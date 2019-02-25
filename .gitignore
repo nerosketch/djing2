@@ -1,0 +1,13 @@
+*.pyc
+*.txt
+!requirements.txt
+media/*
+media/min/*
+.idea/
+djing/local_settings.py
+gmap/fixtures
+*.json
+*.bak
+*.mo
+venv/
+__pycache__/

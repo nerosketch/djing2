@@ -1,0 +1,37 @@
+urllib3
+Django
+djangorestframework
+Pillow
+
+# for mac address field
+netaddr
+
+# db client for Postgres
+psycopg2-binary
+
+easysnmp
+pid
+django-guardian
+
+# django-jsonfield
+-e git://github.com/dmkoch/django-jsonfield.git#egg=django-jsonfield
+
+requests
+webdavclient
+transliterate
+
+# django-xmlview for pay system allpay
+-e git://github.com/nerosketch/django-xmlview.git#egg=django-xmlview
+
+# django-bitfield
+-e git://github.com/disqus/django-bitfield.git#egg=django-bitfield
+
+# django_cleanup for clean unused media
+-e git://github.com/un1t/django-cleanup.git#egg=django_cleanup
+
+# viberbot
+-e git://github.com/Viber/viber-bot-python.git#egg=viberbot
+
+Celery
+redis==2.10.6
+celery[redis]
