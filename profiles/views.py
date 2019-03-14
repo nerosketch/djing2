@@ -1,31 +1,32 @@
 from rest_framework import viewsets
-from rest_framework.generics import GenericAPIView, RetrieveAPIView
+from rest_framework.generics import RetrieveAPIView
 
+from djing2.custom_mixins import CorsAllow
 from profiles.models import UserProfile, UserProfileLog
 from profiles.serializers import UserProfileSerializer, UserProfileLogSerializer
 from djing2.metadata import FieldMetadata
 
 
-class UserProfileViewSet(viewsets.ModelViewSet):
+class UserProfileViewSet(CorsAllow, viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     metadata_class = FieldMetadata
 
-    # FIXME: Only on development. Prevent CORS error in browser
-    def dispatch(self, request, *args, **kwargs):
-        r = super(UserProfileViewSet, self).dispatch(request, *args, **kwargs)
-        r["Access-Control-Allow-Origin"] = "*"
-        r["Access-Control-Allow-Methods"] = '*'
-        return r
 
-
-class UserProfileDetails(RetrieveAPIView):
+class UserProfileDetails(CorsAllow, RetrieveAPIView):
+    model = UserProfile
+    lookup_field = 'username'
+    queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+
+    # def get_serializer_class(self):
+    #     sc = super().get_serializer_class()
+    #     sc.Meta.fields = ('telephone', 'username', 'fio', 'is_active',
+    #                       'is_superuser', 'email', 'avatar')
+    #     return sc
 
 
 class UserProfileLogViewSet(viewsets.ModelViewSet):
     queryset = UserProfileLog.objects.all()
     serializer_class = UserProfileLogSerializer
     metadata_class = FieldMetadata
-
-

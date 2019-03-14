@@ -1,8 +1,10 @@
 from rest_framework import serializers
+
+from djing2.custom_mixins import VerboseModelSerializer
 from profiles.models import UserProfile, UserProfileLog
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(VerboseModelSerializer):
     class Meta:
         model = UserProfile
         fields = ('username', 'fio', 'is_active', 'is_admin', 'telephone',
