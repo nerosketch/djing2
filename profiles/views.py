@@ -19,12 +19,6 @@ class UserProfileDetails(CorsAllow, RetrieveAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
-    # def get_serializer_class(self):
-    #     sc = super().get_serializer_class()
-    #     sc.Meta.fields = ('telephone', 'username', 'fio', 'is_active',
-    #                       'is_superuser', 'email', 'avatar')
-    #     return sc
-
 
 class UserProfileLogViewSet(viewsets.ModelViewSet):
     queryset = UserProfileLog.objects.all()
