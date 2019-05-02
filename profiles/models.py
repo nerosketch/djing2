@@ -2,7 +2,6 @@ import os
 from PIL import Image
 from bitfield.models import BitField
 
-from jsonfield import JSONField
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin
 from django.core.validators import RegexValidator
@@ -93,7 +92,7 @@ class BaseAccount(AbstractBaseUser, PermissionsMixin):
 
 class UserProfileLog(models.Model):
     account = models.ForeignKey('UserProfile', on_delete=models.CASCADE, verbose_name=_('Author'))
-    meta_info = JSONField(verbose_name=_('Meta information'))
+    # meta_info = JSONField(verbose_name=_('Meta information'))
     ACTION_TYPES = (
         (0, _('Undefined')),
         (1, _('Create user')),

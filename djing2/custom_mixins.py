@@ -31,7 +31,10 @@ class VerboseModelSerializer(serializers.ModelSerializer):
                     'v': field.to_representation(attribute),
                     'i': {
                         'help_text': getattr(field, 'help_text'),
-                        'label': getattr(field, 'label')
+                        'label': getattr(field, 'label'),
+                        # 'max_length': getattr(field, 'max_length', 0),
+                        # 'required': getattr(field, 'required', False),
+                        # 'type': field.__class__.__name__
                     }
                 }
         return ret

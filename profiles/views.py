@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from rest_framework.generics import RetrieveAPIView
+from rest_framework.generics import RetrieveUpdateDestroyAPIView
 
 from djing2.custom_mixins import CorsAllow
 from profiles.models import UserProfile, UserProfileLog
@@ -13,7 +13,7 @@ class UserProfileViewSet(CorsAllow, viewsets.ModelViewSet):
     metadata_class = FieldMetadata
 
 
-class UserProfileDetails(CorsAllow, RetrieveAPIView):
+class UserProfileDetails(CorsAllow, RetrieveUpdateDestroyAPIView):
     model = UserProfile
     lookup_field = 'username'
     queryset = UserProfile.objects.all()

@@ -13,9 +13,6 @@ easysnmp
 pid
 django-guardian
 
-# django-jsonfield
--e git://github.com/dmkoch/django-jsonfield.git#egg=django-jsonfield
-
 requests
 webdavclient
 transliterate
