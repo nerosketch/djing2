@@ -31,9 +31,9 @@ from django.urls import reverse_lazy
 SECRET_KEY = '27o%+57bayjug7b8qew%9n6dh$+v_ul%7o89$nm0k!%)fq@6!)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = local_settings.DEBUG
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = local_settings.ALLOWED_HOSTS
 
 ADMINS = getattr(local_settings, 'ADMINS', ())
 
@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'corsheaders',
     'groupapp',
     'profiles',
 ]
@@ -57,6 +58,7 @@ if DEBUG:
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -198,3 +200,14 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata'
 }
+
+if DEBUG:
+    print('CORS')
+    CORS_ORIGIN_ALLOW_ALL = True
+    CORS_ALLOW_CREDENTIALS = True
+    CORS_ORIGIN_WHITELIST = (
+        'localhost:8080',
+    )
+    CORS_ORIGIN_REGEX_WHITELIST = (
+        'localhost:8080',
+    )

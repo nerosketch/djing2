@@ -13,5 +13,6 @@ router.register('log', views.UserProfileLogViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('test_req/', views.test_req),
     re_path(r'^(?P<username>\w{1,127})/$', views.UserProfileDetails.as_view())
 ]
