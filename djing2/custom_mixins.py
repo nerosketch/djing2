@@ -9,8 +9,8 @@ class CorsAllow(object):
     # FIXME: Only on development. Prevent CORS error in browser
     def dispatch(self, request, *args, **kwargs):
         r = super(CorsAllow, self).dispatch(request, *args, **kwargs)
-        r["Access-Control-Allow-Origin"] = "*"
-        r["Access-Control-Allow-Methods"] = '*'
+        r["Access-Control-Allow-Origin"] = "http://localhost:8080"
+        r["Access-Control-Allow-Methods"] = 'POST, GET'
         return r
 
 
