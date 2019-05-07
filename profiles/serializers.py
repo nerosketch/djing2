@@ -11,10 +11,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
                   'avatar', 'email', 'password')
 
     def create(self, validated_data):
-        print(validated_data)
-        UserProfile.objects.create_superuser()
-        return UserProfile.objects.create(**validated_data)
-
+        return UserProfile.objects.create_superuser(
+            telephone=validated_data.get('telephone'),
+            username=validated_data.get('username'),
+            password=validated_data.get('password')
+        )
+        # return UserProfile.objects.create(**validated_data)
 
 
 class UserProfileLogSerializer(serializers.ModelSerializer):

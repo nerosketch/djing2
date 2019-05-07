@@ -165,9 +165,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_PICTURE = '/static/img/user_ava.gif'
 AUTH_USER_MODEL = 'profiles.UserProfile'
 
-LOGIN_URL = reverse_lazy('acc_app:login')
-LOGIN_REDIRECT_URL = reverse_lazy('acc_app:setup_info')
-LOGOUT_URL = reverse_lazy('acc_app:logout')
+#LOGIN_URL = reverse_lazy('acc_app:login')
+#LOGIN_REDIRECT_URL = reverse_lazy('acc_app:setup_info')
+#LOGOUT_URL = reverse_lazy('acc_app:logout')
 
 TELEPHONE_REGEXP = local_settings.TELEPHONE_REGEXP
 

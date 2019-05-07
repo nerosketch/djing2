@@ -168,6 +168,3 @@ class UserProfile(BaseAccount):
             do_type=do_type,
             additional_text=additional_text
         )
-
-    def get_absolute_url(self):
-        return resolve_url('acc_app:other_profile', self.pk)
