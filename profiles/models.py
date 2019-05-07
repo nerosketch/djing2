@@ -54,7 +54,7 @@ class BaseAccount(AbstractBaseUser, PermissionsMixin):
     fio = models.CharField(_('fio'), max_length=256)
     birth_day = models.DateField(_('birth day'), auto_now_add=True)
     is_active = models.BooleanField(_('Is active'), default=True)
-    is_admin = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=True)
     telephone = models.CharField(
         max_length=16,
         verbose_name=_('Telephone'),
