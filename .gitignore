@@ -9,5 +9,6 @@ gmap/fixtures
 *.json
 *.bak
 *.mo
+db.sqlite3
 venv/
 __pycache__/
