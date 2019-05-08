@@ -7,8 +7,8 @@ from profiles.models import UserProfile, UserProfileLog
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ('username', 'fio', 'is_active', 'is_admin', 'telephone',
-                  'avatar', 'email', 'password')
+        fields = ('pk', 'username', 'fio', 'is_active', 'is_admin', 'telephone',
+                  'avatar', 'email')
 
     def create(self, validated_data):
         return UserProfile.objects.create_superuser(
