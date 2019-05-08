@@ -4,6 +4,7 @@ from django.conf import settings
 
 urlpatterns = [
     path('profiles/', include('profiles.urls', namespace='profiles')),
+    path('groups/', include('groupapp.urls', namespace='groups')),
     path('api-auth/', include('rest_framework.urls'))
 ]
 

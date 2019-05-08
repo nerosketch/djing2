@@ -4,10 +4,9 @@ from bitfield.models import BitField
 
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin
-from django.core.validators import RegexValidator
+
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
-from django.shortcuts import resolve_url
+from djing2.lib.validators import latinValidator, telephoneValidator
 from groupapp.models import Group
 
 
@@ -49,7 +48,7 @@ class BaseAccount(AbstractBaseUser, PermissionsMixin):
         _('profile username'),
         max_length=127,
         unique=True,
-        validators=(RegexValidator(r'^\w{1,127}$'),)
+        validators=(latinValidator,)
     )
     fio = models.CharField(_('fio'), max_length=256)
     birth_day = models.DateField(_('birth day'), auto_now_add=True)
@@ -59,9 +58,7 @@ class BaseAccount(AbstractBaseUser, PermissionsMixin):
         max_length=16,
         verbose_name=_('Telephone'),
         blank=True,
-        validators=(RegexValidator(
-            getattr(settings, 'TELEPHONE_REGEXP', r'^(\+[7893]\d{10,11})?$')
-        ),)
+        validators=(telephoneValidator,)
     )
 
     USERNAME_FIELD = 'username'
