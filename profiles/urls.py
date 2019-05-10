@@ -8,11 +8,11 @@ app_name = 'profiles'
 
 
 router = DefaultRouter()
-router.register('', views.UserProfileViewSet)
+router.register('accounts', views.UserProfileViewSet)
 router.register('log', views.UserProfileLogViewSet)
 
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('api-token-auth/', obtain_auth_token)
+    path('token-auth/', obtain_auth_token)
 ]
