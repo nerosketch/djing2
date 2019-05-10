@@ -1,12 +1,12 @@
 # from django.contrib.auth.models import User
-from rest_framework import serializers
+from rest_framework.serializers import ModelSerializer
 from rest_framework.exceptions import ValidationError
 
 from profiles.models import UserProfile, UserProfileLog
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    firbidden_usernames = ('log',)
+class UserProfileSerializer(ModelSerializer):
+    firbidden_usernames = ('log', 'api-token-auth')
 
     class Meta:
         model = UserProfile
@@ -33,7 +33,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return super().is_valid(raise_exception)
 
 
-class UserProfileLogSerializer(serializers.ModelSerializer):
+class UserProfileLogSerializer(ModelSerializer):
     class Meta:
         model = UserProfileLog
         fields = ('do_type', 'additional_text', 'action_date')

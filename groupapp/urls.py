@@ -7,10 +7,9 @@ app_name = 'groups'
 
 
 router = routers.DefaultRouter()
-router.register('all', views.GroupsModelViewSets)
+router.register('', views.GroupsModelViewSets)
 
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('<int:pk>/', views.GroupRetrieveUpdateDestroyAPIView.as_view())
+    path('', include(router.urls))
 ]

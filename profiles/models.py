@@ -3,9 +3,11 @@ from PIL import Image
 from bitfield.models import BitField
 
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin
-
 from django.utils.translation import gettext_lazy as _
+from rest_framework.authtoken.models import Token
 from djing2.lib.validators import latinValidator, telephoneValidator
 from groupapp.models import Group
 
@@ -165,3 +167,9 @@ class UserProfile(BaseAccount):
             do_type=do_type,
             additional_text=additional_text
         )
+
+
+@receiver(post_save, sender=UserProfile)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    if created:
+        Token.objects.create(user=instance)

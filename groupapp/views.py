@@ -1,15 +1,10 @@
-from rest_framework import viewsets
-from rest_framework.generics import RetrieveUpdateDestroyAPIView
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated
 from groupapp.models import Group
 from groupapp.serializers import GroupsSerializer
 
 
-class GroupsModelViewSets(viewsets.ModelViewSet):
+class GroupsModelViewSets(ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupsSerializer
-
-
-class GroupRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
-    # model = Group
-    serializer_class = GroupsSerializer
-    queryset = Group.objects.all()
+    permission_classes = (IsAuthenticated,)

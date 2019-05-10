@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated
 
 # from rest_framework.response import Response
 # from rest_framework import status
@@ -8,11 +9,12 @@ from profiles.serializers import UserProfileSerializer, UserProfileLogSerializer
 from djing2.metadata import FieldMetadata
 
 
-class UserProfileViewSet(viewsets.ModelViewSet):
+class UserProfileViewSet(ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     metadata_class = FieldMetadata
     lookup_field = 'username'
+    permission_classes = (IsAuthenticated,)
 
     # def create(self, request, *args, **kwargs):
     #     print('create')
@@ -25,7 +27,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserProfileLogViewSet(viewsets.ModelViewSet):
+class UserProfileLogViewSet(ModelViewSet):
     queryset = UserProfileLog.objects.all()
     serializer_class = UserProfileLogSerializer
     metadata_class = FieldMetadata
+    permission_classes = (IsAuthenticated,)
