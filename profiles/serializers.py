@@ -1,10 +1,13 @@
 # from django.contrib.auth.models import User
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from profiles.models import UserProfile, UserProfileLog
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    firbidden_usernames = ('log',)
+
     class Meta:
         model = UserProfile
         fields = ('pk', 'username', 'fio', 'is_active', 'is_admin', 'telephone',
@@ -17,6 +20,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
             password=validated_data.get('password')
         )
         # return UserProfile.objects.create(**validated_data)
+
+    def validate(self, attrs):
+        print('Attrs:', attrs)
+        return super().validate(attrs)
+
+    def is_valid(self, raise_exception: bool = ...):
+        if self.initial_data['username'] in self.firbidden_usernames:
+            if raise_exception:
+                raise ValidationError({'username': ['Forbidden username']})
+            return True
+        return super().is_valid(raise_exception)
 
 
 class UserProfileLogSerializer(serializers.ModelSerializer):

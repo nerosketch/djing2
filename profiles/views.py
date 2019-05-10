@@ -1,5 +1,4 @@
 from rest_framework import viewsets
-from rest_framework.generics import RetrieveUpdateDestroyAPIView, ListCreateAPIView
 
 # from rest_framework.response import Response
 # from rest_framework import status
@@ -13,6 +12,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     metadata_class = FieldMetadata
+    lookup_field = 'username'
 
     # def create(self, request, *args, **kwargs):
     #     print('create')
@@ -23,18 +23,6 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     #         print('create Response')
     #         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UserProfileCreate(ListCreateAPIView):
-    queryset = UserProfile.objects.all()
-    serializer_class = UserProfileSerializer
-
-
-class UserProfileDetails(RetrieveUpdateDestroyAPIView):
-    model = UserProfile
-    lookup_field = 'username'
-    queryset = UserProfile.objects.all()
-    serializer_class = UserProfileSerializer
 
 
 class UserProfileLogViewSet(viewsets.ModelViewSet):
