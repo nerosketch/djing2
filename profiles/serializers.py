@@ -6,7 +6,7 @@ from profiles.models import UserProfile, UserProfileLog
 
 
 class UserProfileSerializer(ModelSerializer):
-    firbidden_usernames = ('log', 'api-token-auth')
+    firbidden_usernames = ('log', 'api-token-auth', 'api')
 
     class Meta:
         model = UserProfile
@@ -20,10 +20,6 @@ class UserProfileSerializer(ModelSerializer):
             password=validated_data.get('password')
         )
         # return UserProfile.objects.create(**validated_data)
-
-    def validate(self, attrs):
-        print('Attrs:', attrs)
-        return super().validate(attrs)
 
     def is_valid(self, raise_exception: bool = ...):
         if self.initial_data['username'] in self.firbidden_usernames:
