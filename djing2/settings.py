@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'groupapp',
     'profiles',
+    'services',
 ]
 
 if DEBUG:
@@ -200,8 +201,8 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata',
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     )
 }
 
