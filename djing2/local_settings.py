@@ -13,11 +13,6 @@ PAGINATION_ITEMS_PER_PAGE = 20
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'apikey'
 
-
-# service id for AllPay payment system
-PAY_SERV_ID = '<service id>'
-PAY_SECRET = '<secret>'
-
 # path to asterisk dial records
 DIALING_MEDIA = 'path/to/asterisk_records'
 

@@ -25,7 +25,7 @@ def safe_int(i):
 class MyChoicesAdapter(Iterator):
     _chs = None
 
-    # На вход принимает кортеж кортежей, вложенный из 2х элементов: кода и класса, как: TARIFF_CHOICES
+    # На вход принимает кортеж кортежей, вложенный из 2х элементов: кода и класса
     def __init__(self, choices):
         self._chs = iter(choices)
 
@@ -47,12 +47,6 @@ class RuTimedelta(timedelta):
             )
 
     def __str__(self):
-        # hours, remainder = divmod(self.seconds, 3600)
-        # minutes, seconds = divmod(remainder, 60)
-        # text_date = "%d:%d" % (
-        #    hours,
-        #    minutes
-        # )
         if self.days > 1:
             ru_days = 'дней'
             if 5 > self.days > 1:
@@ -64,17 +58,6 @@ class RuTimedelta(timedelta):
         else:
             text_date = ''
         return text_date
-
-
-class MultipleException(Exception):
-    def __init__(self, err_list):
-        if not isinstance(err_list, (list, tuple)):
-            raise TypeError
-        self.err_list = err_list
-
-
-class LogicError(Exception):
-    pass
 
 
 class Singleton(type):
