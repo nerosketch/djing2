@@ -33,3 +33,4 @@ Celery
 redis==2.10.6
 celery[redis]
 django-cors-headers
+django-encrypted-model-fields
