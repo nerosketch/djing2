@@ -1,10 +1,8 @@
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
+from djing2.viewsets import DjingModelViewSet
 from groupapp.models import Group
 from groupapp.serializers import GroupsSerializer
 
 
-class GroupsModelViewSets(ModelViewSet):
+class GroupsModelViewSets(DjingModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupsSerializer
-    permission_classes = (IsAuthenticated,)
