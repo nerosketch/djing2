@@ -47,10 +47,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'encrypted_model_fields',
     'corsheaders',
     'groupapp',
     'profiles',
     'services',
+    'gateways'
 ]
 
 if DEBUG:
@@ -215,3 +217,12 @@ if DEBUG:
     CORS_ORIGIN_REGEX_WHITELIST = (
         'http://localhost:8080',
     )
+
+
+# Encrypted fields
+# https://pypi.org/project/django-encrypted-model-fields/
+FIELD_ENCRYPTION_KEY = getattr(
+    local_settings,
+    'FIELD_ENCRYPTION_KEY',
+    'vZpDlDPQyU6Ha7NyUGj9uYMuPigejtEPMOZfkYXIQRw='
+)

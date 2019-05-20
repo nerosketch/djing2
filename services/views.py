@@ -9,7 +9,7 @@ from services.serializers import ServiceModelSerializer, PeriodicPayModelSeriali
 class ServiceModelViewSet(ModelViewSet):
     # queryset = Service.objects.annotate(usercount=Count('linkto_service__abon'))
     queryset = Service.objects.all()
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = ServiceModelSerializer
 
 
