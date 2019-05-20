@@ -2,10 +2,16 @@ from django.urls import path, include
 from django.conf import settings
 
 
+api_urls = [
+    path('profiles/', include('profiles.urls', namespace='profiles')),
+    path('groups/', include('groupapp.urls', namespace='groups')),
+    path('services/', include('services.urls', namespace='services')),
+    path('gateways/', include('gateways.urls', namespace='gateways')),
+]
+
+
 urlpatterns = [
-    path('api/profiles/', include('profiles.urls', namespace='profiles')),
-    path('api/groups/', include('groupapp.urls', namespace='groups')),
-    path('api/services/', include('services.urls', namespace='services')),
+    path('api/', include(api_urls)),
     # path('api-auth/', include('rest_framework.urls'))
 ]
 

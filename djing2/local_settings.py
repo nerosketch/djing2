@@ -48,3 +48,7 @@ EMAIL_USE_TLS = True
 
 # public url for Viber Bot
 VIBER_BOT_PUBLIC_URL = 'https://localhost:8000'
+
+
+# Encrypted fields
+FIELD_ENCRYPTION_KEY = 'PB1c-qnmO82xT8VhUGNyA5-7XJRAejBXVVcc-cvwZpo='
