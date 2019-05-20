@@ -1,11 +1,8 @@
-from rest_framework.viewsets import ModelViewSet
-# from rest_framework.permissions import IsAuthenticated
-
+from djing2.viewsets import DjingModelViewSet
 from gateways.models import Gateway
 from gateways.serializers import GatewayModelSerializer
 
 
-class GatewayModelViewSet(ModelViewSet):
+class GatewayModelViewSet(DjingModelViewSet):
     queryset = Gateway.objects.all()
-    # permission_classes = (IsAuthenticated,)
     serializer_class = GatewayModelSerializer
