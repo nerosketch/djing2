@@ -32,5 +32,10 @@ transliterate
 Celery
 redis==2.10.6
 celery[redis]
+
 django-cors-headers
 django-encrypted-model-fields
+django-macaddress
+
+# pexpect
+-e git://github.com/pexpect/pexpect.git#egg=pexpect
