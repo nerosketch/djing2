@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'groupapp',
     'profiles',
     'services',
-    'gateways'
+    'gateways',
+    'devices',
 ]
 
 if DEBUG:
