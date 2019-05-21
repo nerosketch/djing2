@@ -21,7 +21,7 @@ from django.utils.translation import gettext_lazy as _
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-from django.urls import reverse_lazy
+# from django.urls import reverse_lazy
 
 
 # Quick-start development settings - unsuitable for production
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'encrypted_model_fields',
+    'django_filters',
     'corsheaders',
     'groupapp',
     'profiles',
@@ -169,9 +170,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_PICTURE = '/static/img/user_ava.gif'
 AUTH_USER_MODEL = 'profiles.UserProfile'
 
-#LOGIN_URL = reverse_lazy('acc_app:login')
-#LOGIN_REDIRECT_URL = reverse_lazy('acc_app:setup_info')
-#LOGOUT_URL = reverse_lazy('acc_app:logout')
+# LOGIN_URL = reverse_lazy('acc_app:login')
+# LOGIN_REDIRECT_URL = reverse_lazy('acc_app:setup_info')
+# LOGOUT_URL = reverse_lazy('acc_app:logout')
 
 TELEPHONE_REGEXP = local_settings.TELEPHONE_REGEXP
 
@@ -206,7 +207,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
-    )
+    ),
+    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',)
 }
 
 if DEBUG:

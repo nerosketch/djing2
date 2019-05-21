@@ -39,3 +39,4 @@ django-macaddress
 
 # pexpect
 -e git://github.com/pexpect/pexpect.git#egg=pexpect
+django-filter
