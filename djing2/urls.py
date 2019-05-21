@@ -7,6 +7,7 @@ api_urls = [
     path('groups/', include('groupapp.urls', namespace='groups')),
     path('services/', include('services.urls', namespace='services')),
     path('gateways/', include('gateways.urls', namespace='gateways')),
+    path('devices/', include('devices.urls', namespace='devices')),
 ]
 
 
