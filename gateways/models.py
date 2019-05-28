@@ -18,15 +18,15 @@ class Gateway(models.Model):
     default = models.BooleanField(_('Is default'), default=False)
     enabled = models.BooleanField(_('Enabled'), default=True)
 
-    def get_nas_manager_klass(self):
+    def get_gw_manager_klass(self):
         try:
             return next(klass for code, klass in GW_TYPES if code == int(self.gw_type))
         except StopIteration:
             raise TypeError(_('One of nas types implementation is not found'))
 
-    def get_nas_manager(self):
+    def get_gw_manager(self):
         try:
-            klass = self.get_nas_manager_klass()
+            klass = self.get_gw_manager_klass()
             if hasattr(self, '_gw_mngr'):
                 o = getattr(self, '_gw_mngr')
             else:
