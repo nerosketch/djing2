@@ -8,12 +8,13 @@ api_urls = [
     path('services/', include('services.urls', namespace='services')),
     path('gateways/', include('gateways.urls', namespace='gateways')),
     path('devices/', include('devices.urls', namespace='devices')),
+    path('customers/', include('customers.urls', namespace='customers')),
 ]
 
 
 urlpatterns = [
     path('api/', include(api_urls)),
-    # path('api-auth/', include('rest_framework.urls'))
+    path('api-auth/', include('rest_framework.urls'))
 ]
 
 

@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'services',
     'gateways',
     'devices',
+    'customers',
 ]
 
 if DEBUG:
