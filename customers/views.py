@@ -1,5 +1,3 @@
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from djing2.viewsets import DjingModelViewSet
@@ -26,6 +24,14 @@ class SubscriberModelViewSet(DjingModelViewSet):
     queryset = models.Subscriber.objects.all()
     serializer_class = serializers.SubscriberModelSerializer
 
+    @staticmethod
+    def generate_random_username(r):
+        return Response(serializers.generate_random_username())
+
+    @staticmethod
+    def generate_random_password(r):
+        return Response(serializers.generate_random_password())
+
 
 class PassportInfoModelViewSet(DjingModelViewSet):
     queryset = models.PassportInfo.objects.all()
@@ -50,18 +56,3 @@ class AdditionalTelephoneModelViewSet(DjingModelViewSet):
 class PeriodicPayForIdModelViewSet(DjingModelViewSet):
     queryset = models.PeriodicPayForId.objects.all()
     serializer_class = serializers.PeriodicPayForIdModelSerializer
-
-
-class GenerateRandomUsername(APIView):
-    permission_classes = (IsAuthenticated, IsAdminUser)
-
-    def get(self, request, format=None):
-        username = serializers.generate_random_username()
-        return Response(username)
-
-
-class GenerateRandomPassword(GenerateRandomUsername):
-
-    def get(self, request, format=None):
-        passw = serializers.generate_random_password()
-        return Response(passw)
