@@ -18,7 +18,7 @@ router.register('additional-telephone/', views.AdditionalTelephoneModelViewSet)
 router.register('periodic-pay/', views.PeriodicPayForIdModelViewSet)
 
 urlpatterns = [
-    path('generate_username/', views.GenerateRandomUsername.as_view()),
-    path('generate_password/', views.GenerateRandomPassword.as_view()),
+    path('generate_username/', views.SubscriberModelViewSet.as_view({'get': 'generate_random_username'})),
+    path('generate_password/', views.SubscriberModelViewSet.as_view({'get': 'generate_random_password'})),
     path('', include(router.urls)),
 ]
