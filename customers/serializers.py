@@ -52,19 +52,20 @@ class SubscriberLogModelSerializer(serializers.ModelSerializer):
 
 
 class SubscriberModelSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(max_length=127)
-    password = serializers.CharField(max_length=64)
-
     def create(self, validated_data):
         raw_password = validated_data.get('password')
+        validated_data.update({
+            'is_admin': False,
+            'password': make_password(raw_password)
+        })
         acc = super().create(validated_data)
-        acc.password = make_password(raw_password)
         try:
             acc_passw = models.SubscriberRawPassword.objects.get(subscriber=acc)
             acc_passw.passw_text = raw_password
             acc_passw.save(update_fields=('passw_text',))
         except models.SubscriberRawPassword.DoesNotExist:
             models.SubscriberRawPassword.objects.create(
+                subscriber=acc,
                 passw_text=raw_password
             )
         return acc
@@ -72,7 +73,7 @@ class SubscriberModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Subscriber
         fields = (
-            'username', 'password', 'telephone', 'fio',
+            'pk', 'username', 'password', 'telephone', 'fio',
             'group', 'description', 'street',
             'house', 'is_active', 'gateway'
         )
