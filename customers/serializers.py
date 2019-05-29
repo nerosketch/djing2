@@ -2,9 +2,8 @@ from string import digits, ascii_lowercase
 from random import choice
 
 from django.contrib.auth.hashers import make_password
-from django.utils.translation import gettext_lazy as _
+# from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
-from rest_framework.fields import empty
 
 from customers import models
 from djing2.lib import safe_int
@@ -21,16 +20,16 @@ def _generate_random_chars(length=6, chars=digits, split=2, delimiter=''):
     return username
 
 
-def _generate_random_username():
+def generate_random_username():
     username = _generate_random_chars()
     try:
         models.Subscriber.objects.get(username=username)
-        return _generate_random_username()
+        return generate_random_username()
     except models.Subscriber.DoesNotExist:
         return safe_int(username)
 
 
-def _generate_random_password():
+def generate_random_password():
     return _generate_random_chars(length=6, chars=digits + ascii_lowercase)
 
 
@@ -53,14 +52,6 @@ class SubscriberLogModelSerializer(serializers.ModelSerializer):
 
 
 class SubscriberModelSerializer(serializers.ModelSerializer):
-    def __init__(self, data=empty, *args, **kwargs):
-        if not isinstance(data, dict) or not data:
-            data = {
-                'username': _generate_random_username(),
-                'password': _generate_random_password()
-            }
-        super().__init__(data=data, *args, **kwargs)
-
     username = serializers.CharField(max_length=127)
     password = serializers.CharField(max_length=64)
 
@@ -81,9 +72,9 @@ class SubscriberModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Subscriber
         fields = (
-            'username', 'telephone', 'fio',
+            'username', 'password', 'telephone', 'fio',
             'group', 'description', 'street',
-            'house', 'is_active', 'nas'
+            'house', 'is_active', 'gateway'
         )
 
 
@@ -117,7 +108,7 @@ class PeriodicPayForIdModelSerializer(serializers.ModelSerializer):
         exclude = ('account',)
 
 
-class AmountMoneySerializer(serializers.Serializer):
+'''class AmountMoneySerializer(serializers.Serializer):
     amount = serializers.FloatField(max_value=5000)
     comment = serializers.CharField(
         max_length=128,
@@ -133,3 +124,4 @@ class AmountMoneySerializer(serializers.Serializer):
 
     # def update(self, instance, validated_data):
     #     pass
+'''
