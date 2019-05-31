@@ -1,4 +1,3 @@
-from random import uniform
 from datetime import timedelta, datetime
 from calendar import monthrange
 
