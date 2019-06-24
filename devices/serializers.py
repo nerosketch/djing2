@@ -1,5 +1,6 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, IntegerField
 from devices.models import Device, Port
+from groupapp.models import Group
 
 
 class DeviceModelSerializer(ModelSerializer):
@@ -16,3 +17,14 @@ class PortModelSerializer(ModelSerializer):
     class Meta:
         model = Port
         fields = ('pk', 'device', 'num', 'descr')
+
+
+class DeviceGroupsModelSerializer(ModelSerializer):
+    device_count = IntegerField(
+        source='device_set.count',
+        read_only=True
+    )
+
+    class Meta:
+        model = Group
+        fields = ('pk', 'title', 'code', 'device_count')

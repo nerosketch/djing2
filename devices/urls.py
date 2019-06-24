@@ -11,5 +11,6 @@ router.register('', views.DeviceModelViewSet)
 router.register('ports/', views.PortModelViewSet)
 
 urlpatterns = [
-    path('', include(router.urls))
+    path('groups/', views.DeviceGroupsList.as_view(), name='groups'),
+    path('', include(router.urls)),
 ]
