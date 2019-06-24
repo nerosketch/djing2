@@ -6,7 +6,7 @@ from djing2.lib.validators import latinValidator
 
 class Group(models.Model):
     title = models.CharField(_('Title'), max_length=127, unique=True)
-    code = models.CharField(_('Tech code'), blank=True, max_length=12, validators=(latinValidator,))
+    code = models.CharField(_('Tech code'), blank=True, max_length=12, validators=(latinValidator,), unique=True)
 
     def get_absolute_url(self):
         return resolve_url('group_app:edit', self.pk)
