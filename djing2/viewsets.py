@@ -1,4 +1,5 @@
 from django.db import IntegrityError
+from rest_framework.generics import ListAPIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
@@ -13,3 +14,7 @@ class DjingModelViewSet(ModelViewSet):
             return super().perform_create(serializer)
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(e)
+
+
+class DjingListAPIView(ListAPIView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
