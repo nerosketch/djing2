@@ -15,7 +15,7 @@ class Gateway(models.Model):
     auth_login = models.CharField(_('Auth login'), max_length=64)
     auth_passw = EncryptedCharField(_('Auth password'), max_length=127)
     gw_type = models.PositiveSmallIntegerField(_('Type'), choices=MyChoicesAdapter(GW_TYPES), default=0)
-    default = models.BooleanField(_('Is default'), default=False)
+    is_default = models.BooleanField(_('Is default'), default=False)
     enabled = models.BooleanField(_('Enabled'), default=True)
 
     def get_gw_manager_klass(self):
@@ -57,5 +57,5 @@ def nas_pre_delete(sender, **kwargs):
     nas = kwargs.get("instance")
     # check if this gateway is default.
     # You cannot remove default server
-    if nas.default:
+    if nas.is_default:
         raise MessageFailure(_('You cannot remove default server'))
