@@ -13,6 +13,16 @@ class DeviceModelSerializer(ModelSerializer):
         )
 
 
+class DeviceWithoutGroupModelSerializer(ModelSerializer):
+    class Meta:
+        model = Device
+        fields = (
+            'pk', 'ip_address', 'mac_addr', 'comment',
+            'dev_type', 'man_passw', 'parent_dev', 'snmp_extra',
+            'extra_data', 'status', 'is_noticeable'
+        )
+
+
 class PortModelSerializer(ModelSerializer):
     class Meta:
         model = Port
