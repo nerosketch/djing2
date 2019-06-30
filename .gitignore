@@ -4,7 +4,7 @@
 media/*
 media/min/*
 .idea/
-djing/local_settings.py
+djing2/local_settings.py
 gmap/fixtures
 *.json
 *.bak

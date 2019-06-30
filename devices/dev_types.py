@@ -48,7 +48,7 @@ def plain_ip_device_mon_template(device) -> Optional[AnyStr]:
 def ex_expect(filename, params=()):
     base_dir = getattr(settings, 'BASE_DIR')
     if base_dir is not None:
-        exec_file = os.path.join(base_dir, 'devapp', 'expect_scripts', filename)
+        exec_file = os.path.join(base_dir, 'devices', 'expect_scripts', filename)
         if os.path.isfile(exec_file) and os.access(path=exec_file, mode=os.X_OK):
             params = ' '.join(str(p) for p in params)
             if params:
@@ -132,9 +132,6 @@ class DLinkDevice(DevBase, SNMPBaseWorker):
         tm = RuTimedelta(timedelta(seconds=uptimestamp / 100)) or RuTimedelta(timedelta())
         return tm
 
-    def get_template_name(self):
-        return 'generic_switch.html'
-
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
         # Dlink has no require snmp info
@@ -206,9 +203,6 @@ class OLTDevice(DevBase, SNMPBaseWorker):
         tm = RuTimedelta(timedelta(seconds=up_timestamp / 100)) or RuTimedelta(timedelta())
         return tm
 
-    def get_template_name(self):
-        return 'olt.html'
-
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
         # Olt has no require snmp info
@@ -252,9 +246,6 @@ class OnuDevice(DevBase, SNMPBaseWorker):
     def uptime(self):
         pass
 
-    def get_template_name(self):
-        return "onu.html"
-
     def get_details(self):
         if self.db_instance is None:
             return
@@ -270,13 +261,15 @@ class OnuDevice(DevBase, SNMPBaseWorker):
                 mac = ':'.join('%x' % ord(i) for i in mac)
             # uptime = self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % num)
             if status is not None and status.isdigit():
-                return {
+                basic_info = super().get_details()
+                basic_info.update({
                     'status': status,
                     'signal': signal / 10 if signal else '—',
                     'name': self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % num),
                     'mac': mac,
                     'distance': int(distance) / 10 if distance.isdigit() else 0
-                }
+                })
+                return basic_info
         except EasySNMPTimeoutError as e:
             return {'err': "%s: %s" % (_('ONU not connected'), e)}
 
@@ -384,7 +377,7 @@ class Olt_ZTE_C320(OLTDevice):
 
     def get_fibers(self):
         fibers = ({
-            'fb_id': fiber_id,
+            'fb_id': int(fiber_id),
             'fb_name': fiber_name,
             'fb_onu_num': safe_int(self.get_item('.1.3.6.1.4.1.3902.1012.3.13.1.1.13.%d' % int(fiber_id)))
         } for fiber_name, fiber_id in self.get_list_keyval('.1.3.6.1.4.1.3902.1012.3.13.1.1.1'))
@@ -437,9 +430,6 @@ class Olt_ZTE_C320(OLTDevice):
 
     def get_hostname(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
-
-    def get_template_name(self):
-        return 'olt_ztec320.html'
 
 
 def _reg_dev_zte(device, extra_data: Dict, reg_func):
@@ -505,7 +495,8 @@ class ZteOnuDevice(OnuDevice):
             if sn is not None:
                 sn = 'ZTEG%s' % ''.join('%.2X' % ord(x) for x in sn[-4:])
 
-            return {
+            basic_info = super().get_details()
+            basic_info.update({
                 'status': status,
                 'signal': conv_zte_signal(signal),
                 'distance': safe_float(distance) / 10,
@@ -515,12 +506,10 @@ class ZteOnuDevice(OnuDevice):
                 'int_name': int_name,
                 'onu_type': onu_type,
                 'mac': sn_to_mac(sn)
-            }
+            })
+            return basic_info
         except IndexError:
             pass
-
-    def get_template_name(self):
-        return 'onu_for_zte.html'
 
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
