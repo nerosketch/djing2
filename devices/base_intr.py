@@ -5,6 +5,8 @@ from easysnmp import Session
 
 from django.utils.translation import gettext, gettext_lazy as _
 
+from djing2.lib.builtins_ext import DictReturner
+
 ListOrError = Union[
     Iterable,
     Union[Exception, Iterable]
@@ -51,10 +53,6 @@ class DevBase(object, metaclass=ABCMeta):
     def uptime(self) -> timedelta:
         pass
 
-    @abstractmethod
-    def get_template_name(self) -> AnyStr:
-        """Return path to html template for device"""
-
     @property
     @abstractmethod
     def has_attachable_to_subscriber(self) -> bool:
@@ -90,8 +88,21 @@ class DevBase(object, metaclass=ABCMeta):
         :return: string for config file
         """
 
+    def get_details(self) -> dict:
+        """
+        Return basic information by SNMP or other method
+        :return: dict of information
+        """
+        return {
+            'uptime': self.uptime(),
+            'name': self.get_device_name(),
+            'description': self.description,
+            'has_attachable_to_subscriber': self.has_attachable_to_subscriber,
+            'is_use_device_port': self.is_use_device_port
+        }
 
-class BasePort(object, metaclass=ABCMeta):
+
+class BasePort(DictReturner, metaclass=ABCMeta):
     __slots__ = 'num', 'snmp_num', 'nm', 'st', '_mac', 'sp', 'writable'
 
     def __init__(self, num, name, status, mac, speed, snmp_num=None, writable=False):
@@ -113,6 +124,17 @@ class BasePort(object, metaclass=ABCMeta):
 
     def mac(self) -> str:
         return ':'.join('%x' % ord(i) for i in self._mac)
+
+    def to_dict(self):
+        return {
+            'number': self.num,
+            'snmp_number': self.snmp_num,
+            'name': self.nm,
+            'status': self.st,
+            'mac_addr': self.mac(),
+            'speed': self.sp,
+            'writable': self.writable
+        }
 
 
 class SNMPBaseWorker(object, metaclass=ABCMeta):
