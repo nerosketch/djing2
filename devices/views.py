@@ -1,3 +1,4 @@
+from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
@@ -106,12 +107,31 @@ class DeviceModelViewSet(DjingModelViewSet):
                 'text': 'Manager has not get_fibers attribute'
             }})
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['put'])
     @catch_dev_manager_err
     def send_reboot(self, request, pk=None):
         device = self.get_object()
         manager = device.get_manager_object()
         manager.reboot(save_before_reboot=False)
+        return Response(status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'])
+    @catch_dev_manager_err
+    def toggle_port(self, request, pk=None):
+        device = self.get_object()
+        manager = device.get_manager_object()
+        port_id = request.query_params.get('port_id')
+        port_state = request.query_params.get('state')
+        if not port_id.isdigit():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        ports = tuple(manager.get_ports())
+        port_id = int(port_id)
+        if port_state == 'up':
+            ports[port_id - 1].enable()
+        elif port_state == 'down':
+            ports[port_id - 1].disable()
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
 
 
@@ -126,5 +146,12 @@ class PortModelViewSet(DjingModelViewSet):
 
 
 class DeviceGroupsList(DjingListAPIView):
-    queryset = Group.objects.all()
     serializer_class = dev_serializers.DeviceGroupsModelSerializer
+
+    def get_queryset(self):
+        groups = get_objects_for_user(
+            self.request.user,
+            'groupapp.view_group', klass=Group,
+            accept_global_perms=False
+        )
+        return groups
