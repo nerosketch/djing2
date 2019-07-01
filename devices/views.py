@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _, gettext
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
@@ -7,6 +8,7 @@ from easysnmp import EasySNMPTimeoutError
 from django_filters.rest_framework import DjangoFilterBackend
 
 from devices.base_intr import DeviceImplementationError
+from djing2.lib import ProcessLocked
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from devices.models import Device, Port
 from devices import serializers as dev_serializers
@@ -133,6 +135,54 @@ class DeviceModelViewSet(DjingModelViewSet):
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'])
+    @catch_dev_manager_err
+    def fix_onu(self, request, pk=None):
+        onu = self.get_object()
+        parent = onu.parent_dev
+        if parent is not None:
+            manager = onu.get_manager_object()
+            mac = onu.mac_addr
+            ports = manager.get_list_keyval('.1.3.6.1.4.1.3320.101.10.1.1.3')
+            text = _('Device with mac address %(mac)s does not exist') % mac
+            http_status = status.HTTP_404_NOT_FOUND
+            for srcmac, snmpnum in ports:
+                # convert bytes mac address to str presentation mac address
+                real_mac = ':'.join('%x' % ord(i) for i in srcmac)
+                if mac == real_mac:
+                    onu.snmp_extra = str(snmpnum)
+                    onu.save(update_fields=('snmp_extra',))
+                    text = _('Fixed')
+                    http_status = status.HTTP_200_OK
+        else:
+            text = _('Parent device not found')
+            http_status = status.HTTP_404_NOT_FOUND
+        return Response(text, http_status)
+
+    @action(detail=True, methods=['get'])
+    @catch_dev_manager_err
+    def register_device(self, request, pk=None):
+        from devices import expect_scripts
+        device = self.get_object()
+        http_status = status.HTTP_200_OK
+        try:
+            device.register_device()
+        except expect_scripts.OnuZteRegisterError:
+            text = gettext('Unregistered onu not found')
+        except expect_scripts.ZteOltLoginFailed:
+            text = gettext('Wrong login or password for telnet access')
+        except (
+                ConnectionRefusedError, expect_scripts.ZteOltConsoleError,
+                expect_scripts.ExpectValidationError, expect_scripts.ZTEFiberIsFull
+        ) as e:
+            text = e
+            http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+        except ProcessLocked:
+            text = gettext('Process locked by another process')
+        else:
+            text = gettext('ok')
+        return Response(text, status=http_status)
 
 
 class DeviceWithoutGroupListAPIView(DjingListAPIView):
