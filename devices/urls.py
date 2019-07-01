@@ -7,11 +7,11 @@ app_name = 'devices'
 
 
 router = DefaultRouter()
-router.register('', views.DeviceModelViewSet)
 router.register('ports/', views.PortModelViewSet)
+router.register('', views.DeviceModelViewSet)
 
 urlpatterns = [
-    path('groups/', views.DeviceGroupsList.as_view(), name='groups'),
+    path('groups/', views.DeviceGroupsList.as_view()),
     path('without_groups/', views.DeviceWithoutGroupListAPIView.as_view()),
     path('', include(router.urls)),
 ]

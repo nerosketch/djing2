@@ -124,8 +124,8 @@ class DeviceModelViewSet(DjingModelViewSet):
         manager = device.get_manager_object()
         port_id = request.query_params.get('port_id')
         port_state = request.query_params.get('state')
-        if not port_id.isdigit():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        if not port_id or not port_id.isdigit():
+            return Response(_('Parameter port_id is bad'), status=status.HTTP_400_BAD_REQUEST)
         ports = tuple(manager.get_ports())
         port_id = int(port_id)
         if port_state == 'up':
@@ -133,7 +133,7 @@ class DeviceModelViewSet(DjingModelViewSet):
         elif port_state == 'down':
             ports[port_id - 1].disable()
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(_('Parameter port_state is bad'), status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'])

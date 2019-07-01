@@ -1,2 +1,0 @@
-curl -X POST -d \'{"username":"bashmak","password":"NOT_A_PASSWORD_ACTUALLYD!"}\' -H "Content-Type: application/json" http://localhost:8000/profiles/token-auth/
-curl -H "Authorization: Token e32283a1cb43f37c6881be2b5d4e700a3d6d4764" http://localhost:8000/profiles/accounts/
