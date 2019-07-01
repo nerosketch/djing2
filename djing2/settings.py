@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'encrypted_model_fields',
     'django_filters',
     'corsheaders',
+    'guardian',
     'groupapp',
     'profiles',
     'services',
@@ -89,6 +90,11 @@ TEMPLATES = [
         },
     },
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend'
+)
 
 WSGI_APPLICATION = 'djing2.wsgi.application'
 
