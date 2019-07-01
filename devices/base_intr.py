@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-from datetime import timedelta
 from typing import Union, Iterable, AnyStr, Generator, Optional, Dict
 from easysnmp import Session
 
@@ -50,7 +49,7 @@ class DevBase(object, metaclass=ABCMeta):
         """Return device name by snmp"""
 
     @abstractmethod
-    def uptime(self) -> timedelta:
+    def uptime(self) -> str:
         pass
 
     @property

@@ -127,10 +127,10 @@ class DLinkDevice(DevBase, SNMPBaseWorker):
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.1.0')
 
-    def uptime(self) -> timedelta:
+    def uptime(self) -> str:
         uptimestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.8.0'))
-        tm = RuTimedelta(timedelta(seconds=uptimestamp / 100)) or RuTimedelta(timedelta())
-        return tm
+        tm = RuTimedelta(timedelta(seconds=uptimestamp / 100))
+        return str(tm)
 
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:

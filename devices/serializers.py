@@ -1,14 +1,20 @@
-from rest_framework.serializers import ModelSerializer, IntegerField
+from rest_framework.serializers import ModelSerializer, IntegerField, CharField
 from devices.models import Device, Port
 from groupapp.models import Group
 
 
 class DeviceModelSerializer(ModelSerializer):
+    dev_type_str = CharField(source='get_dev_type_display', read_only=True)
+    parent_dev_name = CharField(source='parent_dev.comment', allow_null=True, read_only=True)
+    parent_dev_group = IntegerField(source='parent_dev.group.pk', allow_null=True, read_only=True)
+
     class Meta:
         model = Device
         fields = (
             'pk', 'ip_address', 'mac_addr', 'comment',
-            'dev_type', 'man_passw', 'group', 'parent_dev', 'snmp_extra',
+            'dev_type', 'dev_type_str', 'man_passw', 'group',
+            'parent_dev', 'parent_dev_name', 'parent_dev_group',
+            'snmp_extra',
             'extra_data', 'status', 'is_noticeable'
         )
 
