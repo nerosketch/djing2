@@ -1,7 +1,6 @@
 import os
 import re
 from typing import AnyStr, Iterable, Optional, Dict
-from datetime import timedelta
 from easysnmp import EasySNMPTimeoutError
 from pexpect import TIMEOUT
 from transliterate import translit
@@ -106,30 +105,30 @@ class DLinkDevice(DevBase, SNMPBaseWorker):
             )), None
 
     def get_ports(self) -> ListOrError:
-        interfaces_count = safe_int(self.get_item('.1.3.6.1.2.1.2.1.0'))
-        nams = tuple(self.get_list('.1.3.6.1.4.1.171.10.134.2.1.1.100.2.1.3'))
-        stats = tuple(self.get_list('.1.3.6.1.2.1.2.2.1.7'))
-        macs = tuple(self.get_list('.1.3.6.1.2.1.2.2.1.6'))
-        speeds = tuple(self.get_list('.1.3.6.1.2.1.2.2.1.5'))
-        try:
-            for n in range(interfaces_count):
-                status = True if int(stats[n]) == 1 else False
-                yield DLinkPort(
-                    num=n + 1,
-                    name=nams[n] if len(nams) > 0 else '',
-                    status=status,
-                    mac=macs[n] if len(macs) > 0 else _('does not fetch the mac'),
-                    speed=int(speeds[n]) if len(speeds) > 0 else 0,
-                    snmp_worker=self)
-        except IndexError:
-            return DeviceImplementationError('Dlink port index error')
+        ints = self.get_list('.1.3.6.1.2.1.10.7.2.1.1')
+        for num in ints:
+            yield self.get_port(snmp_num=num)
+
+    def get_port(self, snmp_num: int):
+        snmp_num = safe_int(snmp_num)
+        status = self.get_item('.1.3.6.1.2.1.2.2.1.7')
+        status = True if status and int(status) == 1 else False
+        return DLinkPort(
+            num=snmp_num,
+            name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % snmp_num),
+            status=status,
+            mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % snmp_num),
+            speed=self.get_item('.1.3.6.1.2.1.2.2.1.5'),
+            uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % snmp_num),
+            snmp_worker=self
+        )
 
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.1.0')
 
     def uptime(self) -> str:
         uptimestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.8.0'))
-        tm = RuTimedelta(timedelta(seconds=uptimestamp / 100))
+        tm = RuTimedelta(seconds=uptimestamp / 100)
         return str(tm)
 
     @staticmethod
@@ -200,7 +199,7 @@ class OLTDevice(DevBase, SNMPBaseWorker):
 
     def uptime(self):
         up_timestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.9.1.4.1'))
-        tm = RuTimedelta(timedelta(seconds=up_timestamp / 100)) or RuTimedelta(timedelta())
+        tm = RuTimedelta(seconds=up_timestamp / 100)
         return tm
 
     @staticmethod
@@ -351,7 +350,7 @@ class EltexSwitch(DLinkDevice):
 
     def uptime(self):
         uptimestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.3.0'))
-        tm = RuTimedelta(timedelta(seconds=uptimestamp / 100)) or RuTimedelta(timedelta())
+        tm = RuTimedelta(seconds=uptimestamp / 100)
         return tm
 
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
@@ -422,7 +421,7 @@ class Olt_ZTE_C320(OLTDevice):
 
     def uptime(self):
         up_timestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.3.0'))
-        tm = RuTimedelta(timedelta(seconds=up_timestamp / 100)) or RuTimedelta(timedelta())
+        tm = RuTimedelta(seconds=up_timestamp / 100)
         return tm
 
     def get_long_description(self):
