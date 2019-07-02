@@ -111,7 +111,7 @@ class BasePort(metaclass=ABCMeta):
         self.st = status
         self._mac = mac
         self.sp = speed
-        self.uptime = int(uptime)
+        self.uptime = int(uptime) if uptime else None
         self.writable = writable
 
     @abstractmethod
@@ -123,7 +123,7 @@ class BasePort(metaclass=ABCMeta):
         pass
 
     def mac(self) -> str:
-        return ':'.join('%x' % ord(i) for i in self._mac)
+        return ':'.join('%x' % ord(i) for i in self._mac) if self._mac else None
 
     def to_dict(self):
         return {
@@ -132,9 +132,9 @@ class BasePort(metaclass=ABCMeta):
             'name': self.nm,
             'status': self.st,
             'mac_addr': self.mac(),
-            'speed': self.sp,
+            'speed': int(self.sp),
             'writable': self.writable,
-            'uptime': str(RuTimedelta(seconds=self.uptime / 100))
+            'uptime': str(RuTimedelta(seconds=self.uptime / 100)) if self.uptime else None
         }
 
 
