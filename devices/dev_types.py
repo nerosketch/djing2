@@ -422,7 +422,7 @@ class Olt_ZTE_C320(OLTDevice):
     def uptime(self):
         up_timestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.3.0'))
         tm = RuTimedelta(seconds=up_timestamp / 100)
-        return tm
+        return str(tm)
 
     def get_long_description(self):
         return self.get_item('.1.3.6.1.2.1.1.1.0')
@@ -478,37 +478,33 @@ class ZteOnuDevice(OnuDevice):
         snmp_extra = self.db_instance.snmp_extra
         if not snmp_extra:
             return
-        try:
-            fiber_num, onu_num = snmp_extra.split('.')
-            fiber_num, onu_num = int(fiber_num), int(onu_num)
-            fiber_addr = '%d.%d' % (fiber_num, onu_num)
-            status = self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1' % fiber_addr)
-            signal = safe_int(self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%s.1' % fiber_addr))
-            distance = self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.18.%s.1' % fiber_addr)
-            ip_addr = self.get_item('.1.3.6.1.4.1.3902.1012.3.50.16.1.1.10.%s' % fiber_addr)
-            vlans = self.get_item('.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%s.1.1' % fiber_addr)
-            int_name = self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s' % fiber_addr)
-            onu_type = self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%s' % fiber_addr)
 
-            sn = self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s' % fiber_addr)
-            if sn is not None:
-                sn = 'ZTEG%s' % ''.join('%.2X' % ord(x) for x in sn[-4:])
+        fiber_num, onu_num = snmp_extra.split('.')
+        fiber_num, onu_num = int(fiber_num), int(onu_num)
+        fiber_addr = '%d.%d' % (fiber_num, onu_num)
 
-            basic_info = super().get_details()
-            basic_info.update({
-                'status': status,
-                'signal': conv_zte_signal(signal),
-                'distance': safe_float(distance) / 10,
-                'ip_addr': ip_addr,
-                'vlans': vlans,
-                'serial': sn,
-                'int_name': int_name,
-                'onu_type': onu_type,
-                'mac': sn_to_mac(sn)
-            })
-            return basic_info
-        except IndexError:
-            pass
+        signal = safe_int(self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%s.1' % fiber_addr))
+        distance = self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.18.%s.1' % fiber_addr)
+
+        sn = self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s' % fiber_addr)
+        if sn is not None:
+            sn = 'ZTEG%s' % ''.join('%.2X' % ord(x) for x in sn[-4:])
+
+        info = {
+            'status': safe_int(self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1' % fiber_addr)),
+            'signal': conv_zte_signal(signal),
+            'distance': safe_float(distance) / 10,
+            # 'ip_addr': self.get_item('.1.3.6.1.4.1.3902.1012.3.50.16.1.1.10.%s' % fiber_addr),
+            'vlans': self.get_item('.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%s.1.1' % fiber_addr),
+            'serial': sn,
+            'int_name': self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s' % fiber_addr),
+            'onu_type': self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%s' % fiber_addr),
+            'mac': sn_to_mac(sn)
+        }
+        basic_info = super().get_details()
+        if basic_info:
+            info.update(basic_info)
+        return info
 
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
