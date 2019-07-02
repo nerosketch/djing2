@@ -111,14 +111,14 @@ class DLinkDevice(DevBase, SNMPBaseWorker):
 
     def get_port(self, snmp_num: int):
         snmp_num = safe_int(snmp_num)
-        status = self.get_item('.1.3.6.1.2.1.2.2.1.7')
+        status = self.get_item('.1.3.6.1.2.1.2.2.1.7.%d' % snmp_num)
         status = True if status and int(status) == 1 else False
         return DLinkPort(
             num=snmp_num,
             name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % snmp_num),
             status=status,
             mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % snmp_num),
-            speed=self.get_item('.1.3.6.1.2.1.2.2.1.5'),
+            speed=self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % snmp_num),
             uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % snmp_num),
             snmp_worker=self
         )
