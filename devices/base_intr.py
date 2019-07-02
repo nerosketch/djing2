@@ -4,7 +4,7 @@ from easysnmp import Session
 
 from django.utils.translation import gettext, gettext_lazy as _
 
-from djing2.lib.builtins_ext import DictReturner
+from djing2.lib import RuTimedelta
 
 ListOrError = Union[
     Iterable,
@@ -101,16 +101,17 @@ class DevBase(object, metaclass=ABCMeta):
         }
 
 
-class BasePort(DictReturner, metaclass=ABCMeta):
-    __slots__ = 'num', 'snmp_num', 'nm', 'st', '_mac', 'sp', 'writable'
+class BasePort(metaclass=ABCMeta):
+    __slots__ = 'num', 'snmp_num', 'nm', 'st', '_mac', 'sp', 'uptime', 'writable'
 
-    def __init__(self, num, name, status, mac, speed, snmp_num=None, writable=False):
+    def __init__(self, num, name, status, mac, speed, uptime: int, snmp_num=None, writable=False):
         self.num = int(num)
         self.snmp_num = int(num) if snmp_num is None else int(snmp_num)
         self.nm = name
         self.st = status
         self._mac = mac
         self.sp = speed
+        self.uptime = int(uptime)
         self.writable = writable
 
     @abstractmethod
@@ -132,7 +133,8 @@ class BasePort(DictReturner, metaclass=ABCMeta):
             'status': self.st,
             'mac_addr': self.mac(),
             'speed': self.sp,
-            'writable': self.writable
+            'writable': self.writable,
+            'uptime': str(RuTimedelta(seconds=self.uptime / 100))
         }
 
 
