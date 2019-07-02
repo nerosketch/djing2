@@ -49,14 +49,6 @@ class MyChoicesAdapter(Iterator):
 
 # Russian localized timedelta
 class RuTimedelta(timedelta):
-    def __new__(cls, tm):
-        if isinstance(tm, timedelta):
-            return timedelta.__new__(
-                cls,
-                days=tm.days,
-                seconds=tm.seconds,
-                microseconds=tm.microseconds
-            )
 
     def __str__(self):
         if self.days > 1:
@@ -118,10 +110,3 @@ def process_lock(fn):
             if s is not None:
                 s.close()
     return wrapped
-
-
-#
-# Raises when IntegrityError in db
-#
-class DuplicateEntry(Exception):
-    pass

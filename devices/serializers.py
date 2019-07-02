@@ -1,4 +1,7 @@
-from rest_framework.serializers import ModelSerializer, IntegerField, CharField
+from rest_framework.serializers import (
+    ModelSerializer, IntegerField,
+    CharField, DictField
+)
 from devices.models import Device, Port
 from groupapp.models import Group
 
@@ -30,9 +33,18 @@ class DeviceWithoutGroupModelSerializer(ModelSerializer):
 
 
 class PortModelSerializer(ModelSerializer):
+    user_count = IntegerField(
+        source='subscriber_set.count',
+        read_only=True
+    )
+    additional = DictField(
+        source='scan_additional',
+        read_only=True
+    )
+
     class Meta:
         model = Port
-        fields = ('pk', 'device', 'num', 'descr')
+        fields = ('pk', 'device', 'num', 'descr', 'user_count', 'additional')
 
 
 class DeviceGroupsModelSerializer(ModelSerializer):

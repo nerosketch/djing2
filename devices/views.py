@@ -79,6 +79,10 @@ class DeviceModelViewSet(DjingModelViewSet):
         device = self.get_object()
         manager = device.get_manager_object()
         ports = tuple(manager.get_ports())
+        if not ports:
+            return Response({'Error': {
+                'text': gettext('Port scan failed')
+            }})
         if ports is not None and len(ports) > 0 and isinstance(
             ports[0],
             Exception
@@ -117,7 +121,7 @@ class DeviceModelViewSet(DjingModelViewSet):
         manager.reboot(save_before_reboot=False)
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=('get',))
     @catch_dev_manager_err
     def toggle_port(self, request, pk=None):
         device = self.get_object()
@@ -136,7 +140,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             return Response(_('Parameter port_state is bad'), status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=('get',))
     @catch_dev_manager_err
     def fix_onu(self, request, pk=None):
         onu = self.get_object()
@@ -160,7 +164,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             http_status = status.HTTP_404_NOT_FOUND
         return Response(text, http_status)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=('get',))
     @catch_dev_manager_err
     def register_device(self, request, pk=None):
         from devices import expect_scripts
@@ -193,6 +197,7 @@ class DeviceWithoutGroupListAPIView(DjingListAPIView):
 class PortModelViewSet(DjingModelViewSet):
     queryset = Port.objects.all()
     serializer_class = dev_serializers.PortModelSerializer
+    filterset_fields = ('device', 'num')
 
 
 class DeviceGroupsList(DjingListAPIView):
