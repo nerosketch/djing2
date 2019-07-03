@@ -102,7 +102,7 @@ def process_lock(fn):
         try:
             s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             # Create an abstract socket, by prefixing it with null.
-            s.bind('\0postconnect_djing_lock_func_%s' % fn.__name__)
+            s.bind('\0postconnect_djing2_lock_func_%s' % fn.__name__)
             return fn(*args, **kwargs)
         except socket.error:
             raise ProcessLocked
