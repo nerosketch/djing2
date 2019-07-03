@@ -30,7 +30,7 @@ transliterate
 -e git://github.com/Viber/viber-bot-python.git#egg=viberbot
 
 Celery
-redis==2.10.6
+redis
 celery[redis]
 
 django-cors-headers

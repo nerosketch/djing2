@@ -60,14 +60,12 @@ class DeviceModelViewSet(DjingModelViewSet):
         device = self.get_object()
         manager = device.get_manager_object()
         if hasattr(manager, 'get_fibers'):
-            unregistered = map(
-                lambda fiber: filter(
-                    lambda onu: onu is not None, manager.get_units_unregistered(
-                        int(fiber.get('fb_id'))
-                    )
-                ), manager.get_fibers()
-            )
-            print(unregistered, list(unregistered))
+            unregistered = []
+            for fb in manager.get_fibers():
+                for unr in manager.get_units_unregistered(int(fb.get('fb_id'))):
+                    unregistered.append(unr)
+
+            # print(unregistered, list(unregistered))
             return Response(unregistered)
         return Response({'Error': {
             'text': 'Manager has not get_fibers attribute'

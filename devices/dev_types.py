@@ -414,7 +414,7 @@ class Olt_ZTE_C320(OLTDevice):
             'firmware_ver': frm_ver,
             'loid_passw': loid_passw,
             'loid': loid,
-            'sn': sn
+            'sn': 'ZTEG' + ''.join('%x' % ord(i) for i in sn[-4:]).upper()
         } for frm_ver, loid_passw, loid, (sn, num) in zip(
             firmware_ver, loid_passws, loids, sn_num_list
         ))
