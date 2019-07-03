@@ -13,6 +13,7 @@ class SubscriberServiceModelViewSet(DjingModelViewSet):
 class SubscriberStreetModelViewSet(DjingModelViewSet):
     queryset = models.SubscriberStreet.objects.all()
     serializer_class = serializers.SubscriberStreetModelSerializer
+    filterset_fields = ('group',)
 
 
 class SubscriberLogModelViewSet(DjingModelViewSet):
