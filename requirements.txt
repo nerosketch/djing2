@@ -29,9 +29,8 @@ transliterate
 # viberbot
 -e git://github.com/Viber/viber-bot-python.git#egg=viberbot
 
-Celery
+celery
 redis
-celery[redis]
 
 django-cors-headers
 django-encrypted-model-fields

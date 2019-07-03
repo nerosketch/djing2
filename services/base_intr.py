@@ -18,7 +18,7 @@ class ServiceBase(metaclass=ABCMeta):
     @abstractmethod
     def description(self) -> AnyStr:
         """
-        Usage in djing.lib.MyChoicesAdapter for choices fields.
+        Usage in djing2.lib.MyChoicesAdapter for choices fields.
         :return: human readable description
         """
 
@@ -59,7 +59,7 @@ class PeriodicPayCalcBase(metaclass=ABCMeta):
     @abstractmethod
     def description(self) -> AnyStr:
         """Return text description.
-        Uses in djing.lib.MyChoicesAdapter for CHOICES fields"""
+        Uses in djing2.lib.MyChoicesAdapter for CHOICES fields"""
 
     @classmethod
     def get_description(cls):
