@@ -52,6 +52,12 @@ class SubscriberLogModelSerializer(serializers.ModelSerializer):
 
 
 class SubscriberModelSerializer(serializers.ModelSerializer):
+    group_title = serializers.CharField(source='group.title', read_only=True)
+    street_name = serializers.CharField(source='street.name', read_only=True)
+    gateway_title = serializers.CharField(source='gateway.title', read_only=True)
+    device_comment = serializers.CharField(source='device.comment', read_only=True)
+    service_title = serializers.CharField(source='last_connected_service.title', read_only=True)
+
     def create(self, validated_data):
         raw_password = validated_data.get('password')
         validated_data.update({
@@ -74,8 +80,10 @@ class SubscriberModelSerializer(serializers.ModelSerializer):
         model = models.Subscriber
         fields = (
             'pk', 'username', 'password', 'telephone', 'fio',
-            'group', 'description', 'street',
-            'house', 'is_active', 'gateway'
+            'group', 'group_title', 'description', 'street', 'street_name',
+            'house', 'is_active', 'gateway', 'gateway_title',
+            'device', 'device_comment', 'last_connected_service',
+            'service_title'
         )
 
 
