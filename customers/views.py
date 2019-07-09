@@ -24,6 +24,8 @@ class SubscriberLogModelViewSet(DjingModelViewSet):
 class SubscriberModelViewSet(DjingModelViewSet):
     queryset = models.Subscriber.objects.all()
     serializer_class = serializers.SubscriberModelSerializer
+    lookup_field = 'username'
+    lookup_url_kwarg = 'uname'
 
     @staticmethod
     def generate_random_username(r):

@@ -79,7 +79,7 @@ class SubscriberModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Subscriber
         fields = (
-            'pk', 'username', 'password', 'telephone', 'fio',
+            'username', 'password', 'telephone', 'fio',
             'group', 'group_title', 'description', 'street', 'street_name',
             'house', 'is_active', 'gateway', 'gateway_title',
             'device', 'device_comment', 'last_connected_service',
