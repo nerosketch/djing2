@@ -1,6 +1,6 @@
 from rest_framework.serializers import (
     ModelSerializer, IntegerField,
-    CharField, DictField, ListField
+    CharField, DictField, ListField, PrimaryKeyRelatedField
 )
 from devices.models import Device, Port
 from groupapp.models import Group
@@ -10,7 +10,10 @@ class DeviceModelSerializer(ModelSerializer):
     dev_type_str = CharField(source='get_dev_type_display', read_only=True)
     parent_dev_name = CharField(source='parent_dev.comment', allow_null=True, read_only=True)
     parent_dev_group = IntegerField(source='parent_dev.group.pk', allow_null=True, read_only=True)
-    attached_users = ListField(source='subscriber_set.all', read_only=True)
+    attached_users = ListField(
+        source='subscriber_set.all', read_only=True,
+        child=PrimaryKeyRelatedField(read_only=True)
+    )
 
     class Meta:
         model = Device
@@ -34,6 +37,12 @@ class DeviceWithoutGroupModelSerializer(ModelSerializer):
 
 
 class PortModelSerializer(ModelSerializer):
+    class Meta:
+        model = Port
+        fields = ['pk', 'device', 'num', 'descr']
+
+
+class PortModelSerializerExtended(PortModelSerializer):
     user_count = IntegerField(
         source='subscriber_set.count',
         read_only=True
@@ -43,9 +52,8 @@ class PortModelSerializer(ModelSerializer):
         read_only=True
     )
 
-    class Meta:
-        model = Port
-        fields = ('pk', 'device', 'num', 'descr', 'user_count', 'additional')
+    class Meta(PortModelSerializer.Meta):
+        fields = PortModelSerializer.Meta.fields + ['user_count', 'additional']
 
 
 class DeviceGroupsModelSerializer(ModelSerializer):
