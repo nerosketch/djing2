@@ -35,35 +35,35 @@ class BaseTransmitter(ABC):
 
     @abstractmethod
     def add_user_range(self, queue_list: VectorQueue):
-        """add subscribers list to gateway
-        :param queue_list: Vector of instances of subscribers
+        """add customers list to gateway
+        :param queue_list: Vector of instances of customers
         """
 
     @abstractmethod
     def remove_user_range(self, queues):
-        """remove subscribers list
-        :param queues: Vector of instances of subscribers
+        """remove customers list
+        :param queues: Vector of instances of customers
         """
 
     @abstractmethod
     def add_user(self, queue: SubnetQueue, *args):
-        """add subscriber
-        :param queue: Subscriber instance
+        """add customer
+        :param queue: Customer instance
         """
 
     @abstractmethod
     def remove_user(self, queue: SubnetQueue):
         """
-        remove subscriber
-        :param queue: Subscriber instance
+        remove customer
+        :param queue: Customer instance
         """
 
     @abstractmethod
     def update_user(self, queue: SubnetQueue, *args):
         """
-        Update subscriber by uid, you can change everything except its uid.
-        Subscriber will found by UID.
-        :param queue: Subscriber instance
+        Update customer by uid, you can change everything except its uid.
+        Customer will found by UID.
+        :param queue: Customer instance
         """
 
     @abstractmethod
