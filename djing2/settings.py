@@ -28,7 +28,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '27o%+57bayjug7b8qew%9n6dh$+v_ul%7o89$nm0k!%)fq@6!)'
+SECRET_KEY = local_settings.SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = local_settings.DEBUG
@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'gateways',
     'devices',
     'customers',
+    'tasks',
 ]
 
 if DEBUG:

@@ -9,6 +9,7 @@ api_urls = [
     path('gateways/', include('gateways.urls', namespace='gateways')),
     path('devices/', include('devices.urls', namespace='devices')),
     path('customers/', include('customers.urls', namespace='customers')),
+    path('tasks/', include('tasks.urls', namespace='tasks')),
 ]
 
 
