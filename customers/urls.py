@@ -7,18 +7,18 @@ app_name = 'customers'
 
 
 router = DefaultRouter()
-router.register('subscriber-service', views.SubscriberServiceModelViewSet)
-router.register('streets', views.SubscriberStreetModelViewSet)
-router.register('subscriber-log', views.SubscriberLogModelViewSet)
+router.register('customer-service', views.CustomerServiceModelViewSet)
+router.register('streets', views.CustomerStreetModelViewSet)
+router.register('customer-log', views.CustomerLogModelViewSet)
 router.register('passport', views.PassportInfoModelViewSet)
 router.register('invoices', views.InvoiceForPaymentModelViewSet)
-router.register('subscriber-raw-password', views.SubscriberRawPasswordModelViewSet)
+router.register('customer-raw-password', views.CustomerRawPasswordModelViewSet)
 router.register('additional-telephone', views.AdditionalTelephoneModelViewSet)
 router.register('periodic-pay', views.PeriodicPayForIdModelViewSet)
-router.register('', views.SubscriberModelViewSet)
+router.register('', views.CustomerModelViewSet)
 
 urlpatterns = [
-    path('generate_username/', views.SubscriberModelViewSet.as_view({'get': 'generate_random_username'})),
-    path('generate_password/', views.SubscriberModelViewSet.as_view({'get': 'generate_random_password'})),
+    path('generate_username/', views.CustomerModelViewSet.as_view({'get': 'generate_random_username'})),
+    path('generate_password/', views.CustomerModelViewSet.as_view({'get': 'generate_random_password'})),
     path('', include(router.urls)),
 ]

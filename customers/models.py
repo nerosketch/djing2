@@ -20,7 +20,7 @@ from services.models import Service, PeriodicPay
 from groupapp.models import Group
 
 
-class SubscriberService(models.Model):
+class CustomerService(models.Model):
     service = models.ForeignKey(
         Service,
         on_delete=models.CASCADE,
@@ -40,16 +40,16 @@ class SubscriberService(models.Model):
         )
 
     class Meta:
-        db_table = 'subscriber_service'
+        db_table = 'customer_service'
         permissions = (
             ('can_complete_service', _('finish service perm')),
         )
-        verbose_name = _('Subscriber service')
-        verbose_name_plural = _('Subscriber services')
+        verbose_name = _('Customer service')
+        verbose_name_plural = _('Customer services')
         ordering = ('start_time',)
 
 
-class SubscriberStreet(models.Model):
+class CustomerStreet(models.Model):
     name = models.CharField(max_length=64)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
 
@@ -57,14 +57,14 @@ class SubscriberStreet(models.Model):
         return self.name
 
     class Meta:
-        db_table = 'subscriber_street'
+        db_table = 'customer_street'
         verbose_name = _('Street')
         verbose_name_plural = _('Streets')
         ordering = 'name',
 
 
-class SubscriberLog(models.Model):
-    subscriber = models.ForeignKey('Subscriber', on_delete=models.CASCADE)
+class CustomerLog(models.Model):
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
     author = models.ForeignKey(
         UserProfile, on_delete=models.SET_NULL,
@@ -74,21 +74,21 @@ class SubscriberLog(models.Model):
     date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'subscriber_log'
+        db_table = 'customer_log'
         ordering = '-date',
 
     def __str__(self):
         return self.comment
 
 
-class SubscriberManager(MyUserManager):
+class CustomerManager(MyUserManager):
     def get_queryset(self):
-        return super(SubscriberManager, self).get_queryset().filter(is_admin=False)
+        return super(CustomerManager, self).get_queryset().filter(is_admin=False)
 
 
-class Subscriber(BaseAccount):
+class Customer(BaseAccount):
     current_service = models.OneToOneField(
-        SubscriberService,
+        CustomerService,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -98,7 +98,7 @@ class Subscriber(BaseAccount):
         Group,
         on_delete=models.SET_NULL,
         blank=True, null=True,
-        verbose_name=_('Subscriber group')
+        verbose_name=_('Customer group')
     )
     balance = models.FloatField(default=0.0)
     ip_address = models.GenericIPAddressField(
@@ -112,7 +112,7 @@ class Subscriber(BaseAccount):
         blank=True
     )
     street = models.ForeignKey(
-        SubscriberStreet,
+        CustomerStreet,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -170,7 +170,7 @@ class Subscriber(BaseAccount):
     )
     markers = BitField(flags=MARKER_FLAGS, default=0)
 
-    objects = SubscriberManager()
+    objects = CustomerManager()
 
     def get_flag_icons(self):
         """
@@ -183,8 +183,8 @@ class Subscriber(BaseAccount):
         return self.current_service
 
     def add_balance(self, profile, cost, comment):
-        SubscriberLog.objects.create(
-            subscriber=self,
+        CustomerLog.objects.create(
+            customer=self,
             cost=cost,
             author=profile if isinstance(profile, UserProfile) else None,
             comment=comment
@@ -228,7 +228,7 @@ class Subscriber(BaseAccount):
             ))
 
         with transaction.atomic():
-            self.current_service = SubscriberService.objects.create(
+            self.current_service = CustomerService.objects.create(
                 deadline=deadline, service=service
             )
             if self.last_connected_service != service:
@@ -244,8 +244,8 @@ class Subscriber(BaseAccount):
             ))
 
             # make log about it
-            SubscriberLog.objects.create(
-                subscriber=self, cost=-amount,
+            CustomerLog.objects.create(
+                customer=self, cost=-amount,
                 author=author,
                 comment=comment or _('Buy service default log')
             )
@@ -269,25 +269,25 @@ class Subscriber(BaseAccount):
             return True
         return False
 
-    # is subscriber have access to service,
+    # is customer have access to service,
     # view in services.custom_tariffs.<ServiceBase>.manage_access()
     def is_access(self) -> bool:
         if not self.is_active:
             return False
-        subscriber_service = self.active_service()
-        if subscriber_service is None:
+        customer_service = self.active_service()
+        if customer_service is None:
             return False
-        trf = subscriber_service.service
-        ct = trf.get_calc_type()(subscriber_service)
+        trf = customer_service.service
+        ct = trf.get_calc_type()(customer_service)
         return ct.manage_access(self)
 
-    # make subscriber from agent structure
+    # make customer from agent structure
     def build_agent_struct(self):
         if not self.ip_address:
             return
-        subscriber_service = self.active_service()
-        if subscriber_service:
-            service = subscriber_service.service
+        customer_service = self.active_service()
+        if customer_service:
+            service = customer_service.service
             return SubnetQueue(
                 name="uid%d" % self.pk,
                 network=self.ip_address,
@@ -343,7 +343,7 @@ class Subscriber(BaseAccount):
             deadline = service.calc_deadline()
         if time_start is None:
             time_start = datetime.now()
-        self.current_service = SubscriberService.objects.create(
+        self.current_service = CustomerService.objects.create(
             deadline=deadline, service=service,
             start_time=time_start
         )
@@ -351,14 +351,14 @@ class Subscriber(BaseAccount):
         self.save(update_fields=('current_service', 'last_connected_service'))
 
     class Meta:
-        db_table = 'subscribers'
+        db_table = 'customers'
         permissions = (
             ('can_buy_service', _('Buy service perm')),
             ('can_add_balance', _('fill account')),
             ('can_ping', _('Can ping'))
         )
-        verbose_name = _('Subscriber')
-        verbose_name_plural = _('Subscribers')
+        verbose_name = _('Customer')
+        verbose_name_plural = _('Customers')
         ordering = ('fio',)
         unique_together = ('ip_address', 'gateway')
 
@@ -379,8 +379,8 @@ class PassportInfo(models.Model):
         max_length=64
     )
     date_of_acceptance = models.DateField(_('Date of acceptance'))
-    subscriber = models.OneToOneField(
-        Subscriber,
+    customer = models.OneToOneField(
+        Customer,
         on_delete=models.CASCADE,
         blank=True,
         null=True
@@ -397,7 +397,7 @@ class PassportInfo(models.Model):
 
 
 class InvoiceForPayment(models.Model):
-    subscriber = models.ForeignKey(Subscriber, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     status = models.BooleanField(default=False)
     cost = models.FloatField(default=0.0)
     comment = models.CharField(max_length=128)
@@ -412,7 +412,7 @@ class InvoiceForPayment(models.Model):
     )
 
     def __str__(self):
-        return "%s -> %.2f" % (self.subscriber.username, self.cost)
+        return "%s -> %.2f" % (self.customer.username, self.cost)
 
     def set_ok(self):
         self.status = True
@@ -420,25 +420,25 @@ class InvoiceForPayment(models.Model):
 
     class Meta:
         ordering = ('date_create',)
-        db_table = 'subscriber_inv_pay'
+        db_table = 'customer_inv_pay'
         verbose_name = _('Debt')
         verbose_name_plural = _('Debts')
 
 
-class SubscriberRawPassword(models.Model):
-    subscriber = models.OneToOneField(Subscriber, models.CASCADE)
+class CustomerRawPassword(models.Model):
+    customer = models.OneToOneField(Customer, models.CASCADE)
     passw_text = EncryptedCharField(max_length=64)
 
     def __str__(self):
-        return "%s - %s" % (self.subscriber, self.passw_text)
+        return "%s - %s" % (self.customer, self.passw_text)
 
     class Meta:
-        db_table = 'subscriber_raw_password'
+        db_table = 'customer_raw_password'
 
 
 class AdditionalTelephone(models.Model):
-    subscriber = models.ForeignKey(
-        Subscriber,
+    customer = models.ForeignKey(
+        Customer,
         on_delete=models.CASCADE,
         related_name='additional_telephones'
     )
@@ -471,7 +471,7 @@ class PeriodicPayForId(models.Model):
     last_pay = models.DateTimeField(_('Last pay time'), blank=True, null=True)
     next_pay = models.DateTimeField(_('Next time to pay'))
     account = models.ForeignKey(
-        Subscriber,
+        Customer,
         on_delete=models.CASCADE,
         verbose_name=_('Account')
     )
@@ -507,19 +507,19 @@ class PeriodicPayForId(models.Model):
         ordering = ('last_pay',)
 
 
-@receiver(post_init, sender=SubscriberService)
-def subscriber_service_post_init(sender, **kwargs):
-    subscriber_service = kwargs["instance"]
-    if getattr(subscriber_service, 'start_time') is None:
-        subscriber_service.start_time = datetime.now()
-    if getattr(subscriber_service, 'deadline') is None:
-        calc_obj = subscriber_service.service.get_calc_type()(subscriber_service)
-        subscriber_service.deadline = calc_obj.calc_deadline()
+@receiver(post_init, sender=CustomerService)
+def customer_service_post_init(sender, **kwargs):
+    customer_service = kwargs["instance"]
+    if getattr(customer_service, 'start_time') is None:
+        customer_service.start_time = datetime.now()
+    if getattr(customer_service, 'deadline') is None:
+        calc_obj = customer_service.service.get_calc_type()(customer_service)
+        customer_service.deadline = calc_obj.calc_deadline()
 
 
-@receiver(pre_save, sender=SubscriberService)
-def subscriber_service_pre_save(sender, **kwargs):
-    subscriber_service = kwargs["instance"]
-    if getattr(subscriber_service, 'deadline') is None:
-        calc_obj = subscriber_service.service.get_calc_type()(subscriber_service)
-        subscriber_service.deadline = calc_obj.calc_deadline()
+@receiver(pre_save, sender=CustomerService)
+def customer_service_pre_save(sender, **kwargs):
+    customer_service = kwargs["instance"]
+    if getattr(customer_service, 'deadline') is None:
+        calc_obj = customer_service.service.get_calc_type()(customer_service)
+        customer_service.deadline = calc_obj.calc_deadline()

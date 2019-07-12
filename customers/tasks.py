@@ -1,17 +1,17 @@
 from celery import shared_task
 
-from customers.models import Subscriber
+from customers.models import Customer
 from djing2.lib import LogicError
 from gateways.models import Gateway
 from gateways.nas_managers import GatewayFailedResult, GatewayNetworkError, SubnetQueue
 
 
 @shared_task
-def subscriber_gw_command(subscriber_uid: int, command: str):
+def customer_gw_command(customer_uid: int, command: str):
     if command not in ('add', 'sync'):
         return 'Command required'
     try:
-        sb = Subscriber.objects.get(pk=subscriber_uid)
+        sb = Customer.objects.get(pk=customer_uid)
         if command == 'sync':
             r = sb.gw_sync_self()
             if isinstance(r, Exception):
@@ -20,19 +20,19 @@ def subscriber_gw_command(subscriber_uid: int, command: str):
             sb.gw_add_self()
         else:
             return 'CUSTOMERS SYNC ERROR: Unknown command "%s"' % command
-    except Subscriber.DoesNotExist:
+    except Customer.DoesNotExist:
         pass
     except (LogicError, GatewayFailedResult, GatewayNetworkError, ConnectionResetError) as e:
         return 'CUSTOMERS ERROR: %s' % e
 
 
 @shared_task
-def subscriber_gw_remove(subscriber_uid: int, ip_addr: str, speed: tuple, is_access: bool, gw_pk: int):
+def customer_gw_remove(customer_uid: int, ip_addr: str, speed: tuple, is_access: bool, gw_pk: int):
     try:
         if not isinstance(ip_addr, (str, int)):
             ip_addr = str(ip_addr)
         sq = SubnetQueue(
-            name="uid%d" % subscriber_uid,
+            name="uid%d" % customer_uid,
             network=ip_addr,
             max_limit=speed,
             is_access=is_access

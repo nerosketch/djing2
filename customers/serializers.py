@@ -23,9 +23,9 @@ def _generate_random_chars(length=6, chars=digits, split=2, delimiter=''):
 def generate_random_username():
     username = _generate_random_chars()
     try:
-        models.Subscriber.objects.get(username=username)
+        models.Customer.objects.get(username=username)
         return generate_random_username()
-    except models.Subscriber.DoesNotExist:
+    except models.Customer.DoesNotExist:
         return safe_int(username)
 
 
@@ -33,28 +33,28 @@ def generate_random_password():
     return _generate_random_chars(length=6, chars=digits + ascii_lowercase)
 
 
-class SubscriberServiceModelSerializer(serializers.ModelSerializer):
+class CustomerServiceModelSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.SubscriberService
+        model = models.CustomerService
         fields = '__all__'
 
 
-class SubscriberStreetModelSerializer(serializers.ModelSerializer):
+class CustomerStreetModelSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.SubscriberStreet
+        model = models.CustomerStreet
         fields = '__all__'
 
 
-class SubscriberLogModelSerializer(serializers.ModelSerializer):
+class CustomerLogModelSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.get_short_name')
-    # subscriber_name = serializers.CharField(source='subscriber.get_short_name')
+    # customer_name = serializers.CharField(source='customer.get_short_name')
 
     class Meta:
-        model = models.SubscriberLog
+        model = models.CustomerLog
         fields = '__all__'
 
 
-class SubscriberModelSerializer(serializers.ModelSerializer):
+class CustomerModelSerializer(serializers.ModelSerializer):
     group_title = serializers.CharField(source='group.title', read_only=True)
     street_name = serializers.CharField(source='street.name', read_only=True)
     gateway_title = serializers.CharField(source='gateway.title', read_only=True)
@@ -69,18 +69,18 @@ class SubscriberModelSerializer(serializers.ModelSerializer):
         })
         acc = super().create(validated_data)
         try:
-            acc_passw = models.SubscriberRawPassword.objects.get(subscriber=acc)
+            acc_passw = models.CustomerRawPassword.objects.get(customer=acc)
             acc_passw.passw_text = raw_password
             acc_passw.save(update_fields=('passw_text',))
-        except models.SubscriberRawPassword.DoesNotExist:
-            models.SubscriberRawPassword.objects.create(
-                subscriber=acc,
+        except models.CustomerRawPassword.DoesNotExist:
+            models.CustomerRawPassword.objects.create(
+                customer=acc,
                 passw_text=raw_password
             )
         return acc
 
     class Meta:
-        model = models.Subscriber
+        model = models.Customer
         fields = (
             'username', 'telephone', 'fio',
             'group', 'group_title', 'description', 'street', 'street_name',
@@ -93,7 +93,7 @@ class SubscriberModelSerializer(serializers.ModelSerializer):
 class PassportInfoModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.PassportInfo
-        exclude = ('subscriber',)
+        exclude = ('customer',)
 
 
 class InvoiceForPaymentModelSerializer(serializers.ModelSerializer):
@@ -102,16 +102,16 @@ class InvoiceForPaymentModelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class SubscriberRawPasswordModelSerializer(serializers.ModelSerializer):
+class CustomerRawPasswordModelSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.SubscriberRawPassword
+        model = models.CustomerRawPassword
         fields = '__all__'
 
 
 class AdditionalTelephoneModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.AdditionalTelephone
-        exclude = ('subscriber',)
+        exclude = ('customer',)
 
 
 class PeriodicPayForIdModelSerializer(serializers.ModelSerializer):

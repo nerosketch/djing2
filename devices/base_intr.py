@@ -54,8 +54,8 @@ class DevBase(object, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def has_attachable_to_subscriber(self) -> bool:
-        """Can connect device to subscriber"""
+    def has_attachable_to_customer(self) -> bool:
+        """Can connect device to customer"""
 
     @property
     @abstractmethod
@@ -96,7 +96,7 @@ class DevBase(object, metaclass=ABCMeta):
             'uptime': self.uptime(),
             'name': self.get_device_name(),
             'description': self.description,
-            'has_attachable_to_subscriber': self.has_attachable_to_subscriber,
+            'has_attachable_to_customer': self.has_attachable_to_customer,
             'is_use_device_port': self.is_use_device_port
         }
 

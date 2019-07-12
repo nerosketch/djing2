@@ -5,25 +5,25 @@ from customers import models
 from customers import serializers
 
 
-class SubscriberServiceModelViewSet(DjingModelViewSet):
-    queryset = models.SubscriberService.objects.all()
-    serializer_class = serializers.SubscriberServiceModelSerializer
+class CustomerServiceModelViewSet(DjingModelViewSet):
+    queryset = models.CustomerService.objects.all()
+    serializer_class = serializers.CustomerServiceModelSerializer
 
 
-class SubscriberStreetModelViewSet(DjingModelViewSet):
-    queryset = models.SubscriberStreet.objects.all()
-    serializer_class = serializers.SubscriberStreetModelSerializer
+class CustomerStreetModelViewSet(DjingModelViewSet):
+    queryset = models.CustomerStreet.objects.all()
+    serializer_class = serializers.CustomerStreetModelSerializer
     filterset_fields = ('group',)
 
 
-class SubscriberLogModelViewSet(DjingModelViewSet):
-    queryset = models.SubscriberLog.objects.all()
-    serializer_class = serializers.SubscriberLogModelSerializer
+class CustomerLogModelViewSet(DjingModelViewSet):
+    queryset = models.CustomerLog.objects.all()
+    serializer_class = serializers.CustomerLogModelSerializer
 
 
-class SubscriberModelViewSet(DjingModelViewSet):
-    queryset = models.Subscriber.objects.all()
-    serializer_class = serializers.SubscriberModelSerializer
+class CustomerModelViewSet(DjingModelViewSet):
+    queryset = models.Customer.objects.all()
+    serializer_class = serializers.CustomerModelSerializer
     lookup_field = 'username'
     lookup_url_kwarg = 'uname'
 
@@ -46,9 +46,9 @@ class InvoiceForPaymentModelViewSet(DjingModelViewSet):
     serializer_class = serializers.InvoiceForPaymentModelSerializer
 
 
-class SubscriberRawPasswordModelViewSet(DjingModelViewSet):
-    queryset = models.SubscriberRawPassword.objects.all()
-    serializer_class = serializers.SubscriberRawPasswordModelSerializer
+class CustomerRawPasswordModelViewSet(DjingModelViewSet):
+    queryset = models.CustomerRawPassword.objects.all()
+    serializer_class = serializers.CustomerRawPasswordModelSerializer
 
 
 class AdditionalTelephoneModelViewSet(DjingModelViewSet):
