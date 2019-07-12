@@ -87,10 +87,10 @@ class Device(models.Model):
             self._cached_manager = man_klass(self)
         return self._cached_manager
 
-    # Can attach device to subscriber in subscriber page
-    def has_attachable_to_subscriber(self) -> bool:
+    # Can attach device to customer in customer page
+    def has_attachable_to_customer(self) -> bool:
         mngr = self.get_manager_klass()
-        return mngr.has_attachable_to_subscriber
+        return mngr.has_attachable_to_customer
 
     def __str__(self):
         return "%s: (%s) %s %s" % (

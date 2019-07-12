@@ -9,7 +9,7 @@ def onu_register(device_ids: Iterable[int]):
     with open('/etc/dhcp/macs.conf', 'w') as f:
         for dev_id in device_ids:
             dev = Device.objects.get(pk=dev_id)
-            if not dev.has_attachable_to_subscriber() or dev.mac_addr is None:
+            if not dev.has_attachable_to_customer() or dev.mac_addr is None:
                 continue
             group_code = dev.group.code
             if not group_code:

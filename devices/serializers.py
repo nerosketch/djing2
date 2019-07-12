@@ -11,7 +11,7 @@ class DeviceModelSerializer(ModelSerializer):
     parent_dev_name = CharField(source='parent_dev.comment', allow_null=True, read_only=True)
     parent_dev_group = IntegerField(source='parent_dev.group.pk', allow_null=True, read_only=True)
     attached_users = ListField(
-        source='subscriber_set.all', read_only=True,
+        source='customer_set.all', read_only=True,
         child=PrimaryKeyRelatedField(read_only=True)
     )
 
@@ -44,7 +44,7 @@ class PortModelSerializer(ModelSerializer):
 
 class PortModelSerializerExtended(PortModelSerializer):
     user_count = IntegerField(
-        source='subscriber_set.count',
+        source='customer_set.count',
         read_only=True
     )
     additional = DictField(

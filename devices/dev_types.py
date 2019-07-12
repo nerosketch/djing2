@@ -79,7 +79,7 @@ class DLinkPort(BasePort):
 
 
 class DLinkDevice(DevBase, SNMPBaseWorker):
-    has_attachable_to_subscriber = True
+    has_attachable_to_customer = True
     tech_code = 'dlink_sw'
     description = _('DLink switch')
     is_use_device_port = True
@@ -163,7 +163,7 @@ class ONUdev(BasePort):
 
 
 class OLTDevice(DevBase, SNMPBaseWorker):
-    has_attachable_to_subscriber = False
+    has_attachable_to_customer = False
     description = 'PON OLT'
     is_use_device_port = False
 
@@ -216,7 +216,7 @@ class OLTDevice(DevBase, SNMPBaseWorker):
 
 
 class OnuDevice(DevBase, SNMPBaseWorker):
-    has_attachable_to_subscriber = True
+    has_attachable_to_customer = True
     description = 'PON ONU BDCOM'
     tech_code = 'bdcom_onu'
     is_use_device_port = False
@@ -331,7 +331,7 @@ class EltexPort(BasePort):
 class EltexSwitch(DLinkDevice):
     description = _('Eltex switch')
     is_use_device_port = False
-    has_attachable_to_subscriber = True
+    has_attachable_to_customer = True
     tech_code = 'eltex_sw'
 
     def get_ports(self) -> ListOrError:
@@ -568,7 +568,7 @@ class ZteF601(ZteOnuDevice):
 class HuaweiSwitch(EltexSwitch):
     description = _('Huawei switch')
     is_use_device_port = True
-    has_attachable_to_subscriber = True
+    has_attachable_to_customer = True
     tech_code = 'huawei_s2300'
 
     def get_ports(self):
