@@ -46,6 +46,9 @@ class SubscriberStreetModelSerializer(serializers.ModelSerializer):
 
 
 class SubscriberLogModelSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source='author.get_short_name')
+    # subscriber_name = serializers.CharField(source='subscriber.get_short_name')
+
     class Meta:
         model = models.SubscriberLog
         fields = '__all__'
