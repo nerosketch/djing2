@@ -3,7 +3,6 @@ from django.utils.translation import gettext
 
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 from viberbot.api.messages import ContactMessage, KeyboardMessage
@@ -23,6 +22,8 @@ UserProfile = get_user_model()
 class ViberMessengerModelViewSet(DjingModelViewSet):
     queryset = models.ViberMessenger.objects.all()
     serializer_class = serializers.ViberMessengerModelSerializer
+    lookup_field = 'slug'
+    lookup_url_kwarg = 'boturl'
 
     @action(detail=False)
     def send_webhook(self, request, pk=None):
@@ -30,25 +31,8 @@ class ViberMessengerModelViewSet(DjingModelViewSet):
         obj.send_webhook()
         return Response(status=status.HTTP_200_OK)
 
-
-class ViberMessageModelViewSet(DjingModelViewSet):
-    queryset = models.ViberMessage.objects.all()
-    serializer_class = serializers.ViberMessageModelSerializer
-
-
-class ViberSubscriberModelViewSet(DjingModelViewSet):
-    queryset = models.ViberSubscriber.objects.all()
-    serializer_class = serializers.ViberSubscriberModelSerializer
-
-
-class ListenViberView(GenericAPIView):
-    queryset = models.ViberMessenger.objects.all()
-    serializer_class = serializers.ViberMessengerModelSerializer
-    lookup_field = 'slug'
-    lookup_url_kwarg = 'boturl'
-    http_method_names = 'post',
-
-    def post(self, request, *args, **kwargs):
+    @action(methods=('post',), detail=True, permission_classes=[], url_name='listen_viber_bot')
+    def listen(self, request, pk=None):
         obj = self.get_object()
         self.object = obj
 
@@ -92,11 +76,11 @@ class ListenViberView(GenericAPIView):
                 'Type': 'keyboard',
                 'DefaultHeight': True,
                 'Buttons': ({
-                    'ActionType': 'share-phone',
-                    'ActionBody': 'reply to me',
-                    "Text": gettext('My telephone number'),
-                    "TextSize": "medium"
-                },)
+                                'ActionType': 'share-phone',
+                                'ActionBody': 'reply to me',
+                                "Text": gettext('My telephone number'),
+                                "TextSize": "medium"
+                            },)
             }, min_api_version=3)
             viber = self.object
             viber.send_message_to_id(viber_user_profile.id, msg)
@@ -124,3 +108,13 @@ class ListenViberView(GenericAPIView):
             viber.send_message_to_id(sender.id, gettext(
                 'Telephone not found, please specify telephone number in account in billing'
             ))
+
+
+class ViberMessageModelViewSet(DjingModelViewSet):
+    queryset = models.ViberMessage.objects.all()
+    serializer_class = serializers.ViberMessageModelSerializer
+
+
+class ViberSubscriberModelViewSet(DjingModelViewSet):
+    queryset = models.ViberSubscriber.objects.all()
+    serializer_class = serializers.ViberSubscriberModelSerializer
