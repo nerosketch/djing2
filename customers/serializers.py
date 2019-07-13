@@ -65,18 +65,18 @@ class CustomerModelSerializer(serializers.ModelSerializer):
         raw_password = validated_data.get('password')
         validated_data.update({
             'is_admin': False,
-            'password': make_password(raw_password)
+            # 'password': make_password(raw_password)
         })
         acc = super().create(validated_data)
-        try:
-            acc_passw = models.CustomerRawPassword.objects.get(customer=acc)
-            acc_passw.passw_text = raw_password
-            acc_passw.save(update_fields=('passw_text',))
-        except models.CustomerRawPassword.DoesNotExist:
-            models.CustomerRawPassword.objects.create(
-                customer=acc,
-                passw_text=raw_password
-            )
+        # try:
+        #     acc_passw = models.CustomerRawPassword.objects.get(customer=acc)
+        #     acc_passw.passw_text = raw_password
+        #     acc_passw.save(update_fields=('passw_text',))
+        # except models.CustomerRawPassword.DoesNotExist:
+        #     models.CustomerRawPassword.objects.create(
+        #         customer=acc,
+        #         passw_text=raw_password
+        #     )
         return acc
 
     class Meta:
