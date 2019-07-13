@@ -34,6 +34,24 @@ class TaskModelViewSet(DjingModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+    def create(self, request, *args, **kwargs):
+        # check if new task with user already exists
+        uname = request.query_params.get('uname')
+        if uname:
+            exists_task = models.Task.objects.filter(customer__username=uname, state=0)
+            if exists_task.exists():
+                return Response(
+                    gettext('New task with this customer already exists.'),
+                    status=status.HTTP_409_CONFLICT
+                )
+        return super().create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        r = super().perform_create(serializer)
+        serializer.instance.author = self.request.user
+        serializer.instance.save(update_fields=('author',))
+        return r
+
     @action(detail=False)
     def active_task_count(self, request):
         tasks_count = 0
