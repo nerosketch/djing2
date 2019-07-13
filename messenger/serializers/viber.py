@@ -1,11 +1,5 @@
 from rest_framework import serializers
-from messenger import models
-
-
-class MessengerModelSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Messenger
-        fields = '__all__'
+from messenger.models import viber as models
 
 
 class ViberMessengerModelSerializer(serializers.ModelSerializer):

@@ -8,27 +8,10 @@ from django.conf import settings
 from viberbot import Api, BotConfiguration
 from viberbot.api.messages import TextMessage
 from viberbot.api.messages.message import Message
+from messenger.models import Messenger
 
 
 UserProfile = get_user_model()
-
-
-class Messenger(models.Model):
-    title = models.CharField(_('Title'), max_length=64)
-    CHAT_TYPES = (
-        (1, _('Viber')),
-    )
-    bot_type = models.PositiveSmallIntegerField(_('Bot type'), choices=CHAT_TYPES, blank=True)
-    slug = models.SlugField(_('Slug'))
-
-    def __str__(self):
-        return self.title
-
-    class Meta:
-        db_table = 'messengers'
-        verbose_name = _('Messenger')
-        verbose_name_plural = _('Messengers')
-        ordering = ('title',)
 
 
 class ViberMessenger(Messenger):
