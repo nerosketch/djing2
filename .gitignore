@@ -7,6 +7,7 @@ media/min/*
 djing2/local_settings.py
 gmap/fixtures
 *.json
+!*/fixtures/*.json
 *.bak
 *.mo
 db.sqlite3

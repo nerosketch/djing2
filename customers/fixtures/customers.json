@@ -1,0 +1,114 @@
+[
+  {
+    "model": "customers.customerstreet",
+    "pk": 1,
+    "fields": {
+      "name": "улица",
+      "group": 2
+    }
+  },
+  {
+    "model": "customers.customerstreet",
+    "pk": 2,
+    "fields": {
+      "name": "сизам",
+      "group": 2
+    }
+  },
+  {
+    "model": "customers.customerstreet",
+    "pk": 3,
+    "fields": {
+      "name": "Трафторифтовая",
+      "group": 2
+    }
+  },
+  {
+    "model": "customers.customer",
+    "pk": 8,
+    "fields": {
+      "current_service": null,
+      "group": 2,
+      "balance": 0.0,
+      "ip_address": null,
+      "description": "",
+      "street": 2,
+      "house": "12",
+      "device": null,
+      "dev_port": null,
+      "is_dynamic_ip": false,
+      "gateway": 1,
+      "auto_renewal_service": false,
+      "last_connected_service": null,
+      "markers": "0",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "customers.customer",
+    "pk": 5,
+    "fields": {
+      "current_service": null,
+      "group": 2,
+      "balance": 0.0,
+      "ip_address": null,
+      "description": "фывфыв",
+      "street": 3,
+      "house": "123",
+      "device": null,
+      "dev_port": null,
+      "is_dynamic_ip": false,
+      "gateway": 1,
+      "auto_renewal_service": false,
+      "last_connected_service": null,
+      "markers": "0",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "customers.customer",
+    "pk": 6,
+    "fields": {
+      "current_service": null,
+      "group": 2,
+      "balance": 0.0,
+      "ip_address": null,
+      "description": "фывфыв",
+      "street": 3,
+      "house": "123",
+      "device": null,
+      "dev_port": null,
+      "is_dynamic_ip": false,
+      "gateway": 1,
+      "auto_renewal_service": false,
+      "last_connected_service": null,
+      "markers": "0",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "customers.customer",
+    "pk": 7,
+    "fields": {
+      "current_service": null,
+      "group": 2,
+      "balance": 0.0,
+      "ip_address": null,
+      "description": "фывфыв",
+      "street": 3,
+      "house": "123",
+      "device": null,
+      "dev_port": null,
+      "is_dynamic_ip": false,
+      "gateway": 1,
+      "auto_renewal_service": false,
+      "last_connected_service": null,
+      "markers": "0",
+      "groups": [],
+      "user_permissions": []
+    }
+  }
+]
