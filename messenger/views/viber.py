@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import gettext
 
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
@@ -22,6 +23,12 @@ UserProfile = get_user_model()
 class ViberMessengerModelViewSet(DjingModelViewSet):
     queryset = models.ViberMessenger.objects.all()
     serializer_class = serializers.ViberMessengerModelSerializer
+
+    @action(detail=False)
+    def send_webhook(self, request, pk=None):
+        obj = self.get_object()
+        obj.send_webhook()
+        return Response(status=status.HTTP_200_OK)
 
 
 class ViberMessageModelViewSet(DjingModelViewSet):
