@@ -14,6 +14,7 @@ class TaskModelSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.get_full_name', read_only=True)
     customer_name = serializers.CharField(source='customer.get_full_name', read_only=True)
     comment_count = serializers.IntegerField(source='extracomment.count', read_only=True)
+    recipients_count = serializers.IntegerField(source='recipients.count', read_only=True)
 
     class Meta:
         model = models.Task
