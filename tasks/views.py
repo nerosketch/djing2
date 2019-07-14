@@ -47,10 +47,9 @@ class TaskModelViewSet(DjingModelViewSet):
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        r = super().perform_create(serializer)
-        serializer.instance.author = self.request.user
-        serializer.instance.save(update_fields=('author',))
-        return r
+        serializer.save(
+            author=self.request.user
+        )
 
     @action(detail=False)
     def active_task_count(self, request):
@@ -81,3 +80,10 @@ class TaskModelViewSet(DjingModelViewSet):
 class ExtraCommentModelViewSet(DjingModelViewSet):
     queryset = models.ExtraComment.objects.all()
     serializer_class = serializers.ExtraCommentModelSerializer
+
+    def perform_create(self, serializer):
+        # TODO: pass task instance
+        serializer.save(
+            author=self.request.user,
+            # task=
+        )
