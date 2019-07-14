@@ -1,0 +1,12 @@
+{% load i18n %}
+{% blocktrans with group=customer.group street=customer.street house=customer.house telephone=customer.telephone task_type=task.get_mode_display task_detail=task.descr %}
+{{ task_status }}
+{{ customer }}
+In group: {{ group }}
+Street: {{ street }}
+House: {{ house }}
+Tel: {{ telephone }}
+Task type: {{ task_type }}
+
+{{ task_detail }}
+{% endblocktrans %}
