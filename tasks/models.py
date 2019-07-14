@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db import models
 from django.conf import settings
 from customers.models import Customer
+from tasks.handle import handle as task_handle
 
 
 TASK_PRIORITIES = (
@@ -127,12 +128,10 @@ class Task(models.Model):
         self.save(update_fields=('state',))
 
     def send_notification(self):
-        # TODO: will make
-        # task_handle(
-        #    self, self.author,
-        #    self.recipients.filter(is_active=True)
-        # )
-        pass
+        task_handle(
+           self, self.author,
+           self.recipients.filter(is_active=True)
+        )
 
     def is_relevant(self):
         return self.out_date < timezone.now().date() or self.state == 2
