@@ -223,9 +223,10 @@ class Customer(BaseAccount):
 
         # if not enough money
         if self.balance < amount:
-            raise LogicError(_('%s not enough money for service %s') % (
-                self.username, service.title
-            ))
+            raise LogicError(_('%(uname)s not enough money for service %(srv_name)s') % {
+                'uname': self.username,
+                'srv_name': service.title
+            })
 
         with transaction.atomic():
             self.current_service = CustomerService.objects.create(

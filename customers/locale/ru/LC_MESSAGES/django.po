@@ -1,0 +1,858 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-07-16 02:35+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: customers/models.py:45
+msgid "finish service perm"
+msgstr "Завершение услуги"
+
+#: customers/models.py:47
+msgid "Customer service"
+msgstr "Услуга абонента"
+
+#: customers/models.py:48
+msgid "Customer services"
+msgstr "Услуги абонента"
+
+#: customers/models.py:61 customers/models.py:119
+msgid "Street"
+msgstr "Улица"
+
+#: customers/models.py:62
+msgid "Streets"
+msgstr "Улицы"
+
+#: customers/models.py:101
+msgid "Customer group"
+msgstr "Группа абонента"
+
+#: customers/models.py:105
+msgid "Ip address"
+msgstr "Ip адрес"
+
+#: customers/models.py:110
+msgid "Comment"
+msgstr "Описание"
+
+#: customers/models.py:122
+msgid "House"
+msgstr "Дом"
+
+#: customers/models.py:140
+msgid "Is dynamic ip"
+msgstr "Динамический ip"
+
+#: customers/models.py:148
+msgid "Gateway"
+msgstr "Шлюз"
+
+#: customers/models.py:149
+msgid "Network access server"
+msgstr "Сервер доступа в интернет"
+
+#: customers/models.py:153
+msgid "Automatically connect next service"
+msgstr "Автоматическое подключение следующей услуги"
+
+#: customers/models.py:157
+msgid "Last connected service"
+msgstr "Последняя подключённая услуга"
+
+#: customers/models.py:161
+msgid "Donkey"
+msgstr "Ослик"
+
+#: customers/models.py:162
+msgid "Fire"
+msgstr "Огорь"
+
+#: customers/models.py:163
+msgid "Ok"
+msgstr ""
+
+#: customers/models.py:164
+msgid "King"
+msgstr "Король"
+
+#: customers/models.py:165
+msgid "TV"
+msgstr "ТВ"
+
+#: customers/models.py:166
+msgid "Smile"
+msgstr "Улыбка"
+
+#: customers/models.py:167
+msgid "Dollar"
+msgstr "Долар"
+
+#: customers/models.py:168
+msgid "Service"
+msgstr "Услуга"
+
+#: customers/models.py:169
+msgid "Marker"
+msgstr "Маркер"
+
+#: customers/models.py:213
+msgid "User that is no staff can not buy admin services"
+msgstr ""
+"Этот пользователь не является сотрудником и не может назначать "
+"административные услуги"
+
+#: customers/models.py:219
+msgid "That service already activated"
+msgstr "Эта услуга уже подключена"
+
+#: customers/models.py:222
+msgid "Service already activated"
+msgstr "Услуга уже подключена"
+
+#: customers/models.py:226
+#, python-format
+msgid "%(uname)s not enough money for service %(srv_name)s"
+msgstr ""
+"У абонента %(uname)s не достаточно денег на счету для услуги %(srv_name)s"
+
+#: customers/models.py:251
+msgid "Buy service default log"
+msgstr "Покупка тарифного плана через админку"
+
+#: customers/models.py:305 customers/models.py:323
+msgid "gateway required"
+msgstr "Необходимо выбрать шлюз"
+
+#: customers/models.py:357
+msgid "Buy service perm"
+msgstr "Покупка тарифа абоненту"
+
+#: customers/models.py:358
+msgid "fill account"
+msgstr "Пополнение счёта"
+
+#: customers/models.py:359
+msgid "Can ping"
+msgstr "Может пинговать"
+
+#: customers/models.py:361
+msgid "Customer"
+msgstr "Абонент"
+
+#: customers/models.py:362
+msgid "Customers"
+msgstr "Абоненты"
+
+#: customers/models.py:369
+msgid "Passport serial"
+msgstr "Серия пас."
+
+#: customers/models.py:374
+msgid "Passport number"
+msgstr "Номер пас."
+
+#: customers/models.py:379
+msgid "Distributor"
+msgstr "Кем выдан"
+
+#: customers/models.py:382
+msgid "Date of acceptance"
+msgstr "Дата выдачи"
+
+#: customers/models.py:392 customers/models.py:393
+msgid "Passport Info"
+msgstr "Паспортные данные"
+
+#: customers/models.py:425
+msgid "Debt"
+msgstr "Квитанция (долг)"
+
+#: customers/models.py:426
+msgid "Debts"
+msgstr "Квитанции (долги)"
+
+#: customers/models.py:448
+msgid "Telephone"
+msgstr "Номер телефона"
+
+#: customers/models.py:462
+msgid "Additional telephone"
+msgstr "Дополнительный телефон"
+
+#: customers/models.py:463
+msgid "Additional telephones"
+msgstr "Дополнительные телефоны"
+
+#: customers/models.py:470
+msgid "Periodic pay"
+msgstr "Периодический платёж"
+
+#: customers/models.py:472
+msgid "Last pay time"
+msgstr "Последний платёж"
+
+#: customers/models.py:473
+msgid "Next time to pay"
+msgstr "Следующий платёж"
+
+#: customers/models.py:477
+msgid "Account"
+msgstr "Учётная запись"
+
+#: customers/models.py:495
+#, python-format
+msgid "Charge for \"%(service)s\""
+msgstr "Плата за \"%(service)s\""
+
+#: customers/views.py:38
+msgid "Not allowed to direct create Customer service, use 'pick_service' url"
+msgstr ""
+"Запрещено прямое создание привязанных к абоненту услуг, используйте "
+"'pick_service' url"
+
+#: customers/views.py:54
+msgid "Not allowed to direct create Customer log"
+msgstr "Запрещено прямое создание логов абонента"
+
+#: customers/views.py:83
+#, python-format
+msgid "Service '%(service_name)s' has connected via admin until %(deadline)s"
+msgstr "Услуга '%(service_name)s' подключена администратором до %(deadline)s"
+
+#~ msgid "login"
+#~ msgstr "Логин"
+
+#~ msgid "Password"
+#~ msgstr "Пароль"
+
+#~ msgid "fio"
+#~ msgstr "ФИО"
+
+#~ msgid "telephone placeholder"
+#~ msgstr "+[7,8,9,3] и 10,11 цифр"
+
+#~ msgid "profile username"
+#~ msgstr "Логин"
+
+#~ msgid "birth day"
+#~ msgstr "День рождения"
+
+#~ msgid "Is active"
+#~ msgstr "Активен"
+
+#~ msgid "Service title"
+#~ msgstr "Название тарифа"
+
+#~ msgid "Balance"
+#~ msgstr "Балланс"
+
+#~ msgid "Device"
+#~ msgstr "Устройство"
+
+#~ msgid "Device port"
+#~ msgstr "Порт устройства"
+
+#~ msgid "Fields"
+#~ msgstr "Поля"
+
+#~ msgid "User group"
+#~ msgstr "Группа"
+
+#~ msgid "%s not enough money for service %s"
+#~ msgstr "%s не имеет достаточно средств для %s"
+
+#~ msgid "Trade point"
+#~ msgstr "Терминал"
+
+#~ msgid "Receipt number"
+#~ msgstr "Номер пас."
+
+#~ msgid "Remove subscriber"
+#~ msgstr "Удаление абонента"
+
+#~ msgid "User groups"
+#~ msgstr "Группы абонентов"
+
+#~ msgid "Add debt"
+#~ msgstr "Добавить квитанцию"
+
+#~ msgid "Add receipt for"
+#~ msgstr "Добавьте платёж на оплату для"
+
+#~ msgid "Sum of pay"
+#~ msgstr "Сумма для платежа"
+
+#~ msgid "Pay status"
+#~ msgstr "Статус оплаты"
+
+#~ msgid "This credit will be visible in user page, be careful with your text."
+#~ msgstr ""
+#~ "Этот долг будет виден на странице абонента, будьте осторожны с "
+#~ "высказываниями."
+
+#~ msgid "Pick a service"
+#~ msgstr "Заказать услугу"
+
+#~ msgid "Pick a service for"
+#~ msgstr "Купить новую услугу (заказать тариф) для"
+
+#~ msgid "Sub"
+#~ msgstr "Абонент"
+
+#~ msgid "currency"
+#~ msgstr "руб"
+
+#~ msgid "This group has no services"
+#~ msgstr "У этой группы нет услуг"
+
+#~ msgid "Attach serices to groups"
+#~ msgstr "Привязать услуги к группам"
+
+#~ msgid "Graph of use by %(wantdate_d)s"
+#~ msgstr "График использования за %(wantdate_d)s"
+
+#~ msgid "Static info was Not found"
+#~ msgstr "Статистика не найдена"
+
+#~ msgid "Show graph by date"
+#~ msgstr "Показать график по дате"
+
+#~ msgid "Choose a date"
+#~ msgstr "Выберите дату"
+
+#~ msgid "Debtors"
+#~ msgstr "Должники"
+
+#~ msgid "People with debts"
+#~ msgstr "Народ, у которого есть неоплаченные услуги"
+
+#~ msgid "Date of make"
+#~ msgstr "Дата создания"
+
+#~ msgid "Author"
+#~ msgstr "Автор"
+
+#~ msgid "Debts not found"
+#~ msgstr "Нет должников"
+
+#~ msgid "Change subscriber"
+#~ msgstr "Изменение абонента"
+
+#~ msgid "Call to"
+#~ msgstr "Позвонить"
+
+#~ msgid "Add telephone"
+#~ msgstr "Добавить номер телефона"
+
+#~ msgid "Add new task"
+#~ msgstr "Добавить задачу"
+
+#~ msgid "Permission denied"
+#~ msgstr "Доступ запрещён"
+
+#~ msgid "Send sms"
+#~ msgstr "Отправить смс"
+
+#~ msgid "Select the device"
+#~ msgstr "Выберите устройство"
+
+#~ msgid "Mac Address"
+#~ msgstr "Мак"
+
+#~ msgid "Not assigned"
+#~ msgstr "&lt;Не назначен&gt;"
+
+#~ msgid "Remove clutch"
+#~ msgstr "Удалить муфту"
+
+#~ msgid "Add clutch"
+#~ msgstr "Добавить муфту"
+
+#~ msgid "Is dynamic network settings"
+#~ msgstr "Динамические настройки по dhcp"
+
+#~ msgid "Free session"
+#~ msgstr "Освободить сессию"
+
+#~ msgid "Start session"
+#~ msgstr "Запустить сессию"
+
+#~ msgid "Leased by:"
+#~ msgstr "Выделен из:"
+
+#~ msgid "From"
+#~ msgstr "От"
+
+#~ msgid "Add"
+#~ msgstr "Добавить"
+
+#~ msgid "Networks"
+#~ msgstr "Подсети"
+
+#~ msgid "User flags"
+#~ msgstr "Флаги абонента"
+
+#~ msgid "Edit"
+#~ msgstr "Редактировать"
+
+#~ msgid "Money by days"
+#~ msgstr "Сумма денег за сутки"
+
+#~ msgid "Sum"
+#~ msgstr "Сумма"
+
+#~ msgid "Date"
+#~ msgstr "Время"
+
+#~ msgid "Pays not found"
+#~ msgstr "Нет платежей"
+
+#~ msgid "Export to csv"
+#~ msgstr "Сохранить в csv"
+
+#~ msgid "Group title"
+#~ msgstr "Название группы"
+
+#~ msgid "Number of subscribers"
+#~ msgstr "Количество абонентов"
+
+#~ msgid "Groups was not found"
+#~ msgstr "Ещё нет групп"
+
+#~ msgid "Subscribers actions"
+#~ msgstr "История действий абонентов"
+
+#~ msgid "List of debtors"
+#~ msgstr "Список должников"
+
+#~ msgid "Export vCards"
+#~ msgstr "Экспорт в vCards"
+
+#~ msgid "Belonging services for groups"
+#~ msgstr "Принадлежность услуг к группам"
+
+#~ msgid "Debtor"
+#~ msgstr "Должник"
+
+#~ msgid "Month"
+#~ msgstr "Месяц"
+
+#~ msgid "Date of payment"
+#~ msgstr "Дата оплаты"
+
+#~ msgid "Author of payment"
+#~ msgstr "Назначил"
+
+#~ msgid "Created paid,Not yet paid"
+#~ msgstr "Создан оплаченным,Ещё не оплачено"
+
+#~ msgid "Receipts not found"
+#~ msgstr "Назначенные платежи отсутствуют"
+
+#~ msgid "Back to home"
+#~ msgstr "Вернуться к абоненту"
+
+#~ msgid "History of subscriber"
+#~ msgstr "История абонента"
+
+#~ msgid "Actions not found"
+#~ msgstr "Нет событий"
+
+#~ msgid "Additional sum"
+#~ msgstr "Начисление средств на счёт"
+
+#~ msgid "Refill"
+#~ msgstr "Пополнить"
+
+#~ msgid "Add ip lease"
+#~ msgstr "Добавить ip аренду"
+
+#~ msgid "Delete"
+#~ msgstr "Удалить"
+
+#~ msgid "Additional telephones not found"
+#~ msgstr "Дополнительные телефоны не найдены"
+
+#~ msgid "Add street"
+#~ msgstr "Добавить улицу"
+
+#~ msgid "Street title"
+#~ msgstr "Название улицы"
+
+#~ msgid "Attach gateway"
+#~ msgstr "Привязать шлюз"
+
+#~ msgid "Select gateway"
+#~ msgstr "Выбрать шлюз"
+
+#~ msgid "Gateways does not exist"
+#~ msgstr "Шлюзы не найдены"
+
+#~ msgid "Attach"
+#~ msgstr "Привязать"
+
+#~ msgid "Available networks"
+#~ msgstr "Доступные подсети"
+
+#~ msgid "Network"
+#~ msgstr "Подсети"
+
+#~ msgid "Scope"
+#~ msgstr "Вид"
+
+#~ msgid "Available networks not found"
+#~ msgstr "Доступных подсетей не найдено"
+
+#~ msgid "Edit streets"
+#~ msgstr "Редактировать улицы"
+
+#~ msgid "Streets has not been found"
+#~ msgstr "Улицы не найдены"
+
+#~ msgid "Select the fields"
+#~ msgstr "Выберите поля"
+
+#~ msgid "Export"
+#~ msgstr "Экспорт"
+
+#~ msgid "Add periodic pay"
+#~ msgstr "Добавить периодический платёж"
+
+#~ msgid "Phonebook"
+#~ msgstr "Телефонная книга"
+
+#~ msgid "Telephone numbers not found"
+#~ msgstr "Номера телефонов не найдены"
+
+#~ msgid "Markers"
+#~ msgstr "Метки"
+
+#~ msgid "Passport information"
+#~ msgstr "Паспортные данные"
+
+#~ msgid "System"
+#~ msgstr "Система"
+
+#~ msgid "Payment history is empty"
+#~ msgstr "История платежей пуста"
+
+#~ msgid "Fill account"
+#~ msgstr "Пополнить счёт"
+
+#~ msgid "The people in the selected group"
+#~ msgstr "Народ в выбранной группе"
+
+#~ msgid "Last traffic"
+#~ msgstr "Траф."
+
+#~ msgid "Apartment"
+#~ msgstr "Квартира"
+
+#~ msgid "Subscribers not found"
+#~ msgstr "Абоненты не найдены"
+
+#~ msgid "Tariffs in groups"
+#~ msgstr "Тарифы в группах"
+
+#~ msgid "Export users"
+#~ msgstr "Экспорт абонентов"
+
+#~ msgid "No streets found for that group"
+#~ msgstr "Не найдены улицы для группы"
+
+#~ msgid "Subscriber's service"
+#~ msgstr "Текущая услуга абонента"
+
+#~ msgid "Input speed"
+#~ msgstr "Входящая скорость"
+
+#~ msgid "Output speed"
+#~ msgstr "Исходящая скорость"
+
+#~ msgid "Date of start"
+#~ msgstr "Дата начала"
+
+#~ msgid "Works until"
+#~ msgstr "Действует до"
+
+#~ msgid "Subscriber has no service"
+#~ msgstr "У абонента нет услуги"
+
+#~ msgid "Buy service"
+#~ msgstr "Купить услугу"
+
+#~ msgid "Finish service"
+#~ msgstr "Завершить услугу"
+
+#~ msgid "Services for buy"
+#~ msgstr "Услуги для заказа"
+
+#~ msgid "Price"
+#~ msgstr "Сумма"
+
+#~ msgid "Speed In"
+#~ msgstr "Входящая скорость"
+
+#~ msgid "Speed Out"
+#~ msgstr "Исходящая скорость"
+
+#~ msgid "Attach services to group"
+#~ msgstr "Привязать услуги к этой группе"
+
+#~ msgid "Pay logic"
+#~ msgstr "Алгоритм платежа"
+
+#~ msgid "Last pay"
+#~ msgstr "Последний платёж"
+
+#~ msgid "Remove periodic pay"
+#~ msgstr "Удалить периодический платёж"
+
+#~ msgid "Recipients"
+#~ msgstr "Исполнители"
+
+#~ msgid "State"
+#~ msgstr "Состояние"
+
+#~ msgid "Type"
+#~ msgstr "Тип"
+
+#~ msgid "Recipients not found"
+#~ msgstr "Нет исполнителей"
+
+#~ msgid "Tasks not found"
+#~ msgstr "Нет задач"
+
+#~ msgid "Ip that you have passed is greater than allowed network range"
+#~ msgstr "IP который вы указали больше чем разрешённый диапазон адресов"
+
+#~ msgid "Enter a valid IPv4 or IPv6 address."
+#~ msgstr "Введите валидный IPv4 или IPv6 адрес"
+
+#~ msgid "Ip that you typed is not in subnet that you have selected"
+#~ msgstr "IP который вы указали не в подсети которую вы выбрали"
+
+#~ msgid "This is not a valid IPv6 address."
+#~ msgstr "Это не правильный IPv6 адрес"
+
+#~ msgid "Address"
+#~ msgstr "Адрес"
+
+#~ msgid "fix form errors"
+#~ msgstr "Некоторые поля заполнены не правильно, проверте ещё раз"
+
+#~ msgid "NAS says: '%s'"
+#~ msgstr "NAS сказал: '%s'"
+
+#~ msgid "fill account through admin side"
+#~ msgstr "Пополнение счёта через админку"
+
+#~ msgid "Account filled successfully on %.2f"
+#~ msgstr "Счёт пополнен на %.2f"
+
+#~ msgid "I not know the account id"
+#~ msgstr "Счёт успешно пополнен на %.2f"
+
+#~ msgid "User group id is not matches with group in url"
+#~ msgstr "Группа абонента не совпадает с группой указанной в url"
+
+#~ msgid "User device was not found"
+#~ msgstr "Пользовательское устройство не найдено"
+
+#~ msgid "User has not have password, and cannot login"
+#~ msgstr "Для абонента не задан пароль, он не сможет войти в учётку"
+
+#~ msgid "Receipt has been created"
+#~ msgstr "Квитанция на оплату была создана"
+
+#~ msgid "Tariff has been picked"
+#~ msgstr "Тариф успешно выбран"
+
+#~ msgid "Tariff your picked does not exist"
+#~ msgstr "Тариф, который вы выбрали, не существует"
+
+#~ msgid "User has been detached from service"
+#~ msgstr "Абонент отвязан от услуги"
+
+#~ msgid "Passport information has been saved"
+#~ msgstr "Информация о паспорте сохранена"
+
+#~ msgid "Successfully saved"
+#~ msgstr "Успешно сохранено"
+
+#~ msgid "Device has successfully attached"
+#~ msgstr "Устройство успешно прикреплено"
+
+#~ msgid "Device your selected already does not exist"
+#~ msgstr "Устройство, выбранное вами, уже не существует"
+
+#~ msgid "Device has successfully unattached"
+#~ msgstr "Устройство успешно откреплено"
+
+#~ msgid "Group what you want doesn't exist"
+#~ msgstr "Указанная вами группа не найдена"
+
+#~ msgid "no ping"
+#~ msgstr "не пингуется"
+
+#~ msgid "Ip not passed"
+#~ msgstr "Ip адрес не передан"
+
+#~ msgid "ping ok"
+#~ msgstr "пингуется"
+
+#~ msgid "IP Conflict! %(return)d/%(all)d results"
+#~ msgstr "IP Конфликт! ping %(return)d из %(all)d"
+
+#~ msgid "ok ping, %(return)d/%(all)d loses"
+#~ msgstr "пингуется, %(return)d/%(all)d"
+
+#~ msgid "no ping, %(return)d/%(all)d loses"
+#~ msgstr "не пингуется, %(return)d/%(all)d"
+
+#~ msgid "Method is not POST"
+#~ msgstr "Метод не POST"
+
+#~ msgid ""
+#~ "<a href='%(user_url)s'>%(user_name)s</a> already pinned to this port on "
+#~ "this device"
+#~ msgstr ""
+#~ "<a href='%(user_url)s'>%(user_name)s</a> уже привязан к этому порту на "
+#~ "этом устройстве"
+
+#~ msgid "Multiple users on the same device port"
+#~ msgstr "Несколько абонентов на одном и том же порту устройства"
+
+#~ msgid "User port has been saved"
+#~ msgstr "Порт абонента успешно выбран"
+
+#~ msgid "Selected port does not exist"
+#~ msgstr "Выбранный порт не существует"
+
+#~ msgid "User does not exist"
+#~ msgstr "Абонент не найден"
+
+#~ msgid "Street successfully saved"
+#~ msgstr "Улица успешно сохранена"
+
+#~ msgid "Streets has been saved"
+#~ msgstr "Улицы сохранены"
+
+#~ msgid "One of these streets has not been found"
+#~ msgstr "Одна из этих улиц не была найдена"
+
+#~ msgid "The street successfully deleted"
+#~ msgstr "Улица успешно удалена"
+
+#~ msgid "The street has not been found"
+#~ msgstr "Улица не найдена"
+
+#~ msgid "New telephone has been saved"
+#~ msgstr "Новый телефон сохранен"
+
+#~ msgid "Additional telephone successfully deleted"
+#~ msgstr "Номер телефона успешно удалён"
+
+#~ msgid "Telephone not found"
+#~ msgstr "Телефон не найден"
+
+#~ msgid "Unexpected format %(export_format)s"
+#~ msgstr "Нежиданный формат %(export_format)s"
+
+#~ msgid "Periodic pays has been designated"
+#~ msgstr "Периодический платёж назначен"
+
+#~ msgid "Something wrong in form"
+#~ msgstr "Что-то не так в форме"
+
+#~ msgid "Periodic pay successfully deleted"
+#~ msgstr "Периодический платёж успешно удалён"
+
+#~ msgid "User flags has changed successfully"
+#~ msgstr "Флаги абонента изменены успешно"
+
+#~ msgid "Ip lease has been freed"
+#~ msgstr "Аренда ip освобождена"
+
+#~ msgid "You cannot disable last session"
+#~ msgstr "Вы не можете отключить последний ip"
+
+#~ msgid "Ip lease has been started"
+#~ msgstr "Аренда ip включена"
+
+#~ msgid "Unexpected action"
+#~ msgstr "Непредвиденное действие"
+
+#~ msgid "Ip lease has been created"
+#~ msgstr "Аренда ip создана"
+
+#~ msgid "Check form errors"
+#~ msgstr "Некоторые поля заполнены не правильно, проверте ещё раз"
+
+#~ msgid "Network access server for users in this group, has been updated"
+#~ msgstr "Сервер доступа в интернет привязан к пользователям в этой группе"
+
+#~ msgid "Users not found"
+#~ msgstr "Пользователи не найдены"
+
+#~ msgid "You must select gateway"
+#~ msgstr "Вы должны выбрать шлюз"
+
+#~ msgid "Sub information"
+#~ msgstr "Инфо"
+
+#~ msgid "Payments"
+#~ msgstr "Финансы"
+
+#~ msgid "History of tasks"
+#~ msgstr "История задач"
+
+#~ msgid "Charts"
+#~ msgstr "Графики"
+
+#~ msgid "Cancel"
+#~ msgstr "Отмена"
+
+#~ msgid "View"
+#~ msgstr "Открыть"
+
+#~ msgid "Auto continue service."
+#~ msgstr "Автопродление услуги."
+
+#~ msgid "No author attached"
+#~ msgstr "Автор не назначен"
+
+#~ msgid "User not have ip"
+#~ msgstr "У пользователя нет ip"
+
+#~ msgid "Ip successfully updated"
+#~ msgstr "IP успешно обновлён"
+
+#~ msgid "IP address conflict"
+#~ msgstr "IP адрес уже есть"
+
+#~ msgid "Date joined"
+#~ msgstr "Дата создания"
+
+#~ msgid "Update ip address"
+#~ msgstr "Обновить ip адрес"
+
+#~ msgid "Please pick NAS for consumer"
+#~ msgstr "Выберите шлюз для абонента"
+
+#~ msgid "Are you sure you want to free ip user session?"
+#~ msgstr "Вы уверены что хотите удалить ip абонента?"
