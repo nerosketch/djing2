@@ -1,0 +1,548 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-07-16 02:35+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: devices/base_intr.py:41
+msgid "Reboot not ready"
+msgstr "Перезагрузка для устройства не готова"
+
+#: devices/base_intr.py:146
+msgid "Ip address is required"
+msgstr "Ip адрес необходим"
+
+#: devices/dev_types.py:58
+#, python-format
+msgid "File %(filename)s is not exists or not executable"
+msgstr "Файл '%(filename)s' не существует или не исполняем"
+
+#: devices/dev_types.py:84
+msgid "DLink switch"
+msgstr "Свич D'Link"
+
+#: devices/dev_types.py:95 devices/dev_types.py:436
+msgid "You have not info in extra_data field, please fill it in JSON"
+msgstr ""
+"Не заполнено поле 'Техническая информация', обратитесь к администратору"
+
+#: devices/dev_types.py:193
+msgid "wait for a reply from the SNMP Timeout"
+msgstr "Время ожидания ответа от SNMP истекло"
+
+#: devices/dev_types.py:235
+msgid "Ip address or parent device with ip address required for ONU device"
+msgstr ""
+"Необходим ip адрес. Или родительское устройство с назначенным ip адресом "
+"необходимо."
+
+#: devices/dev_types.py:273
+msgid "ONU not connected"
+msgstr "ONU не в сети"
+
+#: devices/dev_types.py:281
+msgid "Onu snmp field must be en integer"
+msgstr "Поле для snmp информации об ONU должно быть числом"
+
+#: devices/dev_types.py:332
+msgid "Eltex switch"
+msgstr "Элтекс свич"
+
+#: devices/dev_types.py:516
+msgid "Zte onu snmp field must be two dot separated integers"
+msgstr ""
+"Поле snmp информации для ZTE ONU должно быть двумя целыми числами, "
+"разделенными точкой"
+
+#: devices/dev_types.py:569
+msgid "Huawei switch"
+msgstr "Huawei "
+
+#: devices/models.py:16
+msgid "Ip address"
+msgstr "Ip адрес"
+
+#: devices/models.py:20
+msgid "Mac address"
+msgstr "Мак адрес"
+
+#: devices/models.py:23
+msgid "Comment"
+msgstr "Комментарий"
+
+#: devices/models.py:35
+msgid "Device type"
+msgstr "Тип устройства"
+
+#: devices/models.py:39
+msgid "SNMP password"
+msgstr "Пароль SNMP"
+
+#: devices/models.py:44
+msgid "Device group"
+msgstr "Группа устройства"
+
+#: devices/models.py:47
+msgid "Parent device"
+msgstr "Родительское устройство"
+
+#: devices/models.py:52
+msgid "SNMP extra info"
+msgstr "Доп. инфо для snmp"
+
+#: devices/models.py:56
+msgid "Extra data"
+msgstr "Дополнительные данные"
+
+#: devices/models.py:57
+msgid "Extra data in JSON format. You may use it for your custom data"
+msgstr ""
+"Дополнительные данные в формате JSON. Вы можете хранить там собственные "
+"данные"
+
+#: devices/models.py:62
+msgid "Undefined"
+msgstr "Не определено"
+
+#: devices/models.py:63
+msgid "Up"
+msgstr "В сети"
+
+#: devices/models.py:64
+msgid "Unreachable"
+msgstr "Не доступно"
+
+#: devices/models.py:65
+msgid "Down"
+msgstr "Не в сети"
+
+#: devices/models.py:67
+msgid "Status"
+msgstr "Состояние"
+
+#: devices/models.py:69
+msgid "Send notify when monitoring state changed"
+msgstr "Отправлять уведомления при событиях мониторинга"
+
+#: devices/models.py:73 devices/models.py:116
+msgid "Device"
+msgstr "Устройство"
+
+#: devices/models.py:74
+msgid "Devices"
+msgstr "Устройства"
+
+#: devices/models.py:118
+msgid "Number"
+msgstr "Номер"
+
+#: devices/models.py:119
+msgid "Description"
+msgstr "Описание"
+
+#: devices/models.py:134
+msgid "Can toggle ports"
+msgstr "Может переключать порты"
+
+#: devices/models.py:136
+msgid "Port"
+msgstr "Порт"
+
+#: devices/models.py:137
+msgid "Ports"
+msgstr "Порты"
+
+#: devices/views.py:82
+msgid "Port scan failed"
+msgstr "Ошибка при сканировании портов"
+
+#: devices/views.py:130
+msgid "Parameter port_id is bad"
+msgstr "Параметр port_id плох"
+
+#: devices/views.py:138
+msgid "Parameter port_state is bad"
+msgstr "Параметр port_state плох"
+
+#: devices/views.py:150
+#, python-format
+msgid "Device with mac address %(mac)s does not exist"
+msgstr "Устройство мак адресом %(mac)s не найдено"
+
+#: devices/views.py:158
+msgid "Fixed"
+msgstr "Исправлено, обновите страницу"
+
+#: devices/views.py:161
+msgid "Parent device not found"
+msgstr "Вышестоящее устройство не найдено"
+
+#: devices/views.py:174
+msgid "Unregistered onu not found"
+msgstr "Незарегистрированные ONU не найдены"
+
+#: devices/views.py:176
+msgid "Wrong login or password for telnet access"
+msgstr "Не правильный логин или пароль для доступа по telnet"
+
+#: devices/views.py:184
+msgid "Process locked by another process"
+msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
+
+#: devices/views.py:186
+msgid "ok"
+msgstr ""
+
+#~ msgid "does not fetch the mac"
+#~ msgstr "не нашёл мак"
+
+#~ msgid "Mac address is required for fill"
+#~ msgstr "MAC-адрес необходим для заполнения"
+
+#~ msgid "Device with that mac is already exist"
+#~ msgstr "Устройство с этим мак-адресом уже есть"
+
+#~ msgid "Port number on device must be unique"
+#~ msgstr "Номер порта на устройстве должен быть уникальным"
+
+#~ msgid "Is save before reboot"
+#~ msgstr "Сохраниться перед перезагрузкой"
+
+#~ msgid "Groups"
+#~ msgstr "Группы"
+
+#~ msgid "Add new device"
+#~ msgstr "Добавить устройство"
+
+#~ msgid "Not assigned"
+#~ msgstr "&lt;Не назначено&gt;"
+
+#~ msgid "Device info"
+#~ msgstr "Инфа о железке"
+
+#~ msgid "Find the device"
+#~ msgstr "Найти устройство"
+
+#~ msgid "Save"
+#~ msgstr "Сохранить"
+
+#~ msgid "Reset"
+#~ msgstr "Сбросить форму"
+
+#~ msgid "Title of the type of switch"
+#~ msgstr "Название типа свича"
+
+#~ msgid "Uptime"
+#~ msgstr "Время работы"
+
+#~ msgid "Disable port"
+#~ msgstr "Выключить порт"
+
+#~ msgid "Enable port"
+#~ msgstr "Включить порт"
+
+#~ msgid "We have not received info, please check options :("
+#~ msgstr "Инфа не получена, проверьте настройки :("
+
+#~ msgid "Ports management"
+#~ msgstr "Управление портами"
+
+#~ msgid "Count of subscribers"
+#~ msgstr "Сколько абонов"
+
+#~ msgid ""
+#~ "Port should not have more than one subscriber, <a href='%(furl)s'>fix "
+#~ "that</a>"
+#~ msgstr ""
+#~ "Порт не должен иметь больше одного назначенного абонента, <a "
+#~ "href='%(furl)s'>исправить</a>"
+
+#~ msgid "Show subscriber on port"
+#~ msgstr "Показать абонента на порту"
+
+#~ msgid "Delete"
+#~ msgstr "Удалить"
+
+#~ msgid "Edit"
+#~ msgstr "Редактировать"
+
+#~ msgid "Ports not found"
+#~ msgstr "Порты не найдены"
+
+#~ msgid "Add"
+#~ msgstr "Добавить"
+
+#~ msgid "Add ports"
+#~ msgstr "Добавить порты"
+
+#~ msgid "Ports comment"
+#~ msgstr "Комментарии портов"
+
+#~ msgid "Title"
+#~ msgstr "Название"
+
+#~ msgid "We have not received info for ports"
+#~ msgstr "Инфа о портах не получена"
+
+#~ msgid "SNMP Num"
+#~ msgstr "SNMP Ном."
+
+#~ msgid "Name"
+#~ msgstr "Имя"
+
+#~ msgid "Mac"
+#~ msgstr "Мак"
+
+#~ msgid "Signal"
+#~ msgstr "Ур. сигнала"
+
+#~ msgid "Create device"
+#~ msgstr "Создать устройство"
+
+#~ msgid "Long description"
+#~ msgstr "Длинное описание"
+
+#~ msgid "Hostname"
+#~ msgstr "Имя хоста"
+
+#~ msgid "OLT Scan"
+#~ msgstr "Скан OLT"
+
+#~ msgid "Unregistered units"
+#~ msgstr "Незарегистрированные юниты"
+
+#~ msgid "Firmware version"
+#~ msgstr "Версия прошивки"
+
+#~ msgid "LOID password"
+#~ msgstr "LOID пароль"
+
+#~ msgid "ONU not found"
+#~ msgstr "ONU не найдена"
+
+#~ msgid "Attached user"
+#~ msgstr "Прикреплённый абонент"
+
+#~ msgid "ONU Status"
+#~ msgstr "Состояние ONU"
+
+#~ msgid "ONU error"
+#~ msgstr "ONU ошибка"
+
+#~ msgid "Name on OLT"
+#~ msgstr "Имя на OLT"
+
+#~ msgid "Distance(m)"
+#~ msgstr "Расстояние (м)"
+
+#~ msgid "Mac on OLT"
+#~ msgstr "MAC адрес на OLT"
+
+#~ msgid "Mac-addresses does not match"
+#~ msgstr "MAC адреса не совпадают"
+
+#~ msgid "Fix it"
+#~ msgstr "Исправить"
+
+#~ msgid "Info does not fetch"
+#~ msgstr "Информация не получена"
+
+#~ msgid "Fiber"
+#~ msgstr "Интерфейс"
+
+#, fuzzy
+#~| msgid "Ip address"
+#~ msgid "Ip addr"
+#~ msgstr "Ip адрес"
+
+#~ msgid "VLan list"
+#~ msgstr "Список VLAN'ов"
+
+#~ msgid "Serial"
+#~ msgstr "Серийник"
+
+#~ msgid "Onu type"
+#~ msgstr "Тип onu"
+
+#~ msgid "Permission denied"
+#~ msgstr "Доступ запрещён"
+
+#~ msgid "Register device"
+#~ msgstr "Зарегистрировать устройство"
+
+#~ msgid "Reboot"
+#~ msgstr "Перезагрузить"
+
+#~ msgid "Tech date"
+#~ msgstr "Техническая информация"
+
+#~ msgid "Remove device"
+#~ msgstr "Удалить устройство"
+
+#~ msgid "Are you sure you want to delete device?"
+#~ msgstr "Вы уверены что хотите удалить устройство?"
+
+#~ msgid "Devices does not found"
+#~ msgstr "Нет созданных устройств"
+
+#~ msgid "Create"
+#~ msgstr "Cоздать"
+
+#~ msgid "Devices without group"
+#~ msgstr "Устройства без группы"
+
+#~ msgid "Fix device group"
+#~ msgstr "Поправить группу устройства"
+
+#~ msgid "Select group"
+#~ msgstr "Выберите группу"
+
+#~ msgid "Group title"
+#~ msgstr "Название"
+
+#~ msgid "Groups was not found"
+#~ msgstr "Эта группа не найдена"
+
+#~ msgid "Export to nagios objects"
+#~ msgstr "Экспортировать конфиг для nagios"
+
+#~ msgid "Mode"
+#~ msgstr "Режим"
+
+#~ msgid "Fix subscriber ports conflict"
+#~ msgstr "Исправить конфликт абонентов на порту"
+
+#~ msgid "Subscribers list on port"
+#~ msgstr "Список абонентов на порту"
+
+#~ msgid ""
+#~ "You may choose the subscriber who correctly attached to device port. When "
+#~ "you have found right subscriber, remove the port from the other person"
+#~ msgstr ""
+#~ "Вы можете выбрать абонента который правильно подключён к порту. Когда вы "
+#~ "найдёте нужного абонента удалите этот порт у другого абонента чтоб "
+#~ "исправить конфликт"
+
+#~ msgid "Abons not found"
+#~ msgstr "Абоненты не найдены"
+
+#~ msgid "Are you sure?"
+#~ msgstr "Вы уверены?"
+
+#~ msgid "Are you sure that you want to delete switch port from db?"
+#~ msgstr "Вы уверены что хотите удалить порт свича из бд?"
+
+#~ msgid "Subscriber on port"
+#~ msgstr "Абонент на порту"
+
+#~ msgid "Change extra data for device"
+#~ msgstr "Изменить дополнительные данные для устройства"
+
+#~ msgid "Back"
+#~ msgstr "Назад"
+
+#~ msgid "Are you sure you want to reboot that device?"
+#~ msgstr "Вы уверены что хотите перезагрузить это устройство?"
+
+#~ msgid "Device successfully deleted"
+#~ msgstr "Устройство успешно удалено"
+
+#~ msgid "Duplicate user and port: %s"
+#~ msgstr "Пользователь с таким портом и устройством уже есть: %s"
+
+#~ msgid "You have redirected to existing device"
+#~ msgstr "Вы были переадресованы на существующее устройство"
+
+#~ msgid "Please attach group for device"
+#~ msgstr "Пожалуйста назначте устройству группу в настройках"
+
+#~ msgid "Device info has been saved"
+#~ msgstr "Инфа о точке сохранена"
+
+#~ msgid "Form is invalid, check fields and try again"
+#~ msgstr "Ошибка в данных, проверте их ещё раз"
+
+#~ msgid "Device extra data has successfully updated"
+#~ msgstr "Дополнительная информация об устройстве успешно обновлена"
+
+#~ msgid "Subscribers on port does not exist"
+#~ msgstr "Абоненты на порту не найдены"
+
+#~ msgid "More than one subscriber on device port"
+#~ msgstr "Больше одного абонента на порту устройства"
+
+#~ msgid "Device does not have a group, please fix that"
+#~ msgstr "У устройства нет группы, пожалуйста, исправьте это"
+
+#~ msgid "Device does not exist"
+#~ msgstr "Устойство не найдено"
+
+#~ msgid "Port successfully removed"
+#~ msgstr "Порт успешно удалён"
+
+#~ msgid "Port does not exist"
+#~ msgstr "Порт не найден"
+
+#~ msgid "Port successfully saved"
+#~ msgstr "Порт успешно сохранён"
+
+#~ msgid "Dot was not pinged"
+#~ msgstr "Эта точка не пингуется"
+
+#~ msgid "Not Set snmp device password"
+#~ msgstr "Не указан snmp пароль для устройства"
+
+#~ msgid "SNMP error on device"
+#~ msgstr "Ошибка SNMP на устройстве"
+
+#~ msgid "Signal for reboot has been sent"
+#~ msgstr "Сигнал для перезагрузки отправлен"
+
+#~ msgid "Command return nothing"
+#~ msgstr "Комманда вернула пустое значение"
+
+#~ msgid "Command returned %s"
+#~ msgstr "Комманда вернула %s"
+
+#~ msgid "Command return unknown"
+#~ msgstr "Комманда вернула что-то не понятное"
+
+#~ msgid "Device fixed"
+#~ msgstr "Устройство исправлено"
+
+#~ msgid "Level"
+#~ msgstr "Уровень"
+
+#~ msgid "Date"
+#~ msgstr "Дата"
+
+#~ msgid "Device %(device_name)s is up"
+#~ msgstr "%(device_name)s в сети"
+
+#~ msgid "Device %(device_name)s is down"
+#~ msgstr "%(device_name)s не в сети"
+
+#~ msgid "Device %(device_name)s is unreachable"
+#~ msgstr "%(device_name)s недостижим"
+
+#~ msgid "Device %(device_name)s getting undefined status code"
+#~ msgstr "Устройство %(device_name)s получило не определённый код состояния"
+
+#~ msgid "View"
+#~ msgstr "Посмотреть"
+
+#~ msgid "Enter valid JSON"
+#~ msgstr "Введите данные в формате JSON"
