@@ -1,8 +1,10 @@
 from datetime import datetime
 from django.contrib.postgres.fields import JSONField
+from django.core.validators import MinValueValidator
 from django.db import models, IntegrityError
 from django.utils.translation import gettext_lazy as _
 from django.dispatch import receiver
+
 from djing2.lib import MyChoicesAdapter
 from services.base_intr import ServiceBase, PeriodicPayCalcBase
 from services.custom_tariffs import TARIFF_CHOICES, PERIODIC_PAY_CHOICES
@@ -17,8 +19,12 @@ class ServiceManager(models.Manager):
 class Service(models.Model):
     title = models.CharField(_('Service title'), max_length=128)
     descr = models.TextField(_('Service description'), null=True, blank=True, default=None)
-    speed_in = models.FloatField(_('Speed in'))
-    speed_out = models.FloatField(_('Speed out'))
+    speed_in = models.FloatField(_('Speed in'), validators=(
+        MinValueValidator(limit_value=0.1),
+    ))
+    speed_out = models.FloatField(_('Speed out'), validators=(
+        MinValueValidator(limit_value=0.1),
+    ))
     cost = models.FloatField(_('Cost'))
     calc_type = models.PositiveSmallIntegerField(_('Script'), choices=MyChoicesAdapter(TARIFF_CHOICES))
     is_admin = models.BooleanField(_('Tech service'), default=False)
