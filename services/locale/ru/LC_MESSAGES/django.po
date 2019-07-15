@@ -1,0 +1,102 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-07-16 02:47+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: services/custom_tariffs.py:11
+msgid "Base calculate functionality"
+msgstr "Базовый расчётный функционал"
+
+#: services/custom_tariffs.py:59
+msgid "Private service"
+msgstr "Для внутреннего пользования"
+
+#: services/custom_tariffs.py:74
+msgid "IS Daily service"
+msgstr "Услуга на сутки"
+
+#: services/custom_tariffs.py:93
+msgid "Default periodic pay"
+msgstr "Логика по умолчанию"
+
+#: services/models.py:20
+msgid "Service title"
+msgstr "Название тарифа"
+
+#: services/models.py:21
+msgid "Service description"
+msgstr "Описание тарифа"
+
+#: services/models.py:22
+msgid "Speed in"
+msgstr "Входящая скорость"
+
+#: services/models.py:25
+msgid "Speed out"
+msgstr "Исходящая скорость"
+
+#: services/models.py:28
+msgid "Cost"
+msgstr "Цена"
+
+#: services/models.py:29
+msgid "Script"
+msgstr "Скрипт"
+
+#: services/models.py:30
+msgid "Tech service"
+msgstr "Административный тариф"
+
+#: services/models.py:31
+msgid "Groups"
+msgstr "Группы"
+
+#: services/models.py:59
+msgid "Service"
+msgstr "Услуга"
+
+#: services/models.py:60
+msgid "Services"
+msgstr "Тарифы"
+
+#: services/models.py:65
+msgid "Periodic pay name"
+msgstr "Название"
+
+#: services/models.py:66
+msgid "When pay created"
+msgstr "Когда создан"
+
+#: services/models.py:68
+msgid "Script type for calculations"
+msgstr "Алгоритм расчёта"
+
+#: services/models.py:71
+msgid "Total amount"
+msgstr "Стоимость"
+
+#: services/models.py:72
+msgid "Extra info"
+msgstr ""
+
+#: services/models.py:109
+msgid "Periodic pay"
+msgstr "Периодический платёж"
+
+#: services/models.py:110
+msgid "Periodic pays"
+msgstr "Периодические платежи"
