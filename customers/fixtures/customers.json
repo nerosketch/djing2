@@ -1,5 +1,14 @@
 [
   {
+    "model": "customers.customerservice",
+    "pk": 3,
+    "fields": {
+      "service": 5,
+      "start_time": "2019-07-16T01:54:42.175",
+      "deadline": "2019-07-17T01:54:42.175"
+    }
+  },
+  {
     "model": "customers.customerstreet",
     "pk": 1,
     "fields": {
@@ -27,7 +36,7 @@
     "model": "customers.customer",
     "pk": 8,
     "fields": {
-      "current_service": null,
+      "current_service": 3,
       "group": 2,
       "balance": 0.0,
       "ip_address": null,
@@ -39,7 +48,7 @@
       "is_dynamic_ip": false,
       "gateway": 1,
       "auto_renewal_service": false,
-      "last_connected_service": null,
+      "last_connected_service": 5,
       "markers": "0",
       "groups": [],
       "user_permissions": []
@@ -109,6 +118,17 @@
       "markers": "0",
       "groups": [],
       "user_permissions": []
+    }
+  },
+  {
+    "model": "customers.customerlog",
+    "pk": 5,
+    "fields": {
+      "customer": 8,
+      "cost": 0.0,
+      "author": 2,
+      "comment": "Service 'Дневная услуга' has connected via admin until None",
+      "date": "2019-07-16T01:54:42.179"
     }
   }
 ]

@@ -46,7 +46,7 @@ class CustomerStreetModelSerializer(serializers.ModelSerializer):
 
 
 class CustomerLogModelSerializer(serializers.ModelSerializer):
-    author_name = serializers.CharField(source='author.get_short_name')
+    author_name = serializers.CharField(source='author.get_short_name', read_only=True)
     # customer_name = serializers.CharField(source='customer.get_short_name')
 
     class Meta:
@@ -62,7 +62,7 @@ class CustomerModelSerializer(serializers.ModelSerializer):
     service_title = serializers.CharField(source='last_connected_service.title', read_only=True)
 
     def create(self, validated_data):
-        raw_password = validated_data.get('password')
+        # raw_password = validated_data.get('password')
         validated_data.update({
             'is_admin': False,
             # 'password': make_password(raw_password)
