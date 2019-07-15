@@ -1,18 +1,15 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-05-02 11:59+0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"POT-Creation-Date: 2019-07-16 02:47+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -20,122 +17,118 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: models.py:22
+#: profiles/models.py:22
 msgid "Users must have an telephone number"
 msgstr "Пользователи должны иметь номер телефона"
 
-#: models.py:50
+#: profiles/models.py:50
 msgid "profile username"
 msgstr "Имя пользователя"
 
-#: models.py:55
+#: profiles/models.py:55
 msgid "fio"
 msgstr "ФИО"
 
-#: models.py:56
+#: profiles/models.py:56
 msgid "birth day"
 msgstr "День рождения"
 
-#: models.py:57
+#: profiles/models.py:57
 msgid "Is active"
 msgstr "Активность"
 
-#: models.py:61
+#: profiles/models.py:61
 msgid "Telephone"
 msgstr "Номер телефона"
 
-#: models.py:95
+#: profiles/models.py:93
 msgid "Author"
 msgstr "Автор"
 
-#: models.py:96
-msgid "Meta information"
-msgstr "Доп. информация"
-
-#: models.py:98
+#: profiles/models.py:96
 msgid "Undefined"
 msgstr "Не определён"
 
-#: models.py:99
+#: profiles/models.py:97
 msgid "Create user"
 msgstr "Создать пользователя"
 
-#: models.py:100
+#: profiles/models.py:98
 msgid "Delete user"
 msgstr "Удалить пользователя"
 
-#: models.py:101
+#: profiles/models.py:99
 msgid "Create device"
 msgstr "Создать устройство"
 
-#: models.py:102
+#: profiles/models.py:100
 msgid "Delete device"
 msgstr "Удалить устройство"
 
-#: models.py:103
+#: profiles/models.py:101
 msgid "Create NAS"
 msgstr "Создать NAS"
 
-#: models.py:104
+#: profiles/models.py:102
 msgid "Delete NAS"
 msgstr "Удалить NAS"
 
-#: models.py:105
+#: profiles/models.py:103
 msgid "Create service"
 msgstr "Создать услугу"
 
-#: models.py:106
+#: profiles/models.py:104
 msgid "Delete service"
 msgstr "Удалить услугу"
 
-#: models.py:108
+#: profiles/models.py:106
 msgid "Action type"
 msgstr "Тип действия"
 
-#: models.py:109
+#: profiles/models.py:107
 msgid "Additional info"
 msgstr "Дополнительная информация"
 
-#: models.py:110
+#: profiles/models.py:108
 msgid "Action date"
 msgstr "Врремя действия"
 
-#: models.py:117
+#: profiles/models.py:115
 msgid "User profile log"
 msgstr "Лог учётной записи"
 
-#: models.py:118
+#: profiles/models.py:116
 msgid "User profile logs"
 msgstr "Логи учётных записей"
 
-#: models.py:127
+#: profiles/models.py:125
 msgid "Avatar"
 msgstr "Аватар"
 
-#: models.py:129
+#: profiles/models.py:127
 msgid "Responsibility groups"
 msgstr "Ответственность за группы"
 
-#: models.py:131
+#: profiles/models.py:129
 msgid "Notification about tasks"
 msgstr "Оповещения о задачах"
 
-#: models.py:132
+#: profiles/models.py:130
 msgid "Notification about messages"
 msgstr "Оповещения о сообщениях"
 
-#: models.py:133
+#: profiles/models.py:131
 msgid "Notification from monitoring"
 msgstr "Оповещения из мониторинга"
 
-#: models.py:135
+#: profiles/models.py:133
 msgid "Settings flags"
 msgstr ""
 
-#: models.py:140
+#: profiles/models.py:138
 msgid "Staff account profile"
 msgstr "Учётная запись сотрудника"
 
-#: models.py:141
+#: profiles/models.py:139
 msgid "Staff account profiles"
 msgstr "Учётные записи сотрудников"
