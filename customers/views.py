@@ -5,6 +5,8 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
+from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 from djing2.lib import safe_int, LogicError
 from djing2.viewsets import DjingModelViewSet
@@ -58,6 +60,8 @@ class CustomerLogModelViewSet(DjingModelViewSet):
 class CustomerModelViewSet(DjingModelViewSet):
     queryset = models.Customer.objects.all()
     serializer_class = serializers.CustomerModelSerializer
+    filter_backends = (SearchFilter, DjangoFilterBackend)
+    search_fields = ('username', 'fio', 'telephone', 'description')
     lookup_field = 'username'
     lookup_url_kwarg = 'uname'
 
