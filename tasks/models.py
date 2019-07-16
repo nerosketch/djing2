@@ -95,10 +95,6 @@ class Task(models.Model):
         _('Condition'), choices=TASK_STATES,
         default=0
     )
-    attachment = models.ImageField(
-        _('Attached image'), upload_to='task_attachments/%Y.%m.%d',
-        blank=True, null=True
-    )
     mode = models.PositiveSmallIntegerField(
         _('The nature of the damage'),
         choices=TASK_TYPES, default=0

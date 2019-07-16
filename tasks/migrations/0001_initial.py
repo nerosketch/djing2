@@ -25,7 +25,6 @@ class Migration(migrations.Migration):
                 ('out_date', models.DateField(blank=True, default=tasks.models.delta_add_days, null=True, verbose_name='Reality')),
                 ('time_of_create', models.DateTimeField(auto_now_add=True, verbose_name='Date of create')),
                 ('state', models.PositiveSmallIntegerField(choices=[(0, 'New'), (1, 'Confused'), (2, 'Completed')], default=0, verbose_name='Condition')),
-                ('attachment', models.ImageField(blank=True, null=True, upload_to='task_attachments/%Y.%m.%d', verbose_name='Attached image')),
                 ('mode', models.PositiveSmallIntegerField(choices=[(0, 'not chosen'), (1, 'ip conflict'), (2, 'yellow triangle'), (3, 'red cross'), (4, 'weak speed'), (5, 'cable break'), (6, 'connection'), (7, 'periodic disappearance'), (8, 'router setup'), (9, 'configure onu'), (10, 'crimp cable'), (11, 'Internet crash'), (12, 'other')], default=0, verbose_name='The nature of the damage')),
                 ('author', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL, verbose_name='Task author')),
                 ('customer', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='customers.Customer', verbose_name='Customer')),
