@@ -49,7 +49,6 @@
       "out_date": "2019-07-16",
       "time_of_create": "2019-07-14T16:51:20.221",
       "state": 0,
-      "attachment": "",
       "mode": 1,
       "customer": 8,
       "recipients": [
@@ -68,7 +67,6 @@
       "out_date": "2019-07-17",
       "time_of_create": "2019-07-14T16:51:43.062",
       "state": 0,
-      "attachment": "",
       "mode": 1,
       "customer": 8,
       "recipients": [
@@ -87,7 +85,6 @@
       "out_date": null,
       "time_of_create": "2019-07-14T16:52:22.005",
       "state": 2,
-      "attachment": "",
       "mode": 1,
       "customer": 8,
       "recipients": [
@@ -106,7 +103,6 @@
       "out_date": "2019-07-19",
       "time_of_create": "2019-07-14T16:52:38.062",
       "state": 1,
-      "attachment": "",
       "mode": 1,
       "customer": 8,
       "recipients": [
