@@ -20,10 +20,11 @@ class TaskModelSerializer(serializers.ModelSerializer):
     recipients_count = serializers.IntegerField(source='recipients.count', read_only=True)
     state_str = serializers.CharField(source='get_state_display', read_only=True)
     mode_str = serializers.CharField(source='get_mode_display', read_only=True)
+    time_of_create = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = models.Task
-        exclude = ('author', 'time_of_create')
+        exclude = ('author',)
 
 
 class ExtraCommentModelSerializer(serializers.ModelSerializer):
