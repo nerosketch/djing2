@@ -351,6 +351,13 @@ class Customer(BaseAccount):
         self.last_connected_service = service
         self.save(update_fields=('current_service', 'last_connected_service'))
 
+    def get_address(self):
+        return "%(group)s. %(street)s %(house)s" % {
+            'group': self.group,
+            'street': self.street,
+            'house': self.house
+        }
+
     class Meta:
         db_table = 'customers'
         permissions = (

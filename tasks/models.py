@@ -100,8 +100,8 @@ class Task(models.Model):
         choices=TASK_TYPES, default=0
     )
     customer = models.ForeignKey(
-        Customer, on_delete=models.CASCADE, null=True,
-        blank=True, verbose_name=_('Customer')
+        Customer, on_delete=models.CASCADE,
+        verbose_name=_('Customer')
     )
 
     def finish(self, current_user):
