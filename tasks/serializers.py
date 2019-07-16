@@ -23,7 +23,7 @@ class TaskModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Task
-        fields = '__all__'
+        exclude = ('author', 'time_of_create')
 
 
 class ExtraCommentModelSerializer(serializers.ModelSerializer):
