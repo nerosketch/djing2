@@ -12,10 +12,7 @@ class ChangeLogModelSerializer(serializers.ModelSerializer):
 
 class TaskModelSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.get_full_name', read_only=True)
-    customer_name = serializers.CharField(source='customer.get_full_name', read_only=True)
-    customer_group = serializers.CharField(source='customer.group.title', read_only=True)
-    customer_street = serializers.CharField(source='customer.street.name', read_only=True)
-    customer_house = serializers.CharField(source='customer.house', read_only=True)
+    customer_address = serializers.CharField(source='customer.get_address', read_only=True)
     comment_count = serializers.IntegerField(source='extracomment.count', read_only=True)
     recipients_count = serializers.IntegerField(source='recipients.count', read_only=True)
     state_str = serializers.CharField(source='get_state_display', read_only=True)
@@ -24,7 +21,8 @@ class TaskModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Task
-        exclude = ('author',)
+        exclude = ('author', 'recipients')
+        depth = 1
 
 
 class ExtraCommentModelSerializer(serializers.ModelSerializer):
