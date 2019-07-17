@@ -1,5 +1,5 @@
 # from django.contrib.auth.models import User
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, CharField
 from rest_framework.exceptions import ValidationError
 
 from profiles.models import UserProfile, UserProfileLog
@@ -7,11 +7,12 @@ from profiles.models import UserProfile, UserProfileLog
 
 class UserProfileSerializer(ModelSerializer):
     firbidden_usernames = ('log', 'api-token-auth', 'api')
+    full_name = CharField(source='get_full_name', read_only=True)
 
     class Meta:
         model = UserProfile
         fields = ('pk', 'username', 'fio', 'is_active', 'is_admin', 'telephone',
-                  'avatar', 'email')
+                  'avatar', 'email', 'full_name')
 
     def create(self, validated_data):
         return UserProfile.objects.create_superuser(
