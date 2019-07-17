@@ -88,3 +88,13 @@ class TaskModelViewSet(DjingModelViewSet):
 class ExtraCommentModelViewSet(DjingModelViewSet):
     queryset = models.ExtraComment.objects.all()
     serializer_class = serializers.ExtraCommentModelSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        comment = self.get_object()
+        if comment.author == self.request.user:
+            self.perform_destroy(comment)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_403_FORBIDDEN)

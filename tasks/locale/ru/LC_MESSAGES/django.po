@@ -190,10 +190,6 @@ msgstr "Напоминания о задачах"
 msgid "Text of comment"
 msgstr "Текст комментария"
 
-#: models.py:159
-msgid "Owner task"
-msgstr "Владелец задачи"
-
 #: models.py:163
 msgid "Author"
 msgstr "Автор"

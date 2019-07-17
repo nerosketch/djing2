@@ -35,8 +35,10 @@ class TaskModelSerializer(serializers.ModelSerializer):
 
 
 class ExtraCommentModelSerializer(serializers.ModelSerializer):
+    author_id = serializers.IntegerField(source='author.pk', read_only=True)
     author_name = serializers.CharField(source='author.get_full_name', read_only=True)
+    author_avatar = serializers.CharField(source='author.get_avatar_url', read_only=True)
 
     class Meta:
         model = models.ExtraComment
-        fields = '__all__'
+        exclude = ('author',)
