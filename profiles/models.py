@@ -3,6 +3,7 @@ from PIL import Image
 from bitfield.models import BitField
 
 from django.db import models
+from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin
@@ -167,6 +168,12 @@ class UserProfile(BaseAccount):
             do_type=do_type,
             additional_text=additional_text
         )
+
+    def get_avatar_url(self):
+        try:
+            return self.avatar.url
+        except ValueError:
+            return getattr(settings, 'DEFAULT_PICTURE', '/static/img/user_ava.gif')
 
 
 @receiver(post_save, sender=UserProfile)

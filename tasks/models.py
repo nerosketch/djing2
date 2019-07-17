@@ -156,7 +156,7 @@ class Task(models.Model):
 class ExtraComment(models.Model):
     text = models.TextField(_('Text of comment'))
     task = models.ForeignKey(
-        Task, verbose_name=_('Owner task'),
+        Task, verbose_name=_('Task'),
         on_delete=models.CASCADE
     )
     author = models.ForeignKey(
