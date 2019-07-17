@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from djing2.viewsets import DjingModelViewSet
+from profiles.serializers import UserProfileSerializer
 from tasks import models
 from tasks import serializers
 
@@ -58,23 +59,30 @@ class TaskModelViewSet(DjingModelViewSet):
             tasks_count = models.Task.objects.filter(recipients__in=request.user, state=0).count()
         return Response(tasks_count)
 
-    @action(detail=False)
+    @action(detail=True)
     def finish(self, request, pk=None):
         task = self.get_object()
         task.finish(request.user)
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=False)
+    @action(detail=True)
     def failed(self, request, pk=None):
         task = self.get_object()
         task.do_fail(request.user)
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=False)
+    @action(detail=True)
     def remind(self, request, pk=None):
         task = self.get_object()
         task.send_notification()
         return Response(status=status.HTTP_200_OK)
+
+    @action(detail=True)
+    def recipients(self, request, pk=None):
+        obj = self.get_object()
+        recs = obj.recipients.all()
+        ser = UserProfileSerializer(recs, many=True)
+        return Response(ser.data)
 
 
 class ExtraCommentModelViewSet(DjingModelViewSet):

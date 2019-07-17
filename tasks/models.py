@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.db import models
@@ -131,6 +131,18 @@ class Task(models.Model):
 
     def is_relevant(self):
         return self.out_date < timezone.now().date() or self.state == 2
+
+    def get_time_diff(self):
+        now_date = datetime.now().date()
+        if not self.out_date:
+            return _('Out date not specified')
+        if self.out_date > now_date:
+            time_diff = "%s: %s" % (_('time left'), (self.out_date - now_date))
+        else:
+            time_diff = _("Expired timeout -%(time_left)s") % {
+                'time_left': (now_date - self.out_date)
+            }
+        return time_diff
 
     class Meta:
         db_table = 'task'
