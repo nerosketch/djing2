@@ -32,3 +32,6 @@ msgstr "Группа"
 #: groupapp/models.py:17
 msgid "Groups"
 msgstr "Группы"
+
+msgid "Tech code must be unique"
+msgstr "Технический код дожен быть уникальным"
