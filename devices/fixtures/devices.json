@@ -1,0 +1,138 @@
+[
+  {
+    "model": "devices.device",
+    "pk": 1,
+    "fields": {
+      "ip_address": null,
+      "mac_addr": null,
+      "comment": "устр1",
+      "dev_type": 1,
+      "man_passw": "",
+      "group": null,
+      "parent_dev": null,
+      "snmp_extra": "",
+      "extra_data": null,
+      "status": 0,
+      "is_noticeable": false
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 2,
+    "fields": {
+      "ip_address": null,
+      "mac_addr": null,
+      "comment": "устр2",
+      "dev_type": 1,
+      "man_passw": "",
+      "group": null,
+      "parent_dev": null,
+      "snmp_extra": "",
+      "extra_data": null,
+      "status": 0,
+      "is_noticeable": false
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 3,
+    "fields": {
+      "ip_address": "192.168.1.2",
+      "mac_addr": "10:7B:44:46:DB:98",
+      "comment": "бдком голова",
+      "dev_type": 2,
+      "man_passw": "",
+      "group": null,
+      "parent_dev": null,
+      "snmp_extra": "",
+      "extra_data": null,
+      "status": 0,
+      "is_noticeable": false
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 4,
+    "fields": {
+      "ip_address": null,
+      "mac_addr": null,
+      "comment": "онушка",
+      "dev_type": 3,
+      "man_passw": "",
+      "group": 2,
+      "parent_dev": null,
+      "snmp_extra": "",
+      "extra_data": null,
+      "status": 0,
+      "is_noticeable": false
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 5,
+    "fields": {
+      "ip_address": null,
+      "mac_addr": null,
+      "comment": "длинк без мака",
+      "dev_type": 1,
+      "man_passw": "",
+      "group": 2,
+      "parent_dev": null,
+      "snmp_extra": "",
+      "extra_data": null,
+      "status": 0,
+      "is_noticeable": false
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 6,
+    "fields": {
+      "ip_address": null,
+      "mac_addr": null,
+      "comment": "голова",
+      "dev_type": 5,
+      "man_passw": "",
+      "group": 2,
+      "parent_dev": null,
+      "snmp_extra": "",
+      "extra_data": null,
+      "status": 0,
+      "is_noticeable": false
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 7,
+    "fields": {
+      "ip_address": null,
+      "mac_addr": null,
+      "comment": "asd",
+      "dev_type": 2,
+      "man_passw": "",
+      "group": 2,
+      "parent_dev": null,
+      "snmp_extra": "",
+      "extra_data": null,
+      "status": 0,
+      "is_noticeable": false
+    }
+  },
+  {
+    "model": "devices.device",
+    "pk": 8,
+    "fields": {
+      "ip_address": null,
+      "mac_addr": "10:7B:44:46:DB:99",
+      "comment": "asd",
+      "dev_type": 3,
+      "man_passw": "",
+      "group": 2,
+      "parent_dev": null,
+      "snmp_extra": "",
+      "extra_data": null,
+      "status": 0,
+      "is_noticeable": false
+    }
+  }
+]
