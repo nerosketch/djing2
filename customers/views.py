@@ -1,19 +1,24 @@
 from datetime import datetime
+
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _, gettext
+from django_filters.rest_framework import DjangoFilterBackend
+from guardian.shortcuts import get_objects_for_user
 from kombu.exceptions import OperationalError
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
-from rest_framework.filters import SearchFilter
-from django_filters.rest_framework import DjangoFilterBackend
 
-from djing2.lib import safe_int, LogicError
-from djing2.viewsets import DjingModelViewSet
 from customers import models
 from customers import serializers
 from customers.tasks import customer_gw_command
+from djing2.lib import safe_int, LogicError
+from djing2.viewsets import DjingModelViewSet
+from gateways.models import Gateway
 from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
+from groupapp.models import Group
 from services.models import Service
 
 
@@ -97,6 +102,45 @@ class CustomerModelViewSet(DjingModelViewSet):
         )
         customer_gw_command.delay(customer.pk, 'sync')
         return Response(status=status.HTTP_200_OK)
+
+    @action(detail=False)
+    @catch_customers_errs
+    def groups(self, request):
+        queryset = get_objects_for_user(
+            request.user,
+            'groupapp.view_group', klass=Group,
+            use_groups=False,
+            accept_global_perms=False
+        ).annotate(usercount=Count('customer')).iterator()
+        return Response(data=(
+            {
+                'pk': grp.pk,
+                'title': grp.title,
+                'usercount': grp.usercount
+            } for grp in queryset))
+
+    @action(methods=('post',), detail=False)
+    @catch_customers_errs
+    def attach_nas(self, request):
+        gateway_id = request.data.get('gateway')
+        if not gateway_id:
+            return Response(_('You must specify gateway'), status=status.HTTP_400_BAD_REQUEST)
+        gateway_id = safe_int(gateway_id)
+        gid = request.data.get('group')
+        if not gid:
+            return Response(_('You must specify group'), status=status.HTTP_400_BAD_REQUEST)
+        gid = safe_int(gid)
+        gw = get_object_or_404(Gateway, pk=gateway_id)
+        customers = models.Customer.objects.filter(group__id=gid)
+        if customers.exists():
+            customers.update(gateway=gw)
+            return Response(
+                _('Network access server for users in this '
+                  'group, has been updated'),
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(_('Users not found'))
 
 
 class PassportInfoModelViewSet(DjingModelViewSet):
