@@ -233,6 +233,12 @@ msgstr "Запрещено прямое создание логов абонен
 msgid "Service '%(service_name)s' has connected via admin until %(deadline)s"
 msgstr "Услуга '%(service_name)s' подключена администратором до %(deadline)s"
 
+msgid "You must specify group"
+msgstr "Вы должны указать группу"
+
+msgid "You must specify gateway"
+msgstr "Вы должны указать шлюз"
+
 #~ msgid "login"
 #~ msgstr "Логин"
 
@@ -803,11 +809,11 @@ msgstr "Услуга '%(service_name)s' подключена администр�
 #~ msgid "Check form errors"
 #~ msgstr "Некоторые поля заполнены не правильно, проверте ещё раз"
 
-#~ msgid "Network access server for users in this group, has been updated"
-#~ msgstr "Сервер доступа в интернет привязан к пользователям в этой группе"
+msgid "Network access server for users in this group, has been updated"
+msgstr "Сервер доступа в интернет привязан к пользователям в этой группе"
 
-#~ msgid "Users not found"
-#~ msgstr "Пользователи не найдены"
+msgid "Users not found"
+msgstr "Пользователи не найдены"
 
 #~ msgid "You must select gateway"
 #~ msgstr "Вы должны выбрать шлюз"
