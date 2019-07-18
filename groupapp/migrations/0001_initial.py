@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('title', models.CharField(max_length=127, unique=True, verbose_name='Title')),
-                ('code', models.CharField(blank=True, max_length=12, unique=True, validators=[django.core.validators.RegexValidator('^\\w{1,127}$')], verbose_name='Tech code')),
+                ('code', models.CharField(blank=True, null=True, default=None, max_length=12, validators=[django.core.validators.RegexValidator('^\\w{1,127}$')], verbose_name='Tech code')),
             ],
             options={
                 'verbose_name': 'Group',
