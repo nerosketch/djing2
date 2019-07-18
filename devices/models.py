@@ -1,9 +1,6 @@
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
-from rest_framework.exceptions import ValidationError
 from macaddress.fields import MACAddressField
 
 from devices import dev_types
@@ -17,11 +14,11 @@ class Device(models.Model):
 
     ip_address = models.GenericIPAddressField(
         verbose_name=_('Ip address'),
-        null=True, blank=True, default=None
+        null=True, blank=True
     )
     mac_addr = MACAddressField(
         verbose_name=_('Mac address'),
-        null=True, blank=True, default=None
+        null=True, blank=True, unique=True
     )
     comment = models.CharField(_('Comment'), max_length=256)
     DEVICE_TYPES = (
@@ -139,12 +136,3 @@ class Port(models.Model):
         verbose_name = _('Port')
         verbose_name_plural = _('Ports')
         ordering = ('num',)
-
-
-@receiver(pre_save, sender=Device)
-def device_pre_save(sender, instance, *args, **kwargs):
-    if not instance.mac_addr:
-        return
-    devs = Device.objects.filter(mac_addr=instance.mac_addr)
-    if devs.exists():
-        raise ValidationError(detail=_('Device with that mac is already exist'))
