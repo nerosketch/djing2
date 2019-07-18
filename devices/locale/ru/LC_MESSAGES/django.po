@@ -206,14 +206,14 @@ msgstr "Процесс занят другой задачей, подождит�
 msgid "ok"
 msgstr ""
 
+msgid "Device with that mac is already exist"
+msgstr "Устройство с этим мак-адресом уже есть"
+
 #~ msgid "does not fetch the mac"
 #~ msgstr "не нашёл мак"
 
 #~ msgid "Mac address is required for fill"
 #~ msgstr "MAC-адрес необходим для заполнения"
-
-#~ msgid "Device with that mac is already exist"
-#~ msgstr "Устройство с этим мак-адресом уже есть"
 
 #~ msgid "Port number on device must be unique"
 #~ msgstr "Номер порта на устройстве должен быть уникальным"
