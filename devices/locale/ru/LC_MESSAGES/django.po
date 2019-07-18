@@ -206,8 +206,8 @@ msgstr "Процесс занят другой задачей, подождит�
 msgid "ok"
 msgstr ""
 
-msgid "Device with that mac is already exist"
-msgstr "Устройство с этим мак-адресом уже есть"
+#~ msgid "Device with that mac is already exist"
+#~ msgstr "Устройство с этим мак-адресом уже есть"
 
 #~ msgid "does not fetch the mac"
 #~ msgstr "не нашёл мак"

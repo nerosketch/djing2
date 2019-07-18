@@ -1,18 +1,15 @@
-from rest_framework.serializers import (
-    ModelSerializer, IntegerField,
-    CharField, DictField, ListField, PrimaryKeyRelatedField
-)
+from rest_framework import serializers
 from devices.models import Device, Port
 from groupapp.models import Group
 
 
-class DeviceModelSerializer(ModelSerializer):
-    dev_type_str = CharField(source='get_dev_type_display', read_only=True)
-    parent_dev_name = CharField(source='parent_dev.comment', allow_null=True, read_only=True)
-    parent_dev_group = IntegerField(source='parent_dev.group.pk', allow_null=True, read_only=True)
-    attached_users = ListField(
+class DeviceModelSerializer(serializers.ModelSerializer):
+    dev_type_str = serializers.CharField(source='get_dev_type_display', read_only=True)
+    parent_dev_name = serializers.CharField(source='parent_dev.comment', allow_null=True, read_only=True)
+    parent_dev_group = serializers.IntegerField(source='parent_dev.group.pk', allow_null=True, read_only=True)
+    attached_users = serializers.ListField(
         source='customer_set.all', read_only=True,
-        child=PrimaryKeyRelatedField(read_only=True)
+        child=serializers.PrimaryKeyRelatedField(read_only=True)
     )
 
     class Meta:
@@ -26,7 +23,7 @@ class DeviceModelSerializer(ModelSerializer):
         )
 
 
-class DeviceWithoutGroupModelSerializer(ModelSerializer):
+class DeviceWithoutGroupModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
         fields = (
@@ -36,18 +33,18 @@ class DeviceWithoutGroupModelSerializer(ModelSerializer):
         )
 
 
-class PortModelSerializer(ModelSerializer):
+class PortModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Port
         fields = ['pk', 'device', 'num', 'descr']
 
 
 class PortModelSerializerExtended(PortModelSerializer):
-    user_count = IntegerField(
+    user_count = serializers.IntegerField(
         source='customer_set.count',
         read_only=True
     )
-    additional = DictField(
+    additional = serializers.DictField(
         source='scan_additional',
         read_only=True
     )
@@ -56,8 +53,8 @@ class PortModelSerializerExtended(PortModelSerializer):
         fields = PortModelSerializer.Meta.fields + ['user_count', 'additional']
 
 
-class DeviceGroupsModelSerializer(ModelSerializer):
-    device_count = IntegerField(
+class DeviceGroupsModelSerializer(serializers.ModelSerializer):
+    device_count = serializers.IntegerField(
         source='device_set.count',
         read_only=True
     )
