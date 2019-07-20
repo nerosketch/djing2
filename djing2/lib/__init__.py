@@ -7,14 +7,14 @@ from collections import Iterator
 
 def safe_float(fl):
     try:
-        return 0.0 if fl is None or fl == '' else float(fl)
+        return 0.0 if not fl else float(fl)
     except ValueError:
         return 0.0
 
 
 def safe_int(i):
     try:
-        return 0 if i is None or i == '' else int(i)
+        return 0 if not i else int(i)
     except ValueError:
         return 0
 
