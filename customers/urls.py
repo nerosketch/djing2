@@ -20,5 +20,6 @@ router.register('', views.CustomerModelViewSet)
 urlpatterns = [
     path('generate_username/', views.CustomerModelViewSet.as_view({'get': 'generate_random_username'})),
     path('generate_password/', views.CustomerModelViewSet.as_view({'get': 'generate_random_password'})),
+    path('attach_group_service/', views.AttachServicesToGroups.as_view()),
     path('', include(router.urls)),
 ]

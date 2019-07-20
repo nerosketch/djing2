@@ -1,15 +1,19 @@
 from datetime import datetime
 
+from django.conf import settings
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
 from kombu.exceptions import OperationalError
 from rest_framework import status
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import get_object_or_404
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from customers import models
 from customers import serializers
@@ -166,3 +170,48 @@ class AdditionalTelephoneModelViewSet(DjingModelViewSet):
 class PeriodicPayForIdModelViewSet(DjingModelViewSet):
     queryset = models.PeriodicPayForId.objects.all()
     serializer_class = serializers.PeriodicPayForIdModelSerializer
+
+
+class AttachServicesToGroups(APIView):
+    if getattr(settings, 'DEBUG', False):
+        from rest_framework.authentication import SessionAuthentication
+        authentication_classes = TokenAuthentication, SessionAuthentication
+    else:
+        authentication_classes = TokenAuthentication,
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    def get(self, request, format=None):
+        gid = safe_int(request.query_params.get('group'))
+        grp = get_object_or_404(Group, pk=gid)
+
+        selected_services_id = tuple(
+            pk[0] for pk in grp.service_set.only('pk').values_list('pk')
+        )
+        services = Service.objects.only('pk').iterator()
+        return Response(({
+            'service': srv.pk,
+            'check': srv.pk in selected_services_id
+        } for srv in services))
+
+    def post(self, request, format=None):
+        group = safe_int(request.query_params.get('group'))
+        group = get_object_or_404(Group, pk=group)
+        selected_service_ids_db = frozenset(t.pk for t in group.service_set.only('pk'))
+        all_available_service_ids_db = frozenset(srv.pk for srv in Service.objects.only('pk').iterator())
+
+        # list of dicts: service<int>, check<bool>
+        data = request.data
+        selected_service_ids = frozenset(s.get('service') for s in data
+                                         if isinstance(s.get('service'), int) and
+                                         s.get('check') and
+                                         s.get('service') in all_available_service_ids_db)
+
+        # add = selected_service_ids - selected_service_ids_db
+        sub = all_available_service_ids_db - (selected_service_ids - selected_service_ids_db)
+
+        group.service_set.set(selected_service_ids)
+        models.Customer.objects.filter(
+            group=group,
+            last_connected_service__in=sub
+        ).update(last_connected_service=None)
+        return Response(status=status.HTTP_200_OK)
