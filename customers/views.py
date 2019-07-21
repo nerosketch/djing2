@@ -71,6 +71,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend)
     search_fields = ('username', 'fio', 'telephone', 'description')
+    filterset_fields = ('group',)
     lookup_field = 'username'
     lookup_url_kwarg = 'uname'
 
@@ -190,6 +191,7 @@ class AttachServicesToGroups(APIView):
         services = Service.objects.only('pk').iterator()
         return Response(({
             'service': srv.pk,
+            'service_name': srv.title,
             'check': srv.pk in selected_services_id
         } for srv in services))
 
