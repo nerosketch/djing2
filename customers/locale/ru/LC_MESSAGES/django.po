@@ -712,23 +712,23 @@ msgstr "Вы должны указать шлюз"
 #~ msgid "Group what you want doesn't exist"
 #~ msgstr "Указанная вами группа не найдена"
 
-#~ msgid "no ping"
-#~ msgstr "не пингуется"
+msgid "no ping"
+msgstr "не пингуется"
 
-#~ msgid "Ip not passed"
-#~ msgstr "Ip адрес не передан"
+msgid "Ip not passed"
+msgstr "Ip адрес не передан"
 
 #~ msgid "ping ok"
 #~ msgstr "пингуется"
 
-#~ msgid "IP Conflict! %(return)d/%(all)d results"
-#~ msgstr "IP Конфликт! ping %(return)d из %(all)d"
+msgid "IP Conflict! %(return)d/%(all)d results"
+msgstr "IP Конфликт! ping %(return)d из %(all)d"
 
-#~ msgid "ok ping, %(return)d/%(all)d loses"
-#~ msgstr "пингуется, %(return)d/%(all)d"
+msgid "ok ping, %(return)d/%(all)d loses"
+msgstr "пингуется, %(return)d/%(all)d"
 
-#~ msgid "no ping, %(return)d/%(all)d loses"
-#~ msgstr "не пингуется, %(return)d/%(all)d"
+msgid "no ping, %(return)d/%(all)d loses"
+msgstr "не пингуется, %(return)d/%(all)d"
 
 #~ msgid "Method is not POST"
 #~ msgstr "Метод не POST"

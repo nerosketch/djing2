@@ -84,7 +84,7 @@ class CustomerModelSerializer(serializers.ModelSerializer):
         model = models.Customer
         fields = (
             'pk', 'username', 'telephone', 'fio',
-            'group', 'group_title', 'description', 'street', 'street_name',
+            'group', 'group_title', 'balance', 'ip_address', 'description', 'street', 'street_name',
             'house', 'is_active', 'gateway', 'gateway_title',
             'device', 'device_comment', 'dev_port', 'last_connected_service',
             'service_title', 'is_dynamic_ip', 'full_name'
