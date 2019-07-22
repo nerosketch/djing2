@@ -8,8 +8,6 @@ ALLOWED_HOSTS = '*',
 
 DEFAULT_FROM_EMAIL = 'admin@yoursite.com'
 
-PAGINATION_ITEMS_PER_PAGE = 20
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '!!!!!!!!!!!!!!!!!!!!!!!!YOUR SECRET KEY!!!!!!!!!!!!!!!!!!!!!!!!'
 
@@ -48,3 +46,7 @@ EMAIL_USE_TLS = True
 
 # public url for Viber Bot
 VIBER_BOT_PUBLIC_URL = 'https://your_domain.name'
+
+# Encrypted fields
+FIELD_ENCRYPTION_KEY = 'Your SECRET_KEY'
+
