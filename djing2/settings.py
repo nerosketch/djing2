@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'services',
     'gateways',
     'devices',
+    'networks',
     'customers',
     'messenger',
     'tasks',
