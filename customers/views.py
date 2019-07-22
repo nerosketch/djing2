@@ -72,8 +72,6 @@ class CustomerModelViewSet(DjingModelViewSet):
     filter_backends = (SearchFilter, DjangoFilterBackend)
     search_fields = ('username', 'fio', 'telephone', 'description')
     filterset_fields = ('group',)
-    lookup_field = 'username'
-    lookup_url_kwarg = 'uname'
 
     @staticmethod
     def generate_random_username(r):
@@ -85,7 +83,7 @@ class CustomerModelViewSet(DjingModelViewSet):
 
     @action(methods=('post',), detail=True)
     @catch_customers_errs
-    def pick_service(self, request, uname=None):
+    def pick_service(self, request, pk=None):
         service_id = safe_int(request.data.get('service_id'))
         deadline = request.data.get('deadline')
         srv = get_object_or_404(Service, pk=service_id)
@@ -146,6 +144,42 @@ class CustomerModelViewSet(DjingModelViewSet):
             )
         else:
             return Response(_('Users not found'))
+
+    @action(detail=True)
+    @catch_customers_errs
+    def ping(self, request, pk=None):
+        customer = self.get_object()
+        ip = request.query_params.get('ip')
+        if ip is None:
+            raise LogicError(_('Ip not passed'))
+        if customer.gateway is None:
+            raise LogicError(_('gateway required'))
+        mngr = customer.gateway.get_gw_manager()
+        ping_result = mngr.ping(ip)
+        no_ping_response = Response(_('no ping'))
+        if ping_result is None:
+            return no_ping_response
+        if isinstance(ping_result, tuple):
+            received, sent = ping_result
+            if received == 0:
+                ping_result = mngr.ping(ip, arp=True)
+                if ping_result is not None and isinstance(ping_result, tuple):
+                    received, sent = ping_result
+                else:
+                    return no_ping_response
+            loses_percent = (
+                received / sent if sent != 0 else 1
+            )
+            ping_result = {'return': received, 'all': sent}
+            if loses_percent > 1.0:
+                text = 'IP Conflict! %(return)d/%(all)d results'
+            elif loses_percent > 0.5:
+                text = 'ok ping, %(return)d/%(all)d loses'
+            else:
+                text = 'no ping, %(return)d/%(all)d loses'
+            text = gettext(text) % ping_result
+            return Response(text)
+        return no_ping_response
 
 
 class PassportInfoModelViewSet(DjingModelViewSet):
