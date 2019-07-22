@@ -11,6 +11,7 @@ api_urls = [
     path('customers/', include('customers.urls', namespace='customers')),
     path('messenger/', include('messenger.urls', namespace='messenger')),
     path('tasks/', include('tasks.urls', namespace='tasks')),
+    path('networks/', include('networks.urls', namespace='networks')),
 ]
 
 
