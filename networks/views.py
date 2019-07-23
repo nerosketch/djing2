@@ -1,4 +1,3 @@
-from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -34,5 +33,5 @@ class NetworkModelViewSet(DjingModelViewSet):
         used_ips = (c.ip_address for c in q)
         ip = network.get_free_ip(employed_ips=used_ips)
         if ip is None:
-            return Response(_('Ip not found'))
+            return Response()
         return Response(str(ip))
