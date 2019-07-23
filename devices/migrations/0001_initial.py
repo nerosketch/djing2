@@ -3,7 +3,7 @@
 import django.contrib.postgres.fields.jsonb
 from django.db import migrations, models
 import django.db.models.deletion
-import macaddress.fields
+from netfields import MACAddressField
 
 
 class Migration(migrations.Migration):
@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('ip_address', models.GenericIPAddressField(blank=True, null=True, verbose_name='Ip address')),
-                ('mac_addr', macaddress.fields.MACAddressField(blank=True, unique=True, integer=True, null=True, verbose_name='Mac address')),
+                ('mac_addr', MACAddressField(unique=True, verbose_name='Mac address')),
                 ('comment', models.CharField(max_length=256, verbose_name='Comment')),
                 ('dev_type', models.PositiveSmallIntegerField(choices=[(1, 'DLink switch'), (2, 'PON OLT'), (3, 'PON ONU BDCOM'), (4, 'Eltex switch'), (5, 'OLT ZTE C320'), (6, 'Zte ONU F660'), (7, 'Zte ONU F601'), (8, 'Huawei switch')], default=1, verbose_name='Device type')),
                 ('man_passw', models.CharField(blank=True, max_length=16, null=True, verbose_name='SNMP password')),

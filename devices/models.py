@@ -1,7 +1,7 @@
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from macaddress.fields import MACAddressField
+from netfields import MACAddressField
 
 from devices import dev_types
 from devices.base_intr import DevBase
@@ -18,7 +18,7 @@ class Device(models.Model):
     )
     mac_addr = MACAddressField(
         verbose_name=_('Mac address'),
-        null=True, blank=True, unique=True
+        unique=True
     )
     comment = models.CharField(_('Comment'), max_length=256)
     DEVICE_TYPES = (

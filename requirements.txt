@@ -34,7 +34,7 @@ redis
 
 django-cors-headers
 django-encrypted-model-fields
-django-macaddress
+django-netfields
 
 # pexpect
 -e git://github.com/pexpect/pexpect.git#egg=pexpect
