@@ -97,43 +97,49 @@ class Customer(BaseAccount):
     group = models.ForeignKey(
         Group,
         on_delete=models.SET_NULL,
-        blank=True, null=True,
+        blank=True, null=True, default=None,
         verbose_name=_('Customer group')
     )
     balance = models.FloatField(default=0.0)
     ip_address = models.GenericIPAddressField(
         verbose_name=_('Ip address'),
         null=True,
-        blank=True
+        blank=True,
+        default=None
     )
     description = models.TextField(
         _('Comment'),
         null=True,
-        blank=True
+        blank=True,
+        default=None
     )
     street = models.ForeignKey(
         CustomerStreet,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        default=None,
         verbose_name=_('Street')
     )
     house = models.CharField(
         _('House'),
         max_length=12,
         null=True,
-        blank=True
+        blank=True,
+        default=None
     )
     device = models.ForeignKey(
         'devices.Device',
         null=True,
         blank=True,
+        default=None,
         on_delete=models.SET_NULL
     )
     dev_port = models.ForeignKey(
         'devices.Port',
         null=True,
         blank=True,
+        default=None,
         on_delete=models.SET_NULL
     )
     is_dynamic_ip = models.BooleanField(
@@ -391,7 +397,8 @@ class PassportInfo(models.Model):
         Customer,
         on_delete=models.CASCADE,
         blank=True,
-        null=True
+        null=True,
+        default=None
     )
 
     class Meta:
@@ -416,7 +423,8 @@ class InvoiceForPayment(models.Model):
         related_name='+',
         on_delete=models.SET_NULL,
         blank=True,
-        null=True
+        null=True,
+        default=None
     )
 
     def __str__(self):
@@ -476,7 +484,7 @@ class PeriodicPayForId(models.Model):
         on_delete=models.CASCADE,
         verbose_name=_('Periodic pay')
     )
-    last_pay = models.DateTimeField(_('Last pay time'), blank=True, null=True)
+    last_pay = models.DateTimeField(_('Last pay time'), blank=True, null=True, default=None)
     next_pay = models.DateTimeField(_('Next time to pay'))
     account = models.ForeignKey(
         Customer,
