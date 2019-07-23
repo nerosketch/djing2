@@ -3,8 +3,8 @@
     "model": "devices.device",
     "pk": 1,
     "fields": {
-      "ip_address": null,
-      "mac_addr": null,
+      "ip_address": "10.12.1.2",
+      "mac_addr": "10:7b:44:46:db:98",
       "comment": "устр1",
       "dev_type": 1,
       "man_passw": "",
@@ -21,7 +21,7 @@
     "pk": 2,
     "fields": {
       "ip_address": null,
-      "mac_addr": null,
+      "mac_addr": "10:7b:44:46:db:99",
       "comment": "устр2",
       "dev_type": 1,
       "man_passw": "",
@@ -38,7 +38,7 @@
     "pk": 3,
     "fields": {
       "ip_address": "192.168.1.2",
-      "mac_addr": "10:7B:44:46:DB:98",
+      "mac_addr": "10:7B:44:46:DB:9a",
       "comment": "бдком голова",
       "dev_type": 2,
       "man_passw": "",
@@ -55,7 +55,7 @@
     "pk": 4,
     "fields": {
       "ip_address": null,
-      "mac_addr": null,
+      "mac_addr": "10:7b:44:46:db:9b",
       "comment": "онушка",
       "dev_type": 3,
       "man_passw": "",
@@ -72,7 +72,7 @@
     "pk": 5,
     "fields": {
       "ip_address": null,
-      "mac_addr": null,
+      "mac_addr": "10:7b:44:46:db:9c",
       "comment": "длинк без мака",
       "dev_type": 1,
       "man_passw": "",
@@ -89,7 +89,7 @@
     "pk": 6,
     "fields": {
       "ip_address": null,
-      "mac_addr": null,
+      "mac_addr": "10:7b:44:46:db:9d",
       "comment": "голова",
       "dev_type": 5,
       "man_passw": "",
@@ -106,7 +106,7 @@
     "pk": 7,
     "fields": {
       "ip_address": null,
-      "mac_addr": null,
+      "mac_addr": "10:7b:44:46:db:9e",
       "comment": "asd",
       "dev_type": 2,
       "man_passw": "",
@@ -123,7 +123,7 @@
     "pk": 8,
     "fields": {
       "ip_address": null,
-      "mac_addr": "10:7B:44:46:DB:99",
+      "mac_addr": "10:7b:44:46:db:9f",
       "comment": "asd",
       "dev_type": 3,
       "man_passw": "",
