@@ -149,7 +149,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @catch_customers_errs
     def ping(self, request, pk=None):
         customer = self.get_object()
-        ip = request.query_params.get('ip')
+        ip = customer.ip_address
         if ip is None:
             raise LogicError(_('Ip not passed'))
         if customer.gateway is None:
