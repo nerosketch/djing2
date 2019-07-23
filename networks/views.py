@@ -1,8 +1,10 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from djing2.viewsets import DjingModelViewSet
+from customers.models import Customer
 from networks.serializers import NetworkModelSerializer
 from networks.models import NetworkModel
 
@@ -24,3 +26,13 @@ class NetworkModelViewSet(DjingModelViewSet):
     #     net = self.get_object()
     #     selected_grps = (pk[0] for pk in net.groups.only('pk').values_list('pk'))
     #     return Response(selected_grps)
+
+    @action(detail=True)
+    def get_free_ip(self, request, pk=None):
+        network = self.get_object()
+        q = Customer.objects.exclude(ip_address=None).exclude(gateway=None).iterator()
+        used_ips = (c.ip_address for c in q)
+        ip = network.get_free_ip(employed_ips=used_ips)
+        if ip is None:
+            return Response(_('Ip not found'))
+        return Response(str(ip))
