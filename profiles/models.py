@@ -61,6 +61,8 @@ class BaseAccount(AbstractBaseUser, PermissionsMixin):
         max_length=16,
         verbose_name=_('Telephone'),
         blank=True,
+        null=True,
+        default=None,
         validators=(telephoneValidator,)
     )
 
