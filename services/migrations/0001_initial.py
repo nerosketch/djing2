@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=64, verbose_name='Periodic pay name')),
                 ('when_add', models.DateTimeField(auto_now_add=True, verbose_name='When pay created')),
-                ('calc_type', models.PositiveSmallIntegerField(choices=[(0, 'Default periodic pay')], default=0, verbose_name='Script type for calculations')),
+                ('calc_type', models.PositiveSmallIntegerField(choices=[(0, 'Default periodic pay'), (1, 'Random periodic pay')], default=0, verbose_name='Script type for calculations')),
                 ('amount', models.FloatField(verbose_name='Total amount')),
                 ('extra_info', django.contrib.postgres.fields.jsonb.JSONField(blank=True, null=True, verbose_name='Extra info')),
             ],
