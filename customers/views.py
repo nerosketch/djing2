@@ -71,7 +71,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend)
     search_fields = ('username', 'fio', 'telephone', 'description')
-    filterset_fields = ('group',)
+    filterset_fields = ('group', 'street')
 
     @staticmethod
     def generate_random_username(r):
