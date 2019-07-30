@@ -14,6 +14,10 @@ from groupapp.models import Group
 
 
 class MyUserManager(BaseUserManager):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.exclude(username='AnonymousUser')
+
     def create_user(self, telephone, username, password=None):
         """
         Creates and saves a User with the given email, date of
