@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 ('birth_day', models.DateField(auto_now_add=True, verbose_name='birth day')),
                 ('is_active', models.BooleanField(default=True, verbose_name='Is active')),
                 ('is_admin', models.BooleanField(default=True)),
-                ('telephone', models.CharField(blank=True, max_length=16, validators=[django.core.validators.RegexValidator('^(\\+[7893]\\d{10,11})?$')], verbose_name='Telephone')),
+                ('telephone', models.CharField(blank=True, null=True, default=None, max_length=16, validators=[django.core.validators.RegexValidator('^(\\+[7893]\\d{10,11})?$')], verbose_name='Telephone')),
                 ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.Group', verbose_name='groups')),
                 ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.Permission', verbose_name='user permissions')),
             ],

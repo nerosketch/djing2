@@ -1,3 +1,4 @@
+from random import uniform
 from datetime import timedelta, datetime
 from calendar import monthrange
 
@@ -100,6 +101,18 @@ class PeriodicPayCalcDefault(PeriodicPayCalcBase):
         return datetime.now() + timedelta(days=30)
 
 
+class PeriodicPayCalcRandom(PeriodicPayCalcDefault):
+    description = _('Random periodic pay')
+
+    def calc_amount(self, model_object) -> float:
+        """
+        :param model_object: it is a instance of models.PeriodicPay model
+        :return: float: amount for the service
+        """
+        return uniform(1, 10)
+
+
 PERIODIC_PAY_CHOICES = (
     (0, PeriodicPayCalcDefault),
+    (1, PeriodicPayCalcRandom)
 )
