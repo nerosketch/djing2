@@ -88,6 +88,7 @@ class TaskModelViewSet(DjingModelViewSet):
 class ExtraCommentModelViewSet(DjingModelViewSet):
     queryset = models.ExtraComment.objects.all()
     serializer_class = serializers.ExtraCommentModelSerializer
+    filterset_fields = ('task', 'author')
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
