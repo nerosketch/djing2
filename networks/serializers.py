@@ -13,7 +13,7 @@ class NetworkModelSerializer(serializers.ModelSerializer):
         if value is None:
             raise serializers.ValidationError(_('Network can not be empty'))
         try:
-            net = ip_network(value)
+            net = ip_network(value, strict=False)
             return net.compressed
         except ValueError as e:
             raise serializers.ValidationError(e, code='invalid')
