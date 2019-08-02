@@ -155,8 +155,17 @@ class CustomerModelViewSet(DjingModelViewSet):
         if customer.gateway is None:
             raise LogicError(_('gateway required'))
         mngr = customer.gateway.get_gw_manager()
-        ping_result = mngr.ping(ip)
-        no_ping_response = Response(_('no ping'))
+        try:
+            ping_result = mngr.ping(ip)
+        except (GatewayNetworkError, GatewayFailedResult) as e:
+            return Response({
+                'text': str(e),
+                'status': False
+            })
+        no_ping_response = Response({
+            'text': _('no ping'),
+            'status': False
+        })
         if ping_result is None:
             return no_ping_response
         if isinstance(ping_result, tuple):
@@ -178,7 +187,10 @@ class CustomerModelViewSet(DjingModelViewSet):
             else:
                 text = 'no ping, %(return)d/%(all)d loses'
             text = gettext(text) % ping_result
-            return Response(text)
+            return Response({
+                'text': text,
+                'status': True
+            })
         return no_ping_response
 
 
