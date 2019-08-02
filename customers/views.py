@@ -59,6 +59,7 @@ class CustomerStreetModelViewSet(DjingModelViewSet):
 class CustomerLogModelViewSet(DjingModelViewSet):
     queryset = models.CustomerLog.objects.all()
     serializer_class = serializers.CustomerLogModelSerializer
+    filterset_fields = ('customer', )
 
     def create(self, request, *args, **kwargs):
         return Response(gettext(
