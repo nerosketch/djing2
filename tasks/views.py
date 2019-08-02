@@ -22,7 +22,7 @@ class TaskModelViewSet(DjingModelViewSet):
         'customer', 'customer__street', 'customer__group', 'author'
     )
     serializer_class = serializers.TaskModelSerializer
-    filterset_fields = ('state', 'recipients')
+    filterset_fields = ('state', 'recipients', 'customer')
 
     def destroy(self, request, *args, **kwargs):
         task = self.get_object()
