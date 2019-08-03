@@ -94,7 +94,7 @@ class PeriodicPay(models.Model):
             raise TypeError
         return res
 
-    def calc_amount(self):
+    def calc_amount(self) -> float:
         calc_obj = self._get_calc_object()
         res = calc_obj.calc_amount(self)
         if not isinstance(res, float):
