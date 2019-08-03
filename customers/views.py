@@ -24,6 +24,7 @@ from gateways.models import Gateway
 from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
 from groupapp.models import Group
 from services.models import Service
+from services.serializers import ServiceModelSerializer
 
 
 def catch_customers_errs(fn):
@@ -193,6 +194,23 @@ class CustomerModelViewSet(DjingModelViewSet):
                 'status': True
             })
         return no_ping_response
+
+    @action(detail=True)
+    @catch_customers_errs
+    def current_service(self, request, pk=None):
+        customer = self.get_object()
+        if not customer.current_service:
+            return Response(False)
+        curr_srv = customer.current_service
+        ser = ServiceModelSerializer(instance=curr_srv.service)
+        r = {
+            'start_time': curr_srv.start_time,
+            'deadline': curr_srv.deadline,
+            'service': ser.data
+        }
+        if customer.last_connected_service:
+            r['last_connected_service'] = customer.last_connected_service.title
+        return Response(r)
 
 
 class PassportInfoModelViewSet(DjingModelViewSet):
