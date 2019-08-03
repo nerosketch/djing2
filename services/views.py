@@ -7,6 +7,7 @@ class ServiceModelViewSet(DjingModelViewSet):
     # queryset = Service.objects.annotate(usercount=Count('linkto_service__abon'))
     queryset = Service.objects.all()
     serializer_class = ServiceModelSerializer
+    filterset_fields = ('groups',)
 
 
 class PeriodicPayModelViewSet(DjingModelViewSet):
