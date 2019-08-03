@@ -31,7 +31,7 @@ class ServiceBase(metaclass=ABCMeta):
         """Manage for access to customer services"""
         if not customer.is_active:
             return False
-        act_srv = customer.active_tariff()
+        act_srv = customer.active_service()
         if act_srv:
             return True
         return False
