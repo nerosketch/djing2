@@ -239,6 +239,12 @@ msgstr "Вы должны указать группу"
 msgid "You must specify gateway"
 msgstr "Вы должны указать шлюз"
 
+msgid "End of service, refund of balance"
+msgstr "Завершение услуги, возврат остатка на счёт"
+
+msgid "End of service"
+msgstr "Завершение услуги"
+
 #~ msgid "login"
 #~ msgstr "Логин"
 
