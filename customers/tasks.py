@@ -29,7 +29,7 @@ def customer_gw_command(customer_uid: int, command: str):
 @shared_task
 def customer_gw_remove(customer_uid: int, ip_addr: str, speed: tuple, is_access: bool, gw_pk: int):
     try:
-        if not isinstance(ip_addr, (str, int)):
+        if not isinstance(ip_addr, str):
             ip_addr = str(ip_addr)
         sq = SubnetQueue(
             name="uid%d" % customer_uid,

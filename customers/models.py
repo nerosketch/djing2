@@ -10,7 +10,7 @@ from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _, gettext
 from encrypted_model_fields.fields import EncryptedCharField
 
-from djing2.lib import LogicError
+from djing2.lib import LogicError, safe_float
 from gateways.nas_managers import (
     SubnetQueue, GatewayFailedResult,
     GatewayNetworkError
@@ -29,7 +29,7 @@ class CustomerService(models.Model):
     start_time = models.DateTimeField(null=True, blank=True, default=None)
     deadline = models.DateTimeField(null=True, blank=True, default=None)
 
-    def calc_amount_service(self):
+    def calc_service_cost(self):
         amount = self.service.cost
         return round(amount, 2)
 
@@ -256,6 +256,49 @@ class Customer(BaseAccount):
                 author=author,
                 comment=comment or _('Buy service default log')
             )
+
+    def stop_service(self, profile) -> None:
+        """
+        Removing current connected customer service
+        :param profile:
+        :return:
+        """
+        with transaction.atomic():
+            cost_to_return = self.calc_cost_to_return()
+            if cost_to_return > 0.1:
+                self.add_balance(
+                    profile,
+                    cost=cost_to_return,
+                    comment=_('End of service, refund of balance')
+                )
+                self.save(update_fields=('balance',))
+            else:
+                self.add_balance(
+                    profile,
+                    cost=cost_to_return,
+                    comment=_('End of service')
+                )
+            customer_service = self.active_service()
+            customer_service.delete()
+
+    def calc_cost_to_return(self):
+        """
+        calculates total proportional cost from elapsed time,
+        and return reminder to the account if reminder more than 0
+        :return: None
+        """
+        customer_service = self.active_service()
+        if not customer_service:
+            return
+        service = customer_service.service
+        if not service:
+            return
+        calc = service.get_calc_type()(
+            customer_service=customer_service
+        )
+        elapsed_cost = calc.calc_cost()
+        total_cost = safe_float(service.cost)
+        return total_cost - elapsed_cost
 
     def attach_ip_addr(self, ip, strict=False):
         """
