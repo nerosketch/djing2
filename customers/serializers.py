@@ -66,6 +66,7 @@ class CustomerModelSerializer(serializers.ModelSerializer):
         # raw_password = validated_data.get('password')
         validated_data.update({
             'is_admin': False,
+            'is_superuser': False
             # 'password': make_password(raw_password)
         })
         acc = super().create(validated_data)
