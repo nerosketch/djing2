@@ -71,7 +71,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.assertFalse(qs.exists())
 
     def test_pick_service_not_enough_money(self):
-        self.customer.refresh_from_db()
+        # models.Customer.objects.filter(username='custo1').update(balance=0, current_service=None)
         r = self.post('/api/customers/%d/pick_service/' % self.customer.pk, {
             'service_id': self.service.pk,
             'deadline': (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M')
@@ -80,4 +80,37 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             'uname': self.customer.username,
             'srv_name': self.service.title
         })
+        self.assertEqual(r.status_code, 400)
+
+    # def test_pick_admin_service_by_customer(self):
+    #     self.client.logout()
+    #     self.client.login(
+    #         username='custo1',
+    #         password='passw'
+    #     )
+    #     r = self.post('/api/customers/%d/pick_service/' % self.customer.pk, {
+    #         'service_id': self.service.pk,
+    #         'deadline': (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M')
+    #     })
+    #     self.assertEqual(r.data, _('User that is no staff can not buy admin services'))
+    #     self.assertEqual(r.status_code, 400)
+
+    def test_pick_service(self):
+        models.Customer.objects.filter(username='custo1').update(balance=2)
+        self.customer.refresh_from_db()
+        r = self.post('/api/customers/%d/pick_service/' % self.customer.pk, {
+            'service_id': self.service.pk,
+            'deadline': (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M')
+        })
+        self.assertIsNone(r.data)
+        self.assertEqual(r.status_code, 200)
+
+    def test_pick_service_again(self):
+        self.test_pick_service()
+        self.customer.refresh_from_db()
+        r = self.post('/api/customers/%d/pick_service/' % self.customer.pk, {
+            'service_id': self.service.pk,
+            'deadline': (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M')
+        })
+        self.assertEqual(r.data, _('That service already activated'))
         self.assertEqual(r.status_code, 400)
