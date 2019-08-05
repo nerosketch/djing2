@@ -108,19 +108,26 @@ class CustomerModelViewSet(DjingModelViewSet):
         customer_gw_command.delay(customer.pk, 'sync')
         return Response(status=status.HTTP_200_OK)
 
-    @action(methods=('post',), detail=True)
+    @action(detail=True)
     @catch_customers_errs
     def stop_service(self, request, pk=None):
         customer = self.get_object()
         cust_srv = customer.active_service()
+        if cust_srv is None:
+            return Response(data=_('Service not connected'))
+
         srv = cust_srv.service
-        customer_gw_remove.delay(
-            customer_uid=int(customer.pk),
-            ip_addr=str(customer.ip_address),
-            speed=(srv.speed_in, srv.speed_out),
-            is_access=customer.is_access(),
-            gw_pk=int(customer.gateway_id)
-        )
+        if srv is None:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        if customer.gateway:
+            customer_gw_remove.delay(
+                customer_uid=int(customer.pk),
+                ip_addr=str(customer.ip_address),
+                speed=(srv.speed_in, srv.speed_out),
+                is_access=customer.is_access(),
+                gw_pk=int(customer.gateway_id)
+            )
         customer.stop_service(request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
