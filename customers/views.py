@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from customers import models
 from customers import serializers
 from customers.tasks import customer_gw_command, customer_gw_remove
-from djing2.lib import safe_int, LogicError
+from djing2.lib import safe_int, LogicError, safe_float
 from djing2.viewsets import DjingModelViewSet
 from gateways.models import Gateway
 from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
@@ -99,13 +99,16 @@ class CustomerModelViewSet(DjingModelViewSet):
                               'service_name': srv.title,
                               'deadline': deadline
                           }
-        customer.pick_service(
-            service=srv,
-            author=request.user,
-            comment=log_comment,
-            deadline=deadline
-        )
-        customer_gw_command.delay(customer.pk, 'sync')
+        try:
+            customer.pick_service(
+                service=srv,
+                author=request.user,
+                comment=log_comment,
+                deadline=deadline
+            )
+            customer_gw_command.delay(customer.pk, 'sync')
+        except models.NotEnoughMoney as e:
+            return Response(data=str(e), status=status.HTTP_402_PAYMENT_REQUIRED)
         return Response(status=status.HTTP_200_OK)
 
     @action(detail=True)
@@ -234,6 +237,27 @@ class CustomerModelViewSet(DjingModelViewSet):
         if customer.last_connected_service:
             r['last_connected_service'] = customer.last_connected_service.title
         return Response(r)
+
+    @action(methods=('post',), detail=True)
+    @catch_customers_errs
+    def add_balance(self, request, pk=None):
+        customer = self.get_object()
+
+        cost = safe_float(request.data.get('cost'))
+        if cost == 0.0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        comment = request.data.get('comment')
+        if comment and len(comment) > 128:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        customer.add_balance(
+            profile=request.user,
+            cost=cost,
+            comment=comment.split() if comment else _('fill account through admin side')
+        )
+        customer.save(update_fields=('balance',))
+        return Response()
 
 
 class PassportInfoModelViewSet(DjingModelViewSet):
