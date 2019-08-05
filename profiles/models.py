@@ -16,6 +16,7 @@ from groupapp.models import Group
 class MyUserManager(BaseUserManager):
     def get_queryset(self):
         qs = super().get_queryset()
+        # TODO: check if AnonymousUser yet used
         return qs.exclude(username='AnonymousUser')
 
     def create_user(self, telephone, username, password=None):
