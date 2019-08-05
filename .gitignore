@@ -1,6 +1,7 @@
 *.pyc
 *.txt
 !requirements.txt
+!TODO.txt
 media/*
 media/min/*
 .idea/
