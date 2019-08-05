@@ -20,6 +20,10 @@ from services.models import Service, PeriodicPay
 from groupapp.models import Group
 
 
+class NotEnoughMoney(LogicError):
+    pass
+
+
 class CustomerService(models.Model):
     service = models.ForeignKey(
         Service,
@@ -229,7 +233,7 @@ class Customer(BaseAccount):
 
         # if not enough money
         if self.balance < amount:
-            raise LogicError(_('%(uname)s not enough money for service %(srv_name)s') % {
+            raise NotEnoughMoney(_('%(uname)s not enough money for service %(srv_name)s') % {
                 'uname': self.username,
                 'srv_name': service.title
             })

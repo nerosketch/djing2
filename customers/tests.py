@@ -82,7 +82,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             'uname': self.customer.username,
             'srv_name': self.service.title
         })
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 402)
 
     # def test_pick_admin_service_by_customer(self):
     #     self.client.logout()
@@ -127,4 +127,48 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         models.Customer.objects.filter(username='custo1').update(current_service=None)
         r = self.get('/api/customers/%d/stop_service/' % self.customer.pk)
         self.assertEqual(r.data, _('Service not connected'))
+        self.assertEqual(r.status_code, 200)
+
+    def test_add_balance_negative(self):
+        r = self.post('/api/customers/%d/add_balance/' % self.customer.pk, {
+            'cost': -10
+        })
+        self.assertEqual(r.status_code, 200)
+
+    def test_add_balance_zero(self):
+        r = self.post('/api/customers/%d/add_balance/' % self.customer.pk, {
+            'cost': 0
+        })
+        self.assertEqual(r.status_code, 400)
+
+    def test_add_balance_text_invalid(self):
+        r = self.post('/api/customers/%d/add_balance/' % self.customer.pk, {
+            'cost': 'sadasd'
+        })
+        self.assertEqual(r.status_code, 400)
+
+    def test_add_balance_ok(self):
+        r = self.post('/api/customers/%d/add_balance/' % self.customer.pk, {
+            'cost': 523
+        })
+        self.assertEqual(r.status_code, 200)
+
+    def test_add_balance_big(self):
+        r = self.post('/api/customers/%d/add_balance/' % self.customer.pk, {
+            'cost': 0xff ** 0xff
+        })
+        self.assertEqual(r.status_code, 400)
+
+    def test_add_balance_long_comment(self):
+        r = self.post('/api/customers/%d/add_balance/' % self.customer.pk, {
+            'cost': 0xff,
+            'comment': 'text ' * 0xfff
+        })
+        self.assertEqual(r.status_code, 400)
+
+    def test_add_balance_comment_bin(self):
+        r = self.post('/api/customers/%d/add_balance/' % self.customer.pk, {
+            'cost': 0xff,
+            'comment': bytes(''.join(chr(i) for i in range(10)), encoding='utf8')
+        })
         self.assertEqual(r.status_code, 200)
