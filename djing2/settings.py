@@ -218,7 +218,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
-    'DATETIME_FORMAT': '%d %B %H:%M'
+    'DATETIME_FORMAT': '%d %B %H:%M',
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json'
 }
 
 if DEBUG:

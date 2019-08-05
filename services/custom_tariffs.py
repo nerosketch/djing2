@@ -20,7 +20,7 @@ class ServiceDefault(ServiceBase):
 
         # сколько прошло с начала действия услуги
         # если времени начала нет то это начало действия, использованное время 0
-        time_diff = now - self.customer_service.time_start if self.customer_service.time_start else timedelta(0)
+        time_diff = now - self.customer_service.start_time if self.customer_service.start_time else timedelta(0)
 
         # времени в этом месяце
         curr_month_time = datetime(now.year, now.month if now.month == 12 else now.month + 1, 1) - timedelta(days=1)
@@ -30,7 +30,7 @@ class ServiceDefault(ServiceBase):
         k = time_diff.total_seconds() / curr_month_time.total_seconds()
 
         # результат - это полная стоимость тарифа умноженная на k
-        res = k * self.customer_service.service.amount
+        res = k * self.customer_service.service.cost
 
         return float(res)
 

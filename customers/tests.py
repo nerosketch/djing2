@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from django.utils.translation import gettext as _
 from rest_framework.test import APITestCase
 from customers import models
@@ -10,6 +11,7 @@ from services.models import Service
 UserProfile = get_user_model()
 
 
+@override_settings(DEFAULT_TABLESPACE='ram')
 class CustomAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
         return self.client.get(*args, **kwargs)
@@ -114,3 +116,15 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         })
         self.assertEqual(r.data, _('That service already activated'))
         self.assertEqual(r.status_code, 400)
+
+    def test_stop_service(self):
+        self.test_pick_service()
+        r = self.get('/api/customers/%d/stop_service/' % self.customer.pk)
+        self.assertIsNone(r.data)
+        self.assertEqual(r.status_code, 204)
+
+    def test_stop_not_exists_service(self):
+        models.Customer.objects.filter(username='custo1').update(current_service=None)
+        r = self.get('/api/customers/%d/stop_service/' % self.customer.pk)
+        self.assertEqual(r.data, _('Service not connected'))
+        self.assertEqual(r.status_code, 200)
