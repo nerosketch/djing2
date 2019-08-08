@@ -254,7 +254,7 @@ class CustomerModelViewSet(DjingModelViewSet):
         customer.add_balance(
             profile=request.user,
             cost=cost,
-            comment=comment.split() if comment else _('fill account through admin side')
+            comment=' '.join(comment.split()) if comment else _('fill account through admin side')
         )
         customer.save(update_fields=('balance',))
         return Response()
