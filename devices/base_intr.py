@@ -132,7 +132,7 @@ class BasePort(metaclass=ABCMeta):
             'name': self.nm,
             'status': self.st,
             'mac_addr': self.mac(),
-            'speed': int(self.sp),
+            'speed': int(self.sp or 0),
             'writable': self.writable,
             'uptime': str(RuTimedelta(seconds=self.uptime / 100)) if self.uptime else None
         }
