@@ -197,7 +197,7 @@ class PortModelViewSet(DjingModelViewSet):
     serializer_class = dev_serializers.PortModelSerializer
     filterset_fields = ('device', 'num')
 
-    @action(detail=True, methods=('get',))
+    @action(detail=False, methods=('get',))
     @catch_dev_manager_err
     def extended(self, request):
         self.serializer_class = dev_serializers.PortModelSerializerExtended
