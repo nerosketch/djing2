@@ -26,7 +26,7 @@ def catch_dev_manager_err(fn):
             }}, status=status.HTTP_501_NOT_IMPLEMENTED)
         except EasySNMPTimeoutError as err:
             return Response({'Error': {
-                'text': err
+                'text': '%s' % err
             }}, status=status.HTTP_408_REQUEST_TIMEOUT)
 
     # Hack for decorator @action
