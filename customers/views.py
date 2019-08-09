@@ -9,7 +9,7 @@ from kombu.exceptions import OperationalError
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -71,9 +71,10 @@ class CustomerLogModelViewSet(DjingModelViewSet):
 class CustomerModelViewSet(DjingModelViewSet):
     queryset = models.Customer.objects.all()
     serializer_class = serializers.CustomerModelSerializer
-    filter_backends = (SearchFilter, DjangoFilterBackend)
+    filter_backends = (SearchFilter, DjangoFilterBackend, OrderingFilter)
     search_fields = ('username', 'fio', 'telephone', 'description')
     filterset_fields = ('group', 'street')
+    ordering_fields = ('username', 'fio', 'balance')
 
     @staticmethod
     def generate_random_username(r):
