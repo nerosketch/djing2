@@ -19,7 +19,8 @@ from customers import models
 from customers import serializers
 from customers.tasks import customer_gw_command, customer_gw_remove
 from djing2.lib import safe_int, LogicError, safe_float
-from djing2.viewsets import DjingModelViewSet
+from djing2.lib.paginator import QueryPageNumberPagination
+from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from gateways.models import Gateway
 from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
 from groupapp.models import Group
@@ -135,22 +136,6 @@ class CustomerModelViewSet(DjingModelViewSet):
         customer.stop_service(request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False)
-    @catch_customers_errs
-    def groups(self, request):
-        queryset = get_objects_for_user(
-            request.user,
-            'groupapp.view_group', klass=Group,
-            use_groups=False,
-            accept_global_perms=False
-        ).annotate(usercount=Count('customer')).iterator()
-        return Response(data=(
-            {
-                'pk': grp.pk,
-                'title': grp.title,
-                'usercount': grp.usercount
-            } for grp in queryset))
-
     @action(methods=('post',), detail=False)
     @catch_customers_errs
     def attach_nas(self, request):
@@ -259,6 +244,19 @@ class CustomerModelViewSet(DjingModelViewSet):
         )
         customer.save(update_fields=('balance',))
         return Response()
+
+
+class CustomersGroupsListAPIView(DjingListAPIView):
+    pagination_class = QueryPageNumberPagination
+    serializer_class = serializers.CustomerGroupSerializer
+
+    def get_queryset(self):
+        return get_objects_for_user(
+            self.request.user,
+            'groupapp.view_group', klass=Group,
+            use_groups=False,
+            accept_global_perms=False
+        )
 
 
 class PassportInfoModelViewSet(DjingModelViewSet):
