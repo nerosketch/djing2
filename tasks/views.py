@@ -3,7 +3,7 @@ from django.utils.translation import gettext
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from djing2.viewsets import DjingModelViewSet
+from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from profiles.serializers import UserProfileSerializer
 from tasks import models
 from tasks import serializers
@@ -83,6 +83,63 @@ class TaskModelViewSet(DjingModelViewSet):
         recs = obj.recipients.all()
         ser = UserProfileSerializer(recs, many=True)
         return Response(ser.data)
+
+
+class AllTasksList(DjingListAPIView):
+    queryset = models.Task.objects.all().select_related(
+        'customer', 'customer__street',
+        'customer__group', 'author'
+    )
+    serializer_class = serializers.TaskModelSerializer
+
+
+class AllNewTasksList(AllTasksList):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(state=0)
+
+
+class NewTasksList(AllTasksList):
+    """
+    Returns tasks that new for current user
+    """
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(
+            recipients=self.request.user, state=0
+        )
+
+
+class FailedTasksList(AllTasksList):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(
+            recipients=self.request.user, state=1
+        )
+
+
+class FinishedTasksList(AllTasksList):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(
+            recipients=self.request.user, state=2
+        )
+
+
+class OwnTasksList(AllTasksList):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(
+            author=self.request.user
+        ).exclude(state=2)
+
+
+class MyTasksList(AllTasksList):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(
+            recipients=self.request.user
+        )
 
 
 class ExtraCommentModelViewSet(DjingModelViewSet):
