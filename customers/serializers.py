@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from customers import models
 from djing2.lib import safe_int
+from groupapp.serializers import GroupsSerializer
 
 
 def _generate_random_chars(length=6, chars=digits, split=2, delimiter=''):
@@ -90,6 +91,13 @@ class CustomerModelSerializer(serializers.ModelSerializer):
             'device', 'device_comment', 'dev_port', 'last_connected_service', 'current_service',
             'service_title', 'is_dynamic_ip', 'full_name'
         )
+
+
+class CustomerGroupSerializer(GroupsSerializer):
+    usercount = serializers.IntegerField(source='customer_set.count', read_only=True)
+
+    class Meta(GroupsSerializer.Meta):
+        fields = ('pk', 'title', 'code', 'usercount')
 
 
 class PassportInfoModelSerializer(serializers.ModelSerializer):
