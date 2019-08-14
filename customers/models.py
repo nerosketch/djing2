@@ -89,6 +89,23 @@ class CustomerManager(MyUserManager):
     def get_queryset(self):
         return super(CustomerManager, self).get_queryset().filter(is_admin=False)
 
+    def create_user(self, telephone, username, password=None):
+        """
+        Creates and saves a User with the given telephone, username and password.
+        """
+        if not telephone:
+            raise ValueError(_('Users must have an telephone number'))
+
+        user = self.model(
+            telephone=telephone,
+            username=username,
+        )
+        user.is_admin = False
+
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
 
 class Customer(BaseAccount):
     current_service = models.OneToOneField(

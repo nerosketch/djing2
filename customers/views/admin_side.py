@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from django.conf import settings
-from django.db.models import Count
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
