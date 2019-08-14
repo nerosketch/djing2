@@ -31,6 +31,7 @@ class MyUserManager(BaseUserManager):
             telephone=telephone,
             username=username,
         )
+        user.is_admin = False
 
         user.set_password(password)
         user.save(using=self._db)
@@ -61,7 +62,7 @@ class BaseAccount(AbstractBaseUser, PermissionsMixin):
     fio = models.CharField(_('fio'), max_length=256)
     birth_day = models.DateField(_('birth day'), auto_now_add=True)
     is_active = models.BooleanField(_('Is active'), default=True)
-    is_admin = models.BooleanField(default=True)
+    is_admin = models.BooleanField(default=False)
     telephone = models.CharField(
         max_length=16,
         verbose_name=_('Telephone'),
@@ -128,6 +129,24 @@ class UserProfileManager(MyUserManager):
     def get_profiles_by_group(self, group_id):
         return self.filter(responsibility_groups__id__in=(group_id,), is_admin=True, is_active=True)
 
+    def create_user(self, telephone, username, password=None):
+        """
+        Creates and saves a User with the given email, date of
+        birth and password.
+        """
+        if not telephone:
+            raise ValueError(_('Users must have an telephone number'))
+
+        user = self.model(
+            telephone=telephone,
+            username=username,
+        )
+        user.is_admin = True
+
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
 
 class UserProfile(BaseAccount):
     avatar = models.ImageField(_('Avatar'), upload_to=os.path.join('user', 'avatar'), null=True, default=None, blank=True)
@@ -185,5 +204,5 @@ class UserProfile(BaseAccount):
 
 @receiver(post_save, sender=UserProfile)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
-    if created:
+    if created and instance:
         Token.objects.create(user=instance)
