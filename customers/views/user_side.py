@@ -1,15 +1,9 @@
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ReadOnlyModelViewSet
-
 from customers import serializers
 from customers import models
+from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet
 
 
-class BaseCustomersReadOnlyModelViewSet(ReadOnlyModelViewSet):
-    permission_classes = (IsAuthenticated,)
-
-
-class CustomersReadOnlyModelViewSet(BaseCustomersReadOnlyModelViewSet):
+class CustomersReadOnlyModelViewSet(BaseNonAdminReadOnlyModelViewSet):
     queryset = models.Customer.objects.all()
     serializer_class = serializers.CustomerModelSerializer
 
@@ -18,7 +12,7 @@ class CustomersReadOnlyModelViewSet(BaseCustomersReadOnlyModelViewSet):
         return qs.filter(username=self.request.user.username)
 
 
-class LogsReadOnlyModelViewSet(BaseCustomersReadOnlyModelViewSet):
+class LogsReadOnlyModelViewSet(BaseNonAdminReadOnlyModelViewSet):
     queryset = models.CustomerLog.objects.all()
     serializer_class = serializers.CustomerLogModelSerializer
 
