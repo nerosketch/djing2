@@ -1,12 +1,17 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from services import views
+from services.views import admin_side, user_side
 
 app_name = 'services'
 
 
 router = DefaultRouter()
-router.register('', views.ServiceModelViewSet)
+
+# User side
+router.register('user', user_side.UserSideServiceModelViewSet)
+
+# Admin side
+router.register('', admin_side.ServiceModelViewSet)
 
 urlpatterns = [
     path('', include(router.urls))
