@@ -12,3 +12,7 @@ class BaseCustomersReadOnlyModelViewSet(ReadOnlyModelViewSet):
 class CustomersReadOnlyModelViewSet(BaseCustomersReadOnlyModelViewSet):
     queryset = models.Customer.objects.all()
     serializer_class = CustomerModelSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(username=self.request.user.username)
