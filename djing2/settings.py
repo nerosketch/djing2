@@ -95,8 +95,9 @@ TEMPLATES = [
 ]
 
 AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
-    'guardian.backends.ObjectPermissionBackend'
+    'djing2.lib.auth_backends.DjingAuthBackend',
+    'guardian.backends.ObjectPermissionBackend',
+    # 'djing2.lib.auth_backends.LocationAuthBackend'
 )
 
 WSGI_APPLICATION = 'djing2.wsgi.application'
