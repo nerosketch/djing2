@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from bitfield import BitField
@@ -7,7 +8,7 @@ from django.core.validators import RegexValidator
 from django.db import models, transaction
 from django.db.models.signals import post_init, pre_save
 from django.dispatch import receiver
-from django.utils.translation import gettext_lazy as _, gettext
+from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
 from djing2.lib import LogicError, safe_float
@@ -71,7 +72,7 @@ class CustomerLog(models.Model):
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
     author = models.ForeignKey(
-        UserProfile, on_delete=models.SET_NULL,
+        BaseAccount, on_delete=models.SET_NULL,
         related_name='+', blank=True, null=True
     )
     comment = models.CharField(max_length=128)
@@ -199,7 +200,7 @@ class Customer(BaseAccount):
 
     objects = CustomerManager()
 
-    def get_flag_icons(self):
+    def get_flag_icons(self) -> tuple:
         """
         Return icon list of set flags from self.markers
         :return: ['m-icon-donkey', 'm-icon-tv', ...]
@@ -209,12 +210,12 @@ class Customer(BaseAccount):
     def active_service(self):
         return self.current_service
 
-    def add_balance(self, profile, cost, comment):
+    def add_balance(self, profile, cost: float, comment: str) -> None:
         CustomerLog.objects.create(
             customer=self,
             cost=cost,
             author=profile if isinstance(profile, UserProfile) else None,
-            comment=comment
+            comment=re.sub(r'\W{1,128}', ' ', comment)
         )
         self.balance += cost
 
@@ -252,7 +253,7 @@ class Customer(BaseAccount):
         if self.balance < amount:
             raise NotEnoughMoney(_('%(uname)s not enough money for service %(srv_name)s') % {
                 'uname': self.username,
-                'srv_name': service.title
+                'srv_name': service
             })
 
         with transaction.atomic():
@@ -570,7 +571,7 @@ class PeriodicPayForId(models.Model):
             next_pay_date = pp.get_next_time_to_pay(self.last_pay)
             account = self.account
             with transaction.atomic():
-                account.add_balance(author, -amount, comment=gettext(
+                account.add_balance(author, -amount, comment=_(
                     'Charge for "%(service)s"') % {
                         'service': self.periodic_pay
                     })

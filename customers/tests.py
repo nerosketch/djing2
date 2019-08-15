@@ -50,12 +50,13 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         super().setUp()
 
         # customer for tests
-        self.post('/api/customers/', {
-            'username': 'custo1',
-            'fio': 'Full User Name',
-            'password': 'passw',
-        })
-        self.customer = models.Customer.objects.get(username='custo1')
+        custo1 = models.Customer.objects.create_user(
+            telephone='+79782345678',
+            username='custo1',
+            password='passw'
+        )
+        custo1.refresh_from_db()
+        self.customer = custo1
 
         # service for tests
         self.service = Service.objects.create(
@@ -80,22 +81,9 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         })
         self.assertEqual(r.data, _('%(uname)s not enough money for service %(srv_name)s') % {
             'uname': self.customer.username,
-            'srv_name': self.service.title
+            'srv_name': self.service
         })
         self.assertEqual(r.status_code, 402)
-
-    # def test_pick_admin_service_by_customer(self):
-    #     self.client.logout()
-    #     self.client.login(
-    #         username='custo1',
-    #         password='passw'
-    #     )
-    #     r = self.post('/api/customers/%d/pick_service/' % self.customer.pk, {
-    #         'service_id': self.service.pk,
-    #         'deadline': (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M')
-    #     })
-    #     self.assertEqual(r.data, _('User that is no staff can not buy admin services'))
-    #     self.assertEqual(r.status_code, 400)
 
     def test_pick_service(self):
         models.Customer.objects.filter(username='custo1').update(balance=2)
@@ -128,6 +116,52 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         r = self.get('/api/customers/%d/stop_service/' % self.customer.pk)
         self.assertEqual(r.data, _('Service not connected'))
         self.assertEqual(r.status_code, 200)
+
+    def test_pick_admin_service_by_customer(self):
+        self.client.logout()
+        login_r = self.client.login(
+            username='custo1',
+            password='passw'
+        )
+        self.assertTrue(login_r)
+        r = self.post('/api/customers/%d/pick_service/' % self.customer.pk, {
+            'service_id': self.service.pk,
+            'deadline': (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M')
+        })
+        self.assertEqual(r.status_code, 403)
+
+    def test_pick_service_by_customer_low_money(self):
+        self.client.logout()
+        login_r = self.client.login(
+            username='custo1',
+            password='passw'
+        )
+        self.assertTrue(login_r)
+        models.Customer.objects.filter(username='custo1').update(balance=0)
+        self.customer.refresh_from_db()
+        r = self.post('/api/customers/users/customer/%d/buy_service/' % self.customer.pk, {
+            'service_id': self.service.pk
+        })
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data, _('%(uname)s not enough money for service %(srv_name)s') % {
+            'uname': self.customer.username,
+            'srv_name': self.service
+        })
+
+    def test_pick_service_by_customer(self):
+        self.client.logout()
+        login_r = self.client.login(
+            username='custo1',
+            password='passw'
+        )
+        self.assertTrue(login_r)
+        models.Customer.objects.filter(username='custo1').update(balance=2)
+        self.customer.refresh_from_db()
+        r = self.post('/api/customers/users/customer/%d/buy_service/' % self.customer.pk, {
+            'service_id': self.service.pk
+        })
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data, _("The service '%s' wan successfully activated") % self.service)
 
     def test_add_balance_negative(self):
         r = self.post('/api/customers/%d/add_balance/' % self.customer.pk, {
