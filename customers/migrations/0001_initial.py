@@ -142,7 +142,7 @@ class Migration(migrations.Migration):
                 ('cost', models.FloatField(default=0.0)),
                 ('comment', models.CharField(max_length=128)),
                 ('date', models.DateTimeField(auto_now_add=True)),
-                ('author', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('author', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to='profiles.BaseAccount')),
                 ('customer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='customers.Customer')),
             ],
             options={

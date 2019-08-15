@@ -4,7 +4,6 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
-from kombu.exceptions import OperationalError
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
@@ -17,6 +16,7 @@ from rest_framework.views import APIView
 from customers import models
 from customers import serializers
 from customers.tasks import customer_gw_command, customer_gw_remove
+from customers.views.view_decorators import catch_customers_errs
 from djing2.lib import safe_int, LogicError, safe_float
 from djing2.lib.paginator import QueryPageNumberPagination
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -25,20 +25,6 @@ from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
 from groupapp.models import Group
 from services.models import Service
 from services.serializers import ServiceModelSerializer
-
-
-def catch_customers_errs(fn):
-    def wrapper(self, *args, **kwargs):
-        try:
-            return fn(self, *args, **kwargs)
-        except (GatewayFailedResult, GatewayNetworkError, OperationalError) as e:
-            return Response(str(e), status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        except LogicError as e:
-            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
-
-    # Hack for decorator @action
-    wrapper.__name__ = fn.__name__
-    return wrapper
 
 
 class CustomerServiceModelViewSet(DjingModelViewSet):
@@ -239,7 +225,7 @@ class CustomerModelViewSet(DjingModelViewSet):
         customer.add_balance(
             profile=request.user,
             cost=cost,
-            comment=' '.join(comment.split()) if comment else _('fill account through admin side')
+            comment=' '.join(comment.split()) if comment else gettext('fill account through admin side')
         )
         customer.save(update_fields=('balance',))
         return Response()
