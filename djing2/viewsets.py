@@ -29,3 +29,13 @@ class BaseNonAdminReadOnlyModelViewSet(ReadOnlyModelViewSet):
         if isinstance(self.request.user, Customer):
             return super().get_queryset()
         raise AuthenticationFailed
+
+
+class BaseNonAdminModelViewSet(ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        if isinstance(self.request.user, Customer):
+            return super().get_queryset()
+        raise AuthenticationFailed
+

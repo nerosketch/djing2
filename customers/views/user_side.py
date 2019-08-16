@@ -9,13 +9,13 @@ from customers import models
 from customers.views.view_decorators import catch_customers_errs
 from customers.tasks import customer_gw_command
 from djing2.lib import safe_int, LogicError
-from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet
+from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet, BaseNonAdminModelViewSet
 from services.models import Service
 from tasks.models import Task
 from tasks.serializers import TaskModelSerializer
 
 
-class CustomersReadOnlyModelViewSet(BaseNonAdminReadOnlyModelViewSet):
+class CustomersUserSideModelViewSet(BaseNonAdminModelViewSet):
     queryset = models.Customer.objects.all()
     serializer_class = serializers.CustomerModelSerializer
 
