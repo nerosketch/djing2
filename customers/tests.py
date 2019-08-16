@@ -213,14 +213,14 @@ class InvoiceForPaymentAPITestCase(CustomAPITestCase):
 
         self.inv1 = models.InvoiceForPayment.objects.create(
             customer=self.customer,
-            status=True,
+            status=False,
             cost=12,
             comment='Test invoice',
             author=self.admin
         )
         self.inv2 = models.InvoiceForPayment.objects.create(
             customer=self.customer,
-            status=True,
+            status=False,
             cost=14,
             comment='Test invoice2',
             author=self.admin
