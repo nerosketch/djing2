@@ -261,6 +261,10 @@ class InvoiceForPaymentAPITestCase(CustomAPITestCase):
         })
         self.assertEqual(r.status_code, 200)
         self.assertIsNone(r.data)
+        self.inv1.refresh_from_db()
+        self.assertTrue(self.inv1.status)
+        self.customer.refresh_from_db()
+        self.assertEqual(self.customer.balance, 0)
 
     def test_buy_not_auth(self):
         r = self.post('/api/customers/users/debts/%d/buy/' % self.inv1.pk, {
