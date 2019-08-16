@@ -20,7 +20,7 @@ router.register('periodic-pay', admin_side.PeriodicPayForIdModelViewSet)
 router.register('', admin_side.CustomerModelViewSet)
 
 # User side views
-router.register('users/customer', user_side.CustomersReadOnlyModelViewSet)
+router.register('users/customer', user_side.CustomersUserSideModelViewSet)
 router.register('users/log', user_side.LogsReadOnlyModelViewSet)
 router.register('users/debts', user_side.DebtsList)
 router.register('users/task_history', user_side.TaskHistory)
