@@ -20,7 +20,7 @@ class CustomAPITestCase(APITestCase):
         return self.client.post(*args, **kwargs)
 
     def setUp(self):
-        UserProfile.objects.create_superuser(
+        self.admin = UserProfile.objects.create_superuser(
             username='admin',
             password='admin',
             telephone='+797812345678'
@@ -29,6 +29,14 @@ class CustomAPITestCase(APITestCase):
             username='admin',
             password='admin'
         )
+        # customer for tests
+        custo1 = models.Customer.objects.create_user(
+            telephone='+79782345678',
+            username='custo1',
+            password='passw'
+        )
+        custo1.refresh_from_db()
+        self.customer = custo1
 
 
 class CustomerServiceTestCase(CustomAPITestCase):
@@ -48,15 +56,6 @@ class CustomerLogAPITestCase(CustomAPITestCase):
 class CustomerModelAPITestCase(CustomAPITestCase):
     def setUp(self):
         super().setUp()
-
-        # customer for tests
-        custo1 = models.Customer.objects.create_user(
-            telephone='+79782345678',
-            username='custo1',
-            password='passw'
-        )
-        custo1.refresh_from_db()
-        self.customer = custo1
 
         # service for tests
         self.service = Service.objects.create(
@@ -161,7 +160,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             'service_id': self.service.pk
         })
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, _("The service '%s' wan successfully activated") % self.service)
+        self.assertEqual(r.data, _("The service '%s' was successfully activated") % self.service)
 
     def test_add_balance_negative(self):
         r = self.post('/api/customers/%d/add_balance/' % self.customer.pk, {
@@ -206,3 +205,65 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             'comment': bytes(''.join(chr(i) for i in range(10)), encoding='utf8')
         })
         self.assertEqual(r.status_code, 200)
+
+
+class InvoiceForPaymentAPITestCase(CustomAPITestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.inv1 = models.InvoiceForPayment.objects.create(
+            customer=self.customer,
+            status=True,
+            cost=12,
+            comment='Test invoice',
+            author=self.admin
+        )
+        self.inv2 = models.InvoiceForPayment.objects.create(
+            customer=self.customer,
+            status=True,
+            cost=14,
+            comment='Test invoice2',
+            author=self.admin
+        )
+
+    def test_buy_empty_data(self):
+        login_r = self.client.login(
+            username='custo1',
+            password='passw'
+        )
+        self.assertTrue(login_r)
+        r = self.post('/api/customers/users/debts/%d/buy/' % self.inv1.pk)
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data, _('Are you not sure that you want buy the service?'))
+
+    def test_buy_not_enough_money(self):
+        login_r = self.client.login(
+            username='custo1',
+            password='passw'
+        )
+        self.assertTrue(login_r)
+        r = self.post('/api/customers/users/debts/%d/buy/' % self.inv1.pk, {
+            'sure': 'on'
+        })
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data, _('Your account have not enough money'))
+
+    def test_buy(self):
+        login_r = self.client.login(
+            username='custo1',
+            password='passw'
+        )
+        self.assertTrue(login_r)
+        models.Customer.objects.filter(username='custo1').update(balance=12)
+        self.customer.refresh_from_db()
+        r = self.post('/api/customers/users/debts/%d/buy/' % self.inv1.pk, {
+            'sure': 'on'
+        })
+        self.assertEqual(r.status_code, 200)
+        self.assertIsNone(r.data)
+
+    def test_buy_not_auth(self):
+        r = self.post('/api/customers/users/debts/%d/buy/' % self.inv1.pk, {
+            'sure': 'on'
+        })
+        self.assertEqual(r.status_code, 403)
