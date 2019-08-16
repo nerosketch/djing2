@@ -11,6 +11,8 @@ from customers.tasks import customer_gw_command
 from djing2.lib import safe_int, LogicError
 from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet
 from services.models import Service
+from tasks.models import Task
+from tasks.serializers import TaskModelSerializer
 
 
 class CustomersReadOnlyModelViewSet(BaseNonAdminReadOnlyModelViewSet):
@@ -87,3 +89,12 @@ class DebtsList(BaseNonAdminReadOnlyModelViewSet):
         debt.set_ok()
         debt.save(update_fields=('status', 'date_pay'))
         return Response(status=status.HTTP_200_OK)
+
+
+class TaskHistory(BaseNonAdminReadOnlyModelViewSet):
+    queryset = Task.objects.all()
+    serializer_class = TaskModelSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(customer=self.request.user)
