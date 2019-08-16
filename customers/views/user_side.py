@@ -1,4 +1,4 @@
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
@@ -8,7 +8,7 @@ from customers import serializers
 from customers import models
 from customers.views.view_decorators import catch_customers_errs
 from customers.tasks import customer_gw_command
-from djing2.lib import safe_int
+from djing2.lib import safe_int, LogicError
 from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet
 from services.models import Service
 
@@ -39,7 +39,7 @@ class CustomersReadOnlyModelViewSet(BaseNonAdminReadOnlyModelViewSet):
             command='sync'
         )
         return Response(
-            data=_("The service '%s' wan successfully activated") % srv,
+            data=_("The service '%s' was successfully activated") % srv,
             status=status.HTTP_200_OK
         )
 
@@ -52,3 +52,38 @@ class LogsReadOnlyModelViewSet(BaseNonAdminReadOnlyModelViewSet):
         qs = super().get_queryset()
         return qs.filter(customer=self.request.user)
 
+
+class DebtsList(BaseNonAdminReadOnlyModelViewSet):
+    queryset = models.InvoiceForPayment.objects.all()
+    serializer_class = serializers.InvoiceForPaymentModelSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(customer=self.request.user)
+
+    @action(methods=('post',), detail=True)
+    @catch_customers_errs
+    def buy(self, request, pk=None):
+        debt = self.get_object()
+        customer = self.request.user
+        sure = request.data.get('sure')
+        if sure != 'on':
+            raise LogicError(
+                _("Are you not sure that you want buy the service?")
+            )
+        if customer.balance < debt.cost:
+            raise LogicError(_('Your account have not enough money'))
+
+        amount = -debt.cost
+        customer.add_balance(
+            profile=self.request.user,
+            cost=amount,
+            comment=gettext('%(username)s paid the debt %(amount).2f') % {
+                'username': customer.get_full_name(),
+                'amount': amount
+            }
+        )
+        customer.save(update_fields=('balance',))
+        debt.set_ok()
+        debt.save(update_fields=('status', 'date_pay'))
+        return Response(status=status.HTTP_200_OK)

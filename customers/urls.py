@@ -22,6 +22,7 @@ router.register('', admin_side.CustomerModelViewSet)
 # User side views
 router.register('users/customer', user_side.CustomersReadOnlyModelViewSet)
 router.register('users/log', user_side.LogsReadOnlyModelViewSet)
+router.register('users/debts', user_side.DebtsList)
 
 
 urlpatterns = [
