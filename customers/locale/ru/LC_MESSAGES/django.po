@@ -245,6 +245,21 @@ msgstr "Завершение услуги, возврат остатка на с
 msgid "End of service"
 msgstr "Завершение услуги"
 
+msgid "Your account have not enough money"
+msgstr "Недостаточно средств на счету"
+
+msgid "Are you not sure that you want buy the service?"
+msgstr "Вы не уверены что хотите оплатить долг?"
+
+msgid "The service '%s' was successfully activated"
+msgstr "Услуга '%s' успешно подключена"
+
+msgid "Buy the service via user side, service '%s'"
+msgstr "Покупка тарифного плана через личный кабинет, тариф '%s'"
+
+msgid "%(username)s paid the debt %(amount).2f"
+msgstr "%(username)s заплатил долг в размере %(amount).2f"
+
 #~ msgid "login"
 #~ msgstr "Логин"
 
