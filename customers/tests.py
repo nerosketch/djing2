@@ -271,3 +271,21 @@ class InvoiceForPaymentAPITestCase(CustomAPITestCase):
             'sure': 'on'
         })
         self.assertEqual(r.status_code, 403)
+
+
+class UserTaskAPITestCase(CustomAPITestCase):
+    def test_task_list(self):
+        self.client.login(
+            username='custo1',
+            password='passw'
+        )
+        r = self.get('/api/customers/users/task_history/')
+        self.assertEqual(r.status_code, 200)
+
+    def test_task_list_wrong_user(self):
+        self.client.login(
+            username='admin',
+            password='admin'
+        )
+        r = self.get('/api/customers/users/task_history/')
+        self.assertEqual(r.status_code, 403)
