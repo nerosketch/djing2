@@ -17,8 +17,8 @@ requests
 webdavclient
 transliterate
 
-# django-xmlview for pay system allpay
--e git://github.com/nerosketch/django-xmlview.git#egg=django-xmlview
+# xml for pay system allpay
+djangorestframework-xml
 
 # django-bitfield
 -e git://github.com/disqus/django-bitfield.git#egg=django-bitfield
