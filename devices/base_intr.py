@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, Iterable, AnyStr, Generator, Optional, Dict
+from typing import Union, Iterable, Generator, Optional, Dict
 from easysnmp import Session
 
 from django.utils.translation import gettext, gettext_lazy as _
@@ -22,10 +22,11 @@ class DeviceConfigurationError(DeviceImplementationError):
 
 class DevBase(object, metaclass=ABCMeta):
     def __init__(self, dev_instance=None):
+        super().__init__()
         self.db_instance = dev_instance
 
     @property
-    def description(self) -> AnyStr:
+    def description(self) -> str:
         return 'Base device interface'
 
     @classmethod
@@ -45,7 +46,7 @@ class DevBase(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_device_name(self) -> AnyStr:
+    def get_device_name(self) -> str:
         """Return device name by snmp"""
 
     @abstractmethod
@@ -64,7 +65,7 @@ class DevBase(object, metaclass=ABCMeta):
 
     @classmethod
     def get_is_use_device_port(cls) -> bool:
-        return cls.is_use_device_port
+        return bool(cls.is_use_device_port)
 
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
@@ -102,9 +103,9 @@ class DevBase(object, metaclass=ABCMeta):
 
 
 class BasePort(metaclass=ABCMeta):
-    __slots__ = 'num', 'snmp_num', 'nm', 'st', '_mac', 'sp', 'uptime', 'writable'
 
     def __init__(self, num, name, status, mac, speed, uptime=None, snmp_num=None, writable=False):
+        super().__init__()
         self.num = int(num)
         self.snmp_num = int(num) if snmp_num is None else int(snmp_num)
         self.nm = name
@@ -142,6 +143,7 @@ class SNMPBaseWorker(object, metaclass=ABCMeta):
     ses = None
 
     def __init__(self, ip: Optional[str], community='public', ver=2):
+        super().__init__()
         if ip is None or ip == '':
             raise DeviceImplementationError(gettext('Ip address is required'))
         self._ip = ip

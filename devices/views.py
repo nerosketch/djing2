@@ -1,19 +1,31 @@
+import re
+
+from kombu.exceptions import OperationalError
+
+from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _, gettext
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 from rest_framework import status
 from easysnmp import EasySNMPTimeoutError
 from django_filters.rest_framework import DjangoFilterBackend
 
+from customers.models import Customer
+from messenger.tasks import multicast_viber_notify
 from devices.base_intr import DeviceImplementationError
-from djing2.lib import ProcessLocked
+from djing2 import IP_ADDR_REGEX
+from djing2.lib import ProcessLocked, safe_int
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from devices.models import Device, Port
 from devices import serializers as dev_serializers
 from devices.tasks import onu_register
 from groupapp.models import Group
+
+
+UserProfile = get_user_model()
 
 
 def catch_dev_manager_err(fn):
@@ -85,10 +97,8 @@ class DeviceModelViewSet(DjingModelViewSet):
             ports[0],
             Exception
         ):
-            return Response({'Error': {
-                'text': '%s' % ports[1]
-            }})
-        return Response(p.to_dict() for p in ports)
+            return Response(p.to_dict() for p in ports)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -111,7 +121,7 @@ class DeviceModelViewSet(DjingModelViewSet):
                 'text': 'Manager has not get_fibers attribute'
             }})
 
-    @action(detail=True, methods=['put'])
+    @action(detail=True, methods=('put',))
     @catch_dev_manager_err
     def send_reboot(self, request, pk=None):
         device = self.get_object()
@@ -119,7 +129,7 @@ class DeviceModelViewSet(DjingModelViewSet):
         manager.reboot(save_before_reboot=False)
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=('get',))
+    @action(detail=True)
     @catch_dev_manager_err
     def toggle_port(self, request, pk=None):
         device = self.get_object()
@@ -138,7 +148,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             return Response(_('Parameter port_state is bad'), status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=('get',))
+    @action(detail=True)
     @catch_dev_manager_err
     def fix_onu(self, request, pk=None):
         onu = self.get_object()
@@ -162,7 +172,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             http_status = status.HTTP_404_NOT_FOUND
         return Response(text, http_status)
 
-    @action(detail=True, methods=('get',))
+    @action(detail=True)
     @catch_dev_manager_err
     def register_device(self, request, pk=None):
         from devices import expect_scripts
@@ -186,6 +196,79 @@ class DeviceModelViewSet(DjingModelViewSet):
             text = gettext('ok')
         return Response(text, status=http_status)
 
+    @action(detail=True)
+    @catch_dev_manager_err
+    def monitoring_event(self, request, pk=None):
+        try:
+            dev_ip = request.query_params.get('dev_ip')
+            dev_status = safe_int(request.query_params.get('status'))
+            if not dev_ip:
+                return Response({'text': 'ip does not passed'})
+            if not re.match(IP_ADDR_REGEX, dev_ip):
+                return Response({'text': 'ip address %s is not valid' % dev_ip})
+
+            device_down = self.get_queryset().filter(
+                ip_address=dev_ip
+            ).defer(
+                'extra_data'
+            ).first()
+            if device_down is None:
+                return Response({
+                    'text': 'Devices with ip %s does not exist' % dev_ip
+                })
+
+            status_map = {
+                'UP': 1,
+                'UNREACHABLE': 2,
+                'DOWN': 3
+            }
+            status_text_map = {
+                'UP': 'Device %(device_name)s is up',
+                'UNREACHABLE': 'Device %(device_name)s is unreachable',
+                'DOWN': 'Device %(device_name)s is down'
+            }
+            device_down.status = status_map.get(dev_status, 0)
+
+            device_down.save(update_fields=('status',))
+
+            if not device_down.is_noticeable:
+                return {
+                    'text': 'Notification for %s is unnecessary' %
+                            device_down.ip_address or device_down.comment
+                }
+
+            if not device_down.group:
+                return Response({
+                    'text': 'Device has not have a group'
+                })
+
+            recipients = UserProfile.objects.get_profiles_by_group(
+                group_id=device_down.group.pk
+            ).filter(flags=UserProfile.flags.notify_mon)
+            user_ids = tuple(recipient.pk for recipient in recipients.only('pk').iterator())
+
+            notify_text = status_text_map.get(
+                dev_status,
+                default='Device %(device_name)s getting undefined status code'
+            )
+            text = gettext(notify_text) % {
+                'device_name': "%s(%s) %s" % (
+                    device_down.ip_address or '',
+                    device_down.mac_addr,
+                    device_down.comment
+                )
+            }
+            multicast_viber_notify.delay(
+                messenger_id=None,
+                account_id_list=user_ids,
+                message_text=text
+            )
+            return Response({'text': 'notification successfully sent'})
+        except (ValueError, OperationalError) as e:
+            return Response({
+                'text': str(e)
+            })
+
 
 class DeviceWithoutGroupListAPIView(DjingListAPIView):
     queryset = Device.objects.filter(group=None)
@@ -197,11 +280,23 @@ class PortModelViewSet(DjingModelViewSet):
     serializer_class = dev_serializers.PortModelSerializer
     filterset_fields = ('device', 'num')
 
-    @action(detail=False, methods=('get',))
+    @action(detail=False)
     @catch_dev_manager_err
     def extended(self, request):
         self.serializer_class = dev_serializers.PortModelSerializerExtended
         return super().list(request)
+
+    @action(detail=True)
+    @catch_dev_manager_err
+    def get_subscriber_on_port(self, request, pk=None):
+        dev_id = request.query_params.get('device_id')
+        # port = self.get_object()
+        customers = Customer.objects.filter(device_id=dev_id, dev_port_id=pk)
+        if not customers.exists():
+            raise NotFound(gettext('Subscribers on port does not exist'))
+        if customers.count() > 1:
+            return Response([c for c in customers])
+        return Response(self.serializer_class(instance=customers.first()))
 
 
 class DeviceGroupsList(DjingListAPIView):

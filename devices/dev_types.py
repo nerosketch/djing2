@@ -62,7 +62,7 @@ def ex_expect(filename, params=()):
 
 class DLinkPort(BasePort):
     def __init__(self, snmp_worker, *args, **kwargs):
-        BasePort.__init__(self, writable=True, *args, **kwargs)
+        super().__init__(writable=True, *args, **kwargs)
         if not issubclass(snmp_worker.__class__, SNMPBaseWorker):
             raise TypeError
         self.snmp_worker = snmp_worker
@@ -338,13 +338,13 @@ class EltexSwitch(DLinkDevice):
         for i, n in enumerate(range(49, 77), 1):
             speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % n)
             yield EltexPort(self,
-                num=i,
-                name=self.get_item('.1.3.6.1.2.1.31.1.1.1.18.%d' % n),
-                status=self.get_item('.1.3.6.1.2.1.2.2.1.8.%d' % n),
-                mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % n),
-                uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % n),
-                speed=int(speed or 0)
-            )
+                            num=i,
+                            name=self.get_item('.1.3.6.1.2.1.31.1.1.1.18.%d' % n),
+                            status=self.get_item('.1.3.6.1.2.1.2.2.1.8.%d' % n),
+                            mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % n),
+                            uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % n),
+                            speed=int(speed or 0)
+                            )
 
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
@@ -384,7 +384,6 @@ class Olt_ZTE_C320(OLTDevice):
         return fibers
 
     def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
-
         onu_types = self.get_list_keyval('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%d' % fiber_num)
         onu_ports = self.get_list('.1.3.6.1.4.1.3902.1012.3.28.1.1.2.%d' % fiber_num)
         onu_signals = safe_int(self.get_list('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%d' % fiber_num))
@@ -585,7 +584,7 @@ class HuaweiSwitch(EltexSwitch):
             link_status = True if link_status == 1 else False
             ep = EltexPort(
                 self,
-                num=i+1,
+                num=i + 1,
                 snmp_num=n,
                 name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % n),         # name
                 status=oper_status,                                        # status

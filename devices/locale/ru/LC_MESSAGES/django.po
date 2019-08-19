@@ -529,14 +529,14 @@ msgstr ""
 #~ msgid "Date"
 #~ msgstr "Дата"
 
-#~ msgid "Device %(device_name)s is up"
-#~ msgstr "%(device_name)s в сети"
+msgid "Device %(device_name)s is up"
+msgstr "%(device_name)s в сети"
 
-#~ msgid "Device %(device_name)s is down"
-#~ msgstr "%(device_name)s не в сети"
+msgid "Device %(device_name)s is down"
+msgstr "%(device_name)s не в сети"
 
-#~ msgid "Device %(device_name)s is unreachable"
-#~ msgstr "%(device_name)s недостижим"
+msgid "Device %(device_name)s is unreachable"
+msgstr "%(device_name)s недостижим"
 
 #~ msgid "Device %(device_name)s getting undefined status code"
 #~ msgstr "Устройство %(device_name)s получило не определённый код состояния"
