@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Report-Msgid-Bugs-To: \n"
+"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
 "POT-Creation-Date: 2019-07-16 02:35+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"

@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'customers',
     'messenger',
     'tasks',
+    'fin_app',
 ]
 
 if DEBUG:
