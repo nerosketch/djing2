@@ -14,6 +14,8 @@ def catch_customers_errs(fn):
             return Response(str(e), status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except LogicError as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+        except TimeoutError as e:
+            return Response(str(e), status=status.HTTP_408_REQUEST_TIMEOUT)
 
     # Hack for decorator @action
     wrapper.__name__ = fn.__name__
