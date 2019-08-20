@@ -54,7 +54,7 @@ class AllTimePay(GenericAPIView):
         md = md5()
         s = '_'.join(
             (str(act), pay_account or '', serv_id or '',
-             pay_id, self.object.secret)
+             pay_id or '', self.object.secret)
         )
         md.update(bytes(s, 'utf-8'))
         our_sign = md.hexdigest()

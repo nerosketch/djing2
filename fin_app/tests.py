@@ -58,18 +58,15 @@ class CustomAPITestCase(APITestCase):
 
 class AllPayTestCase(CustomAPITestCase):
     time_format = '%d.%m.%Y %H:%M'
+    url = '/api/fin/pay_gw_slug/pay/'
 
     def test_user_pay_view_info(self):
         current_date = timezone.now().strftime(self.time_format)
         service_id = self.pay_system.service_id
-        r = self.get('/api/fin/pay_gw_slug/pay/', {
+        r = self.get(self.url, {
                 'ACT': 1,
                 'PAY_ACCOUNT': 'custo1',
-                'SERVICE_ID': service_id,
-                'PAY_ID': '840ab457-e7d1-4494-8197-9570da035170',
-                'TRADE_POINT': 'term1',
-                'SIGN': _make_sign(1, 'custo1', service_id,
-                                   '840ab457-e7d1-4494-8197-9570da035170', self.pay_system.secret)
+                'SIGN': _make_sign(1, 'custo1', '', '', self.pay_system.secret)
             })
         o = ''.join((
             "<pay-response>",
@@ -84,4 +81,59 @@ class AllPayTestCase(CustomAPITestCase):
             "</pay-response>"
         ))
         self.assertXMLEqual(r.content.decode('utf8'), o)
+        self.assertEqual(r.status_code, 200)
+
+    def test_user_pay_pay(self):
+        current_date = timezone.now().strftime(self.time_format)
+        service_id = self.pay_system.service_id
+        r = self.get(self.url, {
+            'ACT': 4,
+            'PAY_ACCOUNT': 'custo1',
+            'PAY_AMOUNT': 18.21,
+            'RECEIPT_NUM': 2126235,
+            'SERVICE_ID': service_id,
+            'PAY_ID': '840ab457-e7d1-4494-8197-9570da035170',
+            'TRADE_POINT': 'term1',
+            'SIGN': _make_sign(4, 'custo1', service_id,
+                               '840ab457-e7d1-4494-8197-9570da035170', self.pay_system.secret)
+        })
+        xml = ''.join((
+            "<pay-response>",
+                "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
+                "<service_id>%s</service_id>" % escape(service_id),
+                "<amount>18.21</amount>",
+                "<status_code>22</status_code>",
+                "<time_stamp>%s</time_stamp>" % escape(current_date),
+            "</pay-response>"
+        ))
+        self.assertXMLEqual(r.content.decode('utf-8'), xml)
+        self.assertEqual(r.status_code, 200)
+        self.customer.refresh_from_db()
+        self.assertEqual(round(self.customer.balance, 2), 5.09)
+        self.user_pay_check(current_date)
+
+    def user_pay_check(self, test_pay_time):
+        current_date = timezone.now().strftime(self.time_format)
+        service_id = self.pay_system.service_id
+        r = self.get(self.url, {
+            'ACT': 7,
+            'SERVICE_ID': service_id,
+            'PAY_ID': '840ab457-e7d1-4494-8197-9570da035170',
+            'SIGN': _make_sign(7, '', service_id,
+                               '840ab457-e7d1-4494-8197-9570da035170', self.pay_system.secret)
+        })
+        xml = ''.join((
+            "<pay-response>",
+                "<status_code>11</status_code>",
+                "<time_stamp>%s</time_stamp>" % escape(current_date),
+                "<transaction>",
+                "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
+                "<service_id>%s</service_id>" % escape(service_id),
+                "<amount>18.21</amount>",
+                "<status>111</status>",
+                "<time_stamp>%s</time_stamp>" % escape(test_pay_time),
+                "</transaction>"
+            "</pay-response>"
+        ))
+        self.assertXMLEqual(r.content.decode(), xml)
         self.assertEqual(r.status_code, 200)
