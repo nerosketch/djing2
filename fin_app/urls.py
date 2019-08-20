@@ -9,6 +9,6 @@ router = DefaultRouter()
 router.register('', views.AllTimeGatewayModelViewSet)
 
 urlpatterns = [
-    path('pay/', views.AllTimePay.as_view()),
+    path('<slug:pay_slug>/pay/', views.AllTimePay.as_view()),
     path('', include(router.urls)),
 ]

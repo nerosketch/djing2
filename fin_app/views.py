@@ -4,6 +4,7 @@ from django.db import transaction
 from django.db.utils import DatabaseError
 from django.utils import timezone
 from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
 from rest_framework_xml.renderers import XMLRenderer
 
 from customers.models import Customer
@@ -25,7 +26,6 @@ class AllTimePayLogModelViewSet(DjingModelViewSet):
 
 class AllTimeSpecifiedXMLRenderer(XMLRenderer):
     root_tag_name = 'pay-response'
-    item_tag_name = 'mypayclient'
 
 
 class AllTimePay(GenericAPIView):
@@ -36,7 +36,7 @@ class AllTimePay(GenericAPIView):
     lookup_url_kwarg = 'pay_slug'
 
     @staticmethod
-    def _bad_ret(err_id: int, err_description: str=None) -> dict:
+    def _bad_ret(err_id: int, err_description: str=None) -> Response:
         now = timezone.now()
         r = {
             'status_code': safe_int(err_id),
@@ -44,7 +44,7 @@ class AllTimePay(GenericAPIView):
         }
         if err_description:
             r.update({'description': err_description})
-        return r
+        return Response(r)
 
     def check_sign(self, data: dict, sign: str) -> bool:
         act: int = safe_int(data.get('ACT'))
@@ -91,10 +91,10 @@ class AllTimePay(GenericAPIView):
         except AttributeError:
             return self._bad_ret(-101)
 
-    def _fetch_user_info(self, data: dict):
+    def _fetch_user_info(self, data: dict) -> Response:
         pay_account = data.get('PAY_ACCOUNT')
         customer = Customer.objects.get(username=pay_account)
-        return {
+        return Response({
             'balance': float(customer.balance),
             'name': customer.fio,
             'account': pay_account,
@@ -103,9 +103,9 @@ class AllTimePay(GenericAPIView):
             'max_amount': 5000,
             'status_code': 21,
             'time_stamp': self.current_date
-        }
+        })
 
-    def _make_pay(self, data: dict):
+    def _make_pay(self, data: dict) -> Response:
         trade_point = safe_int(data.get('TRADE_POINT'))
         receipt_num = safe_int(data.get('RECEIPT_NUM'))
         pay_account = data.get('PAY_ACCOUNT')
@@ -132,18 +132,18 @@ class AllTimePay(GenericAPIView):
                 receipt_num=receipt_num,
                 pay_gw=self.object
             )
-        return {
+        return Response({
             'pay_id': pay_id,
             'service_id': data.get('SERVICE_ID'),
             'amount': pay_amount,
             'status_code': 22,
             'time_stamp': self.current_date
-        }
+        })
 
-    def _check_pay(self, data: dict):
+    def _check_pay(self, data: dict) -> Response:
         pay_id = data.get('PAY_ID')
         pay = AllTimePayLog.objects.get(pay_id=pay_id)
-        return {
+        return Response({
             'status_code': 11,
             'time_stamp': self.current_date,
             'transaction': {
@@ -153,4 +153,4 @@ class AllTimePay(GenericAPIView):
                 'status': 111,
                 'time_stamp': pay.date_add.strftime("%d.%m.%Y %H:%M")
             }
-        }
+        })
