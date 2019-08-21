@@ -29,6 +29,9 @@ djangorestframework-xml
 # viberbot
 -e git://github.com/Viber/viber-bot-python.git#egg=viberbot
 
+# Asterisk AMI
+git+https://github.com/gawel/panoramisk.git
+
 celery
 redis
 
@@ -38,4 +41,5 @@ django-netfields
 
 # pexpect
 -e git://github.com/pexpect/pexpect.git#egg=pexpect
+
 django-filter
