@@ -36,7 +36,7 @@ def catch_dev_manager_err(fn):
             return Response({'Error': {
                 'text': '%s' % err
             }}, status=status.HTTP_501_NOT_IMPLEMENTED)
-        except EasySNMPTimeoutError as err:
+        except (ConnectionResetError, EasySNMPTimeoutError) as err:
             return Response({'Error': {
                 'text': '%s' % err
             }}, status=status.HTTP_408_REQUEST_TIMEOUT)
@@ -93,10 +93,13 @@ class DeviceModelViewSet(DjingModelViewSet):
             return Response({'Error': {
                 'text': gettext('Port scan failed')
             }})
-        if ports is not None and len(ports) > 0 and isinstance(
-            ports[0],
-            Exception
-        ):
+        if ports is not None and len(ports) > 0:
+            if isinstance(ports[0], Exception):
+                return Response({
+                    'Error': {
+                        'text': str(ports[0])
+                    }
+                })
             return Response(p.to_dict() for p in ports)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
