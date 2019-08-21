@@ -22,7 +22,6 @@ class DeviceConfigurationError(DeviceImplementationError):
 
 class DevBase(object, metaclass=ABCMeta):
     def __init__(self, dev_instance=None):
-        super().__init__()
         self.db_instance = dev_instance
 
     @property
@@ -105,7 +104,6 @@ class DevBase(object, metaclass=ABCMeta):
 class BasePort(metaclass=ABCMeta):
 
     def __init__(self, num, name, status, mac, speed, uptime=None, snmp_num=None, writable=False):
-        super().__init__()
         self.num = int(num)
         self.snmp_num = int(num) if snmp_num is None else int(snmp_num)
         self.nm = name
@@ -143,7 +141,6 @@ class SNMPBaseWorker(object, metaclass=ABCMeta):
     ses = None
 
     def __init__(self, ip: Optional[str], community='public', ver=2):
-        super().__init__()
         if ip is None or ip == '':
             raise DeviceImplementationError(gettext('Ip address is required'))
         self._ip = ip
