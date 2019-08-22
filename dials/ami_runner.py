@@ -25,7 +25,7 @@ dispatcher = StateEventDispatcher()
 
 @manager.register_event('Newchannel')
 def new_channel_event(mngr, msg: Message):
-    print('#####NewCh', end=' ')
+    print('#####NewCh', msg)
     dispatcher.on_new_channel(msg)
 
 
@@ -62,7 +62,7 @@ def new_state_ev(mngr, msg):
     # print('State', state, type(state))
     if state:
         handler = state_map.get(state, dispatcher.unknown)
-        r = handler(msg=msg)
+        handler(msg=msg)
         # print('####New caller from', r, msg.CallerIDNum, msg, end='\n'*3)
 
 
@@ -165,7 +165,6 @@ def main():
     try:
         manager.loop.run_forever()
     except KeyboardInterrupt:
-        manager.loop.close()
         manager.close()
 
 
