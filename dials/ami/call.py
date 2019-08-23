@@ -31,12 +31,12 @@ class DialChannel(object):
     абонент и оператор оказываются в разных DialChannel,
     соединённых уникальным идентификатором <Uid>
     """
-    _uid: Uid
-    _linked_id: Uid
+    _uid: Uid = None
+    _linked_id: Uid = None
     linked_dial_channel = None
-    caller_id_num = ''
-    caller_id_name = ''
-    fname = ''
+    caller_id_num = None
+    caller_id_name = None
+    fname = None
 
     def __init__(self, uid: float):
         self.uid = uid
@@ -48,34 +48,50 @@ class DialChannel(object):
         self._uid = Uid(uid)
 
     def _linked_id_get(self):
-        return self._uid
+        return self._linked_id
 
-    def _linked_id__set(self, uid):
-        self._uid = Uid(uid)
+    def _linked_id_set(self, uid):
+        self._linked_id = Uid(uid)
 
     uid = property(_uid_get, _uid_set)
-    linked_id = property(_linked_id_get, _linked_id__set)
+    linked_id = property(_linked_id_get, _linked_id_set)
 
     def on_hangup(self):
-        """Срабатывает когда в этом канале положили трубку"""
-        print('###################### DialChannel hangup', self.uid)
+        """Срабатывает когда в этом канале положили трубку.
+           После этого канал удаляется"""
+        pass
+        # print('###################### DialChannel hangup', self.uid)
 
     def on_set_monitor_fname(self, fname):
-        self.fname = fname
-        print('###################### DialChannel monitor fname', fname)
-
-    def json(self):
-        return {
-            'uid': float(self.uid),
-            'linked_id': float(self.linked_id),
-            'caller_id_num': self.caller_id_num,
-            'caller_id_name': self.caller_id_name,
-            'fname': self.fname
-        }
+        self.fname = fname or None
+        pass
+        # print('###################### DialChannel monitor fname', fname)
 
     def __str__(self):
-        return self.uid
+        return 'Channel <%s>' % self.uid
 
     def __del__(self):
         if self.linked_dial_channel is not None:
             del self.linked_dial_channel
+
+
+def dial_channel_json_encoder(channel: DialChannel):
+    if isinstance(channel, DialChannel):
+        r = {
+            'uid': str(channel.uid),
+            'linked_id': str(channel.linked_id) if channel.linked_id else None,
+            'caller_id_num': channel.caller_id_num or None,
+            'caller_id_name': channel.caller_id_name or None,
+            'fname': channel.fname or None
+        }
+        print('linked_dial_channel', channel.linked_dial_channel)
+        if channel.linked_dial_channel:
+            r['linked_dial_channel'] = {
+                'uid': str(channel.linked_dial_channel.uid),
+                'linked_id': str(channel.linked_dial_channel.linked_id),
+                'caller_id_num': channel.linked_dial_channel.caller_id_num,
+                'caller_id_name': channel.linked_dial_channel.caller_id_name,
+                'fname': channel.linked_dial_channel.fname,
+            }
+        return r
+    raise TypeError(repr(channel) + " is not JSON serializable")
