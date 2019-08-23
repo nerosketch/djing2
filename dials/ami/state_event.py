@@ -1,7 +1,9 @@
 from json import dump
 from panoramisk.message import Message
 
-from .call import DialChannel
+from .call import DialChannel, dial_channel_json_encoder
+
+unk = '<unknown>'
 
 
 class StateEventDispatcher(object):
@@ -24,11 +26,14 @@ class StateEventDispatcher(object):
             return
         channel = DialChannel(uid=float(uid))
         linked_id = msg.Linkedid
-        if linked_id and linked_id != uid:
+        if linked_id and linked_id not in (uid, unk):
+            print('\t############################# PASSED linked_id:', linked_id, 'to uid', uid)
             channel.linked_id = linked_id
             channel.linked_dial_channel = self.calls.get(linked_id)
 
-        channel.caller_id_num = msg.CallerIDNum
+        id_num = msg.CallerIDNum
+        if id_num != unk:
+            channel.caller_id_num = id_num
         channel.caller_id_name = msg.CallerIDName
         self.calls[uid] = channel
 
@@ -56,7 +61,7 @@ class StateEventDispatcher(object):
         if call_channel:
             call_channel.on_hangup()
             with open('./calls.%s.json' % uid, 'w') as f:
-                dump(call_channel.json(), f, ensure_ascii=False, indent=2)
+                dump(call_channel, f, ensure_ascii=False, indent=2, default=dial_channel_json_encoder)
             del self.calls[uid]
         else:
             print('Warning: dial hangup for uid "%s" not found' % uid)
@@ -66,7 +71,16 @@ class StateEventDispatcher(object):
         """Звонок начат, надо соединить 2 канала, вызывающий и отвечающий"""
         # msg.Uniqueid - id вызывающего канала
         # msg.DestUniqueid - id вызываемого канала
-        print(msg.Uniqueid, '------------- Dial Begin -------------', msg, end='\n' * 3)
+        uid = msg.Uniqueid
+        call_channel = self.calls.get(uid)
+        if call_channel:
+            dst_uid = msg.DestUniqueid
+            if dst_uid and dst_uid != unk:
+                dst_ch = self.calls.get(dst_uid)
+                if dst_ch:
+                    call_channel.linked_id = dst_uid
+                    call_channel.linked_dial_channel = dst_ch
+            print(msg.Uniqueid, '------------- Dial Begin -------------', msg, end='\n' * 3)
 
     def on_dial_end(self, msg: Message):
         print(msg.Uniqueid, '------------- Dial End -------------', msg, end='\n' * 3)

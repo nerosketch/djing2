@@ -25,7 +25,7 @@ dispatcher = StateEventDispatcher()
 
 @manager.register_event('Newchannel')
 def new_channel_event(mngr, msg: Message):
-    print('#####NewCh', msg)
+    print('#####NewCh')
     dispatcher.on_new_channel(msg)
 
 
@@ -34,13 +34,13 @@ def hangup_ev(mngr, msg):
     # print('#####Hangup from', end=' ')
     # pprint(msg.CallerIDNum)
     dispatcher.on_hangup(msg=msg)
-    print('Calls', dispatcher.calls)
+    # print('Calls', dispatcher.calls)
     # print('\n' * 3)
 
 
 @manager.register_event('NewCallerid')
 def new_caller_ev(mngr, msg):
-    print('####New caller from', msg.CallerIDNum, msg, end='\n'*3)
+    print('####New caller from', msg.CallerIDNum, end='\n'*3)
 
 
 @manager.register_event('Newstate')
