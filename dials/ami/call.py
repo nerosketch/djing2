@@ -1,5 +1,7 @@
 from typing import Tuple
 
+from panoramisk.message import Message
+
 
 class Uid(object):
     _uid: Tuple[int, int] = (0, 0)
@@ -37,6 +39,8 @@ class DialChannel(object):
     caller_id_num = None
     caller_id_name = None
     fname = None
+    hold_time = 0
+    talk_time = 0
 
     def __init__(self, uid: float):
         self.uid = uid
@@ -67,6 +71,9 @@ class DialChannel(object):
         pass
         # print('###################### DialChannel monitor fname', fname)
 
+    def on_agent_complete(self, msg: Message, talk_time: int, hold_time: int):
+        print('###################### Agent complete', self.uid)
+
     def __str__(self):
         return 'Channel <%s>' % self.uid
 
@@ -82,7 +89,9 @@ def dial_channel_json_encoder(channel: DialChannel):
             'linked_id': str(channel.linked_id) if channel.linked_id else None,
             'caller_id_num': channel.caller_id_num or None,
             'caller_id_name': channel.caller_id_name or None,
-            'fname': channel.fname or None
+            'fname': channel.fname or None,
+            'hold_time': channel.hold_time,
+            'talk_time': channel.talk_time
         }
         print('linked_dial_channel', channel.linked_dial_channel)
         if channel.linked_dial_channel:
@@ -92,6 +101,8 @@ def dial_channel_json_encoder(channel: DialChannel):
                 'caller_id_num': channel.linked_dial_channel.caller_id_num,
                 'caller_id_name': channel.linked_dial_channel.caller_id_name,
                 'fname': channel.linked_dial_channel.fname,
+                'hold_time': channel.linked_dial_channel.hold_time,
+                'talk_time': channel.linked_dial_channel.talk_time
             }
         return r
     raise TypeError(repr(channel) + " is not JSON serializable")

@@ -2,7 +2,7 @@
 import asyncio
 from panoramisk import Manager
 from panoramisk.message import Message
-# from pprint import pprint
+from pprint import pprint
 
 from ami.helps import safe_int
 from ami.state_event import StateEventDispatcher
@@ -16,11 +16,11 @@ manager = Manager(
 dispatcher = StateEventDispatcher()
 
 
-# @manager.register_event('*')
-# def callback_all_events(mngr: Manager, msg: Message):
-#     print('Ev', msg.Event, end=' ')
-#     pprint(msg)
-#     print('\n' * 3)
+@manager.register_event('*')
+def callback_all_events(mngr: Manager, msg: Message):
+    print('Ev', msg.Event, end=' ')
+    pprint(msg)
+    print('\n' * 3)
 
 
 @manager.register_event('Newchannel')
@@ -138,6 +138,21 @@ def new_exten_ev(mngr, msg):
     :param msg:
     :return:
     """
+
+
+@manager.register_event('AgentComplete')
+def queue_join_ev(mngr, msg):
+    """
+    Окончание обслуживания агентом члена очереди
+    :param mngr:
+    :param msg:
+    :return:
+    """
+    dispatcher.on_agent_complete(
+        msg=msg,
+        talk_time=safe_int(msg.TalkTime),
+        hold_time=safe_int(msg.HoldTime)
+    )
 
 
 # @manager.register_event('QueueCallerJoin')
