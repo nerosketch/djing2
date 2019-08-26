@@ -27,7 +27,6 @@ class StateEventDispatcher(object):
         channel = DialChannel(uid=float(uid))
         linked_id = msg.Linkedid
         if linked_id and linked_id not in (uid, unk):
-            print('\t############################# PASSED linked_id:', linked_id, 'to uid', uid)
             channel.linked_id = linked_id
             channel.linked_dial_channel = self.calls.get(linked_id)
 
@@ -65,7 +64,7 @@ class StateEventDispatcher(object):
             del self.calls[uid]
         else:
             print('Warning: dial hangup for uid "%s" not found' % uid)
-        print(msg.Uniqueid, '------------- Hangup -------------', msg, end='\n' * 3)
+        print(msg.Uniqueid, '------------- Hangup -------------', end='\n' * 3)
 
     def on_dial_begin(self, msg: Message):
         """Звонок начат, надо соединить 2 канала, вызывающий и отвечающий"""
@@ -80,10 +79,10 @@ class StateEventDispatcher(object):
                 if dst_ch:
                     call_channel.linked_id = dst_uid
                     call_channel.linked_dial_channel = dst_ch
-            print(msg.Uniqueid, '------------- Dial Begin -------------', msg, end='\n' * 3)
+            print(msg.Uniqueid, '------------- Dial Begin -------------', end='\n' * 3)
 
     def on_dial_end(self, msg: Message):
-        print(msg.Uniqueid, '------------- Dial End -------------', msg, end='\n' * 3)
+        print(msg.Uniqueid, '------------- Dial End -------------', end='\n' * 3)
 
     def on_set_monitor_filename(self, msg: Message, val: str):
         uid = msg.Uniqueid
@@ -100,3 +99,16 @@ class StateEventDispatcher(object):
 
     def on_set_queue_talk_time(self, msg: Message, val: str):
         print(msg.Uniqueid, '------------- Set QUEUETALKTIME -------------', val, end='\n' * 3)
+
+    def on_agent_complete(self, msg: Message, talk_time: int, hold_time: int):
+        uid = msg.Uniqueid
+        call_channel = self.calls.get(uid)
+        if call_channel:
+            call_channel.hold_time = hold_time
+            call_channel.talk_time = talk_time
+            call_channel.on_agent_complete(
+                msg=msg,
+                talk_time=talk_time,
+                hold_time=hold_time
+            )
+        print(msg.Uniqueid, '------------- AgentComplete -------------', talk_time, hold_time, end='\n' * 3)
