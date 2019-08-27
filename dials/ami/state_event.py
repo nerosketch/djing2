@@ -1,3 +1,4 @@
+from datetime import datetime
 from json import dump
 from panoramisk.message import Message
 
@@ -25,6 +26,7 @@ class StateEventDispatcher(object):
         if not uid:
             return
         channel = DialChannel(uid=float(uid))
+        channel.create_time = datetime.now()
         linked_id = msg.Linkedid
         if linked_id and linked_id not in (uid, unk):
             channel.linked_id = linked_id
@@ -58,6 +60,7 @@ class StateEventDispatcher(object):
         uid = msg.Uniqueid
         call_channel = self.calls.get(uid)
         if call_channel:
+            call_channel.end_time = datetime.now()
             call_channel.on_hangup()
             with open('./calls.%s.json' % uid, 'w') as f:
                 dump(call_channel, f, ensure_ascii=False, indent=2, default=dial_channel_json_encoder)
