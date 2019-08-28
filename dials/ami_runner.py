@@ -6,12 +6,13 @@ from pprint import pprint
 
 from ami.helps import safe_int
 from ami.state_event import StateEventDispatcher
+from ami.opts import HOST, USERNAME, SECRET
 
 manager = Manager(
     loop=asyncio.get_event_loop(),
-    host='10.12.1.2',
-    username='bashmak',
-    secret='partoki'
+    host=HOST,
+    username=USERNAME,
+    secret=SECRET
 )
 dispatcher = StateEventDispatcher()
 
