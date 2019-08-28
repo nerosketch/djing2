@@ -1,40 +1,15 @@
-from typing import Tuple
-
 from panoramisk.message import Message
-
-
-class Uid(object):
-    _uid: Tuple[int, int] = (0, 0)
-
-    def __init__(self, uid):
-        if isinstance(uid, float):
-            suid = str(uid)
-            nuid = suid.split('.')
-            self._uid = int(nuid[0]), int(nuid[1])
-        elif isinstance(uid, str):
-            nuid = uid.split('.')
-            self._uid = int(nuid[0]), int(nuid[1])
-        elif isinstance(uid, Tuple):
-            self._uid = int(uid[0]), int(uid[1])
-
-    def __float__(self):
-        return float('%d.%d' % self._uid)
-
-    def __str__(self):
-        return '%d.%d' % self._uid
-
-    def __eq__(self, other):
-        return self._uid == other._uid
+from .helps import safe_float
 
 
 class DialChannel(object):
     """
     Вызов с одной стороны звонка. При входящем звонке
     абонент и оператор оказываются в разных DialChannel,
-    соединённых уникальным идентификатором <Uid>
+    соединённых уникальным идентификатором
     """
-    _uid: Uid = None
-    _linked_id: Uid = None
+    _uid: float = None
+    _linked_id: float = None
     linked_dial_channel = None
     caller_id_num = None
     caller_id_name = None
@@ -51,14 +26,14 @@ class DialChannel(object):
     def _uid_get(self):
         return self._uid
 
-    def _uid_set(self, uid):
-        self._uid = Uid(uid)
+    def _uid_set(self, uid: float):
+        self._uid = safe_float(uid)
 
     def _linked_id_get(self):
         return self._linked_id
 
-    def _linked_id_set(self, uid):
-        self._linked_id = Uid(uid)
+    def _linked_id_set(self, uid: float):
+        self._linked_id = safe_float(uid)
 
     uid = property(_uid_get, _uid_set)
     linked_id = property(_linked_id_get, _linked_id_set)
@@ -69,9 +44,8 @@ class DialChannel(object):
         pass
         # print('###################### DialChannel hangup', self.uid)
 
-    def on_set_monitor_fname(self, fname):
+    def on_set_monitor_fname(self, fname: str):
         self.fname = fname or None
-        pass
         # print('###################### DialChannel monitor fname', fname)
 
     def on_agent_complete(self, msg: Message, talk_time: int, hold_time: int):
@@ -88,8 +62,8 @@ class DialChannel(object):
 def dial_channel_json_encoder(channel: DialChannel):
     if isinstance(channel, DialChannel):
         r = {
-            'uid': str(channel.uid),
-            'linked_id': str(channel.linked_id) if channel.linked_id else None,
+            'uid': channel.uid,
+            'linked_id': channel.linked_id or None,
             'caller_id_num': channel.caller_id_num or None,
             'caller_id_name': channel.caller_id_name or None,
             'fname': channel.fname or None,
@@ -102,8 +76,8 @@ def dial_channel_json_encoder(channel: DialChannel):
         print('linked_dial_channel', channel.linked_dial_channel)
         if channel.linked_dial_channel:
             r['linked_dial_channel'] = {
-                'uid': str(channel.linked_dial_channel.uid),
-                'linked_id': str(channel.linked_dial_channel.linked_id),
+                'uid': channel.linked_dial_channel.uid,
+                'linked_id': channel.linked_dial_channel.linked_id,
                 'caller_id_num': channel.linked_dial_channel.caller_id_num,
                 'caller_id_name': channel.linked_dial_channel.caller_id_name,
                 'fname': channel.linked_dial_channel.fname,
