@@ -16,9 +16,10 @@ class DialChannel(object):
     fname = None
     hold_time = 0
     talk_time = 0
-    create_time = 0
-    end_time = 0
+    create_time = None
+    end_time = None
     dev_name = ''
+    answered: bool = False
 
     def __init__(self, uid: float):
         self.uid = uid
@@ -46,6 +47,7 @@ class DialChannel(object):
 
     def on_set_monitor_fname(self, fname: str):
         self.fname = fname or None
+        self.answered = True
         # print('###################### DialChannel monitor fname', fname)
 
     def on_agent_complete(self, msg: Message, talk_time: int, hold_time: int):
@@ -71,21 +73,24 @@ def dial_channel_json_encoder(channel: DialChannel):
             'talk_time': channel.talk_time,
             'create_time': str(channel.create_time),
             'end_time': str(channel.end_time),
-            'dev_name': channel.dev_name
+            'dev_name': channel.dev_name,
+            'answered': channel.answered
         }
         print('linked_dial_channel', channel.linked_dial_channel)
         if channel.linked_dial_channel:
+            c = channel.linked_dial_channel
             r['linked_dial_channel'] = {
-                'uid': channel.linked_dial_channel.uid,
-                'linked_id': channel.linked_dial_channel.linked_id,
-                'caller_id_num': channel.linked_dial_channel.caller_id_num,
-                'caller_id_name': channel.linked_dial_channel.caller_id_name,
-                'fname': channel.linked_dial_channel.fname,
-                'hold_time': channel.linked_dial_channel.hold_time,
-                'talk_time': channel.linked_dial_channel.talk_time,
-                'create_time': str(channel.linked_dial_channel.create_time),
-                'end_time': str(channel.linked_dial_channel.end_time),
-                'dev_name': channel.linked_dial_channel.dev_name
+                'uid': c.uid,
+                'linked_id': c.linked_id,
+                'caller_id_num': c.caller_id_num,
+                'caller_id_name': c.caller_id_name,
+                'fname': c.fname,
+                'hold_time': c.hold_time,
+                'talk_time': c.talk_time,
+                'create_time': str(c.create_time),
+                'end_time': str(c.end_time),
+                'dev_name': c.dev_name,
+                'answered': c.answered,
             }
         return r
     raise TypeError(repr(channel) + " is not JSON serializable")
