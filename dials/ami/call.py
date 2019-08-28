@@ -43,6 +43,7 @@ class DialChannel(object):
     talk_time = 0
     create_time = 0
     end_time = 0
+    dev_name = ''
 
     def __init__(self, uid: float):
         self.uid = uid
@@ -95,7 +96,8 @@ def dial_channel_json_encoder(channel: DialChannel):
             'hold_time': channel.hold_time,
             'talk_time': channel.talk_time,
             'create_time': str(channel.create_time),
-            'end_time': str(channel.end_time)
+            'end_time': str(channel.end_time),
+            'dev_name': channel.dev_name
         }
         print('linked_dial_channel', channel.linked_dial_channel)
         if channel.linked_dial_channel:
@@ -108,7 +110,8 @@ def dial_channel_json_encoder(channel: DialChannel):
                 'hold_time': channel.linked_dial_channel.hold_time,
                 'talk_time': channel.linked_dial_channel.talk_time,
                 'create_time': str(channel.linked_dial_channel.create_time),
-                'end_time': str(channel.linked_dial_channel.end_time)
+                'end_time': str(channel.linked_dial_channel.end_time),
+                'dev_name': channel.linked_dial_channel.dev_name
             }
         return r
     raise TypeError(repr(channel) + " is not JSON serializable")
