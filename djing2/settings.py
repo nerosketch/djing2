@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'messenger',
     'tasks',
     'fin_app',
+    'dials',
 ]
 
 if DEBUG:
@@ -242,3 +243,7 @@ FIELD_ENCRYPTION_KEY = getattr(
     'FIELD_ENCRYPTION_KEY',
     'vZpDlDPQyU6Ha7NyUGj9uYMuPigejtEPMOZfkYXIQRw='
 )
+
+
+DIAL_RECORDS_PATH = '/var/spool/asterisk/monitor/'
+DIAL_RECORDS_EXTENSION = 'wav'
