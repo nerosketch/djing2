@@ -36,6 +36,12 @@ class StateEventDispatcher(object):
         if id_num != unk:
             channel.caller_id_num = id_num
         channel.caller_id_name = msg.CallerIDName
+
+        # Channel 'Dongle/sim_8318999-010000088d' || 'PJSIP/312-00001a7d
+        dev_name = msg.Channel.split('-')
+        if len(dev_name) > 0:
+            channel.dev_name = dev_name[0]
+
         self.calls[uid] = channel
 
     def on_moh_start(self, msg: Message):
