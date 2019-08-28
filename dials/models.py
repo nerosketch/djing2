@@ -67,6 +67,8 @@ class DialLog(models.Model):
     )
     answered = models.BooleanField(_('Answered'), default=False)
 
+    objects = DialLogManager()
+
     def get_dial_full_filename(self) -> Optional[str]:
         if self.answered:
             return os.path.join(DIAL_RECORDS_PATH, '%s.%s' % (self.uid, DIAL_RECORDS_EXTENSION))
