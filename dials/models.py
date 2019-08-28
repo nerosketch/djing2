@@ -35,7 +35,7 @@ class ATSDeviceModel(models.Model):
         return self.name
 
     class Meta:
-        db_name = 'ats_devices'
+        db_table = 'ats_devices'
         ordering = ('-id',)
 
 
@@ -80,5 +80,5 @@ class DialLog(models.Model):
         return self.uid
 
     class Meta:
-        db_name = 'dial_log'
+        db_table = 'dial_log'
         ordering = ('-id',)
