@@ -13,6 +13,7 @@ api_urls = [
     path('tasks/', include('tasks.urls', namespace='tasks')),
     path('networks/', include('networks.urls', namespace='networks')),
     path('fin/', include('fin_app.urls', namespace='fin_app')),
+    path('dial/', include('dials.urls', namespace='dials')),
 ]
 
 
