@@ -118,4 +118,4 @@ class StateEventDispatcher(object):
                 talk_time=talk_time,
                 hold_time=hold_time
             )
-        # print(msg.Uniqueid, '------------- AgentComplete -------------', talk_time, hold_time, end='\n' * 3)
+        print(msg.Uniqueid, '------------- AgentComplete -------------', msg, talk_time, hold_time, end='\n' * 3)
