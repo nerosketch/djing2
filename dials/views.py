@@ -1,3 +1,12 @@
-from django.shortcuts import render
+from djing2.viewsets import DjingModelViewSet
+from dials import serializers, models
 
-# Create your views here.
+
+class ATSDeviceModelViewSet(DjingModelViewSet):
+    queryset = models.ATSDeviceModel.objects.all()
+    serializer_class = serializers.ATSDeviceModelSerializer
+
+
+class DialLogModelViewSet(DjingModelViewSet):
+    queryset = models.DialLog.objects.all()
+    serializer_class = serializers.DialLogSerializer
