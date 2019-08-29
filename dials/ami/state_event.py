@@ -1,9 +1,9 @@
 from datetime import datetime
-from json import dump
 from panoramisk.message import Message
 
 from .helps import safe_float
-from .call import DialChannel, dial_channel_json_encoder
+from .call import DialChannel
+from .http import send_dial
 
 
 class StateEventDispatcher(object):
@@ -67,8 +67,9 @@ class StateEventDispatcher(object):
         if call_channel:
             call_channel.end_time = datetime.now()
             call_channel.on_hangup()
-            with open('./calls.%f.json' % uid, 'w') as f:
-                dump(call_channel, f, ensure_ascii=False, indent=2, default=dial_channel_json_encoder)
+            # with open('./calls.%f.json' % uid, 'w') as f:
+            #     dump(call_channel, f, ensure_ascii=False, indent=2, default=dial_channel_json_encoder)
+            send_dial(call_channel)
             del self.calls[uid]
             # print('Warning: dial hangup for uid "%f" not found' % uid)
         # print(msg.Uniqueid, '------------- Hangup -------------', end='\n' * 3)
@@ -113,9 +114,10 @@ class StateEventDispatcher(object):
         if call_channel:
             call_channel.hold_time = hold_time
             call_channel.talk_time = talk_time
+            call_channel.caller_id_name = msg.CallerIDName
             call_channel.on_agent_complete(
                 msg=msg,
                 talk_time=talk_time,
                 hold_time=hold_time
             )
-        print(msg.Uniqueid, '------------- AgentComplete -------------', msg, talk_time, hold_time, end='\n' * 3)
+        # print(msg.Uniqueid, '------------- AgentComplete -------------', msg, talk_time, hold_time, end='\n' * 3)
