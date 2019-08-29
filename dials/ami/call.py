@@ -76,7 +76,7 @@ def dial_channel_json_encoder(channel: DialChannel):
             'dev_name': channel.dev_name,
             'answered': channel.answered
         }
-        print('linked_dial_channel', channel.linked_dial_channel)
+        # print('linked_dial_channel', channel.linked_dial_channel)
         if channel.linked_dial_channel:
             c = channel.linked_dial_channel
             r['linked_dial_channel'] = {
@@ -94,3 +94,19 @@ def dial_channel_json_encoder(channel: DialChannel):
             }
         return r
     raise TypeError(repr(channel) + " is not JSON serializable")
+
+
+def join_call_log(c1: DialChannel) -> dict:
+    if '+' in c1.caller_id_num or not c1.linked_dial_channel:
+        c = c1
+    else:
+        c = c1.linked_dial_channel
+    return {
+        'uid': c.uid,
+        'caller_num': c.caller_id_num,
+        'caller_name': c.caller_id_name,
+        'hold_time': c.hold_time,
+        'talk_time': c.talk_time,
+        'create_time': c.create_time,
+        'answered': c.answered
+    }
