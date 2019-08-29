@@ -1,10 +1,12 @@
 import os
+from datetime import timedelta
 from typing import Optional
 
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.db import models
 
+from djing2.lib import safe_int
 from .ami.call import DialChannel, join_call_log
 
 DIAL_RECORDS_PATH = getattr(settings, 'DIAL_RECORDS_PATH')
@@ -60,6 +62,14 @@ class DialLog(models.Model):
     def get_dial_fname(self) -> Optional[str]:
         if self.answered:
             return '%s.%s' % (self.uid, DIAL_RECORDS_EXTENSION)
+
+    def hold_time_humanity(self):
+        secs = safe_int(self.hold_time)
+        return timedelta(seconds=secs)
+
+    def talk_time_humanity(self):
+        secs = safe_int(self.talk_time)
+        return timedelta(seconds=secs)
 
     def __str__(self):
         return self.uid
