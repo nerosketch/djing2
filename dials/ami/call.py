@@ -97,7 +97,7 @@ def dial_channel_json_encoder(channel: DialChannel):
 
 
 def join_call_log(c1: DialChannel) -> dict:
-    if '+' in c1.caller_id_num or not c1.linked_dial_channel:
+    if '+' in (c1.caller_id_num or '') or not c1.linked_dial_channel:
         c = c1
     else:
         c = c1.linked_dial_channel
