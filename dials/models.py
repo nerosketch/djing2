@@ -5,27 +5,10 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.db import models
 
-from .ami.call import DialChannel
+from .ami.call import DialChannel, join_call_log
 
 DIAL_RECORDS_PATH = getattr(settings, 'DIAL_RECORDS_PATH')
 DIAL_RECORDS_EXTENSION = getattr(settings, 'DIAL_RECORDS_EXTENSION')
-
-
-def _join_call_log(c1: DialChannel):
-    c2 = c1.linked_dial_channel
-    if '+' in c1.caller_id_num:
-        c = c1
-    else:
-        c = c2
-    return {
-        'uid': c.uid,
-        'caller_num': c.caller_id_num,
-        'caller_name': c.caller_id_name,
-        'hold_time': c.hold_time,
-        'talk_time': c.talk_time,
-        'create_time': c.create_time,
-        'answered': c.answered
-    }
 
 
 class ATSDeviceModel(models.Model):
@@ -46,7 +29,7 @@ class DialLogManager(models.Manager):
         hypothetical_ats_device = ATSDeviceModel.objects.filter(
             name__icontains=dial_channel.dev_name
         )
-        create_params = _join_call_log(dial_channel)
+        create_params = join_call_log(dial_channel)
         if hypothetical_ats_device.exists():
             create_params['ats_dev'] = hypothetical_ats_device.first()
 
