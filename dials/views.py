@@ -10,3 +10,8 @@ class ATSDeviceModelViewSet(DjingModelViewSet):
 class DialLogModelViewSet(DjingModelViewSet):
     queryset = models.DialLog.objects.all()
     serializer_class = serializers.DialLogSerializer
+
+
+class DialAccountModelViewSet(DjingModelViewSet):
+    queryset = models.DialAccount.objects.all()
+    serializer_class = serializers.DialAccountModelSerializer

@@ -1,8 +1,9 @@
+from json import dump
 from datetime import datetime
 from panoramisk.message import Message
 
 from .helps import safe_float
-from .call import DialChannel
+from .call import DialChannel, dial_channel_json_encoder
 from .http import send_dial
 
 
@@ -21,6 +22,7 @@ class StateEventDispatcher(object):
         него ещё нет второго канала, он ещё не создан, т.е.
         на этот звонок ещё не ответили
         """
+        print(msg.Uniqueid, '------------- New Channel -------------', msg, end='\n' * 3)
         uid = safe_float(msg.Uniqueid)
         if not uid:
             return
@@ -30,6 +32,11 @@ class StateEventDispatcher(object):
         if linked_id and linked_id != uid:
             channel.linked_id = linked_id
             channel.linked_dial_channel = self.calls.get(linked_id)
+
+        if linked_id == uid:
+            channel.initiator = True
+        else:
+            channel.dial_killer = True
 
         id_num = msg.CallerIDNum
         if id_num != '<unknown>':
@@ -67,17 +74,18 @@ class StateEventDispatcher(object):
         if call_channel:
             call_channel.end_time = datetime.now()
             call_channel.on_hangup()
-            # with open('./calls.%f.json' % uid, 'w') as f:
-            #     dump(call_channel, f, ensure_ascii=False, indent=2, default=dial_channel_json_encoder)
+            with open('./calls.%f.json' % uid, 'w') as f:
+                dump(call_channel, f, ensure_ascii=False, indent=2, default=dial_channel_json_encoder)
             send_dial(call_channel)
             del self.calls[uid]
             # print('Warning: dial hangup for uid "%f" not found' % uid)
-        # print(msg.Uniqueid, '------------- Hangup -------------', end='\n' * 3)
+        print(msg.Uniqueid, '------------- Hangup -------------', msg, end='\n' * 3)
 
     def on_dial_begin(self, msg: Message):
         """Звонок начат, надо соединить 2 канала, вызывающий и отвечающий"""
         # msg.Uniqueid - id вызывающего канала
         # msg.DestUniqueid - id вызываемого канала
+        print(msg.Uniqueid, '------------- Dial Begin -------------', msg)
         uid = safe_float(msg.Uniqueid)
         call_channel = self.calls.get(uid)
         if call_channel:
@@ -87,7 +95,7 @@ class StateEventDispatcher(object):
                 if dst_ch:
                     call_channel.linked_id = dst_uid
                     call_channel.linked_dial_channel = dst_ch
-            # print(msg.Uniqueid, '------------- Dial Begin -------------', end='\n' * 3)
+        print('', end='\n' * 3)
 
     # def on_dial_end(self, msg: Message):
         # print(msg.Uniqueid, '------------- Dial End -------------', end='\n' * 3)
