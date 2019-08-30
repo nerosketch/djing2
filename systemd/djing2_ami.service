@@ -1,0 +1,14 @@
+[Unit]
+Description=AMI worker for djing
+
+[Service]
+Type=simple
+ExecStart=/var/www/djing2/venv/bin/python /var/www/djing2/dials/ami_runner.py
+WorkingDirectory=/var/www/djing2
+TimeoutSec=7
+Restart=always
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target

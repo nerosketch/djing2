@@ -1,10 +1,16 @@
 from rest_framework import serializers
-from dials.models import ATSDeviceModel, DialLog
+from dials import models
 
 
 class ATSDeviceModelSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ATSDeviceModel
+        model = models.ATSDeviceModel
+        fields = '__all__'
+
+
+class DialAccountModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.DialAccount
         fields = '__all__'
 
 
@@ -15,5 +21,5 @@ class DialLogSerializer(serializers.ModelSerializer):
     talk_time_human = serializers.CharField(source="talk_time_humanity", read_only=True)
 
     class Meta:
-        model = DialLog
+        model = models.DialLog
         fields = '__all__'

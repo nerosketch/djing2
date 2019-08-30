@@ -1,4 +1,4 @@
-from panoramisk.message import Message
+# from panoramisk.message import Message
 from .helps import safe_float
 
 
@@ -19,7 +19,9 @@ class DialChannel(object):
     create_time = None
     end_time = None
     dev_name = ''
-    answered: bool = False
+    answered = False
+    initiator = False
+    dial_killer = False
 
     def __init__(self, uid: float):
         self.uid = uid
@@ -50,8 +52,8 @@ class DialChannel(object):
         self.answered = True
         # print('###################### DialChannel monitor fname', fname)
 
-    def on_agent_complete(self, msg: Message, talk_time: int, hold_time: int):
-        print('###################### Agent complete', self.uid)
+    # def on_agent_complete(self, msg: Message, talk_time: int, hold_time: int):
+    #     print('###################### Agent complete', self.uid)
 
     def __str__(self):
         return 'Channel <%s>' % self.uid
@@ -74,7 +76,9 @@ def dial_channel_json_encoder(channel: DialChannel):
             'create_time': str(channel.create_time),
             'end_time': str(channel.end_time),
             'dev_name': channel.dev_name,
-            'answered': channel.answered
+            'answered': channel.answered,
+            'initiator': channel.initiator,
+            'dial_killer': channel.dial_killer
         }
         # print('linked_dial_channel', channel.linked_dial_channel)
         if channel.linked_dial_channel:
@@ -91,13 +95,15 @@ def dial_channel_json_encoder(channel: DialChannel):
                 'end_time': str(c.end_time),
                 'dev_name': c.dev_name,
                 'answered': c.answered,
+                'initiator': c.initiator,
+                'dial_killer': c.dial_killer
             }
         return r
     raise TypeError(repr(channel) + " is not JSON serializable")
 
 
 def join_call_log(c1: DialChannel) -> dict:
-    if '+' in (c1.caller_id_num or '') or not c1.linked_dial_channel:
+    if c1.initiator:
         c = c1
     else:
         c = c1.linked_dial_channel
