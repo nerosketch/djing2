@@ -6,8 +6,8 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2019-08-28 18:03+0300\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-08-30 18:20+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,42 +17,78 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: models.py:32
+#: models.py:19
 msgid "ATS device name"
 msgstr "Название устройства звонка"
 
-#: models.py:57
+#: models.py:30
+msgid "ATS Number"
+msgstr ""
+
+#: models.py:88
 msgid "Unique identifier"
 msgstr "Уникальный идентификатор"
 
-#: models.py:58
+#: models.py:89
 msgid "Caller number"
 msgstr "Номер звонящего"
 
-#: models.py:59
+#: models.py:90
 msgid "Caller name"
 msgstr "Имя звонящего"
 
-#: models.py:60
+#: models.py:91
+msgid "Dst caller number"
+msgstr "Номер адресата"
+
+#: models.py:92
+msgid "Dst caller name"
+msgstr "Имя адресата"
+
+#: models.py:93
 msgid "Hold time"
 msgstr "Время ожидания"
 
-#: models.py:61
+#: models.py:94
 msgid "Talk time"
 msgstr "Время разговора"
 
-#: models.py:62
+#: models.py:95
 msgid "Start call time"
 msgstr "Время начала звонка"
 
-#: models.py:63
+#: models.py:96
 msgid "End call time"
 msgstr "Время завершения звонка"
 
-#: models.py:66
+#: models.py:99
 msgid "ATS device"
 msgstr "Устройство звонка"
 
-#: models.py:68
+#: models.py:102
+msgid "Account"
+msgstr "Учётная запись"
+
+#: models.py:106
 msgid "Answered"
 msgstr "Отвечен"
+
+#: models.py:108
+msgid "Unknown"
+msgstr "Не известен"
+
+#: models.py:109
+msgid "Incoming"
+msgstr "Входящий"
+
+#: models.py:110
+msgid "Outgoing"
+msgstr "Исходящий"
+
+#: models.py:112
+msgid "Call type"
+msgstr "Тип звонка"
+
+#: models.py:115
+msgid "Call killer"
+msgstr "Кто завершил звонок"
