@@ -1,4 +1,6 @@
-# from panoramisk.message import Message
+from panoramisk.message import Message
+from datetime import datetime
+
 from .helps import safe_float
 
 
@@ -17,7 +19,6 @@ class DialChannel(object):
     hold_time = 0
     talk_time = 0
     create_time = None
-    end_time = None
     dev_name = ''
     answered = False
     initiator = False
@@ -26,16 +27,16 @@ class DialChannel(object):
     def __init__(self, uid: float):
         self.uid = uid
 
-    def _uid_get(self):
+    def _uid_get(self) -> float:
         return self._uid
 
-    def _uid_set(self, uid: float):
+    def _uid_set(self, uid: float) -> None:
         self._uid = safe_float(uid)
 
-    def _linked_id_get(self):
+    def _linked_id_get(self) -> float:
         return self._linked_id
 
-    def _linked_id_set(self, uid: float):
+    def _linked_id_set(self, uid: float) -> None:
         self._linked_id = safe_float(uid)
 
     uid = property(_uid_get, _uid_set)
@@ -52,8 +53,9 @@ class DialChannel(object):
         self.answered = True
         # print('###################### DialChannel monitor fname', fname)
 
-    # def on_agent_complete(self, msg: Message, talk_time: int, hold_time: int):
-    #     print('###################### Agent complete', self.uid)
+    def on_agent_complete(self, msg: Message, talk_time: int, hold_time: int):
+        pass
+        # print('###################### Agent complete', self.uid)
 
     def __str__(self):
         return 'Channel <%s>' % self.uid
@@ -74,7 +76,6 @@ def dial_channel_json_encoder(channel: DialChannel):
             'hold_time': channel.hold_time,
             'talk_time': channel.talk_time,
             'create_time': str(channel.create_time),
-            'end_time': str(channel.end_time),
             'dev_name': channel.dev_name,
             'answered': channel.answered,
             'initiator': channel.initiator,
@@ -92,7 +93,6 @@ def dial_channel_json_encoder(channel: DialChannel):
                 'hold_time': c.hold_time,
                 'talk_time': c.talk_time,
                 'create_time': str(c.create_time),
-                'end_time': str(c.end_time),
                 'dev_name': c.dev_name,
                 'answered': c.answered,
                 'initiator': c.initiator,
@@ -105,14 +105,19 @@ def dial_channel_json_encoder(channel: DialChannel):
 def join_call_log(c1: DialChannel) -> dict:
     if c1.initiator:
         c = c1
-    else:
+    elif c1.linked_dial_channel:
         c = c1.linked_dial_channel
+    else:
+        c = c1
+    create_time = None
+    if isinstance(c.create_time, datetime):
+        create_time = c.create_time.strftime('%Y-%m-%d %I:%M')
     return {
         'uid': c.uid,
         'caller_num': c.caller_id_num,
         'caller_name': c.caller_id_name,
         'hold_time': c.hold_time,
         'talk_time': c.talk_time,
-        'create_time': c.create_time,
+        'create_time': create_time,
         'answered': c.answered
     }
