@@ -103,16 +103,23 @@ def dial_channel_json_encoder(channel: DialChannel):
 
 
 def join_call_log(c1: DialChannel) -> dict:
-    if c1.initiator:
-        c = c1
+    c = c1
+    dst_caller = {}
+    if c1.initiator and c1.linked_dial_channel:
+        dst_caller = {
+            'dst_caller_num': c1.linked_dial_channel.caller_id_num,
+            'dst_caller_name': c1.linked_dial_channel.caller_id_name
+        }
     elif c1.linked_dial_channel:
         c = c1.linked_dial_channel
-    else:
-        c = c1
+        dst_caller = {
+            'dst_caller_num': c1.caller_id_num,
+            'dst_caller_name': c1.caller_id_name
+        }
     create_time = None
     if isinstance(c.create_time, datetime):
         create_time = c.create_time.strftime('%Y-%m-%d %I:%M')
-    return {
+    dst_caller.update({
         'uid': c.uid,
         'caller_num': c.caller_id_num,
         'caller_name': c.caller_id_name,
@@ -120,4 +127,5 @@ def join_call_log(c1: DialChannel) -> dict:
         'talk_time': c.talk_time,
         'create_time': create_time,
         'answered': c.answered
-    }
+    })
+    return dst_caller
