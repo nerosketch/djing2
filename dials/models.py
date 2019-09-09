@@ -85,11 +85,11 @@ class DialLogManager(models.Manager):
 
 
 class DialLog(models.Model):
-    uid = models.FloatField(_('Unique identifier'), unique=True)
-    caller_num = models.CharField(_('Caller number'), max_length=32, blank=True, null=True, default=None)
-    caller_name = models.CharField(_('Caller name'), max_length=64, blank=True, null=True, default=None)
-    dst_caller_num = models.CharField(_('Dst caller number'), max_length=32, blank=True, null=True, default=None)
-    dst_caller_name = models.CharField(_('Dst caller name'), max_length=64, blank=True, null=True, default=None)
+    uid = models.CharField(_('Unique identifier'), unique=True, max_length=32)
+    caller_num = models.CharField(_('Caller number'), max_length=80, blank=True, null=True, default=None)
+    caller_name = models.CharField(_('Caller name'), max_length=80, blank=True, null=True, default=None)
+    dst_caller_num = models.CharField(_('Dst caller number'), max_length=80, blank=True, null=True, default=None)
+    dst_caller_name = models.CharField(_('Dst caller name'), max_length=80, blank=True, null=True, default=None)
     hold_time = models.PositiveSmallIntegerField(_('Hold time'), default=0)
     talk_time = models.PositiveSmallIntegerField(_('Talk time'), default=0)
     create_time = models.DateTimeField(_('Start call time'), auto_now_add=True)
