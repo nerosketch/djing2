@@ -46,8 +46,14 @@ msgid "Dst caller name"
 msgstr "Имя адресата"
 
 #: models.py:93
-msgid "Hold time"
-msgstr "Время ожидания"
+msgid "Duration"
+msgstr "Вся длительность"
+
+msgid "Duration of the call"
+msgstr "Количество секунд от начала вызова до его завершения"
+
+msgid "Duration of the call once it was answered"
+msgstr "Фактическое время разговора"
 
 #: models.py:94
 msgid "Talk time"

@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import timedelta
 from typing import Optional
 
@@ -8,7 +9,6 @@ from django.conf import settings
 from django.db import models
 
 from djing2.lib import safe_int
-from .ami.call import DialChannel, join_call_log
 
 DIAL_RECORDS_PATH = getattr(settings, 'DIAL_RECORDS_PATH')
 DIAL_RECORDS_EXTENSION = getattr(settings, 'DIAL_RECORDS_EXTENSION')
@@ -34,66 +34,61 @@ class DialAccount(UserProfile):
 
 
 class DialLogManager(models.Manager):
-    def create_from_dial_channel(self, dial_channel: DialChannel):
-        if not isinstance(dial_channel, DialChannel):
+    def create_dial(self, call: dict):
+        if not isinstance(call, dict):
             raise TypeError
-        if dial_channel.initiator:
-            ci = dial_channel
-            co = dial_channel.linked_dial_channel
-        else:
-            co = dial_channel
-            ci = dial_channel.linked_dial_channel
 
-        create_params = join_call_log(dial_channel)
+        # Try to attach ats_dev to log instance
+        channel_name = call.get('channel_name')
+        # For example, channel name might be "Dongle/simname-0100000129"
+        if channel_name is not None and re.match('^[a-zA-Z]{1,12}\/.{1,32}\-\d{9,12}$', channel_name):
+            try:
+                dev_type, call_detail = channel_name.split('/')
+                dev_name, call_id = call_detail.split('-')
+                ats_dev = ATSDeviceModel.objects.filter(name=dev_name).first()
+                if ats_dev:
+                    call.update({
+                        'ats_dev': ats_dev
+                    })
+            except ValueError:
+                pass
 
-        create_params['dst_caller_num'] = co.caller_id_num
-        create_params['dst_caller_name'] = co.caller_id_name
+        dclid = call.get('dst_caller_num')
+        if dclid is not None:
+            dacc = DialAccount.objects.filter(ats_number=dclid).first()
+            if dacc:
+                call.update({
+                    'dial_account': dacc
+                })
 
-        # Call direction
-        if dial_channel.initiator:
-            create_params['call_type'] = 2
-        else:
-            create_params['call_type'] = 1
-
-        # Call device
-        hypothetical_ats_device = ATSDeviceModel.objects.filter(
-            name__icontains=ci.dev_name
-        ).first()
-        if hypothetical_ats_device:
-            create_params['ats_dev'] = hypothetical_ats_device
-        del hypothetical_ats_device
-
-        # Employee account
-        hypothetical_dial_account = DialAccount.objects.filter(
-            ats_number=safe_int(ci.caller_id_num)
-        ).first()
-        if hypothetical_dial_account:
-            create_params['dial_account'] = hypothetical_dial_account
-
-        # Place dial killer. The one who hang up
-        if ci.dial_killer:
-            if hypothetical_dial_account:
-                create_params['call_killer'] = hypothetical_dial_account
-        elif co.dial_killer:
-            hypothetical_dial_account = DialAccount.objects.filter(
-                ats_number=safe_int(co.caller_id_num)
-            ).first()
-            if hypothetical_dial_account:
-                create_params['call_killer'] = hypothetical_dial_account
-
-        return self.create(**create_params)
+        return self.create(**call)
 
 
 class DialLog(models.Model):
-    uid = models.CharField(_('Unique identifier'), unique=True, max_length=32)
-    caller_num = models.CharField(_('Caller number'), max_length=80, blank=True, null=True, default=None)
-    caller_name = models.CharField(_('Caller name'), max_length=80, blank=True, null=True, default=None)
-    dst_caller_num = models.CharField(_('Dst caller number'), max_length=80, blank=True, null=True, default=None)
-    dst_caller_name = models.CharField(_('Dst caller name'), max_length=80, blank=True, null=True, default=None)
-    hold_time = models.PositiveSmallIntegerField(_('Hold time'), default=0)
-    talk_time = models.PositiveSmallIntegerField(_('Talk time'), default=0)
-    create_time = models.DateTimeField(_('Start call time'), auto_now_add=True)
-    end_time = models.DateTimeField(_('End call time'), auto_now_add=True)
+    uid = models.CharField(
+        _('Unique identifier'), unique=True, max_length=32
+    )
+    caller_num = models.CharField(
+        _('Caller number'), max_length=80, blank=True,
+        null=True, default=None
+    )
+    caller_name = models.CharField(
+        _('Caller name'), max_length=80,
+        blank=True, null=True, default=None
+    )
+    dst_caller_num = models.CharField(
+        _('Dst caller number'), max_length=80,
+        blank=True, null=True, default=None
+    )
+    duration = models.PositiveSmallIntegerField(
+        _('Duration'), default=0, help_text=_('Duration of the call')
+    )
+    billsec = models.PositiveSmallIntegerField(
+        _('Talk time'), default=0, help_text=_('Duration of the call once it was answered')
+    )
+    create_time = models.DateTimeField(_('Start call time'))
+    answer_time = models.DateTimeField(_('Answer time'))
+    end_time = models.DateTimeField(_('End call time'), auto_now=True)
     ats_dev = models.ForeignKey(
         ATSDeviceModel, on_delete=models.CASCADE,
         verbose_name=_('ATS device'), blank=True, null=True, default=None
@@ -109,7 +104,9 @@ class DialLog(models.Model):
         (1, _('Incoming')),
         (2, _('Outgoing')),
     )
-    call_type = models.PositiveSmallIntegerField(_('Call type'), choices=CALL_TYPES, default=0)
+    call_type = models.PositiveSmallIntegerField(
+        _('Call type'), choices=CALL_TYPES, default=0
+    )
 
     call_killer = models.ForeignKey(
         DialAccount, verbose_name=_('Call killer'),
@@ -141,4 +138,18 @@ class DialLog(models.Model):
 
     class Meta:
         db_table = 'dial_log'
+        ordering = ('-id',)
+
+
+class SMSModel(models.Model):
+    make_time = models.DateTimeField(_('Create time'), auto_now_add=True)
+    sender = models.CharField(_('Sender'), max_length=80)
+    receiver = models.CharField(_('Receiver'), max_length=80)
+    text = models.CharField(_('Text'), max_length=280)
+
+    def __str__(self):
+        return self.text
+
+    class Meta:
+        db_table = 'dial_sms'
         ordering = ('-id',)
