@@ -125,12 +125,12 @@ class DialLog(models.Model):
         if self.answered:
             return '%s.%s' % (self.uid, DIAL_RECORDS_EXTENSION)
 
-    def hold_time_humanity(self):
-        secs = safe_int(self.hold_time)
+    def duration_humanity(self):
+        secs = safe_int(self.duration)
         return timedelta(seconds=secs)
 
-    def talk_time_humanity(self):
-        secs = safe_int(self.talk_time)
+    def billsec_humanity(self):
+        secs = safe_int(self.billsec)
         return timedelta(seconds=secs)
 
     def __str__(self):
