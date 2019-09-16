@@ -1,5 +1,0 @@
-HOST = '192.168.0.1'
-USERNAME = 'manager_username'
-SECRET = 'manager_password'
-WEB_HOST = 'http://127.0.0.1/api/'
-WEB_TOKEN = 'e08a7a86b511205ef4ee1fde855fdce2ff4bffb0'
