@@ -17,8 +17,8 @@ class DialAccountModelSerializer(serializers.ModelSerializer):
 class DialLogSerializer(serializers.ModelSerializer):
     # full_filename = serializers.CharField(source='get_dial_full_filename', read_only=True)
     filename = serializers.CharField(source='get_dial_fname', read_only=True)
-    hold_time_human = serializers.CharField(source="hold_time_humanity", read_only=True)
-    talk_time_human = serializers.CharField(source="talk_time_humanity", read_only=True)
+    duration_human = serializers.CharField(source="duration_humanity", read_only=True)
+    billsec_human = serializers.CharField(source="billsec_humanity", read_only=True)
     call_type_human = serializers.CharField(source="get_call_type_display", read_only=True)
 
     class Meta:
