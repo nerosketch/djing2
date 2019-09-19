@@ -1,8 +1,5 @@
 import re
-
 from django.db.models import Q
-from django.utils.html import escape
-from django.conf import settings
 from rest_framework.response import Response
 
 from djing2 import MAC_ADDR_REGEX
@@ -11,32 +8,35 @@ from customers.models import Customer
 from devices.models import Device
 
 
-REST_FRAMEWORK = getattr(settings, 'REST_FRAMEWORK', 15)
-
-
-def replace_without_case(orig, old, new):
-    return re.sub(old, new, orig, flags=re.IGNORECASE)
-
-
 def accs_format(acc: Customer, search_str: str) -> dict:
     r = {
         'id': acc.pk,
-        'fio': replace_without_case(escape(acc.fio), search_str, "<b>%s</b>" % search_str),
-        'username': replace_without_case(escape(acc.username), search_str, "<b>%s</b>" % search_str)
+        'fio': acc.fio,
+        'username': acc.username,
+        't': 1
     }
-    tel = replace_without_case(escape(acc.telephone), search_str, "<b>%s</b>" % search_str)
-    if tel:
+    if acc.telephone:
         r.update({
-            'telephone': tel
+            'telephone': acc.telephone
+        })
+    if acc.group:
+        r.update({
+            'gid': acc.group.pk
         })
     return r
 
 
 def dev_format(device: Device, search_str: str) -> dict:
-    return {
+    r = {
         'id': device.pk,
-        'text': replace_without_case(escape(device.comment), search_str, "<b>%s</b>" % search_str),
+        'text': device.comment,
+        't': 2
     }
+    if device.group:
+        r.update({
+            'gid': device.group.pk
+        })
+    return r
 
 
 class SearchApiView(DjingListAPIView):
@@ -49,7 +49,7 @@ class SearchApiView(DjingListAPIView):
             return Response(())
         s = s.replace('+', '')
 
-        limit_count = REST_FRAMEWORK.get('PAGE_SIZE')
+        limit_count = 10
 
         if s:
             customers = Customer.objects.filter(
