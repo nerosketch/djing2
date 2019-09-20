@@ -1,6 +1,7 @@
 import re
 
 from kombu.exceptions import OperationalError
+from json import dumps as json_dumps
 
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _, gettext
@@ -89,12 +90,21 @@ class DeviceModelViewSet(DjingModelViewSet):
     def scan_ports(self, request, pk=None):
         device = self.get_object()
         manager = device.get_manager_object()
+        # TODO: get max len from manager,
+        # implement get_ports for other devices
+        chunk_max_len = 200
+
+        def chunk_cook(chunk) -> bytes:
+            chunk_json = json_dumps(chunk, ensure_ascii=False)
+            chunk_json = '%s\n' % chunk_json
+            format_string = '{:%ds}' % chunk_max_len
+            dat = format_string.format(chunk_json)
+            return dat.encode()[:chunk_max_len]
         try:
             ports = manager.get_ports()
             items_count = next(ports)
-            r = StreamingHttpResponse(streaming_content=(p.to_dict() for p in ports if p is not None))
-            r['X-Progress-Max'] = items_count
-            print('AllCount:', items_count)
+            r = StreamingHttpResponse(streaming_content=(chunk_cook(p.to_dict()) for p in ports))
+            r['Content-Length'] = items_count * chunk_max_len
             return r
         except StopIteration:
             pass

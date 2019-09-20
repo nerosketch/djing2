@@ -108,7 +108,6 @@ class DLinkDevice(DevBase, SNMPBaseWorker):
         ints = self.get_list('.1.3.6.1.2.1.10.7.2.1.1')
         for num in ints:
             yield self.get_port(snmp_num=num)
-        raise StopIteration
 
     def get_port(self, snmp_num: int):
         snmp_num = safe_int(snmp_num)
@@ -211,7 +210,6 @@ class OLTDevice(DevBase, SNMPBaseWorker):
                         signal=signal / 10 if signal else '—',
                         uptime=safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % onu_num)),
                         snmp_worker=self)
-            raise StopIteration
         except EasySNMPTimeoutError as e:
             raise EasySNMPTimeoutError(
                 "%s (%s)" % (gettext('wait for a reply from the SNMP Timeout'), e)
@@ -260,7 +258,7 @@ class OnuDevice(DevBase, SNMPBaseWorker):
         SNMPBaseWorker.__init__(self, dev_ip_addr, dev_instance.man_passw, 2)
 
     def get_ports(self) -> Generator:
-        raise StopIteration
+        yield 0
 
     def get_device_name(self):
         pass
@@ -373,7 +371,6 @@ class EltexSwitch(DLinkDevice):
                             uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % n),
                             speed=int(speed or 0)
                             )
-        raise StopIteration
 
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
@@ -630,4 +627,3 @@ class HuaweiSwitch(EltexSwitch):
             )
             ep.writable = True
             yield ep
-        raise StopIteration
