@@ -1,6 +1,6 @@
 import os
 import re
-from typing import AnyStr, Iterable, Optional, Dict
+from typing import AnyStr, Iterable, Optional, Dict, Generator
 from easysnmp import EasySNMPTimeoutError
 from pexpect import TIMEOUT
 from transliterate import translit
@@ -12,7 +12,7 @@ from devices.expect_scripts import register_f601_onu, register_f660_onu, ExpectV
 from devices.expect_scripts.base import sn_to_mac
 from .base_intr import (
     DevBase, SNMPBaseWorker, BasePort, DeviceImplementationError,
-    ListOrError, DeviceConfigurationError
+    DeviceConfigurationError
 )
 
 
@@ -104,10 +104,11 @@ class DLinkDevice(DevBase, SNMPBaseWorker):
                 1 if save_before_reboot else 0
             )), None
 
-    def get_ports(self) -> ListOrError:
+    def get_ports(self) -> Generator:
         ints = self.get_list('.1.3.6.1.2.1.10.7.2.1.1')
         for num in ints:
             yield self.get_port(snmp_num=num)
+        raise StopIteration
 
     def get_port(self, snmp_num: int):
         snmp_num = safe_int(snmp_num)
@@ -158,6 +159,13 @@ class ONUdev(BasePort):
     def enable(self):
         pass
 
+    def to_dict(self):
+        sdata = super().to_dict()
+        sdata.update({
+            'signal': self.signal
+        })
+        return sdata
+
     def __str__(self):
         return "%d: '%s' %s" % (self.num, self.nm, self.mac())
 
@@ -171,28 +179,43 @@ class OLTDevice(DevBase, SNMPBaseWorker):
         DevBase.__init__(self, dev_instance)
         SNMPBaseWorker.__init__(self, dev_instance.ip_address, dev_instance.man_passw, 2)
 
-    def get_ports(self) -> ListOrError:
-        nms = self.get_list('.1.3.6.1.4.1.3320.101.10.1.1.79')
-        res = []
+    def get_ports(self) -> Generator:
+        """return the ports count first, and ports in next"""
+        # numbers
+        # fiber_nums = (safe_int(i) for i in self.get_list('.1.3.6.1.4.1.3320.101.6.1.1.1'))
+        # numbers
+        fiber_onu_counts = self.get_list('.1.3.6.1.4.1.3320.101.6.1.1.2')
+
+        # comma separated strings, remember to remove empty elements
+        fiber_onu_nums = self.get_list('.1.3.6.1.4.1.3320.101.6.1.1.23')
+
+        # All onu's count
+        yield sum(safe_int(i) for i in fiber_onu_counts)
+
         try:
-            for nm in nms:
-                n = int(nm)
-                status = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.26.%d' % n)
-                signal = safe_float(self.get_item('.1.3.6.1.4.1.3320.101.10.5.1.5.%d' % n))
-                onu = ONUdev(
-                    num=n,
-                    name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % n),
-                    status=True if status == '3' else False,
-                    mac=self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % n),
-                    speed=0,
-                    signal=signal / 10 if signal else '—',
-                    snmp_worker=self)
-                res.append(onu)
+            for fiber_onu_num in fiber_onu_nums:
+                for onu_num in fiber_onu_num.split(','):
+                    if not onu_num:
+                        continue
+                    onu_num = safe_int(onu_num)
+                    if onu_num == 0:
+                        continue
+                    status = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.26.%d' % onu_num)
+                    signal = safe_float(self.get_item('.1.3.6.1.4.1.3320.101.10.5.1.5.%d' % onu_num))
+                    yield ONUdev(
+                        num=onu_num,
+                        name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % onu_num),
+                        status=True if status == '3' else False,
+                        mac=self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % onu_num),
+                        speed=0,
+                        signal=signal / 10 if signal else '—',
+                        uptime=safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % onu_num)),
+                        snmp_worker=self)
+            raise StopIteration
         except EasySNMPTimeoutError as e:
-            return EasySNMPTimeoutError(
+            raise EasySNMPTimeoutError(
                 "%s (%s)" % (gettext('wait for a reply from the SNMP Timeout'), e)
-            ), res
-        return res
+            )
 
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
@@ -236,8 +259,8 @@ class OnuDevice(DevBase, SNMPBaseWorker):
             ))
         SNMPBaseWorker.__init__(self, dev_ip_addr, dev_instance.man_passw, 2)
 
-    def get_ports(self) -> ListOrError:
-        return ()
+    def get_ports(self) -> Generator:
+        raise StopIteration
 
     def get_device_name(self):
         pass
@@ -251,6 +274,10 @@ class OnuDevice(DevBase, SNMPBaseWorker):
         num = safe_int(self.db_instance.snmp_extra)
         if num == 0:
             return
+        status_map = {
+            '3': 'ok',
+            '2': 'down'
+        }
         try:
             status = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.26.%d' % num)
             signal = safe_float(self.get_item('.1.3.6.1.4.1.3320.101.10.5.1.5.%d' % num))
@@ -262,7 +289,7 @@ class OnuDevice(DevBase, SNMPBaseWorker):
             if status is not None and status.isdigit():
                 basic_info = super().get_details()
                 basic_info.update({
-                    'status': status,
+                    'status': status_map.get(status, 'unknown'),
                     'signal': signal / 10 if signal else '—',
                     'name': self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % num),
                     'mac': mac,
@@ -334,7 +361,8 @@ class EltexSwitch(DLinkDevice):
     has_attachable_to_customer = True
     tech_code = 'eltex_sw'
 
-    def get_ports(self) -> ListOrError:
+    def get_ports(self) -> Generator:
+        yield 28
         for i, n in enumerate(range(49, 77), 1):
             speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % n)
             yield EltexPort(self,
@@ -345,6 +373,7 @@ class EltexSwitch(DLinkDevice):
                             uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % n),
                             speed=int(speed or 0)
                             )
+        raise StopIteration
 
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
@@ -490,8 +519,12 @@ class ZteOnuDevice(OnuDevice):
         if sn is not None:
             sn = 'ZTEG%s' % ''.join('%.2X' % ord(x) for x in sn[-4:])
 
+        status_map = {
+            '1': 'ok',
+            '2': 'down'
+        }
         info = {
-            'status': safe_int(self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1' % fiber_addr)),
+            'status': status_map.get(self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1' % fiber_addr), 'unknown'),
             'signal': conv_zte_signal(signal),
             'distance': safe_float(distance) / 10,
             # 'ip_addr': self.get_item('.1.3.6.1.4.1.3902.1012.3.50.16.1.1.10.%s' % fiber_addr),
@@ -571,7 +604,10 @@ class HuaweiSwitch(EltexSwitch):
     has_attachable_to_customer = True
     tech_code = 'huawei_s2300'
 
-    def get_ports(self):
+    def get_ports(self) -> Generator:
+        # interfaces count
+        yield safe_int(self.get_item('.1.3.6.1.2.1.17.1.2.0'))
+
         interfaces_ids = self.get_list('.1.3.6.1.2.1.17.1.4.1.2')
         if interfaces_ids is None:
             raise DeviceImplementationError('Switch returned null')
@@ -594,3 +630,4 @@ class HuaweiSwitch(EltexSwitch):
             )
             ep.writable = True
             yield ep
+        raise StopIteration
