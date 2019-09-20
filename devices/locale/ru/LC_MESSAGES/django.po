@@ -165,10 +165,6 @@ msgstr "Порт"
 msgid "Ports"
 msgstr "Порты"
 
-#: devices/views.py:82
-msgid "Port scan failed"
-msgstr "Ошибка при сканировании портов"
-
 #: devices/views.py:130
 msgid "Parameter port_id is bad"
 msgstr "Параметр port_id плох"

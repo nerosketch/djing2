@@ -10,7 +10,7 @@ netaddr
 # db client for Postgres
 psycopg2-binary
 
-easysnmp
+-e git://github.com/nerosketch/easysnmp.git#egg=easysnmp
 pid
 django-guardian
 
