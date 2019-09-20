@@ -4,6 +4,7 @@ from kombu.exceptions import OperationalError
 
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _, gettext
+from django.http.response import StreamingHttpResponse
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
@@ -88,19 +89,15 @@ class DeviceModelViewSet(DjingModelViewSet):
     def scan_ports(self, request, pk=None):
         device = self.get_object()
         manager = device.get_manager_object()
-        ports = tuple(manager.get_ports())
-        if not ports:
-            return Response({'Error': {
-                'text': gettext('Port scan failed')
-            }})
-        if ports is not None and len(ports) > 0:
-            if isinstance(ports[0], Exception):
-                return Response({
-                    'Error': {
-                        'text': str(ports[0])
-                    }
-                })
-            return Response(p.to_dict() for p in ports)
+        try:
+            ports = manager.get_ports()
+            items_count = next(ports)
+            r = StreamingHttpResponse(streaming_content=(p.to_dict() for p in ports if p is not None))
+            r['X-Progress-Max'] = items_count
+            print('AllCount:', items_count)
+            return r
+        except StopIteration:
+            pass
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True)

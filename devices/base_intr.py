@@ -1,15 +1,10 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, Iterable, Generator, Optional, Dict
+from typing import Generator, Optional, Dict
 from easysnmp import Session
 
 from django.utils.translation import gettext, gettext_lazy as _
 
 from djing2.lib import RuTimedelta
-
-ListOrError = Union[
-    Iterable,
-    Union[Exception, Iterable]
-]
 
 
 class DeviceImplementationError(NotImplementedError):
@@ -41,8 +36,9 @@ class DevBase(object, metaclass=ABCMeta):
         return 5, _('Reboot not ready')
 
     @abstractmethod
-    def get_ports(self) -> ListOrError:
-        pass
+    def get_ports(self) -> Generator:
+        """return the ports count first, and ports in next"""
+        raise NotImplementedError
 
     @abstractmethod
     def get_device_name(self) -> str:
