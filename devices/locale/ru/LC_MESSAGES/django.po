@@ -542,3 +542,7 @@ msgstr "%(device_name)s недостижим"
 
 #~ msgid "Enter valid JSON"
 #~ msgstr "Введите данные в формате JSON"
+
+msgid "For fetch additional device info, snmp community required"
+msgstr "Для получения дополнительной информации по устройству требуются snmp данные"
+

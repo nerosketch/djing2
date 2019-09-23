@@ -105,6 +105,8 @@ class DeviceModelViewSet(DjingModelViewSet):
             items_count = next(ports)
             r = StreamingHttpResponse(streaming_content=(chunk_cook(p.to_dict()) for p in ports))
             r['Content-Length'] = items_count * chunk_max_len
+            r['Cache-Control'] = 'no-store'
+            r['Content-Type'] = 'application/octet-stream'
             return r
         except StopIteration:
             pass
