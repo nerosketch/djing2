@@ -255,6 +255,10 @@ class OnuDevice(DevBase, SNMPBaseWorker):
             raise DeviceImplementationError(gettext(
                 'Ip address or parent device with ip address required for ONU device'
             ))
+        if not dev_instance.man_passw:
+            raise DeviceImplementationError(gettext(
+                'For fetch additional device info, snmp community required'
+            ))
         SNMPBaseWorker.__init__(self, dev_ip_addr, dev_instance.man_passw, 2)
 
     def get_ports(self) -> Generator:
@@ -270,7 +274,7 @@ class OnuDevice(DevBase, SNMPBaseWorker):
         if self.db_instance is None:
             return
         num = safe_int(self.db_instance.snmp_extra)
-        if num == 0:
+        if not num:
             return
         status_map = {
             '3': 'ok',
