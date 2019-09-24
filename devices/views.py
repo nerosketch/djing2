@@ -1,7 +1,8 @@
 import re
+from types import GeneratorType
+from json import dumps as json_dumps
 
 from kombu.exceptions import OperationalError
-from json import dumps as json_dumps
 
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _, gettext
@@ -17,7 +18,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from customers.models import Customer
 from messenger.tasks import multicast_viber_notify
-from devices.base_intr import DeviceImplementationError
+from devices.base_intr import DeviceImplementationError, BasePort
 from djing2 import IP_ADDR_REGEX
 from djing2.lib import ProcessLocked, safe_int
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -90,23 +91,25 @@ class DeviceModelViewSet(DjingModelViewSet):
     def scan_ports(self, request, pk=None):
         device = self.get_object()
         manager = device.get_manager_object()
-        # TODO: get max len from manager,
-        # implement get_ports for other devices
-        chunk_max_len = 200
 
-        def chunk_cook(chunk) -> bytes:
+        def chunk_cook(chunk: dict) -> bytes:
             chunk_json = json_dumps(chunk, ensure_ascii=False)
             chunk_json = '%s\n' % chunk_json
             format_string = '{:%ds}' % chunk_max_len
             dat = format_string.format(chunk_json)
             return dat.encode()[:chunk_max_len]
+
         try:
             ports = manager.get_ports()
-            items_count = next(ports)
-            r = StreamingHttpResponse(streaming_content=(chunk_cook(p.to_dict()) for p in ports))
-            r['Content-Length'] = items_count * chunk_max_len
-            r['Cache-Control'] = 'no-store'
-            r['Content-Type'] = 'application/octet-stream'
+            if isinstance(ports, GeneratorType):
+                item_size = next(ports)
+                chunk_max_len = next(ports)
+                r = StreamingHttpResponse(streaming_content=(chunk_cook(p.to_dict()) for p in ports))
+                r['Content-Length'] = item_size * chunk_max_len
+                r['Cache-Control'] = 'no-store'
+                r['Content-Type'] = 'application/octet-stream'
+            else:
+                r = Response(data=(p.to_dict() for p in ports))
             return r
         except StopIteration:
             pass
@@ -144,18 +147,17 @@ class DeviceModelViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_dev_manager_err
     def toggle_port(self, request, pk=None):
-        device = self.get_object()
-        manager = device.get_manager_object()
         port_id = request.query_params.get('port_id')
         port_state = request.query_params.get('state')
         if not port_id or not port_id.isdigit():
             return Response(_('Parameter port_id is bad'), status=status.HTTP_400_BAD_REQUEST)
-        ports = tuple(manager.get_ports())
         port_id = int(port_id)
+        device = self.get_object()
+        manager = device.get_manager_object()
         if port_state == 'up':
-            ports[port_id - 1].enable()
+            manager.port_enable(port_num=port_id)
         elif port_state == 'down':
-            ports[port_id - 1].disable()
+            manager.port_disable(port_num=port_id)
         else:
             return Response(_('Parameter port_state is bad'), status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)

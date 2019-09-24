@@ -1,6 +1,6 @@
 import os
 import re
-from typing import AnyStr, Iterable, Optional, Dict, Generator
+from typing import AnyStr, Iterable, Optional, Dict
 from easysnmp import EasySNMPTimeoutError
 from pexpect import TIMEOUT
 from transliterate import translit
@@ -12,7 +12,8 @@ from devices.expect_scripts import register_f601_onu, register_f660_onu, ExpectV
 from devices.expect_scripts.base import sn_to_mac
 from .base_intr import (
     DevBase, SNMPBaseWorker, BasePort, DeviceImplementationError,
-    DeviceConfigurationError
+    DeviceConfigurationError,
+    GeneratorOrTuple
 )
 
 
@@ -67,16 +68,6 @@ class DLinkPort(BasePort):
             raise TypeError
         self.snmp_worker = snmp_worker
 
-    def disable(self):
-        self.snmp_worker.set_int_value(
-            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', self.num), 2
-        )
-
-    def enable(self):
-        self.snmp_worker.set_int_value(
-            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', self.num), 1
-        )
-
 
 class DLinkDevice(DevBase, SNMPBaseWorker):
     has_attachable_to_customer = True
@@ -104,15 +95,14 @@ class DLinkDevice(DevBase, SNMPBaseWorker):
                 1 if save_before_reboot else 0
             )), None
 
-    def get_ports(self) -> Generator:
-        ints = self.get_list('.1.3.6.1.2.1.10.7.2.1.1')
-        for num in ints:
-            yield self.get_port(snmp_num=num)
+    def get_ports(self) -> GeneratorOrTuple:
+        ifs_ids = self.get_list('.1.3.6.1.2.1.10.7.2.1.1')
+        return tuple(self.get_port(snmp_num=if_id) for if_id in ifs_ids)
 
     def get_port(self, snmp_num: int):
         snmp_num = safe_int(snmp_num)
         status = self.get_item('.1.3.6.1.2.1.2.2.1.7.%d' % snmp_num)
-        status = True if status and int(status) == 1 else False
+        status = status and int(status) == 1
         return DLinkPort(
             num=snmp_num,
             name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % snmp_num),
@@ -121,6 +111,16 @@ class DLinkDevice(DevBase, SNMPBaseWorker):
             speed=self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % snmp_num),
             uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % snmp_num),
             snmp_worker=self
+        )
+
+    def port_disable(self, port_num: int):
+        self.set_int_value(
+            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num), 2
+        )
+
+    def port_enable(self, port_num: int):
+        self.set_int_value(
+            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num), 1
         )
 
     def get_device_name(self):
@@ -152,12 +152,6 @@ class ONUdev(BasePort):
         self.snmp_worker = snmp_worker
         self.signal = signal
 
-    def disable(self):
-        pass
-
-    def enable(self):
-        pass
-
     def to_dict(self):
         sdata = super().to_dict()
         sdata.update({
@@ -178,8 +172,12 @@ class OLTDevice(DevBase, SNMPBaseWorker):
         DevBase.__init__(self, dev_instance)
         SNMPBaseWorker.__init__(self, dev_instance.ip_address, dev_instance.man_passw, 2)
 
-    def get_ports(self) -> Generator:
-        """return the ports count first, and ports in next"""
+    def get_ports(self) -> GeneratorOrTuple:
+        """
+        If fast operation then just return tuple.
+        If long operation then return the generator of ports count first,
+        then max chunk size, and ports in next in generations
+        """
         # numbers
         # fiber_nums = (safe_int(i) for i in self.get_list('.1.3.6.1.4.1.3320.101.6.1.1.1'))
         # numbers
@@ -190,6 +188,9 @@ class OLTDevice(DevBase, SNMPBaseWorker):
 
         # All onu's count
         yield sum(safe_int(i) for i in fiber_onu_counts)
+
+        # chunk max size
+        yield 200
 
         try:
             for fiber_onu_num in fiber_onu_nums:
@@ -204,7 +205,7 @@ class OLTDevice(DevBase, SNMPBaseWorker):
                     yield ONUdev(
                         num=onu_num,
                         name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % onu_num),
-                        status=True if status == '3' else False,
+                        status=status == '3',
                         mac=self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % onu_num),
                         speed=0,
                         signal=signal / 10 if signal else '—',
@@ -235,6 +236,14 @@ class OLTDevice(DevBase, SNMPBaseWorker):
     def register_device(self, extra_data: Dict):
         pass
 
+    def port_disable(self, port_num: int):
+        # May be disabled
+        raise NotImplementedError
+
+    def port_enable(self, port_num: int):
+        # May be enabled
+        raise NotImplementedError
+
 
 class OnuDevice(DevBase, SNMPBaseWorker):
     has_attachable_to_customer = True
@@ -261,8 +270,8 @@ class OnuDevice(DevBase, SNMPBaseWorker):
             ))
         SNMPBaseWorker.__init__(self, dev_ip_addr, dev_instance.man_passw, 2)
 
-    def get_ports(self) -> Generator:
-        yield 0
+    def get_ports(self) -> GeneratorOrTuple:
+        return ()
 
     def get_device_name(self):
         pass
@@ -336,6 +345,12 @@ class OnuDevice(DevBase, SNMPBaseWorker):
     def register_device(self, extra_data: Dict):
         pass
 
+    def port_disable(self, port_num: int):
+        pass
+
+    def port_enable(self, port_num: int):
+        pass
+
 
 class EltexPort(BasePort):
     def __init__(self, snmp_worker, *args, **kwargs):
@@ -344,18 +359,6 @@ class EltexPort(BasePort):
             raise TypeError
         self.snmp_worker = snmp_worker
 
-    def disable(self):
-        self.snmp_worker.set_int_value(
-            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', self.num),
-            2
-        )
-
-    def enable(self):
-        self.snmp_worker.set_int_value(
-            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', self.num),
-            1
-        )
-
 
 class EltexSwitch(DLinkDevice):
     description = _('Eltex switch')
@@ -363,18 +366,19 @@ class EltexSwitch(DLinkDevice):
     has_attachable_to_customer = True
     tech_code = 'eltex_sw'
 
-    def get_ports(self) -> Generator:
-        yield 28
-        for i, n in enumerate(range(49, 77), 1):
+    def get_ports(self) -> GeneratorOrTuple:
+        def build_port(s, i: int, n: int):
             speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % n)
-            yield EltexPort(self,
-                            num=i,
-                            name=self.get_item('.1.3.6.1.2.1.31.1.1.1.18.%d' % n),
-                            status=self.get_item('.1.3.6.1.2.1.2.2.1.8.%d' % n),
-                            mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % n),
-                            uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % n),
-                            speed=int(speed or 0)
-                            )
+            return EltexPort(
+                s,
+                num=i,
+                name=self.get_item('.1.3.6.1.2.1.31.1.1.1.18.%d' % n),
+                status=self.get_item('.1.3.6.1.2.1.2.2.1.8.%d' % n),
+                mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % n),
+                uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % n),
+                speed=int(speed or 0)
+            )
+        return tuple(build_port(self, i, n) for i, n in enumerate(range(49, 77), 1))
 
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
@@ -390,6 +394,18 @@ class EltexSwitch(DLinkDevice):
 
     def reboot(self, save_before_reboot=False):
         return DevBase.reboot(self, save_before_reboot)
+
+    def port_disable(self, port_num: int):
+        self.set_int_value(
+            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num),
+            2
+        )
+
+    def port_enable(self, port_num: int):
+        self.set_int_value(
+            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num),
+            1
+        )
 
 
 def conv_zte_signal(lvl: int) -> float:
@@ -413,25 +429,25 @@ class Olt_ZTE_C320(OLTDevice):
         } for fiber_name, fiber_id in self.get_list_keyval('.1.3.6.1.4.1.3902.1012.3.13.1.1.1'))
         return fibers
 
-    def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
-        onu_types = self.get_list_keyval('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%d' % fiber_num)
-        onu_ports = self.get_list('.1.3.6.1.4.1.3902.1012.3.28.1.1.2.%d' % fiber_num)
-        onu_signals = safe_int(self.get_list('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%d' % fiber_num))
-
-        # Real sn in last 3 octets
-        onu_sns = self.get_list('.1.3.6.1.4.1.3902.1012.3.28.1.1.5.%d' % fiber_num)
-        onu_prefixs = self.get_list('.1.3.6.1.4.1.3902.1012.3.50.11.2.1.1.%d' % fiber_num)
-        onu_list = ({
-            'onu_type': onu_type_num[0],
-            'onu_port': onu_port,
-            'onu_signal': conv_zte_signal(onu_signal),
-            'onu_sn': onu_prefix + ''.join('%.2X' % ord(i) for i in onu_sn[-4:]),  # Real sn in last 4 octets,
-            'snmp_extra': "%d.%d" % (fiber_num, safe_int(onu_type_num[1])),
-        } for onu_type_num, onu_port, onu_signal, onu_sn, onu_prefix in zip(
-            onu_types, onu_ports, onu_signals, onu_sns, onu_prefixs
-        ))
-
-        return onu_list
+    # def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
+    #     onu_types = self.get_list_keyval('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%d' % fiber_num)
+    #     onu_ports = self.get_list('.1.3.6.1.4.1.3902.1012.3.28.1.1.2.%d' % fiber_num)
+    #     onu_signals = self.get_list('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%d' % fiber_num)
+    #
+    #     # Real sn in last 3 octets
+    #     onu_sns = self.get_list('.1.3.6.1.4.1.3902.1012.3.28.1.1.5.%d' % fiber_num)
+    #     onu_prefixs = self.get_list('.1.3.6.1.4.1.3902.1012.3.50.11.2.1.1.%d' % fiber_num)
+    #     onu_list = ({
+    #         'onu_type': onu_type_num[0],
+    #         'onu_port': onu_port,
+    #         'onu_signal': conv_zte_signal(onu_signal),
+    #         'onu_sn': onu_prefix + ''.join('%.2X' % ord(i) for i in onu_sn[-4:]),  # Real sn in last 4 octets,
+    #         'snmp_extra': "%d.%d" % (fiber_num, safe_int(onu_type_num[1])),
+    #     } for onu_type_num, onu_port, onu_signal, onu_sn, onu_prefix in zip(
+    #         onu_types, onu_ports, onu_signals, onu_sns, onu_prefixs
+    #     ))
+    #
+    #     return onu_list
 
     def get_units_unregistered(self, fiber_num: int) -> Iterable:
         sn_num_list = self.get_list_keyval('.1.3.6.1.4.1.3902.1012.3.13.3.1.2.%d' % fiber_num)
@@ -605,20 +621,20 @@ class HuaweiSwitch(EltexSwitch):
     has_attachable_to_customer = True
     tech_code = 'huawei_s2300'
 
-    def get_ports(self) -> Generator:
+    def get_ports(self) -> GeneratorOrTuple:
         # interfaces count
-        yield safe_int(self.get_item('.1.3.6.1.2.1.17.1.2.0'))
+        # yield safe_int(self.get_item('.1.3.6.1.2.1.17.1.2.0'))
 
         interfaces_ids = self.get_list('.1.3.6.1.2.1.17.1.4.1.2')
         if interfaces_ids is None:
             raise DeviceImplementationError('Switch returned null')
-        for i, n in enumerate(interfaces_ids):
-            n = int(n)
+
+        def build_port(i: int, n: int):
             speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % n)
             oper_status = safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.7.%d' % n))
-            oper_status = True if oper_status == 1 else False
+            oper_status = oper_status == 1
             link_status = safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.8.%d' % n))
-            link_status = True if link_status == 1 else False
+            link_status = link_status == 1
             ep = EltexPort(
                 self,
                 num=i + 1,
@@ -630,4 +646,5 @@ class HuaweiSwitch(EltexSwitch):
                 uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % n)        # UpTime
             )
             ep.writable = True
-            yield ep
+            return ep
+        return tuple(build_port(i, int(n)) for i, n in enumerate(interfaces_ids))
