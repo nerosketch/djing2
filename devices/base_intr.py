@@ -1,10 +1,13 @@
 from abc import ABCMeta, abstractmethod
-from typing import Generator, Optional, Dict
+from typing import Generator, Optional, Dict, Union, Iterable
 from easysnmp import Session
 
 from django.utils.translation import gettext, gettext_lazy as _
 
 from djing2.lib import RuTimedelta
+
+
+GeneratorOrTuple = Union[Generator, Iterable]
 
 
 class DeviceImplementationError(NotImplementedError):
@@ -36,9 +39,23 @@ class DevBase(object, metaclass=ABCMeta):
         return 5, _('Reboot not ready')
 
     @abstractmethod
-    def get_ports(self) -> Generator:
-        """return the ports count first, and ports in next"""
+    def get_ports(self) -> GeneratorOrTuple:
+        """
+        If fast operation then just return tuple.
+        If long operation then return the generator of ports count first,
+        then max chunk size, and ports in next in generations
+        """
         raise NotImplementedError
+
+    @abstractmethod
+    def port_disable(self, port_num: int):
+        """Disable port by number"""
+        pass
+
+    @abstractmethod
+    def port_enable(self, port_num: int):
+        """Enable port by number"""
+        pass
 
     @abstractmethod
     def get_device_name(self) -> str:
@@ -108,14 +125,6 @@ class BasePort(metaclass=ABCMeta):
         self.sp = speed
         self.uptime = int(uptime) if uptime else None
         self.writable = writable
-
-    @abstractmethod
-    def disable(self):
-        pass
-
-    @abstractmethod
-    def enable(self):
-        pass
 
     def mac(self) -> str:
         return ':'.join('%x' % ord(i) for i in self._mac) if self._mac else None
