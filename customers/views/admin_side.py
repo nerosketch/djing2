@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.conf import settings
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
@@ -28,7 +29,9 @@ from services.serializers import ServiceModelSerializer
 
 
 class CustomerServiceModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerService.objects.all()
+    queryset = models.CustomerService.objects.select_related(
+        'service'
+    )
     serializer_class = serializers.CustomerServiceModelSerializer
 
     def create(self, request, *args, **kwargs):
@@ -38,13 +41,17 @@ class CustomerServiceModelViewSet(DjingModelViewSet):
 
 
 class CustomerStreetModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerStreet.objects.all()
+    queryset = models.CustomerStreet.objects.select_related(
+        'group'
+    )
     serializer_class = serializers.CustomerStreetModelSerializer
     filterset_fields = ('group',)
 
 
 class CustomerLogModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerLog.objects.all()
+    queryset = models.CustomerLog.objects.select_related(
+        'customer', 'author'
+    )
     serializer_class = serializers.CustomerLogModelSerializer
     filterset_fields = ('customer', )
 
@@ -244,31 +251,35 @@ class CustomersGroupsListAPIView(DjingListAPIView):
             'groupapp.view_group', klass=Group,
             use_groups=False,
             accept_global_perms=False
-        )
+        ).annotate(usercount=Count('customer'))
 
 
 class PassportInfoModelViewSet(DjingModelViewSet):
-    queryset = models.PassportInfo.objects.all()
+    queryset = models.PassportInfo.objects.defer('customer')
     serializer_class = serializers.PassportInfoModelSerializer
 
 
 class InvoiceForPaymentModelViewSet(DjingModelViewSet):
-    queryset = models.InvoiceForPayment.objects.all()
+    queryset = models.InvoiceForPayment.objects.select_related(
+        'customer', 'author'
+    )
     serializer_class = serializers.InvoiceForPaymentModelSerializer
 
 
 class CustomerRawPasswordModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerRawPassword.objects.all()
+    queryset = models.CustomerRawPassword.objects.select_related(
+        'customer'
+    )
     serializer_class = serializers.CustomerRawPasswordModelSerializer
 
 
 class AdditionalTelephoneModelViewSet(DjingModelViewSet):
-    queryset = models.AdditionalTelephone.objects.all()
+    queryset = models.AdditionalTelephone.objects.defer('customer')
     serializer_class = serializers.AdditionalTelephoneModelSerializer
 
 
 class PeriodicPayForIdModelViewSet(DjingModelViewSet):
-    queryset = models.PeriodicPayForId.objects.all()
+    queryset = models.PeriodicPayForId.objects.defer('account')
     serializer_class = serializers.PeriodicPayForIdModelSerializer
 
 
@@ -287,7 +298,7 @@ class AttachServicesToGroups(APIView):
         selected_services_id = tuple(
             pk[0] for pk in grp.service_set.only('pk').values_list('pk')
         )
-        services = Service.objects.only('pk').iterator()
+        services = Service.objects.only('pk', 'title').iterator()
         return Response(({
             'service': srv.pk,
             'service_name': srv.title,
