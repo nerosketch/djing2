@@ -18,7 +18,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from customers.models import Customer
 from messenger.tasks import multicast_viber_notify
-from devices.base_intr import DeviceImplementationError, BasePort
+from devices.base_intr import DeviceImplementationError
 from djing2 import IP_ADDR_REGEX
 from djing2.lib import ProcessLocked, safe_int
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
