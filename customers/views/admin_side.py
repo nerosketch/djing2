@@ -55,7 +55,10 @@ class CustomerLogModelViewSet(DjingModelViewSet):
 
 
 class CustomerModelViewSet(DjingModelViewSet):
-    queryset = models.Customer.objects.all()
+    queryset = models.Customer.objects.select_related(
+        'group', 'street', 'gateway', 'device', 'dev_port',
+        'current_service', 'last_connected_service'
+    )
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, OrderingFilter)
     search_fields = ('username', 'fio', 'telephone', 'description')
