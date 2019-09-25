@@ -94,7 +94,7 @@ class CustomerModelSerializer(serializers.ModelSerializer):
 
 
 class CustomerGroupSerializer(GroupsSerializer):
-    usercount = serializers.IntegerField(source='customer_set.count', read_only=True)
+    usercount = serializers.IntegerField(read_only=True)
 
     class Meta(GroupsSerializer.Meta):
         fields = ('pk', 'title', 'code', 'usercount')
