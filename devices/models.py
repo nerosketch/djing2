@@ -107,7 +107,7 @@ class Device(models.Model):
         if not self.extra_data:
             if self.parent_dev and self.parent_dev.extra_data:
                 return mng.register_device(self.parent_dev.extra_data)
-        return mng.register_device(dict(self.extra_data))
+        return mng.register_device(self.extra_data)
 
 
 class Port(models.Model):
