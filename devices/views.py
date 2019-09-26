@@ -171,7 +171,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             manager = onu.get_manager_object()
             mac = onu.mac_addr
             ports = manager.get_list_keyval('.1.3.6.1.4.1.3320.101.10.1.1.3')
-            text = _('Device with mac address %(mac)s does not exist') % mac
+            text = _('Device with mac address %(mac)s does not exist') % {'mac': mac}
             http_status = status.HTTP_404_NOT_FOUND
             for srcmac, snmpnum in ports:
                 # convert bytes mac address to str presentation mac address
