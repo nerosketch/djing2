@@ -33,35 +33,35 @@ class DialAccount(UserProfile):
         db_table = 'ats_accounts'
 
 
-class DialLogManager(models.Manager):
-    def create_dial(self, call: dict):
-        if not isinstance(call, dict):
-            raise TypeError
-
-        # Try to attach ats_dev to log instance
-        channel_name = call.get('channel_name')
-        # For example, channel name might be "Dongle/simname-0100000129"
-        if channel_name is not None and re.match('^[a-zA-Z]{1,12}\/.{1,32}\-\d{9,12}$', channel_name):
-            try:
-                dev_type, call_detail = channel_name.split('/')
-                dev_name, call_id = call_detail.split('-')
-                ats_dev = ATSDeviceModel.objects.filter(name=dev_name).first()
-                if ats_dev:
-                    call.update({
-                        'ats_dev': ats_dev
-                    })
-            except ValueError:
-                pass
-
-        dclid = call.get('dst_caller_num')
-        if dclid is not None:
-            dacc = DialAccount.objects.filter(ats_number=dclid).first()
-            if dacc:
-                call.update({
-                    'dial_account': dacc
-                })
-
-        return self.create(**call)
+# class DialLogQuerySet(models.QuerySet):
+#     def create_dial(self, call: dict):
+#         if not isinstance(call, dict):
+#             raise TypeError
+#
+#         # Try to attach ats_dev to log instance
+#         channel_name = call.get('channel_name')
+#         # For example, channel name might be "Dongle/simname-0100000129"
+#         if channel_name is not None and re.match('^[a-zA-Z]{1,12}\/.{1,32}\-\d{9,12}$', channel_name):
+#             try:
+#                 dev_type, call_detail = channel_name.split('/')
+#                 dev_name, call_id = call_detail.split('-')
+#                 ats_dev = ATSDeviceModel.objects.filter(name=dev_name).first()
+#                 if ats_dev:
+#                     call.update({
+#                         'ats_dev': ats_dev
+#                     })
+#             except ValueError:
+#                 pass
+#
+#         dclid = call.get('dst_caller_num')
+#         if dclid is not None:
+#             dacc = DialAccount.objects.filter(ats_number=dclid).first()
+#             if dacc:
+#                 call.update({
+#                     'dial_account': dacc
+#                 })
+#
+#         return self.create(**call)
 
 
 class DialLog(models.Model):
@@ -114,7 +114,7 @@ class DialLog(models.Model):
         null=True, default=None
     )
 
-    objects = DialLogManager()
+    # objects = DialLogQuerySet.as_manager()
 
     def get_dial_full_filename(self) -> Optional[str]:
         if self.answered:

@@ -6,8 +6,6 @@ media/*
 media/min/*
 .idea/
 djing2/local_settings.py
-dials/ami/opts.py
-gmap/fixtures
 *.json
 !*/fixtures/*.json
 *.bak
