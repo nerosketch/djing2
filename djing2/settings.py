@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'tasks',
     'fin_app',
     'dials',
+    'dynamicfields',
 ]
 
 if DEBUG:
