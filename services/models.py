@@ -11,9 +11,9 @@ from services.custom_tariffs import TARIFF_CHOICES, PERIODIC_PAY_CHOICES
 from groupapp.models import Group
 
 
-class ServiceManager(models.Manager):
-    def get_services_by_group(self, group_id):
-        return self.filter(groups__id__in=group_id)
+# class ServiceQuerySet(models.QuerySet):
+#     def filter_services_by_group(self, group_id):
+#         return self.filter(groups__id__in=group_id)
 
 
 class Service(models.Model):
@@ -30,7 +30,7 @@ class Service(models.Model):
     is_admin = models.BooleanField(_('Tech service'), default=False)
     groups = models.ManyToManyField(Group, blank=True, verbose_name=_('Groups'))
 
-    objects = ServiceManager()
+    # objects = ServiceQuerySet.as_manager()
 
     def get_calc_type(self):
         """
