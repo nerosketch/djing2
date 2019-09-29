@@ -1,9 +1,6 @@
-# from django.db.models.signals import pre_save
-# from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from django.shortcuts import resolve_url
 from django.db import models
-# from rest_framework.exceptions import ValidationError
 from djing2.lib.validators import latinValidator
 
 
@@ -26,14 +23,3 @@ class Group(models.Model):
 
     def __str__(self):
         return self.title
-
-
-# @receiver(pre_save, sender=Group)
-# def group_pre_save(sender, instance, **kwargs):
-#     """
-#     Tech code must be unique or empty
-#     """
-#     if not instance.code:
-#         return
-#     if Group.objects.filter(code=instance.code).exists():
-#         raise ValidationError(_('Tech code must be unique'))
