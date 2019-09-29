@@ -1,6 +1,4 @@
 from django.core.exceptions import ValidationError
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from django.core import validators
 from django.db import models
@@ -26,11 +24,12 @@ class _DynamicField(models.CharField):
 
     def get_prep_value(self, value):
         # python -> db
-        raise NotImplementedError
+        return str(value) if value else 'null'
 
-    def from_db_value(self, value, expression, connection):
+    @staticmethod
+    def from_db_value(value, expression, connection):
         # db -> python
-        raise NotImplementedError
+        return str(value) if value else None
 
     def clean(self, value, model_instance):
         type_validators = {
@@ -58,7 +57,7 @@ class FieldModel(models.Model):
         (5, _('Slug Field')),
     )
     field_type = models.PositiveSmallIntegerField(_('Field type'), choices=FIELD_TYPES, default=0)
-    groups = models.ManyToManyField(Group, related_name='fields', verbose_name=_('Groups'))
+    groups = models.ManyToManyField(Group, related_name='fields', verbose_name=_('Groups'), db_table='dynamic_fields_groups')
 
     def __str__(self):
         return self.title
@@ -80,7 +79,7 @@ class FieldContentModelManager(models.Manager):
         """
         fcms = self.filter(customer=customer)
         fms = FieldModel.objects.filter(groups__in=customer.group).exclude(field_contents__in=fcms).iterator()
-        FieldContentModel.objects.bulk_create((FieldContentModel(
+        self.bulk_create((FieldContentModel(
             customer=customer,
             content=None,
             field_type=fm
@@ -88,9 +87,8 @@ class FieldContentModelManager(models.Manager):
 
 
 class FieldContentModel(models.Model):
-    customer = models.OneToOneField(
-        to=Customer, on_delete=models.CASCADE,
-        primary_key=True
+    customer = models.ForeignKey(
+        to=Customer, on_delete=models.CASCADE
     )
     content = _DynamicField(max_length=127, null=True, blank=True)
     field_type = models.ForeignKey(FieldModel, on_delete=models.CASCADE, related_name='field_contents')
@@ -99,27 +97,5 @@ class FieldContentModel(models.Model):
 
     class Meta:
         db_table = 'dynamic_field_content'
+        unique_together = ('customer', 'field_type')
         # ordering = ('customer',)
-
-
-@receiver(post_save, sender=Customer)
-def attach_dynamic_fields_to_new_customer(sender, instance: Customer, created: bool, **kwargs):
-    if not created:
-        return
-    assert sender is Customer
-    field_types = FieldModel.objects.filter(groups__in=instance.group).iterator()
-    FieldContentModel.objects.bulk_create((FieldContentModel(
-        customer=instance,
-        content=None,
-        field_type=ft
-    ) for ft in field_types), batch_size=100)
-
-
-@receiver(post_save, sender=FieldModel)
-def fill_accounts_with_dynamic_fields(sender, instance: FieldModel, created: bool, **kwargs):
-    """
-    Fill all user accounts with new dynamic field
-    """
-    if not created:
-        return
-    raise NotImplementedError
