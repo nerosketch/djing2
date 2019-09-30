@@ -16,7 +16,16 @@ from tasks.serializers import TaskModelSerializer
 
 
 class CustomersUserSideModelViewSet(BaseNonAdminModelViewSet):
-    queryset = models.Customer.objects.all()
+    queryset = models.Customer.objects.select_related(
+        'group', 'street', 'gateway', 'device', 'current_service'
+    ).only(
+        'pk', 'username', 'telephone', 'fio',
+        'group', 'group__title', 'balance', 'ip_address', 'description', 'street_id',
+        'street__name',
+        'house', 'is_active', 'gateway', 'gateway__title', 'auto_renewal_service',
+        'device_id', 'device__comment', 'dev_port', 'last_connected_service_id', 'current_service_id',
+        'is_dynamic_ip'
+    )
     serializer_class = serializers.CustomerModelSerializer
 
     def get_queryset(self):

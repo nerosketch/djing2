@@ -29,9 +29,7 @@ from services.serializers import ServiceModelSerializer
 
 
 class CustomerServiceModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerService.objects.select_related(
-        'service'
-    )
+    queryset = models.CustomerService.objects.all()
     serializer_class = serializers.CustomerServiceModelSerializer
 
     def create(self, request, *args, **kwargs):
