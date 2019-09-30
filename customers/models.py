@@ -39,10 +39,7 @@ class CustomerService(models.Model):
         return round(amount, 2)
 
     def __str__(self):
-        return "%s: %s" % (
-            self.deadline,
-            self.service.title
-        )
+        return self.service.title
 
     class Meta:
         db_table = 'customer_service'
@@ -65,7 +62,7 @@ class CustomerStreet(models.Model):
         db_table = 'customer_street'
         verbose_name = _('Street')
         verbose_name_plural = _('Streets')
-        ordering = 'name',
+        ordering = 'id',
 
 
 class CustomerLog(models.Model):
@@ -438,7 +435,7 @@ class Customer(BaseAccount):
         )
         verbose_name = _('Customer')
         verbose_name_plural = _('Customers')
-        ordering = ('fio',)
+        ordering = ('id',)
         unique_together = ('ip_address', 'gateway')
 
 
@@ -470,7 +467,7 @@ class PassportInfo(models.Model):
         db_table = 'passport_info'
         verbose_name = _('Passport Info')
         verbose_name_plural = _('Passport Info')
-        ordering = ('series',)
+        ordering = ('id',)
 
     def __str__(self):
         return "%s %s" % (self.series, self.number)
@@ -500,7 +497,7 @@ class InvoiceForPayment(models.Model):
         self.date_pay = datetime.now()
 
     class Meta:
-        ordering = ('date_create',)
+        ordering = ('id',)
         db_table = 'customer_inv_pay'
         verbose_name = _('Debt')
         verbose_name_plural = _('Debts')
@@ -538,7 +535,7 @@ class AdditionalTelephone(models.Model):
 
     class Meta:
         db_table = 'additional_telephones'
-        ordering = ('owner_name',)
+        ordering = ('id',)
         verbose_name = _('Additional telephone')
         verbose_name_plural = _('Additional telephones')
 

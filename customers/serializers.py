@@ -37,13 +37,13 @@ def generate_random_password():
 class CustomerServiceModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CustomerService
-        fields = '__all__'
+        fields = ('service_id', 'start_time', 'deadline')
 
 
 class CustomerStreetModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CustomerStreet
-        fields = '__all__'
+        fields = ('id', 'name', 'group_id')
 
 
 class CustomerLogModelSerializer(serializers.ModelSerializer):
@@ -52,16 +52,19 @@ class CustomerLogModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CustomerLog
-        fields = '__all__'
+        fields = (
+            'customer_id', 'cost', 'author_id',
+            'author_name', 'comment', 'date'
+        )
 
 
 class CustomerModelSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='get_full_name', read_only=True)
-    group_title = serializers.CharField(source='group.title', read_only=True)
-    street_name = serializers.CharField(source='street.name', read_only=True)
-    gateway_title = serializers.CharField(source='gateway.title', read_only=True)
-    device_comment = serializers.CharField(source='device.comment', read_only=True)
-    service_title = serializers.CharField(source='current_service.service.title', read_only=True)
+    group_title = serializers.CharField(source='group__title', read_only=True)
+    street_name = serializers.CharField(source='street__name', read_only=True)
+    gateway_title = serializers.CharField(source='gateway__title', read_only=True)
+    device_comment = serializers.CharField(source='device__comment', read_only=True)
+    service_title = serializers.CharField(source='current_service__service__title', read_only=True)
 
     def create(self, validated_data):
         # raw_password = validated_data.get('password')
@@ -86,9 +89,9 @@ class CustomerModelSerializer(serializers.ModelSerializer):
         model = models.Customer
         fields = (
             'pk', 'username', 'telephone', 'fio',
-            'group', 'group_title', 'balance', 'ip_address', 'description', 'street', 'street_name',
-            'house', 'is_active', 'gateway', 'gateway_title', 'auto_renewal_service',
-            'device', 'device_comment', 'dev_port', 'last_connected_service', 'current_service',
+            'group_id', 'group_title', 'balance', 'ip_address', 'description', 'street_id', 'street_name',
+            'house', 'is_active', 'gateway_id', 'gateway_title', 'auto_renewal_service',
+            'device_id', 'device_comment', 'dev_port_id', 'last_connected_service_id', 'current_service_id',
             'service_title', 'is_dynamic_ip', 'full_name'
         )
 
@@ -127,7 +130,7 @@ class AdditionalTelephoneModelSerializer(serializers.ModelSerializer):
 class PeriodicPayForIdModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.PeriodicPayForId
-        exclude = ('account',)
+        fields = ('id', 'last_pay', 'next_pay', 'periodic_pay_id')
 
 
 '''class AmountMoneySerializer(serializers.Serializer):
