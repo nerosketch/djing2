@@ -22,16 +22,16 @@ class TaskModelSerializer(serializers.ModelSerializer):
     customer_address = serializers.CharField(source='customer.get_address', read_only=True)
     customer_full_name = serializers.CharField(source='customer.get_full_name', read_only=True)
     customer_uname = serializers.CharField(source='customer.username', read_only=True)
-    customer_group = serializers.CharField(source='customer.group.pk', read_only=True)
+    customer_group = serializers.IntegerField(source='customer.group_id', read_only=True)
     comment_count = serializers.IntegerField(source='extracomment.count', read_only=True)
-    recipients = serializers.PrimaryKeyRelatedField(many=True, queryset=UserProfile.objects.all())
+    recipients = serializers.PrimaryKeyRelatedField(many=True, queryset=UserProfile.objects.only('pk', 'username', 'fio'))
     state_str = serializers.CharField(source='get_state_display', read_only=True)
     mode_str = serializers.CharField(source='get_mode_display', read_only=True)
     time_of_create = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = models.Task
-        exclude = ('author',)
+        fields = '__all__'
 
 
 class ExtraCommentModelSerializer(serializers.ModelSerializer):
