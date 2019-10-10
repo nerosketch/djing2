@@ -71,11 +71,11 @@ class CustomerModelViewSet(DjingModelViewSet):
     ordering_fields = ('username', 'fio', 'balance')
 
     @staticmethod
-    def generate_random_username(r):
+    def generate_random_username(_):
         return Response(serializers.generate_random_username())
 
     @staticmethod
-    def generate_random_password(r):
+    def generate_random_password(_):
         return Response(serializers.generate_random_password())
 
     @action(methods=('post',), detail=True)
