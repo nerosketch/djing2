@@ -19,8 +19,14 @@ UserProfile = get_user_model()
 
 class TaskModelViewSet(DjingModelViewSet):
     queryset = models.Task.objects.all().select_related(
-        'customer', 'customer__street', 'customer__group', 'author'
+        'author', 'customer', 'customer__group', 'customer__street'
+    ).only(
+        'author__username', 'author__fio', 'priority', 'out_date',
+        'customer__group__title', 'customer__street__name',
+        'customer__username', 'customer__fio', 'customer__house',
+        'state', 'mode', 'time_of_create', 'descr', 'recipients'
     )
+    # TODO: Optimize. recipients field make request for each task entry
     serializer_class = serializers.TaskModelSerializer
     filterset_fields = ('state', 'recipients', 'customer')
 
