@@ -37,13 +37,13 @@ def generate_random_password():
 class CustomerServiceModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CustomerService
-        fields = ('service_id', 'start_time', 'deadline')
+        fields = ('service', 'start_time', 'deadline')
 
 
 class CustomerStreetModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CustomerStreet
-        fields = ('id', 'name', 'group_id')
+        fields = ('id', 'name', 'group')
 
 
 class CustomerLogModelSerializer(serializers.ModelSerializer):
@@ -53,7 +53,7 @@ class CustomerLogModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CustomerLog
         fields = (
-            'customer_id', 'cost', 'author_id',
+            'customer', 'cost', 'author',
             'author_name', 'comment', 'date'
         )
 
@@ -89,9 +89,9 @@ class CustomerModelSerializer(serializers.ModelSerializer):
         model = models.Customer
         fields = (
             'pk', 'username', 'telephone', 'fio',
-            'group_id', 'group_title', 'balance', 'ip_address', 'description', 'street_id', 'street_name',
-            'house', 'is_active', 'gateway_id', 'gateway_title', 'auto_renewal_service',
-            'device_id', 'device_comment', 'dev_port_id', 'last_connected_service_id', 'current_service_id',
+            'group', 'group_title', 'balance', 'ip_address', 'description', 'street', 'street_name',
+            'house', 'is_active', 'gateway', 'gateway_title', 'auto_renewal_service',
+            'device', 'device_comment', 'dev_port', 'last_connected_service', 'current_service',
             'service_title', 'is_dynamic_ip', 'full_name'
         )
 
@@ -130,7 +130,7 @@ class AdditionalTelephoneModelSerializer(serializers.ModelSerializer):
 class PeriodicPayForIdModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.PeriodicPayForId
-        fields = ('id', 'last_pay', 'next_pay', 'periodic_pay_id')
+        fields = ('id', 'last_pay', 'next_pay', 'periodic_pay')
 
 
 '''class AmountMoneySerializer(serializers.Serializer):
