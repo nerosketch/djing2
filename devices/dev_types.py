@@ -429,6 +429,16 @@ class Olt_ZTE_C320(OLTDevice):
         } for fiber_name, fiber_id in self.get_list_keyval('.1.3.6.1.4.1.3902.1012.3.13.1.1.1'))
         return fibers
 
+    def get_details(self) -> dict:
+        details = {
+            'disk_total': self.get_item('.1.3.6.1.4.1.3902.1015.14.1.1.1.7.1.1.4.0.5.102.108.97.115.104.1'),
+            'disk_free': self.get_item('.1.3.6.1.4.1.3902.1015.14.1.1.1.8.1.1.4.0.5.102.108.97.115.104.1'),
+            'fname': self.get_item('.1.3.6.1.4.1.3902.1015.2.1.2.2.1.2.1.1.1'),
+            'fver': self.get_item('.1.3.6.1.4.1.3902.1015.2.1.2.2.1.4.1.1.1')
+        }
+        details.update(super().get_details())
+        return details
+
     # def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
     #     onu_types = self.get_list_keyval('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%d' % fiber_num)
     #     onu_ports = self.get_list('.1.3.6.1.4.1.3902.1012.3.28.1.1.2.%d' % fiber_num)
