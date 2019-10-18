@@ -41,3 +41,6 @@ django-netfields
 -e git://github.com/pexpect/pexpect.git#egg=pexpect
 
 django-filter
+
+# django websocket connector
+-e git://github.com/nerosketch/djing_py_ws.git#egg=djing_py_ws
