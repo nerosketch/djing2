@@ -16,6 +16,7 @@ from rest_framework import status
 from easysnmp import EasySNMPTimeoutError
 from django_filters.rest_framework import DjangoFilterBackend
 
+from djing_py_ws import send_to_ws
 from customers.models import Customer
 from messenger.tasks import multicast_viber_notify
 from devices.base_intr import DeviceImplementationError
@@ -277,6 +278,11 @@ class DeviceModelViewSet(DjingModelViewSet):
                 account_id_list=user_ids,
                 message_text=text
             )
+            send_to_ws(json_dumps({
+                'type': 'monitoring_event',
+                'recipients': user_ids,
+                'text': text
+            }))
             return Response({'text': 'notification successfully sent'})
         except (ValueError, OperationalError) as e:
             return Response({
