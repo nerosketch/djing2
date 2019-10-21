@@ -10,7 +10,7 @@ netaddr
 # db client for Postgres
 psycopg2-binary
 
--e git://github.com/nerosketch/easysnmp.git#egg=easysnmp
+git+git://github.com/nerosketch/easysnmp.git#egg=easysnmp
 pid
 django-guardian
 
@@ -22,13 +22,13 @@ transliterate
 djangorestframework-xml
 
 # django-bitfield
--e git://github.com/disqus/django-bitfield.git#egg=django-bitfield
+git+git://github.com/disqus/django-bitfield.git#egg=django-bitfield
 
 # django_cleanup for clean unused media
--e git://github.com/un1t/django-cleanup.git#egg=django_cleanup
+git+git://github.com/un1t/django-cleanup.git#egg=django_cleanup
 
 # viberbot
--e git://github.com/Viber/viber-bot-python.git#egg=viberbot
+git+git://github.com/Viber/viber-bot-python.git#egg=viberbot
 
 celery
 redis
@@ -38,9 +38,6 @@ django-encrypted-model-fields
 django-netfields
 
 # pexpect
--e git://github.com/pexpect/pexpect.git#egg=pexpect
+git+git://github.com/pexpect/pexpect.git#egg=pexpect
 
 django-filter
-
-# django websocket connector
--e git://github.com/nerosketch/djing_py_ws.git#egg=djing_py_ws
