@@ -16,12 +16,11 @@ from rest_framework import status
 from easysnmp import EasySNMPTimeoutError
 from django_filters.rest_framework import DjangoFilterBackend
 
-from djing_py_ws import send_to_ws
 from customers.models import Customer
 from messenger.tasks import multicast_viber_notify
 from devices.base_intr import DeviceImplementationError
 from djing2 import IP_ADDR_REGEX
-from djing2.lib import ProcessLocked, safe_int
+from djing2.lib import ProcessLocked, safe_int, ws_connector
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from devices.models import Device, Port
 from devices import serializers as dev_serializers
@@ -278,11 +277,11 @@ class DeviceModelViewSet(DjingModelViewSet):
                 account_id_list=user_ids,
                 message_text=text
             )
-            send_to_ws(json_dumps({
+            ws_connector.send_data({
                 'type': 'monitoring_event',
                 'recipients': user_ids,
                 'text': text
-            }))
+            })
             return Response({'text': 'notification successfully sent'})
         except (ValueError, OperationalError) as e:
             return Response({
