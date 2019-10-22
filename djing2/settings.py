@@ -62,6 +62,8 @@ INSTALLED_APPS = [
     'tasks',
     'fin_app',
     'dials',
+    'msg_app',
+    'traf_stat',
 ]
 
 if DEBUG:
