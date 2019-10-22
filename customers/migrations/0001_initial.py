@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Customer',
                 'verbose_name_plural': 'Customers',
                 'db_table': 'customers',
-                'ordering': ('fio',),
+                'ordering': ('id',),
                 'permissions': (('can_buy_service', 'Buy service perm'), ('can_add_balance', 'fill account'), ('can_ping', 'Can ping')),
             },
             bases=('profiles.baseaccount',),
@@ -72,7 +72,7 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Passport Info',
                 'verbose_name_plural': 'Passport Info',
                 'db_table': 'passport_info',
-                'ordering': ('series',),
+                'ordering': ('id',),
             },
         ),
         migrations.CreateModel(
@@ -91,7 +91,7 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Debt',
                 'verbose_name_plural': 'Debts',
                 'db_table': 'customer_inv_pay',
-                'ordering': ('date_create',),
+                'ordering': ('id',),
             },
         ),
         migrations.CreateModel(
@@ -105,7 +105,7 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Street',
                 'verbose_name_plural': 'Streets',
                 'db_table': 'customer_street',
-                'ordering': ('name',),
+                'ordering': ('id',),
             },
         ),
         migrations.CreateModel(
@@ -197,7 +197,7 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Additional telephone',
                 'verbose_name_plural': 'Additional telephones',
                 'db_table': 'additional_telephones',
-                'ordering': ('owner_name',),
+                'ordering': ('id',),
             },
         ),
         migrations.AlterUniqueTogether(
