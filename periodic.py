@@ -3,7 +3,7 @@ import os
 from threading import Thread
 import django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "djing.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "djing2.settings")
 django.setup()
 from django.utils import timezone
 from django.db import transaction
