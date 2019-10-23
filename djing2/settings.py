@@ -176,6 +176,8 @@ STATIC_URL = '/static/'
 if DEBUG:
     STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
 
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
 # Example output: 16 september 2018
 DATE_FORMAT = 'd E Y'
 
@@ -196,17 +198,6 @@ API_AUTH_SECRET = local_settings.API_AUTH_SECRET
 
 # Company name
 COMPANY_NAME = local_settings.COMPANY_NAME
-
-
-# Email config
-EMAIL_HOST_USER = local_settings.EMAIL_HOST_USER
-EMAIL_HOST = local_settings.EMAIL_HOST
-EMAIL_PORT = local_settings.EMAIL_PORT
-EMAIL_HOST_PASSWORD = local_settings.EMAIL_HOST_PASSWORD
-EMAIL_USE_TLS = getattr(local_settings, 'EMAIL_USE_TLS', True)
-
-SERVER_EMAIL = getattr(local_settings, 'SERVER_EMAIL', EMAIL_HOST_USER)
-
 
 # REDIS related settings
 CELERY_BROKER_URL = 'redis://localhost:6379'
