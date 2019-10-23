@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.conf import settings
 from django.db.models import Count
+from django.db.utils import IntegrityError
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
@@ -14,11 +15,13 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from agent.commands.dhcp import dhcp_commit, dhcp_expiry, dhcp_release
 from customers import models
 from customers import serializers
 from customers.tasks import customer_gw_command, customer_gw_remove
 from customers.views.view_decorators import catch_customers_errs
-from djing2.lib import safe_int, LogicError, safe_float
+from djing2.lib import safe_int, LogicError, DuplicateEntry, safe_float
+from djing2.lib.mixins import SecureApiView
 from djing2.lib.paginator import QueryPageNumberPagination
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from gateways.models import Gateway
@@ -81,6 +84,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @action(methods=('post',), detail=True)
     @catch_customers_errs
     def pick_service(self, request, pk=None):
+        del pk
         service_id = safe_int(request.data.get('service_id'))
         deadline = request.data.get('deadline')
         srv = get_object_or_404(Service, pk=service_id)
@@ -109,6 +113,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_customers_errs
     def stop_service(self, request, pk=None):
+        del pk
         customer = self.get_object()
         cust_srv = customer.active_service()
         if cust_srv is None:
@@ -155,6 +160,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_customers_errs
     def ping(self, request, pk=None):
+        del request, pk
         customer = self.get_object()
         ip = customer.ip_address
         if ip is None:
@@ -203,6 +209,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_customers_errs
     def current_service(self, request, pk=None):
+        del request, pk
         customer = self.get_object()
         if not customer.current_service:
             return Response(False)
@@ -220,6 +227,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @action(methods=('post',), detail=True)
     @catch_customers_errs
     def add_balance(self, request, pk=None):
+        del pk
         customer = self.get_object()
 
         cost = safe_float(request.data.get('cost'))
@@ -290,6 +298,7 @@ class AttachServicesToGroups(APIView):
     permission_classes = (IsAuthenticated, IsAdminUser)
 
     def get(self, request, format=None):
+        del format
         gid = safe_int(request.query_params.get('group'))
         grp = get_object_or_404(Group, pk=gid)
 
@@ -304,6 +313,7 @@ class AttachServicesToGroups(APIView):
         } for srv in services))
 
     def post(self, request, format=None):
+        del format
         group = safe_int(request.query_params.get('group'))
         group = get_object_or_404(Group, pk=group)
         selected_service_ids_db = frozenset(t.pk for t in group.service_set.only('pk'))
@@ -325,3 +335,57 @@ class AttachServicesToGroups(APIView):
             last_connected_service__in=sub
         ).update(last_connected_service=None)
         return Response(status=status.HTTP_200_OK)
+
+
+class DhcpLever(SecureApiView):
+    #
+    # Api view for dhcp event
+    #
+    http_method_names = ('get',)
+
+    def get(self, request, format=None):
+        del format
+        data = request.query_params.copy()
+        try:
+            r = self.on_dhcp_event(data)
+            if r is not None:
+                if issubclass(r.__class__, Exception):
+                    return Response({'error': str(r)})
+                return Response({'text': r})
+            return Response({'status': 'ok'})
+        except IntegrityError as e:
+            return Response({
+                'status': str(e).replace('\n', ' ')
+            })
+
+    @staticmethod
+    def on_dhcp_event(data: dict):
+        """
+        :param data = {
+            'client_ip': ip_address('127.0.0.1'),
+            'client_mac': 'aa:bb:cc:dd:ee:ff',
+            'switch_mac': 'aa:bb:cc:dd:ee:ff',
+            'switch_port': 3,
+            'cmd': 'commit'
+        }"""
+        try:
+            action = data.get('cmd')
+            if action is None:
+                return '"cmd" parameter is missing'
+            client_ip = data.get('client_ip')
+            if client_ip is None:
+                return '"client_ip" parameter is missing'
+            if action == 'commit':
+                return dhcp_commit(
+                    client_ip, data.get('client_mac'),
+                    data.get('switch_mac'), data.get('switch_port')
+                )
+            elif action == 'expiry':
+                return dhcp_expiry(client_ip)
+            elif action == 'release':
+                return dhcp_release(client_ip)
+            else:
+                return '"cmd" parameter is invalid: %s' % action
+        except (LogicError, DuplicateEntry) as e:
+            print('%s:' % e.__class__.__name__, e)
+            return str(e)
