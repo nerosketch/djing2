@@ -55,5 +55,4 @@ def dhcp_expiry(client_ip: str) -> Optional[str]:
             customer.gw_sync_self()
 
 
-def dhcp_release(client_ip: str) -> Optional[str]:
-    return dhcp_expiry(client_ip)
+dhcp_release = dhcp_expiry
