@@ -249,3 +249,9 @@ FIELD_ENCRYPTION_KEY = getattr(
 
 DIAL_RECORDS_PATH = '/var/spool/asterisk/monitor/'
 DIAL_RECORDS_EXTENSION = 'wav'
+
+# Secret word for auth to api views by hash
+API_AUTH_SECRET = local_settings.API_AUTH_SECRET
+
+# Allowed subnet for api
+API_AUTH_SUBNET = local_settings.API_AUTH_SUBNET
