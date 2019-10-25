@@ -60,11 +60,11 @@ class CustomerLogModelSerializer(serializers.ModelSerializer):
 
 class CustomerModelSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='get_full_name', read_only=True)
-    group_title = serializers.CharField(source='group__title', read_only=True)
-    street_name = serializers.CharField(source='street__name', read_only=True)
-    gateway_title = serializers.CharField(source='gateway__title', read_only=True)
-    device_comment = serializers.CharField(source='device__comment', read_only=True)
-    service_title = serializers.CharField(source='current_service__service__title', read_only=True)
+    group_title = serializers.CharField(source='group.title', read_only=True)
+    street_name = serializers.CharField(source='street.name', read_only=True)
+    gateway_title = serializers.CharField(source='gateway.title', read_only=True)
+    device_comment = serializers.CharField(source='device.comment', read_only=True)
+    service_title = serializers.CharField(source='current_service.service.title', read_only=True)
 
     def create(self, validated_data):
         # raw_password = validated_data.get('password')
