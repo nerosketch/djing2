@@ -67,22 +67,20 @@ class CustomerModelSerializer(serializers.ModelSerializer):
     service_title = serializers.CharField(source='current_service.service.title', read_only=True)
 
     def create(self, validated_data):
-        # raw_password = validated_data.get('password')
         validated_data.update({
             'is_admin': False,
             'is_superuser': False
             # 'password': make_password(raw_password)
         })
         acc = super().create(validated_data)
-        # try:
-        #     acc_passw = models.CustomerRawPassword.objects.get(customer=acc)
-        #     acc_passw.passw_text = raw_password
-        #     acc_passw.save(update_fields=('passw_text',))
-        # except models.CustomerRawPassword.DoesNotExist:
-        #     models.CustomerRawPassword.objects.create(
-        #         customer=acc,
-        #         passw_text=raw_password
-        #     )
+        raw_password = validated_data.get('password')
+        if raw_password:
+            updated_count = models.CustomerRawPassword.objects.filter(customer=acc).update(passw_text=raw_password)
+            if updated_count == 0:
+                models.CustomerRawPassword.objects.create(
+                    customer=acc,
+                    passw_text=raw_password
+                )
         return acc
 
     class Meta:
@@ -94,6 +92,7 @@ class CustomerModelSerializer(serializers.ModelSerializer):
             'device', 'device_comment', 'dev_port', 'last_connected_service', 'current_service',
             'service_title', 'is_dynamic_ip', 'full_name'
         )
+        read_only_fields = ('password',)
 
 
 class CustomerGroupSerializer(GroupsSerializer):
