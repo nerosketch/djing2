@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _, gettext
 from django.http.response import StreamingHttpResponse
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from rest_framework import status
@@ -320,6 +320,8 @@ class PortModelViewSet(DjingModelViewSet):
 
 class DeviceGroupsList(DjingListAPIView):
     serializer_class = dev_serializers.DeviceGroupsModelSerializer
+    filter_backends = (OrderingFilter,)
+    ordering_fields = ('title', 'code')
 
     def get_queryset(self):
         groups = get_objects_for_user(
