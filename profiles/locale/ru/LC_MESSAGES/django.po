@@ -132,3 +132,6 @@ msgstr "Учётная запись сотрудника"
 #: profiles/models.py:139
 msgid "Staff account profiles"
 msgstr "Учётные записи сотрудников"
+
+msgid "Login is not possible"
+msgstr "Не получается войти в предоставленными учётными данными"
