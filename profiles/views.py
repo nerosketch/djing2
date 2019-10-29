@@ -1,9 +1,27 @@
+from django.utils.translation import gettext_lazy as _
+from rest_framework import status
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from djing2.viewsets import DjingModelViewSet
 from profiles.models import UserProfile, UserProfileLog
 from profiles.serializers import UserProfileSerializer, UserProfileLogSerializer
+
+
+class CustomObtainAuthToken(ObtainAuthToken):
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data,
+                                           context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        if not isinstance(user, UserProfile):
+            return Response({
+                'text': _('Login is not possible')
+            }, status=status.HTTP_403_FORBIDDEN)
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({'token': token.key})
 
 
 class UserProfileViewSet(DjingModelViewSet):

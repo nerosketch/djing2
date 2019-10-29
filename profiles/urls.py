@@ -1,6 +1,5 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from rest_framework.authtoken.views import obtain_auth_token
 from profiles import views
 
 
@@ -14,5 +13,5 @@ router.register('log', views.UserProfileLogViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('token-auth/', obtain_auth_token)
+    path('token-auth/', views.CustomObtainAuthToken.as_view())
 ]
