@@ -62,7 +62,7 @@ class TaskModelViewSet(DjingModelViewSet):
     def active_task_count(self, request):
         tasks_count = 0
         if isinstance(request.user, UserProfile):
-            tasks_count = models.Task.objects.filter(recipients__in=request.user, state=0).count()
+            tasks_count = models.Task.objects.filter(recipients__in=(request.user,), state=0).count()
         return Response(tasks_count)
 
     @action(detail=True)

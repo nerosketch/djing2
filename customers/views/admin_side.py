@@ -246,16 +246,6 @@ class CustomerModelViewSet(DjingModelViewSet):
         customer.save(update_fields=('balance',))
         return Response()
 
-    @action(methods=('get',), detail=True)
-    @catch_customers_errs
-    def get_raw_password(self, request, pk=None):
-        del request, pk
-        customer = self.get_object()
-        r = None
-        if customer.customerrawpassword:
-            r = customer.customerrawpassword.passw_text
-        return Response(r)
-
 
 class CustomersGroupsListAPIView(DjingListAPIView):
     pagination_class = QueryPageNumberPagination
