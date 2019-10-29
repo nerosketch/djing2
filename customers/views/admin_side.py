@@ -250,6 +250,8 @@ class CustomerModelViewSet(DjingModelViewSet):
 class CustomersGroupsListAPIView(DjingListAPIView):
     pagination_class = QueryPageNumberPagination
     serializer_class = serializers.CustomerGroupSerializer
+    filter_backends = (OrderingFilter,)
+    ordering_fields = ('title', 'usercount')
 
     def get_queryset(self):
         return get_objects_for_user(
