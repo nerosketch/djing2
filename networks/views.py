@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 
 from djing2.viewsets import DjingModelViewSet
@@ -11,6 +12,8 @@ from networks.models import NetworkModel
 class NetworkModelViewSet(DjingModelViewSet):
     queryset = NetworkModel.objects.all()
     serializer_class = NetworkModelSerializer
+    filter_backends = (OrderingFilter,)
+    ordering_fields = ('network', 'kind', 'description', 'cost', 'usercount')
 
     @action(detail=True, methods=('post',))
     def group_attach(self, request, pk=None):
