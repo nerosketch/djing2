@@ -192,12 +192,15 @@ class DeviceModelViewSet(DjingModelViewSet):
         from devices import expect_scripts
         device = self.get_object()
         http_status = status.HTTP_200_OK
+        res_status = 1  # 'ok'
         try:
             device.register_device()
         except expect_scripts.OnuZteRegisterError:
             text = gettext('Unregistered onu not found')
+            res_status = 2
         except expect_scripts.ZteOltLoginFailed:
             text = gettext('Wrong login or password for telnet access')
+            res_status = 2
         except (
                 ConnectionRefusedError, expect_scripts.ZteOltConsoleError,
                 expect_scripts.ExpectValidationError, expect_scripts.ZTEFiberIsFull
@@ -206,9 +209,10 @@ class DeviceModelViewSet(DjingModelViewSet):
             http_status = status.HTTP_503_SERVICE_UNAVAILABLE
         except ProcessLocked:
             text = gettext('Process locked by another process')
+            res_status = 2
         else:
             text = gettext('ok')
-        return Response(text, status=http_status)
+        return Response({'text': text, 'status': res_status}, status=http_status)
 
     @action(detail=True)
     @catch_dev_manager_err
