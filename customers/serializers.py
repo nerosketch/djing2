@@ -74,7 +74,7 @@ class CustomerModelSerializer(serializers.ModelSerializer):
     gateway_title = serializers.CharField(source='gateway.title', read_only=True)
     device_comment = serializers.CharField(source='device.comment', read_only=True)
     service_title = serializers.CharField(source='current_service.service.title', read_only=True)
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False)
     raw_password = serializers.CharField(source='customerrawpassword.passw_text', read_only=True)
 
     def create(self, validated_data):

@@ -50,6 +50,9 @@ class Service(models.Model):
         calc_obj = calc_type(self)
         return calc_obj.calc_deadline()
 
+    def calc_deadline_formatted(self):
+        return self.calc_deadline().strftime('%Y-%m-%dT%H:%M')
+
     def __str__(self):
         return "%s (%.2f)" % (self.title, self.cost)
 
