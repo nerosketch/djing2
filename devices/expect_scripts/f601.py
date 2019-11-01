@@ -1,6 +1,6 @@
 import re
 from typing import Optional
-from djing2.lib import process_lock
+from djing2.lib import process_lock, safe_int
 from . import base
 
 
@@ -129,7 +129,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
         ch.do_cmd('exit', '%s(config)#' % prompt)
 
         ch.close()
-        return base.onu_conv(
+        return base.zte_onu_conv_to_num(
             rack_num=rack_num,
             fiber_num=fiber_num,
             port_num=free_onu_number
@@ -148,18 +148,12 @@ def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_l
         raise base.ExpectValidationError('Serial not valid, match: ^ZTEG[0-9A-F]{8}$')
 
     if not isinstance(onu_vlan, int):
-        onu_vlan = int(onu_vlan)
+        onu_vlan = safe_int(onu_vlan)
 
     if onu_mac is None:
         onu_mac = base.sn_to_mac(serial)
 
-    IP4_ADDR_REGEX = (
-        r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
-        r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
-        r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
-        r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
-    )
-    if not re.match(IP4_ADDR_REGEX, zte_ip_addr):
+    if not re.match(base.IP4_ADDR_REGEX, zte_ip_addr):
         raise base.ExpectValidationError('ip address for zte not valid')
 
     return appy_config(
@@ -167,3 +161,40 @@ def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_l
         telnet_login, telnet_passw,
         telnet_prompt, onu_vlan
     )
+
+
+@process_lock
+def remove_from_olt(zte_ip_addr: str, telnet_login: str,
+                    telnet_passw: str, telnet_prompt: str, snmp_info: str):
+    if not re.match(base.IP4_ADDR_REGEX, zte_ip_addr):
+        raise base.ExpectValidationError('ip address for zte not valid')
+
+    # Входим
+    ch = base.MySpawn('telnet %s' % zte_ip_addr)
+    ch.timeout = 15
+    ch.expect_exact('Username:')
+    ch.do_cmd(telnet_login, 'Password:')
+
+    choice = ch.do_cmd(telnet_passw, ['bad password.', '%s#' % telnet_prompt])
+    if choice == 0:
+        raise base.ZteOltLoginFailed
+
+    rack_num, fiber_num, onu_num = base.zte_onu_conv_from_onu(snmp_info)
+
+    # enter to config
+    ch.do_cmd('conf t', '%s(config)#' % telnet_prompt)
+
+    int_addr = '1/%d/%d' % (
+        rack_num,
+        fiber_num
+    )
+    # go to olt interface
+    ch.do_cmd('interface gpon-olt_%s' % int_addr, '%s(config-if)#' % telnet_prompt)
+
+    # remove onu register from olt fiber
+    ch.do_cmd('no onu %d' % onu_num, '%s(config-if)#' % telnet_prompt)
+
+    # Exit
+    ch.do_cmd('exit', '%s(config)#' % telnet_prompt)
+    ch.close()
+    return True

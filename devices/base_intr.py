@@ -93,6 +93,9 @@ class DevBase(object, metaclass=ABCMeta):
     def register_device(self, extra_data: Dict):
         pass
 
+    def remove_from_olt(self, extra_data: Dict):
+        """Removes device from OLT if devices is ONU"""
+
     @abstractmethod
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
         """
