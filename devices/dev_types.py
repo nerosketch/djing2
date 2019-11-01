@@ -8,7 +8,11 @@ from django.utils.translation import gettext_lazy as _, gettext
 from django.conf import settings
 
 from djing2.lib import RuTimedelta, safe_int, safe_float
-from devices.expect_scripts import register_f601_onu, register_f660_onu, ExpectValidationError, OnuZteRegisterError
+from devices.expect_scripts import (
+    register_f601_onu, register_f660_onu,
+    ExpectValidationError, OnuZteRegisterError,
+    remove_from_olt_f601
+)
 from devices.expect_scripts.base import sn_to_mac
 from .base_intr import (
     DevBase, SNMPBaseWorker, BasePort, DeviceImplementationError,
@@ -345,6 +349,9 @@ class OnuDevice(DevBase, SNMPBaseWorker):
     def register_device(self, extra_data: Dict):
         pass
 
+    def remove_from_olt(self, extra_data: Dict):
+        pass
+
     def port_disable(self, port_num: int):
         pass
 
@@ -601,6 +608,23 @@ class ZteOnuDevice(OnuDevice):
 
     def register_device(self, extra_data: Dict):
         return _reg_dev_zte(self.db_instance, extra_data, register_f660_onu)
+
+    def remove_from_olt(self, extra_data: Dict):
+        dev = self.db_instance
+        if not dev:
+            return False
+        if not dev.parent_dev or not dev.snmp_extra:
+            return False
+        telnet = extra_data.get('telnet')
+        if not telnet:
+            return False
+        return remove_from_olt_f601(
+            zte_ip_addr=str(dev.parent_dev.ip_address),
+            telnet_login=telnet.get('login'),
+            telnet_passw=telnet.get('password'),
+            telnet_prompt=telnet.get('prompt'),
+            snmp_info=str(dev.snmp_extra)
+        )
 
     def get_fiber_str(self):
         dev = self.db_instance

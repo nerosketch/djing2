@@ -173,10 +173,8 @@ msgstr "Параметр port_id плох"
 msgid "Parameter port_state is bad"
 msgstr "Параметр port_state плох"
 
-#: devices/views.py:150
-#, python-format
-msgid "Device with mac address %(mac)s does not exist"
-msgstr "Устройство мак адресом %(mac)s не найдено"
+#~ msgid "Device with mac address %(mac)s does not exist"
+#~ msgstr "Устройство мак адресом %(mac)s не найдено"
 
 #: devices/views.py:158
 msgid "Fixed"
@@ -546,3 +544,8 @@ msgstr "%(device_name)s недостижим"
 msgid "For fetch additional device info, snmp community required"
 msgstr "Для получения дополнительной информации по устройству требуются snmp данные"
 
+msgid "Deleted"
+msgstr "Удалено"
+
+msgid "Failed"
+msgstr "Не получилось"
