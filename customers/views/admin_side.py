@@ -71,7 +71,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     filter_backends = (SearchFilter, DjangoFilterBackend, OrderingFilter)
     search_fields = ('username', 'fio', 'telephone', 'description')
     filterset_fields = ('group', 'street')
-    ordering_fields = ('username', 'fio', 'balance')
+    ordering_fields = ('username', 'fio', 'house', 'balance')
 
     @staticmethod
     def generate_random_username(_):
