@@ -23,6 +23,14 @@ class ExpectValidationError(ValueError):
     pass
 
 
+IP4_ADDR_REGEX = (
+    r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+    r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+    r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
+    r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+)
+
+
 class MySpawn(spawn):
     def __init__(self, *args, **kwargs):
         super(MySpawn, self).__init__(encoding='utf-8', *args, **kwargs)
@@ -83,7 +91,18 @@ def sn_to_mac(sn: str):
     return '45:47:%s' % ':'.join(r)
 
 
-def onu_conv(rack_num: int, fiber_num: int, port_num: int):
+def zte_onu_conv_to_num(rack_num: int, fiber_num: int, port_num: int):
     r = "10000{0:08b}{1:08b}00000000".format(rack_num, fiber_num)
     snmp_fiber_num = int(r, base=2)
     return "%d.%d" % (snmp_fiber_num, port_num)
+
+
+def zte_onu_conv_from_onu(snmp_info: str) -> tuple:
+    try:
+        fiber_num, onu_num = (int(i) for i in snmp_info.split('.'))
+        fiber_num_bin = bin(fiber_num)[2:]
+        rack_num = int(fiber_num_bin[5:13], base=2)
+        fiber_num = int(fiber_num_bin[13:21], base=2)
+        return rack_num, fiber_num, onu_num
+    except ValueError:
+        raise OnuZteRegisterError('Bad snmp info format for zte')

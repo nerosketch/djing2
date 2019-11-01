@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
 from devices import dev_types
-from devices.base_intr import DevBase
+from devices.base_intr import DevBase, DeviceConfigurationError
 from djing2.lib import MyChoicesAdapter
 from groupapp.models import Group
 
@@ -108,6 +108,20 @@ class Device(models.Model):
             if self.parent_dev and self.parent_dev.extra_data:
                 return mng.register_device(self.parent_dev.extra_data)
         return mng.register_device(self.extra_data)
+
+    def remove_from_olt(self):
+        pdev = self.parent_dev
+        if not pdev:
+            raise DeviceConfigurationError(_('You should config parent OLT device for ONU'))
+        if not pdev.extra_data:
+            raise DeviceConfigurationError(_('You have not info in extra_data '
+                                             'field, please fill it in JSON'))
+        mng = self.get_manager_object()
+        r = mng.remove_from_olt(pdev.extra_data)
+        if r:
+            self.snmp_extra = None
+            self.save(update_fields=['snmp_extra'])
+        return r
 
 
 class Port(models.Model):

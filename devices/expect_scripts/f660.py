@@ -105,7 +105,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
         ch.do_cmd('exit', '%s(config)#' % prompt)
         ch.do_cmd('exit', '%s#' % prompt)
         ch.close()
-        return base.onu_conv(
+        return base.zte_onu_conv_to_num(
             rack_num=rack_num,
             fiber_num=fiber_num,
             port_num=free_onu_number

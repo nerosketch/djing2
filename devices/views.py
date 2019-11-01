@@ -79,8 +79,6 @@ class DeviceModelViewSet(DjingModelViewSet):
             for fb in manager.get_fibers():
                 for unr in manager.get_units_unregistered(int(fb.get('fb_id'))):
                     unregistered.append(unr)
-
-            # print(unregistered, list(unregistered))
             return Response(unregistered)
         return Response({'Error': {
             'text': 'Manager has not get_fibers attribute'
@@ -167,12 +165,12 @@ class DeviceModelViewSet(DjingModelViewSet):
     def fix_onu(self, request, pk=None):
         onu = self.get_object()
         parent = onu.parent_dev
+        text = _('Failed')
+        http_status = status.HTTP_200_OK
         if parent is not None:
-            manager = onu.get_manager_object()
+            manager = parent.get_manager_object()
             mac = onu.mac_addr
             ports = manager.get_list_keyval('.1.3.6.1.4.1.3320.101.10.1.1.3')
-            text = _('Device with mac address %(mac)s does not exist') % {'mac': mac}
-            http_status = status.HTTP_404_NOT_FOUND
             for srcmac, snmpnum in ports:
                 # convert bytes mac address to str presentation mac address
                 real_mac = ':'.join('%x' % ord(i) for i in srcmac)
@@ -202,8 +200,8 @@ class DeviceModelViewSet(DjingModelViewSet):
             text = gettext('Wrong login or password for telnet access')
             res_status = 2
         except (
-                ConnectionRefusedError, expect_scripts.ZteOltConsoleError,
-                expect_scripts.ExpectValidationError, expect_scripts.ZTEFiberIsFull
+            ConnectionRefusedError, expect_scripts.ZteOltConsoleError,
+            expect_scripts.ExpectValidationError, expect_scripts.ZTEFiberIsFull
         ) as e:
             text = e
             http_status = status.HTTP_503_SERVICE_UNAVAILABLE
@@ -213,6 +211,14 @@ class DeviceModelViewSet(DjingModelViewSet):
         else:
             text = gettext('ok')
         return Response({'text': text, 'status': res_status}, status=http_status)
+
+    @action(detail=True)
+    @catch_dev_manager_err
+    def remove_from_olt(self, request, pk=None):
+        device = self.get_object()
+        if device.remove_from_olt():
+            return Response(_('Deleted'))
+        return Response(_('Failed'))
 
     @action(detail=True)
     @catch_dev_manager_err
