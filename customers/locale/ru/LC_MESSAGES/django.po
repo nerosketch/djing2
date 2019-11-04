@@ -110,10 +110,13 @@ msgid "Marker"
 msgstr "Маркер"
 
 #: customers/models.py:213
-msgid "User that is no staff can not buy admin services"
+msgid "User who is no staff can not buy admin services"
 msgstr ""
 "Этот пользователь не является сотрудником и не может назначать "
 "административные услуги"
+
+msgid "User, who is no staff, can not be buy services on credit"
+msgstr "Пользователь, который не является сотрудником, не может покупать услуги в долг"
 
 #: customers/models.py:219
 msgid "That service already activated"
