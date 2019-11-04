@@ -103,7 +103,8 @@ class CustomerModelViewSet(DjingModelViewSet):
                 service=srv,
                 author=request.user,
                 comment=log_comment,
-                deadline=deadline
+                deadline=deadline,
+                allow_negative=True
             )
             customer_gw_command.delay(customer.pk, 'sync')
         except models.NotEnoughMoney as e:
