@@ -6,8 +6,8 @@ from django.utils.translation import gettext_lazy as _
 from django.dispatch import receiver
 
 from djing2.lib import MyChoicesAdapter
-from services.base_intr import ServiceBase, PeriodicPayCalcBase
-from services.custom_tariffs import TARIFF_CHOICES, PERIODIC_PAY_CHOICES
+from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase
+from services.custom_logic import SERVICE_CHOICES, PERIODIC_PAY_CHOICES, ONE_SHOT_TYPES
 from groupapp.models import Group
 
 
@@ -26,7 +26,7 @@ class Service(models.Model):
         MinValueValidator(limit_value=0.1),
     ))
     cost = models.FloatField(_('Cost'))
-    calc_type = models.PositiveSmallIntegerField(_('Script'), choices=MyChoicesAdapter(TARIFF_CHOICES))
+    calc_type = models.PositiveSmallIntegerField(_('Script'), choices=MyChoicesAdapter(SERVICE_CHOICES))
     is_admin = models.BooleanField(_('Tech service'), default=False)
     groups = models.ManyToManyField(Group, blank=True, verbose_name=_('Groups'))
 
@@ -38,7 +38,7 @@ class Service(models.Model):
                  methods which provide the desired logic of payments
         """
         calc_code = self.calc_type
-        for choice_pair in TARIFF_CHOICES:
+        for choice_pair in SERVICE_CHOICES:
             choice_code, logic_class = choice_pair
             if choice_code == calc_code:
                 if not issubclass(logic_class, ServiceBase):
@@ -112,6 +112,24 @@ class PeriodicPay(models.Model):
         verbose_name = _('Periodic pay')
         verbose_name_plural = _('Periodic pays')
         ordering = ('-id',)
+
+
+class OneShotPay(models.Model):
+    name = models.CharField(_('Shot pay name'), max_length=64)
+    cost = models.FloatField(_('Total cost'))
+    pay_type = models.PositiveSmallIntegerField(
+        _('One shot pay type'),
+        help_text=_('Uses for callbacks before pay and after pay'),
+        choices=MyChoicesAdapter(ONE_SHOT_TYPES),
+        default=0
+    )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'service_one_shot'
+        ordering = ('name',)
 
 
 @receiver(models.signals.pre_delete, sender=PeriodicPay)
