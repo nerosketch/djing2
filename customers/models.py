@@ -216,9 +216,10 @@ class Customer(BaseAccount):
         )
         self.balance += cost
 
-    def pick_service(self, service, author, comment=None, deadline=None) -> None:
+    def pick_service(self, service, author, comment=None, deadline=None, allow_negative=False) -> None:
         """
         Trying to buy a service if enough money.
+        :param allow_negative: Allows negative balance
         :param service: instance of services.models.Service.
         :param author: Instance of profiles.models.UserProfile.
         Who connected this service. May be None if author is a system.
@@ -235,7 +236,7 @@ class Customer(BaseAccount):
         if service.is_admin and author is not None:
             if not author.is_staff:
                 raise LogicError(
-                    _('User that is no staff can not buy admin services')
+                    _('User who is no staff can not buy admin services')
                 )
 
         if self.current_service is not None:
@@ -246,8 +247,11 @@ class Customer(BaseAccount):
                 # if service is present then speak about it
                 raise LogicError(_('Service already activated'))
 
+        if allow_negative and not author.is_staff:
+            raise LogicError(_('User, who is no staff, can not be buy services on credit'))
+
         # if not enough money
-        if self.balance < amount:
+        if not allow_negative and self.balance < amount:
             raise NotEnoughMoney(_('%(uname)s not enough money for service %(srv_name)s') % {
                 'uname': self.username,
                 'srv_name': service
