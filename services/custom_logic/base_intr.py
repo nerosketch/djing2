@@ -64,3 +64,31 @@ class PeriodicPayCalcBase(metaclass=ABCMeta):
     @classmethod
     def get_description(cls):
         return cls.description
+
+
+class OneShotBaseService(metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    def description(self) -> AnyStr:
+        """Return text description.
+        Uses in djing2.lib.MyChoicesAdapter for CHOICES fields"""
+
+    @classmethod
+    def get_description(cls):
+        return cls.description
+
+    @abstractmethod
+    def calc_amount(self, model_object) -> float:
+        """
+        :param model_object: it is a instance of models.OneShotPay model
+        :return: float: amount for the service
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def before_pay(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def after_pay(self):
+        raise NotImplementedError

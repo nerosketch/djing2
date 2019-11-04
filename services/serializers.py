@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer, IntegerField, DateTimeField
 
-from services.models import Service, PeriodicPay
+from services import models
 
 
 class ServiceModelSerializer(ModelSerializer):
@@ -8,7 +8,7 @@ class ServiceModelSerializer(ModelSerializer):
     planned_deadline = DateTimeField(source='calc_deadline_formatted', read_only=True)
 
     class Meta:
-        model = Service
+        model = models.Service
         fields = (
             'pk', 'title', 'descr', 'speed_in', 'speed_out',
             'cost', 'calc_type', 'is_admin', 'usercount',
@@ -18,8 +18,14 @@ class ServiceModelSerializer(ModelSerializer):
 
 class PeriodicPayModelSerializer(ModelSerializer):
     class Meta:
-        model = PeriodicPay
+        model = models.PeriodicPay
         fields = (
             'name', 'when_add',
             'calc_type', 'amount'
         )
+
+
+class OneShotPaySerializer(ModelSerializer):
+    class Meta:
+        model = models.OneShotPay
+        fields = '__all__'
