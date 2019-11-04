@@ -11,6 +11,8 @@ router = DefaultRouter()
 router.register('user', user_side.UserSideServiceModelViewSet)
 
 # Admin side
+router.register('shot', admin_side.OneShotModelViewSet)
+router.register('periodic', admin_side.PeriodicPayModelViewSet)
 router.register('', admin_side.ServiceModelViewSet)
 
 urlpatterns = [

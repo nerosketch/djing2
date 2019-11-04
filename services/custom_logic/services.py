@@ -1,11 +1,10 @@
-from random import uniform
 from datetime import timedelta, datetime
 from calendar import monthrange
 
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from services.base_intr import ServiceBase, PeriodicPayCalcBase
+from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase
 
 
 class ServiceDefault(ServiceBase):
@@ -79,40 +78,3 @@ class TariffDaily(TariffDp):
         # next day in the same time
         one_day = timedelta(days=1)
         return now + one_day
-
-
-# Первый - всегда по умолчанию
-TARIFF_CHOICES = (
-    (0, ServiceDefault),
-    (1, TariffDp),
-    (2, TariffCp),
-    (3, TariffDaily)
-)
-
-
-class PeriodicPayCalcDefault(PeriodicPayCalcBase):
-    description = _('Default periodic pay')
-
-    def calc_amount(self, model_object) -> float:
-        return model_object.amount
-
-    def get_next_time_to_pay(self, model_object, last_time_payment) -> datetime:
-        # TODO: решить какой будет расёт периодических платежей
-        return datetime.now() + timedelta(days=30)
-
-
-class PeriodicPayCalcRandom(PeriodicPayCalcDefault):
-    description = _('Random periodic pay')
-
-    def calc_amount(self, model_object) -> float:
-        """
-        :param model_object: it is a instance of models.PeriodicPay model
-        :return: float: amount for the service
-        """
-        return uniform(1, 10)
-
-
-PERIODIC_PAY_CHOICES = (
-    (0, PeriodicPayCalcDefault),
-    (1, PeriodicPayCalcRandom)
-)

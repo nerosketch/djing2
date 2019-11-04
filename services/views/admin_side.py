@@ -3,8 +3,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 
 from djing2.viewsets import DjingModelViewSet
-from services.models import Service, PeriodicPay
-from services.serializers import ServiceModelSerializer, PeriodicPayModelSerializer
+from services.models import Service, PeriodicPay, OneShotPay
+from services.serializers import (
+    ServiceModelSerializer,
+    PeriodicPayModelSerializer,
+    OneShotPaySerializer
+)
 
 
 class ServiceModelViewSet(DjingModelViewSet):
@@ -18,3 +22,8 @@ class ServiceModelViewSet(DjingModelViewSet):
 class PeriodicPayModelViewSet(DjingModelViewSet):
     queryset = PeriodicPay.objects.all()
     serializer_class = PeriodicPayModelSerializer
+
+
+class OneShotModelViewSet(DjingModelViewSet):
+    queryset = OneShotPay.objects.all()
+    serializer_class = OneShotPaySerializer
