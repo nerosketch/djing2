@@ -17,7 +17,7 @@ from gateways.nas_managers import (
     GatewayNetworkError
 )
 from profiles.models import BaseAccount, MyUserManager, UserProfile
-from services.models import Service, PeriodicPay
+from services.models import Service, PeriodicPay, OneShotPay
 from groupapp.models import Group
 
 
@@ -303,6 +303,39 @@ class Customer(BaseAccount):
                 )
             customer_service = self.active_service()
             customer_service.delete()
+
+    def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None):
+        """
+        Makes one-time service for accounting services.
+        :param request: Django http request.
+        :param shot: instance of services.OneShotPay model.
+        :param allow_negative: Allows negative balance.
+        :param comment: Optional text for logging this pay.
+        :return: result for frontend
+        """
+        if not isinstance(shot, OneShotPay):
+            return False
+
+        cost = round(shot.calc_cost(request, self), 3)
+
+        # if not enough money
+        if not allow_negative and self.balance < cost:
+            raise NotEnoughMoney(_('%(uname)s not enough money for service %(srv_name)s') % {
+                'uname': self.username,
+                'srv_name': shot.name
+            })
+        with transaction.atomic():
+            # charge for the service
+            self.balance -= cost
+            self.save(update_fields=['balance'])
+
+            # make log about it
+            CustomerLog.objects.create(
+                customer=self, cost=-cost,
+                author=request.user,
+                comment=comment or _('Buy one-shot service default log')
+            )
+        return True
 
     def calc_cost_to_return(self):
         """

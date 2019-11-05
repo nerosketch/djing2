@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from django.dispatch import receiver
 
 from djing2.lib import MyChoicesAdapter
-from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase
+from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase, OneShotBaseService
 from services.custom_logic import SERVICE_CHOICES, PERIODIC_PAY_CHOICES, ONE_SHOT_TYPES
 from groupapp.models import Group
 
@@ -76,7 +76,7 @@ class PeriodicPay(models.Model):
 
     def _get_calc_object(self):
         """
-        :return: subclass of custom_tariffs.PeriodicPayCalcBase with required
+        :return: subclass of services.custom_logic.PeriodicPayCalcBase with required
         logic depending on the selected in database.
         """
         calc_code = self.calc_type
@@ -123,6 +123,35 @@ class OneShotPay(models.Model):
         choices=MyChoicesAdapter(ONE_SHOT_TYPES),
         default=0
     )
+    _pay_type_cache = None
+
+    def _get_calc_object(self):
+        """
+        :return: subclass of services.custom_logic.OneShotBaseService with required
+        logic depending on the selected in database.
+        """
+        if self._pay_type_cache is not None:
+            return self._pay_type_cache
+        pay_type = self.pay_type
+        for choice_pair in ONE_SHOT_TYPES:
+            choice_code, logic_class = choice_pair
+            if choice_code == pay_type:
+                if not issubclass(logic_class, OneShotBaseService):
+                    raise TypeError
+                self._pay_type_cache = logic_class()
+                return self._pay_type_cache
+
+    def before_pay(self, request, customer):
+        pay_logic = self._get_calc_object()
+        pay_logic.before_pay(request, customer)
+
+    def calc_cost(self, request, customer) -> float:
+        pay_logic = self._get_calc_object()
+        return pay_logic.calc_cost(self, request, customer)
+
+    def after_pay(self, request, customer):
+        pay_logic = self._get_calc_object()
+        pay_logic.before_pay(request, customer)
 
     def __str__(self):
         return self.name
