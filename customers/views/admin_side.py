@@ -27,7 +27,7 @@ from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from gateways.models import Gateway
 from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
 from groupapp.models import Group
-from services.models import Service
+from services.models import Service, OneShotPay
 from services.serializers import ServiceModelSerializer
 
 
@@ -110,6 +110,32 @@ class CustomerModelViewSet(DjingModelViewSet):
         except models.NotEnoughMoney as e:
             return Response(data=str(e), status=status.HTTP_402_PAYMENT_REQUIRED)
         return Response(status=status.HTTP_200_OK)
+
+    @action(methods=('post',), detail=True)
+    @catch_customers_errs
+    def make_shot(self, request, pk=None):
+        customer = self.get_object()
+        shot_id = safe_int(request.data.get('shot_id'))
+        shot = get_object_or_404(OneShotPay, pk=shot_id)
+        shot.before_pay(request=request, customer=customer)
+        r = customer.make_shot(request, shot, customer, allow_negative=True)
+        shot.after_pay(request=request, customer=customer)
+        if not r:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        return Response(r)
+
+    @action(methods=('get',), detail=False)
+    @catch_customers_errs
+    def service_users(self, request):
+        service_id = safe_int(request.query_params.get('service_id'))
+        if service_id == 0:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        qs = models.Customer.objects.filter(
+            current_service__service__id=service_id
+        ).select_related('group').values(
+            'id', 'group_id', 'username', 'fio'
+        )
+        return Response(qs)
 
     @action(detail=True)
     @catch_customers_errs

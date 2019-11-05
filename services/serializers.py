@@ -30,6 +30,8 @@ class PeriodicPayModelSerializer(ModelSerializer):
 
 
 class OneShotPaySerializer(ModelSerializer):
+    pay_type_name = CharField(source='get_pay_type_display', read_only=True)
+
     class Meta:
         model = models.OneShotPay
         fields = '__all__'

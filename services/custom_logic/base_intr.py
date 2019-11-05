@@ -78,17 +78,19 @@ class OneShotBaseService(metaclass=ABCMeta):
         return cls.description
 
     @abstractmethod
-    def calc_amount(self, model_object) -> float:
+    def calc_cost(self, model_object, request, customer) -> float:
         """
         :param model_object: it is a instance of models.OneShotPay model
+        :param request: Django http request
+        :param customer: instance of custmers.Customer model
         :return: float: amount for the service
         """
         raise NotImplementedError
 
     @abstractmethod
-    def before_pay(self):
+    def before_pay(self, request, customer):
         raise NotImplementedError
 
     @abstractmethod
-    def after_pay(self):
+    def after_pay(self, request, customer):
         raise NotImplementedError
