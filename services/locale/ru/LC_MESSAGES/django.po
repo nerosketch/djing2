@@ -128,3 +128,6 @@ msgstr "Тип одноразового платежа"
 #: models.py:122
 msgid "Uses for callbacks before pay and after pay"
 msgstr "Используется для настраиваемых хуков перед и после платежа"
+
+msgid "Buy one-shot service default log"
+msgstr "Оплата за одноразовую услугу через административный интерфейс"
