@@ -76,6 +76,7 @@ class CustomerModelSerializer(serializers.ModelSerializer):
     service_title = serializers.CharField(source='current_service.service.title', read_only=True)
     password = serializers.CharField(write_only=True, required=False)
     raw_password = serializers.CharField(source='customerrawpassword.passw_text', read_only=True)
+    balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False)
 
     def create(self, validated_data):
         validated_data.update({
