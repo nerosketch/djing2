@@ -118,7 +118,7 @@ class CustomerModelViewSet(DjingModelViewSet):
         shot_id = safe_int(request.data.get('shot_id'))
         shot = get_object_or_404(OneShotPay, pk=shot_id)
         shot.before_pay(request=request, customer=customer)
-        r = customer.make_shot(request, shot, customer, allow_negative=True)
+        r = customer.make_shot(request, shot, allow_negative=True)
         shot.after_pay(request=request, customer=customer)
         if not r:
             return Response(status=status.HTTP_403_FORBIDDEN)
