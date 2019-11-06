@@ -333,7 +333,7 @@ class Customer(BaseAccount):
             CustomerLog.objects.create(
                 customer=self, cost=-cost,
                 author=request.user,
-                comment=comment or _('Buy one-shot service default log')
+                comment=comment or _('Buy one-shot service for "%(title)s"') % {'title': shot.name}
             )
         return True
 
