@@ -8,6 +8,8 @@ UserProfile = get_user_model()
 
 class ChangeLogModelSerializer(serializers.ModelSerializer):
     who_name = serializers.CharField(source='who.get_full_name', read_only=True)
+    act_text = serializers.CharField(source='get_act_type_display', read_only=True)
+    task_descr = serializers.CharField(source='task.descr', read_only=True)
 
     class Meta:
         model = models.ChangeLog
