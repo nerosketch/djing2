@@ -206,6 +206,7 @@ class CustomerModelViewSet(DjingModelViewSet):
             'text': _('no ping'),
             'status': False
         })
+        r_status = True
         if ping_result is None:
             return no_ping_response
         if isinstance(ping_result, tuple):
@@ -222,14 +223,16 @@ class CustomerModelViewSet(DjingModelViewSet):
             ping_result = {'return': received, 'all': sent}
             if loses_percent > 1.0:
                 text = 'IP Conflict! %(return)d/%(all)d results'
+                r_status = False
             elif loses_percent > 0.5:
                 text = 'ok ping, %(return)d/%(all)d loses'
             else:
                 text = 'no ping, %(return)d/%(all)d loses'
+                r_status = False
             text = gettext(text) % ping_result
             return Response({
                 'text': text,
-                'status': True
+                'status': r_status
             })
         return no_ping_response
 
