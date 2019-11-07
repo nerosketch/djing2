@@ -10,8 +10,14 @@ from tasks import serializers
 
 
 class ChangeLogModelViewSet(DjingModelViewSet):
-    queryset = models.ChangeLog.objects.all()
+    queryset = models.ChangeLog.objects.select_related(
+        'who', 'task'
+    ).only(
+        'id', 'who', 'who__username', 'who__fio',
+        'act_type', 'when', 'task', 'task__descr'
+    )
     serializer_class = serializers.ChangeLogModelSerializer
+    filterset_fields = ('act_type', 'who', 'task')
 
 
 UserProfile = get_user_model()

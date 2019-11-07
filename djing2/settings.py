@@ -224,9 +224,6 @@ if DEBUG:
     CORS_ORIGIN_WHITELIST = (
         'http://localhost:8080',
     )
-    # CORS_ORIGIN_REGEX_WHITELIST = (
-    #    'http://localhost:8080',
-    # )
 
 
 # Encrypted fields

@@ -14,4 +14,4 @@ class QueryPageNumberPagination(PageNumberPagination):
                 return q_page_size
         except (KeyError, ValueError):
             pass
-        return self.max_page_size
+        return self.page_size
