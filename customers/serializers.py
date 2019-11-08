@@ -73,10 +73,16 @@ class CustomerModelSerializer(serializers.ModelSerializer):
     street_name = serializers.CharField(source='street.name', read_only=True)
     gateway_title = serializers.CharField(source='gateway.title', read_only=True)
     device_comment = serializers.CharField(source='device.comment', read_only=True)
-    service_title = serializers.CharField(source='current_service.service.title', read_only=True)
+    service_title = serializers.CharField(
+        source='current_service.service.title', read_only=True
+    )
     password = serializers.CharField(write_only=True, required=False)
-    raw_password = serializers.CharField(source='customerrawpassword.passw_text', read_only=True)
-    balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False)
+    raw_password = serializers.CharField(
+        source='customerrawpassword.passw_text', read_only=True
+    )
+    balance = serializers.DecimalField(
+        max_digits=12, decimal_places=2, coerce_to_string=False, required=False
+    )
 
     def create(self, validated_data):
         validated_data.update({
