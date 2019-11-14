@@ -30,7 +30,12 @@ class CustomersUserSideModelViewSet(BaseNonAdminModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(username=self.request.user.username)
+        return qs.filter(username=self.request.user.username).first()
+
+    def list(self, request, *args, **kwargs):
+        qs = self.filter_queryset(self.get_queryset())
+        sr = self.get_serializer(qs, many=False)
+        return Response(sr.data)
 
     @action(methods=('post',), detail=True)
     @catch_customers_errs
