@@ -4,7 +4,7 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import AuthenticationFailed
 
-from customers.models import Customer
+from profiles.models import BaseAccount
 from djing2.exceptions import UniqueConstraintIntegrityError
 
 
@@ -26,7 +26,7 @@ class BaseNonAdminReadOnlyModelViewSet(ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        if isinstance(self.request.user, Customer):
+        if isinstance(self.request.user, BaseAccount):
             return super().get_queryset()
         raise AuthenticationFailed
 
@@ -35,7 +35,6 @@ class BaseNonAdminModelViewSet(ModelViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        if isinstance(self.request.user, Customer):
+        if isinstance(self.request.user, BaseAccount):
             return super().get_queryset()
         raise AuthenticationFailed
-

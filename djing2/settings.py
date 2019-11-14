@@ -185,7 +185,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_PICTURE = '/static/img/user_ava.gif'
-AUTH_USER_MODEL = 'profiles.UserProfile'
+AUTH_USER_MODEL = 'profiles.BaseAccount'
 
 # LOGIN_URL = reverse_lazy('acc_app:login')
 # LOGIN_REDIRECT_URL = reverse_lazy('acc_app:setup_info')

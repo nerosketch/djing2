@@ -1,9 +1,6 @@
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from tasks import models
-
-
-UserProfile = get_user_model()
+from profiles.models import UserProfile
 
 
 class ChangeLogModelSerializer(serializers.ModelSerializer):

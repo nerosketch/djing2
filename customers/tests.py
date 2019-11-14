@@ -1,14 +1,11 @@
 from datetime import datetime, timedelta
 
-from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.utils.translation import gettext as _
 from rest_framework.test import APITestCase
 from customers import models
 from services.models import Service
-
-
-UserProfile = get_user_model()
+from profiles.models import UserProfile
 
 
 @override_settings(DEFAULT_TABLESPACE='ram')
