@@ -55,3 +55,4 @@ class LocationAuthBackend(DjingAuthBackend):
                 return user
         except AddressValueError:
             return None
+
