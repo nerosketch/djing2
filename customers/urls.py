@@ -21,6 +21,7 @@ router.register('', admin_side.CustomerModelViewSet)
 
 # User side views
 router.register('users/me', user_side.CustomersUserSideModelViewSet)
+router.register('users/service', user_side.CustomerServiceModelViewSet)
 router.register('users/log', user_side.LogsReadOnlyModelViewSet)
 router.register('users/debts', user_side.DebtsList)
 router.register('users/task_history', user_side.TaskHistory)
