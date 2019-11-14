@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from django.utils.translation import gettext
 
 from rest_framework import status
@@ -14,9 +13,7 @@ from viberbot.api.viber_requests import (
 from djing2.viewsets import DjingModelViewSet
 from messenger.models import viber as models
 from messenger.serializers import viber as serializers
-
-
-UserProfile = get_user_model()
+from profiles.models import UserProfile
 
 
 class ViberMessengerModelViewSet(DjingModelViewSet):

@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db import models
 from django.conf import settings
 from customers.models import Customer
+from profiles.models import UserProfile
 from tasks.handle import handle as task_handle
 
 
@@ -48,7 +49,7 @@ class ChangeLog(models.Model):
     act_type = models.PositiveSmallIntegerField(choices=ACT_CHOICES)
     when = models.DateTimeField(auto_now_add=True)
     who = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        UserProfile,
         on_delete=models.CASCADE, related_name='+'
     )
 
@@ -72,11 +73,11 @@ class Task(models.Model):
         null=True, blank=True
     )
     recipients = models.ManyToManyField(
-        settings.AUTH_USER_MODEL, verbose_name=_('Recipients'),
+        UserProfile, verbose_name=_('Recipients'),
         related_name='them_task'
     )
     author = models.ForeignKey(
-        settings.AUTH_USER_MODEL, related_name='+',
+        UserProfile, related_name='+',
         on_delete=models.SET_NULL, null=True,
         blank=True, verbose_name=_('Task author')
     )
@@ -160,7 +161,7 @@ class ExtraComment(models.Model):
         on_delete=models.CASCADE
     )
     author = models.ForeignKey(
-        settings.AUTH_USER_MODEL, verbose_name=_('Author'),
+        UserProfile, verbose_name=_('Author'),
         on_delete=models.CASCADE
     )
     date_create = models.DateTimeField(_('Time of create'), auto_now_add=True)
