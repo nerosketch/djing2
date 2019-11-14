@@ -2,16 +2,14 @@ import os
 from datetime import timedelta
 from typing import Optional
 
-from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.db import models
-
 from djing2.lib import safe_int
+from profiles.models import UserProfile
 
 DIAL_RECORDS_PATH = getattr(settings, 'DIAL_RECORDS_PATH')
 DIAL_RECORDS_EXTENSION = getattr(settings, 'DIAL_RECORDS_EXTENSION')
-UserProfile = get_user_model()
 
 
 class ATSDeviceModel(models.Model):

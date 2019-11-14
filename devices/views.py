@@ -4,7 +4,6 @@ from json import dumps as json_dumps
 
 from kombu.exceptions import OperationalError
 
-from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _, gettext
 from django.http.response import StreamingHttpResponse
 from guardian.shortcuts import get_objects_for_user
@@ -26,9 +25,7 @@ from devices.models import Device, Port
 from devices import serializers as dev_serializers
 from devices.tasks import onu_register
 from groupapp.models import Group
-
-
-UserProfile = get_user_model()
+from profiles.models import UserProfile
 
 
 def catch_dev_manager_err(fn):

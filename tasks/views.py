@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from django.utils.translation import gettext
 from rest_framework import status
 from rest_framework.decorators import action
@@ -7,6 +6,7 @@ from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from profiles.serializers import UserProfileSerializer
 from tasks import models
 from tasks import serializers
+from profiles.models import UserProfile
 
 
 class ChangeLogModelViewSet(DjingModelViewSet):
@@ -18,9 +18,6 @@ class ChangeLogModelViewSet(DjingModelViewSet):
     )
     serializer_class = serializers.ChangeLogModelSerializer
     filterset_fields = ('act_type', 'who', 'task')
-
-
-UserProfile = get_user_model()
 
 
 class TaskModelViewSet(DjingModelViewSet):

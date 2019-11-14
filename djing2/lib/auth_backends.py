@@ -1,13 +1,9 @@
 from ipaddress import ip_address, AddressValueError
 
-from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 
 from customers.models import Customer
-from profiles.models import BaseAccount
-
-
-UserProfile = get_user_model()
+from profiles.models import BaseAccount, UserProfile
 
 
 class DjingAuthBackend(ModelBackend):
@@ -55,4 +51,3 @@ class LocationAuthBackend(DjingAuthBackend):
                 return user
         except AddressValueError:
             return None
-

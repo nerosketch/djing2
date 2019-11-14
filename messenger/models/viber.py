@@ -3,15 +3,12 @@ from urllib.parse import urljoin
 from django.db import models
 from django.shortcuts import resolve_url
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth import get_user_model
 from django.conf import settings
 from viberbot import Api, BotConfiguration
 from viberbot.api.messages import TextMessage
 from viberbot.api.messages.message import Message
 from messenger.models import Messenger
-
-
-UserProfile = get_user_model()
+from profiles.models import UserProfile
 
 
 class ViberMessenger(Messenger):
