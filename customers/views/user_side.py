@@ -15,7 +15,14 @@ from tasks.models import Task
 from tasks.serializers import TaskModelSerializer
 
 
-class CustomersUserSideModelViewSet(BaseNonAdminModelViewSet):
+class SingleListObjMixin:
+    def list(self, *args, **kwargs):
+        qs = self.get_queryset().first()
+        sr = self.get_serializer(qs, many=False)
+        return Response(sr.data)
+
+
+class CustomersUserSideModelViewSet(SingleListObjMixin, BaseNonAdminModelViewSet):
     queryset = models.Customer.objects.select_related(
         'group', 'street', 'gateway', 'device', 'current_service'
     ).only(
@@ -30,12 +37,7 @@ class CustomersUserSideModelViewSet(BaseNonAdminModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(username=self.request.user.username).first()
-
-    def list(self, request, *args, **kwargs):
-        qs = self.filter_queryset(self.get_queryset())
-        sr = self.get_serializer(qs, many=False)
-        return Response(sr.data)
+        return qs.filter(username=self.request.user.username)
 
     @action(methods=('post',), detail=True)
     @catch_customers_errs
@@ -58,6 +60,15 @@ class CustomersUserSideModelViewSet(BaseNonAdminModelViewSet):
             data=_("The service '%s' was successfully activated") % srv,
             status=status.HTTP_200_OK
         )
+
+
+class CustomerServiceModelViewSet(SingleListObjMixin, BaseNonAdminModelViewSet):
+    queryset = models.CustomerService.objects.all()
+    serializer_class = serializers.DetailedCustomerServiceModelSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(customer=self.request.user)
 
 
 class LogsReadOnlyModelViewSet(BaseNonAdminReadOnlyModelViewSet):

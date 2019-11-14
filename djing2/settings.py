@@ -209,10 +209,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'djing2.lib.paginator.QueryPageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata',
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
-    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'djing2.lib.auth_backends.CustomTokenAuthentication'
+    ],
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
     'DATETIME_FORMAT': '%d %B %H:%M',
     'TEST_REQUEST_DEFAULT_FORMAT': 'json'
@@ -223,6 +222,9 @@ if DEBUG:
     CORS_ALLOW_CREDENTIALS = True
     CORS_ORIGIN_WHITELIST = (
         'http://localhost:8080',
+    )
+    REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'].append(
+        'rest_framework.authentication.SessionAuthentication'
     )
 
 

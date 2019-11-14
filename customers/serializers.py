@@ -7,6 +7,7 @@ from rest_framework import serializers
 from customers import models
 from djing2.lib import safe_int
 from groupapp.serializers import GroupsSerializer
+from services.serializers import ServiceModelSerializer
 
 
 def _generate_random_chars(length=6, chars=digits, split=2, delimiter=''):
@@ -34,6 +35,14 @@ def generate_random_password():
 
 
 class CustomerServiceModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CustomerService
+        fields = ('service', 'start_time', 'deadline')
+
+
+class DetailedCustomerServiceModelSerializer(serializers.ModelSerializer):
+    service = ServiceModelSerializer(many=False, read_only=True)
+
     class Meta:
         model = models.CustomerService
         fields = ('service', 'start_time', 'deadline')
