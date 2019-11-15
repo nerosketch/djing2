@@ -2,7 +2,7 @@ from django.utils.translation import gettext
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from djing2.viewsets import DjingModelViewSet, DjingListAPIView
+from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
 from profiles.serializers import UserProfileSerializer
 from tasks import models
 from tasks import serializers
@@ -165,3 +165,12 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
             self.perform_destroy(comment)
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+class UserTaskHistory(BaseNonAdminReadOnlyModelViewSet):
+    queryset = models.Task.objects.all()
+    serializer_class = serializers.UserTaskModelSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(customer__id=self.request.user.pk)
