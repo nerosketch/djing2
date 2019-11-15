@@ -33,6 +33,11 @@ class TaskModelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UserTaskModelSerializer(TaskModelSerializer):
+    class Meta(TaskModelSerializer.Meta):
+        fields = ('time_of_create', 'state_str', 'mode_str', 'out_date')
+
+
 class ExtraCommentModelSerializer(serializers.ModelSerializer):
     author_id = serializers.IntegerField(source='author.pk', read_only=True)
     author_name = serializers.CharField(source='author.get_full_name', read_only=True)
