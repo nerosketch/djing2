@@ -1,13 +1,12 @@
-# from django.contrib.auth.models import User
-from rest_framework.serializers import ModelSerializer, CharField
+from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from profiles.models import UserProfile, UserProfileLog
 
 
-class UserProfileSerializer(ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
     firbidden_usernames = ('log', 'api-token-auth', 'api')
-    full_name = CharField(source='get_full_name', read_only=True)
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
 
     class Meta:
         model = UserProfile
@@ -30,7 +29,7 @@ class UserProfileSerializer(ModelSerializer):
         return super().is_valid(raise_exception)
 
 
-class UserProfileLogSerializer(ModelSerializer):
+class UserProfileLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfileLog
         fields = ('do_type', 'additional_text', 'action_date')

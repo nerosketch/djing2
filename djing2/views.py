@@ -1,5 +1,7 @@
 import re
+from ipaddress import ip_address, AddressValueError
 from django.db.models import Q
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from djing2 import MAC_ADDR_REGEX
@@ -73,3 +75,19 @@ class SearchApiView(DjingListAPIView):
             'accounts': (accs_format(acc, s) for acc in customers),
             'devices': (dev_format(dev, s) for dev in devices)
         })
+
+
+@api_view(http_method_names=['get'])
+def can_login_by_location(request):
+    try:
+        # remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
+        remote_ip = ip_address('10.10.0.4')
+        if remote_ip.version == 4:
+            has_exist = Customer.objects.filter(
+                ip_address=str(remote_ip),
+                is_active=True
+            ).exists()
+            return Response(has_exist)
+    except AddressValueError:
+        pass
+    return Response(False)

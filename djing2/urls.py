@@ -1,6 +1,6 @@
 from django.urls import path, include
 from django.conf import settings
-from djing2.views import SearchApiView
+from djing2.views import SearchApiView, can_login_by_location
 
 
 api_urls = [
@@ -15,6 +15,7 @@ api_urls = [
     path('networks/', include('networks.urls', namespace='networks')),
     path('fin/', include('fin_app.urls', namespace='fin_app')),
     path('dial/', include('dials.urls', namespace='dials')),
+    path('can_login_by_location/', can_login_by_location),
     path('search/', SearchApiView.as_view())
 ]
 
