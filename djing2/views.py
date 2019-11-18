@@ -80,8 +80,7 @@ class SearchApiView(DjingListAPIView):
 @api_view(http_method_names=['get'])
 def can_login_by_location(request):
     try:
-        # remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
-        remote_ip = ip_address('10.10.0.4')
+        remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
         if remote_ip.version == 4:
             has_exist = Customer.objects.filter(
                 ip_address=str(remote_ip),
