@@ -1,9 +1,6 @@
 from ipaddress import ip_address, AddressValueError
 
 from django.contrib.auth.backends import ModelBackend
-from django.utils.translation import gettext_lazy as _
-from rest_framework import exceptions
-from rest_framework.authentication import TokenAuthentication
 
 from customers.models import Customer
 from profiles.models import BaseAccount, UserProfile
@@ -24,6 +21,8 @@ class DjingAuthBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         if username is None:
             username = kwargs.get(BaseAccount.USERNAME_FIELD)
+        if username is None:
+            return
         try:
             user = BaseAccount._default_manager.get_by_natural_key(username)
         except BaseAccount.DoesNotExist:
@@ -45,9 +44,13 @@ class DjingAuthBackend(ModelBackend):
 
 
 class LocationAuthBackend(DjingAuthBackend):
-    def authenticate(self, request, **kwargs):
+    def authenticate(self, request, byip=None, **kwargs):
+        if byip is None:
+            return
         try:
-            remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
+            # remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
+            remote_ip = ip_address('10.10.0.4')
+            print(remote_ip)
             user = Customer.objects.filter(
                 ip_address=str(remote_ip),
                 is_active=True
@@ -58,17 +61,3 @@ class LocationAuthBackend(DjingAuthBackend):
                 return user
         except AddressValueError:
             return None
-
-
-class CustomTokenAuthentication(TokenAuthentication):
-    def authenticate_credentials(self, key):
-        token_model = self.get_model()
-        try:
-            token = token_model.objects.select_related('user').get(key=key)
-        except token_model.DoesNotExist:
-            raise exceptions.AuthenticationFailed(_('Invalid token.'))
-
-        if not token.user.is_active:
-            raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
-
-        return _get_right_user(token.user), token

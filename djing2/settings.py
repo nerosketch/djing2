@@ -101,7 +101,7 @@ TEMPLATES = [
 AUTHENTICATION_BACKENDS = (
     'djing2.lib.auth_backends.DjingAuthBackend',
     'guardian.backends.ObjectPermissionBackend',
-    # 'djing2.lib.auth_backends.LocationAuthBackend'
+    'djing2.lib.auth_backends.LocationAuthBackend'
 )
 
 WSGI_APPLICATION = 'djing2.wsgi.application'
@@ -210,7 +210,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
     'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata',
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'djing2.lib.auth_backends.CustomTokenAuthentication'
+        'djing2.lib.authenticators.CustomTokenAuthentication'
     ],
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
     'DATETIME_FORMAT': '%d %B %H:%M',
