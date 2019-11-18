@@ -48,9 +48,7 @@ class LocationAuthBackend(DjingAuthBackend):
         if byip is None:
             return
         try:
-            # remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
-            remote_ip = ip_address('10.10.0.4')
-            print(remote_ip)
+            remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
             user = Customer.objects.filter(
                 ip_address=str(remote_ip),
                 is_active=True
