@@ -1,5 +1,10 @@
+from django.contrib.auth import authenticate
+from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
 
 from djing2.viewsets import DjingModelViewSet
 from profiles.models import UserProfile, UserProfileLog
@@ -20,3 +25,21 @@ class UserProfileViewSet(DjingModelViewSet):
 class UserProfileLogViewSet(DjingModelViewSet):
     queryset = UserProfileLog.objects.all()
     serializer_class = UserProfileLogSerializer
+
+
+class LocationAuth(APIView):
+    throttle_classes = ()
+    permission_classes = ()
+
+    def get(self, request, *args, **kwargs):
+        user = authenticate(
+            request=request,
+            byip=True
+        )
+
+        if not user:
+            msg = _('Unable to log in with provided credentials.')
+            raise ValidationError(msg, code='authorization')
+
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({'token': token.key})

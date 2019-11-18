@@ -14,5 +14,6 @@ router.register('log', views.UserProfileLogViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('location-auth/', views.LocationAuth.as_view()),
     path('token-auth/', obtain_auth_token)
 ]
