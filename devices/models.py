@@ -29,7 +29,8 @@ class Device(models.Model):
         (5, dev_types.Olt_ZTE_C320),
         (6, dev_types.ZteOnuDevice),
         (7, dev_types.ZteF601),
-        (8, dev_types.HuaweiSwitch)
+        (8, dev_types.HuaweiSwitch),
+        (9, dev_types.ZteF660v125s)
     )
     dev_type = models.PositiveSmallIntegerField(
         _('Device type'), default=1,
