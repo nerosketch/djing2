@@ -11,7 +11,7 @@ from djing2.lib import RuTimedelta, safe_int, safe_float
 from devices.expect_scripts import (
     register_f601_onu, register_f660_onu,
     ExpectValidationError, OnuZteRegisterError,
-    remove_from_olt_f601
+    remove_from_olt_f601, register_f660v125s_onu
 )
 from devices.expect_scripts.base import sn_to_mac
 from .base_intr import (
@@ -647,6 +647,13 @@ class ZteF601(ZteOnuDevice):
 
     def register_device(self, extra_data: Dict):
         return _reg_dev_zte(self.db_instance, extra_data, register_f601_onu)
+
+
+class ZteF660v125s(ZteOnuDevice):
+    description = 'ZTE ONU F660 V125 S'
+
+    def register_device(self, extra_data: Dict):
+        return _reg_dev_zte(self.db_instance, extra_data, register_f660v125s_onu)
 
 
 class HuaweiSwitch(EltexSwitch):
