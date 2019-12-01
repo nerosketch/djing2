@@ -15,7 +15,6 @@ def accs_format(acc: Customer, search_str: str) -> dict:
         'id': acc.pk,
         'fio': acc.fio,
         'username': acc.username,
-        't': 1
     }
     if acc.telephone:
         r.update({
@@ -32,7 +31,6 @@ def dev_format(device: Device, search_str: str) -> dict:
     r = {
         'id': device.pk,
         'text': device.comment,
-        't': 2
     }
     if device.group:
         r.update({
