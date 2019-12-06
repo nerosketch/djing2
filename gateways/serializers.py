@@ -7,6 +7,3 @@ class GatewayModelSerializer(ModelSerializer):
         model = Gateway
         fields = ('pk', 'title', 'ip_address', 'ip_port', 'auth_login',
                   'auth_passw', 'gw_type', 'is_default', 'enabled')
-        extra_kwargs = {
-            'auth_passw': {'write_only': True}
-        }

@@ -70,7 +70,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, OrderingFilter)
     search_fields = ('username', 'fio', 'telephone', 'description')
-    filterset_fields = ('group', 'street')
+    filterset_fields = ('group', 'street', 'device', 'dev_port')
     ordering_fields = ('username', 'fio', 'house', 'balance')
 
     @staticmethod
