@@ -314,6 +314,7 @@ class CustomerRawPasswordModelViewSet(DjingModelViewSet):
 class AdditionalTelephoneModelViewSet(DjingModelViewSet):
     queryset = models.AdditionalTelephone.objects.defer('customer')
     serializer_class = serializers.AdditionalTelephoneModelSerializer
+    filterset_fields = 'customer',
 
 
 class PeriodicPayForIdModelViewSet(DjingModelViewSet):
