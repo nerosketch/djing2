@@ -302,6 +302,7 @@ class InvoiceForPaymentModelViewSet(DjingModelViewSet):
         'customer', 'author'
     )
     serializer_class = serializers.InvoiceForPaymentModelSerializer
+    filterset_fields = ('customer',)
 
 
 class CustomerRawPasswordModelViewSet(DjingModelViewSet):
