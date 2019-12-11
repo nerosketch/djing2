@@ -152,7 +152,7 @@ class CustomerRawPasswordModelSerializer(serializers.ModelSerializer):
 class AdditionalTelephoneModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.AdditionalTelephone
-        exclude = ('customer',)
+        fields = '__all__'
 
 
 class PeriodicPayForIdModelSerializer(serializers.ModelSerializer):
