@@ -138,6 +138,9 @@ class PassportInfoModelSerializer(serializers.ModelSerializer):
 
 
 class InvoiceForPaymentModelSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source='author.get_full_name', read_only=True)
+    author_uname = serializers.CharField(source='author.username', read_only=True)
+
     class Meta:
         model = models.InvoiceForPayment
         fields = '__all__'
