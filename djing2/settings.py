@@ -118,6 +118,14 @@ DATABASES = getattr(local_settings, 'DATABASES', {
 })
 
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
+        'LOCATION': '/run/memcached/memcached.sock',
+    }
+}
+
+
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
