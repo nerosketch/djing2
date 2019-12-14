@@ -11,4 +11,5 @@ djing2/local_settings.py
 *.mo
 db.sqlite3
 venv/
+static/
 __pycache__/
