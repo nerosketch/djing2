@@ -2,7 +2,7 @@ import socket
 from functools import wraps
 from hashlib import sha256
 from datetime import timedelta
-from collections import Iterator
+from collections.abc import Iterator
 
 
 def safe_float(fl: float) -> float:

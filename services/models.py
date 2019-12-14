@@ -58,7 +58,7 @@ class Service(models.Model):
 
     class Meta:
         db_table = 'services'
-        ordering = ('title',)
+        # ordering = ('title',)
         verbose_name = _('Service')
         verbose_name_plural = _('Services')
         unique_together = ('speed_in', 'speed_out', 'cost', 'calc_type')
@@ -111,7 +111,7 @@ class PeriodicPay(models.Model):
         db_table = 'periodic_pay'
         verbose_name = _('Periodic pay')
         verbose_name_plural = _('Periodic pays')
-        ordering = ('-id',)
+        # ordering = ('-id',)
 
 
 class OneShotPay(models.Model):
@@ -158,7 +158,7 @@ class OneShotPay(models.Model):
 
     class Meta:
         db_table = 'service_one_shot'
-        ordering = ('name',)
+        # ordering = ('name',)
 
 
 @receiver(models.signals.pre_delete, sender=PeriodicPay)

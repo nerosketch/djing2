@@ -17,4 +17,4 @@ class Messenger(models.Model):
         db_table = 'messengers'
         verbose_name = _('Messenger')
         verbose_name_plural = _('Messengers')
-        ordering = ('title',)
+        # ordering = ('title',)
