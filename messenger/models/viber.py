@@ -71,7 +71,7 @@ class ViberMessenger(Messenger):
         db_table = 'messenger_viber'
         verbose_name = _('Viber messenger')
         verbose_name_plural = _('Viber messengers')
-        ordering = ('title',)
+        # ordering = ('title',)
 
 
 class ViberMessage(models.Model):
@@ -98,7 +98,7 @@ class ViberMessage(models.Model):
         db_table = 'messenger_viber_messages'
         verbose_name = _('Viber message')
         verbose_name_plural = _('Viber messages')
-        ordering = ('-date',)
+        # ordering = ('-date',)
 
 
 class ViberSubscriber(models.Model):
@@ -127,4 +127,4 @@ class ViberSubscriber(models.Model):
         db_table = 'messenger_viber_subscriber'
         verbose_name = _('Viber subscriber')
         verbose_name_plural = _('Viber subscribers')
-        ordering = ('name',)
+        # ordering = ('name',)

@@ -22,7 +22,7 @@ class Group(models.Model):
         db_table = 'groups'
         verbose_name = _('Group')
         verbose_name_plural = _('Groups')
-        ordering = ('title',)
+        # ordering = ('title',)
 
     def __str__(self):
         return self.title
