@@ -672,10 +672,8 @@ class HuaweiSwitch(EltexSwitch):
 
         def build_port(i: int, n: int):
             speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % n)
-            oper_status = safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.7.%d' % n))
-            oper_status = oper_status == 1
-            link_status = safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.8.%d' % n))
-            link_status = link_status == 1
+            oper_status = safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.7.%d' % n)) == 1
+            link_status = safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.8.%d' % n)) == 1
             ep = EltexPort(
                 self,
                 num=i + 1,
