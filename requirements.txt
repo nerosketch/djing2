@@ -1,25 +1,23 @@
 wheel
-urllib3
-Django
-djangorestframework
-Pillow
+Django==2.2.5
+djangorestframework==3.10.3
+Pillow==6.1.0
 
 # for mac address field
-netaddr
+netaddr==0.7.19
 
 # db client for Postgres
-psycopg2-binary
+psycopg2-binary==2.8.3
 
 git+git://github.com/nerosketch/easysnmp.git#egg=easysnmp
-pid
-django-guardian
+pid==2.2.5
+django-guardian==2.1.0
 
-requests
-webdavclient
-transliterate
+requests==2.22.0
+transliterate==1.10.2
 
 # xml for pay system allpay
-djangorestframework-xml
+djangorestframework-xml==1.4.0
 
 # django-bitfield
 git+git://github.com/disqus/django-bitfield.git#egg=django-bitfield
@@ -30,14 +28,15 @@ git+git://github.com/un1t/django-cleanup.git#egg=django_cleanup
 # viberbot
 git+git://github.com/Viber/viber-bot-python.git#egg=viberbot
 
-celery
-redis
+celery==4.3.0
+redis==3.3.8
 
-django-cors-headers
-django-encrypted-model-fields
-django-netfields
+django-cors-headers==3.1.0
+django-encrypted-model-fields==0.5.8
+django-netfields==1.1.0
 
 # pexpect
 git+git://github.com/pexpect/pexpect.git#egg=pexpect
 
-django-filter
+django-filter==2.2.0
+pylibmc==1.6.1
