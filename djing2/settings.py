@@ -121,7 +121,7 @@ DATABASES = getattr(local_settings, 'DATABASES', {
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
-        'LOCATION': '/run/memcached/memcached.sock',
+        'LOCATION': '127.0.0.1:11211',
     }
 }
 
