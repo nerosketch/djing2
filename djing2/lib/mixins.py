@@ -6,7 +6,9 @@ from django.utils.decorators import method_decorator
 from django.views.generic.base import View
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer
 from rest_framework.views import APIView
+from drf_queryfields import QueryFieldsMixin
 
 from .decorators import hash_auth_view
 
@@ -56,4 +58,8 @@ class AllowedSubnetMixin(object):
 
 
 class SecureApiView(AllowedSubnetMixin, HashAuthView):
+    pass
+
+
+class BaseCustomModelSerializer(QueryFieldsMixin, ModelSerializer):
     pass
