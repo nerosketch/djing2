@@ -2,10 +2,12 @@ from string import digits, ascii_lowercase
 from random import choice
 
 from django.contrib.auth.hashers import make_password
+from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
 
 from customers import models
 from djing2.lib import safe_int
+from djing2.lib.mixins import BaseCustomModelSerializer
 from groupapp.serializers import GroupsSerializer
 from services.serializers import ServiceModelSerializer
 
@@ -34,13 +36,13 @@ def generate_random_password():
     return _generate_random_chars(length=6, chars=digits + ascii_lowercase)
 
 
-class CustomerServiceModelSerializer(serializers.ModelSerializer):
+class CustomerServiceModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerService
         fields = ('service', 'start_time', 'deadline')
 
 
-class DetailedCustomerServiceModelSerializer(serializers.ModelSerializer):
+class DetailedCustomerServiceModelSerializer(BaseCustomModelSerializer):
     service = ServiceModelSerializer(many=False, read_only=True)
 
     class Meta:
@@ -48,13 +50,13 @@ class DetailedCustomerServiceModelSerializer(serializers.ModelSerializer):
         fields = ('service', 'start_time', 'deadline')
 
 
-class CustomerStreetModelSerializer(serializers.ModelSerializer):
+class CustomerStreetModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerStreet
         fields = ('id', 'name', 'group')
 
 
-class CustomerLogModelSerializer(serializers.ModelSerializer):
+class CustomerLogModelSerializer(BaseCustomModelSerializer):
     author_name = serializers.CharField(source='author.get_short_name', read_only=True)
     # customer_name = serializers.CharField(source='customer.get_short_name')
 
@@ -76,7 +78,7 @@ def update_passw(acc, raw_password):
             )
 
 
-class CustomerModelSerializer(serializers.ModelSerializer):
+class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     full_name = serializers.CharField(source='get_full_name', read_only=True)
     group_title = serializers.CharField(source='group.title', read_only=True)
     street_name = serializers.CharField(source='street.name', read_only=True)
@@ -131,13 +133,13 @@ class CustomerGroupSerializer(GroupsSerializer):
         fields = ('pk', 'title', 'code', 'usercount')
 
 
-class PassportInfoModelSerializer(serializers.ModelSerializer):
+class PassportInfoModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.PassportInfo
         exclude = ('customer',)
 
 
-class InvoiceForPaymentModelSerializer(serializers.ModelSerializer):
+class InvoiceForPaymentModelSerializer(BaseCustomModelSerializer):
     author_name = serializers.CharField(source='author.get_full_name', read_only=True)
     author_uname = serializers.CharField(source='author.username', read_only=True)
 
@@ -146,19 +148,19 @@ class InvoiceForPaymentModelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class CustomerRawPasswordModelSerializer(serializers.ModelSerializer):
+class CustomerRawPasswordModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerRawPassword
         fields = '__all__'
 
 
-class AdditionalTelephoneModelSerializer(serializers.ModelSerializer):
+class AdditionalTelephoneModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.AdditionalTelephone
         fields = '__all__'
 
 
-class PeriodicPayForIdModelSerializer(serializers.ModelSerializer):
+class PeriodicPayForIdModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.PeriodicPayForId
         fields = ('id', 'last_pay', 'next_pay', 'periodic_pay')

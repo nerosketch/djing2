@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from djing2.lib.mixins import BaseCustomModelSerializer
 from profiles.models import UserProfile, UserProfileLog
 
 
-class UserProfileSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(BaseCustomModelSerializer):
     firbidden_usernames = ('log', 'api-token-auth', 'api')
     full_name = serializers.CharField(source='get_full_name', read_only=True)
 
@@ -29,7 +30,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return super().is_valid(raise_exception)
 
 
-class UserProfileLogSerializer(serializers.ModelSerializer):
+class UserProfileLogSerializer(BaseCustomModelSerializer):
     class Meta:
         model = UserProfileLog
         fields = ('do_type', 'additional_text', 'action_date')

@@ -2,10 +2,12 @@ from ipaddress import ip_network
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
+
+from djing2.lib.mixins import BaseCustomModelSerializer
 from networks.models import NetworkModel
 
 
-class NetworkModelSerializer(serializers.ModelSerializer):
+class NetworkModelSerializer(BaseCustomModelSerializer):
     kind_name = serializers.CharField(source='get_kind_display', read_only=True)
 
     @staticmethod

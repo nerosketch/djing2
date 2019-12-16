@@ -40,3 +40,4 @@ git+git://github.com/pexpect/pexpect.git#egg=pexpect
 
 django-filter==2.2.0
 pylibmc==1.6.1
+djangorestframework-queryfields==1.0.0
