@@ -1,8 +1,8 @@
-from rest_framework import serializers
+from djing2.lib.mixins import BaseCustomModelSerializer
 from messenger import models
 
 
-class MessengerModelSerializer(serializers.ModelSerializer):
+class MessengerModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.Messenger
         fields = '__all__'

@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from devices.models import Device, Port
+from djing2.lib.mixins import BaseCustomModelSerializer
 from groupapp.models import Group
 
 
-class DeviceModelSerializer(serializers.ModelSerializer):
+class DeviceModelSerializer(BaseCustomModelSerializer):
     dev_type_str = serializers.CharField(source='get_dev_type_display', read_only=True)
     parent_dev_name = serializers.CharField(source='parent_dev.comment', allow_null=True, read_only=True)
     parent_dev_group = serializers.IntegerField(source='parent_dev.group.pk', allow_null=True, read_only=True)
@@ -23,7 +24,7 @@ class DeviceModelSerializer(serializers.ModelSerializer):
         )
 
 
-class DeviceWithoutGroupModelSerializer(serializers.ModelSerializer):
+class DeviceWithoutGroupModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = Device
         fields = (
@@ -33,7 +34,7 @@ class DeviceWithoutGroupModelSerializer(serializers.ModelSerializer):
         )
 
 
-class PortModelSerializer(serializers.ModelSerializer):
+class PortModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = Port
         fields = ['pk', 'device', 'num', 'descr']
@@ -53,7 +54,7 @@ class PortModelSerializerExtended(PortModelSerializer):
         fields = PortModelSerializer.Meta.fields + ['user_count', 'additional']
 
 
-class DeviceGroupsModelSerializer(serializers.ModelSerializer):
+class DeviceGroupsModelSerializer(BaseCustomModelSerializer):
     device_count = serializers.IntegerField(
         source='device_set.count',
         read_only=True

@@ -1,12 +1,12 @@
 from rest_framework.serializers import (
-    ModelSerializer, IntegerField,
-    DateTimeField, CharField
+    IntegerField, DateTimeField, CharField
 )
 
+from djing2.lib.mixins import BaseCustomModelSerializer
 from services import models
 
 
-class ServiceModelSerializer(ModelSerializer):
+class ServiceModelSerializer(BaseCustomModelSerializer):
     usercount = IntegerField(read_only=True)
     planned_deadline = DateTimeField(source='calc_deadline_formatted', read_only=True)
     calc_type_name = CharField(source='get_calc_type_display', read_only=True)
@@ -20,7 +20,7 @@ class ServiceModelSerializer(ModelSerializer):
         )
 
 
-class PeriodicPayModelSerializer(ModelSerializer):
+class PeriodicPayModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.PeriodicPay
         fields = (
@@ -29,7 +29,7 @@ class PeriodicPayModelSerializer(ModelSerializer):
         )
 
 
-class OneShotPaySerializer(ModelSerializer):
+class OneShotPaySerializer(BaseCustomModelSerializer):
     pay_type_name = CharField(source='get_pay_type_display', read_only=True)
 
     class Meta:

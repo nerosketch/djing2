@@ -1,9 +1,11 @@
 from rest_framework import serializers
+
+from djing2.lib.mixins import BaseCustomModelSerializer
 from tasks import models
 from profiles.models import UserProfile
 
 
-class ChangeLogModelSerializer(serializers.ModelSerializer):
+class ChangeLogModelSerializer(BaseCustomModelSerializer):
     who_name = serializers.CharField(source='who.get_full_name', read_only=True)
     act_text = serializers.CharField(source='get_act_type_display', read_only=True)
     task_descr = serializers.CharField(source='task.descr', read_only=True)
@@ -13,7 +15,7 @@ class ChangeLogModelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class TaskModelSerializer(serializers.ModelSerializer):
+class TaskModelSerializer(BaseCustomModelSerializer):
     author_full_name = serializers.CharField(source='author.get_full_name', read_only=True)
     author_uname = serializers.CharField(source='author.username', read_only=True)
     priority_name = serializers.CharField(source='get_priority_display', read_only=True)
@@ -38,7 +40,7 @@ class UserTaskModelSerializer(TaskModelSerializer):
         fields = ('time_of_create', 'state_str', 'mode_str', 'out_date')
 
 
-class ExtraCommentModelSerializer(serializers.ModelSerializer):
+class ExtraCommentModelSerializer(BaseCustomModelSerializer):
     author_id = serializers.IntegerField(source='author.pk', read_only=True)
     author_name = serializers.CharField(source='author.get_full_name', read_only=True)
     author_avatar = serializers.CharField(source='author.get_avatar_url', read_only=True)
