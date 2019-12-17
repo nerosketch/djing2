@@ -13,5 +13,5 @@ db.sqlite3
 venv/
 static/
 __pycache__/
-devices/expect_scripts/switch_config/custom/*.py
-!devices/expect_scripts/switch_config/custom/__init__.py
+devices/switch_config/custom/*.py
+!devices/switch_config/custom/__init__.py

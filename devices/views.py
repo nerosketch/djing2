@@ -17,7 +17,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from customers.models import Customer
 from messenger.tasks import multicast_viber_notify
-from devices.base_intr import DeviceImplementationError
+from devices.switch_config import DeviceImplementationError, DeviceConsoleError, ExpectValidationError
 from djing2 import IP_ADDR_REGEX
 from djing2.lib import ProcessLocked, safe_int, ws_connector
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -184,24 +184,18 @@ class DeviceModelViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_dev_manager_err
     def register_device(self, request, pk=None):
-        from devices import expect_scripts
         device = self.get_object()
         http_status = status.HTTP_200_OK
         res_status = 1  # 'ok'
         try:
             device.register_device()
-        except expect_scripts.OnuZteRegisterError:
-            text = gettext('Unregistered onu not found')
+        except DeviceConsoleError as e:
+            text = str(e)
             res_status = 2
-        except expect_scripts.ZteOltLoginFailed:
-            text = gettext('Wrong login or password for telnet access')
-            res_status = 2
-        except (
-            ConnectionRefusedError, expect_scripts.ZteOltConsoleError,
-            expect_scripts.ExpectValidationError, expect_scripts.ZTEFiberIsFull
-        ) as e:
+        except (ConnectionRefusedError, ExpectValidationError) as e:
             text = e
             http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+            res_status = 2
         except ProcessLocked:
             text = gettext('Process locked by another process')
             res_status = 2

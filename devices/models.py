@@ -3,8 +3,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
-from devices import dev_types
-from devices.base_intr import DevBase, DeviceConfigurationError
+from devices.switch_config import DEVICE_TYPES
+from devices.switch_config.base import DevBase, DeviceConfigurationError
 from djing2.lib import MyChoicesAdapter
 from groupapp.models import Group
 from networks.models import VlanIf
@@ -22,19 +22,8 @@ class Device(models.Model):
         unique=True
     )
     comment = models.CharField(_('Comment'), max_length=256)
-    DEVICE_TYPES = (
-        (1, dev_types.DLinkDevice),
-        (2, dev_types.OLTDevice),
-        (3, dev_types.OnuDevice),
-        (4, dev_types.EltexSwitch),
-        (5, dev_types.Olt_ZTE_C320),
-        (6, dev_types.ZteOnuDevice),
-        (7, dev_types.ZteF601),
-        (8, dev_types.HuaweiSwitch),
-        (9, dev_types.ZteF660v125s)
-    )
     dev_type = models.PositiveSmallIntegerField(
-        _('Device type'), default=1,
+        _('Device type'), default=0,
         choices=MyChoicesAdapter(DEVICE_TYPES)
     )
     man_passw = models.CharField(
@@ -78,7 +67,7 @@ class Device(models.Model):
 
     def get_manager_klass(self):
         try:
-            return next(klass for code, klass in self.DEVICE_TYPES if code == int(self.dev_type))
+            return next(klass for code, klass in DEVICE_TYPES if code == int(self.dev_type))
         except StopIteration:
             raise TypeError('one of types is not subclass of DevBase. '
                             'Or implementation of that device type is not found')
