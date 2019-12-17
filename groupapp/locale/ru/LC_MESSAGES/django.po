@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-07-16 02:47+0300\n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,21 +17,21 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: groupapp/models.py:8
+#: groupapp/models.py:11
 msgid "Title"
 msgstr "Название"
 
-#: groupapp/models.py:9
+#: groupapp/models.py:13
 msgid "Tech code"
 msgstr "Тех. код"
 
-#: groupapp/models.py:16
+#: groupapp/models.py:23
 msgid "Group"
 msgstr "Группа"
 
-#: groupapp/models.py:17
+#: groupapp/models.py:24
 msgid "Groups"
 msgstr "Группы"
 
-msgid "Tech code must be unique"
-msgstr "Технический код дожен быть уникальным"
+#~ msgid "Tech code must be unique"
+#~ msgstr "Технический код дожен быть уникальным"

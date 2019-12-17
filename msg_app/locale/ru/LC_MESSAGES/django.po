@@ -1,0 +1,105 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+#: msg_app/models.py:24
+msgid "New"
+msgstr "Новое"
+
+#: msg_app/models.py:25
+msgid "Seen"
+msgstr "Старое"
+
+#: msg_app/models.py:26
+msgid "Deleted"
+msgstr "Удалённое"
+
+#: msg_app/models.py:44
+msgid "Message status"
+msgstr "Состояние сообщения"
+
+#: msg_app/models.py:45
+msgid "Messages statuses"
+msgstr "Состояния сообщений"
+
+#: msg_app/models.py:49
+msgid "Body"
+msgstr "Тело сообщения"
+
+#: msg_app/models.py:50
+msgid "sent at"
+msgstr "просмотрено в"
+
+#: msg_app/models.py:57 msg_app/models.py:301
+msgid "Conversation"
+msgstr "Беседа"
+
+#: msg_app/models.py:92
+msgid "Message"
+msgstr "Сообщение"
+
+#: msg_app/models.py:93
+msgid "Messages"
+msgstr "Сообщения"
+
+#: msg_app/models.py:103
+msgid "Admin"
+msgstr "Админ"
+
+#: msg_app/models.py:104
+msgid "Guest"
+msgstr "Гость"
+
+#: msg_app/models.py:105
+msgid "Banned user"
+msgstr "Заблокированный"
+
+#: msg_app/models.py:106
+msgid "Inviter"
+msgstr "Тот кто пригласил"
+
+#: msg_app/models.py:122
+msgid "Conversation membership"
+msgstr "Членство в беседе"
+
+#: msg_app/models.py:123
+msgid "Conversation memberships"
+msgstr "Членства в беседах"
+
+#: msg_app/models.py:134
+msgid "Participant profile does not found"
+msgstr "Учётки адресата нет"
+
+#: msg_app/models.py:142
+msgid "No name"
+msgstr "Нет имени"
+
+#: msg_app/models.py:176
+msgid "Title"
+msgstr "Название"
+
+#: msg_app/models.py:179
+msgid "Participants"
+msgstr "Адресаты"
+
+#: msg_app/models.py:182
+msgid "for select multiple press ctrl and click on field"
+msgstr "для того чтобы выделить несколько вариантов нажмите ctrl и кликните нужный вариант"
+
+#: msg_app/models.py:302
+msgid "Conversations"
+msgstr "Беседы"

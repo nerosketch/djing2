@@ -6,8 +6,8 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-06 16:58+0300\n"
+"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -119,7 +119,7 @@ msgstr ""
 "Этот пользователь не является сотрудником и не может назначать "
 "административные услуги"
 
-#: customers/models.py:245 customers/tests.py:104
+#: customers/models.py:245 customers/tests.py:101
 msgid "That service already activated"
 msgstr "Эта услуга уже подключена"
 
@@ -133,8 +133,8 @@ msgstr ""
 "Пользователь, который не является сотрудником, не может покупать услуги в "
 "долг"
 
-#: customers/models.py:255 customers/models.py:323 customers/tests.py:81
-#: customers/tests.py:145
+#: customers/models.py:255 customers/models.py:323 customers/tests.py:78
+#: customers/tests.py:142
 #, python-format
 msgid "%(uname)s not enough money for service %(srv_name)s"
 msgstr ""
@@ -243,30 +243,30 @@ msgstr "Учётная запись"
 msgid "Charge for \"%(service)s\""
 msgstr "Плата за \"%(service)s\""
 
-#: customers/tests.py:45 customers/views/admin_side.py:40
+#: customers/tests.py:42 customers/views/admin_side.py:40
 msgid "Not allowed to direct create Customer service, use 'pick_service' url"
 msgstr ""
 "Запрещено прямое создание привязанных к абоненту услуг, используйте "
 "'pick_service' url"
 
-#: customers/tests.py:52 customers/views/admin_side.py:61
+#: customers/tests.py:49 customers/views/admin_side.py:61
 msgid "Not allowed to direct create Customer log"
 msgstr "Запрещено прямое создание логов абонента"
 
-#: customers/tests.py:116 customers/views/admin_side.py:147
+#: customers/tests.py:113 customers/views/admin_side.py:147
 msgid "Service not connected"
 msgstr ""
 
-#: customers/tests.py:163 customers/views/user_side.py:53
+#: customers/tests.py:160 customers/views/user_side.py:56
 #, python-format
 msgid "The service '%s' was successfully activated"
 msgstr "Услуга '%s' успешно подключена"
 
-#: customers/tests.py:237 customers/views/user_side.py:83
+#: customers/tests.py:234 customers/views/user_side.py:104
 msgid "Are you not sure that you want buy the service?"
 msgstr "Вы не уверены что хотите оплатить долг?"
 
-#: customers/tests.py:249 customers/views/user_side.py:86
+#: customers/tests.py:246 customers/views/user_side.py:107
 msgid "Your account have not enough money"
 msgstr "Недостаточно средств на счету"
 
@@ -299,16 +299,16 @@ msgstr "Ip адрес не передан"
 msgid "no ping"
 msgstr "не пингуется"
 
-#: customers/views/admin_side.py:271
+#: customers/views/admin_side.py:274
 msgid "fill account through admin side"
 msgstr ""
 
-#: customers/views/user_side.py:46
+#: customers/views/user_side.py:49
 #, python-format
 msgid "Buy the service via user side, service '%s'"
 msgstr "Покупка тарифного плана через личный кабинет, тариф '%s'"
 
-#: customers/views/user_side.py:92
+#: customers/views/user_side.py:113
 #, python-format
 msgid "%(username)s paid the debt %(amount).2f"
 msgstr "%(username)s заплатил долг в размере %(amount).2f"

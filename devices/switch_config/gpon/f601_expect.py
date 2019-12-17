@@ -4,7 +4,9 @@ from djing2.lib import process_lock, safe_int
 from .. import expect_util
 from .zte_utils import (
     get_unregistered_onu, get_free_registered_onu_number,
-    zte_onu_conv_to_num, sn_to_mac, zte_onu_conv_from_onu
+    zte_onu_conv_to_num, sn_to_mac, zte_onu_conv_from_onu,
+    ZteOltLoginFailed, OnuZteRegisterError, ZTEFiberIsFull,
+    ZteOltConsoleError
 )
 
 
@@ -47,14 +49,14 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 
     choice = ch.do_cmd(password, ['bad password.', '%s#' % prompt])
     if choice == 0:
-        raise expect_util.ZteOltLoginFailed
+        raise ZteOltLoginFailed
 
     ch.do_cmd('terminal length 0', '%s#' % prompt)
     choice = ch.do_cmd('show gpon onu uncfg', ['No related information to show', '%s#' % prompt])
 
     if choice == 0:
         ch.close()
-        raise expect_util.OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
+        raise OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
     elif choice == 1:
         # Получим незареганные onu
         unregistered_onu = get_unregistered_onu(
@@ -63,7 +65,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
         )
         if unregistered_onu is None:
             ch.close()
-            raise expect_util.OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
+            raise OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
 
         stack_num = int(unregistered_onu.get('stack_num'))
         rack_num = int(unregistered_onu.get('rack_num'))
@@ -81,7 +83,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 
         if free_onu_number > 126:
             ch.close()
-            raise expect_util.ZTEFiberIsFull('olt fiber %d is full' % fiber_num)
+            raise ZTEFiberIsFull('olt fiber %d is full' % fiber_num)
 
         # enter to config
         ch.do_cmd('conf t', '%s(config)#' % prompt)
@@ -140,7 +142,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
         )
     else:
         ch.close()
-        raise expect_util.ZteOltConsoleError("I don't know what choice:", choice)
+        raise ZteOltConsoleError("I don't know what is that choice: %d" % choice)
 
 
 # Main Entry point
@@ -181,7 +183,7 @@ def remove_from_olt(zte_ip_addr: str, telnet_login: str,
 
     choice = ch.do_cmd(telnet_passw, ['bad password.', '%s#' % telnet_prompt])
     if choice == 0:
-        raise expect_util.ZteOltLoginFailed
+        raise ZteOltLoginFailed
 
     rack_num, fiber_num, onu_num = zte_onu_conv_from_onu(snmp_info)
 

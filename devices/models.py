@@ -1,3 +1,5 @@
+from typing import Optional, Tuple
+
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -5,7 +7,7 @@ from netfields import MACAddressField
 
 from devices.switch_config import DEVICE_TYPES
 from devices.switch_config.base import DevBase, DeviceConfigurationError
-from djing2.lib import MyChoicesAdapter
+from djing2.lib import MyChoicesAdapter, safe_int
 from groupapp.models import Group
 from networks.models import VlanIf
 
@@ -114,6 +116,30 @@ class Device(models.Model):
             self.save(update_fields=['snmp_extra'])
         return r
 
+    def onu_find_sn_by_mac(self) -> Tuple[Optional[int], Optional[str]]:
+        parent = self.parent_dev
+        if parent is not None:
+            manager = parent.get_manager_object()
+            mac = self.mac_addr
+            ports = manager.get_list_keyval('.1.3.6.1.4.1.3320.101.10.1.1.3')
+            for srcmac, snmpnum in ports:
+                # convert bytes mac address to str presentation mac address
+                real_mac = ':'.join('%x' % ord(i) for i in srcmac)
+                if mac == real_mac:
+                    return safe_int(snmpnum), None
+            return None, _('Onu with mac "%(onu_mac)s" not found on OLT') % {
+                'onu_mac': mac
+            }
+        return None, _('Parent device not found')
+
+    def fix_onu(self):
+        onu_sn, err_text = self.onu_find_sn_by_mac()
+        if onu_sn is not None:
+            self.snmp_extra = str(onu_sn)
+            self.save(update_fields=('snmp_extra',))
+            return True, _('Fixed')
+        return False, err_text
+
 
 class PortVlanMemberModel(models.Model):
     vlanif = models.ForeignKey(VlanIf, on_delete=models.CASCADE)
@@ -151,7 +177,7 @@ class Port(models.Model):
     )
     vlans = models.ManyToManyField(
         VlanIf, through=PortVlanMemberModel,
-        verbose_name=_('User vlan list'),
+        verbose_name=_('VLan list'),
         through_fields=('port', 'vlanif')
     )
     # config_type = models.PositiveSmallIntegerField

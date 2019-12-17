@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-07-23 02:22+0300\n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,130 +17,145 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: fields.py:16
-msgid "IP address with prefix length, or subnet for ipv4"
-msgstr "IP адрес с длиной префикса, или подсеть IPv4)"
+#: networks/models.py:14 networks/models.py:59
+msgid "Vlan interface"
+msgstr ""
 
-#: fields.py:21
-msgid "Enter a valid IPv4 or IPv6 address with prefix length."
-msgstr "Введите валидный IPv4 или IPv6 адрес с маской сети"
+#: networks/models.py:15
+msgid "VID"
+msgstr ""
 
-#: models.py:16
+#: networks/models.py:16
+msgid "Vid could not be less then 2"
+msgstr "VID не может быть меньше чем 2"
+
+#: networks/models.py:17
+msgid "Vid could not be more than 4094"
+msgstr "VID не может быть больше чем 4094"
+
+#: networks/models.py:19
+msgid "Is management"
+msgstr "Управляемый"
+
+#: networks/models.py:26
+msgid "Vlan"
+msgstr ""
+
+#: networks/models.py:27
+#, fuzzy
+#| msgid "Ip leases list"
+msgid "Vlan list"
+msgstr "Список аренд ip"
+
+#: networks/models.py:34
 msgid "IP network"
 msgstr "IP подсеть"
 
-#: models.py:17
+#: networks/models.py:35
 msgid "Ip address of network. For example: 192.168.1.0 or fde8:6789:1234:1::"
 msgstr "IP адрес подсети. На пример: 192.168.1.0 or fde8:6789:1234:1::"
 
-#: models.py:22
+#: networks/models.py:40
 msgid "Not defined"
-msgstr ""
+msgstr "Не определённая"
 
-#: models.py:23
+#: networks/models.py:41
 msgid "Internet"
 msgstr "Интернет"
 
-#: models.py:24
+#: networks/models.py:42
 msgid "Guest"
 msgstr "Гостевая"
 
-#: models.py:25
+#: networks/models.py:43
 msgid "Trusted"
 msgstr "Доверенная"
 
-#: models.py:26
+#: networks/models.py:44
 msgid "Devices"
 msgstr "Устройства"
 
-#: models.py:27
+#: networks/models.py:45
 msgid "Admin"
 msgstr "Административная"
 
-#: models.py:30
+#: networks/models.py:48
 msgid "Kind of network"
 msgstr "Тип сети"
 
-#: models.py:33
+#: networks/models.py:51
 msgid "Description"
 msgstr "Описание"
 
-#: models.py:34
+#: networks/models.py:52
 msgid "Groups"
 msgstr "Группы"
 
-#: models.py:37
+#: networks/models.py:55
 msgid "Start work ip range"
 msgstr "Начальный ip из диапазона"
 
-#: models.py:38
+#: networks/models.py:56
 msgid "End work ip range"
 msgstr "Конечный ip из диапазона"
 
-#: models.py:55
+#: networks/models.py:71
 msgid "Network is invalid"
 msgstr "Подсеть не правильная"
 
-#: models.py:62
+#: networks/models.py:78
 msgid "Ip start is invalid"
 msgstr "Начальный ip из диапазона не верный"
 
-#: models.py:69
+#: networks/models.py:85
 msgid "Start ip must be in subnet of specified network"
 msgstr "Начальный ip должен быть в указанной подсети"
 
-#: models.py:74
+#: networks/models.py:90
 msgid "Ip end is invalid"
 msgstr "Конечный ip из диапазона не верный"
 
-#: models.py:81
+#: networks/models.py:97
 msgid "End ip must be in subnet of specified network"
 msgstr "Конечный ip должен быть в указанной подсети"
 
-#: models.py:96
+#: networks/models.py:112
 #, python-format
 msgid "Network is overlaps with %(other_network)s"
 msgstr "Подсеть пересекается с сетью '%(other_network)s'"
 
-#: models.py:106
-msgid "Global"
-msgstr "Глобальная"
-
-#: models.py:108
-msgid "Link local"
-msgstr ""
-
-#: models.py:110
-msgid "Loopback"
-msgstr "Локальное кольцо(loopback)"
-
-#: models.py:112
-msgid "Multicast"
-msgstr ""
-
-#: models.py:114
-msgid "Private"
-msgstr "Приватный"
-
-#: models.py:116
-msgid "Reserved"
-msgstr "Зарезервированный"
-
-#: models.py:118
-msgid "Site local"
-msgstr ""
-
-#: models.py:120
-msgid "Unspecified"
-msgstr "Не определён"
-
-#: models.py:155
+#: networks/models.py:153
 msgid "Network"
 msgstr "Подсеть"
 
-#: models.py:156
+#: networks/models.py:154
 msgid "Networks"
 msgstr "Подсети"
+
+#: networks/serializers.py:16
+msgid "Network can not be empty"
+msgstr "Сеть не может быть пустой"
+
+#~ msgid "IP address with prefix length, or subnet for ipv4"
+#~ msgstr "IP адрес с длиной префикса, или подсеть IPv4)"
+
+#~ msgid "Enter a valid IPv4 or IPv6 address with prefix length."
+#~ msgstr "Введите валидный IPv4 или IPv6 адрес с маской сети"
+
+#~ msgid "Global"
+#~ msgstr "Глобальная"
+
+#~ msgid "Loopback"
+#~ msgstr "Локальное кольцо(loopback)"
+
+#~ msgid "Private"
+#~ msgstr "Приватный"
+
+#~ msgid "Reserved"
+#~ msgstr "Зарезервированный"
+
+#~ msgid "Unspecified"
+#~ msgstr "Не определён"
 
 #~ msgid "Ip that you typed is not in subnet that you have selected"
 #~ msgstr "Введённый вами IP не в выбранной подсети"
@@ -186,9 +201,6 @@ msgstr "Подсети"
 
 #~ msgid "All networks"
 #~ msgstr "Все подсети"
-
-#~ msgid "Ip leases list"
-#~ msgstr "Список аренд ip"
 
 #~ msgid "You have not any available dedicated ips in this network"
 #~ msgstr "Нет ни одного выделенного ip в этой сети"
@@ -264,9 +276,6 @@ msgstr "Подсети"
 
 #~ msgid "Network successfully updated"
 #~ msgstr "Сеть успешно обновлена"
-
-#~ msgid "Network has been deleted"
-#~ msgstr "Сеть успешно удалена"
 
 #~ msgid "Network has been created"
 #~ msgstr "Сеть создана"
