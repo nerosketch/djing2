@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-04 17:36+0300\n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,117 +17,117 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: custom_logic/oneshot.py:7
+#: services/custom_logic/oneshot.py:7
 msgid "Default shot pay logic"
 msgstr "Логика по умолчанию для одноразового платежа"
 
-#: custom_logic/periodic.py:10
+#: services/custom_logic/periodic.py:10
 msgid "Default periodic pay"
 msgstr "Логика по умолчанию"
 
-#: custom_logic/periodic.py:21
+#: services/custom_logic/periodic.py:21
 msgid "Random periodic pay"
 msgstr "Логика по умолчанию для периодического"
 
-#: custom_logic/services.py:11
+#: services/custom_logic/services.py:11
 msgid "Base calculate functionality"
 msgstr "Базовый расчётный функционал"
 
-#: custom_logic/services.py:59
+#: services/custom_logic/services.py:59
 msgid "Private service"
 msgstr "Для внутреннего пользования"
 
-#: custom_logic/services.py:74
+#: services/custom_logic/services.py:74
 msgid "IS Daily service"
 msgstr "Услуга на сутки"
 
-#: models.py:20
+#: services/models.py:20
 msgid "Service title"
 msgstr "Название тарифа"
 
-#: models.py:21
+#: services/models.py:21
 msgid "Service description"
 msgstr "Описание тарифа"
 
-#: models.py:22
+#: services/models.py:22
 msgid "Speed in"
 msgstr "Входящая скорость"
 
-#: models.py:25
+#: services/models.py:25
 msgid "Speed out"
 msgstr "Исходящая скорость"
 
-#: models.py:28
+#: services/models.py:28
 msgid "Cost"
 msgstr "Цена"
 
-#: models.py:29
+#: services/models.py:29
 msgid "Script"
 msgstr "Скрипт"
 
-#: models.py:30
+#: services/models.py:30
 msgid "Tech service"
 msgstr "Административный тариф"
 
-#: models.py:31
+#: services/models.py:31
 msgid "Groups"
 msgstr "Группы"
 
-#: models.py:62
+#: services/models.py:62
 msgid "Service"
 msgstr "Услуга"
 
-#: models.py:63
+#: services/models.py:63
 msgid "Services"
 msgstr "Тарифы"
 
-#: models.py:68
+#: services/models.py:68
 msgid "Periodic pay name"
 msgstr "Название"
 
-#: models.py:69
+#: services/models.py:69
 msgid "When pay created"
 msgstr "Когда создан"
 
-#: models.py:71
+#: services/models.py:71
 msgid "Script type for calculations"
 msgstr "Алгоритм расчёта"
 
-#: models.py:74
+#: services/models.py:74
 msgid "Total amount"
 msgstr "Стоимость"
 
-#: models.py:75
+#: services/models.py:75
 msgid "Extra info"
 msgstr ""
 
-#: models.py:112
+#: services/models.py:112
 msgid "Periodic pay"
 msgstr "Периодический платёж"
 
-#: models.py:113
+#: services/models.py:113
 msgid "Periodic pays"
 msgstr "Периодические платежи"
 
-#: models.py:118
+#: services/models.py:118
 #, fuzzy
 #| msgid "Periodic pay name"
 msgid "Shot pay name"
 msgstr "Название"
 
-#: models.py:119
+#: services/models.py:119
 #, fuzzy
 #| msgid "Total amount"
 msgid "Total cost"
 msgstr "Стоимость"
 
-#: models.py:121
+#: services/models.py:121
 msgid "One shot pay type"
 msgstr "Тип одноразового платежа"
 
-#: models.py:122
+#: services/models.py:122
 msgid "Uses for callbacks before pay and after pay"
 msgstr "Используется для настраиваемых хуков перед и после платежа"
 
-msgid "Buy one-shot service default log"
-msgstr "Оплата за одноразовую услугу через административный интерфейс"
+#~ msgid "Buy one-shot service default log"
+#~ msgstr "Оплата за одноразовую услугу через административный интерфейс"

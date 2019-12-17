@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-07-17 21:24+0300\n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,196 +17,196 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: handle.py:23
+#: tasks/handle.py:23 tasks/models.py:160
 msgid "Task"
 msgstr "Задача"
 
-#: handle.py:27
+#: tasks/handle.py:27
 msgid "Task completed"
 msgstr "Задача завершена"
 
-#: models.py:11
+#: tasks/models.py:12
 msgid "Low"
 msgstr "Низкий"
 
-#: models.py:12
+#: tasks/models.py:13
 msgid "Average"
 msgstr "Средний"
 
-#: models.py:13
+#: tasks/models.py:14
 msgid "Higher"
 msgstr "Высший"
 
-#: models.py:17
+#: tasks/models.py:18
 msgid "New"
 msgstr "Новая"
 
-#: models.py:18
+#: tasks/models.py:19
 msgid "Confused"
 msgstr "Провалена"
 
-#: models.py:19
+#: tasks/models.py:20
 msgid "Completed"
 msgstr "Выполнена"
 
-#: models.py:23
+#: tasks/models.py:24
 msgid "not chosen"
 msgstr "не выбрано"
 
-#: models.py:24
+#: tasks/models.py:25
 msgid "ip conflict"
 msgstr "Ip конфликт"
 
-#: models.py:25
+#: tasks/models.py:26
 msgid "yellow triangle"
 msgstr "жёлтый треугольник"
 
-#: models.py:26
+#: tasks/models.py:27
 msgid "red cross"
 msgstr "красный крестик"
 
-#: models.py:27
+#: tasks/models.py:28
 msgid "weak speed"
 msgstr "слабая скорость"
 
-#: models.py:28
+#: tasks/models.py:29
 msgid "cable break"
 msgstr "обрыв кабеля"
 
-#: models.py:29
+#: tasks/models.py:30
 msgid "connection"
 msgstr "подключение"
 
-#: models.py:30
+#: tasks/models.py:31
 msgid "periodic disappearance"
 msgstr "переодическое пропадание"
 
-#: models.py:31
+#: tasks/models.py:32
 msgid "router setup"
 msgstr "настройка роутера"
 
-#: models.py:32
+#: tasks/models.py:33
 msgid "configure onu"
 msgstr "настроить onu"
 
-#: models.py:33
+#: tasks/models.py:34
 msgid "crimp cable"
 msgstr "обжать кабель"
 
-#: models.py:34
+#: tasks/models.py:35
 msgid "Internet crash"
 msgstr "Нет интернета"
 
-#: models.py:35
+#: tasks/models.py:36
 msgid "other"
 msgstr "другое"
 
-#: models.py:42
+#: tasks/models.py:43
 msgid "Change task"
 msgstr "Изменение задачи"
 
-#: models.py:43
+#: tasks/models.py:44
 msgid "Create task"
 msgstr "Создание задачи"
 
-#: models.py:44
+#: tasks/models.py:45
 msgid "Delete task"
 msgstr "Удаление задачи"
 
-#: models.py:45
+#: tasks/models.py:46
 msgid "Completing tasks"
 msgstr "Завершение задачи"
 
-#: models.py:46
+#: tasks/models.py:47
 msgid "The task failed"
 msgstr "Задача провалена"
 
-#: models.py:60
+#: tasks/models.py:61
 msgid "Change log"
 msgstr "Лог задач"
 
-#: models.py:61
+#: tasks/models.py:62
 msgid "Change logs"
 msgstr "Логи задач"
 
-#: models.py:71
+#: tasks/models.py:72
 msgid "Description"
 msgstr "Описание"
 
-#: models.py:75
+#: tasks/models.py:76
 msgid "Recipients"
 msgstr "Исполнители"
 
-#: models.py:81
+#: tasks/models.py:82
 msgid "Task author"
 msgstr "Автор задачи"
 
-#: models.py:84
+#: tasks/models.py:85
 msgid "A priority"
 msgstr "Приоритет"
 
-#: models.py:88
+#: tasks/models.py:89
 msgid "Reality"
 msgstr "Актуальность (дата, до которой нужно завершить задачу)"
 
-#: models.py:92
+#: tasks/models.py:93
 msgid "Date of create"
 msgstr "Дата создания"
 
-#: models.py:95
+#: tasks/models.py:96
 msgid "Condition"
 msgstr "Состояние"
 
-#: models.py:99
+#: tasks/models.py:100
 msgid "The nature of the damage"
 msgstr "Характер поломки"
 
-#: models.py:104
+#: tasks/models.py:105
 msgid "Customer"
 msgstr "Абонент"
 
-#: models.py:138
+#: tasks/models.py:139
 msgid "Out date not specified"
 msgstr "Дата окончания не указана"
 
-#: models.py:140
+#: tasks/models.py:141
 msgid "time left"
 msgstr "осталось"
 
-#: models.py:142
+#: tasks/models.py:143
 #, python-format
 msgid "Expired timeout -%(time_left)s"
 msgstr "Время вышло -%(time_left)s"
 
-#: models.py:151
+#: tasks/models.py:152
 msgid "Access to all tasks"
 msgstr "Доступ ко всем задачам"
 
-#: models.py:152
+#: tasks/models.py:153
 msgid "Reminders of tasks"
 msgstr "Напоминания о задачах"
 
-#: models.py:157
+#: tasks/models.py:158
 msgid "Text of comment"
 msgstr "Текст комментария"
 
-#: models.py:163
+#: tasks/models.py:164
 msgid "Author"
 msgstr "Автор"
 
-#: models.py:166
+#: tasks/models.py:167
 msgid "Time of create"
 msgstr "Дата создания"
 
-#: models.py:173
+#: tasks/models.py:174
 msgid "Extra comment"
 msgstr "Комментарий"
 
-#: models.py:174
+#: tasks/models.py:175
 msgid "Extra comments"
 msgstr "Комментарии"
 
-#: templates/notification.html:2
+#: tasks/templates/notification.html:2
 #, python-format
 msgid ""
 "\n"
@@ -231,11 +231,11 @@ msgstr ""
 "\n"
 "%(task_detail)s\n"
 
-#: views.py:34
+#: tasks/views.py:43
 msgid "You cannot delete task that assigned to you"
 msgstr "Вы не можете удалять назначенные на вас задачи"
 
-#: views.py:45
+#: tasks/views.py:54
 msgid "New task with this customer already exists."
 msgstr "Заявка для этого абонента уже создана."
 

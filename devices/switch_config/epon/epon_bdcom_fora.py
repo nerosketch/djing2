@@ -4,9 +4,11 @@ from easysnmp import EasySNMPTimeoutError
 from transliterate import translit
 
 from djing2.lib import safe_int, safe_float
-from ..base import GeneratorOrTuple, DevBase, DeviceImplementationError
+from ..base import GeneratorOrTuple, DevBase, DeviceImplementationError, DeviceConfigurationError
 from ..snmp_util import SNMPBaseWorker
 from ..utils import norm_name
+from ..expect_util import ExpectValidationError
+from .epon_bdcom_expect import remove_from_olt
 
 
 class EPON_BDCOM_FORA(DevBase, SNMPBaseWorker):
@@ -110,7 +112,24 @@ class EPON_BDCOM_FORA(DevBase, SNMPBaseWorker):
         pass
 
     def remove_from_olt(self, extra_data: Dict):
-        pass
+        dev = self.db_instance
+        if not dev:
+            return False
+        if not dev.parent_dev or not dev.snmp_extra:
+            return False
+        telnet = extra_data.get('telnet')
+        if not telnet:
+            return False
+        onu_sn, err_text = dev.onu_find_sn_by_mac()
+        if onu_sn is None:
+            raise DeviceConfigurationError(err_text)
+        return remove_from_olt(
+            ip_addr=str(dev.parent_dev.ip_address),
+            telnet_login=telnet.get('login'),
+            telnet_passw=telnet.get('password'),
+            telnet_prompt=telnet.get('prompt'),
+            int_name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % onu_sn)
+        )
 
     def port_disable(self, port_num: int):
         pass

@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from transliterate import translit
 
 from djing2.lib import safe_int, safe_float
+from ..base import DeviceConsoleError
 from ..utils import norm_name
 from ..expect_util import ExpectValidationError
 from .f660_expect import register_onu
@@ -109,12 +110,27 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         telnet = extra_data.get('telnet')
         if not telnet:
             return False
-        return remove_from_olt(
-            zte_ip_addr=str(dev.parent_dev.ip_address),
-            telnet_login=telnet.get('login'),
-            telnet_passw=telnet.get('password'),
-            telnet_prompt=telnet.get('prompt'),
-            snmp_info=str(dev.snmp_extra)
+
+        fiber_num, onu_num = str(dev.snmp_extra).split('.')
+        fiber_num, onu_num = safe_int(fiber_num), safe_int(onu_num)
+        fiber_addr = '%d.%d' % (fiber_num, onu_num)
+        sn = self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s' % fiber_addr)
+        if sn is not None:
+            sn = 'ZTEG%s' % ''.join('%.2X' % ord(x) for x in sn[-4:])
+            sn_mac = sn_to_mac(sn)
+            if str(dev.mac_addr) != sn_mac:
+                raise ExpectValidationError(
+                    _('Mac of device not equal mac by snmp')
+                )
+            return remove_from_olt(
+                zte_ip_addr=str(dev.parent_dev.ip_address),
+                telnet_login=telnet.get('login'),
+                telnet_passw=telnet.get('password'),
+                telnet_prompt=telnet.get('prompt'),
+                snmp_info=str(dev.snmp_extra)
+            )
+        raise DeviceConsoleError(
+            _('Could not fetch serial for onu')
         )
 
     def get_fiber_str(self):

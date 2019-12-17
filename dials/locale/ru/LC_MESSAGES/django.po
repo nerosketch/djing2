@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-08-30 18:20+0300\n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,84 +17,105 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: models.py:19
+#: dials/models.py:16
 msgid "ATS device name"
 msgstr "Название устройства звонка"
 
-#: models.py:30
+#: dials/models.py:27
 msgid "ATS Number"
-msgstr ""
+msgstr "Номер АТС"
 
-#: models.py:88
+#: dials/models.py:66
 msgid "Unique identifier"
 msgstr "Уникальный идентификатор"
 
-#: models.py:89
+#: dials/models.py:69
 msgid "Caller number"
 msgstr "Номер звонящего"
 
-#: models.py:90
+#: dials/models.py:73
 msgid "Caller name"
 msgstr "Имя звонящего"
 
-#: models.py:91
+#: dials/models.py:77
 msgid "Dst caller number"
 msgstr "Номер адресата"
 
-#: models.py:92
-msgid "Dst caller name"
-msgstr "Имя адресата"
-
-#: models.py:93
+#: dials/models.py:81
 msgid "Duration"
 msgstr "Вся длительность"
 
+#: dials/models.py:81
 msgid "Duration of the call"
 msgstr "Количество секунд от начала вызова до его завершения"
 
-msgid "Duration of the call once it was answered"
-msgstr "Фактическое время разговора"
-
-#: models.py:94
+#: dials/models.py:84
 msgid "Talk time"
 msgstr "Время разговора"
 
-#: models.py:95
+#: dials/models.py:84
+msgid "Duration of the call once it was answered"
+msgstr "Фактическое время разговора"
+
+#: dials/models.py:86
 msgid "Start call time"
 msgstr "Время начала звонка"
 
-#: models.py:96
+#: dials/models.py:87
+msgid "Answer time"
+msgstr "Время ответа"
+
+#: dials/models.py:88
 msgid "End call time"
 msgstr "Время завершения звонка"
 
-#: models.py:99
+#: dials/models.py:91
 msgid "ATS device"
 msgstr "Устройство звонка"
 
-#: models.py:102
+#: dials/models.py:94
 msgid "Account"
 msgstr "Учётная запись"
 
-#: models.py:106
+#: dials/models.py:98
 msgid "Answered"
 msgstr "Отвечен"
 
-#: models.py:108
+#: dials/models.py:100
 msgid "Unknown"
 msgstr "Не известен"
 
-#: models.py:109
+#: dials/models.py:101
 msgid "Incoming"
 msgstr "Входящий"
 
-#: models.py:110
+#: dials/models.py:102
 msgid "Outgoing"
 msgstr "Исходящий"
 
-#: models.py:112
+#: dials/models.py:105
 msgid "Call type"
 msgstr "Тип звонка"
 
-#: models.py:115
+#: dials/models.py:109
 msgid "Call killer"
 msgstr "Кто завершил звонок"
+
+#: dials/models.py:142
+msgid "Create time"
+msgstr "Время начала"
+
+#: dials/models.py:143
+msgid "Sender"
+msgstr "Отправитель"
+
+#: dials/models.py:144
+msgid "Receiver"
+msgstr "Получатель"
+
+#: dials/models.py:145
+msgid "Text"
+msgstr "Текст"
+
+msgid "Dst caller name"
+msgstr "Имя адресата"

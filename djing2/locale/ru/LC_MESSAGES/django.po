@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-07-16 02:37+0300\n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,6 +17,14 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: djing2/settings.py:140
+#: djing2/lib/authenticators.py:14
+msgid "Invalid token."
+msgstr "Не правильный токен"
+
+#: djing2/lib/authenticators.py:17
+msgid "User inactive or deleted."
+msgstr "Пользователь не активен или удалён"
+
+#: djing2/settings.py:161
 msgid "Russian"
 msgstr "Русский"

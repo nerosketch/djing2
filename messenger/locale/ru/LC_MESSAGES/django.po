@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-07-16 02:47+0300\n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,102 +17,102 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: messenger/models/__init__.py:10
+#: messenger/models/__init__.py:6
 msgid "Title"
 msgstr "Название"
 
-#: messenger/models/__init__.py:12
+#: messenger/models/__init__.py:8
 msgid "Viber"
 msgstr "Вайбер"
 
-#: messenger/models/__init__.py:14
+#: messenger/models/__init__.py:10
 msgid "Bot type"
 msgstr "Тип бота"
 
-#: messenger/models/__init__.py:15
+#: messenger/models/__init__.py:11
 msgid "Slug"
 msgstr "Ссыль"
 
-#: messenger/models/__init__.py:22 messenger/models/viber.py:89
+#: messenger/models/__init__.py:18 messenger/models/viber.py:86
 msgid "Messenger"
 msgstr "Мэссенджэр"
 
-#: messenger/models/__init__.py:23
+#: messenger/models/__init__.py:19
 msgid "Messengers"
 msgstr "Мэссенджэры"
 
-#: messenger/models/viber.py:22
+#: messenger/models/viber.py:19
 msgid "Bot secret token"
 msgstr "Секретный токен viber"
 
-#: messenger/models/viber.py:23 messenger/models/viber.py:117
+#: messenger/models/viber.py:20 messenger/models/viber.py:114
 msgid "Avatar"
 msgstr "Аватар"
 
-#: messenger/models/viber.py:75
+#: messenger/models/viber.py:72
 msgid "Viber messenger"
 msgstr "Viber мэссенджэр"
 
-#: messenger/models/viber.py:76
+#: messenger/models/viber.py:73
 msgid "Viber messengers"
 msgstr "Viber мэссенджэры"
 
-#: messenger/models/viber.py:81
+#: messenger/models/viber.py:78
 msgid "Message"
 msgstr "Сообщение"
 
-#: messenger/models/viber.py:83
+#: messenger/models/viber.py:80
 msgid "Date"
 msgstr "Дата"
 
-#: messenger/models/viber.py:86
+#: messenger/models/viber.py:83
 msgid "Sender"
 msgstr "Отправитель"
 
-#: messenger/models/viber.py:94
+#: messenger/models/viber.py:91
 msgid "Subscriber"
 msgstr "Подписчик"
 
-#: messenger/models/viber.py:102
+#: messenger/models/viber.py:99
 msgid "Viber message"
 msgstr "Сообщение viber"
 
-#: messenger/models/viber.py:103
+#: messenger/models/viber.py:100
 msgid "Viber messages"
 msgstr "Сообщения viber"
 
-#: messenger/models/viber.py:109
+#: messenger/models/viber.py:106
 msgid "User unique id in viber"
 msgstr "Уникальный id viber"
 
-#: messenger/models/viber.py:113
+#: messenger/models/viber.py:110
 msgid "Name"
 msgstr "Имя"
 
-#: messenger/models/viber.py:122
+#: messenger/models/viber.py:119
 msgid "System account"
 msgstr "Системная учётная запись"
 
-#: messenger/models/viber.py:131
+#: messenger/models/viber.py:128
 msgid "Viber subscriber"
 msgstr "Подписчик viber"
 
-#: messenger/models/viber.py:132
+#: messenger/models/viber.py:129
 msgid "Viber subscribers"
 msgstr "Подписчики viber"
 
-#: messenger/views/viber.py:81
+#: messenger/views/viber.py:78
 msgid "My telephone number"
 msgstr "Мой номер телефона"
 
-#: messenger/views/viber.py:105
+#: messenger/views/viber.py:102
 msgid ""
 "Your account is attached. Now you will be receive notifications from billing"
 msgstr ""
 "Ваша учётка из биллинга привязана. Теперь вы будете получать оповещения из "
 "биллинга."
 
-#: messenger/views/viber.py:109
+#: messenger/views/viber.py:106
 msgid ""
 "Telephone not found, please specify telephone number in account in billing"
 msgstr ""

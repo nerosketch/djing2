@@ -34,11 +34,13 @@ def catch_dev_manager_err(fn):
             return fn(self, *args, **kwargs)
         except DeviceImplementationError as err:
             return Response({'Error': {
-                'text': '%s' % err
+                'text': str(err)
             }}, status=status.HTTP_501_NOT_IMPLEMENTED)
+        except ExpectValidationError as err:
+            return Response(str(err))
         except (ConnectionResetError, EasySNMPTimeoutError) as err:
             return Response({'Error': {
-                'text': '%s' % err
+                'text': str(err)
             }}, status=status.HTTP_408_REQUEST_TIMEOUT)
 
     # Hack for decorator @action
@@ -161,25 +163,10 @@ class DeviceModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def fix_onu(self, request, pk=None):
         onu = self.get_object()
-        parent = onu.parent_dev
-        text = _('Failed')
-        http_status = status.HTTP_200_OK
-        if parent is not None:
-            manager = parent.get_manager_object()
-            mac = onu.mac_addr
-            ports = manager.get_list_keyval('.1.3.6.1.4.1.3320.101.10.1.1.3')
-            for srcmac, snmpnum in ports:
-                # convert bytes mac address to str presentation mac address
-                real_mac = ':'.join('%x' % ord(i) for i in srcmac)
-                if mac == real_mac:
-                    onu.snmp_extra = str(snmpnum)
-                    onu.save(update_fields=('snmp_extra',))
-                    text = _('Fixed')
-                    http_status = status.HTTP_200_OK
-        else:
-            text = _('Parent device not found')
-            http_status = status.HTTP_404_NOT_FOUND
-        return Response(text, http_status)
+        fix_status, text = onu.fix_onu()
+        if fix_status:
+            return Response(text, status.HTTP_200_OK)
+        return Response(text, status.HTTP_404_NOT_FOUND)
 
     @action(detail=True)
     @catch_dev_manager_err
