@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-07-16 02:47+0300\n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,121 +17,125 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: profiles/models.py:22
+#: profiles/models.py:28 profiles/models.py:138
 msgid "Users must have an telephone number"
 msgstr "Пользователи должны иметь номер телефона"
 
-#: profiles/models.py:50
+#: profiles/models.py:57
 msgid "profile username"
 msgstr "Имя пользователя"
 
-#: profiles/models.py:55
+#: profiles/models.py:62
 msgid "fio"
 msgstr "ФИО"
 
-#: profiles/models.py:56
+#: profiles/models.py:63
 msgid "birth day"
 msgstr "День рождения"
 
-#: profiles/models.py:57
+#: profiles/models.py:64
 msgid "Is active"
 msgstr "Активность"
 
-#: profiles/models.py:61
+#: profiles/models.py:68
 msgid "Telephone"
 msgstr "Номер телефона"
 
-#: profiles/models.py:93
+#: profiles/models.py:102
 msgid "Author"
 msgstr "Автор"
 
-#: profiles/models.py:96
+#: profiles/models.py:105
 msgid "Undefined"
 msgstr "Не определён"
 
-#: profiles/models.py:97
+#: profiles/models.py:106
 msgid "Create user"
 msgstr "Создать пользователя"
 
-#: profiles/models.py:98
+#: profiles/models.py:107
 msgid "Delete user"
 msgstr "Удалить пользователя"
 
-#: profiles/models.py:99
+#: profiles/models.py:108
 msgid "Create device"
 msgstr "Создать устройство"
 
-#: profiles/models.py:100
+#: profiles/models.py:109
 msgid "Delete device"
 msgstr "Удалить устройство"
 
-#: profiles/models.py:101
+#: profiles/models.py:110
 msgid "Create NAS"
 msgstr "Создать NAS"
 
-#: profiles/models.py:102
+#: profiles/models.py:111
 msgid "Delete NAS"
 msgstr "Удалить NAS"
 
-#: profiles/models.py:103
+#: profiles/models.py:112
 msgid "Create service"
 msgstr "Создать услугу"
 
-#: profiles/models.py:104
+#: profiles/models.py:113
 msgid "Delete service"
 msgstr "Удалить услугу"
 
-#: profiles/models.py:106
+#: profiles/models.py:115
 msgid "Action type"
 msgstr "Тип действия"
 
-#: profiles/models.py:107
+#: profiles/models.py:116
 msgid "Additional info"
 msgstr "Дополнительная информация"
 
-#: profiles/models.py:108
+#: profiles/models.py:117
 msgid "Action date"
 msgstr "Врремя действия"
 
-#: profiles/models.py:115
+#: profiles/models.py:124
 msgid "User profile log"
 msgstr "Лог учётной записи"
 
-#: profiles/models.py:116
+#: profiles/models.py:125
 msgid "User profile logs"
 msgstr "Логи учётных записей"
 
-#: profiles/models.py:125
+#: profiles/models.py:152
 msgid "Avatar"
 msgstr "Аватар"
 
-#: profiles/models.py:127
+#: profiles/models.py:154
 msgid "Responsibility groups"
 msgstr "Ответственность за группы"
 
-#: profiles/models.py:129
+#: profiles/models.py:156
 msgid "Notification about tasks"
 msgstr "Оповещения о задачах"
 
-#: profiles/models.py:130
+#: profiles/models.py:157
 msgid "Notification about messages"
 msgstr "Оповещения о сообщениях"
 
-#: profiles/models.py:131
+#: profiles/models.py:158
 msgid "Notification from monitoring"
 msgstr "Оповещения из мониторинга"
 
-#: profiles/models.py:133
+#: profiles/models.py:160
 msgid "Settings flags"
 msgstr ""
 
-#: profiles/models.py:138
+#: profiles/models.py:165
 msgid "Staff account profile"
 msgstr "Учётная запись сотрудника"
 
-#: profiles/models.py:139
+#: profiles/models.py:166
 msgid "Staff account profiles"
 msgstr "Учётные записи сотрудников"
 
-msgid "Login is not possible"
-msgstr "Не получается войти в предоставленными учётными данными"
+#: profiles/views.py:41
+msgid "Unable to log in with provided credentials."
+msgstr "Не получается войти с предоставленными учётными данными."
+
+#~ msgid "Login is not possible"
+#~ msgstr "Не получается войти в предоставленными учётными данными"

@@ -2,7 +2,9 @@ import re
 from typing import Optional
 
 from djing2.lib import process_lock
-from ..expect_util import IP4_ADDR_REGEX
+from .. import expect_util
+from . import zte_utils
+from ..expect_util import ExpectValidationError
 
 
 def get_onu_template(vlan_id: int, mac_addr: str):
@@ -24,29 +26,29 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
     onu_type = 'ZTE-F660'
 
     # Входим
-    ch = base.MySpawn('telnet %s' % hostname)
+    ch = expect_util.MySpawn('telnet %s' % hostname)
     ch.timeout = 15
     ch.expect_exact('Username:')
     ch.do_cmd(login, 'Password:')
 
     choice = ch.do_cmd(password, ['bad password.', '%s#' % prompt])
     if choice == 0:
-        raise base.ZteOltLoginFailed
+        raise zte_utils.ZteOltLoginFailed
 
     ch.do_cmd('terminal length 0', '%s#' % prompt)
     choice = ch.do_cmd('show gpon onu uncfg', ['No related information to show', '%s#' % prompt])
     if choice == 0:
         ch.close()
-        raise base.OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
+        raise zte_utils.OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
     elif choice == 1:
         # Получим незареганные onu
-        unregistered_onu = base.get_unregistered_onu(
+        unregistered_onu = zte_utils.get_unregistered_onu(
             lines=ch.get_lines_before(),
             serial=sn
         )
         if unregistered_onu is None:
             ch.close()
-            raise base.OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
+            raise zte_utils.OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
         stack_num = int(unregistered_onu.get('stack_num'))
         rack_num = int(unregistered_onu.get('rack_num'))
         fiber_num = int(unregistered_onu.get('fiber_num'))
@@ -57,12 +59,12 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
             'rack': rack_num,
             'fiber': fiber_num
         }, '%s#' % prompt)
-        free_onu_number = base.get_free_registered_onu_number(
+        free_onu_number = zte_utils.get_free_registered_onu_number(
             ch.get_lines_before()
         )
         if free_onu_number > 126:
             ch.close()
-            raise base.ZTEFiberIsFull('olt fiber %d is full' % fiber_num)
+            raise zte_utils.ZTEFiberIsFull('olt fiber %d is full' % fiber_num)
 
         # enter to config
         ch.do_cmd('conf t', '%s(config)#' % prompt)
@@ -105,14 +107,14 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
         ch.do_cmd('exit', '%s(config)#' % prompt)
         ch.do_cmd('exit', '%s#' % prompt)
         ch.close()
-        return base.zte_onu_conv_to_num(
+        return zte_utils.zte_onu_conv_to_num(
             rack_num=rack_num,
             fiber_num=fiber_num,
             port_num=free_onu_number
         )
     else:
         ch.close()
-        raise base.ZteOltConsoleError("I don't know what choice:", choice)
+        raise zte_utils.ZteOltConsoleError("I don't know what is that choice: %d" % choice)
 
 
 # Main Entry point
@@ -121,16 +123,16 @@ def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_l
                  telnet_passw: str, telnet_prompt: str, onu_vlan: int):
 
     if not re.match(r'^ZTEG[0-9A-F]{8}$', serial):
-        raise base.ExpectValidationError('Serial not valid, match: ^ZTEG[0-9A-F]{8}$')
+        raise ExpectValidationError('Serial not valid, match: ^ZTEG[0-9A-F]{8}$')
 
     if not isinstance(onu_vlan, int):
         onu_vlan = int(onu_vlan)
 
     if onu_mac is None:
-        onu_mac = base.sn_to_mac(serial)
+        onu_mac = zte_utils.sn_to_mac(serial)
 
-    if not re.match(IP4_ADDR_REGEX, zte_ip_addr):
-        raise base.ExpectValidationError('ip address for zte not valid')
+    if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
+        raise ExpectValidationError('ip address for zte not valid')
 
     return appy_config(
         onu_mac, serial, zte_ip_addr,
