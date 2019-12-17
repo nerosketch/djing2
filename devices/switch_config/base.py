@@ -1,8 +1,8 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from typing import Generator, Optional, Dict, Union, Iterable
-from easysnmp import Session
 
-from django.utils.translation import gettext, gettext_lazy as _
+
+from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import RuTimedelta
 
@@ -18,7 +18,11 @@ class DeviceConfigurationError(DeviceImplementationError):
     pass
 
 
-class DevBase(object, metaclass=ABCMeta):
+class DeviceConsoleError(Exception):
+    pass
+
+
+class DevBase(ABC):
     def __init__(self, dev_instance=None):
         self.db_instance = dev_instance
 
@@ -50,11 +54,6 @@ class DevBase(object, metaclass=ABCMeta):
     @abstractmethod
     def port_disable(self, port_num: int):
         """Disable port by number"""
-        pass
-
-    @abstractmethod
-    def port_enable(self, port_num: int):
-        """Enable port by number"""
         pass
 
     @abstractmethod
@@ -117,7 +116,7 @@ class DevBase(object, metaclass=ABCMeta):
         }
 
 
-class BasePort(metaclass=ABCMeta):
+class BasePort(ABC):
 
     def __init__(self, num, name, status, mac, speed, uptime=None, snmp_num=None, writable=False):
         self.num = int(num)
@@ -143,42 +142,3 @@ class BasePort(metaclass=ABCMeta):
             'writable': self.writable,
             'uptime': str(RuTimedelta(seconds=self.uptime / 100)) if self.uptime else None
         }
-
-
-class SNMPBaseWorker(object, metaclass=ABCMeta):
-    ses = None
-
-    def __init__(self, ip: Optional[str], community='public', ver=2):
-        if ip is None or ip == '':
-            raise DeviceImplementationError(gettext('Ip address is required'))
-        self._ip = ip
-        self._community = community
-        self._ver = ver
-
-    def start_ses(self):
-        if self.ses is None:
-            self.ses = Session(
-                hostname=self._ip, community=self._community,
-                version=self._ver
-            )
-
-    def set_int_value(self, oid: str, value):
-        self.start_ses()
-        return self.ses.set(oid, value, 'i')
-
-    def get_list(self, oid) -> Generator:
-        self.start_ses()
-        for v in self.ses.walk(oid):
-            yield v.value
-
-    def get_list_keyval(self, oid) -> Generator:
-        self.start_ses()
-        for v in self.ses.walk(oid):
-            snmpnum = v.oid.split('.')[-1:]
-            yield v.value, snmpnum[0] if len(snmpnum) > 0 else None
-
-    def get_item(self, oid):
-        self.start_ses()
-        v = self.ses.get(oid).value
-        if v != 'NOSUCHINSTANCE':
-            return v

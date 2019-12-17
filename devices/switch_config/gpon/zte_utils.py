@@ -1,10 +1,14 @@
 import re
-import sys
-from pexpect import spawn
+from typing import Dict
+from pexpect import TIMEOUT
+
+from django.utils.translation import gettext, gettext_lazy as _
+from ..base import DeviceConfigurationError, DeviceConsoleError
 
 
-class ZteOltConsoleError(Exception):
-    pass
+class ZteOltConsoleError(DeviceConsoleError):
+    def __init__(self, message=None):
+        self.message = message or 'ZTE OLT Console error'
 
 
 class OnuZteRegisterError(ZteOltConsoleError):
@@ -12,39 +16,50 @@ class OnuZteRegisterError(ZteOltConsoleError):
 
 
 class ZTEFiberIsFull(ZteOltConsoleError):
-    pass
+    def __init__(self, message=None):
+        self.message = message or 'ZTE OLT fiber is full'
 
 
 class ZteOltLoginFailed(ZteOltConsoleError):
-    pass
+    def __init__(self, message=None):
+        self.message = message or gettext('Wrong login or password for telnet access')
 
 
-class ExpectValidationError(ValueError):
-    pass
+def reg_dev_zte(device, extra_data: Dict, reg_func):
+    if not extra_data:
+        raise DeviceConfigurationError(_('You have not info in extra_data '
+                                         'field, please fill it in JSON'))
+    ip = None
+    if device.ip_address:
+        ip = device.ip_address
+    elif device.parent_dev:
+        ip = device.parent_dev.ip_address
+    if ip:
+        mac = str(device.mac_addr) if device.mac_addr else None
 
-
-IP4_ADDR_REGEX = (
-    r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
-    r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
-    r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.'
-    r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
-)
-
-
-class MySpawn(spawn):
-    def __init__(self, *args, **kwargs):
-        super(MySpawn, self).__init__(encoding='utf-8', *args, **kwargs)
-        self.logfile = sys.stdout
-
-    def do_cmd(self, c, prompt):
-        self.sendline(c)
-        return self.expect_exact(prompt)
-
-    def get_lines(self):
-        return self.buffer.split('\r\n')
-
-    def get_lines_before(self):
-        return self.before.split('\r\n')
+        # Format serial number from mac address
+        # because saved mac address was make from serial number
+        sn = "ZTEG%s" % ''.join('%.2X' % int(x, base=16) for x in mac.split(':')[-4:])
+        telnet = extra_data.get('telnet')
+        try:
+            onu_snmp = reg_func(
+                onu_mac=mac,
+                serial=sn,
+                zte_ip_addr=str(ip),
+                telnet_login=telnet.get('login'),
+                telnet_passw=telnet.get('password'),
+                telnet_prompt=telnet.get('prompt'),
+                onu_vlan=extra_data.get('default_vid')
+            )
+            if onu_snmp is not None:
+                device.snmp_extra = onu_snmp
+                device.save(update_fields=('snmp_extra',))
+            else:
+                raise DeviceConfigurationError('unregistered onu not found, sn=%s' % sn)
+        except TIMEOUT as e:
+            raise OnuZteRegisterError(e)
+    else:
+        raise DeviceConfigurationError('not have ip')
 
 
 def parse_onu_name(onu_name: str, name_regexp=re.compile('[/:_]')):
