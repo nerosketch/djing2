@@ -4,9 +4,27 @@ from typing import Optional, Generator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinLengthValidator
 
 from groupapp.models import Group
 from netfields import InetAddressField, NetManager
+
+
+class VlanIf(models.Model):
+    title = models.CharField(_('Vlan interface'), max_length=128)
+    vid = models.PositiveSmallIntegerField(_('VID'), default=1, validators=[
+        MinLengthValidator(2, message=_('Vid could not be less then 2')),
+        MaxValueValidator(4094, message=_('Vid could not be more than 4094'))
+    ], unique=True)
+    is_management = models.BooleanField(_('Is management'), default=False)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        db_table = 'networks_vlan'
+        verbose_name = _('Vlan')
+        verbose_name_plural = _('Vlan list')
 
 
 class NetworkModel(models.Model):
@@ -36,6 +54,12 @@ class NetworkModel(models.Model):
     # Usable ip range
     ip_start = models.GenericIPAddressField(_('Start work ip range'))
     ip_end = models.GenericIPAddressField(_('End work ip range'))
+
+    vlan_if = models.ForeignKey(
+        VlanIf, verbose_name=_('Vlan interface'),
+        on_delete=models.CASCADE, blank=True,
+        null=True, default=None
+    )
 
     def __str__(self):
         return "%s: %s" % (self.description, self.network.with_prefixlen)
