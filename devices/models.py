@@ -7,6 +7,7 @@ from devices import dev_types
 from devices.base_intr import DevBase, DeviceConfigurationError
 from djing2.lib import MyChoicesAdapter
 from groupapp.models import Group
+from networks.models import VlanIf
 
 
 class Device(models.Model):
@@ -125,6 +126,22 @@ class Device(models.Model):
         return r
 
 
+class PortVlanMemberModel(models.Model):
+    vlanif = models.ForeignKey(VlanIf, on_delete=models.CASCADE)
+    port = models.ForeignKey('Port', on_delete=models.CASCADE)
+    VLAN_OPERATING_MODES = (
+        (0, _('Not chosen')),
+        (1, _('Default')),
+        (2, _('Untagged')),
+        (3, _('Tagged')),
+        (4, _('Hybrid'))
+    )
+    mode = models.PositiveSmallIntegerField(
+        _('Operating mode'), default=0,
+        choices=VLAN_OPERATING_MODES
+    )
+
+
 class Port(models.Model):
     device = models.ForeignKey(
         Device, on_delete=models.CASCADE,
@@ -132,6 +149,23 @@ class Port(models.Model):
     )
     num = models.PositiveSmallIntegerField(_('Number'), default=0)
     descr = models.CharField(_('Description'), max_length=60, null=True, blank=True)
+    PORT_OPERATING_MODES = (
+        (0, _('Not chosen')),
+        (1, _('Access')),
+        (2, _('Trunk')),
+        (3, _('Hybrid')),
+        (4, _('General'))
+    )
+    operating_mode = models.PositiveSmallIntegerField(
+        _('Operating mode'), default=0,
+        choices=PORT_OPERATING_MODES
+    )
+    vlans = models.ManyToManyField(
+        VlanIf, through=PortVlanMemberModel,
+        verbose_name=_('User vlan list'),
+        through_fields=('port', 'vlanif')
+    )
+    # config_type = models.PositiveSmallIntegerField
 
     def __str__(self):
         return "%d: %s" % (self.num, self.descr)
