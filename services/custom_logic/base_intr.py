@@ -1,9 +1,9 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import AnyStr, Optional, Union
 
 
-class ServiceBase(metaclass=ABCMeta):
+class ServiceBase(ABC):
     @abstractmethod
     def calc_cost(self) -> float:
         """Calculates total cost of payment"""
@@ -37,7 +37,7 @@ class ServiceBase(metaclass=ABCMeta):
         return False
 
 
-class PeriodicPayCalcBase(metaclass=ABCMeta):
+class PeriodicPayCalcBase(ABC):
     @abstractmethod
     def calc_amount(self, model_object) -> float:
         """
@@ -66,7 +66,7 @@ class PeriodicPayCalcBase(metaclass=ABCMeta):
         return cls.description
 
 
-class OneShotBaseService(metaclass=ABCMeta):
+class OneShotBaseService(ABC):
     @property
     @abstractmethod
     def description(self) -> AnyStr:

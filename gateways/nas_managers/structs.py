@@ -1,9 +1,9 @@
-from abc import ABCMeta
+from abc import ABC
 from ipaddress import ip_network, _BaseNetwork
 from typing import Iterable
 
 
-class BaseStruct(object, metaclass=ABCMeta):
+class BaseStruct(ABC):
     __slots__ = ()
 
 
