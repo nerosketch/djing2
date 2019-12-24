@@ -65,7 +65,7 @@ class Device(models.Model):
         db_table = 'device'
         verbose_name = _('Device')
         verbose_name_plural = _('Devices')
-        # ordering = ('id',)
+        ordering = ('id',)
 
     def get_manager_klass(self):
         try:
@@ -199,4 +199,4 @@ class Port(models.Model):
         )
         verbose_name = _('Port')
         verbose_name_plural = _('Ports')
-        # ordering = ('num',)
+        ordering = ('num',)

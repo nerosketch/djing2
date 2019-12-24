@@ -60,7 +60,7 @@ class ChangeLog(models.Model):
         db_table = 'task_change_log'
         verbose_name = _('Change log')
         verbose_name_plural = _('Change logs')
-        # ordering = ('-when',)
+        ordering = ('-when',)
 
 
 def delta_add_days():
@@ -147,7 +147,7 @@ class Task(models.Model):
 
     class Meta:
         db_table = 'task'
-        # ordering = ('-id',)
+        ordering = ('-id',)
         permissions = (
             ('can_viewall', _('Access to all tasks')),
             ('can_remind', _('Reminders of tasks'))
@@ -173,4 +173,4 @@ class ExtraComment(models.Model):
         db_table = 'task_extra_comments'
         verbose_name = _('Extra comment')
         verbose_name_plural = _('Extra comments')
-        # ordering = ('-date_create',)
+        ordering = ('-date_create',)
