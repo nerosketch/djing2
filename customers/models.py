@@ -48,7 +48,7 @@ class CustomerService(models.Model):
         )
         verbose_name = _('Customer service')
         verbose_name_plural = _('Customer services')
-        # ordering = ('start_time',)
+        ordering = ('start_time',)
 
 
 class CustomerStreet(models.Model):
@@ -62,7 +62,7 @@ class CustomerStreet(models.Model):
         db_table = 'customer_street'
         verbose_name = _('Street')
         verbose_name_plural = _('Streets')
-        # ordering = 'id',
+        ordering = 'id',
 
 
 class CustomerLog(models.Model):
@@ -77,7 +77,7 @@ class CustomerLog(models.Model):
 
     class Meta:
         db_table = 'customer_log'
-        # ordering = '-date',
+        ordering = '-date',
 
     def __str__(self):
         return self.comment
@@ -472,7 +472,7 @@ class Customer(BaseAccount):
         )
         verbose_name = _('Customer')
         verbose_name_plural = _('Customers')
-        # ordering = ('id',)
+        ordering = ('id',)
         unique_together = ('ip_address', 'gateway')
 
 
@@ -504,7 +504,7 @@ class PassportInfo(models.Model):
         db_table = 'passport_info'
         verbose_name = _('Passport Info')
         verbose_name_plural = _('Passport Info')
-        # ordering = ('id',)
+        ordering = ('id',)
 
     def __str__(self):
         return "%s %s" % (self.series, self.number)
@@ -534,7 +534,7 @@ class InvoiceForPayment(models.Model):
         self.date_pay = datetime.now()
 
     class Meta:
-        # ordering = ('id',)
+        ordering = ('id',)
         db_table = 'customer_inv_pay'
         verbose_name = _('Debt')
         verbose_name_plural = _('Debts')
@@ -572,7 +572,7 @@ class AdditionalTelephone(models.Model):
 
     class Meta:
         db_table = 'additional_telephones'
-        # ordering = ('id',)
+        ordering = ('id',)
         verbose_name = _('Additional telephone')
         verbose_name_plural = _('Additional telephones')
 
@@ -619,7 +619,7 @@ class PeriodicPayForId(models.Model):
 
     class Meta:
         db_table = 'periodic_pay_for_id'
-        # ordering = ('last_pay',)
+        ordering = ('last_pay',)
 
 
 @receiver(post_init, sender=CustomerService)

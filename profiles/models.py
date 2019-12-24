@@ -95,7 +95,7 @@ class BaseAccount(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = 'base_accounts'
-        # ordering = 'username',
+        ordering = 'username',
 
 
 class UserProfileLog(models.Model):
@@ -120,7 +120,7 @@ class UserProfileLog(models.Model):
         return self.get_do_type_display()
 
     class Meta:
-        # ordering = '-action_date',
+        ordering = '-action_date',
         verbose_name = _('User profile log')
         verbose_name_plural = _('User profile logs')
 
@@ -164,7 +164,7 @@ class UserProfile(BaseAccount):
     class Meta:
         verbose_name = _('Staff account profile')
         verbose_name_plural = _('Staff account profiles')
-        # ordering = 'fio',
+        ordering = 'fio',
 
     def save(self, *args, **kwargs):
         r = super().save(*args, **kwargs)

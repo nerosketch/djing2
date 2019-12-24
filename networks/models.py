@@ -152,4 +152,4 @@ class NetworkModel(models.Model):
         db_table = 'networks_network'
         verbose_name = _('Network')
         verbose_name_plural = _('Networks')
-        # ordering = ('network',)
+        ordering = ('network',)
