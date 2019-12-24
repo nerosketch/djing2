@@ -49,7 +49,7 @@ class Gateway(models.Model):
         db_table = 'gateways'
         verbose_name = _('Network access server. Gateway')
         verbose_name_plural = _('Network access servers. Gateways')
-        # ordering = 'ip_address',
+        ordering = 'ip_address',
 
 
 @receiver(pre_delete, sender=Gateway)
