@@ -20,7 +20,7 @@ class PayAllTimeGateway(models.Model):
     class Meta:
         db_table = 'pay_all_time_gateways'
         verbose_name = _('All time gateway')
-        # ordering = 'title',
+        ordering = 'title',
 
 
 class AllTimePayLog(models.Model):
@@ -57,4 +57,4 @@ class AllTimePayLog(models.Model):
 
     class Meta:
         db_table = 'all_time_pay_log'
-        # ordering = ('-date_add',)
+        ordering = ('-date_add',)
