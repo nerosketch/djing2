@@ -3,8 +3,7 @@ from easysnmp import EasySNMPTimeoutError
 from django.utils.translation import gettext
 from djing2.lib import safe_int, RuTimedelta, safe_float
 from ..utils import plain_ip_device_mon_template
-from ..base import DevBase, BasePort, GeneratorOrTuple
-from ..snmp_util import SNMPBaseWorker
+from ..base import DevBase, BasePort, GeneratorOrTuple, SNMPBaseWorker
 
 
 class ONUdevPort(BasePort):
@@ -26,14 +25,10 @@ class ONUdevPort(BasePort):
         return "%d: '%s' %s" % (self.num, self.nm, self.mac())
 
 
-class BDCOM_P3310C(DevBase, SNMPBaseWorker):
+class BDCOM_P3310C(DevBase):
     has_attachable_to_customer = False
     description = 'PON OLT'
     is_use_device_port = False
-
-    def __init__(self, dev_instance):
-        DevBase.__init__(self, dev_instance)
-        SNMPBaseWorker.__init__(self, dev_instance.ip_address, dev_instance.man_passw, 2)
 
     def get_ports(self) -> GeneratorOrTuple:
         """

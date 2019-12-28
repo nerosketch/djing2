@@ -4,21 +4,20 @@ from easysnmp import EasySNMPTimeoutError
 from transliterate import translit
 
 from djing2.lib import safe_int, safe_float
-from ..base import GeneratorOrTuple, DevBase, DeviceImplementationError, DeviceConfigurationError
-from ..snmp_util import SNMPBaseWorker
+from ..base import GeneratorOrTuple, DevBase, DeviceImplementationError, DeviceConfigurationError, SNMPBaseWorker
 from ..utils import norm_name
 from ..expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
 
 
-class EPON_BDCOM_FORA(DevBase, SNMPBaseWorker):
+class EPON_BDCOM_FORA(DevBase):
     has_attachable_to_customer = True
     description = 'PON ONU BDCOM'
     tech_code = 'bdcom_onu'
     is_use_device_port = False
 
-    def __init__(self, dev_instance):
-        DevBase.__init__(self, dev_instance)
+    def __init__(self, dev_instance, *args, **kwargs):
+        super().__init__(dev_instance=dev_instance, *args, **kwargs)
         dev_ip_addr = None
         if dev_instance.ip_address:
             dev_ip_addr = dev_instance.ip_address
@@ -34,7 +33,6 @@ class EPON_BDCOM_FORA(DevBase, SNMPBaseWorker):
             raise DeviceImplementationError(gettext(
                 'For fetch additional device info, snmp community required'
             ))
-        SNMPBaseWorker.__init__(self, dev_ip_addr, dev_instance.man_passw, 2)
 
     def get_ports(self) -> GeneratorOrTuple:
         return ()
