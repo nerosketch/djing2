@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, ClassVar
 
 from django.contrib.postgres.fields import JSONField
 from django.db import models
@@ -67,9 +67,9 @@ class Device(models.Model):
         verbose_name_plural = _('Devices')
         ordering = ('id',)
 
-    def get_manager_klass(self):
+    def get_manager_klass(self) -> ClassVar[DevBase]:
         try:
-            return next(klass for code, klass in DEVICE_TYPES if code == int(self.dev_type))
+            return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
         except StopIteration:
             raise TypeError('one of types is not subclass of DevBase. '
                             'Or implementation of that device type is not found')
@@ -100,7 +100,7 @@ class Device(models.Model):
         if not self.extra_data:
             if self.parent_dev and self.parent_dev.extra_data:
                 return mng.register_device(self.parent_dev.extra_data)
-        return mng.register_device(self.extra_data)
+        return mng.register_device(dict(self.extra_data))
 
     def remove_from_olt(self):
         pdev = self.parent_dev
