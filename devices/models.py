@@ -5,7 +5,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
-from devices.switch_config import DEVICE_TYPES
+from devices.switch_config import DEVICE_TYPES, Vlans, Macs
 from devices.switch_config.base import DevBase, DeviceConfigurationError
 from djing2.lib import MyChoicesAdapter, safe_int
 from groupapp.models import Group
@@ -139,6 +139,54 @@ class Device(models.Model):
             self.save(update_fields=('snmp_extra',))
             return True, _('Fixed')
         return False, err_text
+
+    #############################
+    #      Telnet access
+    #############################
+    
+    def _prepare_telnet(self) -> Tuple[str, str, str, ClassVar[DevBase]]:
+        if not self.extra_data:
+            raise DeviceConfigurationError(_('You have not info in extra_data '
+                                             'field, please fill it in JSON'))
+        extra_data = dict(self.extra_data)
+        extra_data_telnet = extra_data.get('telnet')
+        tlogin = extra_data_telnet.get('login')
+        tpassw = extra_data_telnet.get('password')
+        tprompt = extra_data_telnet.get('prompt')
+        if not all((tlogin, tpassw, extra_data_telnet, tprompt)):
+            raise DeviceConfigurationError('telnet credentials required in "extra_data"')
+        mng = self.get_manager_klass()
+        return tlogin, tpassw, tprompt, mng
+
+    def telnet_get_all_vlan_list(self) -> Vlans:
+        login, passw, prompt, mng = self._prepare_telnet()
+        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
+            tln.login(login=login, password=passw)
+            return tln.read_all_vlan_info()
+    
+    def telnet_get_port_vlan_list(self, device_port_num: int) -> Vlans:
+        login, passw, prompt, mng = self._prepare_telnet()
+        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
+            tln.login(login=login, password=passw)
+            return tln.read_port_vlan_info(port=device_port_num)
+
+    def telnet_get_mac_address_port(self, device_port_num: int) -> Macs:
+        login, passw, prompt, mng = self._prepare_telnet()
+        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
+            tln.login(login=login, password=passw)
+            return tln.read_mac_address_port(port=device_port_num)
+    
+    def telnet_get_mac_address_vlan(self, vlan_id: int) -> Macs:
+        login, passw, prompt, mng = self._prepare_telnet()
+        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
+            tln.login(login=login, password=passw)
+            return tln.read_mac_address_vlan(vid=vlan_id)
+
+    def telnet_create_vlan(self, vlan_id: int, name: str):
+        login, passw, prompt, mng = self._prepare_telnet()
+        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
+            tln.login(login=login, password=passw)
+            return tln.create_vlan(vid=vlan_id, name=name)
 
 
 class PortVlanMemberModel(models.Model):
