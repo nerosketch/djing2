@@ -23,7 +23,7 @@ DEVICE_TYPES = [
 __all__ = (
     'DEVICE_TYPES', 'DeviceImplementationError', 'DeviceConfigurationError',
     'ExpectValidationError', 'MySpawn',
-    'DeviceConsoleError'
+    'DeviceConsoleError', 'Vlans', 'Macs'
 )
 
 # DEVICE_TYPES = (

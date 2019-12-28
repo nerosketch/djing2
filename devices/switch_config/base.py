@@ -72,8 +72,8 @@ class SNMPBaseWorker(ABC):
 
 
 class DevBase(Telnet, SNMPBaseWorker, metaclass=ABCMeta):
-    def __init__(self, dev_instance, prompt: bytes, endl: bytes = b'\n', *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, dev_instance, prompt: bytes, endl: bytes = b'\n', port=23, *args, **kwargs):
+        super().__init__(port=port, *args, **kwargs)
         self.db_instance = dev_instance
         self.prompt = prompt
         if isinstance(endl, bytes):
@@ -176,6 +176,10 @@ class DevBase(Telnet, SNMPBaseWorker, metaclass=ABCMeta):
             'has_attachable_to_customer': self.has_attachable_to_customer,
             'is_use_device_port': self.is_use_device_port
         }
+
+    #############################
+    #      Telnet access
+    #############################
 
     def login(self, login_prompt: bytes, login: str, password_prompt: bytes, password: str) -> bool:
         self.read_until(login_prompt)
