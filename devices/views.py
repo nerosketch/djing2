@@ -33,9 +33,7 @@ def catch_dev_manager_err(fn):
         try:
             return fn(self, *args, **kwargs)
         except DeviceImplementationError as err:
-            return Response({'Error': {
-                'text': str(err)
-            }}, status=status.HTTP_501_NOT_IMPLEMENTED)
+            return Response(str(err), status=status.HTTP_501_NOT_IMPLEMENTED)
         except ExpectValidationError as err:
             return Response(str(err))
         except (ConnectionResetError, EasySNMPTimeoutError) as err:
