@@ -33,15 +33,11 @@ def catch_dev_manager_err(fn):
         try:
             return fn(self, *args, **kwargs)
         except DeviceImplementationError as err:
-            return Response({'Error': {
-                'text': str(err)
-            }}, status=status.HTTP_501_NOT_IMPLEMENTED)
+            return Response(str(err), status=status.HTTP_501_NOT_IMPLEMENTED)
         except ExpectValidationError as err:
             return Response(str(err))
         except (ConnectionResetError, EasySNMPTimeoutError) as err:
-            return Response({'Error': {
-                'text': str(err)
-            }}, status=status.HTTP_408_REQUEST_TIMEOUT)
+            return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
 
     # Hack for decorator @action
     wrapper.__name__ = fn.__name__
@@ -70,6 +66,7 @@ class DeviceModelViewSet(DjingModelViewSet):
         return r
 
     @action(detail=True)
+    @catch_dev_manager_err
     def scan_units_unregistered(self, request, pk=None):
         device = self.get_object()
         manager = device.get_manager_object()
@@ -79,9 +76,7 @@ class DeviceModelViewSet(DjingModelViewSet):
                 for unr in manager.get_units_unregistered(int(fb.get('fb_id'))):
                     unregistered.append(unr)
             return Response(unregistered)
-        return Response({'Error': {
-            'text': 'Manager has not get_fibers attribute'
-        }})
+        return DeviceImplementationError('Manager has not get_fibers attribute')
 
     @action(detail=True)
     @catch_dev_manager_err
