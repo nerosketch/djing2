@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, ClassVar
+from typing import Optional, Tuple
 
 from django.contrib.postgres.fields import JSONField
 from django.db import models
@@ -67,7 +67,7 @@ class Device(models.Model):
         verbose_name_plural = _('Devices')
         ordering = ('id',)
 
-    def get_manager_klass(self) -> ClassVar[DevBase]:
+    def get_manager_klass(self) -> DevBase:
         try:
             return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
         except StopIteration:
@@ -75,9 +75,14 @@ class Device(models.Model):
                             'Or implementation of that device type is not found')
 
     def get_manager_object(self) -> DevBase:
+        login, passw, prompt, mng = self._prepare_telnet()
         man_klass = self.get_manager_klass()
+        print(man_klass)
         if self._cached_manager is None:
-            self._cached_manager = man_klass(self)
+            self._cached_manager = man_klass(
+                dev_instance=self,
+                prompt=prompt.encode(),
+            )
         return self._cached_manager
 
     # Can attach device to customer in customer page
@@ -143,8 +148,8 @@ class Device(models.Model):
     #############################
     #      Telnet access
     #############################
-    
-    def _prepare_telnet(self) -> Tuple[str, str, str, ClassVar[DevBase]]:
+
+    def _prepare_telnet(self) -> Tuple[str, str, str, DevBase]:
         if not self.extra_data:
             raise DeviceConfigurationError(_('You have not info in extra_data '
                                              'field, please fill it in JSON'))
@@ -163,7 +168,7 @@ class Device(models.Model):
         with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
             tln.login(login=login, password=passw)
             return tln.read_all_vlan_info()
-    
+
     def telnet_get_port_vlan_list(self, device_port_num: int) -> Vlans:
         login, passw, prompt, mng = self._prepare_telnet()
         with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
@@ -175,7 +180,7 @@ class Device(models.Model):
         with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
             tln.login(login=login, password=passw)
             return tln.read_mac_address_port(port=device_port_num)
-    
+
     def telnet_get_mac_address_vlan(self, vlan_id: int) -> Macs:
         login, passw, prompt, mng = self._prepare_telnet()
         with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
