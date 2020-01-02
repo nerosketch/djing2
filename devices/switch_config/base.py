@@ -121,11 +121,28 @@ class BaseTelnet(Telnet, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
+    def create_vlan(self, vid: int, name: str) -> bool:
+        _vlan_gen = (v for v in (Vlan(vid=vid, name=name),))
+        return self.create_vlans(_vlan_gen)
+
+    def delete_vlan(self, vid: int) -> bool:
+        _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
+        return self.delete_vlans(_vlan_gen)
+
     @abstractmethod
     def read_all_vlan_info(self) -> Vlans:
         """
         Read info about all vlans
         :return: Vlan list
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def read_mac_address_vlan(self, vid: int) -> Macs:
+        """
+        Read FDB in vlan
+        :param vid
+        :return: Mac list
         """
         raise NotImplementedError
 
@@ -270,23 +287,6 @@ class BaseTelnetSwitch(DevBase):
         :return: Mac list
         """
         raise NotImplementedError
-
-    @abstractmethod
-    def read_mac_address_vlan(self, vid: int) -> Macs:
-        """
-        Read FDB in vlan
-        :param vid
-        :return: Mac list
-        """
-        raise NotImplementedError
-
-    def create_vlan(self, vid: int, name: str) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, name=name),))
-        return self.create_vlans(_vlan_gen)
-
-    def delete_vlan(self, vid: int) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
-        return self.delete_vlans(_vlan_gen)
 
     @abstractmethod
     def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
