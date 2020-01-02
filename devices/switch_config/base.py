@@ -32,48 +32,40 @@ MacItem = namedtuple('MacItem', 'vid name mac port')
 Macs = Generator[MacItem, None, None]
 
 
-class SNMPBaseWorker(ABC):
-    ses = None
+class BaseSNMPWorker(Session):
 
-    def __init__(self, ip: Optional[str], community='public', ver=2):
-        if ip is None or ip == '':
-            raise DeviceImplementationError(gettext('Ip address is required'))
-        self._ip = ip
-        self._community = community
-        self._ver = ver
+    def __init__(self, hostname: str=None, community='public', version=2, *args, **kwargs):
+        if not hostname:
+            raise DeviceImplementationError(gettext('Hostname required for snmp'))
+        super().__init__(
+            hostname=hostname, community=community,
+            version=version, *args, **kwargs
+        )
 
-    def start_ses(self):
-        if self.ses is None:
-            self.ses = Session(
-                hostname=self._ip, community=self._community,
-                version=self._ver
-            )
+    def __enter__(self):
+        return self
 
     def set_int_value(self, oid: str, value):
-        self.start_ses()
-        return self.ses.set(oid, value, 'i')
+        return self.set(oid, value, 'i')
 
     def get_list(self, oid) -> Generator:
-        self.start_ses()
-        for v in self.ses.walk(oid):
+        for v in self.walk(oid):
             yield v.value
 
     def get_list_keyval(self, oid) -> Generator:
-        self.start_ses()
-        for v in self.ses.walk(oid):
+        for v in self.walk(oid):
             snmpnum = v.oid.split('.')[-1:]
             yield v.value, snmpnum[0] if len(snmpnum) > 0 else None
 
     def get_item(self, oid):
-        self.start_ses()
-        v = self.ses.get(oid).value
+        v = self.get(oid).value
         if v != 'NOSUCHINSTANCE':
             return v
 
 
-class BaseTelnet(Telnet, metaclass=ABCMeta):
-    def __init__(self, prompt: bytes, endl: bytes = b'\n', port=23, *args, **kwargs):
-        super().__init__(port=port, *args, **kwargs)
+class BaseTelnetWorker(Telnet, metaclass=ABCMeta):
+    def __init__(self, host: str, prompt: bytes = b'#', endl: bytes = b'\n', port=23):
+        super().__init__(host=host, port=port)
         self.prompt = prompt
         if isinstance(endl, bytes):
             self.endl = endl
@@ -147,16 +139,10 @@ class BaseTelnet(Telnet, metaclass=ABCMeta):
         raise NotImplementedError
 
 
-class DevBase(BaseTelnet, SNMPBaseWorker, metaclass=ABCMeta):
-    def __init__(self, dev_instance, prompt: bytes, endl: bytes = b'\n', port=23, *args, **kwargs):
-        super().__init__(port=port, *args, **kwargs)
+class BaseDeviceInterface(BaseSNMPWorker):
+    def __init__(self, dev_instance, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.db_instance = dev_instance
-        self.prompt = prompt
-        if isinstance(endl, bytes):
-            self.endl = endl
-        else:
-            self.endl = str(endl).encode()
-        SNMPBaseWorker.__init__(self, dev_instance.ip_address, dev_instance.man_passw, 2)
 
     @property
     @abstractmethod
@@ -194,7 +180,7 @@ class DevBase(BaseTelnet, SNMPBaseWorker, metaclass=ABCMeta):
         """Return device name by snmp"""
 
     @abstractmethod
-    def uptime(self) -> str:
+    def get_uptime(self) -> str:
         pass
 
     @property
@@ -246,7 +232,7 @@ class DevBase(BaseTelnet, SNMPBaseWorker, metaclass=ABCMeta):
         :return: dict of information
         """
         return {
-            'uptime': self.uptime(),
+            'uptime': self.get_uptime(),
             'name': self.get_device_name(),
             'description': self.description,
             'has_attachable_to_customer': self.has_attachable_to_customer,
@@ -254,7 +240,27 @@ class DevBase(BaseTelnet, SNMPBaseWorker, metaclass=ABCMeta):
         }
 
 
-class BaseTelnetSwitch(DevBase):
+class BasePortInterface(BaseSNMPWorker):
+    pass
+
+
+class BasePON_ONU_Interface(BaseDeviceInterface):
+    @property
+    @abstractmethod
+    def has_attachable_to_customer(self) -> bool:
+        """Can connect device to customer"""
+
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        """Base device interface"""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return getattr(cls, 'description', 'ONU description')
+
+
+class BaseTelnetSwitch(BaseDeviceInterface, BaseTelnetWorker, BaseSNMPWorker):
     def write(self, buffer: AnyStr) -> None:
         if isinstance(buffer, bytes):
             return super().write(buffer + self.endl)
@@ -310,7 +316,7 @@ class BaseTelnetSwitch(DevBase):
         raise NotImplementedError
 
 
-class BaseTelnetPON(DevBase):
+class BaseTelnetPON_OLT(BaseDeviceInterface, BaseTelnetWorker, BaseSNMPWorker):
     @abstractmethod
     def attach_vlans_to_uplink(self, vids: Iterable[int], *args, **kwargs) -> None:
         """
@@ -323,17 +329,20 @@ class BaseTelnetPON(DevBase):
         raise NotImplementedError
 
 
-class BasePort(ABC):
-
-    def __init__(self, num, name, status, mac, speed, uptime=None, snmp_num=None, writable=False):
+class BasePortTelnetWorker(ABC):
+    def __init__(self, num=0, name='', status=False, mac=b'', speed=0, uptime=None, snmp_num=None, writable=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.num = int(num)
         self.snmp_num = int(num) if snmp_num is None else int(snmp_num)
         self.nm = name
         self.st = status
         self._mac = mac
         self.sp = speed
-        self.uptime = int(uptime) if uptime else None
+        self._uptime = int(uptime) if uptime else None
         self.writable = writable
+
+    def __enter__(self):
+        return self
 
     def mac(self) -> str:
         return ':'.join('%x' % ord(i) for i in self._mac) if self._mac else None
@@ -347,5 +356,9 @@ class BasePort(ABC):
             'mac_addr': self.mac(),
             'speed': int(self.sp or 0),
             'writable': self.writable,
-            'uptime': str(RuTimedelta(seconds=self.uptime / 100)) if self.uptime else None
+            'uptime': str(RuTimedelta(seconds=self._uptime / 100)) if self._uptime else None
         }
+
+
+class BasePON_ONU_TelnetWorker(BasePON_ONU_Interface, BasePortTelnetWorker, BaseSNMPWorker):
+    pass
