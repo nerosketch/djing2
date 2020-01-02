@@ -1,15 +1,29 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterable
 
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
-from devices.switch_config import DEVICE_TYPES, Vlans, Macs
+from devices.switch_config import DEVICE_TYPES, Vlans, Macs, DeviceConsoleError, BaseTelnetSwitch, BaseTelnetPON
 from devices.switch_config.base import DevBase, DeviceConfigurationError
 from djing2.lib import MyChoicesAdapter, safe_int
 from groupapp.models import Group
 from networks.models import VlanIf
+
+
+def _telnet_methods_wrapper(fn):
+    def _wrapper(self, *args, **kwargs):
+        login, passw, prompt, mng = self._prepare_telnet()
+
+        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
+            if not tln.login(login=login, password=passw):
+                raise DeviceConsoleError(_('Login failed'))
+            try:
+                return fn(self, tln, *args, **kwargs)
+            except (ValueError, RuntimeError) as e:
+                raise DeviceConsoleError(e)
+    return _wrapper
 
 
 class Device(models.Model):
@@ -77,7 +91,6 @@ class Device(models.Model):
     def get_manager_object(self) -> DevBase:
         login, passw, prompt, mng = self._prepare_telnet()
         man_klass = self.get_manager_klass()
-        print(man_klass)
         if self._cached_manager is None:
             self._cached_manager = man_klass(
                 dev_instance=self,
@@ -163,35 +176,55 @@ class Device(models.Model):
         mng = self.get_manager_klass()
         return tlogin, tpassw, tprompt, mng
 
-    def telnet_get_all_vlan_list(self) -> Vlans:
-        login, passw, prompt, mng = self._prepare_telnet()
-        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
-            tln.login(login=login, password=passw)
-            return tln.read_all_vlan_info()
+    @_telnet_methods_wrapper
+    def telnet_get_all_vlan_list(self, tln: DevBase) -> Vlans:
+        return tln.read_all_vlan_info()
 
-    def telnet_get_port_vlan_list(self, device_port_num: int) -> Vlans:
-        login, passw, prompt, mng = self._prepare_telnet()
-        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
-            tln.login(login=login, password=passw)
-            return tln.read_port_vlan_info(port=device_port_num)
+    @_telnet_methods_wrapper
+    def telnet_get_mac_address_vlan(self, tln: DevBase, vlan_id: int) -> Macs:
+        return tln.read_mac_address_vlan(vid=vlan_id)
 
-    def telnet_get_mac_address_port(self, device_port_num: int) -> Macs:
-        login, passw, prompt, mng = self._prepare_telnet()
-        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
-            tln.login(login=login, password=passw)
-            return tln.read_mac_address_port(port=device_port_num)
+    @_telnet_methods_wrapper
+    def telnet_create_vlans(self, tln: DevBase, vids: Vlans) -> None:
+        if not tln.create_vlans(vids):
+            raise DeviceConsoleError(_('Failed while create vlans'))
 
-    def telnet_get_mac_address_vlan(self, vlan_id: int) -> Macs:
-        login, passw, prompt, mng = self._prepare_telnet()
-        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
-            tln.login(login=login, password=passw)
-            return tln.read_mac_address_vlan(vid=vlan_id)
+    @_telnet_methods_wrapper
+    def telnet_delete_vlan(self, tln: DevBase, vids: Vlans) -> None:
+        if not tln.delete_vlans(vlan_list=vids):
+            raise DeviceConsoleError(_('Failed while removing vlan'))
 
-    def telnet_create_vlan(self, vlan_id: int, name: str):
-        login, passw, prompt, mng = self._prepare_telnet()
-        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
-            tln.login(login=login, password=passw)
-            return tln.create_vlan(vid=vlan_id, name=name)
+    @_telnet_methods_wrapper
+    def telnet_read_mac_address_vlan(self, tln: DevBase, vid: int) -> Macs:
+        return tln.read_mac_address_vlan(vid=vid)
+
+    ##############################
+    # Switch telnet methods
+    ##############################
+
+    @_telnet_methods_wrapper
+    def telnet_switch_attach_vlan_to_port(self, tln: BaseTelnetSwitch, vid: int, port: int, tag: bool = True) -> bool:
+        return tln.attach_vlan_to_port(vid=vid, port=port, tag=tag)
+
+    @_telnet_methods_wrapper
+    def telnet_switch_detach_vlan_from_port(self, tln: BaseTelnetSwitch, vid: int, port: int) -> bool:
+        return tln.detach_vlan_from_port(vid=vid, port=port)
+
+    @_telnet_methods_wrapper
+    def telnet_switch_get_mac_address_port(self, tln: BaseTelnetSwitch, device_port_num: int) -> Macs:
+        return tln.read_mac_address_port(port_num=device_port_num)
+
+    @_telnet_methods_wrapper
+    def telnet_get_port_vlan_list(self, tln: BaseTelnetSwitch, device_port_num: int) -> Vlans:
+        return tln.read_port_vlan_info(port=device_port_num)
+
+    ##############################
+    # PON telnet methods
+    ##############################
+
+    @_telnet_methods_wrapper
+    def telnet_pon_attach_vlans_to_uplink(self, tln: BaseTelnetPON, vids: Iterable[int], *args, **kwargs) -> None:
+        return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
 
 
 class PortVlanMemberModel(models.Model):
