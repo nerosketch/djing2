@@ -5,8 +5,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
-from devices.switch_config import DEVICE_TYPES, Vlans, Macs, DeviceConsoleError, BaseTelnetSwitch, BaseTelnetPON
-from devices.switch_config.base import DevBase, DeviceConfigurationError
+from devices.switch_config import DEVICE_TYPES, Vlans, Macs, DeviceConsoleError, BaseTelnetSwitch, BaseTelnetPON_OLT
+from devices.switch_config.base import BaseDeviceInterface, DeviceConfigurationError
 from djing2.lib import MyChoicesAdapter, safe_int
 from groupapp.models import Group
 from networks.models import VlanIf
@@ -14,10 +14,22 @@ from networks.models import VlanIf
 
 def _telnet_methods_wrapper(fn):
     def _wrapper(self, *args, **kwargs):
-        login, passw, prompt, mng = self._prepare_telnet()
+        if not self.extra_data:
+            raise DeviceConfigurationError(_('You have not info in extra_data '
+                                             'field, please fill it in JSON'))
+        extra_data = dict(self.extra_data)
+        extra_data_telnet = extra_data.get('telnet')
+        if not extra_data_telnet:
+            raise DeviceConfigurationError('telnet credentials required in "extra_data"')
+        tlogin = extra_data_telnet.get('login')
+        tpassw = extra_data_telnet.get('password')
+        tprompt = extra_data_telnet.get('prompt')
+        if not all((tlogin, tpassw, extra_data_telnet, tprompt)):
+            raise DeviceConfigurationError('telnet credentials required in "extra_data"')
+        mng = self.get_manager_klass()
 
-        with mng(host=str(self.ip_address), prompt=prompt.encode()) as tln:
-            if not tln.login(login=login, password=passw):
+        with mng(host=str(self.ip_address), prompt=tprompt.encode()) as tln:
+            if not tln.login(login=tlogin, password=tpassw):
                 raise DeviceConsoleError(_('Login failed'))
             try:
                 return fn(self, tln, *args, **kwargs)
@@ -81,20 +93,18 @@ class Device(models.Model):
         verbose_name_plural = _('Devices')
         ordering = ('id',)
 
-    def get_manager_klass(self) -> DevBase:
+    def get_manager_klass(self) -> BaseDeviceInterface:
         try:
             return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
         except StopIteration:
-            raise TypeError('one of types is not subclass of DevBase. '
+            raise TypeError('one of types is not subclass of BaseDeviceInterface. '
                             'Or implementation of that device type is not found')
 
-    def get_manager_object(self) -> DevBase:
-        login, passw, prompt, mng = self._prepare_telnet()
+    def get_manager_object(self) -> BaseDeviceInterface:
         man_klass = self.get_manager_klass()
         if self._cached_manager is None:
             self._cached_manager = man_klass(
-                dev_instance=self,
-                prompt=prompt.encode(),
+                dev_instance=self
             )
         return self._cached_manager
 
@@ -162,40 +172,26 @@ class Device(models.Model):
     #      Telnet access
     #############################
 
-    def _prepare_telnet(self) -> Tuple[str, str, str, DevBase]:
-        if not self.extra_data:
-            raise DeviceConfigurationError(_('You have not info in extra_data '
-                                             'field, please fill it in JSON'))
-        extra_data = dict(self.extra_data)
-        extra_data_telnet = extra_data.get('telnet')
-        tlogin = extra_data_telnet.get('login')
-        tpassw = extra_data_telnet.get('password')
-        tprompt = extra_data_telnet.get('prompt')
-        if not all((tlogin, tpassw, extra_data_telnet, tprompt)):
-            raise DeviceConfigurationError('telnet credentials required in "extra_data"')
-        mng = self.get_manager_klass()
-        return tlogin, tpassw, tprompt, mng
-
     @_telnet_methods_wrapper
-    def telnet_get_all_vlan_list(self, tln: DevBase) -> Vlans:
+    def telnet_get_all_vlan_list(self, tln: BaseDeviceInterface) -> Vlans:
         return tln.read_all_vlan_info()
 
     @_telnet_methods_wrapper
-    def telnet_get_mac_address_vlan(self, tln: DevBase, vlan_id: int) -> Macs:
+    def telnet_get_mac_address_vlan(self, tln: BaseDeviceInterface, vlan_id: int) -> Macs:
         return tln.read_mac_address_vlan(vid=vlan_id)
 
     @_telnet_methods_wrapper
-    def telnet_create_vlans(self, tln: DevBase, vids: Vlans) -> None:
+    def telnet_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
         if not tln.create_vlans(vids):
             raise DeviceConsoleError(_('Failed while create vlans'))
 
     @_telnet_methods_wrapper
-    def telnet_delete_vlan(self, tln: DevBase, vids: Vlans) -> None:
+    def telnet_delete_vlan(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
         if not tln.delete_vlans(vlan_list=vids):
             raise DeviceConsoleError(_('Failed while removing vlan'))
 
     @_telnet_methods_wrapper
-    def telnet_read_mac_address_vlan(self, tln: DevBase, vid: int) -> Macs:
+    def telnet_read_mac_address_vlan(self, tln: BaseDeviceInterface, vid: int) -> Macs:
         return tln.read_mac_address_vlan(vid=vid)
 
     ##############################
@@ -223,7 +219,7 @@ class Device(models.Model):
     ##############################
 
     @_telnet_methods_wrapper
-    def telnet_pon_attach_vlans_to_uplink(self, tln: BaseTelnetPON, vids: Iterable[int], *args, **kwargs) -> None:
+    def telnet_pon_attach_vlans_to_uplink(self, tln: BaseTelnetPON_OLT, vids: Iterable[int], *args, **kwargs) -> None:
         return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
 
 

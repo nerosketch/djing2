@@ -1,16 +1,19 @@
 from typing import Optional
 
 from netaddr import EUI
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib import safe_int, RuTimedelta
-from ..base import Vlans, Vlan, Macs, MacItem, BaseTelnetSwitch, BasePort, GeneratorOrTuple, SNMPBaseWorker
+from ..base import (
+    Vlans, Vlan, Macs, MacItem, BaseTelnetSwitch, BasePortInterface,
+    GeneratorOrTuple, BaseSNMPWorker, DeviceImplementationError
+)
 from ..utils import plain_ip_device_mon_template
 
 
-class DLinkPort(BasePort):
+class DLinkPort(BasePortInterface):
     def __init__(self, snmp_worker, *args, **kwargs):
         super().__init__(writable=True, *args, **kwargs)
-        if not issubclass(snmp_worker.__class__, SNMPBaseWorker):
+        if not issubclass(snmp_worker.__class__, BaseSNMPWorker):
             raise TypeError
         self.snmp_worker = snmp_worker
 
@@ -23,9 +26,14 @@ class DlinkDGS_3120_24SC_Telnet(BaseTelnetSwitch):
     is_use_device_port = True
     ports_len = 10
 
-    def __init__(self, prompt: bytes = None, *args, **kwargs):
+    def __init__(self, dev_instance, prompt: bytes = None, *args, **kwargs):
+        if not dev_instance.ip_address:
+            raise DeviceImplementationError(gettext('Ip address required'))
+        dev_ip_addr = dev_instance.ip_address
         super().__init__(
             prompt=prompt or b'DGS-3120-24SC:admin#',
+            dev_instance=dev_instance, hostname=dev_ip_addr, host=dev_ip_addr,
+            community=str(dev_instance.man_passw),
             *args, **kwargs
         )
 
@@ -162,7 +170,7 @@ class DlinkDGS_3120_24SC_Telnet(BaseTelnetSwitch):
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.1.0')
 
-    def uptime(self) -> str:
+    def get_uptime(self) -> str:
         uptimestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.8.0'))
         tm = RuTimedelta(seconds=uptimestamp / 100)
         return str(tm)

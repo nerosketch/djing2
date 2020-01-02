@@ -4,20 +4,19 @@ from easysnmp import EasySNMPTimeoutError
 from transliterate import translit
 
 from djing2.lib import safe_int, safe_float
-from ..base import GeneratorOrTuple, BaseTelnetPON, DeviceImplementationError, DeviceConfigurationError
+from ..base import GeneratorOrTuple, BasePON_ONU_TelnetWorker, DeviceImplementationError, DeviceConfigurationError
 from ..utils import norm_name
 from ..expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
 
 
-class EPON_BDCOM_FORA(BaseTelnetPON):
+class EPON_BDCOM_FORA(BasePON_ONU_TelnetWorker):
     has_attachable_to_customer = True
     description = 'PON ONU BDCOM'
     tech_code = 'bdcom_onu'
     is_use_device_port = False
 
     def __init__(self, dev_instance, *args, **kwargs):
-        super().__init__(dev_instance=dev_instance, *args, **kwargs)
         dev_ip_addr = None
         if dev_instance.ip_address:
             dev_ip_addr = dev_instance.ip_address
@@ -33,6 +32,10 @@ class EPON_BDCOM_FORA(BaseTelnetPON):
             raise DeviceImplementationError(gettext(
                 'For fetch additional device info, snmp community required'
             ))
+        super().__init__(
+            dev_instance=dev_instance, hostname=dev_ip_addr, host=dev_ip_addr,
+            community=str(dev_instance.man_passw), *args, **kwargs
+        )
 
     def get_ports(self) -> GeneratorOrTuple:
         return ()
@@ -40,7 +43,7 @@ class EPON_BDCOM_FORA(BaseTelnetPON):
     def get_device_name(self):
         pass
 
-    def uptime(self):
+    def get_uptime(self):
         pass
 
     def get_details(self):

@@ -1,7 +1,8 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Iterable
 from django.utils.translation import gettext_lazy as _
 from transliterate import translit
 
+from devices.switch_config import Macs, Vlans
 from djing2.lib import safe_int, safe_float
 from ..base import DeviceConsoleError
 from ..utils import norm_name
@@ -25,6 +26,7 @@ def _conv_zte_signal(lvl: int) -> float:
 class OnuZTE_F660(EPON_BDCOM_FORA):
     description = 'Zte ONU F660'
     tech_code = 'zte_onu'
+    ports_len = 4
 
     def get_details(self) -> Optional[Dict]:
         if self.db_instance is None:
