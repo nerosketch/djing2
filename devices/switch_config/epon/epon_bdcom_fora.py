@@ -4,13 +4,13 @@ from easysnmp import EasySNMPTimeoutError
 from transliterate import translit
 
 from djing2.lib import safe_int, safe_float
-from ..base import GeneratorOrTuple, DevBase, DeviceImplementationError, DeviceConfigurationError, SNMPBaseWorker
+from ..base import GeneratorOrTuple, BaseTelnetPON, DeviceImplementationError, DeviceConfigurationError
 from ..utils import norm_name
 from ..expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
 
 
-class EPON_BDCOM_FORA(DevBase):
+class EPON_BDCOM_FORA(BaseTelnetPON):
     has_attachable_to_customer = True
     description = 'PON ONU BDCOM'
     tech_code = 'bdcom_onu'

@@ -71,7 +71,66 @@ class SNMPBaseWorker(ABC):
             return v
 
 
-class DevBase(Telnet, SNMPBaseWorker, metaclass=ABCMeta):
+class BaseTelnet(Telnet, metaclass=ABCMeta):
+    def __init__(self, prompt: bytes, endl: bytes = b'\n', port=23, *args, **kwargs):
+        super().__init__(port=port, *args, **kwargs)
+        self.prompt = prompt
+        if isinstance(endl, bytes):
+            self.endl = endl
+        else:
+            self.endl = str(endl).encode()
+
+    def login(self, login_prompt: bytes, login: str, password_prompt: bytes, password: str) -> bool:
+        self.read_until(login_prompt)
+        self.write(login)
+        self.read_until(password_prompt)
+        self.write(password)
+        self.read_until(self.prompt)
+        return True
+
+    def write(self, buffer: AnyStr) -> None:
+        if isinstance(buffer, bytes):
+            return super().write(buffer + self.endl)
+        return super().write(buffer.encode() + self.endl)
+
+    def read_until(self, match, timeout=None):
+        if isinstance(match, bytes):
+            return super().read_until(match=match, timeout=timeout)
+        return super().read_until(match=str(match).encode(), timeout=timeout)
+
+    @staticmethod
+    def _normalize_name(name: str) -> str:
+        vname = translit(name, language_code='ru', reversed=True)
+        return re.sub(r'\W+', '_', vname)[:32]
+
+    @abstractmethod
+    def create_vlans(self, vlan_list: Vlans) -> bool:
+        """
+        Create new vlan with name
+        :param vlan_list:
+        :return: Operation result
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def delete_vlans(self, vlan_list: Vlans) -> bool:
+        """
+        Delete vlans from switch
+        :param vlan_list:
+        :return: Operation result
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def read_all_vlan_info(self) -> Vlans:
+        """
+        Read info about all vlans
+        :return: Vlan list
+        """
+        raise NotImplementedError
+
+
+class DevBase(BaseTelnet, SNMPBaseWorker, metaclass=ABCMeta):
     def __init__(self, dev_instance, prompt: bytes, endl: bytes = b'\n', port=23, *args, **kwargs):
         super().__init__(port=port, *args, **kwargs)
         self.db_instance = dev_instance
@@ -177,19 +236,8 @@ class DevBase(Telnet, SNMPBaseWorker, metaclass=ABCMeta):
             'is_use_device_port': self.is_use_device_port
         }
 
-    #############################
-    #      Telnet access
-    #############################
 
-    def login(self, login_prompt: bytes, login: str, password_prompt: bytes, password: str) -> bool:
-        self.read_until(login_prompt)
-        self.write(login)
-        self.read_until(password_prompt)
-        self.write(password)
-        self.read_until(self.prompt)
-        # self._disable_prompt()
-        return True
-
+class BaseTelnetSwitch(DevBase):
     def write(self, buffer: AnyStr) -> None:
         if isinstance(buffer, bytes):
             return super().write(buffer + self.endl)
@@ -215,14 +263,6 @@ class DevBase(Telnet, SNMPBaseWorker, metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def read_all_vlan_info(self) -> Vlans:
-        """
-        Read info about all vlans
-        :return: Vlan list
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def read_mac_address_port(self, port_num: int) -> Macs:
         """
         Read FDB on port
@@ -240,27 +280,9 @@ class DevBase(Telnet, SNMPBaseWorker, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def create_vlans(self, vlan_list: Vlans) -> bool:
-        """
-        Create new vlan with name
-        :param vlan_list:
-        :return: Operation result
-        """
-        raise NotImplementedError
-
     def create_vlan(self, vid: int, name: str) -> bool:
         _vlan_gen = (v for v in (Vlan(vid=vid, name=name),))
         return self.create_vlans(_vlan_gen)
-
-    @abstractmethod
-    def delete_vlans(self, vlan_list: Vlans) -> bool:
-        """
-        Delete vlans from switch
-        :param vlan_list:
-        :return: Operation result
-        """
-        raise NotImplementedError
 
     def delete_vlan(self, vid: int) -> bool:
         _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
@@ -284,6 +306,19 @@ class DevBase(Telnet, SNMPBaseWorker, metaclass=ABCMeta):
         :param vid:
         :param port:
         :return: Operation result
+        """
+        raise NotImplementedError
+
+
+class BaseTelnetPON(DevBase):
+    @abstractmethod
+    def attach_vlans_to_uplink(self, vids: Iterable[int], *args, **kwargs) -> None:
+        """
+        Attach vlan to uplink port
+        :param vids: vid iterable, each element must be instance of Int
+        :param args: optional parameters for each implementation
+        :param kwargs: optional parameters for each implementation
+        :return: nothing
         """
         raise NotImplementedError
 
