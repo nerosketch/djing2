@@ -22,7 +22,9 @@ DEVICE_TYPES = [
 
 __all__ = (
     'DEVICE_TYPES', 'DeviceImplementationError', 'DeviceConfigurationError',
+    'SNMPBaseWorker', 'DevBase',
     'ExpectValidationError', 'MySpawn',
+    'BaseTelnet', 'BaseTelnetSwitch', 'BaseTelnetPON', 'BasePort',
     'DeviceConsoleError', 'Vlans', 'Macs'
 )
 
