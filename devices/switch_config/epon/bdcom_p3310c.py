@@ -6,18 +6,15 @@ from netaddr import EUI, mac_cisco
 from djing2.lib import safe_int, RuTimedelta, safe_float
 from ..utils import plain_ip_device_mon_template
 from ..base import (
-    BaseTelnetPON_OLT, BasePON_ONU_TelnetWorker,
-    GeneratorOrTuple, BaseSNMPWorker, Vlans, Vlan, Macs, MacItem,
+    BasePON_ONU_Interface, BasePONInterface,
+    GeneratorOrTuple, Vlans, Vlan, Macs, MacItem,
     DeviceImplementationError
 )
 
 
-class ONUdevPort(BasePON_ONU_TelnetWorker):
-    def __init__(self, signal, snmp_worker, *args, **kwargs):
-        super(ONUdevPort, self).__init__(*args, **kwargs)
-        if not issubclass(snmp_worker.__class__, BaseSNMPWorker):
-            raise TypeError
-        self.snmp_worker = snmp_worker
+class ONUdevPort(BasePON_ONU_Interface):
+    def __init__(self, signal, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.signal = signal
 
     def to_dict(self):
@@ -31,7 +28,7 @@ class ONUdevPort(BasePON_ONU_TelnetWorker):
         return "%d: '%s' %s" % (self.num, self.nm, self.mac())
 
 
-class BDCOM_P3310C(BaseTelnetPON_OLT):
+class BDCOM_P3310C(BasePONInterface):
     has_attachable_to_customer = False
     description = 'PON OLT'
     is_use_device_port = False
@@ -89,7 +86,7 @@ class BDCOM_P3310C(BaseTelnetPON_OLT):
                         speed=0,
                         signal=signal / 10 if signal else '—',
                         uptime=safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % onu_num)),
-                        snmp_worker=self)
+                        dev_instance=self)
         except EasySNMPTimeoutError as e:
             raise EasySNMPTimeoutError(
                 "%s (%s)" % (gettext('wait for a reply from the SNMP Timeout'), e)
@@ -109,7 +106,7 @@ class BDCOM_P3310C(BaseTelnetPON_OLT):
         pass
 
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.db_instance
+        device = self.dev_instance
         return plain_ip_device_mon_template(device)
 
     def register_device(self, extra_data: Dict):
@@ -338,6 +335,9 @@ class BDCOM_P3310C(BaseTelnetPON_OLT):
             self.read_until('_epon0/%d#' % fiber_num)
         self._exit_fiber()
         return True
+
+    def remove_from_olt(self, extra_data: Dict) -> None:
+        pass
 
 
 class OLT_BDCOM_P33C_ONU(object):
