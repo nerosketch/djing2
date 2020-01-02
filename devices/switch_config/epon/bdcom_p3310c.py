@@ -5,13 +5,17 @@ from netaddr import EUI, mac_cisco
 
 from djing2.lib import safe_int, RuTimedelta, safe_float
 from ..utils import plain_ip_device_mon_template
-from ..base import BaseTelnetPON, BasePort, GeneratorOrTuple, SNMPBaseWorker, Vlans, Vlan, Macs, MacItem
+from ..base import (
+    BaseTelnetPON_OLT, BasePON_ONU_TelnetWorker,
+    GeneratorOrTuple, BaseSNMPWorker, Vlans, Vlan, Macs, MacItem,
+    DeviceImplementationError
+)
 
 
-class ONUdevPort(BasePort):
+class ONUdevPort(BasePON_ONU_TelnetWorker):
     def __init__(self, signal, snmp_worker, *args, **kwargs):
         super(ONUdevPort, self).__init__(*args, **kwargs)
-        if not issubclass(snmp_worker.__class__, SNMPBaseWorker):
+        if not issubclass(snmp_worker.__class__, BaseSNMPWorker):
             raise TypeError
         self.snmp_worker = snmp_worker
         self.signal = signal
@@ -27,11 +31,25 @@ class ONUdevPort(BasePort):
         return "%d: '%s' %s" % (self.num, self.nm, self.mac())
 
 
-class BDCOM_P3310C(BaseTelnetPON):
+class BDCOM_P3310C(BaseTelnetPON_OLT):
     has_attachable_to_customer = False
     description = 'PON OLT'
     is_use_device_port = False
     ports_len = 4
+
+    def __init__(self, dev_instance, *args, **kwargs):
+        if not dev_instance.ip_address:
+            raise DeviceImplementationError(gettext('Ip address required'))
+        dev_ip_addr = dev_instance.ip_address
+
+        if not dev_instance.man_passw:
+            raise DeviceImplementationError(gettext(
+                'For fetch additional device info, snmp community required'
+            ))
+        super().__init__(
+            dev_instance=dev_instance, host=dev_ip_addr,
+            *args, **kwargs
+        )
 
     def get_ports(self) -> GeneratorOrTuple:
         """
@@ -80,7 +98,7 @@ class BDCOM_P3310C(BaseTelnetPON):
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
 
-    def uptime(self):
+    def get_uptime(self):
         up_timestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.9.1.4.1'))
         tm = RuTimedelta(seconds=up_timestamp / 100)
         return tm

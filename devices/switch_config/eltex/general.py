@@ -3,16 +3,16 @@ from django.utils.translation import gettext_lazy as _
 from netaddr import EUI
 
 from djing2.lib import safe_int, RuTimedelta
-from ..base import DevBase, GeneratorOrTuple, BasePort, Vlans, Vlan, MacItem, Macs, SNMPBaseWorker
+from ..base import BaseDeviceInterface, GeneratorOrTuple, BasePortInterface, Vlans, Vlan, MacItem, Macs, BaseSNMPWorker
 from ..utils import plain_ip_device_mon_template
 
 from ..dlink import DlinkDGS1100_10ME
 
 
-class EltexPort(BasePort):
+class EltexPort(BasePortInterface):
     def __init__(self, snmp_worker, *args, **kwargs):
-        BasePort.__init__(self, *args, **kwargs)
-        if not issubclass(snmp_worker.__class__, SNMPBaseWorker):
+        BasePortInterface.__init__(self, *args, **kwargs)
+        if not issubclass(snmp_worker.__class__, BaseSNMPWorker):
             raise TypeError
         self.snmp_worker = snmp_worker
 
@@ -22,6 +22,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
     is_use_device_port = False
     has_attachable_to_customer = True
     tech_code = 'eltex_sw'
+    ports_len = 24
 
     def get_ports(self) -> GeneratorOrTuple:
         def build_port(s, i: int, n: int):
@@ -41,7 +42,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
 
-    def uptime(self):
+    def get_uptime(self):
         uptimestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.3.0'))
         tm = RuTimedelta(seconds=uptimestamp / 100)
         return tm
@@ -51,7 +52,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         return plain_ip_device_mon_template(device)
 
     def reboot(self, save_before_reboot=False):
-        return DevBase.reboot(self, save_before_reboot)
+        return BaseDeviceInterface.reboot(self, save_before_reboot)
 
     def port_disable(self, port_num: int):
         self.set_int_value(

@@ -62,7 +62,7 @@ class ZTE_C320(BDCOM_P3310C):
             firmware_ver, loid_passws, loids, sn_num_list
         ))
 
-    def uptime(self):
+    def get_uptime(self):
         up_timestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.3.0'))
         tm = RuTimedelta(seconds=up_timestamp / 100)
         return str(tm)
