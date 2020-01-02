@@ -1,11 +1,11 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Iterable
 from easysnmp import EasySNMPTimeoutError
 from django.utils.translation import gettext
-from netaddr import EUI
+from netaddr import EUI, mac_cisco
 
 from djing2.lib import safe_int, RuTimedelta, safe_float
 from ..utils import plain_ip_device_mon_template
-from ..base import DevBase, BasePort, GeneratorOrTuple, SNMPBaseWorker, Vlans, Vlan, Macs, MacItem
+from ..base import BaseTelnetPON, BasePort, GeneratorOrTuple, SNMPBaseWorker, Vlans, Vlan, Macs, MacItem
 
 
 class ONUdevPort(BasePort):
@@ -27,7 +27,7 @@ class ONUdevPort(BasePort):
         return "%d: '%s' %s" % (self.num, self.nm, self.mac())
 
 
-class BDCOM_P3310C(DevBase):
+class BDCOM_P3310C(BaseTelnetPON):
     has_attachable_to_customer = False
     description = 'PON OLT'
     is_use_device_port = False
@@ -104,6 +104,10 @@ class BDCOM_P3310C(DevBase):
     def port_enable(self, port_num: int):
         # May be enabled
         raise NotImplementedError
+
+    #############################
+    #      Telnet access
+    #############################
 
     def login(self, login: str, password: str, *args, **kwargs) -> bool:
         orig_prompt = self.prompt
@@ -215,27 +219,141 @@ class BDCOM_P3310C(DevBase):
         return True
 
     def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
+        return self.attach_vlan_to_eport(vid, port, tag)
+
+    def attach_vlan_to_eport(self, vid: int, port: int, tag: bool = True) -> bool:
+        if port > self.ports_len or port < 1:
+            raise ValueError('Port must be in range 1-%d' % self.ports_len)
         self.write('conf')
         self.read_until('_config#')
         self.write('int EPON0/%d' % port)
         self.read_until('_epon0/%d#' % port)
-        self.write('switch trunk vlan-allowed add %d' % vid)
+        if tag:
+            self.write('switch trunk vlan-allowed add %d' % vid)
+        else:
+            self.write('switchport trunk vlan-untagged %d' % vid)
         self.read_until('_epon0/%d#' % port)
-        self.write('exit')
-        self.read_until('_config#')
+        self._exit_fiber()
         self.write('exit')
         self.read_until(self.prompt)
         return True
 
-    def detach_vlan_from_port(self, vid: int, port: int) -> bool:
+    def attach_vlan_to_gport(self, vids: Iterable[int], port: int, tag: bool = True) -> bool:
+        if port > self.ports_len or port < 1:
+            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+        self.write('conf')
+        self.read_until('_config#')
+        self.write('int g0/%d' % port)
+        self.read_until('_g0/%d#' % port)
+        for vid in vids:
+            if tag:
+                self.write('switch trunk vlan-allowed add %d' % vid)
+                self.read_until('_g0/%d#' % port)
+            else:
+                self.write('switchport trunk vlan-untagged %d' % vid)
+                break
+        self.read_until('_g0/%d#' % port)
+        self._exit_fiber()
+        self.write('exit')
+        self.read_until(self.prompt)
+        return True
+
+    def attach_vlans_to_uplink(self, vids: Iterable[int], port: int, tag: bool = True) -> None:
+        self.attach_vlan_to_gport(vids, port, tag)
+
+    def detach_vlan_from_port(self, vid: int, port: int, tag: bool = True) -> bool:
+        return self.detach_vlan_from_eport(vid, port, tag)
+
+    def detach_vlan_from_eport(self, vid: int, port: int, tag: bool = True) -> bool:
         self.write('conf')
         self.read_until('_config#')
         self.write('int EPON0/%d' % port)
         self.read_until('_epon0/%d#' % port)
-        self.write('switch trunk vlan-allowed remove %d' % vid)
+        if tag:
+            self.write('switch trunk vlan-allowed remove %d' % vid)
+        else:
+            self.write('switchport trunk vlan-untagged remove %d' % vid)
         self.read_until('_epon0/%d#' % port)
-        self.write('exit')
-        self.read_until('_config#')
+        self._exit_fiber()
         self.write('exit')
         self.read_until(self.prompt)
         return True
+
+    def detach_vlan_from_gport(self, vid: int, port: int, tag: bool = True) -> bool:
+        self.write('conf')
+        self.read_until('_config#')
+        self.write('int g0/%d' % port)
+        self.read_until('_g0/%d#' % port)
+        if tag:
+            self.write('switch trunk vlan-allowed remove %d' % vid)
+        else:
+            self.write('switchport trunk vlan-untagged remove %d' % vid)
+        self.read_until('_g0/%d#' % port)
+        self._exit_fiber()
+        self.write('exit')
+        self.read_until(self.prompt)
+        return True
+
+    def _enter_fiber(self, fiber_num: int):
+        self.write('conf')
+        self.read_until('_config#')
+        self.write('int EPON0/%d' % fiber_num)
+        self.read_until('_epon0/%d#' % fiber_num)
+
+    def _exit_fiber(self):
+        self.write('exit')
+        self.read_until('_config#')
+
+    def detach_onu_sec(self, fiber_num: int, onu_nums: Iterable[int]) -> bool:
+        self._enter_fiber(fiber_num)
+        for onu_num in onu_nums:
+            self.write('no epon bind-onu sequence %d' % onu_num)
+            self.read_until('_epon0/%d#' % fiber_num)
+        self._exit_fiber()
+        return True
+
+    def detach_onu_mac(self, fiber_num: int, onu_macs: Macs) -> bool:
+        self._enter_fiber(fiber_num)
+        for mac in onu_macs:
+            bdcom_mac = EUI(mac, dialect=mac_cisco)
+            self.write('no epon bind-onu mac %s' % bdcom_mac)
+            self.read_until('_epon0/%d#' % fiber_num)
+        self._exit_fiber()
+        return True
+
+
+class OLT_BDCOM_P33C_ONU(object):
+    def __init__(self, bt: BDCOM_P3310C, fiber_num: int, onu_num: int):
+        self.bt: BDCOM_P3310C = bt
+        self.fiber_num = fiber_num
+        self.onu_num = onu_num
+
+    def __enter__(self):
+        self.bt.write('int EPON0/%d:%d' % (self.fiber_num, self.onu_num))
+        self._read_until_onu_int()
+        self.bt.write('epon onu all-port loopback detect')
+        self._read_until_onu_int()
+
+    def _read_until_onu_int(self) -> bytes:
+        return self.bt.read_until('_epon0/%d:%d#' % (self.fiber_num, self.onu_num))
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.bt._exit_fiber()
+
+    def get_onu_cooper_state(self, port: int = 1) -> bool:
+        self.bt.write('show epon int EPON0/%d:%d onu port %d state' % (
+            self.fiber_num, self.onu_num, port
+        ))
+        out = self._read_until_onu_int()
+        return b'Link-Up' in out
+
+    def attach_native_vlan(self, vid: int) -> None:
+        self.bt.write('epon onu all-port ctc vlan mode tag %d' % vid)
+        self._read_until_onu_int()
+
+    def attach_vlans(self, native_vid: int, tag_vlans: Vlans) -> None:
+        tag_vids = ','.join(str(v.vid) for v in tag_vlans)
+        self.bt.write('epon onu all-port ctc vlan mode trunk %d %s' % (
+            native_vid, tag_vids
+        ))
+        self._read_until_onu_int()
