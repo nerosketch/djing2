@@ -4,21 +4,18 @@ from netaddr import EUI
 from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib import safe_int, RuTimedelta
 from ..base import (
-    Vlans, Vlan, Macs, MacItem, BaseTelnetSwitch, BasePortInterface,
-    GeneratorOrTuple, BaseSNMPWorker, DeviceImplementationError
+    Vlans, Vlan, Macs, MacItem, BaseSwitchInterface, BasePortInterface,
+    GeneratorOrTuple, DeviceImplementationError
 )
 from ..utils import plain_ip_device_mon_template
 
 
 class DLinkPort(BasePortInterface):
-    def __init__(self, snmp_worker, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(writable=True, *args, **kwargs)
-        if not issubclass(snmp_worker.__class__, BaseSNMPWorker):
-            raise TypeError
-        self.snmp_worker = snmp_worker
 
 
-class DlinkDGS_3120_24SC_Telnet(BaseTelnetSwitch):
+class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
     """Dlink DGS-3120-24SC"""
     has_attachable_to_customer = False
     tech_code = 'dlink_sw'
@@ -26,15 +23,13 @@ class DlinkDGS_3120_24SC_Telnet(BaseTelnetSwitch):
     is_use_device_port = True
     ports_len = 10
 
-    def __init__(self, dev_instance, prompt: bytes = None, *args, **kwargs):
+    def __init__(self, dev_instance, *args, **kwargs):
         if not dev_instance.ip_address:
             raise DeviceImplementationError(gettext('Ip address required'))
         dev_ip_addr = dev_instance.ip_address
         super().__init__(
-            prompt=prompt or b'DGS-3120-24SC:admin#',
-            dev_instance=dev_instance, hostname=dev_ip_addr, host=dev_ip_addr,
-            community=str(dev_instance.man_passw),
-            *args, **kwargs
+            dev_instance=dev_instance, host=dev_ip_addr,
+            snmp_community=str(dev_instance.man_passw)
         )
 
     def login(self, login: str, password: str, *args, **kwargs) -> bool:
@@ -154,7 +149,7 @@ class DlinkDGS_3120_24SC_Telnet(BaseTelnetSwitch):
             mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % snmp_num),
             speed=self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % snmp_num),
             uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % snmp_num),
-            snmp_worker=self
+            dev_interface=self
         )
 
     def port_disable(self, port_num: int):
@@ -181,7 +176,7 @@ class DlinkDGS_3120_24SC_Telnet(BaseTelnetSwitch):
         pass
 
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.db_instance
+        device = self.dev_instance
         return plain_ip_device_mon_template(device)
 
     def register_device(self, extra_data: dict):
