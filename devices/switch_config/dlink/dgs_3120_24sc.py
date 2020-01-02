@@ -3,7 +3,7 @@ from typing import Optional
 from netaddr import EUI
 from django.utils.translation import gettext_lazy as _
 from djing2.lib import safe_int, RuTimedelta
-from ..base import Vlans, Vlan, Macs, MacItem, DevBase, BasePort, GeneratorOrTuple, SNMPBaseWorker
+from ..base import Vlans, Vlan, Macs, MacItem, BaseTelnetSwitch, BasePort, GeneratorOrTuple, SNMPBaseWorker
 from ..utils import plain_ip_device_mon_template
 
 
@@ -15,7 +15,7 @@ class DLinkPort(BasePort):
         self.snmp_worker = snmp_worker
 
 
-class DlinkDGS_3120_24SC_Telnet(DevBase):
+class DlinkDGS_3120_24SC_Telnet(BaseTelnetSwitch):
     """Dlink DGS-3120-24SC"""
     has_attachable_to_customer = False
     tech_code = 'dlink_sw'
