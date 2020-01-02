@@ -3,18 +3,14 @@ from django.utils.translation import gettext_lazy as _
 from netaddr import EUI
 
 from djing2.lib import safe_int, RuTimedelta
-from ..base import BaseDeviceInterface, GeneratorOrTuple, BasePortInterface, Vlans, Vlan, MacItem, Macs, BaseSNMPWorker
+from ..base import BaseDeviceInterface, GeneratorOrTuple, BasePortInterface, Vlans, Vlan, MacItem, Macs
 from ..utils import plain_ip_device_mon_template
 
 from ..dlink import DlinkDGS1100_10ME
 
 
 class EltexPort(BasePortInterface):
-    def __init__(self, snmp_worker, *args, **kwargs):
-        BasePortInterface.__init__(self, *args, **kwargs)
-        if not issubclass(snmp_worker.__class__, BaseSNMPWorker):
-            raise TypeError
-        self.snmp_worker = snmp_worker
+    pass
 
 
 class EltexSwitch(DlinkDGS1100_10ME):
@@ -48,7 +44,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         return tm
 
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.db_instance
+        device = self.dev_instance
         return plain_ip_device_mon_template(device)
 
     def reboot(self, save_before_reboot=False):

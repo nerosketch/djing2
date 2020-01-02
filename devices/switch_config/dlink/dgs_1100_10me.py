@@ -37,7 +37,7 @@ class DlinkDGS1100_10ME(DlinkDGS_1100_06ME_Telnet):
         )
 
     def reboot(self, save_before_reboot=False):
-        dat = self.db_instance.extra_data
+        dat = self.dev_instance.extra_data
         if dat is None:
             raise DeviceConfigurationError(
                 _('You have not info in extra_data '
@@ -47,15 +47,15 @@ class DlinkDGS1100_10ME(DlinkDGS_1100_06ME_Telnet):
         passw = dat.get('password')
         if login and passw:
             return _ex_expect('dlink_DGS1100_reboot.exp', (
-                self.db_instance.ip_address,
+                self.dev_instance.ip_address,
                 login, passw,
                 1 if save_before_reboot else 0
             )), None
 
     def login(self, login: str, password: str, *args, **kwargs) -> bool:
         return BaseDeviceInterface.login(self,
-                             login_prompt=b'login: ',
-                             login=login,
-                             password_prompt=b'Password:',
-                             password=password
-                             )
+                                         login_prompt=b'login: ',
+                                         login=login,
+                                         password_prompt=b'Password:',
+                                         password=password
+                                         )
