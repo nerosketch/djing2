@@ -3,6 +3,7 @@ from typing import Iterable
 from djing2.lib import RuTimedelta, safe_int
 from ..epon import BDCOM_P3310C
 from ..base import Vlans, Vlan
+from ..utils import macbin2str
 
 
 class ZTE_C320(BDCOM_P3310C):
@@ -53,7 +54,7 @@ class ZTE_C320(BDCOM_P3310C):
         loids = self.get_list('.1.3.6.1.4.1.3902.1012.3.13.3.1.8.%d' % fiber_num)
 
         return ({
-            'mac': ':'.join('%x' % ord(i) for i in sn[-6:]),
+            'mac': macbin2str(sn[-6:]),
             'firmware_ver': frm_ver,
             'loid_passw': loid_passw,
             'loid': loid,
