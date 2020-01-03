@@ -4,16 +4,16 @@ from typing import Optional, Generator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinLengthValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 from groupapp.models import Group
 from netfields import InetAddressField, NetManager
 
 
 class VlanIf(models.Model):
-    title = models.CharField(_('Vlan interface'), max_length=128)
+    title = models.CharField(_('Vlan title'), max_length=128)
     vid = models.PositiveSmallIntegerField(_('VID'), default=1, validators=[
-        MinLengthValidator(2, message=_('Vid could not be less then 2')),
+        MinValueValidator(2, message=_('Vid could not be less then 2')),
         MaxValueValidator(4094, message=_('Vid could not be more than 4094'))
     ], unique=True)
     is_management = models.BooleanField(_('Is management'), default=False)
