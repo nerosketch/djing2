@@ -21,10 +21,12 @@ DEVICE_TYPES = [
 ]
 
 __all__ = (
-    'DEVICE_TYPES', 'DeviceImplementationError', 'DeviceConfigurationError', 'DeviceConsoleError',
-    'BaseSNMPWorker', 'BaseTelnetWorker', 'BaseDeviceInterface', 'BasePortInterface', 'ExpectValidationError',
-    'BasePON_ONU_Interface', 'BaseSwitchInterface', 'BasePONInterface', 'BasePON_ONU_Interface',
-    'Vlans', 'Macs', 'Vlan', 'MacItem'
+    'DEVICE_TYPES', 'DeviceImplementationError', 'DeviceConfigurationError',
+    'DeviceConsoleError', 'DeviceConnectionError', 'BaseSNMPWorker',
+    'BaseTelnetWorker', 'BaseDeviceInterface', 'BasePortInterface',
+    'ExpectValidationError', 'BasePON_ONU_Interface', 'BaseSwitchInterface',
+    'BasePONInterface', 'BasePON_ONU_Interface',
+    'Vlans', 'Macs', 'Vlan', 'MacItem', 'macbin2str'
 )
 
 # DEVICE_TYPES = (
