@@ -5,8 +5,8 @@ from rest_framework.response import Response
 
 from djing2.viewsets import DjingModelViewSet
 from customers.models import Customer
-from networks.serializers import NetworkModelSerializer
-from networks.models import NetworkModel
+from networks.serializers import NetworkModelSerializer, VlanIfModelSerializer
+from networks.models import NetworkModel, VlanIf
 
 
 class NetworkModelViewSet(DjingModelViewSet):
@@ -38,3 +38,10 @@ class NetworkModelViewSet(DjingModelViewSet):
         if ip is None:
             return Response()
         return Response(str(ip))
+
+
+class VlanIfModelViewSet(DjingModelViewSet):
+    queryset = VlanIf.objects.all()
+    serializer_class = VlanIfModelSerializer
+    filter_backends = (OrderingFilter,)
+    ordering_fields = ('title', 'vid')

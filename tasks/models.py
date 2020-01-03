@@ -2,7 +2,6 @@ from datetime import timedelta, datetime
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.db import models
-from django.conf import settings
 from customers.models import Customer
 from profiles.models import UserProfile
 from tasks.handle import handle as task_handle

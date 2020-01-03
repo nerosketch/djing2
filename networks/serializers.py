@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from djing2.lib.mixins import BaseCustomModelSerializer
-from networks.models import NetworkModel
+from networks.models import NetworkModel, VlanIf
 
 
 class NetworkModelSerializer(BaseCustomModelSerializer):
@@ -22,4 +22,10 @@ class NetworkModelSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = NetworkModel
+        fields = '__all__'
+
+
+class VlanIfModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = VlanIf
         fields = '__all__'
