@@ -1,8 +1,7 @@
-from typing import Optional, Dict, Iterable
+from typing import Optional, Dict
 from django.utils.translation import gettext_lazy as _
 from transliterate import translit
 
-from devices.switch_config import Macs, Vlans
 from djing2.lib import safe_int, safe_float
 from ..base import DeviceConsoleError
 from ..utils import norm_name
@@ -29,9 +28,9 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
     ports_len = 4
 
     def get_details(self) -> Optional[Dict]:
-        if self.db_instance is None:
+        if self.dev_instance is None:
             return
-        snmp_extra = self.db_instance.snmp_extra
+        snmp_extra = self.dev_instance.snmp_extra
         if not snmp_extra:
             return
 
@@ -77,7 +76,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             raise ExpectValidationError(_('Zte onu snmp field must be two dot separated integers'))
 
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.db_instance
+        device = self.dev_instance
         if not device:
             return
         host_name = norm_name("%d%s" % (device.pk, translit(device.comment, language_code='ru', reversed=True)))
@@ -101,10 +100,10 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         return '\n'.join(i for i in r if i)
 
     def register_device(self, extra_data: Dict):
-        return reg_dev_zte(self.db_instance, extra_data, register_onu)
+        return reg_dev_zte(self.dev_instance, extra_data, register_onu)
 
     def remove_from_olt(self, extra_data: Dict):
-        dev = self.db_instance
+        dev = self.dev_instance
         if not dev:
             return False
         if not dev.parent_dev or not dev.snmp_extra:
@@ -136,7 +135,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         )
 
     def get_fiber_str(self):
-        dev = self.db_instance
+        dev = self.dev_instance
         if not dev:
             return
         dat = dev.snmp_extra

@@ -5,7 +5,10 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
-from devices.switch_config import DEVICE_TYPES, Vlans, Macs, DeviceConsoleError, BaseTelnetSwitch, BaseTelnetPON_OLT
+from devices.switch_config import (
+    DEVICE_TYPES, Vlans, Macs, DeviceConsoleError,
+    BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
+    macbin2str)
 from devices.switch_config.base import BaseDeviceInterface, DeviceConfigurationError
 from djing2.lib import MyChoicesAdapter, safe_int
 from groupapp.models import Group
@@ -108,6 +111,30 @@ class Device(models.Model):
             )
         return self._cached_manager
 
+    def get_manager_object_switch(self) -> BaseSwitchInterface:
+        man_klass = self.get_manager_klass()
+        if self._cached_manager is None:
+            self._cached_manager = man_klass(
+                dev_instance=self
+            )
+        return self._cached_manager
+
+    def get_manager_object_olt(self) -> BasePONInterface:
+        man_klass = self.get_manager_klass()
+        if self._cached_manager is None:
+            self._cached_manager = man_klass(
+                dev_instance=self
+            )
+        return self._cached_manager
+
+    def get_manager_object_onu(self) -> BasePON_ONU_Interface:
+        man_klass = self.get_manager_klass()
+        if self._cached_manager is None:
+            self._cached_manager = man_klass(
+                dev_instance=self
+            )
+        return self._cached_manager
+
     # Can attach device to customer in customer page
     def has_attachable_to_customer(self) -> bool:
         mngr = self.get_manager_klass()
@@ -124,7 +151,7 @@ class Device(models.Model):
         return mng.monitoring_template()
 
     def register_device(self):
-        mng = self.get_manager_object()
+        mng = self.get_manager_object_olt()
         if not self.extra_data:
             if self.parent_dev and self.parent_dev.extra_data:
                 return mng.register_device(self.parent_dev.extra_data)
@@ -137,8 +164,8 @@ class Device(models.Model):
         if not pdev.extra_data:
             raise DeviceConfigurationError(_('You have not info in extra_data '
                                              'field, please fill it in JSON'))
-        mng = self.get_manager_object()
-        r = mng.remove_from_olt(pdev.extra_data)
+        mng = self.get_manager_object_olt()
+        r = mng.remove_from_olt(dict(pdev.extra_data))
         if r:
             self.snmp_extra = None
             self.save(update_fields=['snmp_extra'])
@@ -147,12 +174,12 @@ class Device(models.Model):
     def onu_find_sn_by_mac(self) -> Tuple[Optional[int], Optional[str]]:
         parent = self.parent_dev
         if parent is not None:
-            manager = parent.get_manager_object()
+            manager = parent.get_manager_object_olt()
             mac = self.mac_addr
             ports = manager.get_list_keyval('.1.3.6.1.4.1.3320.101.10.1.1.3')
             for srcmac, snmpnum in ports:
                 # convert bytes mac address to str presentation mac address
-                real_mac = ':'.join('%x' % ord(i) for i in srcmac)
+                real_mac = macbin2str(srcmac)
                 if mac == real_mac:
                     return safe_int(snmpnum), None
             return None, _('Onu with mac "%(onu_mac)s" not found on OLT') % {
@@ -199,19 +226,20 @@ class Device(models.Model):
     ##############################
 
     @_telnet_methods_wrapper
-    def telnet_switch_attach_vlan_to_port(self, tln: BaseTelnetSwitch, vid: int, port: int, tag: bool = True) -> bool:
+    def telnet_switch_attach_vlan_to_port(self, tln: BaseSwitchInterface, vid: int,
+                                          port: int, tag: bool = True) -> bool:
         return tln.attach_vlan_to_port(vid=vid, port=port, tag=tag)
 
     @_telnet_methods_wrapper
-    def telnet_switch_detach_vlan_from_port(self, tln: BaseTelnetSwitch, vid: int, port: int) -> bool:
+    def telnet_switch_detach_vlan_from_port(self, tln: BaseSwitchInterface, vid: int, port: int) -> bool:
         return tln.detach_vlan_from_port(vid=vid, port=port)
 
     @_telnet_methods_wrapper
-    def telnet_switch_get_mac_address_port(self, tln: BaseTelnetSwitch, device_port_num: int) -> Macs:
+    def telnet_switch_get_mac_address_port(self, tln: BaseSwitchInterface, device_port_num: int) -> Macs:
         return tln.read_mac_address_port(port_num=device_port_num)
 
     @_telnet_methods_wrapper
-    def telnet_get_port_vlan_list(self, tln: BaseTelnetSwitch, device_port_num: int) -> Vlans:
+    def telnet_get_port_vlan_list(self, tln: BaseSwitchInterface, device_port_num: int) -> Vlans:
         return tln.read_port_vlan_info(port=device_port_num)
 
     ##############################
@@ -219,7 +247,7 @@ class Device(models.Model):
     ##############################
 
     @_telnet_methods_wrapper
-    def telnet_pon_attach_vlans_to_uplink(self, tln: BaseTelnetPON_OLT, vids: Iterable[int], *args, **kwargs) -> None:
+    def telnet_pon_attach_vlans_to_uplink(self, tln: BasePONInterface, vids: Iterable[int], *args, **kwargs) -> None:
         return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
 
 

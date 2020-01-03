@@ -4,13 +4,13 @@ from easysnmp import EasySNMPTimeoutError
 from transliterate import translit
 
 from djing2.lib import safe_int, safe_float
-from ..base import GeneratorOrTuple, BasePON_ONU_TelnetWorker, DeviceImplementationError, DeviceConfigurationError
-from ..utils import norm_name
+from ..base import GeneratorOrTuple, BasePON_ONU_Interface, DeviceImplementationError, DeviceConfigurationError
+from ..utils import norm_name, macbin2str
 from ..expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
 
 
-class EPON_BDCOM_FORA(BasePON_ONU_TelnetWorker):
+class EPON_BDCOM_FORA(BasePON_ONU_Interface):
     has_attachable_to_customer = True
     description = 'PON ONU BDCOM'
     tech_code = 'bdcom_onu'
@@ -32,10 +32,9 @@ class EPON_BDCOM_FORA(BasePON_ONU_TelnetWorker):
             raise DeviceImplementationError(gettext(
                 'For fetch additional device info, snmp community required'
             ))
-        super().__init__(
-            dev_instance=dev_instance, hostname=dev_ip_addr, host=dev_ip_addr,
-            community=str(dev_instance.man_passw), *args, **kwargs
-        )
+        super().__init__(dev_instance=dev_instance, host=dev_ip_addr,
+                         snmp_community=str(dev_instance.man_passw),
+                         *args, **kwargs)
 
     def get_ports(self) -> GeneratorOrTuple:
         return ()
@@ -47,9 +46,9 @@ class EPON_BDCOM_FORA(BasePON_ONU_TelnetWorker):
         pass
 
     def get_details(self):
-        if self.db_instance is None:
+        if self.dev_instance is None:
             return
-        num = safe_int(self.db_instance.snmp_extra)
+        num = safe_int(self.dev_instance.snmp_extra)
         if not num:
             return
         status_map = {
@@ -61,18 +60,15 @@ class EPON_BDCOM_FORA(BasePON_ONU_TelnetWorker):
             signal = safe_float(self.get_item('.1.3.6.1.4.1.3320.101.10.5.1.5.%d' % num))
             distance = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.27.%d' % num)
             mac = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % num)
-            if mac is not None:
-                mac = ':'.join('%x' % ord(i) for i in mac)
             # uptime = self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % num)
             if status is not None and status.isdigit():
-                basic_info = super().get_details()
-                basic_info.update({
+                basic_info = {
                     'status': status_map.get(status, 'unknown'),
                     'signal': signal / 10 if signal else '—',
                     'name': self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % num),
-                    'mac': mac,
+                    'mac': macbin2str(mac),
                     'distance': int(distance) / 10 if distance.isdigit() else 0
-                })
+                }
                 return basic_info
         except EasySNMPTimeoutError as e:
             return {'err': "%s: %s" % (_('ONU not connected'), e)}
@@ -86,7 +82,7 @@ class EPON_BDCOM_FORA(BasePON_ONU_TelnetWorker):
             raise ExpectValidationError(_('Onu snmp field must be en integer'))
 
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.db_instance
+        device = self.dev_instance
         if not device:
             return
         host_name = norm_name("%d%s" % (device.pk, translit(device.comment, language_code='ru', reversed=True)))
@@ -113,7 +109,7 @@ class EPON_BDCOM_FORA(BasePON_ONU_TelnetWorker):
         pass
 
     def remove_from_olt(self, extra_data: Dict):
-        dev = self.db_instance
+        dev = self.dev_instance
         if not dev:
             return False
         if not dev.parent_dev or not dev.snmp_extra:

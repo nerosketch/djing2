@@ -11,8 +11,7 @@ from ..utils import plain_ip_device_mon_template
 
 
 class DLinkPort(BasePortInterface):
-    def __init__(self, *args, **kwargs):
-        super().__init__(writable=True, *args, **kwargs)
+    pass
 
 
 class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
