@@ -26,6 +26,10 @@ class DeviceConsoleError(Exception):
     pass
 
 
+class DeviceConnectionError(ConnectionError):
+    pass
+
+
 Vlan = namedtuple('Vlan', 'vid name')
 Vlans = Generator[Vlan, None, None]
 MacItem = namedtuple('MacItem', 'vid name mac port')
@@ -36,12 +40,15 @@ class BaseSNMPWorker(Session):
     def __init__(self, hostname: str=None, version=2, *args, **kwargs):
         if not hostname:
             raise DeviceImplementationError(gettext('Hostname required for snmp'))
-        super().__init__(
-            hostname=hostname,
-            version=version, *args, **kwargs
-        )
+        try:
+            super().__init__(
+                hostname=hostname,
+                version=version, *args, **kwargs
+            )
+        except OSError as e:
+            raise DeviceConnectionError(e)
 
-    def set_int_value(self, oid: str, value):
+    def set_int_value(self, oid: str, value) -> bool:
         return self.set(oid, value, 'i')
 
     def get_list(self, oid) -> Generator:
@@ -53,7 +60,7 @@ class BaseSNMPWorker(Session):
             snmpnum = v.oid.split('.')[-1:]
             yield v.value, snmpnum[0] if len(snmpnum) > 0 else None
 
-    def get_item(self, oid):
+    def get_item(self, oid) -> str:
         v = self.get(oid).value
         if v != 'NOSUCHINSTANCE':
             return v
