@@ -18,8 +18,8 @@ msgstr ""
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
 #: networks/models.py:14 networks/models.py:59
-msgid "Vlan interface"
-msgstr ""
+msgid "Vlan title"
+msgstr "Название vlan"
 
 #: networks/models.py:15
 msgid "VID"
