@@ -17,7 +17,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from customers.models import Customer
 from messenger.tasks import multicast_viber_notify
-from devices.switch_config import DeviceImplementationError, DeviceConsoleError, ExpectValidationError, macbin2str
+from devices.switch_config import (
+    DeviceImplementationError, DeviceConsoleError,
+    ExpectValidationError, macbin2str, DeviceConnectionError
+)
 from djing2 import IP_ADDR_REGEX
 from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -36,10 +39,8 @@ def catch_dev_manager_err(fn):
             return Response(str(err), status=status.HTTP_501_NOT_IMPLEMENTED)
         except ExpectValidationError as err:
             return Response(str(err))
-        except (ConnectionResetError, EasySNMPTimeoutError) as err:
-            return Response({'Error': {
-                'text': str(err)
-            }}, status=status.HTTP_408_REQUEST_TIMEOUT)
+        except (ConnectionResetError, DeviceConnectionError, EasySNMPTimeoutError) as err:
+            return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
 
     # Hack for decorator @action
     wrapper.__name__ = fn.__name__
