@@ -1,4 +1,5 @@
 from typing import Optional, Dict, Iterable
+from collections import namedtuple
 from easysnmp import EasySNMPTimeoutError
 from django.utils.translation import gettext
 from netaddr import EUI, mac_cisco
@@ -6,26 +7,13 @@ from netaddr import EUI, mac_cisco
 from djing2.lib import safe_int, RuTimedelta, safe_float
 from ..utils import plain_ip_device_mon_template
 from ..base import (
-    BasePON_ONU_Interface, BasePONInterface,
+    BasePONInterface,
     GeneratorOrTuple, Vlans, Vlan, Macs, MacItem,
     DeviceImplementationError
 )
 
 
-class ONUdevPort(BasePON_ONU_Interface):
-    def __init__(self, signal, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.signal = signal
-
-    def to_dict(self):
-        sdata = super().to_dict()
-        sdata.update({
-            'signal': self.signal
-        })
-        return sdata
-
-    def __str__(self):
-        return "%d: '%s' %s" % (self.num, self.nm, self.mac())
+ONUdevPort = namedtuple('ONUdevPort', 'num name status mac signal uptime')
 
 
 class BDCOM_P3310C(BasePONInterface):
@@ -45,7 +33,7 @@ class BDCOM_P3310C(BasePONInterface):
             ))
         super().__init__(
             dev_instance=dev_instance, host=dev_ip_addr,
-            *args, **kwargs
+            snmp_community=str(dev_instance.man_passw)
         )
 
     def get_ports(self) -> GeneratorOrTuple:
@@ -83,10 +71,9 @@ class BDCOM_P3310C(BasePONInterface):
                         name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % onu_num),
                         status=status == '3',
                         mac=self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % onu_num),
-                        speed=0,
                         signal=signal / 10 if signal else '—',
-                        uptime=safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % onu_num)),
-                        dev_instance=self)
+                        uptime=safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % onu_num))
+                    )
         except EasySNMPTimeoutError as e:
             raise EasySNMPTimeoutError(
                 "%s (%s)" % (gettext('wait for a reply from the SNMP Timeout'), e)

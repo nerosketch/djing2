@@ -17,9 +17,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from customers.models import Customer
 from messenger.tasks import multicast_viber_notify
-from devices.switch_config import DeviceImplementationError, DeviceConsoleError, ExpectValidationError
+from devices.switch_config import DeviceImplementationError, DeviceConsoleError, ExpectValidationError, macbin2str
 from djing2 import IP_ADDR_REGEX
-from djing2.lib import ProcessLocked, safe_int, ws_connector
+from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from devices.models import Device, Port
 from devices import serializers as dev_serializers
@@ -70,7 +70,7 @@ class DeviceModelViewSet(DjingModelViewSet):
     @action(detail=True)
     def scan_units_unregistered(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object()
+        manager = device.get_manager_object_olt()
         if hasattr(manager, 'get_fibers'):
             unregistered = []
             for fb in manager.get_fibers():
@@ -99,7 +99,14 @@ class DeviceModelViewSet(DjingModelViewSet):
             if isinstance(ports, GeneratorType):
                 item_size = next(ports)
                 chunk_max_len = next(ports)
-                r = StreamingHttpResponse(streaming_content=(chunk_cook(p.to_dict()) for p in ports))
+                r = StreamingHttpResponse(streaming_content=(chunk_cook({
+                    'number': p.num,
+                    'name': p.name,
+                    'status': p.status,
+                    'mac_addr': macbin2str(p.mac),
+                    'signal': p.signal,
+                    'uptime': str(RuTimedelta(seconds=p.uptime / 100)) if p.uptime else None
+                }) for p in ports))
                 r['Content-Length'] = item_size * chunk_max_len
                 r['Cache-Control'] = 'no-store'
                 r['Content-Type'] = 'application/octet-stream'
@@ -122,7 +129,7 @@ class DeviceModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_fibers(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object()
+        manager = device.get_manager_object_olt()
         if hasattr(manager, 'get_fibers'):
             fb = manager.get_fibers()
             return Response(fb)
@@ -148,7 +155,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             return Response(_('Parameter port_id is bad'), status=status.HTTP_400_BAD_REQUEST)
         port_id = int(port_id)
         device = self.get_object()
-        manager = device.get_manager_object()
+        manager = device.get_manager_object_switch()
         if port_state == 'up':
             manager.port_enable(port_num=port_id)
         elif port_state == 'down':

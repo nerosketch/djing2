@@ -1,5 +1,5 @@
 import re
-from abc import ABC, abstractmethod, ABCMeta
+from abc import ABC, abstractmethod
 from collections import namedtuple
 from telnetlib import Telnet
 from typing import Generator, Optional, Dict, Union, Iterable, AnyStr, Tuple
@@ -7,8 +7,8 @@ from transliterate import translit
 from easysnmp import Session
 
 from django.utils.translation import gettext_lazy as _, gettext
-
 from djing2.lib import RuTimedelta
+from .utils import macbin2str
 
 
 GeneratorOrTuple = Union[Generator, Iterable]
@@ -92,17 +92,16 @@ class BaseTelnetWorker(Telnet):
         return re.sub(r'\W+', '_', vname)[:32]
 
 
-class BaseDeviceInterface(BaseSNMPWorker, BaseTelnetWorker, metaclass=ABCMeta):
+class BaseDeviceInterface(BaseSNMPWorker, BaseTelnetWorker):
     def __init__(self, dev_instance=None, host: str=None, snmp_community='public'):
         """
-        :param dev_instance: Instance of devices.models.Device
+        :param dev_instance: an instance of devices.models.Device
         :param host: device host address
         """
         BaseSNMPWorker.__init__(self, hostname=host, community=snmp_community)
         BaseTelnetWorker.__init__(self, host=host)
         self.dev_instance = dev_instance
 
-    @abstractmethod
     def create_vlans(self, vlan_list: Vlans) -> bool:
         """
         Create new vlan with name
@@ -111,7 +110,6 @@ class BaseDeviceInterface(BaseSNMPWorker, BaseTelnetWorker, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def delete_vlans(self, vlan_list: Vlans) -> bool:
         """
         Delete vlans from switch
@@ -128,7 +126,6 @@ class BaseDeviceInterface(BaseSNMPWorker, BaseTelnetWorker, metaclass=ABCMeta):
         _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
         return self.delete_vlans(_vlan_gen)
 
-    @abstractmethod
     def read_all_vlan_info(self) -> Vlans:
         """
         Read info about all vlans
@@ -136,7 +133,6 @@ class BaseDeviceInterface(BaseSNMPWorker, BaseTelnetWorker, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def read_mac_address_vlan(self, vid: int) -> Macs:
         """
         Read FDB in vlan
@@ -278,7 +274,7 @@ class BaseSwitchInterface(BaseDeviceInterface):
 
 class BasePortInterface(ABC):
     def __init__(self, dev_interface: BaseSwitchInterface, num=0, name='', status=False, mac: bytes=b'',
-                 speed=0, uptime=None, snmp_num=None, writable=False,
+                 speed=0, uptime=None, snmp_num=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.num = int(num)
@@ -288,11 +284,11 @@ class BasePortInterface(ABC):
         self._mac: bytes = mac
         self.sp = speed
         self._uptime = int(uptime) if uptime else None
-        self.writable = writable
         self.dev_interface = dev_interface
 
+    @property
     def mac(self) -> str:
-        return ':'.join('%x' % ord(i) for i in self._mac) if self._mac else None
+        return macbin2str(self._mac)
 
     def to_dict(self) -> dict:
         return {
@@ -300,9 +296,8 @@ class BasePortInterface(ABC):
             'snmp_number': self.snmp_num,
             'name': self.nm,
             'status': self.st,
-            'mac_addr': self.mac(),
+            'mac_addr': self.mac,
             'speed': int(self.sp or 0),
-            'writable': self.writable,
             'uptime': str(RuTimedelta(seconds=self._uptime / 100)) if self._uptime else None
         }
 
@@ -328,11 +323,13 @@ class BasePONInterface(BaseDeviceInterface):
         raise NotImplementedError
 
 
-class BasePON_ONU_Interface(ABC):
-    def __init__(self, dev_interface: BasePONInterface, num=0, name='', status=False, mac: bytes=b'',
-                 speed=0, uptime=None, snmp_num=None, writable=False):
+class BasePON_ONU_Interface(BaseDeviceInterface):
+    def __init__(self,
+                 num=0, name='', status=False, mac: bytes=b'',
+                 speed=0, uptime=None, snmp_num=None, *args, **kwargs):
         """
         :param dev_interface: a subclass of devices.switch_config.base.BasePONInterface
+        :param dev_instance: an instance of devices.models.Device
         :param num: onu number
         :param name: onu name
         :param status: onu status
@@ -340,9 +337,8 @@ class BasePON_ONU_Interface(ABC):
         :param speed:
         :param uptime:
         :param snmp_num:
-        :param writable:
         """
-        self.dev_interface: BasePONInterface = dev_interface
+        super().__init__(*args, **kwargs)
         self.num = int(num)
         self.nm = name
         self.st = status
@@ -350,19 +346,6 @@ class BasePON_ONU_Interface(ABC):
         self.sp = speed
         self._uptime = int(uptime) if uptime else None
         self.snmp_num = snmp_num
-        self.writable = writable
 
     def mac(self) -> str:
-        return ':'.join('%x' % ord(i) for i in self._mac) if self._mac else None
-
-    def to_dict(self) -> dict:
-        return {
-            'number': self.num,
-            'snmp_number': self.snmp_num,
-            'name': self.nm,
-            'status': self.st,
-            'mac_addr': self.mac(),
-            'speed': int(self.sp or 0),
-            'writable': self.writable,
-            'uptime': str(RuTimedelta(seconds=self._uptime / 100)) if self._uptime else None
-        }
+        return macbin2str(self._mac)
