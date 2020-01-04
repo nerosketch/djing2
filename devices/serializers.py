@@ -20,7 +20,7 @@ class DeviceModelSerializer(BaseCustomModelSerializer):
             'dev_type', 'dev_type_str', 'man_passw', 'group',
             'parent_dev', 'parent_dev_name', 'parent_dev_group',
             'snmp_extra', 'attached_users',
-            'extra_data', 'status', 'is_noticeable'
+            'extra_data', 'status', 'is_noticeable', 'vlans'
         )
 
 
