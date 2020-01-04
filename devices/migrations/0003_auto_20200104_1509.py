@@ -22,9 +22,5 @@ class Migration(migrations.Migration):
             model_name='device',
             name='vlans',
             field=models.ManyToManyField(to='networks.VlanIf', verbose_name='Available vlans'),
-        ),
-        migrations.AlterModelOptions(
-            name='vlanif',
-            options={'ordering': ('-id',), 'verbose_name': 'Vlan', 'verbose_name_plural': 'Vlan list'},
-        ),
+        )
     ]
