@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 
 from djing2.viewsets import DjingModelViewSet
 from customers.models import Customer
@@ -43,5 +44,6 @@ class NetworkModelViewSet(DjingModelViewSet):
 class VlanIfModelViewSet(DjingModelViewSet):
     queryset = VlanIf.objects.all()
     serializer_class = VlanIfModelSerializer
-    filter_backends = (OrderingFilter,)
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering_fields = ('title', 'vid')
+    filterset_fields = ('device',)
