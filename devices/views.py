@@ -39,8 +39,8 @@ def catch_dev_manager_err(fn):
             return Response(str(err), status=status.HTTP_501_NOT_IMPLEMENTED)
         except ExpectValidationError as err:
             return Response(str(err))
-        except (ConnectionResetError, DeviceConnectionError, EasySNMPTimeoutError) as err:
-            return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
+        except (ConnectionResetError, ConnectionRefusedError, DeviceConnectionError, EasySNMPTimeoutError) as err:
+            return Response(str(err), status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     # Hack for decorator @action
     wrapper.__name__ = fn.__name__
