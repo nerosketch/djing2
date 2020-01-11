@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
     'guardian',
+    'debug_toolbar',
     'groupapp',
     'profiles',
     'services',
@@ -70,6 +71,7 @@ if DEBUG:
     INSTALLED_APPS.insert(0, 'django.contrib.admin')
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -260,3 +262,7 @@ API_AUTH_SECRET = local_settings.API_AUTH_SECRET
 
 # Allowed subnet for api
 API_AUTH_SUBNET = local_settings.API_AUTH_SUBNET
+
+# DEBUG TOOLBAR
+if DEBUG:
+    INTERNAL_IPS = ['127.0.0.1']
