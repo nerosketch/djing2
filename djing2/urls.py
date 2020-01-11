@@ -30,7 +30,9 @@ if settings.DEBUG:
     from django.conf.urls.static import static
     from django.contrib.staticfiles.urls import staticfiles_urlpatterns
     from django.contrib import admin
+    import debug_toolbar
 
     urlpatterns.extend(static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT))
     urlpatterns.extend(staticfiles_urlpatterns())
     urlpatterns.append(path('admin/', admin.site.urls))
+    urlpatterns.append(path('__debug__/', include(debug_toolbar.urls)))
