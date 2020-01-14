@@ -296,11 +296,11 @@ class Port(models.Model):
     def __str__(self):
         return "%d: %s" % (self.num, self.descr)
 
-    def scan_additional(self):
-        if not self.device:
-            return
-        mng = self.device.get_manager_object()
-        return mng.get_port(snmp_num=self.num).to_dict()
+    # def scan_additional(self):
+    #     if not self.device:
+    #         return
+    #     mng = self.device.get_manager_object()
+    #     return mng.get_port(snmp_num=self.num).to_dict()
 
     class Meta:
         db_table = 'device_port'

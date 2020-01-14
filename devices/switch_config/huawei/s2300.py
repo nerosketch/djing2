@@ -1,7 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 from djing2.lib import safe_int
 from ..eltex import EltexSwitch, EltexPort
-from ..base import GeneratorOrTuple, DeviceImplementationError
+from ..base import DeviceImplementationError
 
 
 class HuaweiS2300(EltexSwitch):
@@ -10,7 +10,7 @@ class HuaweiS2300(EltexSwitch):
     has_attachable_to_customer = True
     tech_code = 'huawei_s2300'
 
-    def get_ports(self) -> GeneratorOrTuple:
+    def get_ports(self) -> tuple:
         # interfaces count
         # yield safe_int(self.get_item('.1.3.6.1.2.1.17.1.2.0'))
 

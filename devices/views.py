@@ -1,5 +1,4 @@
 import re
-from types import GeneratorType
 from json import dumps as json_dumps
 
 from django.db.models import Count
@@ -20,8 +19,8 @@ from customers.models import Customer
 from messenger.tasks import multicast_viber_notify
 from devices.switch_config import (
     DeviceImplementationError, DeviceConsoleError,
-    ExpectValidationError, macbin2str, DeviceConnectionError
-)
+    ExpectValidationError, macbin2str, DeviceConnectionError,
+    BaseSwitchInterface, BasePONInterface, BasePortInterface)
 from djing2 import IP_ADDR_REGEX
 from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -85,9 +84,11 @@ class DeviceModelViewSet(DjingModelViewSet):
 
     @action(detail=True)
     @catch_dev_manager_err
-    def scan_ports(self, request, pk=None):
+    def scan_onu_list(self, request, pk=None):
         device = self.get_object()
         manager = device.get_manager_object()
+        if not issubclass(manager.__class__, BasePONInterface):
+            raise DeviceImplementationError('Expected BasePONInterface subclass')
 
         def chunk_cook(chunk: dict) -> bytes:
             chunk_json = json_dumps(chunk, ensure_ascii=False)
@@ -97,27 +98,47 @@ class DeviceModelViewSet(DjingModelViewSet):
             return dat.encode()[:chunk_max_len]
 
         try:
-            ports = manager.get_ports()
-            if isinstance(ports, GeneratorType):
-                item_size = next(ports)
-                chunk_max_len = next(ports)
-                r = StreamingHttpResponse(streaming_content=(chunk_cook({
-                    'number': p.num,
-                    'name': p.name,
-                    'status': p.status,
-                    'mac_addr': macbin2str(p.mac),
-                    'signal': p.signal,
-                    'uptime': str(RuTimedelta(seconds=p.uptime / 100)) if p.uptime else None
-                }) for p in ports))
-                r['Content-Length'] = item_size * chunk_max_len
-                r['Cache-Control'] = 'no-store'
-                r['Content-Type'] = 'application/octet-stream'
-            else:
-                r = Response(data=(p.to_dict() for p in ports))
+            onu_list = manager.scan_onu_list()
+            item_size = next(onu_list)
+            chunk_max_len = next(onu_list)
+            r = StreamingHttpResponse(streaming_content=(chunk_cook({
+                'number': p.num,
+                'name': p.name,
+                'status': p.status,
+                'mac_addr': macbin2str(p.mac),
+                'signal': p.signal,
+                'uptime': str(RuTimedelta(seconds=p.uptime / 100)) if p.uptime else None
+            }) for p in onu_list))
+            r['Content-Length'] = item_size * chunk_max_len
+            r['Cache-Control'] = 'no-store'
+            r['Content-Type'] = 'application/octet-stream'
             return r
         except StopIteration:
             pass
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response('No all fetched')
+
+    @action(detail=True)
+    @catch_dev_manager_err
+    def scan_ports(self, request, pk=None):
+        device = self.get_object()
+        manager = device.get_manager_object()
+        if not issubclass(manager.__class__, BaseSwitchInterface):
+            raise DeviceImplementationError('Expected BaseSwitchInterface subclass')
+        ports = manager.get_ports()
+        db_ports = Port.objects.filter(device__id=pk).annotate(user_count=Count('customer'))
+
+        def join_with_db(p: BasePortInterface):
+            r = p.to_dict()
+            ps = [dbp for dbp in db_ports if p.num == dbp.num]
+            if len(ps) > 0:
+                db_port = dev_serializers.PortModelSerializer(ps[0]).data
+                del db_port['num']
+                r.update({
+                    'db': db_port
+                })
+            return r
+
+        return Response(data=(join_with_db(p) for p in ports))
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -129,7 +150,7 @@ class DeviceModelViewSet(DjingModelViewSet):
 
     @action(detail=True)
     @catch_dev_manager_err
-    def scan_fibers(self, request, pk=None):
+    def scan_olt_fibers(self, request, pk=None):
         device = self.get_object()
         manager = device.get_manager_object_olt()
         if hasattr(manager, 'get_fibers'):
@@ -276,26 +297,17 @@ class PortModelViewSet(DjingModelViewSet):
     serializer_class = dev_serializers.PortModelSerializer
     filterset_fields = ('device', 'num')
 
-    @action(detail=False)
-    @catch_dev_manager_err
-    def extended(self, request):
-        self.serializer_class = dev_serializers.PortModelSerializerExtended
-        return super().list(request)
-
     @action(detail=True)
     @catch_dev_manager_err
     def toggle_port(self, request, pk=None):
-        port_id = pk
         port_state = request.query_params.get('state')
-        if not port_id or not port_id.isdigit():
-            return Response(_('Parameter port_id is bad'), status=status.HTTP_400_BAD_REQUEST)
-        port_id = int(port_id)
-        device = self.get_object()
-        manager = device.get_manager_object_switch()
+        port = self.get_object()
+        port_num = int(port.num)
+        manager = port.device.get_manager_object_switch()
         if port_state == 'up':
-            manager.port_enable(port_num=port_id)
+            manager.port_enable(port_num=port_num)
         elif port_state == 'down':
-            manager.port_disable(port_num=port_id)
+            manager.port_disable(port_num=port_num)
         else:
             return Response(_('Parameter port_state is bad'), status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
@@ -329,5 +341,5 @@ class DeviceGroupsList(DjingListAPIView):
             self.request.user,
             'groupapp.view_group', klass=Group,
             accept_global_perms=False
-        )
+        ).annotate(device_count=Count('device'))
         return groups

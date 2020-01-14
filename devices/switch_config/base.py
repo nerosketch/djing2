@@ -2,16 +2,13 @@ import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from telnetlib import Telnet
-from typing import Generator, Optional, Dict, Union, Iterable, AnyStr, Tuple
+from typing import Generator, Optional, Dict, Iterable, AnyStr, Tuple
 from transliterate import translit
 from easysnmp import Session
 
 from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib import RuTimedelta
 from .utils import macbin2str
-
-
-GeneratorOrTuple = Union[Generator, Iterable]
 
 
 class DeviceImplementationError(NotImplementedError):
@@ -221,7 +218,7 @@ class BaseDeviceInterface(BaseSNMPWorker, BaseTelnetWorker):
 
 class BaseSwitchInterface(BaseDeviceInterface):
     @abstractmethod
-    def get_ports(self) -> GeneratorOrTuple:
+    def get_ports(self) -> tuple:
         """
         If fast operation then just return tuple.
         If long operation then return the generator of ports count first,
@@ -327,6 +324,10 @@ class BasePONInterface(BaseDeviceInterface):
         :param kwargs: optional parameters for each implementation
         :return: nothing
         """
+        raise NotImplementedError
+
+    @abstractmethod
+    def scan_onu_list(self) -> Generator:
         raise NotImplementedError
 
 

@@ -4,7 +4,7 @@ from easysnmp import EasySNMPTimeoutError
 from transliterate import translit
 
 from djing2.lib import safe_int, safe_float
-from ..base import GeneratorOrTuple, BasePON_ONU_Interface, DeviceImplementationError, DeviceConfigurationError
+from ..base import BasePON_ONU_Interface, DeviceImplementationError, DeviceConfigurationError
 from ..utils import norm_name, macbin2str
 from ..expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
@@ -35,9 +35,6 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
         super().__init__(dev_instance=dev_instance, host=dev_ip_addr,
                          snmp_community=str(dev_instance.man_passw),
                          *args, **kwargs)
-
-    def get_ports(self) -> GeneratorOrTuple:
-        return ()
 
     def get_device_name(self):
         pass

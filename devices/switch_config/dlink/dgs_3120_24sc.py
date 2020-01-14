@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib import safe_int, RuTimedelta
 from ..base import (
     Vlans, Vlan, Macs, MacItem, BaseSwitchInterface, BasePortInterface,
-    GeneratorOrTuple, DeviceImplementationError
+    DeviceImplementationError
 )
 from ..utils import plain_ip_device_mon_template
 
@@ -133,7 +133,7 @@ class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
         out = self.read_until(self.prompt)
         return b'Success' in out
 
-    def get_ports(self) -> GeneratorOrTuple:
+    def get_ports(self) -> tuple:
         ifs_ids = self.get_list('.1.3.6.1.2.1.10.7.2.1.1')
         return tuple(self.get_port(snmp_num=if_id) for if_id in ifs_ids)
 

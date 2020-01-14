@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Iterable
+from typing import Optional, Dict, Iterable, Generator
 from collections import namedtuple
 from easysnmp import EasySNMPTimeoutError
 from django.utils.translation import gettext
@@ -8,7 +8,7 @@ from djing2.lib import safe_int, RuTimedelta, safe_float
 from ..utils import plain_ip_device_mon_template
 from ..base import (
     BasePONInterface,
-    GeneratorOrTuple, Vlans, Vlan, Macs, MacItem,
+    Vlans, Vlan, Macs, MacItem,
     DeviceImplementationError
 )
 
@@ -36,7 +36,7 @@ class BDCOM_P3310C(BasePONInterface):
             snmp_community=str(dev_instance.man_passw)
         )
 
-    def get_ports(self) -> GeneratorOrTuple:
+    def scan_onu_list(self) -> Generator:
         """
         If fast operation then just return tuple.
         If long operation then return the generator of ports count first,
