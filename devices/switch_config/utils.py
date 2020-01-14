@@ -29,3 +29,7 @@ def plain_ip_device_mon_template(device) -> Optional[AnyStr]:
         "}\n"
     )
     return '\n'.join(i for i in r if i)
+
+
+def macbin2str(bin_mac: bytes) -> str:
+    return ':'.join('%x' % ord(i) for i in bin_mac) if bin_mac else None
