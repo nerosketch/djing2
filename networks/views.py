@@ -2,11 +2,12 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 
 from djing2.viewsets import DjingModelViewSet
 from customers.models import Customer
-from networks.serializers import NetworkModelSerializer
-from networks.models import NetworkModel
+from networks.serializers import NetworkModelSerializer, VlanIfModelSerializer
+from networks.models import NetworkModel, VlanIf
 
 
 class NetworkModelViewSet(DjingModelViewSet):
@@ -38,3 +39,11 @@ class NetworkModelViewSet(DjingModelViewSet):
         if ip is None:
             return Response()
         return Response(str(ip))
+
+
+class VlanIfModelViewSet(DjingModelViewSet):
+    queryset = VlanIf.objects.all()
+    serializer_class = VlanIfModelSerializer
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering_fields = ('title', 'vid')
+    filterset_fields = ('device',)

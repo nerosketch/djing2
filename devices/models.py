@@ -1,15 +1,44 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterable
 
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
-from devices.switch_config import DEVICE_TYPES
-from devices.switch_config.base import DevBase, DeviceConfigurationError
+from devices.switch_config import (
+    DEVICE_TYPES, Vlans, Macs, DeviceConsoleError,
+    BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
+    macbin2str)
+from devices.switch_config.base import BaseDeviceInterface, DeviceConfigurationError
 from djing2.lib import MyChoicesAdapter, safe_int
 from groupapp.models import Group
 from networks.models import VlanIf
+
+
+def _telnet_methods_wrapper(fn):
+    def _wrapper(self, *args, **kwargs):
+        if not self.extra_data:
+            raise DeviceConfigurationError(_('You have not info in extra_data '
+                                             'field, please fill it in JSON'))
+        extra_data = dict(self.extra_data)
+        extra_data_telnet = extra_data.get('telnet')
+        if not extra_data_telnet:
+            raise DeviceConfigurationError('telnet credentials required in "extra_data"')
+        tlogin = extra_data_telnet.get('login')
+        tpassw = extra_data_telnet.get('password')
+        tprompt = extra_data_telnet.get('prompt')
+        if not all((tlogin, tpassw, extra_data_telnet, tprompt)):
+            raise DeviceConfigurationError('telnet credentials required in "extra_data"')
+        mng = self.get_manager_klass()
+
+        with mng(host=str(self.ip_address), prompt=tprompt.encode()) as tln:
+            if not tln.login(login=tlogin, password=tpassw):
+                raise DeviceConsoleError(_('Login failed'))
+            try:
+                return fn(self, tln, *args, **kwargs)
+            except (ValueError, RuntimeError) as e:
+                raise DeviceConsoleError(e)
+    return _wrapper
 
 
 class Device(models.Model):
@@ -50,6 +79,7 @@ class Device(models.Model):
         help_text=_('Extra data in JSON format. You may use it for your custom data'),
         blank=True, null=True
     )
+    vlans = models.ManyToManyField(VlanIf, verbose_name=_('Available vlans'))
 
     NETWORK_STATES = (
         (0, _('Undefined')),
@@ -67,17 +97,43 @@ class Device(models.Model):
         verbose_name_plural = _('Devices')
         ordering = ('id',)
 
-    def get_manager_klass(self):
+    def get_manager_klass(self) -> BaseDeviceInterface:
         try:
-            return next(klass for code, klass in DEVICE_TYPES if code == int(self.dev_type))
+            return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
         except StopIteration:
-            raise TypeError('one of types is not subclass of DevBase. '
+            raise TypeError('one of types is not subclass of BaseDeviceInterface. '
                             'Or implementation of that device type is not found')
 
-    def get_manager_object(self) -> DevBase:
+    def get_manager_object(self) -> BaseDeviceInterface:
         man_klass = self.get_manager_klass()
         if self._cached_manager is None:
-            self._cached_manager = man_klass(self)
+            self._cached_manager = man_klass(
+                dev_instance=self
+            )
+        return self._cached_manager
+
+    def get_manager_object_switch(self) -> BaseSwitchInterface:
+        man_klass = self.get_manager_klass()
+        if self._cached_manager is None:
+            self._cached_manager = man_klass(
+                dev_instance=self
+            )
+        return self._cached_manager
+
+    def get_manager_object_olt(self) -> BasePONInterface:
+        man_klass = self.get_manager_klass()
+        if self._cached_manager is None:
+            self._cached_manager = man_klass(
+                dev_instance=self
+            )
+        return self._cached_manager
+
+    def get_manager_object_onu(self) -> BasePON_ONU_Interface:
+        man_klass = self.get_manager_klass()
+        if self._cached_manager is None:
+            self._cached_manager = man_klass(
+                dev_instance=self
+            )
         return self._cached_manager
 
     # Can attach device to customer in customer page
@@ -96,11 +152,11 @@ class Device(models.Model):
         return mng.monitoring_template()
 
     def register_device(self):
-        mng = self.get_manager_object()
+        mng = self.get_manager_object_olt()
         if not self.extra_data:
             if self.parent_dev and self.parent_dev.extra_data:
                 return mng.register_device(self.parent_dev.extra_data)
-        return mng.register_device(self.extra_data)
+        return mng.register_device(dict(self.extra_data))
 
     def remove_from_olt(self):
         pdev = self.parent_dev
@@ -109,8 +165,8 @@ class Device(models.Model):
         if not pdev.extra_data:
             raise DeviceConfigurationError(_('You have not info in extra_data '
                                              'field, please fill it in JSON'))
-        mng = self.get_manager_object()
-        r = mng.remove_from_olt(pdev.extra_data)
+        mng = self.get_manager_object_olt()
+        r = mng.remove_from_olt(dict(pdev.extra_data))
         if r:
             self.snmp_extra = None
             self.save(update_fields=['snmp_extra'])
@@ -119,12 +175,12 @@ class Device(models.Model):
     def onu_find_sn_by_mac(self) -> Tuple[Optional[int], Optional[str]]:
         parent = self.parent_dev
         if parent is not None:
-            manager = parent.get_manager_object()
+            manager = parent.get_manager_object_olt()
             mac = self.mac_addr
             ports = manager.get_list_keyval('.1.3.6.1.4.1.3320.101.10.1.1.3')
             for srcmac, snmpnum in ports:
                 # convert bytes mac address to str presentation mac address
-                real_mac = ':'.join('%x' % ord(i) for i in srcmac)
+                real_mac = macbin2str(srcmac)
                 if mac == real_mac:
                     return safe_int(snmpnum), None
             return None, _('Onu with mac "%(onu_mac)s" not found on OLT') % {
@@ -139,6 +195,61 @@ class Device(models.Model):
             self.save(update_fields=('snmp_extra',))
             return True, _('Fixed')
         return False, err_text
+
+    #############################
+    #      Telnet access
+    #############################
+
+    @_telnet_methods_wrapper
+    def telnet_get_all_vlan_list(self, tln: BaseDeviceInterface) -> Vlans:
+        return tln.read_all_vlan_info()
+
+    @_telnet_methods_wrapper
+    def telnet_get_mac_address_vlan(self, tln: BaseDeviceInterface, vlan_id: int) -> Macs:
+        return tln.read_mac_address_vlan(vid=vlan_id)
+
+    @_telnet_methods_wrapper
+    def telnet_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
+        if not tln.create_vlans(vids):
+            raise DeviceConsoleError(_('Failed while create vlans'))
+
+    @_telnet_methods_wrapper
+    def telnet_delete_vlan(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
+        if not tln.delete_vlans(vlan_list=vids):
+            raise DeviceConsoleError(_('Failed while removing vlan'))
+
+    @_telnet_methods_wrapper
+    def telnet_read_mac_address_vlan(self, tln: BaseDeviceInterface, vid: int) -> Macs:
+        return tln.read_mac_address_vlan(vid=vid)
+
+    ##############################
+    # Switch telnet methods
+    ##############################
+
+    @_telnet_methods_wrapper
+    def telnet_switch_attach_vlan_to_port(self, tln: BaseSwitchInterface, vid: int,
+                                          port: int, tag: bool = True) -> bool:
+        return tln.attach_vlan_to_port(vid=vid, port=port, tag=tag)
+
+    @_telnet_methods_wrapper
+    def telnet_switch_detach_vlan_from_port(self, tln: BaseSwitchInterface, vid: int, port: int) -> bool:
+        return tln.detach_vlan_from_port(vid=vid, port=port)
+
+    @_telnet_methods_wrapper
+    def telnet_switch_get_mac_address_port(self, tln: BaseSwitchInterface, device_port_num: int) -> Macs:
+        return tln.read_mac_address_port(port_num=device_port_num)
+
+    @_telnet_methods_wrapper
+    def telnet_get_port_vlan_list(self, tln: BaseSwitchInterface, device_port_num: int) -> Vlans:
+        return tln.read_port_vlan_info(port=device_port_num)
+
+    ##############################
+    # PON telnet methods
+    ##############################
+
+    @_telnet_methods_wrapper
+    def telnet_pon_attach_vlans_to_uplink(self, tln: BasePONInterface, vids: Iterable[int], *args, **kwargs) -> None:
+        return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
 
 
 class PortVlanMemberModel(models.Model):
@@ -185,11 +296,11 @@ class Port(models.Model):
     def __str__(self):
         return "%d: %s" % (self.num, self.descr)
 
-    def scan_additional(self):
-        if not self.device:
-            return
-        mng = self.device.get_manager_object()
-        return mng.get_port(snmp_num=self.num).to_dict()
+    # def scan_additional(self):
+    #     if not self.device:
+    #         return
+    #     mng = self.device.get_manager_object()
+    #     return mng.get_port(snmp_num=self.num).to_dict()
 
     class Meta:
         db_table = 'device_port'

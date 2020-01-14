@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from devices.models import Device, Port
+from devices.models import Device, Port, PortVlanMemberModel
 from djing2.lib.mixins import BaseCustomModelSerializer
 from groupapp.models import Group
 
@@ -20,7 +20,7 @@ class DeviceModelSerializer(BaseCustomModelSerializer):
             'dev_type', 'dev_type_str', 'man_passw', 'group',
             'parent_dev', 'parent_dev_name', 'parent_dev_group',
             'snmp_extra', 'attached_users',
-            'extra_data', 'status', 'is_noticeable'
+            'extra_data', 'status', 'is_noticeable', 'vlans'
         )
 
 
@@ -35,31 +35,22 @@ class DeviceWithoutGroupModelSerializer(BaseCustomModelSerializer):
 
 
 class PortModelSerializer(BaseCustomModelSerializer):
+    user_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Port
-        fields = ['pk', 'device', 'num', 'descr']
-
-
-class PortModelSerializerExtended(PortModelSerializer):
-    user_count = serializers.IntegerField(
-        source='customer_set.count',
-        read_only=True
-    )
-    additional = serializers.DictField(
-        source='scan_additional',
-        read_only=True
-    )
-
-    class Meta(PortModelSerializer.Meta):
-        fields = PortModelSerializer.Meta.fields + ['user_count', 'additional']
+        fields = ('pk', 'device', 'num', 'descr', 'user_count')
 
 
 class DeviceGroupsModelSerializer(BaseCustomModelSerializer):
-    device_count = serializers.IntegerField(
-        source='device_set.count',
-        read_only=True
-    )
+    device_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Group
         fields = ('pk', 'title', 'code', 'device_count')
+
+
+class PortVlanMemberModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = PortVlanMemberModel
+        fields = '__all__'

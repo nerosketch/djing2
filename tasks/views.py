@@ -1,3 +1,4 @@
+from django.db.models import Count
 from django.utils.translation import gettext
 from rest_framework import status
 from rest_framework.decorators import action
@@ -21,14 +22,9 @@ class ChangeLogModelViewSet(DjingModelViewSet):
 
 
 class TaskModelViewSet(DjingModelViewSet):
-    queryset = models.Task.objects.all().select_related(
+    queryset = models.Task.objects.select_related(
         'author', 'customer', 'customer__group', 'customer__street'
-    ).only(
-        'author__username', 'author__fio', 'priority', 'out_date',
-        'customer__group__title', 'customer__street__name',
-        'customer__username', 'customer__fio', 'customer__house',
-        'state', 'mode', 'time_of_create', 'descr', 'recipients'
-    )
+    ).annotate(comment_count=Count('extracomment'))
     # TODO: Optimize. recipients field make request for each task entry
     serializer_class = serializers.TaskModelSerializer
     filterset_fields = ('state', 'recipients', 'customer')
@@ -98,7 +94,7 @@ class AllTasksList(DjingListAPIView):
     queryset = models.Task.objects.all().select_related(
         'customer', 'customer__street',
         'customer__group', 'author'
-    )
+    ).annotate(comment_count=Count('extracomment'))
     serializer_class = serializers.TaskModelSerializer
 
 
@@ -168,7 +164,7 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
 
 
 class UserTaskHistory(BaseNonAdminReadOnlyModelViewSet):
-    queryset = models.Task.objects.all()
+    queryset = models.Task.objects.annotate(comment_count=Count('extracomment'))
     serializer_class = serializers.UserTaskModelSerializer
 
     def get_queryset(self):

@@ -3,16 +3,17 @@ from functools import wraps
 from hashlib import sha256
 from datetime import timedelta
 from collections.abc import Iterator
+from typing import Any
 
 
-def safe_float(fl: float) -> float:
+def safe_float(fl: Any) -> float:
     try:
         return 0.0 if not fl else float(fl)
     except (ValueError, OverflowError):
         return 0.0
 
 
-def safe_int(i: int) -> int:
+def safe_int(i: Any) -> int:
     try:
         return 0 if not i else int(i)
     except (ValueError, OverflowError):
