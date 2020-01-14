@@ -9,4 +9,4 @@ class OnuZTE_F601(OnuZTE_F660):
     description = 'Zte ONU F601'
 
     def register_device(self, extra_data: Dict):
-        return reg_dev_zte(self.db_instance, extra_data, register_onu)
+        return reg_dev_zte(self.dev_instance, extra_data, register_onu)

@@ -6,6 +6,7 @@ app_name = 'networks'
 
 router = DefaultRouter()
 
+router.register('vlan', views.VlanIfModelViewSet)
 router.register('', views.NetworkModelViewSet)
 
 

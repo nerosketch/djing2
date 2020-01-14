@@ -20,6 +20,7 @@ from customers import models
 from customers import serializers
 from customers.tasks import customer_gw_command, customer_gw_remove
 from customers.views.view_decorators import catch_customers_errs
+from djing2.exceptions import UniqueConstraintIntegrityError
 from djing2.lib import safe_int, LogicError, DuplicateEntry, safe_float
 from djing2.lib.mixins import SecureApiView
 from djing2.lib.paginator import QueryPageNumberPagination
@@ -65,7 +66,8 @@ class CustomerLogModelViewSet(DjingModelViewSet):
 class CustomerModelViewSet(DjingModelViewSet):
     queryset = models.Customer.objects.select_related(
         'group', 'street', 'gateway', 'device', 'dev_port',
-        'current_service', 'last_connected_service'
+        'current_service', 'last_connected_service',
+        'current_service__service', 'customerrawpassword'
     )
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, OrderingFilter)
@@ -110,6 +112,26 @@ class CustomerModelViewSet(DjingModelViewSet):
         except models.NotEnoughMoney as e:
             return Response(data=str(e), status=status.HTTP_402_PAYMENT_REQUIRED)
         return Response(status=status.HTTP_200_OK)
+
+    def perform_update(self, serializer):
+        customer = serializer.save()
+        customer_gw_command.delay(customer.pk, 'sync')
+
+    def perform_create(self, serializer):
+        try:
+            customer = serializer.save()
+            if customer.is_access():
+                customer_gw_command.delay(customer.pk, 'add')
+        except IntegrityError as e:
+            raise UniqueConstraintIntegrityError(str(e))
+
+    def perform_destroy(self, instance):
+        customer_gw_remove.delay(
+            customer_uid=instance.pk, ip_addr=instance.ip_address,
+            speed=(0, 0),
+            is_access=instance.is_access(), gw_pk=instance.gateway_id
+        )
+        super().perform_destroy(instance)
 
     @action(methods=('post',), detail=True)
     @catch_customers_errs

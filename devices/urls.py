@@ -7,6 +7,7 @@ app_name = 'devices'
 
 
 router = DefaultRouter()
+router.register('ports-vlan', views.PortVlanMemberModelViewSet)
 router.register('ports', views.PortModelViewSet)
 router.register('', views.DeviceModelViewSet)
 

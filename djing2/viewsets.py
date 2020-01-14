@@ -15,9 +15,21 @@ from djing2.exceptions import UniqueConstraintIntegrityError
 class DjingModelViewSet(ModelViewSet):
     permission_classes = (IsAuthenticated, IsAdminUser)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer) -> None:
         try:
-            return super().perform_create(serializer)
+            super().perform_create(serializer)
+        except IntegrityError as e:
+            raise UniqueConstraintIntegrityError(str(e))
+
+    def perform_update(self, serializer) -> None:
+        try:
+            super().perform_update(serializer)
+        except IntegrityError as e:
+            raise UniqueConstraintIntegrityError(str(e))
+
+    def perform_destroy(self, instance) -> None:
+        try:
+            super().perform_destroy(instance)
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(str(e))
 

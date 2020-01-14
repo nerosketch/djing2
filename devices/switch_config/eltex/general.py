@@ -1,19 +1,16 @@
 from typing import Optional
 from django.utils.translation import gettext_lazy as _
+from netaddr import EUI
+
 from djing2.lib import safe_int, RuTimedelta
-from ..base import DevBase, GeneratorOrTuple, BasePort
-from ..snmp_util import SNMPBaseWorker
+from ..base import BaseDeviceInterface, BasePortInterface, Vlans, Vlan, MacItem, Macs
 from ..utils import plain_ip_device_mon_template
 
 from ..dlink import DlinkDGS1100_10ME
 
 
-class EltexPort(BasePort):
-    def __init__(self, snmp_worker, *args, **kwargs):
-        BasePort.__init__(self, *args, **kwargs)
-        if not issubclass(snmp_worker.__class__, SNMPBaseWorker):
-            raise TypeError
-        self.snmp_worker = snmp_worker
+class EltexPort(BasePortInterface):
+    pass
 
 
 class EltexSwitch(DlinkDGS1100_10ME):
@@ -21,8 +18,9 @@ class EltexSwitch(DlinkDGS1100_10ME):
     is_use_device_port = False
     has_attachable_to_customer = True
     tech_code = 'eltex_sw'
+    ports_len = 24
 
-    def get_ports(self) -> GeneratorOrTuple:
+    def get_ports(self) -> tuple:
         def build_port(s, i: int, n: int):
             speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % n)
             return EltexPort(
@@ -40,17 +38,17 @@ class EltexSwitch(DlinkDGS1100_10ME):
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
 
-    def uptime(self):
+    def get_uptime(self):
         uptimestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.3.0'))
         tm = RuTimedelta(seconds=uptimestamp / 100)
         return tm
 
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.db_instance
+        device = self.dev_instance
         return plain_ip_device_mon_template(device)
 
     def reboot(self, save_before_reboot=False):
-        return DevBase.reboot(self, save_before_reboot)
+        return BaseDeviceInterface.reboot(self, save_before_reboot)
 
     def port_disable(self, port_num: int):
         self.set_int_value(
@@ -63,3 +61,150 @@ class EltexSwitch(DlinkDGS1100_10ME):
             "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num),
             1
         )
+
+    def read_port_vlan_info(self, port: int) -> Vlans:
+        self.write('show int switc gi1/0/%d' % port)
+        out = self.read_until(self.prompt)
+        for line in out.split(b'\n'):
+            chunks = line.split()
+            if len(chunks) != 4:
+                continue
+            vid = safe_int(chunks[0])
+            if vid > 0:
+                vname = chunks[1].decode()
+                yield Vlan(vid=vid, name=vname)
+
+    def _disable_prompt(self):
+        self.write('terminal datadump')
+        self.read_until(self.prompt)
+
+    @staticmethod
+    def _port_parse(port_descr: str) -> int:
+        if '/' in port_descr:
+            gi, zero, port_num = port_descr.split('/')
+            return safe_int(port_num)
+        raise RuntimeError('port not match to "giN/N/N" where N is digit')
+
+    def read_all_vlan_info(self) -> Vlans:
+        self.write('show vlan')
+        out = self.read_until(self.prompt)
+        for line in out.split(b'\n'):
+            chunks = line.split()
+            chlen = len(chunks)
+            try:
+                if chlen == 6:
+                    vid = int(chunks[0])
+                    vname = chunks[1].decode()
+                    yield Vlan(vid=vid, name=vname)
+                    # ports_descr = chunks[2].decode()
+                    # if ',' in ports_descr:
+                    #     for pd in ports_descr.split(','):
+                    #         port_num = self._port_parse(pd)
+                    #         vids.append(Vlan(vid=vid, name=vname))
+            except (ValueError, IndexError):
+                pass
+
+    def read_mac_address_port(self, port_num: int) -> Macs:
+        self.write('show mac addr int gi1/0/%d' % port_num)
+        out = self.read_until(self.prompt)
+        for line in out.split(b'\n'):
+            chunks = line.split()
+            if len(chunks) != 4:
+                continue
+            vid = safe_int(chunks[0])
+            if vid == 0:
+                continue
+            mac = EUI(chunks[1].decode())
+            yield MacItem(vid=vid, name=None, mac=mac, port=port_num)
+
+    def read_mac_address_vlan(self, vid: int) -> Macs:
+        self.write('show mac addr vlan %d' % vid)
+        out = self.read_until(self.prompt)
+        for line in out.split(b'\n'):
+            chunks = line.split()
+            if len(chunks) != 4:
+                continue
+            vid = safe_int(chunks[0])
+            if vid == 0:
+                continue
+            mac = EUI(chunks[1].decode())
+            port = self._port_parse(chunks[2].decode())
+            yield MacItem(vid=vid, name=None, mac=mac, port=port)
+
+    def create_vlans(self, vlan_list: Vlans) -> bool:
+        self.write('conf')
+        self.read_until('(config)#')
+        self.write('vlan database')
+        self.read_until('(config-vlan)#')
+        for vlan in vlan_list:
+            self.write('vlan %(vid)d name %(name)s' % {
+                'vid': vlan.vid,
+                'name': self._normalize_name(vlan.name)
+            })
+            self.read_until('(config-vlan)#')
+        self.write('exit')
+        self.read_until('(config)#')
+        self.write('exit')
+        self.read_until(self.prompt)
+        return True
+
+    def delete_vlans(self, vlan_list: Vlans) -> bool:
+        self.write('conf')
+        self.read_until('(config)#')
+        self.write('vlan database')
+        self.read_until('(config-vlan)#')
+        for vlan in vlan_list:
+            self.write('no vlan %d' % vlan.vid)
+            self.read_until('(config-vlan)#')
+        self.write('exit')
+        self.read_until('(config)#')
+        self.write('exit')
+        self.read_until(self.prompt)
+        return True
+
+    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
+        self.write('conf')
+        self.read_until('(config)#')
+        self.write('int gi1/0/%d' % port_num)
+        self.read_until('(config-if)#')
+        for v in vlan_list:
+            self.write('switchport trunk allowed vlan add %d' % v.vid)
+        self.write('exit')
+        self.read_until('(config)#')
+        self.write('exit')
+        self.read_until(self.prompt)
+        return True
+
+    def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
+        _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
+        return self.attach_vlans_to_port(_vlan_gen, port)
+
+    def detach_vlans_from_port(self, vlan_list: Vlans, port: int, rm_all: bool = False) -> bool:
+        self.write('conf')
+        self.read_until('(config)#')
+        self.write('int gi1/0/%d' % port)
+        self.read_until('(config-if)#')
+        if rm_all:
+            self.write('switchport trunk allowed vlan remove all')
+        else:
+            for v in vlan_list:
+                self.write('switchport trunk allowed vlan remove %d' % v.vid)
+        self.write('exit')
+        self.read_until('(config)#')
+        self.write('exit')
+        self.read_until(self.prompt)
+        return True
+
+    def detach_vlan_from_port(self, vid: int, port: int) -> bool:
+        _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
+        return self.detach_vlans_from_port(_vlan_gen, port)
+
+    def login(self, login: str, password: str, *args, **kwargs) -> bool:
+        r = super().login(
+            login_prompt=b'User Name:',
+            login=login,
+            password_prompt=b'Password:',
+            password=password
+        )
+        self._disable_prompt()
+        return r

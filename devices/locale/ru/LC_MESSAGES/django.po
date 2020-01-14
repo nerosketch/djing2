@@ -241,10 +241,6 @@ msgstr ""
 msgid "Ip address is required"
 msgstr "Ip адрес необходим"
 
-#: devices/views.py:150
-msgid "Parameter port_id is bad"
-msgstr "Параметр port_id плох"
-
 #: devices/views.py:159
 msgid "Parameter port_state is bad"
 msgstr "Параметр port_state плох"

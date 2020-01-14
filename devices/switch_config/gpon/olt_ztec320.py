@@ -2,6 +2,8 @@ from typing import Iterable
 
 from djing2.lib import RuTimedelta, safe_int
 from ..epon import BDCOM_P3310C
+from ..base import Vlans, Vlan
+from ..utils import macbin2str
 
 
 class ZTE_C320(BDCOM_P3310C):
@@ -52,7 +54,7 @@ class ZTE_C320(BDCOM_P3310C):
         loids = self.get_list('.1.3.6.1.4.1.3902.1012.3.13.3.1.8.%d' % fiber_num)
 
         return ({
-            'mac': ':'.join('%x' % ord(i) for i in sn[-6:]),
+            'mac': macbin2str(sn[-6:]),
             'firmware_ver': frm_ver,
             'loid_passw': loid_passw,
             'loid': loid,
@@ -61,7 +63,7 @@ class ZTE_C320(BDCOM_P3310C):
             firmware_ver, loid_passws, loids, sn_num_list
         ))
 
-    def uptime(self):
+    def get_uptime(self):
         up_timestamp = safe_int(self.get_item('.1.3.6.1.2.1.1.3.0'))
         tm = RuTimedelta(seconds=up_timestamp / 100)
         return str(tm)
@@ -71,3 +73,130 @@ class ZTE_C320(BDCOM_P3310C):
 
     def get_hostname(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
+
+    #############################
+    #      Telnet access
+    #############################
+
+    def login(self, login: str, password: str, *args, **kwargs) -> bool:
+        super().login(
+            login_prompt=b'Username:',
+            login=login,
+            password_prompt=b'Password:',
+            password=password
+        )
+        out = self.read_until(self.prompt)
+        return b'bad password' in out
+
+    def read_all_vlan_info(self) -> Vlans:
+        self.write('show vlan summary')
+        # FIXME: if telnet max line len is short and vid list breaks for next line
+        # then last vids will be lost
+        out = self.read_until(self.prompt)
+        vids = ()
+        for line in out.split(b'\n'):
+            if b'All created vlan num' in line:
+                continue
+            if b'Details are following' in line:
+                continue
+            vids = (int(v) for v in line.split(','))
+            break
+        for vid in vids:
+            self.write('show vlan %d' % vid)
+            out = self.read_until(self.prompt)
+            if b'This vlan does not exist' in out:
+                continue
+            for line in out.split(b'\n'):
+                if b'vlanid' in line:
+                    _, ln_vid = line.split(b':')
+                    assert bytes(vid) == ln_vid
+                if b'name' in line:
+                    _, vname = line.split(b':')
+                    yield Vlan(vid=vid, name=vname.decode())
+                    break
+
+    def enter_config(self) -> None:
+        self.write('conf t')
+        self.read_until('(config)#')
+
+    def create_vlans(self, vlan_list: Vlans) -> bool:
+        for v in vlan_list:
+            self.write('vlan %d' % v.vid)
+            self.read_until('(config-vlan)#')
+            self.write('name %s' % self._normalize_name(v.name))
+            self.read_until('(config-vlan)#')
+            self.write('exit')
+            self.read_until('(config)#')
+        return True
+
+    def delete_vlans(self, vlan_list: Vlans) -> bool:
+        for v in vlan_list:
+            self.write('no vlan %d' % v.vid)
+            self.read_until('(config)#')
+        return True
+
+    def attach_vlans_to_uplink(self, vids: Iterable[int], stack_num: int,
+                               rack_num: int, port_num: int) -> None:
+        self.write('int gei_%d/%d/%d' % (stack_num, rack_num, port_num))
+        self.read_until('(config-if)#')
+        for v in vids:
+            self.write('switchport vlan %d tag' % v)
+            self.read_until('(config-if)#')
+        self.write('exit')
+        self.read_until('(config)#')
+
+
+class OLT_ZTE_C320_ONU(object):
+    def __init__(self, bt: ZTE_C320, stack_num: int, rack_num: int, fiber_num: int, onu_num: int):
+        self.bt: ZTE_C320 = bt
+        self.stack_num = stack_num
+        self.rack_num = rack_num
+        self.fiber_num = fiber_num
+        self.onu_num = onu_num
+
+    def __enter__(self):
+        self.bt.write('int gpon-onu_%d/%d/%d:%d' % (
+            self.stack_num,
+            self.rack_num,
+            self.fiber_num,
+            self.onu_num
+        ))
+        self._read_until_if()
+
+    def _read_until_if(self) -> bytes:
+        return self.bt.read_until('(config-if)#')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.bt.write('exit')
+        self.bt.read_until('(config)#')
+
+
+class OLT_ZTE_C320_Fiber(object):
+    def __init__(self, bt: ZTE_C320, stack_num: int, rack_num: int, fiber_num):
+        self.bt: ZTE_C320 = bt
+        self.stack_num = stack_num
+        self.rack_num = rack_num
+        self.fiber_num = fiber_num
+
+    def __enter__(self):
+        self.bt.write('int gpon-olt_%d/%d/%d' % (
+            self.stack_num,
+            self.rack_num,
+            self.fiber_num
+        ))
+        self._read_until_if()
+
+    def _read_until_if(self) -> bytes:
+        return self.bt.read_until('(config-if)#')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.bt.write('exit')
+        self.bt.read_until('(config)#')
+
+    def remove_onu(self, onu_num: int) -> None:
+        self.bt.write('no onu %d' % onu_num)
+        self._read_until_if()
+
+    def custom_command(self, cmd: str, expect_after: str) -> None:
+        self.bt.write(cmd)
+        self.bt.read_until(expect_after)
