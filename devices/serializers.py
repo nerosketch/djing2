@@ -6,7 +6,7 @@ from groupapp.models import Group
 
 class DeviceModelSerializer(BaseCustomModelSerializer):
     dev_type_str = serializers.CharField(source='get_dev_type_display', read_only=True)
-    parent_dev_name = serializers.CharField(source='parent_dev.comment', allow_null=True, read_only=True)
+    parent_dev_name = serializers.CharField(source='parent_dev', allow_null=True, read_only=True)
     parent_dev_group = serializers.IntegerField(source='parent_dev.group.pk', allow_null=True, read_only=True)
     attached_users = serializers.ListField(
         source='customer_set.all', read_only=True,
