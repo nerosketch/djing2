@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from netaddr import EUI
 
 from djing2.lib import safe_int, RuTimedelta
-from ..base import BaseDeviceInterface, GeneratorOrTuple, BasePortInterface, Vlans, Vlan, MacItem, Macs
+from ..base import BaseDeviceInterface, BasePortInterface, Vlans, Vlan, MacItem, Macs
 from ..utils import plain_ip_device_mon_template
 
 from ..dlink import DlinkDGS1100_10ME
@@ -20,7 +20,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
     tech_code = 'eltex_sw'
     ports_len = 24
 
-    def get_ports(self) -> GeneratorOrTuple:
+    def get_ports(self) -> tuple:
         def build_port(s, i: int, n: int):
             speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % n)
             return EltexPort(

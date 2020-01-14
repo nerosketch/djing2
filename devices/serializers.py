@@ -35,30 +35,15 @@ class DeviceWithoutGroupModelSerializer(BaseCustomModelSerializer):
 
 
 class PortModelSerializer(BaseCustomModelSerializer):
-    class Meta:
-        model = Port
-        fields = ['pk', 'device', 'num', 'descr']
-
-
-class PortModelSerializerExtended(PortModelSerializer):
     user_count = serializers.IntegerField(read_only=True)
 
-    # additional = serializers.DictField(
-    #     source='scan_additional',
-    #     read_only=True
-    # )
-
-    class Meta(PortModelSerializer.Meta):
-        # fields = PortModelSerializer.Meta.fields + ['user_count', 'additional']
-        fields = PortModelSerializer.Meta.fields + ['user_count']
+    class Meta:
+        model = Port
+        fields = ('pk', 'device', 'num', 'descr', 'user_count')
 
 
 class DeviceGroupsModelSerializer(BaseCustomModelSerializer):
-    # TODO: optymize _set.count
-    device_count = serializers.IntegerField(
-        source='device_set.count',
-        read_only=True
-    )
+    device_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Group

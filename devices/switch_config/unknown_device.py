@@ -1,6 +1,5 @@
 from typing import Optional
 
-from devices.switch_config.base import GeneratorOrTuple
 from .base import BaseDeviceInterface
 
 
@@ -9,7 +8,7 @@ class UnknownDevice(BaseDeviceInterface):
     description = 'Unknown Device'
     is_use_device_port = False
 
-    def get_ports(self) -> GeneratorOrTuple:
+    def get_ports(self) -> tuple:
         return ()
 
     def get_device_name(self) -> str:
