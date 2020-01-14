@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
     'guardian',
-    'debug_toolbar',
     'groupapp',
     'profiles',
     'services',
@@ -69,9 +68,9 @@ INSTALLED_APPS = [
 
 if DEBUG:
     INSTALLED_APPS.insert(0, 'django.contrib.admin')
+    INSTALLED_APPS.append('debug_toolbar')
 
 MIDDLEWARE = [
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -81,6 +80,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if DEBUG:
+    MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'djing2.urls'
 
@@ -224,7 +226,7 @@ CELERY_TIMEZONE = TIME_ZONE
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'djing2.lib.paginator.QueryPageNumberPagination',
-    'PAGE_SIZE': 20,
+    'PAGE_SIZE': 180,
     'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'djing2.lib.authenticators.CustomTokenAuthentication'
