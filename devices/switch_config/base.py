@@ -57,6 +57,11 @@ class BaseSNMPWorker(Session):
             snmpnum = v.oid.split('.')[-1:]
             yield v.value, snmpnum[0] if len(snmpnum) > 0 else None
 
+    def get_list_with_oid(self, oid) -> Generator:
+        for v in self.walk(oid):
+            res_oid = v.oid.split('.')
+            yield v.value, res_oid
+
     def get_item(self, oid) -> str:
         v = self.get(oid).value
         if v != 'NOSUCHINSTANCE':
