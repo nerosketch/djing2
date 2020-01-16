@@ -285,6 +285,18 @@ class DeviceModelViewSet(DjingModelViewSet):
                 'text': str(e)
             })
 
+    @action(detail=True)
+    @catch_dev_manager_err
+    def scan_mac_address_vlan(self, request, pk=None):
+        dev = self.get_object()
+        vid = safe_int(request.query_params.get('vid'))
+        if vid == 0:
+            return Response('Valid vid required', status=status.HTTP_400_BAD_REQUEST)
+        macs = dev.dev_read_mac_address_vlan(
+            vid=vid
+        )
+        return Response([m._asdict() for m in macs])
+
 
 class DeviceWithoutGroupListAPIView(DjingListAPIView):
     queryset = Device.objects.filter(group=None)
@@ -322,6 +334,18 @@ class PortModelViewSet(DjingModelViewSet):
         if customers.count() > 1:
             return Response([c for c in customers])
         return Response(self.serializer_class(instance=customers.first()))
+
+    # @action(detail=True)
+    # @catch_dev_manager_err
+    # def scan_mac_address_port(self, request, pk=None):
+    #     port = self.get_object()
+    #     dev = port.device
+    #     if dev is None:
+    #         return Response(status=status.HTTP_404_NOT_FOUND)
+    #     macs = dev.dev_switch_get_mac_address_port(
+    #         device_port_num=port.num
+    #     )
+    #     return Response([m._asdict() for m in macs])
 
 
 class PortVlanMemberModelViewSet(DjingModelViewSet):
