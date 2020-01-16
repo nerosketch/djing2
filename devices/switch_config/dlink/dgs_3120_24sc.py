@@ -20,7 +20,7 @@ class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
     tech_code = 'dlink_sw'
     description = _('DLink switch')
     is_use_device_port = True
-    ports_len = 10
+    ports_len = 24
 
     def __init__(self, dev_instance, *args, **kwargs):
         if not dev_instance.ip_address:
