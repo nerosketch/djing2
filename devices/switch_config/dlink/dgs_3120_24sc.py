@@ -80,20 +80,16 @@ class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
             yield Vlan(vid=vid, name=name)
 
     def read_mac_address_port(self, port_num: int) -> Macs:
-        self.write('show fdb port 1:%d' % port_num)
-        out = self.read_until(self.prompt)
-        for line in out.split(b'\n'):
-            chunks = line.split()
-            if len(chunks) != 6:
+        if port_num > self.ports_len or port_num < 1:
+            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+        fdb = self.get_list_with_oid('.1.3.6.1.2.1.17.7.1.2.2.1.2')
+        for fdb_port, oid in fdb:
+            if port_num != int(fdb_port):
                 continue
-            try:
-                vid = int(chunks[0])
-                vname = chunks[1]
-                mac = EUI(chunks[2].decode())
-                stack_num, port = chunks[3].split(b':')
-                yield MacItem(vid=vid, name=vname.decode(), mac=mac, port=safe_int(port))
-            except (ValueError, IndexError):
-                pass
+            vid = safe_int(oid[-7:-6][0])
+            fdb_mac = str(EUI(':'.join('%.2x' % int(i) for i in oid[-6:])))
+            vid_name = self._get_vid_name(vid)
+            yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
 
     def read_mac_address_vlan(self, vid: int) -> Macs:
         vid = safe_int(vid)
