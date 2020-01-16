@@ -44,24 +44,40 @@ class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
         self.read_until(self.prompt)
 
     def read_port_vlan_info(self, port: int) -> Vlans:
-        self.write('show vlan ports 1:%d' % port)
-        out = self.read_until(self.prompt)
-        for line in out.split(b'\n'):
-            chunks = line.split()
-            if len(chunks) > 2:
-                port, vid = chunks[:2]
-                yield Vlan(safe_int(vid), '')
+        if port > self.ports_len or port < 1:
+            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+        vids = self.get_list_keyval('.1.3.6.1.4.1.171.10.134.1.1.10.3.4.1.1')
+        for vid, vid2 in vids:
+            vid = safe_int(vid)
+            if vid in (0, 1):
+                continue
+            member_ports = self.get_item_port_member('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vid)
+            if not self._get_bit(member_ports, port):
+                # if port num is not <port>
+                continue
+            name = self._get_vid_name(vid)
+            yield Vlan(vid=vid, name=name)
+
+    @staticmethod
+    def _get_bit(num: int, pos: int) -> bool:
+        pos = 32 - pos
+        return bool((num & (1 << pos)) >> pos)
+
+    def _get_vid_name(self, vid: int) -> str:
+        return self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % vid)
+
+    def get_item_port_member(self, oid: str) -> int:
+        r = self.get_item(oid)[:4]
+        return int.from_bytes(r, "big")
 
     def read_all_vlan_info(self) -> Vlans:
-        self.write('show vlan')
-        out = self.read_until(self.prompt)
-        for line in out.split(b'\n'):
-            if b'VID' in line:
-                chunks = line.split()
-                if len(chunks) == 7:
-                    vid = safe_int(chunks[2])
-                    vname = chunks[6].decode()
-                    yield Vlan(vid, vname)
+        vids = self.get_list_keyval('.1.3.6.1.4.1.171.10.134.1.1.10.3.4.1.1')
+        for vid, vid2 in vids:
+            vid = safe_int(vid)
+            if vid in (0, 1):
+                continue
+            name = self._get_vid_name(vid)
+            yield Vlan(vid=vid, name=name)
 
     def read_mac_address_port(self, port_num: int) -> Macs:
         self.write('show fdb port 1:%d' % port_num)
@@ -80,23 +96,14 @@ class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
                 pass
 
     def read_mac_address_vlan(self, vid: int) -> Macs:
-        self.write('show fdb vlanid %d' % vid)
-        out = self.read_until(self.prompt)
-        for line in out.split(b'\n'):
-            chunks = line.split()
-            if len(chunks) != 6:
-                continue
-            try:
-                vlan_id = int(chunks[0])
-                assert vid == vlan_id, 'Catch vid(%d) that is not equal to passed vid(%d)' % (
-                    vlan_id, vid
-                )
-                vname = chunks[1].decode()
-                mac = EUI(chunks[2].decode())
-                stack, port = chunks[3].split(b':')
-                yield MacItem(vid=vlan_id, name=vname, mac=mac, port=safe_int(port))
-            except (ValueError, IndexError):
-                pass
+        vid = safe_int(vid)
+        if vid > 4095 or vid < 1:
+            raise ValueError('VID must be in range 1-%d' % 4095)
+        fdb = self.get_list_with_oid('.1.3.6.1.2.1.17.7.1.2.2.1.2.%d' % vid)
+        vid_name = self._get_vid_name(vid)
+        for port_num, oid in fdb:
+            fdb_mac = str(EUI(':'.join('%.2x' % int(i) for i in oid[-6:])))
+            yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
 
     def create_vlans(self, vlan_list: Vlans) -> bool:
         for v in vlan_list:
