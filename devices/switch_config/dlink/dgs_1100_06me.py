@@ -23,24 +23,6 @@ class DlinkDGS_1100_06ME_Telnet(DlinkDGS_3120_24SC_Telnet):
                              password=password
                              )
 
-    def read_mac_address_port(self, port_num: int) -> Macs:
-        if port_num > self.ports_len or port_num < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
-        self.write('show fdb port %d' % port_num)
-        out = self.read_until(self.prompt)
-        for line in out.split(b'\n'):
-            chunks = line.split()
-            if len(chunks) != 5:
-                continue
-            try:
-                vid = int(chunks[0])
-                vname = chunks[1]
-                mac = EUI(chunks[2].decode())
-                port = chunks[3].decode()
-                yield MacItem(vid=vid, name=vname.decode(), mac=mac, port=safe_int(port))
-            except (ValueError, IndexError):
-                pass
-
     def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
         if port > self.ports_len or port < 1:
             raise ValueError('Port must be in range 1-%d' % self.ports_len)
