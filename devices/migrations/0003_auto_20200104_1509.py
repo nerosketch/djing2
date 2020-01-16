@@ -21,6 +21,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='device',
             name='vlans',
-            field=models.ManyToManyField(to='networks.VlanIf', verbose_name='Available vlans'),
+            field=models.ManyToManyField(to='networks.VlanIf', verbose_name='Available vlans', blank=True),
         )
     ]

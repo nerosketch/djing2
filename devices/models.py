@@ -79,7 +79,7 @@ class Device(models.Model):
         help_text=_('Extra data in JSON format. You may use it for your custom data'),
         blank=True, null=True
     )
-    vlans = models.ManyToManyField(VlanIf, verbose_name=_('Available vlans'))
+    vlans = models.ManyToManyField(VlanIf, verbose_name=_('Available vlans'), blank=True)
 
     NETWORK_STATES = (
         (0, _('Undefined')),
