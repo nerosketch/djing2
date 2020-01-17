@@ -74,9 +74,9 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 vname = chunks[1].decode()
                 yield Vlan(vid=vid, name=vname)
 
-    def _disable_prompt(self):
-        self.write('terminal datadump')
-        self.read_until(self.prompt)
+    # def _disable_prompt(self):
+    #     self.write('terminal datadump')
+    #     self.read_until(self.prompt)
 
     @staticmethod
     def _port_parse(port_descr: str) -> int:
@@ -199,12 +199,12 @@ class EltexSwitch(DlinkDGS1100_10ME):
         _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
         return self.detach_vlans_from_port(_vlan_gen, port)
 
-    def login(self, login: str, password: str, *args, **kwargs) -> bool:
-        r = super().login(
-            login_prompt=b'User Name:',
-            login=login,
-            password_prompt=b'Password:',
-            password=password
-        )
-        self._disable_prompt()
-        return r
+    # def login(self, login: str, password: str, *args, **kwargs) -> bool:
+    #     r = super().login(
+    #         login_prompt=b'User Name:',
+    #         login=login,
+    #         password_prompt=b'Password:',
+    #         password=password
+    #     )
+    #     self._disable_prompt()
+    #     return r

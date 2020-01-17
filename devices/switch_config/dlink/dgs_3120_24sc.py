@@ -39,9 +39,9 @@ class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
             password=password
         )
 
-    def _disable_prompt(self) -> None:
-        self.write('disable clipaging')
-        self.read_until(self.prompt)
+    # def _disable_prompt(self) -> None:
+    #     self.write('disable clipaging')
+    #     self.read_until(self.prompt)
 
     def read_port_vlan_info(self, port: int) -> Vlans:
         self.write('show vlan ports 1:%d' % port)
