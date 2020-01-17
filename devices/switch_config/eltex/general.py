@@ -18,7 +18,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
     is_use_device_port = False
     has_attachable_to_customer = True
     tech_code = 'eltex_sw'
-    ports_len = 24
+    ports_len = 26
 
     def get_ports(self) -> tuple:
         def build_port(s, i: int, n: int):
@@ -78,12 +78,12 @@ class EltexSwitch(DlinkDGS1100_10ME):
     #     self.write('terminal datadump')
     #     self.read_until(self.prompt)
 
-    @staticmethod
-    def _port_parse(port_descr: str) -> int:
-        if '/' in port_descr:
-            gi, zero, port_num = port_descr.split('/')
-            return safe_int(port_num)
-        raise RuntimeError('port not match to "giN/N/N" where N is digit')
+    # @staticmethod
+    # def _port_parse(port_descr: str) -> int:
+    #     if '/' in port_descr:
+    #         gi, zero, port_num = port_descr.split('/')
+    #         return safe_int(port_num)
+    #     raise RuntimeError('port not match to "giN/N/N" where N is digit')
 
     def read_all_vlan_info(self) -> Vlans:
         self.write('show vlan')
@@ -105,31 +105,31 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 pass
 
     def read_mac_address_port(self, port_num: int) -> Macs:
-        self.write('show mac addr int gi1/0/%d' % port_num)
-        out = self.read_until(self.prompt)
-        for line in out.split(b'\n'):
-            chunks = line.split()
-            if len(chunks) != 4:
+        if port_num > self.ports_len or port_num < 1:
+            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+        try:
+            ports_map = {int(i): n+1 for n, i in enumerate(self.get_list('.1.3.6.1.2.1.2.2.1.1')) if int(i) > 0}
+        except ValueError:
+            return
+        for fdb_port, oid in self.get_list_with_oid('.1.3.6.1.2.1.17.7.1.2.2.1.2'):
+            real_fdb_port_num = ports_map.get(int(fdb_port))
+            if port_num != real_fdb_port_num:
                 continue
-            vid = safe_int(chunks[0])
-            if vid == 0:
-                continue
-            mac = EUI(chunks[1].decode())
-            yield MacItem(vid=vid, name=None, mac=mac, port=port_num)
+            vid = safe_int(oid[-7:-6][0])
+            fdb_mac = str(EUI(':'.join('%.2x' % int(i) for i in oid[-6:])))
+            vid_name = self._get_vid_name(vid)
+            yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
     def read_mac_address_vlan(self, vid: int) -> Macs:
-        self.write('show mac addr vlan %d' % vid)
-        out = self.read_until(self.prompt)
-        for line in out.split(b'\n'):
-            chunks = line.split()
-            if len(chunks) != 4:
-                continue
-            vid = safe_int(chunks[0])
-            if vid == 0:
-                continue
-            mac = EUI(chunks[1].decode())
-            port = self._port_parse(chunks[2].decode())
-            yield MacItem(vid=vid, name=None, mac=mac, port=port)
+        try:
+            ports_map = {int(i): n+1 for n, i in enumerate(self.get_list('.1.3.6.1.2.1.2.2.1.1')) if int(i) > 0}
+        except ValueError:
+            return
+        for fdb_port, oid in self.get_list_with_oid('.1.3.6.1.2.1.17.7.1.2.2.1.2.%d' % vid):
+            real_fdb_port_num = ports_map.get(int(fdb_port))
+            fdb_mac = str(EUI(':'.join('%.2x' % int(i) for i in oid[-6:])))
+            vid_name = self._get_vid_name(vid)
+            yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
     def create_vlans(self, vlan_list: Vlans) -> bool:
         self.write('conf')
