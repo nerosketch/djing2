@@ -125,9 +125,9 @@ class BDCOM_P3310C(BasePONInterface):
         self.read_until(orig_prompt)
         return r
 
-    def _disable_prompt(self) -> None:
-        self.write('terminal length 0')
-        self.read_until(self.prompt)
+    # def _disable_prompt(self) -> None:
+    #     self.write('terminal length 0')
+    #     self.read_until(self.prompt)
 
     def read_port_vlan_info(self, port: int) -> Vlans:
         self.write('show vlan int EPON0/%d' % port)
