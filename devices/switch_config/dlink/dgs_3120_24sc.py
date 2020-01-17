@@ -31,13 +31,13 @@ class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
             snmp_community=str(dev_instance.man_passw)
         )
 
-    def login(self, login: str, password: str, *args, **kwargs) -> bool:
-        return super().login(
-            login_prompt=b'UserName:',
-            login=login,
-            password_prompt=b'PassWord:',
-            password=password
-        )
+    # def login(self, login: str, password: str, *args, **kwargs) -> bool:
+    #     return super().login(
+    #         login_prompt=b'UserName:',
+    #         login=login,
+    #         password_prompt=b'PassWord:',
+    #         password=password
+    #     )
 
     # def _disable_prompt(self) -> None:
     #     self.write('disable clipaging')
@@ -62,9 +62,6 @@ class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
     def _get_bit(num: int, pos: int) -> bool:
         pos = 32 - pos
         return bool((num & (1 << pos)) >> pos)
-
-    def _get_vid_name(self, vid: int) -> str:
-        return self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % vid)
 
     def get_item_port_member(self, oid: str) -> int:
         r = self.get_item(oid)[:4]

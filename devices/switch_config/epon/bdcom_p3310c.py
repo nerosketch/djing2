@@ -111,19 +111,19 @@ class BDCOM_P3310C(BasePONInterface):
     #      Telnet access
     #############################
 
-    def login(self, login: str, password: str, *args, **kwargs) -> bool:
-        orig_prompt = self.prompt
-        self.prompt = b'>'
-        r = super().login(
-            login_prompt=b'Username:',
-            login=login,
-            password_prompt=b'Password:',
-            password=password
-        )
-        self.prompt = orig_prompt
-        self.write('enable')
-        self.read_until(orig_prompt)
-        return r
+    # def login(self, login: str, password: str, *args, **kwargs) -> bool:
+    #     orig_prompt = self.prompt
+    #     self.prompt = b'>'
+    #     r = super().login(
+    #         login_prompt=b'Username:',
+    #         login=login,
+    #         password_prompt=b'Password:',
+    #         password=password
+    #     )
+    #     self.prompt = orig_prompt
+    #     self.write('enable')
+    #     self.read_until(orig_prompt)
+    #     return r
 
     # def _disable_prompt(self) -> None:
     #     self.write('terminal length 0')

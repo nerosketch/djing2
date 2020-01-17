@@ -77,13 +77,13 @@ class BaseTelnetWorker(Telnet):
         else:
             self.endl = str(endl).encode()
 
-    def login(self, login_prompt: bytes, login: str, password_prompt: bytes, password: str) -> bool:
-        self.read_until(login_prompt)
-        self.write(login)
-        self.read_until(password_prompt)
-        self.write(password)
-        self.read_until(self.prompt)
-        return True
+    # def login(self, login_prompt: bytes, login: str, password_prompt: bytes, password: str) -> bool:
+    #     self.read_until(login_prompt)
+    #     self.write(login)
+    #     self.read_until(password_prompt)
+    #     self.write(password)
+    #     self.read_until(self.prompt)
+    #     return True
 
     def write(self, buffer: AnyStr) -> None:
         if isinstance(buffer, bytes):
@@ -269,6 +269,9 @@ class BaseSwitchInterface(BaseDeviceInterface):
         :return:
         """
         raise NotImplementedError
+
+    def _get_vid_name(self, vid: int) -> str:
+        return self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % vid)
 
     @abstractmethod
     def detach_vlan_from_port(self, vid: int, port: int) -> bool:

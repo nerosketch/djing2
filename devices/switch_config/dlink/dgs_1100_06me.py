@@ -1,7 +1,7 @@
-from netaddr import EUI
+# from netaddr import EUI
 
-from djing2.lib import safe_int
-from ..base import Macs, MacItem
+# from djing2.lib import safe_int
+# from ..base import Macs, MacItem
 from .dgs_3120_24sc import DlinkDGS_3120_24SC_Telnet
 
 
@@ -15,13 +15,13 @@ class DlinkDGS_1100_06ME_Telnet(DlinkDGS_3120_24SC_Telnet):
             *args, **kwargs
         )
 
-    def login(self, login: str, password: str, *args, **kwargs) -> bool:
-        return super().login(
-                             login_prompt=b'UserName:',
-                             login=login,
-                             password_prompt=b'Password:',
-                             password=password
-                             )
+    # def login(self, login: str, password: str, *args, **kwargs) -> bool:
+    #     return super().login(
+    #                          login_prompt=b'UserName:',
+    #                          login=login,
+    #                          password_prompt=b'Password:',
+    #                          password=password
+    #                          )
 
     def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
         if port > self.ports_len or port < 1:
