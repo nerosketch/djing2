@@ -2,7 +2,7 @@ import os
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from .dgs_1100_06me import DlinkDGS_1100_06ME_Telnet
-from ..base import BaseDeviceInterface, DeviceConfigurationError
+from ..base import DeviceConfigurationError
 
 
 def _ex_expect(filename, params=()):
@@ -52,10 +52,10 @@ class DlinkDGS1100_10ME(DlinkDGS_1100_06ME_Telnet):
                 1 if save_before_reboot else 0
             )), None
 
-    def login(self, login: str, password: str, *args, **kwargs) -> bool:
-        return BaseDeviceInterface.login(self,
-                                         login_prompt=b'login: ',
-                                         login=login,
-                                         password_prompt=b'Password:',
-                                         password=password
-                                         )
+    # def login(self, login: str, password: str, *args, **kwargs) -> bool:
+    #     return BaseDeviceInterface.login(self,
+    #                                      login_prompt=b'login: ',
+    #                                      login=login,
+    #                                      password_prompt=b'Password:',
+    #                                      password=password
+    #                                      )
