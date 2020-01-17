@@ -116,7 +116,9 @@ class Device(models.Model):
         man_klass = self.get_manager_klass()
         if self._cached_manager is None:
             self._cached_manager = man_klass(
-                dev_instance=self
+                dev_instance=self,
+                host=str(self.ip_address),
+                snmp_community=str(self.man_passw)
             )
         return self._cached_manager
 
@@ -205,22 +207,18 @@ class Device(models.Model):
         return tln.read_all_vlan_info()
 
     @_telnet_methods_wrapper
-    def telnet_get_mac_address_vlan(self, tln: BaseDeviceInterface, vlan_id: int) -> Macs:
-        return tln.read_mac_address_vlan(vid=vlan_id)
-
-    @_telnet_methods_wrapper
-    def telnet_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
+    def dev_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
         if not tln.create_vlans(vids):
             raise DeviceConsoleError(_('Failed while create vlans'))
 
     @_telnet_methods_wrapper
-    def telnet_delete_vlan(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
+    def dev_delete_vlan(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
         if not tln.delete_vlans(vlan_list=vids):
             raise DeviceConsoleError(_('Failed while removing vlan'))
 
-    @_telnet_methods_wrapper
-    def telnet_read_mac_address_vlan(self, tln: BaseDeviceInterface, vid: int) -> Macs:
-        return tln.read_mac_address_vlan(vid=vid)
+    def dev_read_mac_address_vlan(self, vid: int) -> Macs:
+        mng = self.get_manager_object_switch()
+        return mng.read_mac_address_vlan(vid=vid)
 
     ##############################
     # Switch telnet methods
@@ -235,9 +233,9 @@ class Device(models.Model):
     def telnet_switch_detach_vlan_from_port(self, tln: BaseSwitchInterface, vid: int, port: int) -> bool:
         return tln.detach_vlan_from_port(vid=vid, port=port)
 
-    @_telnet_methods_wrapper
-    def telnet_switch_get_mac_address_port(self, tln: BaseSwitchInterface, device_port_num: int) -> Macs:
-        return tln.read_mac_address_port(port_num=device_port_num)
+    def dev_switch_get_mac_address_port(self, device_port_num: int) -> Macs:
+        mng = self.get_manager_object_switch()
+        return mng.read_mac_address_port(port_num=device_port_num)
 
     @_telnet_methods_wrapper
     def telnet_get_port_vlan_list(self, tln: BaseSwitchInterface, device_port_num: int) -> Vlans:
