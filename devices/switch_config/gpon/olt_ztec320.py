@@ -78,15 +78,15 @@ class ZTE_C320(BDCOM_P3310C):
     #      Telnet access
     #############################
 
-    def login(self, login: str, password: str, *args, **kwargs) -> bool:
-        super().login(
-            login_prompt=b'Username:',
-            login=login,
-            password_prompt=b'Password:',
-            password=password
-        )
-        out = self.read_until(self.prompt)
-        return b'bad password' in out
+    # def login(self, login: str, password: str, *args, **kwargs) -> bool:
+    #     super().login(
+    #         login_prompt=b'Username:',
+    #         login=login,
+    #         password_prompt=b'Password:',
+    #         password=password
+    #     )
+    #     out = self.read_until(self.prompt)
+    #     return b'bad password' in out
 
     def read_all_vlan_info(self) -> Vlans:
         self.write('show vlan summary')
