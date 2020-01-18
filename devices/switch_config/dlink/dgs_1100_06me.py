@@ -23,24 +23,24 @@ class DlinkDGS_1100_06ME_Telnet(DlinkDGS_3120_24SC_Telnet):
     #                          password=password
     #                          )
 
-    def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
-        if port > self.ports_len or port < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
-        tag_mark = 'tagged' if tag else 'untagged'
-        self.write('config vlan vlanid %(vid)d add %(tag_mark)s %(port)d' % {
-            'vid': vid,
-            'port': port,
-            'tag_mark': tag_mark
-        })
-        out = self.read_until(self.prompt)
-        return b'Success' in out
+    # def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
+    #     if port > self.ports_len or port < 1:
+    #         raise ValueError('Port must be in range 1-%d' % self.ports_len)
+    #     tag_mark = 'tagged' if tag else 'untagged'
+    #     self.write('config vlan vlanid %(vid)d add %(tag_mark)s %(port)d' % {
+    #         'vid': vid,
+    #         'port': port,
+    #         'tag_mark': tag_mark
+    #     })
+    #     out = self.read_until(self.prompt)
+    #     return b'Success' in out
 
-    def detach_vlan_from_port(self, vid: int, port: int) -> bool:
-        if port > self.ports_len or port < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
-        self.write('config vlan vlanid %(vid)d delete %(port)d' % {
-            'vid': vid,
-            'port': port
-        })
-        out = self.read_until(self.prompt)
-        return b'Success' in out
+    # def detach_vlan_from_port(self, vid: int, port: int) -> bool:
+    #     if port > self.ports_len or port < 1:
+    #         raise ValueError('Port must be in range 1-%d' % self.ports_len)
+    #     self.write('config vlan vlanid %(vid)d delete %(port)d' % {
+    #         'vid': vid,
+    #         'port': port
+    #     })
+    #     out = self.read_until(self.prompt)
+    #     return b'Success' in out
