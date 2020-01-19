@@ -1,11 +1,12 @@
-from typing import Optional
-from django.utils.translation import gettext_lazy as _
+import math
+from typing import Optional, AnyStr, List
+
 from netaddr import EUI
+from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import safe_int, RuTimedelta
-from ..base import BaseDeviceInterface, BasePortInterface, Vlans, Vlan, MacItem, Macs
+from ..base import BasePortInterface, Vlans, Vlan, MacItem, Macs
 from ..utils import plain_ip_device_mon_template
-
 from ..dlink import DlinkDGS1100_10ME
 
 
@@ -33,7 +34,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 speed=int(speed or 0)
             )
 
-        return tuple(build_port(self, i, n) for i, n in enumerate(range(49, 77), 1))
+        return tuple(build_port(self, i, n) for i, n in enumerate(range(49, self.ports_len+50), 1))
 
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
@@ -47,8 +48,25 @@ class EltexSwitch(DlinkDGS1100_10ME):
         device = self.dev_instance
         return plain_ip_device_mon_template(device)
 
-    def reboot(self, save_before_reboot=False):
-        return BaseDeviceInterface.reboot(self, save_before_reboot)
+    def save_config(self) -> bool:
+        return self.set_multiple([
+            ('1.3.6.1.4.1.89.87.2.1.3.1', 1, 'i'),
+            ('1.3.6.1.4.1.89.87.2.1.7.1', 2, 'i'),
+            ('1.3.6.1.4.1.89.87.2.1.8.1', 1, 'i'),
+            ('1.3.6.1.4.1.89.87.2.1.12.1', 3, 'i'),
+            ('1.3.6.1.4.1.89.87.2.1.17.1', 4, 'i')
+        ])
+
+    def reboot(self, save_before_reboot=False) -> bool:
+        if save_before_reboot:
+            if not self.save_config():
+                return False
+            if not self.set('1.3.6.1.4.1.89.1.10.0', 8, snmp_type='t'):
+                return False
+        else:
+            if not self.set('1.3.6.1.4.1.89.1.10.0', 0, snmp_type='t'):
+                return False
+        return True
 
     def port_disable(self, port_num: int):
         self.set_int_value(
@@ -86,23 +104,17 @@ class EltexSwitch(DlinkDGS1100_10ME):
     #     raise RuntimeError('port not match to "giN/N/N" where N is digit')
 
     def read_all_vlan_info(self) -> Vlans:
-        self.write('show vlan')
-        out = self.read_until(self.prompt)
-        for line in out.split(b'\n'):
-            chunks = line.split()
-            chlen = len(chunks)
-            try:
-                if chlen == 6:
-                    vid = int(chunks[0])
-                    vname = chunks[1].decode()
-                    yield Vlan(vid=vid, name=vname)
-                    # ports_descr = chunks[2].decode()
-                    # if ',' in ports_descr:
-                    #     for pd in ports_descr.split(','):
-                    #         port_num = self._port_parse(pd)
-                    #         vids.append(Vlan(vid=vid, name=vname))
-            except (ValueError, IndexError):
-                pass
+        snmp_vid = 100000
+        while True:
+            res = self.get_next('.1.3.6.1.2.1.2.2.1.1.%d' % snmp_vid)
+            if res.snmp_type != 'INTEGER':
+                break
+            vid = snmp_vid = safe_int(res.value)
+            if vid < 100000 or vid > 104095:
+                break
+            vid = (vid - 100000) + 1
+            name = self._get_vid_name(vid=vid)
+            yield Vlan(vid=vid, name=name)
 
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
@@ -162,18 +174,56 @@ class EltexSwitch(DlinkDGS1100_10ME):
         self.read_until(self.prompt)
         return True
 
+    # @staticmethod
+    # def make_single_map_vlan(vid: int) -> str:
+    #     if vid > 4095 or vid < 1:
+    #         raise ValueError('VID must be in range 1-%d' % 4095)
+    #     field_no = int(math.ceil(vid / 4))
+    #     b = [0, 0, 0, 0]
+    #     b[(field_no * 4) - vid - 1] = 1
+    #     i = int(''.join(str(k) for k in b), base=2)
+    #     bit_map = '0' * (field_no - 1)
+    #     bit_map += str(i)
+    #     return bit_map
+
+    @staticmethod
+    def _make_eltex_map_vlan(vid: int) -> str:
+        """
+        https://eltexsl.ru/wp-content/uploads/2016/05/monitoring-i-upravlenie-ethernet-kommutatorami-mes-po-snmp.pdf
+        :param vid:
+        :return: str bit map vlan representation by Eltex version
+        >>> EltexSwitch._make_eltex_map_vlan(3100)
+        '0000001'
+        >>> EltexSwitch._make_eltex_map_vlan(622)
+        '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004'
+        """
+        if vid > 4095 or vid < 1:
+            raise ValueError('VID must be in range 1-%d' % 4095)
+        table_no = int(math.floor(vid / 1024))
+        field_no = int(math.ceil(vid / 4)) - 1
+        field_no = (field_no - 256 * table_no)
+        b = [0, 0, 0, 0]
+        if table_no > 0:
+            field_index = int(vid / (256 * table_no)) - 1
+        else:
+            field_index = (field_no * 4) - vid - 1
+        b[field_index] = 1
+        i = int(''.join(str(k) for k in b), base=2)
+        bit_map = '0' * field_no
+        bit_map += str(i)
+        return bit_map
+
     def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
-        self.write('conf')
-        self.read_until('(config)#')
-        self.write('int gi1/0/%d' % port_num)
-        self.read_until('(config-if)#')
+        oids = []
+        port_num = port_num + 49
         for v in vlan_list:
-            self.write('switchport trunk allowed vlan add %d' % v.vid)
-        self.write('exit')
-        self.read_until('(config)#')
-        self.write('exit')
-        self.read_until(self.prompt)
-        return True
+            bit_map = self._make_eltex_map_vlan(vid=v.vid)
+            oids.append((
+                '1.3.6.1.4.1.89.48.68.1.1.%d' % port_num,
+                bit_map.zfill(10),
+                'x'
+            ))
+        return self.set_multiple(oids)
 
     def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
         _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
