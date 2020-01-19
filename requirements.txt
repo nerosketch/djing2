@@ -1,5 +1,5 @@
 wheel
-Django==2.2.8
+Django>=2.2.9
 djangorestframework==3.10.3
 Pillow==6.2.0
 
