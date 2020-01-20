@@ -81,27 +81,21 @@ class EltexSwitch(DlinkDGS1100_10ME):
         )
 
     def read_port_vlan_info(self, port: int) -> Vlans:
-        self.write('show int switc gi1/0/%d' % port)
-        out = self.read_until(self.prompt)
-        for line in out.split(b'\n'):
-            chunks = line.split()
-            if len(chunks) != 4:
-                continue
-            vid = safe_int(chunks[0])
-            if vid > 0:
-                vname = chunks[1].decode()
-                yield Vlan(vid=vid, name=vname)
-
-    # def _disable_prompt(self):
-    #     self.write('terminal datadump')
-    #     self.read_until(self.prompt)
-
-    # @staticmethod
-    # def _port_parse(port_descr: str) -> int:
-    #     if '/' in port_descr:
-    #         gi, zero, port_num = port_descr.split('/')
-    #         return safe_int(port_num)
-    #     raise RuntimeError('port not match to "giN/N/N" where N is digit')
+        if port > self.ports_len or port < 1:
+            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+        port = port + 48
+        r = self.get_item('1.3.6.1.4.1.89.48.68.1.1.%d' % port)
+        if r:
+            yield (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=0))
+        r = self.get_item('1.3.6.1.4.1.89.48.68.1.2.%d' % port)
+        if r:
+            yield (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=1))
+        r = self.get_item('1.3.6.1.4.1.89.48.68.1.3.%d' % port)
+        if r:
+            yield (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=2))
+        r = self.get_item('1.3.6.1.4.1.89.48.68.1.4.%d' % port)
+        if r:
+            yield (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=3))
 
     def read_all_vlan_info(self) -> Vlans:
         snmp_vid = 100000
@@ -144,47 +138,23 @@ class EltexSwitch(DlinkDGS1100_10ME):
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
     def create_vlans(self, vlan_list: Vlans) -> bool:
-        self.write('conf')
-        self.read_until('(config)#')
-        self.write('vlan database')
-        self.read_until('(config-vlan)#')
         for vlan in vlan_list:
-            self.write('vlan %(vid)d name %(name)s' % {
-                'vid': vlan.vid,
-                'name': self._normalize_name(vlan.name)
-            })
-            self.read_until('(config-vlan)#')
-        self.write('exit')
-        self.read_until('(config)#')
-        self.write('exit')
-        self.read_until(self.prompt)
+            oids = (
+                ('1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % vlan.vid, vlan.name, 's'),
+                ('1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vlan.vid, 0, 'x'),
+                ('1.3.6.1.2.1.17.7.1.4.3.1.3.%d' % vlan.vid, 0, 'x'),
+                ('1.3.6.1.2.1.17.7.1.4.3.1.4.%d' % vlan.vid, 0, 'x'),
+                ('1.3.6.1.2.1.17.7.1.4.3.1.5.%d' % vlan.vid, 4, 'i')
+            )
+            if not self.set_multiple(oid_values=oids):
+                return False
         return True
 
     def delete_vlans(self, vlan_list: Vlans) -> bool:
-        self.write('conf')
-        self.read_until('(config)#')
-        self.write('vlan database')
-        self.read_until('(config-vlan)#')
         for vlan in vlan_list:
-            self.write('no vlan %d' % vlan.vid)
-            self.read_until('(config-vlan)#')
-        self.write('exit')
-        self.read_until('(config)#')
-        self.write('exit')
-        self.read_until(self.prompt)
+            if not self.set_int_value('1.3.6.1.2.1.17.7.1.4.3.1.5.%d' % vlan.vid, 6):
+                return False
         return True
-
-    # @staticmethod
-    # def make_single_map_vlan(vid: int) -> str:
-    #     if vid > 4095 or vid < 1:
-    #         raise ValueError('VID must be in range 1-%d' % 4095)
-    #     field_no = int(math.ceil(vid / 4))
-    #     b = [0, 0, 0, 0]
-    #     b[(field_no * 4) - vid - 1] = 1
-    #     i = int(''.join(str(k) for k in b), base=2)
-    #     bit_map = '0' * (field_no - 1)
-    #     bit_map += str(i)
-    #     return bit_map
 
     @staticmethod
     def make_eltex_map_vlan(vids: Iterable[int]) -> Dict[int, bytes]:
@@ -238,48 +208,30 @@ class EltexSwitch(DlinkDGS1100_10ME):
         r = (bin_num == '1' for octet_num in bitmap for bin_num in f'{ord(octet_num):08b}')
         return ((numer + 1) + (table * 1024) for numer, bit in enumerate(r) if bit)
 
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
+    def _set_vlans_on_port(self, vlan_list: Vlans, port_num: int):
+        if port_num > self.ports_len or port_num < 1:
+            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+        port_num = port_num + 48
+        bit_maps = self.make_eltex_map_vlan(vlan_list)
         oids = []
-        port_num = port_num + 49
-        for v in vlan_list:
-            bit_map = self.make_eltex_map_vlan(vid=v.vid)
+        for tbl_num, bitmap in bit_maps.items():
             oids.append((
-                '1.3.6.1.4.1.89.48.68.1.1.%d' % port_num,
-                bit_map.zfill(10),
+                '1.3.6.1.4.1.89.48.68.1.%d.%d' % (tbl_num, port_num),
+                bitmap,
                 'x'
             ))
         return self.set_multiple(oids)
+
+    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
+        return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port_num)
 
     def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
         _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
         return self.attach_vlans_to_port(_vlan_gen, port)
 
-    def detach_vlans_from_port(self, vlan_list: Vlans, port: int, rm_all: bool = False) -> bool:
-        self.write('conf')
-        self.read_until('(config)#')
-        self.write('int gi1/0/%d' % port)
-        self.read_until('(config-if)#')
-        if rm_all:
-            self.write('switchport trunk allowed vlan remove all')
-        else:
-            for v in vlan_list:
-                self.write('switchport trunk allowed vlan remove %d' % v.vid)
-        self.write('exit')
-        self.read_until('(config)#')
-        self.write('exit')
-        self.read_until(self.prompt)
-        return True
+    def detach_vlans_from_port(self, vlan_list: Vlans, port: int) -> bool:
+        return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port)
 
     def detach_vlan_from_port(self, vid: int, port: int) -> bool:
         _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
         return self.detach_vlans_from_port(_vlan_gen, port)
-
-    # def login(self, login: str, password: str, *args, **kwargs) -> bool:
-    #     r = super().login(
-    #         login_prompt=b'User Name:',
-    #         login=login,
-    #         password_prompt=b'Password:',
-    #         password=password
-    #     )
-    #     self._disable_prompt()
-    #     return r
