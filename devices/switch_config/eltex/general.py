@@ -1,5 +1,5 @@
 import math
-from typing import Optional, AnyStr, List
+from typing import Optional, Generator
 
 from netaddr import EUI
 from django.utils.translation import gettext_lazy as _
@@ -29,7 +29,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 num=i,
                 name=self.get_item('.1.3.6.1.2.1.31.1.1.1.18.%d' % n),
                 status=self.get_item('.1.3.6.1.2.1.2.2.1.8.%d' % n),
-                mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % n),
+                mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % n).encode(),
                 uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % n),
                 speed=int(speed or 0)
             )
@@ -187,21 +187,21 @@ class EltexSwitch(DlinkDGS1100_10ME):
     #     return bit_map
 
     @staticmethod
-    def _make_eltex_map_vlan(vid: int) -> str:
+    def make_eltex_map_vlan(vid: int) -> bytes:
         """
         https://eltexsl.ru/wp-content/uploads/2016/05/monitoring-i-upravlenie-ethernet-kommutatorami-mes-po-snmp.pdf
         :param vid:
         :return: str bit map vlan representation by Eltex version
-        >>> EltexSwitch._make_eltex_map_vlan(3100)
+        >>> EltexSwitch.make_eltex_map_vlan(3100)
         '0000001'
-        >>> EltexSwitch._make_eltex_map_vlan(622)
+        >>> EltexSwitch.make_eltex_map_vlan(622)
         '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004'
         """
         if vid > 4095 or vid < 1:
             raise ValueError('VID must be in range 1-%d' % 4095)
         table_no = int(math.floor(vid / 1024))
         field_no = int(math.ceil(vid / 4)) - 1
-        field_no = (field_no - 256 * table_no)
+        field_no = field_no - 256 * table_no
         b = [0, 0, 0, 0]
         if table_no > 0:
             field_index = int(vid / (256 * table_no)) - 1
@@ -213,11 +213,32 @@ class EltexSwitch(DlinkDGS1100_10ME):
         bit_map += str(i)
         return bit_map
 
+    @staticmethod
+    def parse_eltex_vlan_map(bitmap: bytes) -> Generator[int, None, None]:
+        """
+        https://eltexsl.ru/wp-content/uploads/2016/05/monitoring-i-upravlenie-ethernet-kommutatorami-mes-po-snmp.pdf
+        :param bitmap: str bit map vlan representation by Eltex version
+        :return: VID, vlan id
+        >>> tuple(EltexSwitch.parse_eltex_vlan_map(
+            b'\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+            b'\x00\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        ))
+        (143, 152)
+        """
+        r = (int(bin_num) for octet_num in bitmap[:64] for bin_num in f'{octet_num:08b}')
+        return (numer + 1 for numer, bit in enumerate(r) if bit > 0)
+
     def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
         oids = []
         port_num = port_num + 49
         for v in vlan_list:
-            bit_map = self._make_eltex_map_vlan(vid=v.vid)
+            bit_map = self.make_eltex_map_vlan(vid=v.vid)
             oids.append((
                 '1.3.6.1.4.1.89.48.68.1.1.%d' % port_num,
                 bit_map.zfill(10),
