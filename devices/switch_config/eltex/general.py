@@ -1,5 +1,5 @@
 import math
-from typing import Optional, Generator
+from typing import Optional, Generator, Iterable, Dict
 
 from netaddr import EUI
 from django.utils.translation import gettext_lazy as _
@@ -187,52 +187,56 @@ class EltexSwitch(DlinkDGS1100_10ME):
     #     return bit_map
 
     @staticmethod
-    def make_eltex_map_vlan(vid: int) -> bytes:
+    def make_eltex_map_vlan(vids: Iterable[int]) -> Dict[int, bytes]:
         """
         https://eltexsl.ru/wp-content/uploads/2016/05/monitoring-i-upravlenie-ethernet-kommutatorami-mes-po-snmp.pdf
-        :param vid:
-        :return: str bit map vlan representation by Eltex version
-        >>> EltexSwitch.make_eltex_map_vlan(3100)
-        '0000001'
-        >>> EltexSwitch.make_eltex_map_vlan(622)
-        '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004'
+        :param vids: Vlan id iterable collection
+        :return: bytes bit map vlan representation by Eltex version
+                 with index of table in dict key
+        >>> EltexSwitch.make_eltex_map_vlan([3100])
+        {3: b'\\x00\\x00\\x00\\x10\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'}
+        >>> EltexSwitch.make_eltex_map_vlan([5, 6, 143, 152])
+        {0: b'\\x0c\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'}
         """
-        if vid > 4095 or vid < 1:
-            raise ValueError('VID must be in range 1-%d' % 4095)
-        table_no = int(math.floor(vid / 1024))
-        field_no = int(math.ceil(vid / 4)) - 1
-        field_no = field_no - 256 * table_no
-        b = [0, 0, 0, 0]
-        if table_no > 0:
-            field_index = int(vid / (256 * table_no)) - 1
-        else:
-            field_index = (field_no * 4) - vid - 1
-        b[field_index] = 1
-        i = int(''.join(str(k) for k in b), base=2)
-        bit_map = '0' * field_no
-        bit_map += str(i)
-        return bit_map
+        vids = list(vids)
+        vids.sort()
+        res = {}
+        for vid in vids:
+            if vid > 4095 or vid < 1:
+                raise ValueError('VID must be in range 1-%d' % 4095)
+            table_no = int(math.floor(vid / 1024))
+            vid -= int(math.floor(vid / 1024)) * 1024
+            if res.get(table_no) is None:
+                res[table_no] = 0
+            res[table_no] |= 1 << (1024 - vid)
+        for k in res.keys():
+            res[k] = res[k].to_bytes(128, 'big')
+        return res
 
     @staticmethod
-    def parse_eltex_vlan_map(bitmap: bytes) -> Generator[int, None, None]:
+    def parse_eltex_vlan_map(bitmap: str, table: int = 0) -> Generator[int, None, None]:
         """
         https://eltexsl.ru/wp-content/uploads/2016/05/monitoring-i-upravlenie-ethernet-kommutatorami-mes-po-snmp.pdf
         :param bitmap: str bit map vlan representation by Eltex version
+        :param table: Value from 0 to 3. In which table can find vlan id list
         :return: VID, vlan id
-        >>> tuple(EltexSwitch.parse_eltex_vlan_map(
-            b'\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-        ))
-        (143, 152)
+        >>> bitmap = (\
+                '\\x08\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'\
+                '\\x00\\x02\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'\
+                '\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'\
+                '\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'\
+                '\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'\
+                '\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'\
+                '\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'\
+                '\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'\
+            )
+        >>> tuple(EltexSwitch.parse_eltex_vlan_map(bitmap))
+        (5, 143, 152)
         """
-        r = (int(bin_num) for octet_num in bitmap[:64] for bin_num in f'{octet_num:08b}')
-        return (numer + 1 for numer, bit in enumerate(r) if bit > 0)
+        if table < 0 or table > 3:
+            raise ValueError('table must be in range 1-3')
+        r = (bin_num == '1' for octet_num in bitmap for bin_num in f'{ord(octet_num):08b}')
+        return ((numer + 1) + (table * 1024) for numer, bit in enumerate(r) if bit)
 
     def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
         oids = []
