@@ -22,6 +22,7 @@ class DeviceModelSerializer(BaseCustomModelSerializer):
             'snmp_extra', 'attached_users',
             'extra_data', 'status', 'is_noticeable', 'vlans'
         )
+        extra_kwargs = {'ip_address': {'required': False}}
 
 
 class DeviceWithoutGroupModelSerializer(BaseCustomModelSerializer):
