@@ -1,7 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from telnetlib import Telnet
+# from telnetlib import Telnet
 from typing import Generator, Optional, Dict, Iterable, AnyStr, Tuple
 from transliterate import translit
 from easysnmp import Session
@@ -68,47 +68,47 @@ class BaseSNMPWorker(Session):
             return v
 
 
-class BaseTelnetWorker(Telnet):
-    def __init__(self, host: str, prompt: bytes = b'#', endl: bytes = b'\n', port=23):
-        super().__init__(host=host, port=port)
-        self.prompt = prompt
-        if isinstance(endl, bytes):
-            self.endl = endl
-        else:
-            self.endl = str(endl).encode()
+# class BaseTelnetWorker(Telnet):
+#     def __init__(self, host: str, prompt: bytes = b'#', endl: bytes = b'\n', port=23):
+#         super().__init__(host=host, port=port)
+#         self.prompt = prompt
+#         if isinstance(endl, bytes):
+#             self.endl = endl
+#         else:
+#             self.endl = str(endl).encode()
+#
+#     def login(self, login_prompt: bytes, login: str, password_prompt: bytes, password: str) -> bool:
+#         self.read_until(login_prompt)
+#         self.write(login)
+#         self.read_until(password_prompt)
+#         self.write(password)
+#         self.read_until(self.prompt)
+#         return True
+#
+#     def write(self, buffer: AnyStr) -> None:
+#         if isinstance(buffer, bytes):
+#             return super().write(buffer + self.endl)
+#         return super().write(buffer.encode() + self.endl)
+#
+#     def read_until(self, match, timeout=None):
+#         if isinstance(match, bytes):
+#             return super().read_until(match=match, timeout=timeout)
+#         return super().read_until(match=str(match).encode(), timeout=timeout)
+#
+#     @staticmethod
+#     def _normalize_name(name: str) -> str:
+#         vname = translit(name, language_code='ru', reversed=True)
+#         return re.sub(r'\W+', '_', vname)[:32]
 
-    # def login(self, login_prompt: bytes, login: str, password_prompt: bytes, password: str) -> bool:
-    #     self.read_until(login_prompt)
-    #     self.write(login)
-    #     self.read_until(password_prompt)
-    #     self.write(password)
-    #     self.read_until(self.prompt)
-    #     return True
 
-    def write(self, buffer: AnyStr) -> None:
-        if isinstance(buffer, bytes):
-            return super().write(buffer + self.endl)
-        return super().write(buffer.encode() + self.endl)
-
-    def read_until(self, match, timeout=None):
-        if isinstance(match, bytes):
-            return super().read_until(match=match, timeout=timeout)
-        return super().read_until(match=str(match).encode(), timeout=timeout)
-
-    @staticmethod
-    def _normalize_name(name: str) -> str:
-        vname = translit(name, language_code='ru', reversed=True)
-        return re.sub(r'\W+', '_', vname)[:32]
-
-
-class BaseDeviceInterface(BaseSNMPWorker, BaseTelnetWorker):
+class BaseDeviceInterface(BaseSNMPWorker):
     def __init__(self, dev_instance=None, host: str=None, snmp_community='public'):
         """
         :param dev_instance: an instance of devices.models.Device
         :param host: device host address
         """
         BaseSNMPWorker.__init__(self, hostname=host, community=snmp_community)
-        BaseTelnetWorker.__init__(self, host=host)
+        # BaseTelnetWorker.__init__(self, host=host)
         self.dev_instance = dev_instance
 
     def create_vlans(self, vlan_list: Vlans) -> bool:

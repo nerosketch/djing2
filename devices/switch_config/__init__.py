@@ -1,7 +1,7 @@
 from .base import *
 from .expect_util import *
 from .unknown_device import UnknownDevice
-from .dlink import DlinkDGS1100_10ME
+from .dlink import DlinkDGS1100_10ME, DlinkDGS_3120_24SCSwitchInterface, DlinkDGS_1100_06MESwitchInterface
 from .epon import BDCOM_P3310C, EPON_BDCOM_FORA
 from .gpon import ZTE_C320, OnuZTE_F660, OnuZTE_F601
 from .eltex import EltexSwitch
@@ -18,12 +18,14 @@ DEVICE_TYPES = [
     (6, OnuZTE_F660),
     (7, OnuZTE_F601),
     (8, HuaweiS2300),
+    (9, DlinkDGS_3120_24SCSwitchInterface),
+    (10, DlinkDGS_1100_06MESwitchInterface),
 ]
 
 __all__ = (
     'DEVICE_TYPES', 'DeviceImplementationError', 'DeviceConfigurationError',
     'DeviceConsoleError', 'DeviceConnectionError', 'BaseSNMPWorker',
-    'BaseTelnetWorker', 'BaseDeviceInterface', 'BasePortInterface',
+    'BaseDeviceInterface', 'BasePortInterface',
     'ExpectValidationError', 'BasePON_ONU_Interface', 'BaseSwitchInterface',
     'BasePONInterface', 'BasePON_ONU_Interface',
     'Vlans', 'Macs', 'Vlan', 'MacItem', 'macbin2str'

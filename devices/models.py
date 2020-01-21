@@ -199,12 +199,12 @@ class Device(models.Model):
         return False, err_text
 
     #############################
-    #      Telnet access
+    #  Remote access(i.e. snmp)
     #############################
 
-    @_telnet_methods_wrapper
-    def telnet_get_all_vlan_list(self, tln: BaseDeviceInterface) -> Vlans:
-        return tln.read_all_vlan_info()
+    def dev_get_all_vlan_list(self) -> Vlans:
+        mng = self.get_manager_object_switch()
+        return mng.read_all_vlan_info()
 
     @_telnet_methods_wrapper
     def dev_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
