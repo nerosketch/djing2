@@ -2,7 +2,7 @@ from typing import Optional, AnyStr, List
 import struct
 
 from netaddr import EUI
-from django.utils.translation import gettext_lazy as _, gettext
+from django.utils.translation import gettext
 from djing2.lib import safe_int, RuTimedelta
 from ..base import (
     Vlans, Vlan, Macs, MacItem, BaseSwitchInterface, BasePortInterface,
@@ -15,11 +15,11 @@ class DLinkPort(BasePortInterface):
     pass
 
 
-class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
+class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
     """Dlink DGS-3120-24SC"""
     has_attachable_to_customer = False
     tech_code = 'dlink_sw'
-    description = _('DLink switch')
+    description = 'DLink DGS-3120-24SC'
     is_use_device_port = True
     ports_len = 24
 
@@ -31,18 +31,6 @@ class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
             dev_instance=dev_instance, host=dev_ip_addr,
             snmp_community=str(dev_instance.man_passw)
         )
-
-    # def login(self, login: str, password: str, *args, **kwargs) -> bool:
-    #     return super().login(
-    #         login_prompt=b'UserName:',
-    #         login=login,
-    #         password_prompt=b'PassWord:',
-    #         password=password
-    #     )
-
-    # def _disable_prompt(self) -> None:
-    #     self.write('disable clipaging')
-    #     self.read_until(self.prompt)
 
     def read_port_vlan_info(self, port: int) -> Vlans:
         if port > self.ports_len or port < 1:
@@ -74,13 +62,12 @@ class DlinkDGS_3120_24SC_Telnet(BaseSwitchInterface):
         return list(v == '1' for v in f'{i:032b}')
 
     def read_all_vlan_info(self) -> Vlans:
-        vids = self.get_list_keyval('.1.3.6.1.4.1.171.10.134.1.1.10.3.4.1.1')
-        for vid, vid2 in vids:
+        vids = self.get_list_keyval('.1.3.6.1.2.1.17.7.1.4.3.1.1')
+        for vid_name, vid in vids:
             vid = safe_int(vid)
             if vid in (0, 1):
                 continue
-            name = self._get_vid_name(vid)
-            yield Vlan(vid=vid, name=name)
+            yield Vlan(vid=vid, name=vid_name)
 
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:

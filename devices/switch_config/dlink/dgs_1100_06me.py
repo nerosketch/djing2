@@ -1,19 +1,20 @@
-# from netaddr import EUI
-
-# from djing2.lib import safe_int
-# from ..base import Macs, MacItem
-from .dgs_3120_24sc import DlinkDGS_3120_24SC_Telnet
+from devices.switch_config import Vlans, Vlan
+from djing2.lib import safe_int
+from .dgs_3120_24sc import DlinkDGS_3120_24SCSwitchInterface
 
 
-class DlinkDGS_1100_06ME_Telnet(DlinkDGS_3120_24SC_Telnet):
+class DlinkDGS_1100_06MESwitchInterface(DlinkDGS_3120_24SCSwitchInterface):
     """Dlink DGS-1100-06/ME"""
+    description = 'DLink DGS-1100-06/ME'
     ports_len = 6
 
-    def __init__(self, prompt: bytes = None, *args, **kwargs):
-        super().__init__(
-            prompt=prompt or b'DGS-1100-06/ME:5#',
-            *args, **kwargs
-        )
+    def read_all_vlan_info(self) -> Vlans:
+        vids = self.get_list_keyval('.1.3.6.1.4.1.171.10.134.1.1.7.6.1.1')
+        for vid_name, vid in vids:
+            vid = safe_int(vid)
+            if vid in (0, 1):
+                continue
+            yield Vlan(vid=vid, name=vid_name)
 
     # def login(self, login: str, password: str, *args, **kwargs) -> bool:
     #     return super().login(
