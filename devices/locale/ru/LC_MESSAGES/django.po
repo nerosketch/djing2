@@ -183,10 +183,6 @@ msgstr "Перезагрузка для устройства не готова"
 msgid "File %(filename)s is not exists or not executable"
 msgstr "Файл '%(filename)s' не существует или не исполняем"
 
-#: devices/switch_config/dlink/dgs1100_10me.py:38
-msgid "DLink switch"
-msgstr "Свич D'Link"
-
 #: devices/switch_config/eltex/general.py:20
 msgid "Eltex switch"
 msgstr "Элтекс свич"

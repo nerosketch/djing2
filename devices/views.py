@@ -297,6 +297,14 @@ class DeviceModelViewSet(DjingModelViewSet):
         )
         return Response([m._asdict() for m in macs])
 
+    @action(detail=True)
+    @catch_dev_manager_err
+    def scan_all_vlan_list(self, request, pk=None):
+        dev = self.get_object()
+        vlans = dev.dev_get_all_vlan_list()
+        res = (i._asdict() for i in vlans)
+        return Response(res)
+
 
 class DeviceWithoutGroupListAPIView(DjingListAPIView):
     queryset = Device.objects.filter(group=None)
