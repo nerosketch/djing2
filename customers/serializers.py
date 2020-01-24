@@ -6,6 +6,7 @@ from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
 
 from customers import models
+from devices.models import Device
 from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
 from groupapp.serializers import GroupsSerializer
@@ -29,7 +30,7 @@ def generate_random_username():
         models.Customer.objects.get(username=username)
         return generate_random_username()
     except models.Customer.DoesNotExist:
-        return safe_int(username)
+        return str(safe_int(username))
 
 
 def generate_random_password():
@@ -79,6 +80,8 @@ def update_passw(acc, raw_password):
 
 
 class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+    username = serializers.CharField(initial=generate_random_username)
+    is_active = serializers.BooleanField(initial=True)
     full_name = serializers.CharField(source='get_full_name', read_only=True)
     group_title = serializers.CharField(source='group.title', read_only=True)
     street_name = serializers.CharField(source='street.name', read_only=True)
@@ -87,7 +90,8 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     service_title = serializers.CharField(
         source='current_service.service.title', read_only=True
     )
-    password = serializers.CharField(write_only=True, required=False)
+    device = serializers.PrimaryKeyRelatedField(queryset=Device.objects.exclude(group=None)[:12])
+    password = serializers.CharField(write_only=True, required=False, initial=generate_random_password)
     raw_password = serializers.CharField(
         source='customerrawpassword.passw_text', read_only=True
     )
@@ -117,6 +121,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     class Meta:
         model = models.Customer
+        depth = 1
         fields = (
             'pk', 'username', 'telephone', 'fio',
             'group', 'group_title', 'balance', 'ip_address', 'description', 'street', 'street_name',

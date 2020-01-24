@@ -15,6 +15,7 @@ class DeviceModelSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = Device
+        depth = 1
         fields = (
             'pk', 'ip_address', 'mac_addr', 'comment',
             'dev_type', 'dev_type_str', 'man_passw', 'group',
