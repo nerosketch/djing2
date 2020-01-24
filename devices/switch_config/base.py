@@ -1,9 +1,7 @@
-import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
 # from telnetlib import Telnet
 from typing import Generator, Optional, Dict, Iterable, AnyStr, Tuple
-from transliterate import translit
 from easysnmp import Session
 
 from django.utils.translation import gettext_lazy as _, gettext

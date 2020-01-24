@@ -39,24 +39,29 @@ class HuaweiS2300(EltexSwitch):
         return tuple(build_port(i, int(n)) for i, n in enumerate(interfaces_ids))
 
     def read_all_vlan_info(self) -> Vlans:
+        vid = 1
         while True:
-            res = self.get_next('1.3.6.1.2.1.17.7.1.4.3.1.1')
+            res = self.get_next('.1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % vid)
             vid = safe_int(res.value[5:])
-            if vid == 0:
+            if vid == 1:
                 continue
+            if vid == 0:
+                return
             yield Vlan(vid=vid, name=res.value)
 
     def read_mac_address_port(self, port_num: int) -> Macs:
         first_port_index = safe_int(self.get_next('.1.3.6.1.2.1.17.1.4.1.2').value)
         if first_port_index == 0:
             return
-        while True:
-            res = self.get_next('1.3.6.1.2.1.17.4.3.1.2')
+        mac_oid = ''
+        snmp_port_id = True
+        while snmp_port_id:
+            res = self.get_next('.1.3.6.1.2.1.17.4.3.1.2.%s' % mac_oid)
             if res.snmp_type != 'INTEGER':
                 break
             snmp_port_id = safe_int(res.value)
             if snmp_port_id == 0:
-                continue
+                break
             real_port_num = snmp_port_id - first_port_index
             if real_port_num != port_num:
                 continue

@@ -1,8 +1,7 @@
 from django.db import IntegrityError
-# from django.utils.decorators import method_decorator
-# from django.views.decorators.cache import cache_page
-# from django.views.decorators.vary import vary_on_cookie
+from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import AuthenticationFailed
@@ -32,6 +31,11 @@ class DjingModelViewSet(ModelViewSet):
             super().perform_destroy(instance)
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(str(e))
+
+    @action(methods=('get',), detail=False)
+    def get_initial(self, request):
+        serializer = self.get_serializer()
+        return Response(serializer.get_initial())
 
     # Cache requested url for each user for 4 hours
     # @method_decorator(cache_page(60 * 60 * 4))
