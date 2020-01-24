@@ -27,12 +27,6 @@ router.register('users/debts', user_side.DebtsList)
 
 
 urlpatterns = [
-    path('generate_username/', admin_side.CustomerModelViewSet.as_view(actions={
-        'get': 'generate_random_username'
-    })),
-    path('generate_password/', admin_side.CustomerModelViewSet.as_view(actions={
-        'get': 'generate_random_password'
-    })),
     path('attach_group_service/', admin_side.AttachServicesToGroups.as_view()),
     path('groups/', admin_side.CustomersGroupsListAPIView.as_view()),
     path('dhcp_lever/', admin_side.DhcpLever.as_view()),
