@@ -41,6 +41,8 @@ def catch_dev_manager_err(fn):
             return Response(str(err))
         except (ConnectionResetError, ConnectionRefusedError, OSError, DeviceConnectionError, EasySNMPTimeoutError) as err:
             return Response(str(err), status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except SystemError as err:
+            return Response(str(err), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # Hack for decorator @action
     wrapper.__name__ = fn.__name__

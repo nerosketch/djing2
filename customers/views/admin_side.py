@@ -75,14 +75,6 @@ class CustomerModelViewSet(DjingModelViewSet):
     filterset_fields = ('group', 'street', 'device', 'dev_port')
     ordering_fields = ('username', 'fio', 'house', 'balance')
 
-    @staticmethod
-    def generate_random_username(_):
-        return Response(serializers.generate_random_username())
-
-    @staticmethod
-    def generate_random_password(_):
-        return Response(serializers.generate_random_password())
-
     @action(methods=('post',), detail=True)
     @catch_customers_errs
     def pick_service(self, request, pk=None):
