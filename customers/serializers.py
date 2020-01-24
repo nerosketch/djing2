@@ -121,7 +121,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     class Meta:
         model = models.Customer
-        depth = 1
+        # depth = 1
         fields = (
             'pk', 'username', 'telephone', 'fio',
             'group', 'group_title', 'balance', 'ip_address', 'description', 'street', 'street_name',
