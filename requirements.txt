@@ -7,7 +7,7 @@ Pillow==6.2.0
 netaddr==0.7.19
 
 # db client for Postgres
-psycopg2-binary==2.8.3
+psycopg2==2.8.4
 
 git+git://github.com/nerosketch/easysnmp.git#egg=easysnmp
 pid==2.2.5
