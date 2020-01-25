@@ -12,3 +12,9 @@ class AllTimePayLogModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.AllTimePayLog
         fields = '__all__'
+
+
+class PayAllTimeGatewayModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = models.PayAllTimeGateway
+        fields = '__all__'
