@@ -5,12 +5,13 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from djing2 import MAC_ADDR_REGEX
+from djing2.serializers import SearchSerializer
 from djing2.viewsets import DjingListAPIView
 from customers.models import Customer
 from devices.models import Device
 
 
-def accs_format(acc: Customer, search_str: str) -> dict:
+def accs_format(acc: Customer) -> dict:
     r = {
         'id': acc.pk,
         'fio': acc.fio,
@@ -27,7 +28,7 @@ def accs_format(acc: Customer, search_str: str) -> dict:
     return r
 
 
-def dev_format(device: Device, search_str: str) -> dict:
+def dev_format(device: Device) -> dict:
     r = {
         'id': device.pk,
         'comment': device.comment,
@@ -44,7 +45,7 @@ def dev_format(device: Device, search_str: str) -> dict:
 
 class SearchApiView(DjingListAPIView):
     # pagination_class = QueryPageNumberPagination
-    # serializer_class = SearchSerializer
+    serializer_class = SearchSerializer
 
     def list(self, request, *args, **kwargs):
         s = request.GET.get('s')
@@ -73,8 +74,8 @@ class SearchApiView(DjingListAPIView):
             devices = ()
 
         return Response({
-            'accounts': (accs_format(acc, s) for acc in customers),
-            'devices': (dev_format(dev, s) for dev in devices)
+            'accounts': (accs_format(acc) for acc in customers),
+            'devices': (dev_format(dev) for dev in devices)
         })
 
 

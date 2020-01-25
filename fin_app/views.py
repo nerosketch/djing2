@@ -32,6 +32,7 @@ class AllTimePay(GenericAPIView):
     http_method_names = 'get',
     renderer_classes = AllTimeSpecifiedXMLRenderer,
     queryset = PayAllTimeGateway.objects.all()
+    serializer_class = serializers.PayAllTimeGatewayModelSerializer
     lookup_field = 'slug'
     lookup_url_kwarg = 'pay_slug'
 
