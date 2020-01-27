@@ -219,9 +219,9 @@ API_AUTH_SECRET = local_settings.API_AUTH_SECRET
 COMPANY_NAME = local_settings.COMPANY_NAME
 
 # REDIS related settings
-CELERY_BROKER_URL = 'redis://localhost:6379'
-CELERY_ACCEPT_CONTENT = 'application/json',
-CELERY_TASK_SERIALIZER = 'json'
+CELERY_BROKER_URL = getattr(local_settings, 'CELERY_BROKER_URL', 'redis://localhost:6379')
+CELERY_ACCEPT_CONTENT = getattr(local_settings, 'CELERY_ACCEPT_CONTENT', 'application/json')
+CELERY_TASK_SERIALIZER = getattr(local_settings, 'CELERY_TASK_SERIALIZER', 'json')
 CELERY_TIMEZONE = TIME_ZONE
 
 REST_FRAMEWORK = {
@@ -240,7 +240,7 @@ if DEBUG:
     CORS_ORIGIN_ALLOW_ALL = True
     CORS_ALLOW_CREDENTIALS = True
     CORS_ORIGIN_WHITELIST = (
-        'http://localhost:8080',
+        'http://0.0.0.0:8080',
     )
     REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'].append(
         'rest_framework.authentication.SessionAuthentication'
