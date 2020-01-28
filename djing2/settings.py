@@ -220,7 +220,7 @@ COMPANY_NAME = local_settings.COMPANY_NAME
 
 # REDIS related settings
 CELERY_BROKER_URL = getattr(local_settings, 'CELERY_BROKER_URL', 'redis://localhost:6379')
-CELERY_ACCEPT_CONTENT = getattr(local_settings, 'CELERY_ACCEPT_CONTENT', 'application/json')
+CELERY_ACCEPT_CONTENT = getattr(local_settings, 'CELERY_ACCEPT_CONTENT', ['application/json'])
 CELERY_TASK_SERIALIZER = getattr(local_settings, 'CELERY_TASK_SERIALIZER', 'json')
 CELERY_TIMEZONE = TIME_ZONE
 

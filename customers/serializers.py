@@ -90,7 +90,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     service_title = serializers.CharField(
         source='current_service.service.title', read_only=True
     )
-    device = serializers.PrimaryKeyRelatedField(queryset=Device.objects.exclude(group=None)[:12])
+    # device = serializers.PrimaryKeyRelatedField(queryset=Device.objects.exclude(group=None)[:12])
     password = serializers.CharField(write_only=True, required=False, initial=generate_random_password)
     raw_password = serializers.CharField(
         source='customerrawpassword.passw_text', read_only=True
