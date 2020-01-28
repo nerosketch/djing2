@@ -14,7 +14,7 @@ def customer_gw_command(customer_uid: int, command: str):
         sb = Customer.objects.get(pk=customer_uid)
         if command == 'sync':
             r = sb.gw_sync_self()
-            if isinstance(r, Exception):
+            if issubclass(r.__class__, Exception):
                 return 'CUSTOMERS SYNC ERROR: %s' % r
         elif command == 'add':
             sb.gw_add_self()
