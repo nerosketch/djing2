@@ -224,30 +224,26 @@ class Device(models.Model):
     # Switch telnet methods
     ##############################
 
-    @_telnet_methods_wrapper
-    def telnet_switch_attach_vlan_to_port(self, tln: BaseSwitchInterface, vid: int,
-                                          port: int, tag: bool = True) -> bool:
-        return tln.attach_vlan_to_port(vid=vid, port=port, tag=tag)
+    # @_telnet_methods_wrapper
+    # def telnet_switch_attach_vlan_to_port(self, tln: BaseSwitchInterface, vid: int,
+    #                                       port: int, tag: bool = True) -> bool:
+    #     return tln.attach_vlan_to_port(vid=vid, port=port, tag=tag)
 
-    @_telnet_methods_wrapper
-    def telnet_switch_detach_vlan_from_port(self, tln: BaseSwitchInterface, vid: int, port: int) -> bool:
-        return tln.detach_vlan_from_port(vid=vid, port=port)
+    # @_telnet_methods_wrapper
+    # def telnet_switch_detach_vlan_from_port(self, tln: BaseSwitchInterface, vid: int, port: int) -> bool:
+    #     return tln.detach_vlan_from_port(vid=vid, port=port)
 
     def dev_switch_get_mac_address_port(self, device_port_num: int) -> Macs:
         mng = self.get_manager_object_switch()
         return mng.read_mac_address_port(port_num=device_port_num)
 
-    @_telnet_methods_wrapper
-    def telnet_get_port_vlan_list(self, tln: BaseSwitchInterface, device_port_num: int) -> Vlans:
-        return tln.read_port_vlan_info(port=device_port_num)
-
     ##############################
     # PON telnet methods
     ##############################
 
-    @_telnet_methods_wrapper
-    def telnet_pon_attach_vlans_to_uplink(self, tln: BasePONInterface, vids: Iterable[int], *args, **kwargs) -> None:
-        return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
+    # @_telnet_methods_wrapper
+    # def telnet_pon_attach_vlans_to_uplink(self, tln: BasePONInterface, vids: Iterable[int], *args, **kwargs) -> None:
+    #     return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
 
 
 class PortVlanMemberModel(models.Model):
@@ -299,6 +295,10 @@ class Port(models.Model):
     #         return
     #     mng = self.device.get_manager_object()
     #     return mng.get_port(snmp_num=self.num).to_dict()
+
+    def get_port_vlan_list(self) -> Vlans:
+        mng = self.device.get_manager_object_switch()
+        yield from mng.read_port_vlan_info(port=int(self.num))
 
     class Meta:
         db_table = 'device_port'
