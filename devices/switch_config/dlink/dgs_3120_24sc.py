@@ -43,7 +43,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             member_ports = self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vid)
             if member_ports is None:
                 return
-            member_ports = self._make_ports_map(member_ports.encode()[:4])
+            member_ports = self._make_ports_map(member_ports[:4])
             if not member_ports[port-1]:
                 # if port num is not <port>
                 continue
@@ -52,9 +52,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
 
     @staticmethod
     def _make_ports_map(data: AnyStr) -> List[bool]:
-        if isinstance(data, str):
-            data = data.encode()[:4]
-        elif isinstance(data, bytes):
+        if isinstance(data, (str, bytes)):
             data = data[:4]
         else:
             raise TypeError('data must be instance of bytes or str')
