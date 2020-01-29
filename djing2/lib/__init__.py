@@ -79,7 +79,7 @@ class Singleton(type):
 #
 
 def calc_hash(data):
-    if type(data) is str:
+    if isinstance(data, str):
         result_data = data.encode('utf-8')
     else:
         result_data = bytes(data)
