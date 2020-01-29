@@ -357,6 +357,14 @@ class PortModelViewSet(DjingModelViewSet):
         )
         return Response([m._asdict() for m in macs])
 
+    @action(detail=True)
+    @catch_dev_manager_err
+    def scan_vlan(self, request, pk=None):
+        port = self.get_object()
+        port_vlans = port.get_port_vlan_list()
+        res = (v._asdict() for v in port_vlans)
+        return Response(res)
+
 
 class PortVlanMemberModelViewSet(DjingModelViewSet):
     queryset = PortVlanMemberModel.objects.all()

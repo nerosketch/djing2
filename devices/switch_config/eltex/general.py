@@ -29,7 +29,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 num=i,
                 name=self.get_item('.1.3.6.1.2.1.31.1.1.1.18.%d' % n),
                 status=self.get_item('.1.3.6.1.2.1.2.2.1.8.%d' % n),
-                mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % n).encode(),
+                mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % n),
                 uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % n),
                 speed=int(speed or 0)
             )
@@ -86,16 +86,16 @@ class EltexSwitch(DlinkDGS1100_10ME):
         port = port + 48
         r = self.get_item('1.3.6.1.4.1.89.48.68.1.1.%d' % port)
         if r:
-            yield (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=0))
+            yield from (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=0))
         r = self.get_item('1.3.6.1.4.1.89.48.68.1.2.%d' % port)
         if r:
-            yield (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=1))
+            yield from (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=1))
         r = self.get_item('1.3.6.1.4.1.89.48.68.1.3.%d' % port)
         if r:
-            yield (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=2))
+            yield from (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=2))
         r = self.get_item('1.3.6.1.4.1.89.48.68.1.4.%d' % port)
         if r:
-            yield (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=3))
+            yield from (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=3))
 
     def read_all_vlan_info(self) -> Vlans:
         snmp_vid = 100000

@@ -32,4 +32,6 @@ def plain_ip_device_mon_template(device) -> Optional[AnyStr]:
 
 
 def macbin2str(bin_mac: bytes) -> str:
+    if isinstance(bin_mac, bytes):
+        return ':'.join('%x' % i for i in bin_mac) if bin_mac else None
     return ':'.join('%x' % ord(i) for i in bin_mac) if bin_mac else None
