@@ -44,7 +44,7 @@ class AllowedSubnetMixin(object):
         """
         ip = ip_address(request.META.get('REMOTE_ADDR'))
         api_auth_subnet = getattr(settings, 'API_AUTH_SUBNET')
-        if type(api_auth_subnet) is str:
+        if isinstance(api_auth_subnet, str):
             if ip in ip_network(api_auth_subnet):
                 return super(AllowedSubnetMixin, self).dispatch(request, *args, **kwargs)
         try:
