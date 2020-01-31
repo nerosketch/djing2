@@ -25,7 +25,7 @@ class DeviceConnectionError(ConnectionError):
     pass
 
 
-Vlan = namedtuple('Vlan', 'vid name')
+Vlan = namedtuple('Vlan', 'vid title')
 Vlans = Generator[Vlan, None, None]
 MacItem = namedtuple('MacItem', 'vid name mac port')
 Macs = Generator[MacItem, None, None]
@@ -126,11 +126,11 @@ class BaseDeviceInterface(BaseSNMPWorker):
         raise NotImplementedError
 
     def create_vlan(self, vid: int, name: str) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, name=name),))
+        _vlan_gen = (v for v in (Vlan(vid=vid, title=name),))
         return self.create_vlans(_vlan_gen)
 
     def delete_vlan(self, vid: int) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
+        _vlan_gen = (v for v in (Vlan(vid=vid, title=None),))
         return self.delete_vlans(_vlan_gen)
 
     def read_all_vlan_info(self) -> Vlans:
@@ -302,7 +302,7 @@ class BasePortInterface(ABC):
 
     def to_dict(self) -> dict:
         return {
-            'number': self.num,
+            'num': self.num,
             'snmp_number': self.snmp_num,
             'name': self.nm,
             'status': self.st,
