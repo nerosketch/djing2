@@ -48,7 +48,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
                 # if port num is not <port>
                 continue
             name = self._get_vid_name(vid)
-            yield Vlan(vid=vid, name=name)
+            yield Vlan(vid=vid, title=name)
 
     @staticmethod
     def _make_ports_map(data: AnyStr) -> List[bool]:
@@ -65,7 +65,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             vid = safe_int(vid)
             if vid in (0, 1):
                 continue
-            yield Vlan(vid=vid, name=vid_name)
+            yield Vlan(vid=vid, title=vid_name)
 
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
@@ -92,7 +92,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
     def create_vlans(self, vlan_list: Vlans) -> bool:
         # ('1.3.6.1.2.1.17.7.1.4.3.1.3.152', b'\xff\xff\xff\xff', 'OCTETSTR'),  # untagged порты
         for v in vlan_list:
-            vname = self._normalize_name(v.name)
+            vname = self._normalize_name(v.title)
             return self.set_multiple([
                 ('1.3.6.1.2.1.17.7.1.4.3.1.5.%d' % v.vid, 4, 'i'),      # 4 - vlan со всеми функциями
                 ('1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % v.vid, vname, 'x'),  # имя влана

@@ -112,7 +112,7 @@ class ZTE_C320(BDCOM_P3310C):
                     assert bytes(vid) == ln_vid
                 if b'name' in line:
                     _, vname = line.split(b':')
-                    yield Vlan(vid=vid, name=vname.decode())
+                    yield Vlan(vid=vid, title=vname.decode())
                     break
 
     def enter_config(self) -> None:
@@ -123,7 +123,7 @@ class ZTE_C320(BDCOM_P3310C):
         for v in vlan_list:
             self.write('vlan %d' % v.vid)
             self.read_until('(config-vlan)#')
-            self.write('name %s' % self._normalize_name(v.name))
+            self.write('name %s' % self._normalize_name(v.title))
             self.read_until('(config-vlan)#')
             self.write('exit')
             self.read_until('(config)#')
