@@ -143,7 +143,7 @@ class BDCOM_P3310C(BasePONInterface):
                 else:
                     continue
                 for i in vlans.split(','):
-                    yield Vlan(int(i), name=None)
+                    yield Vlan(int(i), title=None)
             except (ValueError, IndexError):
                 pass
 
@@ -200,7 +200,7 @@ class BDCOM_P3310C(BasePONInterface):
         for vlan in vlan_list:
             self.write('vlan %d' % vlan.vid)
             self.read_until('config_vlan%d#' % vlan.vid)
-            self.write('name %s' % self._normalize_name(vlan.name))
+            self.write('name %s' % self._normalize_name(vlan.title))
             self.read_until('config_vlan%d#' % vlan.vid)
             self.write('ex')
             self.read_until('_config#')

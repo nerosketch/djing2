@@ -14,7 +14,7 @@ class DlinkDGS_1100_06MESwitchInterface(DlinkDGS_3120_24SCSwitchInterface):
             vid = safe_int(vid)
             if vid in (0, 1):
                 continue
-            yield Vlan(vid=vid, name=vid_name)
+            yield Vlan(vid=vid, title=vid_name)
 
     # def login(self, login: str, password: str, *args, **kwargs) -> bool:
     #     return super().login(

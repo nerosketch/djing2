@@ -86,16 +86,16 @@ class EltexSwitch(DlinkDGS1100_10ME):
         port = port + 48
         r = self.get_item('1.3.6.1.4.1.89.48.68.1.1.%d' % port)
         if r:
-            yield from (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=0))
+            yield from (Vlan(vid=vid, title=None) for vid in self.parse_eltex_vlan_map(r, table=0))
         r = self.get_item('1.3.6.1.4.1.89.48.68.1.2.%d' % port)
         if r:
-            yield from (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=1))
+            yield from (Vlan(vid=vid, title=None) for vid in self.parse_eltex_vlan_map(r, table=1))
         r = self.get_item('1.3.6.1.4.1.89.48.68.1.3.%d' % port)
         if r:
-            yield from (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=2))
+            yield from (Vlan(vid=vid, title=None) for vid in self.parse_eltex_vlan_map(r, table=2))
         r = self.get_item('1.3.6.1.4.1.89.48.68.1.4.%d' % port)
         if r:
-            yield from (Vlan(vid=vid, name=None) for vid in self.parse_eltex_vlan_map(r, table=3))
+            yield from (Vlan(vid=vid, title=None) for vid in self.parse_eltex_vlan_map(r, table=3))
 
     def read_all_vlan_info(self) -> Vlans:
         snmp_vid = 100000
@@ -108,7 +108,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 break
             vid = (vid - 100000) + 1
             name = self._get_vid_name(vid=vid)
-            yield Vlan(vid=vid, name=name)
+            yield Vlan(vid=vid, title=name)
 
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
@@ -140,7 +140,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
     def create_vlans(self, vlan_list: Vlans) -> bool:
         for vlan in vlan_list:
             oids = (
-                ('1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % vlan.vid, vlan.name, 's'),
+                ('1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % vlan.vid, vlan.title, 's'),
                 ('1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vlan.vid, 0, 'x'),
                 ('1.3.6.1.2.1.17.7.1.4.3.1.3.%d' % vlan.vid, 0, 'x'),
                 ('1.3.6.1.2.1.17.7.1.4.3.1.4.%d' % vlan.vid, 0, 'x'),
@@ -226,12 +226,12 @@ class EltexSwitch(DlinkDGS1100_10ME):
         return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port_num)
 
     def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
+        _vlan_gen = (v for v in (Vlan(vid=vid, title=None),))
         return self.attach_vlans_to_port(_vlan_gen, port)
 
     def detach_vlans_from_port(self, vlan_list: Vlans, port: int) -> bool:
         return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port)
 
     def detach_vlan_from_port(self, vid: int, port: int) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, name=None),))
+        _vlan_gen = (v for v in (Vlan(vid=vid, title=None),))
         return self.detach_vlans_from_port(_vlan_gen, port)

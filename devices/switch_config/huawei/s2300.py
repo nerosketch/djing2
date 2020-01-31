@@ -47,7 +47,7 @@ class HuaweiS2300(EltexSwitch):
                 continue
             if vid == 0:
                 return
-            yield Vlan(vid=vid, name=res.value)
+            yield Vlan(vid=vid, title=res.value)
 
     def read_mac_address_port(self, port_num: int) -> Macs:
         yield MacItem(vid=None, name='', mac='0:0:0:0:0:0', port=0)
@@ -89,4 +89,4 @@ class HuaweiS2300(EltexSwitch):
                 # if port num is not <port>
                 continue
             name = self._get_vid_name(vid)
-            yield Vlan(vid=vid, name=name)
+            yield Vlan(vid=vid, title=name)
