@@ -104,7 +104,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             chunk_max_len = next(onu_list)
             r = StreamingHttpResponse(streaming_content=(chunk_cook({
                 'number': p.num,
-                'name': p.name,
+                'title': p.title,
                 'status': p.status,
                 'mac_addr': macbin2str(p.mac),
                 'signal': p.signal,
@@ -130,13 +130,12 @@ class DeviceModelViewSet(DjingModelViewSet):
 
         def join_with_db(p: BasePortInterface):
             r = p.to_dict()
-            ps = [dbp for dbp in db_ports if p.num == dbp.num]
-            if len(ps) > 0:
-                db_port = dev_serializers.PortModelSerializer(ps[0]).data
-                del db_port['num']
-                r.update({
-                    'db': db_port
-                })
+            try:
+                ps_el = next(dbp for dbp in db_ports if p.num == dbp.num)
+                db_port = dev_serializers.PortModelSerializer(ps_el).data
+                r.update(db_port)
+            except StopIteration:
+                pass
             return r
 
         return Response(data=(join_with_db(p) for p in ports))
