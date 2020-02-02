@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
 # from telnetlib import Telnet
-from typing import Generator, Optional, Dict, Iterable, AnyStr, Tuple
+from typing import Generator, Optional, Dict, Iterable, AnyStr, Tuple, Any
 from easysnmp import Session
 
 from django.utils.translation import gettext_lazy as _, gettext
@@ -55,15 +55,23 @@ class BaseSNMPWorker(Session):
             snmpnum = v.oid.split('.')[-1:]
             yield v.value, snmpnum[0] if len(snmpnum) > 0 else None
 
+    def get_next_keyval(self, oid) -> Tuple:
+        v = self.get_next(oid)
+        if not v:
+            return None, None
+        snmpnum = v.oid.split('.')[-1:]
+        return v.value, snmpnum[0] if len(snmpnum) > 0 else None
+
     def get_list_with_oid(self, oid) -> Generator:
         for v in self.walk(oid):
             res_oid = v.oid.split('.')
             yield v.value, res_oid
 
-    def get_item(self, oid) -> str:
+    def get_item(self, oid) -> Any:
         v = self.get(oid).value
-        if v != 'NOSUCHINSTANCE':
-            return v
+        if isinstance(v, str) and v == 'NOSUCHINSTANCE':
+            return None
+        return v
 
 
 # class BaseTelnetWorker(Telnet):
