@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Iterable
+from typing import Optional, Tuple
 
 from django.contrib.postgres.fields import JSONField
 from django.db import models
@@ -9,7 +9,11 @@ from devices.switch_config import (
     DEVICE_TYPES, Vlans, Macs, DeviceConsoleError,
     BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
     macbin2str)
-from devices.switch_config.base import BaseDeviceInterface, DeviceConfigurationError
+from devices.switch_config import (
+    BaseDeviceInterface,
+    DeviceConfigurationError,
+    port_templates_modules
+)
 from djing2.lib import MyChoicesAdapter, safe_int
 from groupapp.models import Group
 from networks.models import VlanIf
