@@ -361,8 +361,7 @@ class PortModelViewSet(DjingModelViewSet):
     def scan_vlan(self, request, pk=None):
         port = self.get_object()
         port_vlans = port.get_port_vlan_list()
-        res = (v._asdict() for v in port_vlans)
-        return Response(res)
+        return Response(v for v in port_vlans)
 
 
 class PortVlanMemberModelViewSet(DjingModelViewSet):

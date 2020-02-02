@@ -43,7 +43,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
 
         sn = self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s' % fiber_addr)
         if sn is not None:
-            sn = 'ZTEG%s' % ''.join('%.2X' % ord(x) for x in sn[-4:])
+            sn = 'ZTEG%s' % ''.join('%.2X' % x for x in sn[-4:])
 
         status_map = {
             '1': 'ok',
@@ -117,7 +117,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         fiber_addr = '%d.%d' % (fiber_num, onu_num)
         sn = self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s' % fiber_addr)
         if sn is not None:
-            sn = 'ZTEG%s' % ''.join('%.2X' % ord(x) for x in sn[-4:])
+            sn = 'ZTEG%s' % ''.join('%.2X' % x for x in sn[-4:])
             sn_mac = sn_to_mac(sn)
             if str(dev.mac_addr) != sn_mac:
                 raise ExpectValidationError(
