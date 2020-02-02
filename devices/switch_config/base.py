@@ -371,3 +371,10 @@ class BasePON_ONU_Interface(BaseDeviceInterface):
 
     def mac(self) -> str:
         return macbin2str(self._mac)
+
+
+def port_template(fn):
+    def _wrapper(*args, **kwargs):
+        return fn(*args, **kwargs)
+    _wrapper.is_port_template = True
+    return _wrapper
