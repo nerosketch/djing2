@@ -1,3 +1,5 @@
+from typing import Generator
+
 from devices.switch_config import Vlans, Vlan
 from djing2.lib import safe_int
 from .dgs_3120_24sc import DlinkDGS_3120_24SCSwitchInterface
@@ -16,13 +18,25 @@ class DlinkDGS_1100_06MESwitchInterface(DlinkDGS_3120_24SCSwitchInterface):
                 continue
             yield Vlan(vid=vid, title=vid_name)
 
-    # def login(self, login: str, password: str, *args, **kwargs) -> bool:
-    #     return super().login(
-    #                          login_prompt=b'UserName:',
-    #                          login=login,
-    #                          password_prompt=b'Password:',
-    #                          password=password
-    #                          )
+    def read_port_vlan_info(self, port: int) -> Generator[dict, None, None]:
+        if port > self.ports_len or port < 1:
+            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+        vids = self.get_list_keyval('.1.3.6.1.4.1.171.10.134.1.1.7.6.1.1')
+        native_vid = self.get_item('.1.3.6.1.4.1.171.10.134.1.1.7.7.1.1.%d' % port)
+        if not native_vid:
+            return
+        for vidname, vid in vids:
+            vid = safe_int(vid)
+            if vid in (0, 1):
+                continue
+            member_ports = self.get_item('.1.3.6.1.4.1.171.10.134.1.1.7.6.1.2.%d' % vid)
+            if member_ports is None:
+                return
+            member_ports = self._make_ports_map(member_ports[:4])
+            if not member_ports[port-1]:
+                # if port num is not <port>
+                continue
+            yield {'vid': vid, 'title': vidname, 'native': vid == native_vid}
 
     # def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
     #     if port > self.ports_len or port < 1:

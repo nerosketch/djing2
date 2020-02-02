@@ -80,22 +80,58 @@ class EltexSwitch(DlinkDGS1100_10ME):
             1
         )
 
-    def read_port_vlan_info(self, port: int) -> Vlans:
+    def read_port_vlan_info(self, port: int) -> Generator[dict, None, None]:
+        def _calc_ret(vlan_untagged_egress_oid, vlan_egress_bitmap, table_no) -> Generator[dict, None, None]:
+            vlan_untagged_egress = self.get_item(vlan_untagged_egress_oid)
+            vlan_untagged_egress = list(self.parse_eltex_vlan_map(vlan_untagged_egress, table=table_no))
+            is_native = next((v == 1 for i, v in enumerate(vlan_untagged_egress, 1) if i >= port), False)
+            return ({
+                'vid': vid,
+                'title': None,
+                'native': is_native
+            } for vid in self.parse_eltex_vlan_map(vlan_egress_bitmap, table=table_no))
+
         if port > self.ports_len or port < 1:
             raise ValueError('Port must be in range 1-%d' % self.ports_len)
         port = port + 48
-        r = self.get_item('1.3.6.1.4.1.89.48.68.1.1.%d' % port)
-        if r:
-            yield from (Vlan(vid=vid, title=None) for vid in self.parse_eltex_vlan_map(r, table=0))
-        r = self.get_item('1.3.6.1.4.1.89.48.68.1.2.%d' % port)
-        if r:
-            yield from (Vlan(vid=vid, title=None) for vid in self.parse_eltex_vlan_map(r, table=1))
-        r = self.get_item('1.3.6.1.4.1.89.48.68.1.3.%d' % port)
-        if r:
-            yield from (Vlan(vid=vid, title=None) for vid in self.parse_eltex_vlan_map(r, table=2))
-        r = self.get_item('1.3.6.1.4.1.89.48.68.1.4.%d' % port)
-        if r:
-            yield from (Vlan(vid=vid, title=None) for vid in self.parse_eltex_vlan_map(r, table=3))
+
+        # rldot1qPortVlanStaticEgressList1to1024
+        vlan_egress = self.get_item('1.3.6.1.4.1.89.48.68.1.1.%d' % port)
+        if vlan_egress:
+            return _calc_ret(
+                # rldot1qPortVlanStaticUntaggedEgressList1to1024
+                vlan_untagged_egress_oid='1.3.6.1.4.1.89.48.68.1.5.%d' % port,
+                vlan_egress_bitmap=vlan_egress,
+                table_no=0
+            )
+
+        # rldot1qPortVlanStaticEgressList1025to2048
+        vlan_egress = self.get_item('1.3.6.1.4.1.89.48.68.1.2.%d' % port)
+        if vlan_egress:
+            return _calc_ret(
+                # rldot1qPortVlanStaticUntaggedEgressList1025to2048
+                vlan_untagged_egress_oid='1.3.6.1.4.1.89.48.68.1.6.%d' % port,
+                vlan_egress_bitmap=vlan_egress,
+                table_no=1
+            )
+        # rldot1qPortVlanStaticEgressList2049to3072
+        vlan_egress = self.get_item('1.3.6.1.4.1.89.48.68.1.3.%d' % port)
+        if vlan_egress:
+            return _calc_ret(
+                # rldot1qPortVlanStaticUntaggedEgressList2049to3072
+                vlan_untagged_egress_oid='1.3.6.1.4.1.89.48.68.1.7.%d' % port,
+                vlan_egress_bitmap=vlan_egress,
+                table_no=2
+            )
+        # rldot1qPortVlanStaticEgressList3073to4094
+        vlan_egress = self.get_item('1.3.6.1.4.1.89.48.68.1.4.%d' % port)
+        if vlan_egress:
+            return _calc_ret(
+                # rldot1qPortVlanStaticUntaggedEgressList3073to4094
+                vlan_untagged_egress_oid='1.3.6.1.4.1.89.48.68.1.8.%d' % port,
+                vlan_egress_bitmap=vlan_egress,
+                table_no=3
+            )
 
     def read_all_vlan_info(self) -> Vlans:
         snmp_vid = 100000
@@ -184,7 +220,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         return res
 
     @staticmethod
-    def parse_eltex_vlan_map(bitmap: str, table: int = 0) -> Generator[int, None, None]:
+    def parse_eltex_vlan_map(bitmap: bytes, table: int = 0) -> Generator[int, None, None]:
         """
         https://eltexsl.ru/wp-content/uploads/2016/05/monitoring-i-upravlenie-ethernet-kommutatorami-mes-po-snmp.pdf
         :param bitmap: str bit map vlan representation by Eltex version
@@ -205,7 +241,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         """
         if table < 0 or table > 3:
             raise ValueError('table must be in range 1-3')
-        r = (bin_num == '1' for octet_num in bitmap for bin_num in f'{ord(octet_num):08b}')
+        r = (bin_num == '1' for octet_num in bitmap for bin_num in f'{octet_num:08b}')
         return ((numer + 1) + (table * 1024) for numer, bit in enumerate(r) if bit)
 
     def _set_vlans_on_port(self, vlan_list: Vlans, port_num: int):
