@@ -1,4 +1,4 @@
-from typing import Optional, AnyStr, List
+from typing import Optional, AnyStr, List, Generator
 import struct
 
 from netaddr import EUI
@@ -32,30 +32,35 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             snmp_community=str(dev_instance.man_passw)
         )
 
-    def read_port_vlan_info(self, port: int) -> Vlans:
+    def read_port_vlan_info(self, port: int) -> Generator[dict, None, None]:
         if port > self.ports_len or port < 1:
             raise ValueError('Port must be in range 1-%d' % self.ports_len)
-        vids = self.get_list_keyval('.1.3.6.1.4.1.171.10.134.1.1.10.3.4.1.1')
-        for vid, vid2 in vids:
+        vid = 1
+        while True:
+            member_ports, vid = self.get_next_keyval('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vid)
+            if not member_ports:
+                break
             vid = safe_int(vid)
             if vid in (0, 1):
-                continue
-            member_ports = self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vid)
-            if member_ports is None:
-                return
+                break
             member_ports = self._make_ports_map(member_ports[:4])
             if not member_ports[port-1]:
-                # if port num is not <port>
                 continue
+            untagged_members = self.get_item('1.3.6.1.2.1.17.7.1.4.3.1.4.%d' % vid)
+            untagged_members = self._make_ports_map(untagged_members[:4])
             name = self._get_vid_name(vid)
-            yield Vlan(vid=vid, title=name)
+            yield {
+                'vid': vid,
+                'title': name,
+                'native': untagged_members[port-1]
+            }
 
     @staticmethod
     def _make_ports_map(data: AnyStr) -> List[bool]:
-        if isinstance(data, (str, bytes)):
+        if isinstance(data, bytes):
             data = data[:4]
         else:
-            raise TypeError('data must be instance of bytes or str')
+            raise TypeError('data must be instance of bytes')
         i = int.from_bytes(data, 'big')
         return list(v == '1' for v in f'{i:032b}')
 
@@ -123,9 +128,9 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
     def detach_vlan_from_port(self, vid: int, port: int) -> bool:
         return self._toggle_vlan_on_port(vid=vid, port=port, member=False)
 
-    def get_ports(self) -> tuple:
+    def get_ports(self) -> Generator:
         ifs_ids = self.get_list('.1.3.6.1.2.1.10.7.2.1.1')
-        return tuple(self.get_port(snmp_num=if_id) for if_id in ifs_ids)
+        return (self.get_port(snmp_num=if_id) for if_id in ifs_ids)
 
     def get_port(self, snmp_num: int):
         snmp_num = safe_int(snmp_num)
@@ -133,7 +138,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         status = status and int(status) == 1
         return DLinkPort(
             num=snmp_num,
-            name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % snmp_num),
+            name=self.get_item('.1.3.6.1.2.1.31.1.1.1.18.%d' % snmp_num),
             status=status,
             mac=self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % snmp_num),
             speed=self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % snmp_num),

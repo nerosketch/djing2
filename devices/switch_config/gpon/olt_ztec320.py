@@ -39,7 +39,7 @@ class ZTE_C320(BDCOM_P3310C):
     #         'onu_type': onu_type_num[0],
     #         'onu_port': onu_port,
     #         'onu_signal': conv_zte_signal(onu_signal),
-    #         'onu_sn': onu_prefix + ''.join('%.2X' % ord(i) for i in onu_sn[-4:]),  # Real sn in last 4 octets,
+    #         'onu_sn': onu_prefix + ''.join('%.2X' % i for i in onu_sn[-4:]),  # Real sn in last 4 octets,
     #         'snmp_extra': "%d.%d" % (fiber_num, safe_int(onu_type_num[1])),
     #     } for onu_type_num, onu_port, onu_signal, onu_sn, onu_prefix in zip(
     #         onu_types, onu_ports, onu_signals, onu_sns, onu_prefixs
@@ -58,7 +58,7 @@ class ZTE_C320(BDCOM_P3310C):
             'firmware_ver': frm_ver,
             'loid_passw': loid_passw,
             'loid': loid,
-            'sn': 'ZTEG' + ''.join('%x' % ord(i) for i in sn[-4:]).upper()
+            'sn': 'ZTEG' + ''.join('%x' % i for i in sn[-4:]).upper()
         } for frm_ver, loid_passw, loid, (sn, num) in zip(
             firmware_ver, loid_passws, loids, sn_num_list
         ))
