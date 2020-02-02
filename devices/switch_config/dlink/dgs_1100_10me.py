@@ -2,9 +2,8 @@ import os
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
-from djing2.lib import safe_int
-from .dgs_1100_06me import DlinkDGS_1100_06MESwitchInterface
-from ..base import DeviceConfigurationError, Vlans, Vlan
+from .dgs_3120_24sc import DlinkDGS_3120_24SCSwitchInterface
+from ..base import DeviceConfigurationError
 
 
 def _ex_expect(filename, params=()):
@@ -23,28 +22,13 @@ def _ex_expect(filename, params=()):
             })
 
 
-class DlinkDGS1100_10ME(DlinkDGS_1100_06MESwitchInterface):
+class DlinkDGS1100_10ME(DlinkDGS_3120_24SCSwitchInterface):
     """Dlink DGS-1100-10/ME"""
     has_attachable_to_customer = True
     tech_code = 'dlink_sw'
     description = 'DLink DGS-1100-10/ME'
     is_use_device_port = True
     ports_len = 10
-
-    def __init__(self, prompt: bytes = None, *args, **kwargs):
-        DlinkDGS_1100_06MESwitchInterface.__init__(
-            self,
-            prompt=prompt or b'DGS-1100-10/ME:5#',
-            *args, **kwargs
-        )
-
-    def read_all_vlan_info(self) -> Vlans:
-        vids = self.get_list_keyval('.1.3.6.1.4.1.171.10.134.2.1.7.6.1.2')
-        for vid_name, vid in vids:
-            vid = safe_int(vid)
-            if vid in (0, 1):
-                continue
-            yield Vlan(vid=vid, name=vid_name)
 
     def reboot(self, save_before_reboot=False):
         dat = self.dev_instance.extra_data
