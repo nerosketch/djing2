@@ -341,7 +341,7 @@ class PortModelViewSet(DjingModelViewSet):
         if not customers.exists():
             raise NotFound(gettext('Subscribers on port does not exist'))
         if customers.count() > 1:
-            return Response([c for c in customers])
+            return Response(customers)
         return Response(self.serializer_class(instance=customers.first()))
 
     @action(detail=True)
@@ -354,14 +354,23 @@ class PortModelViewSet(DjingModelViewSet):
         macs = dev.dev_switch_get_mac_address_port(
             device_port_num=port.num
         )
-        return Response([m._asdict() for m in macs])
+        return Response(m._asdict() for m in macs)
 
     @action(detail=True)
     @catch_dev_manager_err
     def scan_vlan(self, request, pk=None):
         port = self.get_object()
         port_vlans = port.get_port_vlan_list()
-        return Response(v for v in port_vlans)
+        return Response(p._asdict() for p in port_vlans)
+
+    @action(methods=['post'], detail=True)
+    @catch_dev_manager_err
+    def vlan_config_apply(self, request, pk=None):
+        port = self.get_object()
+        serializer = dev_serializers.PortVlanConfigSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        port.apply_vlan_config(serializer=serializer)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class PortVlanMemberModelViewSet(DjingModelViewSet):
