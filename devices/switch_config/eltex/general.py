@@ -80,16 +80,16 @@ class EltexSwitch(DlinkDGS1100_10ME):
             1
         )
 
-    def read_port_vlan_info(self, port: int) -> Generator[dict, None, None]:
-        def _calc_ret(vlan_untagged_egress_oid, vlan_egress_bitmap, table_no) -> Generator[dict, None, None]:
+    def read_port_vlan_info(self, port: int) -> Vlans:
+        def _calc_ret(vlan_untagged_egress_oid, vlan_egress_bitmap, table_no) -> Vlans:
             vlan_untagged_egress = self.get_item(vlan_untagged_egress_oid)
             vlan_untagged_egress = list(self.parse_eltex_vlan_map(vlan_untagged_egress, table=table_no))
             is_native = next((v == 1 for i, v in enumerate(vlan_untagged_egress, 1) if i >= port), False)
-            return ({
-                'vid': vid,
-                'title': None,
-                'native': is_native
-            } for vid in self.parse_eltex_vlan_map(vlan_egress_bitmap, table=table_no))
+            return (Vlan(
+                vid=vid,
+                title=None,
+                native=is_native
+            ) for vid in self.parse_eltex_vlan_map(vlan_egress_bitmap, table=table_no))
 
         if port > self.ports_len or port < 1:
             raise ValueError('Port must be in range 1-%d' % self.ports_len)
@@ -248,7 +248,8 @@ class EltexSwitch(DlinkDGS1100_10ME):
         if port_num > self.ports_len or port_num < 1:
             raise ValueError('Port must be in range 1-%d' % self.ports_len)
         port_num = port_num + 48
-        bit_maps = self.make_eltex_map_vlan(vlan_list)
+        vids = (v.vid for v in vlan_list)
+        bit_maps = self.make_eltex_map_vlan(vids=vids)
         oids = []
         for tbl_num, bitmap in bit_maps.items():
             oids.append((
@@ -261,13 +262,9 @@ class EltexSwitch(DlinkDGS1100_10ME):
     def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
         return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port_num)
 
-    def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, title=None),))
-        return self.attach_vlans_to_port(_vlan_gen, port)
-
     def detach_vlans_from_port(self, vlan_list: Vlans, port: int) -> bool:
         return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port)
 
-    def detach_vlan_from_port(self, vid: int, port: int) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, title=None),))
+    def detach_vlan_from_port(self, vlan: Vlan, port: int) -> bool:
+        _vlan_gen = (v for v in (vlan,))
         return self.detach_vlans_from_port(_vlan_gen, port)

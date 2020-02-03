@@ -260,11 +260,11 @@ class BDCOM_P3310C(BasePONInterface):
         self.read_until(self.prompt)
         return True
 
-    def attach_vlans_to_uplink(self, vids: Iterable[int], port: int, tag: bool = True) -> None:
+    def attach_vlans_to_uplink(self, vlans: Vlans, port: int, tag: bool = True) -> None:
         self.attach_vlan_to_gport(vids, port, tag)
 
-    def detach_vlan_from_port(self, vid: int, port: int, tag: bool = True) -> bool:
-        return self.detach_vlan_from_eport(vid, port, tag)
+    def detach_vlan_from_port(self, vlan: Vlan, port: int, tag: bool = True) -> bool:
+        return self.detach_vlan_from_eport(vlan, port, tag)
 
     def detach_vlan_from_eport(self, vid: int, port: int, tag: bool = True) -> bool:
         self.write('conf')
