@@ -32,7 +32,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             snmp_community=str(dev_instance.man_passw)
         )
 
-    def read_port_vlan_info(self, port: int) -> Generator[dict, None, None]:
+    def read_port_vlan_info(self, port: int) -> Vlans:
         if port > self.ports_len or port < 1:
             raise ValueError('Port must be in range 1-%d' % self.ports_len)
         vid = 1
@@ -49,20 +49,25 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             untagged_members = self.get_item('1.3.6.1.2.1.17.7.1.4.3.1.4.%d' % vid)
             untagged_members = self._make_ports_map(untagged_members[:4])
             name = self._get_vid_name(vid)
-            yield {
-                'vid': vid,
-                'title': name,
-                'native': untagged_members[port-1]
-            }
+            yield Vlan(
+                vid=vid,
+                title=name,
+                native=untagged_members[port-1]
+            )
 
     @staticmethod
     def _make_ports_map(data: AnyStr) -> List[bool]:
         if isinstance(data, bytes):
             data = data[:4]
         else:
-            raise TypeError('data must be instance of bytes')
+            raise TypeError('data must be instance of bytes, %s got instead' % data.__class__)
         i = int.from_bytes(data, 'big')
         return list(v == '1' for v in f'{i:032b}')
+
+    @staticmethod
+    def _make_buf_from_ports_map(ports_map: List) -> bytes:
+        i = int(''.join('1' if m else '0' for m in ports_map), base=2)
+        return struct.pack('!I', i)
 
     def read_all_vlan_info(self) -> Vlans:
         vids = self.get_list_keyval('.1.3.6.1.2.1.17.7.1.4.3.1.1')
@@ -107,26 +112,48 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         req = [('1.3.6.1.2.1.17.7.1.4.3.1.5.%d' % v.vid, 6) for v in vlan_list]
         return self.set_multiple(req)
 
-    def _toggle_vlan_on_port(self, vid: int, port: int, member: bool):
+    def _toggle_vlan_on_port(self, vlan: Vlan, port: int, member: bool):
         if port > self.ports_len or port < 1:
             raise ValueError('Port must be in range 1-%d' % self.ports_len)
-        member_tagged = self.get_item('1.3.6.1.2.1.17.7.1.4.3.1.3.%d' % vid)
-        if member_tagged is None:
+        port_member_tagged = self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.3.%d' % vlan.vid)
+        port_member_untag = self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vlan.vid)
+        print('port_member_tagged:', vlan.vid, port_member_tagged)
+        print('port_member_untag:', vlan.vid, port_member_untag)
+        if port_member_tagged is None:
             return False
-        member_tagged_map = self._make_ports_map(member_tagged)
-        member_tagged_map[port - 1] = member
-        i = int(''.join('1' if m else '0' for m in member_tagged_map), base=2)
-        return self.set(
-            oid='1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vid,
-            value=struct.pack('!I', i),
-            snmp_type='x'
+        port_member_tagged_map = self._make_ports_map(port_member_tagged)
+        port_member_tagged_map[port - 1] = member
+
+        buf = self._make_buf_from_ports_map(port_member_tagged_map).decode()
+        return True
+
+        if vlan.native:
+            return self.set_multiple(oid_values=[
+                ('.1.3.6.1.2.1.17.7.1.4.3.1.3.%d' % vlan.vid, buf, 'OCTETSTR'),
+                ('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vlan.vid, buf, 'OCTETSTR')
+            ])
+        else:
+            return self.set(
+                oid='1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vlan.vid,
+                value=buf,
+                snmp_type='OCTETSTR'
+            )
+
+    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> tuple:
+        if port_num > self.ports_len or port_num < 1:
+            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+
+        results = tuple(
+            self._toggle_vlan_on_port(vlan=v, port=port_num, member=True)
+            for v in vlan_list
         )
+        return results
 
-    def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
-        return self._toggle_vlan_on_port(vid=vid, port=port, member=True)
+    def attach_vlan_to_port(self, vlan: Vlan, port: int, tag: bool = True) -> bool:
+        return self._toggle_vlan_on_port(vlan=vlan, port=port, member=True)
 
-    def detach_vlan_from_port(self, vid: int, port: int) -> bool:
-        return self._toggle_vlan_on_port(vid=vid, port=port, member=False)
+    def detach_vlan_from_port(self, vlan: Vlan, port: int) -> bool:
+        return self._toggle_vlan_on_port(vlan=vlan, port=port, member=False)
 
     def get_ports(self) -> Generator:
         ifs_ids = self.get_list('.1.3.6.1.2.1.10.7.2.1.1')

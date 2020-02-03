@@ -18,7 +18,7 @@ class DlinkDGS_1100_06MESwitchInterface(DlinkDGS_3120_24SCSwitchInterface):
                 continue
             yield Vlan(vid=vid, title=vid_name)
 
-    def read_port_vlan_info(self, port: int) -> Generator[dict, None, None]:
+    def read_port_vlan_info(self, port: int) -> Vlans:
         if port > self.ports_len or port < 1:
             raise ValueError('Port must be in range 1-%d' % self.ports_len)
         vids = self.get_list_keyval('.1.3.6.1.4.1.171.10.134.1.1.7.6.1.1')
@@ -36,7 +36,11 @@ class DlinkDGS_1100_06MESwitchInterface(DlinkDGS_3120_24SCSwitchInterface):
             if not member_ports[port-1]:
                 # if port num is not <port>
                 continue
-            yield {'vid': vid, 'title': vidname, 'native': vid == native_vid}
+            yield Vlan(
+                vid=vid,
+                title=vidname,
+                native=(vid == native_vid)
+            )
 
     # def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
     #     if port > self.ports_len or port < 1:

@@ -8,12 +8,11 @@ from netfields import MACAddressField
 from devices.switch_config import (
     DEVICE_TYPES, Vlans, Macs, DeviceConsoleError,
     BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
-    macbin2str)
-from devices.switch_config import (
     BaseDeviceInterface,
     DeviceConfigurationError,
-    port_templates_modules
-)
+    port_templates_modules,
+    macbin2str, DeviceImplementationError, Vlan)
+
 from djing2.lib import MyChoicesAdapter, safe_int
 from groupapp.models import Group
 from networks.models import VlanIf
@@ -294,15 +293,27 @@ class Port(models.Model):
     def __str__(self):
         return "%d: %s" % (self.num, self.descr)
 
-    # def scan_additional(self):
-    #     if not self.device:
-    #         return
-    #     mng = self.device.get_manager_object()
-    #     return mng.get_port(snmp_num=self.num).to_dict()
-
     def get_port_vlan_list(self) -> Vlans:
         mng = self.device.get_manager_object_switch()
         yield from mng.read_port_vlan_info(port=int(self.num))
+
+    def apply_vlan_config(self, serializer):
+        device = self.device
+        if not device:
+            raise DeviceImplementationError('device could not found')
+        port_num = serializer.data.get('port_num')
+        if not port_num:
+            raise DeviceImplementationError('port_num field required')
+
+        mng = device.get_manager_object_switch()
+
+        vlans_data = serializer.data.get('vlans')
+        if not vlans_data:
+            raise DeviceImplementationError('vlans field required')
+
+        vlans_gen = (Vlan(**v) for v in vlans_data)
+
+        mng.attach_vlans_to_port(vlan_list=vlans_gen, port_num=port_num)
 
     class Meta:
         db_table = 'device_port'
