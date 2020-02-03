@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
 # from telnetlib import Telnet
-from typing import Generator, Optional, Dict, Iterable, AnyStr, Tuple, Any
+from typing import Generator, Optional, Dict, Iterable, AnyStr, Tuple, Any, NamedTuple
 from easysnmp import Session
 
 from django.utils.translation import gettext_lazy as _, gettext
@@ -25,7 +25,20 @@ class DeviceConnectionError(ConnectionError):
     pass
 
 
-Vlan = namedtuple('Vlan', 'vid title')
+class Vlan(namedtuple('Vlan', 'vid title native is_management marked_new')):
+
+    def __new__(cls, vid: int, title: str, native: bool = False, is_management: bool = False, marked_new: bool = False):
+        if title:
+            if isinstance(title, bytes):
+                title = ''.join(chr(c) for c in title if chr(c).isalpha())
+            else:
+                title = ''.join(filter(str.isalpha, title))
+        return super().__new__(
+            cls, vid=vid, title=title, native=native,
+            is_management=is_management, marked_new=marked_new
+        )
+
+
 Vlans = Generator[Vlan, None, None]
 MacItem = namedtuple('MacItem', 'vid name mac port')
 Macs = Generator[MacItem, None, None]
@@ -265,8 +278,17 @@ class BaseSwitchInterface(BaseDeviceInterface):
         """
         raise NotImplementedError
 
+    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
+        """
+        Attach vlan set to port
+        :param vlan_list:
+        :param port_num:
+        :return: Operation result
+        """
+        raise NotImplementedError
+
     @abstractmethod
-    def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
+    def attach_vlan_to_port(self, vlan: Vlan, port: int, tag: bool = True) -> bool:
         """
         Attach vlan to switch port
         :param vid:
@@ -274,13 +296,14 @@ class BaseSwitchInterface(BaseDeviceInterface):
         :param tag: Tagged if True or untagged otherwise
         :return:
         """
-        raise NotImplementedError
+        _vlan_gen = (v for v in (vlan,))
+        return self.attach_vlans_to_port(_vlan_gen, port)
 
     def _get_vid_name(self, vid: int) -> str:
         return self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % vid)
 
     @abstractmethod
-    def detach_vlan_from_port(self, vid: int, port: int) -> bool:
+    def detach_vlan_from_port(self, vlan: Vlan, port: int) -> bool:
         """
         Detach vlan from switch port
         :param vid:
@@ -330,7 +353,7 @@ class BasePONInterface(BaseDeviceInterface):
         """Removes device from OLT if devices is ONU"""
 
     @abstractmethod
-    def attach_vlans_to_uplink(self, vids: Iterable[int], *args, **kwargs) -> None:
+    def attach_vlans_to_uplink(self, vlans: Vlans, *args, **kwargs) -> None:
         """
         Attach vlan to uplink port
         :param vids: vid iterable, each element must be instance of Int
