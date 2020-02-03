@@ -45,11 +45,3 @@ class DlinkDGS1100_10ME(DlinkDGS_3120_24SCSwitchInterface):
                 login, passw,
                 1 if save_before_reboot else 0
             )), None
-
-    # def login(self, login: str, password: str, *args, **kwargs) -> bool:
-    #     return BaseDeviceInterface.login(self,
-    #                                      login_prompt=b'login: ',
-    #                                      login=login,
-    #                                      password_prompt=b'Password:',
-    #                                      password=password
-    #                                      )

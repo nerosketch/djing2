@@ -44,6 +44,23 @@ class PortModelSerializer(BaseCustomModelSerializer):
         fields = ('pk', 'device', 'num', 'descr', 'user_count')
 
 
+class PortVlanConfigMemberSerializer(serializers.Serializer):
+    vid = serializers.IntegerField(
+        min_value=1, max_value=4095, required=True
+    )
+    title = serializers.CharField(max_length=128, required=True)
+    is_management = serializers.NullBooleanField(default=False, initial=False)
+    native = serializers.BooleanField(default=False, initial=False)
+    marked_new = serializers.BooleanField(default=False, initial=False)
+
+
+class PortVlanConfigSerializer(serializers.Serializer):
+    port_num = serializers.IntegerField(min_value=1, max_value=28)
+    vlans = serializers.ListField(
+        child=PortVlanConfigMemberSerializer()
+    )
+
+
 class DeviceGroupsModelSerializer(BaseCustomModelSerializer):
     device_count = serializers.IntegerField(read_only=True)
 
