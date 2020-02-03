@@ -47,14 +47,13 @@ for dirc in all_directories:
             port_template_mod = importlib.import_module(
                 'devices.switch_config.%s.port_templates.%s' % (dirc, port_template_module_file))
             func_names = filter(lambda fn: not fn.startswith('_'), dir(port_template_mod))
+            for func_name in func_names:
+                func = getattr(port_template_mod, func_name)
+                if hasattr(func, 'is_port_template') and func.is_port_template:
+                    port_templates_modules[func_num] = func
+                    func_num += 1
     except (ModuleNotFoundError, FileNotFoundError):
         continue
-
-    for func_name in func_names:
-        func = getattr(port_template_mod, func_name)
-        if hasattr(func, 'is_port_template') and func.is_port_template:
-            port_templates_modules[func_num] = func
-            func_num += 1
 
 __all__ = (
     'DEVICE_TYPES', 'DeviceImplementationError', 'DeviceConfigurationError',
