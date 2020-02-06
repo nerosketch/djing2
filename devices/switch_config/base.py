@@ -1,8 +1,10 @@
+import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
 # from telnetlib import Telnet
-from typing import Generator, Optional, Dict, Iterable, AnyStr, Tuple, Any, NamedTuple
+from typing import Generator, Optional, Dict, AnyStr, Tuple, Any
 from easysnmp import Session
+from transliterate import translit
 
 from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib import RuTimedelta
@@ -25,9 +27,9 @@ class DeviceConnectionError(ConnectionError):
     pass
 
 
-class Vlan(namedtuple('Vlan', 'vid title native is_management marked_new')):
+class Vlan(namedtuple('Vlan', 'vid title native is_management')):
 
-    def __new__(cls, vid: int, title: str, native: bool = False, is_management: bool = False, marked_new: bool = False):
+    def __new__(cls, vid: int, title: str, native: bool = False, is_management: bool = False):
         if title:
             if isinstance(title, bytes):
                 title = ''.join(chr(c) for c in title if chr(c).isalpha())
@@ -35,7 +37,7 @@ class Vlan(namedtuple('Vlan', 'vid title native is_management marked_new')):
                 title = ''.join(filter(str.isalpha, title))
         return super().__new__(
             cls, vid=vid, title=title, native=native,
-            is_management=is_management, marked_new=marked_new
+            is_management=is_management
         )
 
 
@@ -113,11 +115,6 @@ class BaseSNMPWorker(Session):
 #         if isinstance(match, bytes):
 #             return super().read_until(match=match, timeout=timeout)
 #         return super().read_until(match=str(match).encode(), timeout=timeout)
-#
-#     @staticmethod
-#     def _normalize_name(name: str) -> str:
-#         vname = translit(name, language_code='ru', reversed=True)
-#         return re.sub(r'\W+', '_', vname)[:32]
 
 
 class BaseDeviceInterface(BaseSNMPWorker):
@@ -146,8 +143,8 @@ class BaseDeviceInterface(BaseSNMPWorker):
         """
         raise NotImplementedError
 
-    def create_vlan(self, vid: int, name: str) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, title=name),))
+    def create_vlan(self, vlan: Vlan) -> bool:
+        _vlan_gen = (v for v in (vlan,))
         return self.create_vlans(_vlan_gen)
 
     def delete_vlan(self, vid: int) -> bool:
@@ -311,6 +308,11 @@ class BaseSwitchInterface(BaseDeviceInterface):
         :return: Operation result
         """
         raise NotImplementedError
+
+    @staticmethod
+    def _normalize_name(name: str) -> str:
+        vname = translit(name, language_code='ru', reversed=True)
+        return re.sub(r'\W+', '_', vname)[:32]
 
 
 class BasePortInterface(ABC):
