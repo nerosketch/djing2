@@ -51,7 +51,6 @@ class PortVlanConfigMemberSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=128, required=True)
     is_management = serializers.NullBooleanField(default=False, initial=False)
     native = serializers.BooleanField(default=False, initial=False)
-    marked_new = serializers.BooleanField(default=False, initial=False)
 
 
 class PortVlanConfigSerializer(serializers.Serializer):
