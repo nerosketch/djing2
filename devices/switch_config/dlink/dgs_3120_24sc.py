@@ -104,40 +104,58 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         for v in vlan_list:
             vname = self._normalize_name(v.title)
             return self.set_multiple([
-                ('1.3.6.1.2.1.17.7.1.4.3.1.5.%d' % v.vid, 4, 'i'),      # 4 - vlan со всеми функциями
-                ('1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % v.vid, vname, 'x'),  # имя влана
+                ('.1.3.6.1.2.1.17.7.1.4.3.1.5.%d' % v.vid, 4, 'INTEGER'),      # 4 - vlan со всеми функциями
+                ('.1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % v.vid, vname, 'OCTETSTR'),   # имя влана
             ])
 
     def delete_vlans(self, vlan_list: Vlans) -> bool:
         req = [('1.3.6.1.2.1.17.7.1.4.3.1.5.%d' % v.vid, 6) for v in vlan_list]
         return self.set_multiple(req)
 
+    def _add_vlan_if_not_exists(self, vlan: Vlan):
+        """
+        If vlan does not exsists on device, then create it
+        :param vlan: vlan for check
+        :return: True if vlan created
+        """
+        snmp_vlan = self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.5.%d' % vlan.vid)
+        if snmp_vlan is None:
+            return self.create_vlan(vlan=vlan)
+        return False
+
     def _toggle_vlan_on_port(self, vlan: Vlan, port: int, member: bool):
         if port > self.ports_len or port < 1:
             raise ValueError('Port must be in range 1-%d' % self.ports_len)
-        port_member_tagged = self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.3.%d' % vlan.vid)
-        port_member_untag = self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vlan.vid)
-        print('port_member_tagged:', vlan.vid, port_member_tagged)
-        print('port_member_untag:', vlan.vid, port_member_untag)
-        if port_member_tagged is None:
+
+        # if vlan does not exsists on device, then create it
+        self._add_vlan_if_not_exists(vlan)
+
+        port_member_tagged = self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vlan.vid)
+        port_member_untag = self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.4.%d' % vlan.vid)
+        if not port_member_tagged or not port_member_untag:
             return False
+
         port_member_tagged_map = self._make_ports_map(port_member_tagged)
-        port_member_tagged_map[port - 1] = member
-
-        buf = self._make_buf_from_ports_map(port_member_tagged_map).decode()
-        return True
-
-        if vlan.native:
-            return self.set_multiple(oid_values=[
-                ('.1.3.6.1.2.1.17.7.1.4.3.1.3.%d' % vlan.vid, buf, 'OCTETSTR'),
-                ('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vlan.vid, buf, 'OCTETSTR')
-            ])
+        port_member_untag_map = self._make_ports_map(port_member_untag)
+        if member:
+            port_member_untag_map[port - 1] = vlan.native
+            port_member_tagged_map[port - 1] = True
         else:
-            return self.set(
-                oid='1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vlan.vid,
-                value=buf,
-                snmp_type='OCTETSTR'
-            )
+            port_member_untag_map[port - 1] = False
+            port_member_tagged_map[port - 1] = False
+
+        port_member_tagged = self._make_buf_from_ports_map(port_member_tagged_map)
+        port_member_untag = self._make_buf_from_ports_map(port_member_untag_map)
+
+        return self.set_multiple(oid_values=[
+            ('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vlan.vid,
+             port_member_tagged,
+             'OCTETSTR'),
+
+            ('.1.3.6.1.2.1.17.7.1.4.3.1.4.%d' % vlan.vid,
+             port_member_untag,
+             'OCTETSTR')
+        ])
 
     def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> tuple:
         if port_num > self.ports_len or port_num < 1:
