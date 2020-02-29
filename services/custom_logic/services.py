@@ -63,7 +63,7 @@ class TariffCp(TariffDp):
         now = timezone.now()
         long_long_time = datetime(
             year=now.year + 10, month=now.month,
-            day=now.day, hour=23,
+            day=1, hour=23,
             minute=59, second=59
         )
         return long_long_time
