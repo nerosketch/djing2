@@ -12,7 +12,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from rest_framework import status
-from easysnmp import EasySNMPTimeoutError
+from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from django_filters.rest_framework import DjangoFilterBackend
 
 from customers.models import Customer
@@ -35,12 +35,12 @@ def catch_dev_manager_err(fn):
     def wrapper(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
-        except DeviceImplementationError as err:
-            return Response(str(err), status=status.HTTP_501_NOT_IMPLEMENTED)
-        except ExpectValidationError as err:
+        except (DeviceImplementationError, ExpectValidationError) as err:
             return Response(str(err))
-        except (ConnectionResetError, ConnectionRefusedError, OSError, DeviceConnectionError, EasySNMPTimeoutError) as err:
+        except (ConnectionResetError, ConnectionRefusedError, OSError, DeviceConnectionError, EasySNMPError) as err:
             return Response(str(err), status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except EasySNMPTimeoutError as err:
+            return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
         except SystemError as err:
             return Response(str(err), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -302,8 +302,8 @@ class DeviceModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_all_vlan_list(self, request, pk=None):
         dev = self.get_object()
-        vlans = dev.dev_get_all_vlan_list()
-        res = (i._asdict() for i in vlans)
+        vlan_list = dev.dev_get_all_vlan_list()
+        res = (i._asdict() for i in vlan_list)
         return Response(res)
 
 
