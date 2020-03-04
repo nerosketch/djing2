@@ -84,8 +84,9 @@ class BaseSNMPWorker(Session):
 
     def get_item(self, oid) -> Any:
         v = self.get(oid).value
-        if isinstance(v, str) and v == 'NOSUCHINSTANCE':
-            return None
+        if isinstance(v, str):
+            if v and v != 'NOSUCHINSTANCE':
+                return v.encode()
         return v
 
 
