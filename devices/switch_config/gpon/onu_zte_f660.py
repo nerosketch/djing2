@@ -46,8 +46,8 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             sn = 'ZTEG%s' % ''.join('%.2X' % x for x in sn[-4:])
 
         status_map = {
-            '1': 'ok',
-            '2': 'down'
+            1: 'ok',
+            2: 'down'
         }
         info = {
             'status': status_map.get(self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1' % fiber_addr),
