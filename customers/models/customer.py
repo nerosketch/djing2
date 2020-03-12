@@ -7,17 +7,13 @@ from django.core import validators
 from django.core.validators import RegexValidator
 from django.db import models, transaction
 from django.db.models.signals import post_init, pre_save
-from django.dispatch import receiver
+from django.dispatch.dispatcher import receiver
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
 from djing2.lib import LogicError, safe_float
-from gateways.nas_managers import (
-    SubnetQueue, GatewayFailedResult,
-    GatewayNetworkError
-)
 from profiles.models import BaseAccount, MyUserManager, UserProfile
-from services.models import Service, PeriodicPay, OneShotPay
+from services.models import Service, OneShotPay, PeriodicPay
 from groupapp.models import Group
 
 
@@ -120,12 +116,6 @@ class Customer(BaseAccount):
         verbose_name=_('Customer group')
     )
     balance = models.FloatField(default=0.0)
-    ip_address = models.GenericIPAddressField(
-        verbose_name=_('Ip address'),
-        null=True,
-        blank=True,
-        default=None
-    )
     description = models.TextField(
         _('Comment'),
         null=True,
@@ -356,24 +346,24 @@ class Customer(BaseAccount):
         total_cost = safe_float(service.cost)
         return total_cost - elapsed_cost
 
-    def attach_ip_addr(self, ip, strict=False):
-        """
-        Attach ip address to account
-        :param ip: Instance of str or ip_address
-        :param strict: If strict is True then ip not replaced quietly
-        :return: None
-        """
-        if strict and self.ip_address:
-            raise LogicError('Ip address already exists')
-        self.ip_address = ip
-        self.save(update_fields=('ip_address',))
+    # def attach_ip_addr(self, ip, strict=False):
+    #     """
+    #     Attach ip address to account
+    #     :param ip: Instance of str or ip_address
+    #     :param strict: If strict is True then ip not replaced quietly
+    #     :return: None
+    #     """
+    #     if strict and self.ip_address:
+    #         raise LogicError('Ip address already exists')
+    #     self.ip_address = ip
+    #     self.save(update_fields=('ip_address',))
 
-    def free_ip_addr(self) -> bool:
-        if self.ip_address:
-            self.ip_address = None
-            self.save(update_fields=('ip_address',))
-            return True
-        return False
+    # def free_ip_addr(self) -> bool:
+    #     if self.ip_address:
+    #         self.ip_address = None
+    #         self.save(update_fields=('ip_address',))
+    #         return True
+    #     return False
 
     # is customer have access to service,
     # view in services.custom_tariffs.<ServiceBase>.manage_access()
@@ -388,54 +378,54 @@ class Customer(BaseAccount):
         return ct.manage_access(self)
 
     # make customer from agent structure
-    def build_agent_struct(self):
-        if not self.ip_address:
-            return
-        customer_service = self.active_service()
-        if customer_service:
-            service = customer_service.service
-            return SubnetQueue(
-                name="uid%d" % self.pk,
-                network=self.ip_address,
-                max_limit=(service.speed_in, service.speed_out),
-                is_access=self.is_access()
-            )
+    # def build_agent_struct(self):
+    #     if not self.ip_address:
+    #         return
+    #     customer_service = self.active_service()
+    #     if customer_service:
+    #         service = customer_service.service
+    #         return SubnetQueue(
+    #             name="uid%d" % self.pk,
+    #             network=self.ip_address,
+    #             max_limit=(service.speed_in, service.speed_out),
+    #             is_access=self.is_access()
+    #         )
 
-    def gw_sync_self(self):
-        """
-        Synchronize user with gateway
-        :return:
-        """
-        if self.gateway is None:
-            raise LogicError(_('gateway required'))
-        try:
-            agent_struct = self.build_agent_struct()
-            if agent_struct is not None:
-                mngr = self.gateway.get_gw_manager()
-                mngr.update_user(agent_struct)
-        except (GatewayFailedResult, GatewayNetworkError, ConnectionResetError) as e:
-            print('ERROR:', e)
-            return e
-        except LogicError:
-            pass
+    # def gw_sync_self(self):
+    #     """
+    #     Synchronize user with gateway
+    #     :return:
+    #     """
+    #     if self.gateway is None:
+    #         raise LogicError(_('gateway required'))
+    #     try:
+    #         agent_struct = self.build_agent_struct()
+    #         if agent_struct is not None:
+    #             mngr = self.gateway.get_gw_manager()
+    #             mngr.update_user(agent_struct)
+    #     except (GatewayFailedResult, GatewayNetworkError, ConnectionResetError) as e:
+    #         print('ERROR:', e)
+    #         return e
+    #     except LogicError:
+    #         pass
 
-    def gw_add_self(self):
-        """
-        Will add this user to network access server
-        :return: Nothing
-        """
-        if self.gateway is None:
-            raise LogicError(_('gateway required'))
-        try:
-            agent_struct = self.build_agent_struct()
-            if agent_struct is not None:
-                mngr = self.gateway.get_gw_manager()
-                mngr.add_user(agent_struct)
-        except (GatewayFailedResult, GatewayNetworkError, ConnectionResetError) as e:
-            print('ERROR:', e)
-            return e
-        except LogicError:
-            pass
+    # def gw_add_self(self):
+    #     """
+    #     Will add this user to network access server
+    #     :return: Nothing
+    #     """
+    #     if self.gateway is None:
+    #         raise LogicError(_('gateway required'))
+    #     try:
+    #         agent_struct = self.build_agent_struct()
+    #         if agent_struct is not None:
+    #             mngr = self.gateway.get_gw_manager()
+    #             mngr.add_user(agent_struct)
+    #     except (GatewayFailedResult, GatewayNetworkError, ConnectionResetError) as e:
+    #         print('ERROR:', e)
+    #         return e
+    #     except LogicError:
+    #         pass
 
     def enable_service(self, service: Service, deadline=None, time_start=None):
         """
@@ -473,7 +463,37 @@ class Customer(BaseAccount):
         verbose_name = _('Customer')
         verbose_name_plural = _('Customers')
         ordering = ('id',)
-        unique_together = ('ip_address', 'gateway')
+        # unique_together = ('ip_address', 'gateway')
+
+
+class InvoiceForPayment(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    status = models.BooleanField(default=False)
+    cost = models.FloatField(default=0.0)
+    comment = models.CharField(max_length=128)
+    date_create = models.DateTimeField(auto_now_add=True)
+    date_pay = models.DateTimeField(blank=True, null=True)
+    author = models.ForeignKey(
+        UserProfile,
+        related_name='+',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        default=None
+    )
+
+    def __str__(self):
+        return "%s -> %.2f" % (self.customer.username, self.cost)
+
+    def set_ok(self):
+        self.status = True
+        self.date_pay = datetime.now()
+
+    class Meta:
+        ordering = ('id',)
+        db_table = 'customer_inv_pay'
+        verbose_name = _('Debt')
+        verbose_name_plural = _('Debts')
 
 
 class PassportInfo(models.Model):
@@ -508,36 +528,6 @@ class PassportInfo(models.Model):
 
     def __str__(self):
         return "%s %s" % (self.series, self.number)
-
-
-class InvoiceForPayment(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    status = models.BooleanField(default=False)
-    cost = models.FloatField(default=0.0)
-    comment = models.CharField(max_length=128)
-    date_create = models.DateTimeField(auto_now_add=True)
-    date_pay = models.DateTimeField(blank=True, null=True)
-    author = models.ForeignKey(
-        UserProfile,
-        related_name='+',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        default=None
-    )
-
-    def __str__(self):
-        return "%s -> %.2f" % (self.customer.username, self.cost)
-
-    def set_ok(self):
-        self.status = True
-        self.date_pay = datetime.now()
-
-    class Meta:
-        ordering = ('id',)
-        db_table = 'customer_inv_pay'
-        verbose_name = _('Debt')
-        verbose_name_plural = _('Debts')
 
 
 class CustomerRawPassword(models.Model):

@@ -30,15 +30,15 @@ class NetworkModelViewSet(DjingModelViewSet):
     #     selected_grps = (pk[0] for pk in net.groups.only('pk').values_list('pk'))
     #     return Response(selected_grps)
 
-    @action(detail=True)
-    def get_free_ip(self, request, pk=None):
-        network = self.get_object()
-        q = Customer.objects.exclude(ip_address=None).exclude(gateway=None).iterator()
-        used_ips = (c.ip_address for c in q)
-        ip = network.get_free_ip(employed_ips=used_ips)
-        if ip is None:
-            return Response()
-        return Response(str(ip))
+    # @action(detail=True)
+    # def get_free_ip(self, request, pk=None):
+    #     network = self.get_object()
+    #     q = Customer.objects.exclude(ip_address=None).exclude(gateway=None).iterator()
+    #     used_ips = (c.ip_address for c in q)
+    #     ip = network.get_free_ip(employed_ips=used_ips)
+    #     if ip is None:
+    #         return Response()
+    #     return Response(str(ip))
 
 
 class VlanIfModelViewSet(DjingModelViewSet):
