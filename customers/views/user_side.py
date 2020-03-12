@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from customers import serializers
 from customers import models
 from customers.views.view_decorators import catch_customers_errs
-from customers.tasks import customer_gw_command
+# from customers.tasks import customer_gw_command
 from djing2.lib import safe_int, LogicError
 from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet
 from services.models import Service
