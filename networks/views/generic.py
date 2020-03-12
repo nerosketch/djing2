@@ -5,13 +5,12 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
 from djing2.viewsets import DjingModelViewSet
-from customers.models import Customer
 from networks.serializers import NetworkModelSerializer, VlanIfModelSerializer
-from networks.models import NetworkModel, VlanIf
+from networks.models import NetworkIpPool, VlanIf
 
 
 class NetworkModelViewSet(DjingModelViewSet):
-    queryset = NetworkModel.objects.all()
+    queryset = NetworkIpPool.objects.all()
     serializer_class = NetworkModelSerializer
     filter_backends = (OrderingFilter,)
     ordering_fields = ('network', 'kind', 'description', 'cost', 'usercount')

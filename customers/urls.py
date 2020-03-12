@@ -8,6 +8,12 @@ app_name = 'customers'
 
 router = DefaultRouter()
 
+# User side views
+router.register('users/me', user_side.CustomersUserSideModelViewSet)
+router.register('users/service', user_side.CustomerServiceModelViewSet)
+router.register('users/log', user_side.LogsReadOnlyModelViewSet)
+router.register('users/debts', user_side.DebtsList)
+
 # Admin Views
 router.register('customer-service', admin_side.CustomerServiceModelViewSet)
 router.register('streets', admin_side.CustomerStreetModelViewSet)
@@ -18,13 +24,6 @@ router.register('customer-raw-password', admin_side.CustomerRawPasswordModelView
 router.register('additional-telephone', admin_side.AdditionalTelephoneModelViewSet)
 router.register('periodic-pay', admin_side.PeriodicPayForIdModelViewSet)
 router.register('', admin_side.CustomerModelViewSet)
-
-# User side views
-router.register('users/me', user_side.CustomersUserSideModelViewSet)
-router.register('users/service', user_side.CustomerServiceModelViewSet)
-router.register('users/log', user_side.LogsReadOnlyModelViewSet)
-router.register('users/debts', user_side.DebtsList)
-
 
 urlpatterns = [
     path('attach_group_service/', admin_side.AttachServicesToGroups.as_view()),

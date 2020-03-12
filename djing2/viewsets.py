@@ -2,7 +2,7 @@ from django.db import IntegrityError
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, GenericViewSet
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import AuthenticationFailed
 
@@ -66,5 +66,5 @@ class BaseNonAdminModelViewSet(ModelViewSet):
         raise AuthenticationFailed
 
 
-class DjingAuthorizedViewSet(ViewSet):
+class DjingAuthorizedViewSet(GenericViewSet):
     permission_classes = (IsAuthenticated, IsAdminUser)
