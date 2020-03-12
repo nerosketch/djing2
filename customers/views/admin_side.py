@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from agent.commands.dhcp import dhcp_commit, dhcp_expiry, dhcp_release
 from customers import models
 from customers import serializers
-from customers.tasks import customer_gw_command, customer_gw_remove
+# from customers.tasks import customer_gw_command, customer_gw_remove
 from customers.views.view_decorators import catch_customers_errs
 from djing2.exceptions import UniqueConstraintIntegrityError
 from djing2.lib import safe_int, LogicError, DuplicateEntry, safe_float
@@ -26,7 +26,7 @@ from djing2.lib.mixins import SecureApiView
 from djing2.lib.paginator import QueryPageNumberPagination
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from gateways.models import Gateway
-from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
+# from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
 from groupapp.models import Group
 from services.models import Service, OneShotPay
 from services.serializers import ServiceModelSerializer
@@ -117,13 +117,13 @@ class CustomerModelViewSet(DjingModelViewSet):
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(str(e))
 
-    def perform_destroy(self, instance):
-        customer_gw_remove.delay(
-            customer_uid=instance.pk, ip_addr=instance.ip_address,
-            speed=(0, 0),
-            is_access=instance.is_access(), gw_pk=instance.gateway_id
-        )
-        super().perform_destroy(instance)
+    # def perform_destroy(self, instance):
+    #     customer_gw_remove.delay(
+    #         customer_uid=instance.pk, ip_addr=instance.ip_address,
+    #         speed=(0, 0),
+    #         is_access=instance.is_access(), gw_pk=instance.gateway_id
+    #     )
+    #     super().perform_destroy(instance)
 
     @action(methods=('post',), detail=True)
     @catch_customers_errs
@@ -164,14 +164,14 @@ class CustomerModelViewSet(DjingModelViewSet):
         if srv is None:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        if customer.gateway:
-            customer_gw_remove.delay(
-                customer_uid=int(customer.pk),
-                ip_addr=str(customer.ip_address),
-                speed=(srv.speed_in, srv.speed_out),
-                is_access=customer.is_access(),
-                gw_pk=int(customer.gateway_id)
-            )
+        # if customer.gateway:
+        #     customer_gw_remove.delay(
+        #         customer_uid=int(customer.pk),
+        #         ip_addr=str(customer.ip_address),
+        #         speed=(srv.speed_in, srv.speed_out),
+        #         is_access=customer.is_access(),
+        #         gw_pk=int(customer.gateway_id)
+        #     )
         customer.stop_service(request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -198,57 +198,57 @@ class CustomerModelViewSet(DjingModelViewSet):
         else:
             return Response(_('Users not found'))
 
-    @action(detail=True)
-    @catch_customers_errs
-    def ping(self, request, pk=None):
-        del request, pk
-        customer = self.get_object()
-        ip = customer.ip_address
-        if ip is None:
-            raise LogicError(_('Ip not passed'))
-        if customer.gateway is None:
-            raise LogicError(_('gateway required'))
-        mngr = customer.gateway.get_gw_manager()
-        try:
-            ping_result = mngr.ping(ip)
-        except (GatewayNetworkError, GatewayFailedResult) as e:
-            return Response({
-                'text': str(e),
-                'status': False
-            })
-        no_ping_response = Response({
-            'text': _('no ping'),
-            'status': False
-        })
-        r_status = True
-        if ping_result is None:
-            return no_ping_response
-        if isinstance(ping_result, tuple):
-            received, sent = ping_result
-            if received == 0:
-                ping_result = mngr.ping(ip, arp=True)
-                if ping_result is not None and isinstance(ping_result, tuple):
-                    received, sent = ping_result
-                else:
-                    return no_ping_response
-            loses_percent = (
-                received / sent if sent != 0 else 1
-            )
-            ping_result = {'return': received, 'all': sent}
-            if loses_percent > 1.0:
-                text = 'IP Conflict! %(return)d/%(all)d results'
-                r_status = False
-            elif loses_percent > 0.5:
-                text = 'ok ping, %(return)d/%(all)d loses'
-            else:
-                text = 'no ping, %(return)d/%(all)d loses'
-                r_status = False
-            text = gettext(text) % ping_result
-            return Response({
-                'text': text,
-                'status': r_status
-            })
-        return no_ping_response
+    # @action(detail=True)
+    # @catch_customers_errs
+    # def ping(self, request, pk=None):
+    #     del request, pk
+    #     customer = self.get_object()
+    #     ip = customer.ip_address
+    #     if ip is None:
+    #         raise LogicError(_('Ip not passed'))
+    #     if customer.gateway is None:
+    #         raise LogicError(_('gateway required'))
+    #     mngr = customer.gateway.get_gw_manager()
+    #     try:
+    #         ping_result = mngr.ping(ip)
+    #     except (GatewayNetworkError, GatewayFailedResult) as e:
+    #         return Response({
+    #             'text': str(e),
+    #             'status': False
+    #         })
+    #     no_ping_response = Response({
+    #         'text': _('no ping'),
+    #         'status': False
+    #     })
+    #     r_status = True
+    #     if ping_result is None:
+    #         return no_ping_response
+    #     if isinstance(ping_result, tuple):
+    #         received, sent = ping_result
+    #         if received == 0:
+    #             ping_result = mngr.ping(ip, arp=True)
+    #             if ping_result is not None and isinstance(ping_result, tuple):
+    #                 received, sent = ping_result
+    #             else:
+    #                 return no_ping_response
+    #         loses_percent = (
+    #             received / sent if sent != 0 else 1
+    #         )
+    #         ping_result = {'return': received, 'all': sent}
+    #         if loses_percent > 1.0:
+    #             text = 'IP Conflict! %(return)d/%(all)d results'
+    #             r_status = False
+    #         elif loses_percent > 0.5:
+    #             text = 'ok ping, %(return)d/%(all)d loses'
+    #         else:
+    #             text = 'no ping, %(return)d/%(all)d loses'
+    #             r_status = False
+    #         text = gettext(text) % ping_result
+    #         return Response({
+    #             'text': text,
+    #             'status': r_status
+    #         })
+    #     return no_ping_response
 
     @action(detail=True)
     @catch_customers_errs
@@ -417,23 +417,23 @@ class DhcpLever(SecureApiView):
             'cmd': 'commit'
         }"""
         try:
-            action = data.get('cmd')
-            if action is None:
+            act = data.get('cmd')
+            if act is None:
                 return '"cmd" parameter is missing'
             client_ip = data.get('client_ip')
             if client_ip is None:
                 return '"client_ip" parameter is missing'
-            if action == 'commit':
+            if act == 'commit':
                 return dhcp_commit(
                     client_ip, data.get('client_mac'),
                     data.get('switch_mac'), data.get('switch_port')
                 )
-            elif action == 'expiry':
+            elif act == 'expiry':
                 return dhcp_expiry(client_ip)
-            elif action == 'release':
+            elif act == 'release':
                 return dhcp_release(client_ip)
             else:
-                return '"cmd" parameter is invalid: %s' % action
+                return '"cmd" parameter is invalid: %s' % act
         except (LogicError, DuplicateEntry) as e:
             print('%s:' % e.__class__.__name__, e)
             return str(e)
