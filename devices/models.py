@@ -6,11 +6,11 @@ from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
 from devices.switch_config import (
-    DEVICE_TYPES, Vlans, Macs, DeviceConsoleError,
+    DEVICE_TYPES, Vlans, Macs,
     BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
     BaseDeviceInterface,
     DeviceConfigurationError,
-    port_templates_modules,
+    # port_templates_modules,
     macbin2str, DeviceImplementationError, Vlan)
 
 from djing2.lib import MyChoicesAdapter, safe_int
@@ -18,30 +18,30 @@ from groupapp.models import Group
 from networks.models import VlanIf
 
 
-def _telnet_methods_wrapper(fn):
-    def _wrapper(self, *args, **kwargs):
-        if not self.extra_data:
-            raise DeviceConfigurationError(_('You have not info in extra_data '
-                                             'field, please fill it in JSON'))
-        extra_data = dict(self.extra_data)
-        extra_data_telnet = extra_data.get('telnet')
-        if not extra_data_telnet:
-            raise DeviceConfigurationError('telnet credentials required in "extra_data"')
-        tlogin = extra_data_telnet.get('login')
-        tpassw = extra_data_telnet.get('password')
-        tprompt = extra_data_telnet.get('prompt')
-        if not all((tlogin, tpassw, extra_data_telnet, tprompt)):
-            raise DeviceConfigurationError('telnet credentials required in "extra_data"')
-        mng = self.get_manager_klass()
+# def _telnet_methods_wrapper(fn):
+#     def _wrapper(self, *args, **kwargs):
+#         if not self.extra_data:
+#             raise DeviceConfigurationError(_('You have not info in extra_data '
+#                                              'field, please fill it in JSON'))
+#         extra_data = dict(self.extra_data)
+#         extra_data_telnet = extra_data.get('telnet')
+#         if not extra_data_telnet:
+#             raise DeviceConfigurationError('telnet credentials required in "extra_data"')
+#         tlogin = extra_data_telnet.get('login')
+#         tpassw = extra_data_telnet.get('password')
+#         tprompt = extra_data_telnet.get('prompt')
+#         if not all((tlogin, tpassw, extra_data_telnet, tprompt)):
+#             raise DeviceConfigurationError('telnet credentials required in "extra_data"')
+#         mng = self.get_manager_klass()
 
-        with mng(host=str(self.ip_address), prompt=tprompt.encode()) as tln:
-            if not tln.login(login=tlogin, password=tpassw):
-                raise DeviceConsoleError(_('Login failed'))
-            try:
-                return fn(self, tln, *args, **kwargs)
-            except (ValueError, RuntimeError) as e:
-                raise DeviceConsoleError(e)
-    return _wrapper
+#         with mng(host=str(self.ip_address), prompt=tprompt.encode()) as tln:
+#             if not tln.login(login=tlogin, password=tpassw):
+#                 raise DeviceConsoleError(_('Login failed'))
+#             try:
+#                 return fn(self, tln, *args, **kwargs)
+#             except (ValueError, RuntimeError) as e:
+#                 raise DeviceConsoleError(e)
+#     return _wrapper
 
 
 class Device(models.Model):
@@ -209,15 +209,15 @@ class Device(models.Model):
         mng = self.get_manager_object_switch()
         return mng.read_all_vlan_info()
 
-    @_telnet_methods_wrapper
-    def dev_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
-        if not tln.create_vlans(vids):
-            raise DeviceConsoleError(_('Failed while create vlans'))
+    # @_telnet_methods_wrapper
+    # def dev_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
+    #     if not tln.create_vlans(vids):
+    #         raise DeviceConsoleError(_('Failed while create vlans'))
 
-    @_telnet_methods_wrapper
-    def dev_delete_vlan(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
-        if not tln.delete_vlans(vlan_list=vids):
-            raise DeviceConsoleError(_('Failed while removing vlan'))
+    # @_telnet_methods_wrapper
+    # def dev_delete_vlan(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
+    #     if not tln.delete_vlans(vlan_list=vids):
+    #         raise DeviceConsoleError(_('Failed while removing vlan'))
 
     def dev_read_mac_address_vlan(self, vid: int) -> Macs:
         mng = self.get_manager_object_switch()
