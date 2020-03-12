@@ -57,7 +57,7 @@ for dirc in all_directories:
 
 __all__ = (
     'DEVICE_TYPES', 'DeviceImplementationError', 'DeviceConfigurationError',
-    'DeviceConsoleError', 'DeviceConnectionError', 'BaseSNMPWorker',
+    'DeviceConnectionError', 'BaseSNMPWorker',
     'BaseDeviceInterface', 'BasePortInterface', 'port_template',
     'ExpectValidationError', 'BasePON_ONU_Interface', 'BaseSwitchInterface',
     'BasePONInterface', 'BasePON_ONU_Interface', 'port_templates_modules',
