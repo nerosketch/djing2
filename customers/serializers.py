@@ -6,7 +6,6 @@ from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
 
 from customers import models
-from devices.models import Device
 from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
 from groupapp.serializers import GroupsSerializer

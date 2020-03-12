@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from djing2.lib.mixins import BaseCustomModelSerializer
-from networks.models import NetworkModel, VlanIf
+from networks.models import NetworkIpPool, VlanIf
 
 
 class NetworkModelSerializer(BaseCustomModelSerializer):
@@ -21,7 +21,7 @@ class NetworkModelSerializer(BaseCustomModelSerializer):
             raise serializers.ValidationError(e, code='invalid')
 
     class Meta:
-        model = NetworkModel
+        model = NetworkIpPool
         fields = '__all__'
 
 
