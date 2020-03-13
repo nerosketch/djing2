@@ -35,10 +35,10 @@ class NetworkIpPool(models.Model):
                     '192.168.1.0 or fde8:6789:1234:1::'),
         unique=True
     )
-    net_mask = models.PositiveSmallIntegerField(
-        verbose_name=_('Network mask'),
-        default=24
-    )
+    # net_mask = models.PositiveSmallIntegerField(
+    #     verbose_name=_('Network mask'),
+    #     default=24
+    # )
     NETWORK_KINDS = (
         (0, _('Not defined')),
         (1, _('Internet')),
@@ -68,7 +68,7 @@ class NetworkIpPool(models.Model):
     lease_time = models.PositiveSmallIntegerField(_('Lease time seconds'), default=3600)
 
     def __str__(self):
-        return "%s: %s/%d" % (self.description, self.network, self.net_mask)
+        return "%s: %s" % (self.description, self.network)
 
     def clean(self):
         errs = {}
@@ -79,7 +79,7 @@ class NetworkIpPool(models.Model):
             )
 
         try:
-            net = ip_network("%s/%d" % (self.network, self.net_mask))
+            net = ip_network("%s" % self.network)
         except ValueError as err:
             errs['network'] = ValidationError(
                 message=str(err),
@@ -120,7 +120,7 @@ class NetworkIpPool(models.Model):
         if not other_nets.exists():
             return
         for other_net in other_nets.iterator():
-            other_net_netw = ip_network("%s/%d" % (other_net.network, self.net_mask))
+            other_net_netw = ip_network("%s" % other_net.network)
             if net.overlaps(other_net_netw):
                 errs['network'] = ValidationError(
                     _('Network is overlaps with %(other_network)s'),
@@ -168,7 +168,7 @@ class NetworkIpPool(models.Model):
 
 
 class CustomerIpLease(models.Model):
-    ip_address = models.GenericIPAddressField(_('Ip address'))
+    ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
     pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
     lease_time = models.DateTimeField(_('Lease time'), auto_now_add=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
@@ -178,3 +178,4 @@ class CustomerIpLease(models.Model):
         db_table = 'networks_ip_leases'
         verbose_name = _('Customer ip lease')
         verbose_name_plural = _('Customer ip leases')
+        unique_together = ('ip_address', 'customer_mac', 'customer')
