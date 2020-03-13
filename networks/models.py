@@ -29,8 +29,6 @@ class VlanIf(models.Model):
 
 
 class NetworkIpPool(models.Model):
-    _netw_cache = None
-
     network = models.GenericIPAddressField(
         verbose_name=_('Ip network address'),
         help_text=_('Ip address of network. For example: '
