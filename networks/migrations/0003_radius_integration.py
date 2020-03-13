@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                     fields=[
                         ('id',
                          models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                        ('ip_address', models.GenericIPAddressField(verbose_name='Ip address')),
+                        ('ip_address', models.GenericIPAddressField(verbose_name='Ip address', unique=True)),
                         ('pool', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='networks.NetworkIpPool')),
                         ('lease_time', models.DateTimeField(auto_now_add=True, verbose_name='Lease time')),
                         ('customer_mac', netfields.fields.MACAddressField(verbose_name='Customer mac address')),
@@ -40,6 +40,7 @@ class Migration(migrations.Migration):
                         'verbose_name': 'Customer ip lease',
                         'verbose_name_plural': 'Customer ip leases',
                         'db_table': 'networks_ip_leases',
+                        'unique_together': {('ip_address', 'customer_mac', 'customer')}
                     },
                 ),
                 migrations.CreateModel(
@@ -50,7 +51,7 @@ class Migration(migrations.Migration):
                         ('network', models.GenericIPAddressField(
                             help_text='Ip address of network. For example: 192.168.1.0 or fde8:6789:1234:1::',
                             unique=True, verbose_name='Ip network address')),
-                        ('net_mask', models.PositiveSmallIntegerField(default=24, verbose_name='Network mask')),
+                        # ('net_mask', models.PositiveSmallIntegerField(default=24, verbose_name='Network mask')),
                         ('kind', models.PositiveSmallIntegerField(
                             choices=[(0, 'Not defined'), (1, 'Internet'), (2, 'Guest'), (3, 'Trusted'), (4, 'Devices'),
                                      (5, 'Admin')], default=0, verbose_name='Kind of network')),
