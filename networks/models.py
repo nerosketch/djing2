@@ -65,7 +65,7 @@ class NetworkIpPool(models.Model):
 
     gateway = models.GenericIPAddressField(_('Gateway ip address'))
     # Default lease time is one hour
-    lease_time = models.PositiveSmallIntegerField(_('Lease time seconds'), default=3600)
+    lease_time = models.PositiveIntegerField(_('Lease time seconds'), default=3600)
 
     def __str__(self):
         return "%s: %s" % (self.description, self.network)
@@ -172,7 +172,8 @@ class CustomerIpLease(models.Model):
     pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
     lease_time = models.DateTimeField(_('Lease time'), auto_now_add=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    customer_mac = MACAddressField(verbose_name=_('Customer mac address'))
+    customer_mac = MACAddressField(verbose_name=_('Customer mac address'), null=True, default=None)
+    is_dynamic = models.BooleanField(_('Is synamic'), default=False)
 
     class Meta:
         db_table = 'networks_ip_leases'
