@@ -16,7 +16,6 @@ def _real_all(fname):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customers', '0002_auto_20200313_1158'),
         ('networks', '0002_auto_20191218_1907'),
     ]
 
@@ -32,9 +31,10 @@ class Migration(migrations.Migration):
                         ('ip_address', models.GenericIPAddressField(verbose_name='Ip address', unique=True)),
                         ('pool', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='networks.NetworkIpPool')),
                         ('lease_time', models.DateTimeField(auto_now_add=True, verbose_name='Lease time')),
-                        ('customer_mac', netfields.fields.MACAddressField(verbose_name='Customer mac address')),
+                        ('customer_mac', netfields.fields.MACAddressField(verbose_name='Customer mac address', null=True, default=None)),
                         ('customer',
                          models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='customers.Customer')),
+                        ('is_dynamic', models.BooleanField('Is synamic', default=False)),
                     ],
                     options={
                         'verbose_name': 'Customer ip lease',

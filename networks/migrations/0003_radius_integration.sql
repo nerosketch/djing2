@@ -7,8 +7,9 @@ CREATE TABLE "networks_ip_leases"
   "ip_address"   inet                        NOT NULL UNIQUE,
   "pool_id"      integer                     NOT NULL,
   "lease_time"   timestamp without time zone NOT NULL DEFAULT 'now' :: timestamp(0),
-  "customer_mac" macaddr                     NOT NULL,
-  "customer_id"  integer                     NOT NULL
+  "customer_mac" macaddr                     NULL,
+  "customer_id"  integer                     NOT NULL,
+  "is_dynamic"   boolean                     NOT NULL DEFAULT FALSE
 );
 CREATE INDEX "networks_ip_leases_pool_id"
   ON "networks_ip_leases"
@@ -29,7 +30,7 @@ CREATE TABLE "networks_ip_pool"
   "ip_end"      inet        NOT NULL,
   "vlan_if_id"  integer     NULL,
   "gateway"     inet        NOT NULL,
-  "lease_time"  smallint    NOT NULL CHECK ("lease_time" >= 0) DEFAULT 3600
+  "lease_time"  INTEGER    NOT NULL CHECK ("lease_time" >= 0) DEFAULT 3600
 );
 CREATE INDEX "networks_ip_pool_vlan_if_id"
   ON "networks_ip_pool"
@@ -44,7 +45,7 @@ ALTER TABLE "networks_ip_leases"
 --
 -- Copy old network table to new ip_pool table
 --
-INSERT INTO networks_ip_pool ("network", "kind", "description", "ip_start", "ip_end", "vlan_if_id", "gateway")
+INSERT INTO networks_ip_pool ("network", "kind", "description", "ip_start", "ip_end", "vlan_if_id", "gateway", "lease_time")
   SELECT
     "network",
     "kind",
@@ -52,7 +53,8 @@ INSERT INTO networks_ip_pool ("network", "kind", "description", "ip_start", "ip_
     "ip_start",
     "ip_end",
     "vlan_if_id",
-    NETWORK("network") :: inet + 1
+    NETWORK("network") :: inet + 1,
+    86700
   FROM networks_network;
 
 
