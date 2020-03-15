@@ -6,10 +6,20 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('networks', '0003_radius_integration'),
         ('customers', '0001_initial'),
     ]
 
     operations = [
+        # Move old ip addresses to leases table before remove 'ip_address' field
+        migrations.RunSQL(sql="""
+        INSERT INTO networks_ip_leases(ip_address, pool_id, customer_mac, customer_id, is_dynamic)
+        SELECT customers.ip_address, networks_ip_pool.id, null, customers.baseaccount_ptr_id, customers.is_dynamic_ip
+        FROM customers
+          LEFT JOIN networks_ip_pool ON (network(networks_ip_pool.network) >> customers.ip_address)
+          WHERE customers.ip_address IS NOT NULL AND
+                networks_ip_pool.id IS NOT NULL
+        """),
         migrations.AlterUniqueTogether(
             name='customer',
             unique_together=set(),
