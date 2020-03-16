@@ -1,6 +1,7 @@
-from ipaddress import ip_address, ip_network
+from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address
+from typing import Optional, Union
 
-from django.db import models
+from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -130,35 +131,15 @@ class NetworkIpPool(models.Model):
                 )
                 raise ValidationError(errs)
 
-    # def get_free_ip(self, employed_ips: Optional[Generator]):
-    #     """
-    #     Find free ip in network.
-    #     :param employed_ips: Sorted from less to more
-    #      ip addresses from current network.
-    #     :return: single found ip or None
-    #     """
-    #     network = self.network
-    #     work_range_start_ip = ip_address(self.ip_start)
-    #     work_range_end_ip = ip_address(self.ip_end)
-    #     if employed_ips is None:
-    #         for ip in network.network:
-    #             if work_range_start_ip <= ip <= work_range_end_ip:
-    #                 return ip
-    #         return
-    #     for ip in network.network:
-    #         if ip < work_range_start_ip:
-    #             continue
-    #         elif ip > work_range_end_ip:
-    #             break  # Not found
-    #         try:
-    #             used_ip = next(employed_ips)
-    #         except StopIteration:
-    #             return ip
-    #         if used_ip is None:
-    #             return ip
-    #         used_ip = ip_address(used_ip)
-    #         if ip < used_ip:
-    #             return ip
+    def get_free_ip(self) -> Optional[Union[IPv4Address, IPv6Address]]:
+        """
+        Finds unused ip
+        :return:
+        """
+        with connection.cursor() as cur:
+            cur.execute("SELECT find_new_ip_pool_lease(%d)" % self.pk)
+            free_ip = cur.fetchone()
+        return ip_address(free_ip[0]) if free_ip else None
 
     class Meta:
         db_table = 'networks_ip_pool'
