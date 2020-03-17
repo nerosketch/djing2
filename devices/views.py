@@ -19,10 +19,10 @@ from customers.models import Customer
 from messenger.tasks import multicast_viber_notify
 from devices.switch_config import (
     DeviceImplementationError, DeviceConsoleError,
-    ExpectValidationError, macbin2str, DeviceConnectionError,
+    ExpectValidationError, DeviceConnectionError,
     BaseSwitchInterface, BasePONInterface, BasePortInterface)
 from djing2 import IP_ADDR_REGEX
-from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta
+from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, macbin2str
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from devices.models import Device, Port, PortVlanMemberModel
 from devices import serializers as dev_serializers

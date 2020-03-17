@@ -7,8 +7,7 @@ from easysnmp import Session
 from transliterate import translit
 
 from django.utils.translation import gettext_lazy as _, gettext
-from djing2.lib import RuTimedelta
-from .utils import macbin2str
+from djing2.lib import RuTimedelta, macbin2str
 
 
 class DeviceImplementationError(NotImplementedError):
