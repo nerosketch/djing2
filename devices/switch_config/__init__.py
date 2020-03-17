@@ -61,7 +61,7 @@ __all__ = (
     'BaseDeviceInterface', 'BasePortInterface', 'port_template',
     'ExpectValidationError', 'BasePON_ONU_Interface', 'BaseSwitchInterface',
     'BasePONInterface', 'BasePON_ONU_Interface', 'port_templates_modules',
-    'Vlans', 'Macs', 'Vlan', 'MacItem', 'macbin2str'
+    'Vlans', 'Macs', 'Vlan', 'MacItem', 'DeviceConsoleError'
 )
 
 # DEVICE_TYPES = (
