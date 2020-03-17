@@ -268,3 +268,9 @@ API_AUTH_SUBNET = local_settings.API_AUTH_SUBNET
 # DEBUG TOOLBAR
 if DEBUG:
     INTERNAL_IPS = ['127.0.0.1']
+
+# Default dhcp lease time in seconds
+DHCP_DEFAULT_LEASE_TIME = 86400
+
+# Address to websocket transmitter
+WS_ADDR = '127.0.0.1:3211'

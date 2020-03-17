@@ -11,9 +11,9 @@ from devices.switch_config import (
     BaseDeviceInterface,
     DeviceConfigurationError,
     # port_templates_modules,
-    macbin2str, DeviceImplementationError, Vlan)
+    DeviceImplementationError, Vlan)
 
-from djing2.lib import MyChoicesAdapter, safe_int
+from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
 from groupapp.models import Group
 from networks.models import VlanIf
 
