@@ -1,9 +1,8 @@
 from typing import Iterable
 
-from djing2.lib import RuTimedelta, safe_int
+from djing2.lib import RuTimedelta, safe_int, macbin2str
 from ..epon import BDCOM_P3310C
 from ..base import Vlans, Vlan
-from ..utils import macbin2str
 
 
 class ZTE_C320(BDCOM_P3310C):
