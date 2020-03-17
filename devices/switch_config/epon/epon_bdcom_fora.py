@@ -3,9 +3,9 @@ from django.utils.translation import gettext, gettext_lazy as _
 from easysnmp import EasySNMPTimeoutError
 from transliterate import translit
 
-from djing2.lib import safe_int, safe_float
+from devices.switch_config.utils import norm_name
+from djing2.lib import safe_int, safe_float, macbin2str
 from ..base import BasePON_ONU_Interface, DeviceImplementationError, DeviceConfigurationError
-from ..utils import norm_name, macbin2str
 from ..expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
 
