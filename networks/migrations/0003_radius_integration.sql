@@ -7,7 +7,7 @@ CREATE TABLE "networks_ip_leases"
   "ip_address"   inet                        NOT NULL UNIQUE,
   "pool_id"      integer                     NOT NULL,
   "lease_time"   timestamp without time zone NOT NULL DEFAULT 'now' :: timestamp(0),
-  "mac_address" macaddr                     NULL,
+  "mac_address"  macaddr                     NULL,
   "customer_id"  integer                     NOT NULL,
   "is_dynamic"   boolean                     NOT NULL DEFAULT FALSE
 );
