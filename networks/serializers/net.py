@@ -4,10 +4,10 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from djing2.lib.mixins import BaseCustomModelSerializer
-from networks.models import NetworkIpPool, VlanIf
+from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
 
 
-class NetworkModelSerializer(BaseCustomModelSerializer):
+class NetworkIpPoolModelSerializer(BaseCustomModelSerializer):
     kind_name = serializers.CharField(source='get_kind_display', read_only=True)
 
     @staticmethod
@@ -28,4 +28,10 @@ class NetworkModelSerializer(BaseCustomModelSerializer):
 class VlanIfModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = VlanIf
+        fields = '__all__'
+
+
+class CustomerIpLeaseModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = CustomerIpLeaseModel
         fields = '__all__'
