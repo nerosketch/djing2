@@ -7,10 +7,11 @@ app_name = 'networks'
 router = DefaultRouter()
 
 # Radius api
-router.register('radius', radius.CustomerRadiusAuthViewSet)
+router.register('radius', radius.RadiusDHCPRequestViewSet, basename='radius')
 
+router.register('lease', generic.CustomerIpLeaseModelViewSet)
+router.register('pool', generic.NetworkIpPoolModelViewSet)
 router.register('vlan', generic.VlanIfModelViewSet)
-router.register('', generic.NetworkModelViewSet)
 
 
 urlpatterns = [
