@@ -1,21 +1,12 @@
-from rest_framework.test import APITestCase
 from django.test import SimpleTestCase
-from networks.views import radius
-
-
-class CustomerAPITestCAse(APITestCase):
-    def post(self, path, data, content_type, secure, **extra):
-        return self.client.post(path=path, data=data, content_type=content_type, secure=secure, **extra)
-
-    def get(self, path, data, content_type, secure, **extra):
-        return self.client.get(path=path, data=data, content_type=content_type, secure=secure, **extra)
+from networks.views.radius import _parse_opt82
 
 
 class Option82TestCase(SimpleTestCase):
     def test_parse_opt82_ok(self):
         circuit_id = b'\x00\x04\x00\x98\x00\x05'
         rem_id = b'\x00\x06\xec\x22\x80\x7f\xad\xb8'
-        mac, port = radius._parse_opt82(
+        mac, port = _parse_opt82(
             remote_id=rem_id,
             circuit_id=circuit_id
         )
@@ -25,7 +16,7 @@ class Option82TestCase(SimpleTestCase):
     def test_parse_opt82_ok2(self):
         circuit_id = b'\x00\x74\x00\x07\x1d'
         rem_id = b'\x1c\x87\x79\x12\xe6\x1a'
-        mac, port = radius._parse_opt82(
+        mac, port = _parse_opt82(
             remote_id=rem_id,
             circuit_id=circuit_id
         )
@@ -35,7 +26,7 @@ class Option82TestCase(SimpleTestCase):
     def test_parse_opt82_long_data(self):
         circuit_id = b'\x00\x74\x00\xff\x1d\xff\x01'
         rem_id = b'\xff\x12\x1c\x87\x79\x12\xe6\x1a'
-        mac, port = radius._parse_opt82(
+        mac, port = _parse_opt82(
             remote_id=rem_id,
             circuit_id=circuit_id
         )
@@ -45,7 +36,7 @@ class Option82TestCase(SimpleTestCase):
     def test_parse_opt82_short_data(self):
         circuit_id = b'\x00\x74\x00\xff'
         rem_id = b'\x1c\x87\x79'
-        mac, port = radius._parse_opt82(
+        mac, port = _parse_opt82(
             remote_id=rem_id,
             circuit_id=circuit_id
         )
@@ -55,7 +46,7 @@ class Option82TestCase(SimpleTestCase):
     def test_parse_opt82_ok_zte(self):
         circuit_id = b'\x5a\x54\x45\x47\x43\x30\x32\x38\x38\x45\x37\x30'
         rem_id = b'\x34\x35\x3a\x34\x37\x3a\x63\x30\x3a\x32\x38\x3a\x38\x65\x3a\x37\x30'
-        mac, port = radius._parse_opt82(
+        mac, port = _parse_opt82(
             remote_id=rem_id,
             circuit_id=circuit_id
         )
@@ -65,7 +56,7 @@ class Option82TestCase(SimpleTestCase):
     def test_parse_opt82_ok_zte2(self):
         circuit_id = b'\x5a\x54\x45\x47\x43\x34\x30\x32\x35\x33\x42\x33'
         rem_id = b'\x34\x35\x3a\x34\x37\x3a\x63\x34\x3a\x32\x3a\x35\x33\x3a\x62\x33'
-        mac, port = radius._parse_opt82(
+        mac, port = _parse_opt82(
             remote_id=rem_id,
             circuit_id=circuit_id
         )
