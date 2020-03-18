@@ -45,17 +45,24 @@ class NetworkIpPool(models.Model):
     #     verbose_name=_('Network mask'),
     #     default=24
     # )
+    NETWORK_KIND_NOT_DEFINED = 0
+    NETWORK_KIND_INTERNET = 1
+    NETWORK_KIND_GUEST = 2
+    NETWORK_KIND_TRUST = 3
+    NETWORK_KIND_DEVICES = 4
+    NETWORK_KIND_ADMIN = 5
+
     NETWORK_KINDS = (
-        (0, _('Not defined')),
-        (1, _('Internet')),
-        (2, _('Guest')),
-        (3, _('Trusted')),
-        (4, _('Devices')),
-        (5, _('Admin'))
+        (NETWORK_KIND_NOT_DEFINED, _('Not defined')),
+        (NETWORK_KIND_INTERNET, _('Internet')),
+        (NETWORK_KIND_GUEST, _('Guest')),
+        (NETWORK_KIND_TRUST, _('Trusted')),
+        (NETWORK_KIND_DEVICES, _('Devices')),
+        (NETWORK_KIND_ADMIN, _('Admin'))
     )
     kind = models.PositiveSmallIntegerField(
         _('Kind of network'),
-        choices=NETWORK_KINDS, default=0
+        choices=NETWORK_KINDS, default=NETWORK_KIND_NOT_DEFINED
     )
     description = models.CharField(_('Description'), max_length=64)
     groups = models.ManyToManyField(Group, verbose_name=_('Description'), db_table='networks_ippool_groups')
@@ -143,7 +150,7 @@ class NetworkIpPool(models.Model):
         with connection.cursor() as cur:
             cur.execute("SELECT find_new_ip_pool_lease(%d, %d)" % (self.pk, DHCP_DEFAULT_LEASE_TIME))
             free_ip = cur.fetchone()
-        return ip_address(free_ip[0]) if free_ip else None
+        return ip_address(free_ip[0]) if free_ip and free_ip[0] else None
 
     class Meta:
         db_table = 'networks_ip_pool'
@@ -171,6 +178,9 @@ class CustomerIpLeaseModel(models.Model):
     is_dynamic = models.BooleanField(_('Is synamic'), default=False)
 
     objects = CustomerIpLeaseModelQuerySet.as_manager()
+
+    def __str__(self):
+        return "%s [%s]" % (self.ip_address, self.mac_address)
 
     class Meta:
         db_table = 'networks_ip_leases'
