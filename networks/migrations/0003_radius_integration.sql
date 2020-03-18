@@ -7,14 +7,14 @@ CREATE TABLE "networks_ip_leases"
   "ip_address"   inet                        NOT NULL UNIQUE,
   "pool_id"      integer                     NOT NULL,
   "lease_time"   timestamp without time zone NOT NULL DEFAULT 'now' :: timestamp(0),
-  "customer_mac" macaddr                     NULL,
+  "mac_address" macaddr                     NULL,
   "customer_id"  integer                     NOT NULL,
   "is_dynamic"   boolean                     NOT NULL DEFAULT FALSE
 );
 CREATE INDEX "networks_ip_leases_pool_id"
   ON "networks_ip_leases"
   USING btree ("pool_id");
-ALTER TABLE "networks_ip_leases" ADD CONSTRAINT "networks_ip_leases_ip_address_customer_mac__customer_uniq" UNIQUE ("ip_address", "customer_mac", "customer_id");
+ALTER TABLE "networks_ip_leases" ADD CONSTRAINT "networks_ip_leases_ip_address_mac_address__customer_uniq" UNIQUE ("ip_address", "mac_address", "pool_id", "customer_id");
 
 --
 -- Create model NetworkIpPool
@@ -29,8 +29,7 @@ CREATE TABLE "networks_ip_pool"
   "ip_start"    inet        NOT NULL,
   "ip_end"      inet        NOT NULL,
   "vlan_if_id"  integer     NULL,
-  "gateway"     inet        NOT NULL,
-  "lease_time"  INTEGER    NOT NULL CHECK ("lease_time" >= 0) DEFAULT 3600
+  "gateway"     inet        NOT NULL
 );
 CREATE INDEX "networks_ip_pool_vlan_if_id"
   ON "networks_ip_pool"
@@ -45,7 +44,7 @@ ALTER TABLE "networks_ip_leases"
 --
 -- Copy old network table to new ip_pool table
 --
-INSERT INTO networks_ip_pool ("network", "kind", "description", "ip_start", "ip_end", "vlan_if_id", "gateway", "lease_time")
+INSERT INTO networks_ip_pool ("network", "kind", "description", "ip_start", "ip_end", "vlan_if_id", "gateway")
   SELECT
     "network",
     "kind",
@@ -53,8 +52,7 @@ INSERT INTO networks_ip_pool ("network", "kind", "description", "ip_start", "ip_
     "ip_start",
     "ip_end",
     "vlan_if_id",
-    NETWORK("network") :: inet + 1,
-    86700
+    NETWORK("network") :: inet + 1
   FROM networks_network;
 
 
@@ -69,7 +67,8 @@ INSERT INTO networks_ip_pool ("network", "kind", "description", "ip_start", "ip_
 -- пула меньше ip из занятых то это значит что ip из пула уже удалился, и мы нашли свободный.
 --
 CREATE OR REPLACE FUNCTION find_new_ip_pool_lease(
-  v_pool_id integer
+  v_pool_id integer,
+  v_lease_time integer
 )
   RETURNS inet
 LANGUAGE plpgsql
@@ -85,8 +84,7 @@ BEGIN
   select
     network,
     ip_start,
-    ip_end,
-    lease_time
+    ip_end
   into t_net_ippool_tbl
   from networks_ip_pool
   where id = v_pool_id
@@ -103,7 +101,7 @@ BEGIN
                                    from networks_ip_leases
                                    where
                                      pool_id = v_pool_id and
-                                     (lease_time + make_interval(secs => t_net_ippool_tbl.lease_time)) >
+                                     (lease_time + make_interval(secs => v_lease_time)) >
                                      'now' :: timestamp(0) and
                                      ip_address >= t_net_ippool_tbl.ip_start and
                                      ip_address <<= t_net_ippool_tbl.network
@@ -158,3 +156,15 @@ BEGIN
   return null;
 END
 $$;
+
+---
+--- Add field groups to networkippool
+---
+CREATE TABLE "networks_ippool_groups" ("id" serial NOT NULL PRIMARY KEY, "networkippool_id" integer NOT NULL, "group_id" integer NOT NULL);
+
+-- Copy old network group relations into new
+INSERT INTO networks_ippool_groups ("networkippool_id", "group_id")
+  SELECT
+    "networkmodel_id",
+    "group_id"
+  FROM networks_network_groups;
