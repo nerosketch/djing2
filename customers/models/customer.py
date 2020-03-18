@@ -116,6 +116,14 @@ class Customer(BaseAccount):
         verbose_name=_('Customer group')
     )
     balance = models.FloatField(default=0.0)
+
+    # ip_address deprecated, marked for remove
+    ip_address = models.GenericIPAddressField(
+        verbose_name=_('Ip address'),
+        null=True,
+        blank=True,
+        default=None
+    )
     description = models.TextField(
         _('Comment'),
         null=True,
@@ -463,7 +471,7 @@ class Customer(BaseAccount):
         verbose_name = _('Customer')
         verbose_name_plural = _('Customers')
         ordering = ('id',)
-        # unique_together = ('ip_address', 'gateway')
+        unique_together = ('ip_address', 'gateway')
 
 
 class InvoiceForPayment(models.Model):
