@@ -16,6 +16,8 @@ def _real_all(fname):
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('groupapp', '0001_initial'),
+        ('customers', '0001_initial'),
         ('networks', '0002_auto_20191218_1907'),
     ]
 
@@ -24,23 +26,25 @@ class Migration(migrations.Migration):
             sql=_real_all('0003_radius_integration.sql'),
             state_operations=[
                 migrations.CreateModel(
-                    name='CustomerIpLease',
+                    name='CustomerIpLeaseModel',
                     fields=[
                         ('id',
                          models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                         ('ip_address', models.GenericIPAddressField(verbose_name='Ip address', unique=True)),
-                        ('pool', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='networks.NetworkIpPool')),
+                        ('pool',
+                         models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='networks.NetworkIpPool')),
                         ('lease_time', models.DateTimeField(auto_now_add=True, verbose_name='Lease time')),
-                        ('customer_mac', netfields.fields.MACAddressField(verbose_name='Customer mac address', null=True, default=None)),
+                        ('mac_address',
+                         netfields.fields.MACAddressField(verbose_name='Mac address', null=True, default=None)),
                         ('customer',
                          models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='customers.Customer')),
                         ('is_dynamic', models.BooleanField('Is synamic', default=False)),
                     ],
                     options={
-                        'verbose_name': 'Customer ip lease',
-                        'verbose_name_plural': 'Customer ip leases',
+                        'verbose_name': 'IP lease',
+                        'verbose_name_plural': 'IP leases',
                         'db_table': 'networks_ip_leases',
-                        'unique_together': {('ip_address', 'customer_mac', 'customer')}
+                        'unique_together': {('ip_address', 'mac_address', 'pool', 'customer')}
                     },
                 ),
                 migrations.CreateModel(
@@ -58,9 +62,10 @@ class Migration(migrations.Migration):
                         ('description', models.CharField(max_length=64, verbose_name='Description')),
                         ('ip_start', models.GenericIPAddressField(verbose_name='Start work ip range')),
                         ('ip_end', models.GenericIPAddressField(verbose_name='End work ip range')),
-                        ('vlan_if', models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='networks.VlanIf', verbose_name='Vlan interface')),
+                        ('vlan_if', models.ForeignKey(blank=True, default=None, null=True,
+                                                      on_delete=django.db.models.deletion.CASCADE, to='networks.VlanIf',
+                                                      verbose_name='Vlan interface')),
                         ('gateway', models.GenericIPAddressField(verbose_name='Gateway ip address')),
-                        ('lease_time', models.PositiveSmallIntegerField(default=3600, verbose_name='Lease time seconds')),
                     ],
                     options={
                         'verbose_name': 'Network ip pool',
@@ -68,6 +73,12 @@ class Migration(migrations.Migration):
                         'db_table': 'networks_ip_pool',
                         'ordering': ('network',),
                     },
+                ),
+                migrations.AddField(
+                    model_name='networkippool',
+                    name='groups',
+                    field=models.ManyToManyField(db_table='networks_ippool_groups', to='groupapp.Group',
+                                                 verbose_name='Description'),
                 ),
             ]
         ),
@@ -83,7 +94,10 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='vlanif',
             name='vid',
-            field=models.PositiveSmallIntegerField(default=1, unique=True, validators=[django.core.validators.MinValueValidator(2, message='Vid could not be less then 2'), django.core.validators.MaxValueValidator(4094, message='Vid could not be more than 4094')], verbose_name='VID'),
+            field=models.PositiveSmallIntegerField(default=1, unique=True, validators=[
+                django.core.validators.MinValueValidator(2, message='Vid could not be less then 2'),
+                django.core.validators.MaxValueValidator(4094, message='Vid could not be more than 4094')],
+                                                   verbose_name='VID'),
         ),
         migrations.DeleteModel(
             name='NetworkModel',
