@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta
 from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address
 from typing import Optional, Union
 
+from django.conf import settings
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
@@ -9,6 +11,9 @@ from netfields import MACAddressField
 
 from customers.models.customer import Customer
 from groupapp.models import Group
+
+
+DHCP_DEFAULT_LEASE_TIME = getattr(settings, 'DHCP_DEFAULT_LEASE_TIME', 86400)
 
 
 class VlanIf(models.Model):
@@ -53,6 +58,7 @@ class NetworkIpPool(models.Model):
         choices=NETWORK_KINDS, default=0
     )
     description = models.CharField(_('Description'), max_length=64)
+    groups = models.ManyToManyField(Group, verbose_name=_('Description'), db_table='networks_ippool_groups')
 
     # Usable ip range
     ip_start = models.GenericIPAddressField(_('Start work ip range'))
@@ -65,8 +71,6 @@ class NetworkIpPool(models.Model):
     )
 
     gateway = models.GenericIPAddressField(_('Gateway ip address'))
-    # Default lease time is one hour
-    lease_time = models.PositiveIntegerField(_('Lease time seconds'), default=3600)
 
     def __str__(self):
         return "%s: %s" % (self.description, self.network)
@@ -137,7 +141,7 @@ class NetworkIpPool(models.Model):
         :return:
         """
         with connection.cursor() as cur:
-            cur.execute("SELECT find_new_ip_pool_lease(%d)" % self.pk)
+            cur.execute("SELECT find_new_ip_pool_lease(%d, %d)" % (self.pk, DHCP_DEFAULT_LEASE_TIME))
             free_ip = cur.fetchone()
         return ip_address(free_ip[0]) if free_ip else None
 
@@ -148,16 +152,28 @@ class NetworkIpPool(models.Model):
         ordering = ('network',)
 
 
-class CustomerIpLease(models.Model):
+class CustomerIpLeaseModelQuerySet(models.QuerySet):
+    def active_leases(self) -> models.QuerySet:
+        """
+        Filter by time, where lease time does not expired
+        :return: new QuerySet
+        """
+        expire_time = datetime.now() - timedelta(seconds=DHCP_DEFAULT_LEASE_TIME)
+        return self.filter(lease_time__lt=expire_time)
+
+
+class CustomerIpLeaseModel(models.Model):
     ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
     pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
     lease_time = models.DateTimeField(_('Lease time'), auto_now_add=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    customer_mac = MACAddressField(verbose_name=_('Customer mac address'), null=True, default=None)
+    mac_address = MACAddressField(verbose_name=_('Mac address'), null=True, default=None)
     is_dynamic = models.BooleanField(_('Is synamic'), default=False)
+
+    objects = CustomerIpLeaseModelQuerySet.as_manager()
 
     class Meta:
         db_table = 'networks_ip_leases'
-        verbose_name = _('Customer ip lease')
-        verbose_name_plural = _('Customer ip leases')
-        unique_together = ('ip_address', 'customer_mac', 'customer')
+        verbose_name = _('IP lease')
+        verbose_name_plural = _('IP leases')
+        unique_together = ('ip_address', 'mac_address', 'pool', 'customer')

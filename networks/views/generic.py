@@ -1,17 +1,19 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
 
 from djing2.viewsets import DjingModelViewSet
-from networks.serializers import NetworkModelSerializer, VlanIfModelSerializer
-from networks.models import NetworkIpPool, VlanIf
+from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
+from networks.serializers import (NetworkIpPoolModelSerializer,
+                                  VlanIfModelSerializer,
+                                  CustomerIpLeaseModelSerializer)
 
 
-class NetworkModelViewSet(DjingModelViewSet):
+class NetworkIpPoolModelViewSet(DjingModelViewSet):
     queryset = NetworkIpPool.objects.all()
-    serializer_class = NetworkModelSerializer
+    serializer_class = NetworkIpPoolModelSerializer
     filter_backends = (OrderingFilter,)
     ordering_fields = ('network', 'kind', 'description', 'cost', 'usercount')
 
@@ -46,3 +48,8 @@ class VlanIfModelViewSet(DjingModelViewSet):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering_fields = ('title', 'vid')
     filterset_fields = ('device',)
+
+
+class CustomerIpLeaseModelViewSet(DjingModelViewSet):
+    queryset = CustomerIpLeaseModel.objects.all()
+    serializer_class = CustomerIpLeaseModelSerializer
