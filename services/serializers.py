@@ -15,8 +15,8 @@ class ServiceModelSerializer(BaseCustomModelSerializer):
         model = models.Service
         fields = (
             'pk', 'title', 'descr', 'speed_in', 'speed_out',
-            'cost', 'calc_type', 'is_admin', 'usercount',
-            'planned_deadline', 'calc_type_name'
+            'speed_burst', 'cost', 'calc_type', 'is_admin',
+            'usercount', 'planned_deadline', 'calc_type_name'
         )
 
 
