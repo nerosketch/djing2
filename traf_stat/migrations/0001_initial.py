@@ -24,6 +24,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 'db_table': 'flowcache',
+                'ordering': ('-last_time',)
             },
         ),
     ]

@@ -32,9 +32,9 @@ class Migration(migrations.Migration):
             model_name='device',
             name='dev_type',
             field=models.PositiveSmallIntegerField(choices=[
-                (0, 'Unknown Device'), (1, 'DLink switch'), (2, 'PON OLT'),
-                (3, 'PON ONU BDCOM'), (4, 'Eltex switch'), (5, 'OLT ZTE C320'),
-                (6, 'Zte ONU F660'), (7, 'Zte ONU F601'), (8, 'Huawei switch')
+                (0, 'Unknown Device'), (1, 'DLink DGS-1100-10/ME'), (2, 'PON OLT'), (3, 'PON ONU BDCOM'),
+                (4, 'Eltex switch'), (5, 'OLT ZTE C320'), (6, 'Zte ONU F660'), (7, 'Zte ONU F601'),
+                (8, 'Huawei switch'), (9, 'DLink DGS-3120-24SC'), (10, 'DLink DGS-1100-06/ME'), (11, 'DLink DGS-3627G')
             ], default=0, verbose_name='Device type'),
         ),
         migrations.CreateModel(
