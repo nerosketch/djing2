@@ -25,6 +25,12 @@ class Service(models.Model):
     speed_out = models.FloatField(_('Speed out'), validators=(
         MinValueValidator(limit_value=0.1),
     ))
+    speed_burst = models.FloatField(
+        _('Speed burst'),
+        help_text=_('Result burst = speed * speed_burst,'
+                    ' speed_burst must be > 1.0'),
+        default=1.0
+    )
     cost = models.FloatField(_('Cost'))
     calc_type = models.PositiveSmallIntegerField(_('Script'), choices=MyChoicesAdapter(SERVICE_CHOICES))
     is_admin = models.BooleanField(_('Tech service'), default=False)
