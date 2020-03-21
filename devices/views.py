@@ -10,12 +10,10 @@ from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
 from rest_framework import status
 from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from django_filters.rest_framework import DjangoFilterBackend
 
-from customers.models import Customer
 from messenger.tasks import multicast_viber_notify
 from devices.switch_config import (
     DeviceImplementationError, DeviceConsoleError,
@@ -332,17 +330,17 @@ class PortModelViewSet(DjingModelViewSet):
             return Response(_('Parameter port_state is bad'), status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=True)
-    @catch_dev_manager_err
-    def get_subscriber_on_port(self, request, pk=None):
-        dev_id = request.query_params.get('device_id')
-        # port = self.get_object()
-        customers = Customer.objects.filter(device_id=dev_id, dev_port_id=pk)
-        if not customers.exists():
-            raise NotFound(gettext('Subscribers on port does not exist'))
-        if customers.count() > 1:
-            return Response(customers)
-        return Response(self.serializer_class(instance=customers.first()))
+    # @action(detail=True)
+    # @catch_dev_manager_err
+    # def get_subscriber_on_port(self, request, pk=None):
+    #     dev_id = request.query_params.get('device_id')
+    #     # port = self.get_object()
+    #     customers = Customer.objects.filter(device_id=dev_id, dev_port_id=pk)
+    #     if not customers.exists():
+    #         raise NotFound(gettext('Subscribers on port does not exist'))
+    #     if customers.count() > 1:
+    #         return Response(customers)
+    #     return Response(self.serializer_class(instance=customers.first()))
 
     @action(detail=True)
     @catch_dev_manager_err
