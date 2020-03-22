@@ -1,14 +1,15 @@
 from datetime import datetime
 from django.contrib.postgres.fields import JSONField
 from django.core.validators import MinValueValidator
-from django.db import models, IntegrityError
-from django.utils.translation import gettext_lazy as _
+from django.db import models, IntegrityError, connection
 from django.dispatch import receiver
+from django.utils.translation import gettext_lazy as _
 
+from netaddr import EUI
 from djing2.lib import MyChoicesAdapter
-from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase, OneShotBaseService
-from services.custom_logic import SERVICE_CHOICES, PERIODIC_PAY_CHOICES, ONE_SHOT_TYPES
 from groupapp.models import Group
+from services.custom_logic import *
+from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase, OneShotBaseService
 
 
 class ServiceManager(models.Manager):
@@ -29,7 +30,10 @@ class Service(models.Model):
         _('Speed burst'),
         help_text=_('Result burst = speed * speed_burst,'
                     ' speed_burst must be > 1.0'),
-        default=1.0
+        default=1.0,
+        validators=(
+            MinValueValidator(limit_value=1.0),
+        )
     )
     cost = models.FloatField(_('Cost'))
     calc_type = models.PositiveSmallIntegerField(_('Script'), choices=MyChoicesAdapter(SERVICE_CHOICES))
@@ -58,6 +62,35 @@ class Service(models.Model):
 
     def calc_deadline_formatted(self):
         return self.calc_deadline().strftime('%Y-%m-%dT%H:%M')
+
+    @staticmethod
+    def get_user_credentials_by_device_switch(device_mac_addr: str, device_port: int):
+        device_mac_addr = str(EUI(device_mac_addr))
+        device_port = int(device_port)
+        if device_port < 1 or device_port > 64:
+            return None
+        with connection.cursor() as cur:
+            cur.execute("SELECT * FROM find_customer_service_by_device_switch_credentials(%s::macaddr, %s::smallint)",
+                        (device_mac_addr, device_port))
+            f_id, f_title, f_descr, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst = cur.fetchone()
+        return Service(
+            pk=f_id, title=f_title, descr=f_descr, speed_in=f_speed_in,
+            speed_out=f_speed_out, cost=f_cost, calc_type=f_calc_type,
+            is_admin=f_is_admin, speed_burst=f_speed_burst
+        )
+
+    @staticmethod
+    def get_user_credentials_by_device_onu(device_mac_addr: str):
+        device_mac_addr = str(EUI(device_mac_addr))
+        with connection.cursor() as cur:
+            cur.execute("SELECT * FROM find_customer_service_by_device_onu_credentials('%s'::macaddr)",
+                        device_mac_addr)
+            f_id, f_title, f_descr, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst = cur.fetchone()
+        return Service(
+            pk=f_id, title=f_title, descr=f_descr, speed_in=f_speed_in,
+            speed_out=f_speed_out, cost=f_cost, calc_type=f_calc_type,
+            is_admin=f_is_admin, speed_burst=f_speed_burst
+        )
 
     def __str__(self):
         return "%s (%.2f)" % (self.title, self.cost)
