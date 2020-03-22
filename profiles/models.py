@@ -14,11 +14,6 @@ from groupapp.models import Group
 
 
 class MyUserManager(BaseUserManager):
-    def get_queryset(self):
-        qs = super().get_queryset()
-        # TODO: check if AnonymousUser yet used
-        return qs.exclude(username='AnonymousUser')
-
     def create_user(self, telephone, username, password=None):
         """
         Creates and saves a User with the given email, date of
@@ -126,6 +121,11 @@ class UserProfileLog(models.Model):
 
 
 class UserProfileManager(MyUserManager):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # TODO: check if AnonymousUser yet used
+        return qs.exclude(username='AnonymousUser')
+
     def get_profiles_by_group(self, group_id):
         return self.filter(responsibility_groups__id__in=(group_id,), is_admin=True, is_active=True)
 
