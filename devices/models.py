@@ -11,7 +11,7 @@ from devices.switch_config import (
     BaseDeviceInterface,
     DeviceConfigurationError,
     # port_templates_modules,
-    DeviceImplementationError, Vlan)
+    DeviceImplementationError, Vlan, DEVICE_TYPE_UNKNOWN)
 
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
 from groupapp.models import Group
@@ -57,7 +57,7 @@ class Device(models.Model):
     )
     comment = models.CharField(_('Comment'), max_length=256)
     dev_type = models.PositiveSmallIntegerField(
-        _('Device type'), default=0,
+        _('Device type'), default=DEVICE_TYPE_UNKNOWN,
         choices=MyChoicesAdapter(DEVICE_TYPES)
     )
     man_passw = models.CharField(
