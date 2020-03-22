@@ -1,13 +1,18 @@
-from .periodic import *
-from .services import *
-from .oneshot import *
+from .periodic import PeriodicPayCalcDefault, PeriodicPayCalcRandom
+from .services import ServiceDefault, TariffDp, TariffCp, TariffDaily
+from .oneshot import ShotDefault
 
-# Первый - всегда по умолчанию
+# First - already default
+SERVICE_CHOICE_DEFAULT = 0
+SERVICE_CHOICE_DP = 1
+SERVICE_CHOICE_CP = 2
+SERVICE_CHOICE_DAILY = 3
+
 SERVICE_CHOICES = (
-    (0, ServiceDefault),
-    (1, TariffDp),
-    (2, TariffCp),
-    (3, TariffDaily)
+    (SERVICE_CHOICE_DEFAULT, ServiceDefault),
+    (SERVICE_CHOICE_DP, TariffDp),
+    (SERVICE_CHOICE_CP, TariffCp),
+    (SERVICE_CHOICE_DAILY, TariffDaily)
 )
 
 
@@ -20,4 +25,6 @@ ONE_SHOT_TYPES = (
     (0, ShotDefault),
 )
 
-__all__ = ('SERVICE_CHOICES', 'PERIODIC_PAY_CHOICES', 'ONE_SHOT_TYPES')
+__all__ = ('SERVICE_CHOICES', 'SERVICE_CHOICE_DEFAULT', 'SERVICE_CHOICE_DP',
+           'SERVICE_CHOICE_CP', 'SERVICE_CHOICE_DAILY',
+           'PERIODIC_PAY_CHOICES', 'ONE_SHOT_TYPES')
