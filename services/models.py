@@ -72,7 +72,10 @@ class Service(models.Model):
         with connection.cursor() as cur:
             cur.execute("SELECT * FROM find_customer_service_by_device_switch_credentials(%s::macaddr, %s::smallint)",
                         (device_mac_addr, device_port))
-            f_id, f_title, f_descr, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst = cur.fetchone()
+            res = cur.fetchone()
+        f_id, f_title, f_descr, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst = res
+        if f_id is None:
+            return None
         return Service(
             pk=f_id, title=f_title, descr=f_descr, speed_in=f_speed_in,
             speed_out=f_speed_out, cost=f_cost, calc_type=f_calc_type,
@@ -83,9 +86,12 @@ class Service(models.Model):
     def get_user_credentials_by_device_onu(device_mac_addr: str):
         device_mac_addr = str(EUI(device_mac_addr))
         with connection.cursor() as cur:
-            cur.execute("SELECT * FROM find_customer_service_by_device_onu_credentials('%s'::macaddr)",
-                        device_mac_addr)
-            f_id, f_title, f_descr, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst = cur.fetchone()
+            cur.execute("SELECT * FROM find_customer_service_by_device_onu_credentials(%s::macaddr)",
+                        [device_mac_addr])
+            res = cur.fetchone()
+        f_id, f_title, f_descr, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst = res
+        if f_id is None:
+            return None
         return Service(
             pk=f_id, title=f_title, descr=f_descr, speed_in=f_speed_in,
             speed_out=f_speed_out, cost=f_cost, calc_type=f_calc_type,
