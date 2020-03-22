@@ -12,19 +12,33 @@ from .gpon import ZTE_C320, OnuZTE_F660, OnuZTE_F601
 from .huawei import HuaweiS2300
 from .unknown_device import UnknownDevice
 
+
+DEVICE_TYPE_UNKNOWN = 0
+DEVICE_TYPE_DlinkDGS1100_10ME = 1
+DEVICE_TYPE_BDCOM_P3310C = 2
+DEVICE_TYPE_EPON_BDCOM_FORA = 3
+DEVICE_TYPE_EltexSwitch = 4
+DEVICE_TYPE_ZTE_C320 = 5
+DEVICE_TYPE_OnuZTE_F660 = 6
+DEVICE_TYPE_OnuZTE_F601 = 7
+DEVICE_TYPE_HuaweiS2300 = 8
+DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface = 9
+DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface = 10
+DEVICE_TYPE_DlinkDGS_3627GSwitchInterface = 11
+
 DEVICE_TYPES = [
-    (0, UnknownDevice),
-    (1, DlinkDGS1100_10ME),
-    (2, BDCOM_P3310C),
-    (3, EPON_BDCOM_FORA),
-    (4, EltexSwitch),
-    (5, ZTE_C320),
-    (6, OnuZTE_F660),
-    (7, OnuZTE_F601),
-    (8, HuaweiS2300),
-    (9, DlinkDGS_3120_24SCSwitchInterface),
-    (10, DlinkDGS_1100_06MESwitchInterface),
-    (11, DlinkDGS_3627GSwitchInterface)
+    (DEVICE_TYPE_UNKNOWN, UnknownDevice),
+    (DEVICE_TYPE_DlinkDGS1100_10ME, DlinkDGS1100_10ME),
+    (DEVICE_TYPE_BDCOM_P3310C, BDCOM_P3310C),
+    (DEVICE_TYPE_EPON_BDCOM_FORA, EPON_BDCOM_FORA),
+    (DEVICE_TYPE_EltexSwitch, EltexSwitch),
+    (DEVICE_TYPE_ZTE_C320, ZTE_C320),
+    (DEVICE_TYPE_OnuZTE_F660, OnuZTE_F660),
+    (DEVICE_TYPE_OnuZTE_F601, OnuZTE_F601),
+    (DEVICE_TYPE_HuaweiS2300, HuaweiS2300),
+    (DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface, DlinkDGS_3120_24SCSwitchInterface),
+    (DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface, DlinkDGS_1100_06MESwitchInterface),
+    (DEVICE_TYPE_DlinkDGS_3627GSwitchInterface, DlinkDGS_3627GSwitchInterface)
 ]
 
 port_templates_modules = {}
@@ -56,22 +70,15 @@ for dirc in all_directories:
         continue
 
 __all__ = (
-    'DEVICE_TYPES', 'DeviceImplementationError', 'DeviceConfigurationError',
+    'DEVICE_TYPES', 'DEVICE_TYPE_UNKNOWN', 'DEVICE_TYPE_DlinkDGS1100_10ME',
+    'DEVICE_TYPE_BDCOM_P3310C', 'DEVICE_TYPE_EPON_BDCOM_FORA', 'DEVICE_TYPE_EltexSwitch',
+    'DEVICE_TYPE_ZTE_C320', 'DEVICE_TYPE_OnuZTE_F660', 'DEVICE_TYPE_OnuZTE_F601',
+    'DEVICE_TYPE_HuaweiS2300', 'DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface',
+    'DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface', 'DEVICE_TYPE_DlinkDGS_3627GSwitchInterface',
+    'DeviceImplementationError', 'DeviceConfigurationError',
     'DeviceConnectionError', 'BaseSNMPWorker',
     'BaseDeviceInterface', 'BasePortInterface', 'port_template',
     'ExpectValidationError', 'BasePON_ONU_Interface', 'BaseSwitchInterface',
     'BasePONInterface', 'BasePON_ONU_Interface', 'port_templates_modules',
     'Vlans', 'Macs', 'Vlan', 'MacItem', 'DeviceConsoleError'
 )
-
-# DEVICE_TYPES = (
-#     (1, dev_types.DLinkDevice),
-#     (2, dev_types.OLTDevice),
-#     (3, dev_types.OnuDevice),
-#     (4, dev_types.EltexSwitch),
-#     (5, dev_types.Olt_ZTE_C320),
-#     (6, dev_types.ZteOnuDevice),
-#     (7, dev_types.ZteF601),
-#     (8, dev_types.HuaweiSwitch),
-#     (9, dev_types.ZteF660v125s)
-# )
