@@ -22,8 +22,9 @@ BEGIN
       left join customer_service on (customer_service.service_id = services.id)
       left join customers on (customers.current_service_id = customer_service.id)
       left join device on (customers.device_id = device.id)
+      left join base_accounts on (base_accounts.id = customers.baseaccount_ptr_id)
       left join device_port on (device_port.device_id = device.id)
-    where device.mac_addr = v_dev_mac and device_port.num = v_dev_port
+    where device.mac_addr = v_dev_mac and device_port.num = v_dev_port and base_accounts.is_active
     limit 1;
     return t_res_row;
   end if;
@@ -54,7 +55,8 @@ BEGIN
       left join customer_service on (customer_service.service_id = services.id)
       left join customers on (customers.current_service_id = customer_service.id)
       left join device on (customers.device_id = device.id)
-    where device.mac_addr = v_dev_mac
+      left join base_accounts on (base_accounts.id = customers.baseaccount_ptr_id)
+    where device.mac_addr = v_dev_mac and base_accounts.is_active
     limit 1;
     return t_res_row;
   end if;
