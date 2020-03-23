@@ -57,17 +57,18 @@ INSERT INTO networks_ip_pool ("network", "kind", "description", "ip_start", "ip_
 
 
 --
--- Copy old static ip address from customer accounts to ip leases
+-- Copy old ip address from customer accounts to ip leases
 --
-INSERT INTO networks_ip_leases ("ip_address", "pool_id", "lease_time", "customer_id")
+INSERT INTO networks_ip_leases ("ip_address", "pool_id", "lease_time", "customer_id", "is_dynamic")
   SELECT
     customers.ip_address,
     networks_ip_pool.id,
     (timestamp without time zone '1000-01-01 00:00:00'),
-    customers.baseaccount_ptr_id
+    customers.baseaccount_ptr_id,
+    customers.is_dynamic_ip
   FROM customers
   LEFT JOIN networks_ip_pool ON (customers.ip_address << networks_ip_pool.network)
-  WHERE customers.ip_address IS NOT NULL AND customers.is_dynamic_ip=false AND networks_ip_pool.id IS NOT NULL;
+  WHERE customers.ip_address IS NOT NULL AND networks_ip_pool.id IS NOT NULL;
 
 
 
@@ -189,7 +190,6 @@ INSERT INTO networks_ippool_groups ("networkippool_id", "group_id")
 -- fetch lease from dynamic subscriber
 --
 CREATE OR REPLACE FUNCTION fetch_subscriber_dynamic_lease(
-  --   v_ip_addr inet,
   v_mac_addr macaddr,
   v_customer_id integer,
   v_session_duration integer)
@@ -238,16 +238,12 @@ BEGIN
       (t_ip, t_net.pool_id, v_mac_addr, v_customer_id, true)
       returning * into t_lease;
       return t_lease;
-
-    else
-      -- new lease is not found, then try next pool
-      continue;
     end if;
 
-    -- leases from all pools is not found, return null
-    return null;
-
+    -- new lease is not found, then try next pool
   end loop;
+
+  -- leases from all pools is not found, nothing to return
 
 END;
 $$;
