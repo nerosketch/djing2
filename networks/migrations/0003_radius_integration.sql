@@ -57,6 +57,21 @@ INSERT INTO networks_ip_pool ("network", "kind", "description", "ip_start", "ip_
 
 
 --
+-- Copy old static ip address from customer accounts to ip leases
+--
+INSERT INTO networks_ip_leases ("ip_address", "pool_id", "lease_time", "customer_id")
+  SELECT
+    customers.ip_address,
+    networks_ip_pool.id,
+    (timestamp without time zone '1000-01-01 00:00:00'),
+    customers.baseaccount_ptr_id
+  FROM customers
+  LEFT JOIN networks_ip_pool ON (customers.ip_address << networks_ip_pool.network)
+  WHERE customers.ip_address IS NOT NULL AND customers.is_dynamic_ip=false AND networks_ip_pool.id IS NOT NULL;
+
+
+
+--
 -- Function that find free ip for new lease
 --
 --
@@ -157,9 +172,9 @@ BEGIN
 END
 $$;
 
----
---- Add field groups to networkippool
----
+--
+-- Add field groups to networkippool
+--
 CREATE TABLE "networks_ippool_groups" ("id" serial NOT NULL PRIMARY KEY, "networkippool_id" integer NOT NULL, "group_id" integer NOT NULL);
 
 -- Copy old network group relations into new
