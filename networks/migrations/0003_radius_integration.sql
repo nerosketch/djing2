@@ -6,7 +6,7 @@ CREATE TABLE "networks_ip_leases"
   "id"           bigserial                   NOT NULL PRIMARY KEY,
   "ip_address"   inet                        NOT NULL UNIQUE,
   "pool_id"      integer                     NOT NULL,
-  "lease_time"   timestamp without time zone NOT NULL DEFAULT 'now' :: timestamp(0),
+  "lease_time"   timestamp without time zone NOT NULL DEFAULT now()::timestamp(0),
   "mac_address"  macaddr                     NULL,
   "customer_id"  integer                     NOT NULL,
   "is_dynamic"   boolean                     NOT NULL DEFAULT FALSE
@@ -117,7 +117,7 @@ BEGIN
                                    where
                                      pool_id = v_pool_id and
                                      (lease_time + make_interval(secs => v_lease_time)) >
-                                     'now' :: timestamp(0) and
+                                     now()::timestamp(0) and
                                      ip_address >= t_net_ippool_tbl.ip_start and
                                      ip_address <<= t_net_ippool_tbl.network
                                    order by ip_address;
@@ -183,3 +183,71 @@ INSERT INTO networks_ippool_groups ("networkippool_id", "group_id")
     "networkmodel_id",
     "group_id"
   FROM networks_network_groups;
+
+
+--
+-- fetch lease from dynamic subscriber
+--
+CREATE OR REPLACE FUNCTION fetch_subscriber_dynamic_lease(
+  --   v_ip_addr inet,
+  v_mac_addr macaddr,
+  v_customer_id integer,
+  v_session_duration integer)
+  RETURNS networks_ip_leases
+  LANGUAGE plpgsql
+AS
+$$
+DECLARE
+  t_expire_time timestamp;
+  t_lease       record;
+  t_ip          inet;
+  t_net record;
+BEGIN
+  -- check if lease is exists
+  -- if exists then return it
+  -- else allocate new lease for customer
+  --   and return it
+
+  t_expire_time = now()::timestamp(0) - make_interval(secs := v_session_duration);
+
+  SELECT * INTO t_lease
+  FROM networks_ip_leases
+  where customer_id = v_customer_id
+    and lease_time < t_expire_time
+    and mac_address = v_mac_addr
+    and is_dynamic
+  order by lease_time
+  limit 1;
+  if FOUND then
+    -- return it
+    return t_lease;
+  end if;
+
+  -- find pools for customer.
+  -- fetched all pools that is available in customers group.
+  for t_net in select networks_ippool_groups.networkippool_id as pool_id from networks_ippool_groups
+  left join customers on (customers.group_id = networks_ippool_groups.group_id)
+  where customers.baseaccount_ptr_id=v_customer_id loop
+
+    -- Find new lease
+    select t_ip from find_new_ip_pool_lease(t_net.pool_id, v_session_duration);
+    if t_ip is not null then
+
+      -- lease found, attach to customer and return it
+      insert into networks_ip_leases(ip_address, pool_id, mac_address, customer_id, is_dynamic) values
+      (t_ip, t_net.pool_id, v_mac_addr, v_customer_id, true)
+      returning * into t_lease;
+      return t_lease;
+
+    else
+      -- new lease is not found, then try next pool
+      continue;
+    end if;
+
+    -- leases from all pools is not found, return null
+    return null;
+
+  end loop;
+
+END;
+$$;
