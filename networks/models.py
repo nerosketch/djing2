@@ -7,6 +7,7 @@ from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
+from netaddr import EUI
 from netfields import MACAddressField
 
 from customers.models.customer import Customer
@@ -181,6 +182,25 @@ class CustomerIpLeaseModel(models.Model):
 
     def __str__(self):
         return "%s [%s]" % (self.ip_address, self.mac_address)
+
+    @staticmethod
+    def fetch_subscriber_dynamic_lease(customer_id: int, customer_mac: str):
+        customer_mac = str(EUI(customer_mac))
+        customer_id = int(customer_id)
+        if customer_id < 1:
+            return None
+        with connection.cursor() as cur:
+            cur.execute("select * from fetch_subscriber_dynamic_lease(%s::macaddr, %d, %d)",
+                        customer_mac, customer_id, DHCP_DEFAULT_LEASE_TIME)
+            res = cur.fetchone()
+        v_id, v_ip_address, v_pool_id, v_lease_time, v_mac_address, v_customer_id, v_is_dynamic = res
+        if v_id is None:
+            return None
+        return CustomerIpLeaseModel(
+            pk=v_id, ip_address=v_ip_address, pool_id=v_pool_id,
+            lease_time=v_lease_time, customer_id=v_customer_id,
+            mac_address=v_mac_address, is_dynamic=v_is_dynamic
+        )
 
     class Meta:
         db_table = 'networks_ip_leases'
