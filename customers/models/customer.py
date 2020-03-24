@@ -83,7 +83,7 @@ class CustomerManager(MyUserManager):
     def get_queryset(self):
         return super(CustomerManager, self).get_queryset().filter(is_admin=False)
 
-    def create_user(self, telephone, username, password=None):
+    def create_user(self, telephone, username, password=None, *args, **kwargs):
         """
         Creates and saves a User with the given telephone, username and password.
         """
@@ -93,6 +93,7 @@ class CustomerManager(MyUserManager):
         user = self.model(
             telephone=telephone,
             username=username,
+            *args, **kwargs
         )
         user.is_admin = False
 
