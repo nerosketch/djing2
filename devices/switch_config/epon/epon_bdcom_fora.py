@@ -49,8 +49,8 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
         if not num:
             return
         status_map = {
-            '3': 'ok',
-            '2': 'down'
+            3: 'ok',
+            2: 'down'
         }
         try:
             status = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.26.%d' % num)
@@ -58,13 +58,15 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
             distance = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.27.%d' % num)
             mac = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % num)
             # uptime = self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % num)
-            if status is not None and status.isdigit():
+            if isinstance(status, str) and status.isdigit():
+                status = int(status)
+            if status is not None:
                 basic_info = {
                     'status': status_map.get(status, 'unknown'),
                     'signal': signal / 10 if signal else '—',
                     'name': self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % num),
                     'mac': macbin2str(mac),
-                    'distance': int(distance) / 10 if distance.isdigit() else 0
+                    'distance': distance / 10
                 }
                 return basic_info
         except EasySNMPTimeoutError as e:
