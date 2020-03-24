@@ -44,8 +44,9 @@ ALTER TABLE "networks_ip_leases"
 --
 -- Copy old network table to new ip_pool table
 --
-INSERT INTO networks_ip_pool ("network", "kind", "description", "ip_start", "ip_end", "vlan_if_id", "gateway")
+INSERT INTO networks_ip_pool ("id", "network", "kind", "description", "ip_start", "ip_end", "vlan_if_id", "gateway")
   SELECT
+    "id",
     "network",
     "kind",
     "description",
@@ -83,8 +84,7 @@ INSERT INTO networks_ip_leases ("ip_address", "pool_id", "lease_time", "customer
 -- пула меньше ip из занятых то это значит что ip из пула уже удалился, и мы нашли свободный.
 --
 CREATE OR REPLACE FUNCTION find_new_ip_pool_lease(
-  v_pool_id integer,
-  v_lease_time integer
+  v_pool_id integer
 )
   RETURNS inet
 LANGUAGE plpgsql
@@ -117,8 +117,6 @@ BEGIN
                                    from networks_ip_leases
                                    where
                                      pool_id = v_pool_id and
-                                     (lease_time + make_interval(secs => v_lease_time)) >
-                                     now()::timestamp(0) and
                                      ip_address >= t_net_ippool_tbl.ip_start and
                                      ip_address <<= t_net_ippool_tbl.network
                                    order by ip_address;
@@ -131,21 +129,21 @@ BEGIN
     if not FOUND
     then
       -- не нашли лизу, возвращаем текущий ip из подсети
-      --       raise notice 'lease not found, return current ip %', t_ip_iter;
+      -- raise notice 'lease not found, return current ip %', t_ip_iter;
       return t_ip_iter;
     end if;
 
     -- если текущий ip больше или равен максимальному допустимому ip то всё, не нашли свободный ip
     if t_ip_iter >= t_net_ippool_tbl.ip_end
     then
-      --       raise notice 'current ip is more than max allowable % -%, end', t_ip_iter, t_net_ippool_tbl.ip_end;
+      -- raise notice 'current ip is more than max allowable % -%, end', t_ip_iter, t_net_ippool_tbl.ip_end;
       return null;
     end if;
 
     -- если текущий ip меньше начального допустимого ip
     if t_ip_iter < t_net_ippool_tbl.ip_start
     then
-      --       raise notice 'current ip is less than minimum. go next % - %', t_ip_iter, t_net_ippool_tbl.ip_start;
+      -- raise notice 'current ip is less than minimum. go next % - %', t_ip_iter, t_net_ippool_tbl.ip_start;
       t_ip_iter := t_ip_iter + 1;
       continue;
     end if;
@@ -153,7 +151,7 @@ BEGIN
     if t_ip_iter = t_ip_lease
     then
       -- сгенерированный ip и занятый из лизов совпадают, дальше
-      --       raise notice 'current ip and lease ip is exact, next % - %', t_ip_iter, t_ip_lease;
+      -- raise notice 'current ip and lease ip is exact, next % - %', t_ip_iter, t_ip_lease;
       t_ip_iter := t_ip_iter + 1;
       continue;
     end if;
@@ -162,7 +160,7 @@ BEGIN
     -- один из ip и пропал из таблицы занятых ip, выдаём его
     if t_ip_iter < t_ip_lease
     then
-      --       raise notice 'current ip is less than ip lease, got it %', t_ip_iter;
+      -- raise notice 'current ip is less than ip lease, got it %', t_ip_iter;
       return t_ip_iter;
     end if;
 
@@ -201,7 +199,7 @@ DECLARE
   t_expire_time timestamp;
   t_lease       record;
   t_ip          inet;
-  t_net record;
+  t_net         record;
 BEGIN
   -- check if lease is exists
   -- if exists then return it
@@ -213,15 +211,17 @@ BEGIN
   SELECT * INTO t_lease
   FROM networks_ip_leases
   where customer_id = v_customer_id
-    and lease_time < t_expire_time
     and mac_address = v_mac_addr
     and is_dynamic
   order by lease_time
   limit 1;
   if FOUND then
     -- return it
+    -- raise notice 'found lease';
     return t_lease;
   end if;
+
+  -- raise notice 'not found lease';
 
   -- find pools for customer.
   -- fetched all pools that is available in customers group.
@@ -229,9 +229,14 @@ BEGIN
   left join customers on (customers.group_id = networks_ippool_groups.group_id)
   where customers.baseaccount_ptr_id=v_customer_id loop
 
+    -- raise notice 'search in pool %', t_net.pool_id;
+
     -- Find new lease
-    select t_ip from find_new_ip_pool_lease(t_net.pool_id, v_session_duration);
+    select * into t_ip from find_new_ip_pool_lease(t_net.pool_id);
+    -- raise notice 'from find_new_ip_pool_lease %', t_ip;
     if t_ip is not null then
+
+      -- raise notice 'found new lease %', t_ip;
 
       -- lease found, attach to customer and return it
       insert into networks_ip_leases(ip_address, pool_id, mac_address, customer_id, is_dynamic) values
@@ -244,6 +249,6 @@ BEGIN
   end loop;
 
   -- leases from all pools is not found, nothing to return
-
+  return null;
 END;
 $$;
