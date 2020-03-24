@@ -42,10 +42,6 @@ class NetworkIpPool(models.Model):
                     '192.168.1.0 or fde8:6789:1234:1::'),
         unique=True
     )
-    # net_mask = models.PositiveSmallIntegerField(
-    #     verbose_name=_('Network mask'),
-    #     default=24
-    # )
     NETWORK_KIND_NOT_DEFINED = 0
     NETWORK_KIND_INTERNET = 1
     NETWORK_KIND_GUEST = 2
@@ -149,7 +145,7 @@ class NetworkIpPool(models.Model):
         :return:
         """
         with connection.cursor() as cur:
-            cur.execute("SELECT find_new_ip_pool_lease(%d, %d)" % (self.pk, DHCP_DEFAULT_LEASE_TIME))
+            cur.execute("SELECT find_new_ip_pool_lease(%d)" % self.pk)
             free_ip = cur.fetchone()
         return ip_address(free_ip[0]) if free_ip and free_ip[0] else None
 
@@ -190,8 +186,8 @@ class CustomerIpLeaseModel(models.Model):
         if customer_id < 1:
             return None
         with connection.cursor() as cur:
-            cur.execute("select * from fetch_subscriber_dynamic_lease(%s::macaddr, %d, %d)",
-                        customer_mac, customer_id, DHCP_DEFAULT_LEASE_TIME)
+            cur.execute("SELECT * from fetch_subscriber_dynamic_lease(%s::macaddr, %s::integer, %s::integer)",
+                        (customer_mac, customer_id, DHCP_DEFAULT_LEASE_TIME))
             res = cur.fetchone()
         v_id, v_ip_address, v_pool_id, v_lease_time, v_mac_address, v_customer_id, v_is_dynamic = res
         if v_id is None:
