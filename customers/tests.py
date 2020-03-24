@@ -4,6 +4,7 @@ from django.test import override_settings
 from django.utils.translation import gettext as _
 from rest_framework.test import APITestCase
 from customers import models
+from groupapp.tests import BaseGroupTestCase
 from services.models import Service
 from profiles.models import UserProfile
 
@@ -17,6 +18,8 @@ class CustomAPITestCase(APITestCase):
         return self.client.post(*args, **kwargs)
 
     def setUp(self):
+        BaseGroupTestCase.setUp(self)
+
         self.admin = UserProfile.objects.create_superuser(
             username='admin',
             password='admin',
@@ -30,7 +33,8 @@ class CustomAPITestCase(APITestCase):
         custo1 = models.Customer.objects.create_user(
             telephone='+79782345678',
             username='custo1',
-            password='passw'
+            password='passw',
+            group=self.group
         )
         custo1.refresh_from_db()
         self.customer = custo1
