@@ -208,16 +208,19 @@ BEGIN
 
   t_expire_time = now()::timestamp(0) - make_interval(secs := v_session_duration);
 
-  SELECT * INTO t_lease
+  -- Find leases by customer and mac, where pool of this lease in
+  -- the same group as the subscriber
+  SELECT networks_ip_leases.* INTO t_lease
   FROM networks_ip_leases
-  where customer_id = v_customer_id
-    and mac_address = v_mac_addr
-    and is_dynamic
-  order by lease_time
+  left join customers on (customers.baseaccount_ptr_id = networks_ip_leases.customer_id)
+  left join networks_ippool_groups on (networks_ippool_groups.networkippool_id = networks_ip_leases.pool_id)
+  where networks_ip_leases.customer_id = v_customer_id
+    and networks_ip_leases.mac_address = v_mac_addr
+    and networks_ippool_groups.group_id = customers.group_id
+    and networks_ip_leases.is_dynamic
   limit 1;
   if FOUND then
     -- return it
-    -- raise notice 'found lease';
     return t_lease;
   end if;
 

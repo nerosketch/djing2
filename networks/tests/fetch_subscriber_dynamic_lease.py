@@ -110,3 +110,43 @@ class FetchSubscriberDynamicLeaseTestCase(TestCase):
         )
         self.assertIsNotNone(lease)
         self.assertEqual(lease.ip_address, '10.11.12.3')
+
+    def test_change_subnet(self):
+        """
+        What if group membership for ip pool is changed
+        :return:
+        """
+        lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+            self.customer.pk, '1:2:3:4:5:6'
+        )
+        self.assertIsNotNone(lease)
+        self.assertEqual(lease.ip_address, '10.11.12.2')
+
+        ippool2 = NetworkIpPool.objects.create(
+            network='10.10.11.0/24',
+            kind=NetworkIpPool.NETWORK_KIND_INTERNET,
+            description='test',
+            ip_start='10.10.11.2',
+            ip_end='10.10.11.254',
+            gateway='10.10.11.1'
+        )
+        self.ippool.groups.remove(self.group)
+        ippool2.groups.add(self.group)
+
+        lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+            self.customer.pk, '1:2:3:4:5:6'
+        )
+        self.assertIsNotNone(lease)
+        self.assertEqual(lease.ip_address, '10.10.11.2')
+
+        lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+            self.customer.pk, '1:2:3:4:5:7'
+        )
+        self.assertIsNotNone(lease)
+        self.assertEqual(lease.ip_address, '10.10.11.3')
+
+        lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+            self.customer.pk, '1:2:3:4:5:6'
+        )
+        self.assertIsNotNone(lease)
+        self.assertEqual(lease.ip_address, '10.10.11.2')
