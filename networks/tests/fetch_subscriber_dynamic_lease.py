@@ -51,22 +51,15 @@ class FetchSubscriberDynamicLeaseTestCase(TestCase):
         self.assertTrue(lease.is_dynamic)
 
     def test_multiple_fetch(self):
-        lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
-            customer_mac='1:2:3:4:5:7',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
-        )
-        self.assertIsNotNone(lease)
-        self.assertEqual(lease.ip_address, '10.11.12.2')
-        self.assertEqual(lease.customer, self.customer)
-        lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
-            customer_mac='1:2:3:4:5:7',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
-        )
-        self.assertIsNotNone(lease)
-        self.assertEqual(lease.ip_address, '10.11.12.2')
-        self.assertEqual(lease.customer, self.customer)
+        for n in range(4):
+            lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+                customer_mac='1:2:3:4:5:7',
+                device_mac='12:13:14:15:16:17',
+                device_port=2,
+            )
+            self.assertIsNotNone(lease)
+            self.assertEqual(lease.ip_address, '10.11.12.2')
+            self.assertEqual(lease.customer, self.customer)
 
     def test_different_mac(self):
         lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
@@ -115,38 +108,22 @@ class FetchSubscriberDynamicLeaseTestCase(TestCase):
         """
         What if two different customers have the same mac addr
         """
-        lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
-            customer_mac='1:2:3:4:5:6',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
-        )
-        self.assertIsNotNone(lease)
-        self.assertEqual(lease.ip_address, '10.11.12.2')
-        self.assertEqual(lease.customer, self.customer)
-        lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
-            customer_mac='1:2:3:4:5:6',
-            device_mac='11:13:14:15:16:18'
-        )
-        self.assertIsNotNone(lease)
-        self.assertEqual(lease.ip_address, '10.11.12.3')
-        self.assertEqual(lease.customer, self.customer2)
-
-        lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
-            customer_mac='1:2:3:4:5:6',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
-        )
-        self.assertIsNotNone(lease)
-        self.assertEqual(lease.ip_address, '10.11.12.2')
-        self.assertEqual(lease.customer, self.customer)
-
-        lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
-            customer_mac='1:2:3:4:5:6',
-            device_mac='11:13:14:15:16:18'
-        )
-        self.assertIsNotNone(lease)
-        self.assertEqual(lease.ip_address, '10.11.12.3')
-        self.assertEqual(lease.customer, self.customer2)
+        for n in range(4):
+            lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+                customer_mac='1:2:3:4:5:6',
+                device_mac='12:13:14:15:16:17',
+                device_port=2,
+            )
+            self.assertIsNotNone(lease)
+            self.assertEqual(lease.ip_address, '10.11.12.2')
+            self.assertEqual(lease.customer, self.customer)
+            lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+                customer_mac='1:2:3:4:5:6',
+                device_mac='11:13:14:15:16:18'
+            )
+            self.assertIsNotNone(lease)
+            self.assertEqual(lease.ip_address, '10.11.12.3')
+            self.assertEqual(lease.customer, self.customer2)
 
     def test_change_subnet(self):
         """
