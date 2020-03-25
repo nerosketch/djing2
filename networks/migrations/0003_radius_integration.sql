@@ -189,24 +189,35 @@ INSERT INTO networks_ippool_groups ("networkippool_id", "group_id")
 --
 CREATE OR REPLACE FUNCTION fetch_subscriber_dynamic_lease(
   v_mac_addr macaddr,
-  v_customer_id integer,
-  v_session_duration integer)
+  v_dev_mac macaddr,
+  v_dev_port smallint)
   RETURNS networks_ip_leases
   LANGUAGE plpgsql
 AS
 $$
 DECLARE
-  t_expire_time timestamp;
   t_lease       record;
   t_ip          inet;
   t_net         record;
+  t_customer_id integer;
 BEGIN
   -- check if lease is exists
   -- if exists then return it
   -- else allocate new lease for customer
   --   and return it
 
-  t_expire_time = now()::timestamp(0) - make_interval(secs := v_session_duration);
+  -- find customer by device mac
+  select cs.baseaccount_ptr_id into t_customer_id from customers cs
+  left join device dv on (dv.id = cs.device_id)
+  left join device_port dp on (cs.dev_port_id = dp.id)
+  left join device_dev_type_is_use_dev_port ddtiudptiu on (ddtiudptiu.dev_type = dv.dev_type)
+  where dv.mac_addr = v_dev_mac
+    and ((not ddtiudptiu.is_use_dev_port) or dp.num = v_dev_port)
+    limit 1;
+  if not FOUND then
+    raise exception 'Customer with device mac=% not found', v_dev_mac;
+    return t_lease;
+  end if;
 
   -- Find leases by customer and mac, where pool of this lease in
   -- the same group as the subscriber
@@ -214,7 +225,7 @@ BEGIN
   FROM networks_ip_leases
   left join customers on (customers.baseaccount_ptr_id = networks_ip_leases.customer_id)
   left join networks_ippool_groups on (networks_ippool_groups.networkippool_id = networks_ip_leases.pool_id)
-  where networks_ip_leases.customer_id = v_customer_id
+  where networks_ip_leases.customer_id = t_customer_id
     and networks_ip_leases.mac_address = v_mac_addr
     and networks_ippool_groups.group_id = customers.group_id
     and networks_ip_leases.is_dynamic
@@ -230,7 +241,7 @@ BEGIN
   -- fetched all pools that is available in customers group.
   for t_net in select networks_ippool_groups.networkippool_id as pool_id from networks_ippool_groups
   left join customers on (customers.group_id = networks_ippool_groups.group_id)
-  where customers.baseaccount_ptr_id=v_customer_id loop
+  where customers.baseaccount_ptr_id=t_customer_id loop
 
     -- raise notice 'search in pool %', t_net.pool_id;
 
@@ -243,7 +254,7 @@ BEGIN
 
       -- lease found, attach to customer and return it
       insert into networks_ip_leases(ip_address, pool_id, mac_address, customer_id, is_dynamic) values
-      (t_ip, t_net.pool_id, v_mac_addr, v_customer_id, true)
+      (t_ip, t_net.pool_id, v_mac_addr, t_customer_id, true)
       returning * into t_lease;
       return t_lease;
     end if;
@@ -252,6 +263,6 @@ BEGIN
   end loop;
 
   -- leases from all pools is not found, nothing to return
-  return null;
+  return t_lease;
 END;
 $$;
