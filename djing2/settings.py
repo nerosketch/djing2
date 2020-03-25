@@ -120,6 +120,8 @@ DATABASES = getattr(local_settings, 'DATABASES', {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 })
+if not DATABASES['default'].get('CONN_MAX_AGE'):
+    DATABASES['default']['CONN_MAX_AGE'] = 300
 
 
 # if DEBUG:

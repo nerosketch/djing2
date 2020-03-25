@@ -14,6 +14,7 @@ SECRET_KEY = '!!!!!!!!!!!!!!!!!!!!!!!!YOUR SECRET KEY!!!!!!!!!!!!!!!!!!!!!!!!'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'CONN_MAX_AGE': 300,
         'NAME': 'djing2',
         'USER': 'postgres_user',
         'PASSWORD': 'password',
