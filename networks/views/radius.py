@@ -1,18 +1,27 @@
-from datetime import datetime
 from typing import Tuple, Optional
 
-from django.core.exceptions import MultipleObjectsReturned
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from djing2.lib import safe_int, macbin2str
 from djing2.viewsets import DjingAuthorizedViewSet
-from customers.models.customer import Customer
-from devices.models import Device, Port
+from networks.exceptions import DhcpRequestError
 from networks.models import CustomerIpLeaseModel, DHCP_DEFAULT_LEASE_TIME, NetworkIpPool
 from networks.serializers.net import NetworkIpPoolModelSerializer
 from networks.serializers.radius import RadiusDHCPRequestSerializer
+
+
+def catch_radius_errs(fn):
+    def _wrapper(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except DhcpRequestError as err:
+            return Response(str(err))
+
+    # Hack for decorator @action
+    _wrapper.__name__ = fn.__name__
+    return _wrapper
 
 
 def _parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int]:
@@ -41,36 +50,6 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
 
     # def dispatch(self, request: http.HttpRequest, *args: Any, **kwargs: Any):
 
-    @staticmethod
-    def dhcp_get_customer_by_opt82(client_ip: str, client_mac: str,
-                                   switch_mac: str, switch_port: int):
-        try:
-            dev = Device.objects.get(mac_addr=switch_mac)
-            mngr_class = dev.get_manager_klass()
-
-            if mngr_class.get_is_use_device_port():
-                customer = Customer.objects.get(
-                    dev_port__device=dev,
-                    dev_port__num=switch_port,
-                    device=dev, is_active=True
-                )
-            else:
-                customer = Customer.objects.get(device=dev, is_active=True)
-            return customer, dev
-        except Customer.DoesNotExist:
-            return "User with device with mac '%s' does not exist" % switch_mac
-        except Device.DoesNotExist:
-            return 'Device with mac %s not found' % switch_mac
-        except Port.DoesNotExist:
-            return 'Port %(switch_port)d on device with mac %(switch_mac)s does not exist' % {
-                'switch_port': int(switch_port),
-                'switch_mac': switch_mac
-            }
-        except MultipleObjectsReturned as e:
-            return 'MultipleObjectsReturned:' + ' '.join(
-                (type(e), e, str(switch_port))
-            )
-
     def _show_serializer(self):
         serializer = self.get_serializer()
         return Response(serializer.data)
@@ -81,6 +60,7 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
         return serializer.data
 
     @action(methods=('post', 'get'), detail=False)
+    @catch_radius_errs
     def dhcp_request(self, request, *args, **kwargs):
         if request.method == 'GET':
             return self._show_serializer()
@@ -91,66 +71,34 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
         circuit_id = opt82.get('circuit_id')
         user_mac = opt82.get('client_mac')
 
-        # попробовать получить мак свича
+        # try to get switch mac addr
         if not all([remote_id, circuit_id]):
             return _return_bad_response('Bad option82')
         dev_mac, dev_port = _parse_opt82(remote_id, circuit_id)
         if dev_mac is None:
             return _return_bad_response('Failed to parse option82')
 
-        get_by_op82_res = self.dhcp_get_customer_by_opt82(
-            client_ip=None, client_mac=user_mac,
-            switch_mac=dev_mac, switch_port=dev_port
-        )
-        if isinstance(get_by_op82_res, str):
-            return _return_bad_response(get_by_op82_res)
-        elif isinstance(get_by_op82_res, tuple):
-            customer, device = get_by_op82_res
-        else:
-            return _return_bad_response("Unexpected option82 result type")
-
         # If customer has an active leases then return latest.
         # If not found then assign new
+        ip_lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+            customer_mac=user_mac,
+            device_mac=dev_mac,
+            device_port=dev_port
+        )
 
-        ip_lease = CustomerIpLeaseModel.objects.active_leases().order_by('-lease_time').first()
         if ip_lease is None:
-            # assign new lease
-            # Надо найти подходящие для абона ip пулы
-            group_id = customer.group_id
-            pools = NetworkIpPool.objects.filter(groups__id__in=[group_id]).iterator()
-            free_ip = None
-            pool_containts_ip = None
-            for pool in pools:
-                free_ip = pool.get_free_ip()
-                pool_containts_ip = pool
-                if not free_ip:
-                    continue
-            if not free_ip:
-                return _return_bad_response("Free ip could not found")
-            # Create lease for customer
-            db_ip_lease, db_ip_lease_created = CustomerIpLeaseModel.objects.update_or_create(
-                ip_address=free_ip,
-                pool=pool_containts_ip,
-                customer=customer,
-                defaults={
-                    'mac_address': user_mac,
-                    'is_dynamic': True,
-                    'lease_time': datetime.now()
-                }
-            )
-        else:
-            free_ip = ip_lease.ip_address
-            pool_containts_ip = ip_lease.pool
+            return _return_bad_response("Can't issue a lease")
+        pool_contains_ip = ip_lease.pool
 
         return {
             "control:Auth-Type": 'Accept',
-            "Framed-IP-Address": free_ip,
+            "Framed-IP-Address": ip_lease.ip_address,
             # Когда Offer то your ip address заполнен а client ip пустой
             # А когда Inform то наоборот
             # А когда Ack то оба одинаковы
-            "DHCP-Your-IP-Address": free_ip,
+            "DHCP-Your-IP-Address": ip_lease.ip_address,
             "DHCP-Subnet-Mask": '255.255.255.0',
-            "DHCP-Router-Address": str(pool_containts_ip.gateway),
+            "DHCP-Router-Address": str(pool_contains_ip.gateway),
             # "DHCP-Domain-Name-Server": '10.12.1.4',
             "DHCP-IP-Address-Lease-Time": DHCP_DEFAULT_LEASE_TIME,
             # "Cleartext-Password": 'dc:0e:a1:66:2e:5d',
