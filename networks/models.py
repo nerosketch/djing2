@@ -3,7 +3,7 @@ from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address
 from typing import Optional, Union
 
 from django.conf import settings
-from django.db import models, connection
+from django.db import models, connection, InternalError
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -12,7 +12,7 @@ from netfields import MACAddressField
 
 from customers.models.customer import Customer
 from groupapp.models import Group
-
+from networks.exceptions import DhcpRequestError
 
 DHCP_DEFAULT_LEASE_TIME = getattr(settings, 'DHCP_DEFAULT_LEASE_TIME', 86400)
 
@@ -184,18 +184,21 @@ class CustomerIpLeaseModel(models.Model):
         customer_mac = str(EUI(customer_mac))
         device_mac = str(EUI(device_mac))
         device_port = int(device_port)
-        with connection.cursor() as cur:
-            cur.execute("SELECT * from fetch_subscriber_dynamic_lease(%s::macaddr, %s::macaddr, %s::smallint)",
-                        (customer_mac, device_mac, device_port))
-            res = cur.fetchone()
-        v_id, v_ip_address, v_pool_id, v_lease_time, v_mac_address, v_customer_id, v_is_dynamic = res
-        if v_id is None:
-            return None
-        return CustomerIpLeaseModel(
-            pk=v_id, ip_address=v_ip_address, pool_id=v_pool_id,
-            lease_time=v_lease_time, customer_id=v_customer_id,
-            mac_address=v_mac_address, is_dynamic=v_is_dynamic
-        )
+        try:
+            with connection.cursor() as cur:
+                cur.execute("SELECT * from fetch_subscriber_dynamic_lease(%s::macaddr, %s::macaddr, %s::smallint)",
+                            (customer_mac, device_mac, device_port))
+                res = cur.fetchone()
+            v_id, v_ip_address, v_pool_id, v_lease_time, v_mac_address, v_customer_id, v_is_dynamic = res
+            if v_id is None:
+                return None
+            return CustomerIpLeaseModel(
+                pk=v_id, ip_address=v_ip_address, pool_id=v_pool_id,
+                lease_time=v_lease_time, customer_id=v_customer_id,
+                mac_address=v_mac_address, is_dynamic=v_is_dynamic
+            )
+        except InternalError as err:
+            raise DhcpRequestError(err)
 
     class Meta:
         db_table = 'networks_ip_leases'
