@@ -180,14 +180,13 @@ class CustomerIpLeaseModel(models.Model):
         return "%s [%s]" % (self.ip_address, self.mac_address)
 
     @staticmethod
-    def fetch_subscriber_dynamic_lease(customer_id: int, customer_mac: str):
+    def fetch_subscriber_dynamic_lease(customer_mac: str, device_mac: str, device_port: int = 0):
         customer_mac = str(EUI(customer_mac))
-        customer_id = int(customer_id)
-        if customer_id < 1:
-            return None
+        device_mac = str(EUI(device_mac))
+        device_port = int(device_port)
         with connection.cursor() as cur:
-            cur.execute("SELECT * from fetch_subscriber_dynamic_lease(%s::macaddr, %s::integer, %s::integer)",
-                        (customer_mac, customer_id, DHCP_DEFAULT_LEASE_TIME))
+            cur.execute("SELECT * from fetch_subscriber_dynamic_lease(%s::macaddr, %s::macaddr, %s::smallint)",
+                        (customer_mac, device_mac, device_port))
             res = cur.fetchone()
         v_id, v_ip_address, v_pool_id, v_lease_time, v_mac_address, v_customer_id, v_is_dynamic = res
         if v_id is None:
