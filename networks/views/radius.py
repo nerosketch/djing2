@@ -1,3 +1,4 @@
+import base64
 from typing import Tuple, Optional
 
 from rest_framework import status
@@ -17,7 +18,7 @@ def catch_radius_errs(fn):
         try:
             return fn(self, *args, **kwargs)
         except DhcpRequestError as err:
-            return Response(str(err))
+            return Response(str(err), status=status.HTTP_404_NOT_FOUND)
 
     # Hack for decorator @action
     _wrapper.__name__ = fn.__name__
@@ -67,9 +68,9 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
         data = self._check_data(request.data)
 
         opt82 = data.get('opt82')
-        remote_id = opt82.get('remote_id')
-        circuit_id = opt82.get('circuit_id')
-        user_mac = opt82.get('client_mac')
+        remote_id = base64.b64decode(opt82.get('remote_id', ''))
+        circuit_id = base64.b64decode(opt82.get('circuit_id', ''))
+        user_mac = data.get('client_mac')
 
         # try to get switch mac addr
         if not all([remote_id, circuit_id]):
@@ -90,7 +91,7 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
             return _return_bad_response("Can't issue a lease")
         pool_contains_ip = ip_lease.pool
 
-        return {
+        return Response(data={
             "control:Auth-Type": 'Accept',
             "Framed-IP-Address": ip_lease.ip_address,
             # Когда Offer то your ip address заполнен а client ip пустой
@@ -102,7 +103,7 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
             # "DHCP-Domain-Name-Server": '10.12.1.4',
             "DHCP-IP-Address-Lease-Time": DHCP_DEFAULT_LEASE_TIME,
             # "Cleartext-Password": 'dc:0e:a1:66:2e:5d',
-        }
+        })
 
 
 class CustomerRadiusAuthViewSet(DjingAuthorizedViewSet):
