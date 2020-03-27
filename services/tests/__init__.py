@@ -1,7 +1,7 @@
-from .get_user_credentials_by_device import GetUserCredentialsByDeviceSwitchCredentialsTestCase, \
+from .get_user_credentials_by_ip import GetUserCredentialsByIpTestCase, \
     GetUserCredentialsByDeviceOnuCredentialsTestCase
 
 __all__ = (
-    'GetUserCredentialsByDeviceSwitchCredentialsTestCase',
+    'GetUserCredentialsByIpTestCase',
     'GetUserCredentialsByDeviceOnuCredentialsTestCase'
 )

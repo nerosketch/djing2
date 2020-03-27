@@ -3,17 +3,13 @@ from netaddr import EUI
 
 from customers.models import Customer
 from networks.models import CustomerIpLeaseModel, NetworkIpPool
-from services.tests.get_user_credentials_by_device import BaseServiceTestCase
+from services.tests.get_user_credentials_by_ip import BaseServiceTestCase
 
 
 class FetchSubscriberDynamicLeaseTestCase(TestCase):
     def setUp(self):
         # Initialize customers instances
         BaseServiceTestCase.setUp(self)
-
-        self.customer.device = self.device_switch
-        self.customer.dev_port = self.ports[1]
-        self.customer.save()
 
         # customer for tests
         custo2 = Customer.objects.create_user(
