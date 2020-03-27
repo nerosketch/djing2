@@ -1,4 +1,5 @@
 from datetime import datetime
+from ipaddress import IPv4Address, AddressValueError
 from django.contrib.postgres.fields import JSONField
 from django.core.validators import MinValueValidator
 from django.db import models, IntegrityError, connection
@@ -64,14 +65,14 @@ class Service(models.Model):
         return self.calc_deadline().strftime('%Y-%m-%dT%H:%M')
 
     @staticmethod
-    def get_user_credentials_by_device_switch(device_mac_addr: str, device_port: int):
-        device_mac_addr = str(EUI(device_mac_addr))
-        device_port = int(device_port)
-        if device_port < 1 or device_port > 64:
+    def get_user_credentials_by_ip(ip_addr: str):
+        try:
+            ip_addr = IPv4Address(ip_addr)
+        except AddressValueError:
             return None
         with connection.cursor() as cur:
-            cur.execute("SELECT * FROM find_customer_service_by_device_switch_credentials(%s::macaddr, %s::smallint)",
-                        (device_mac_addr, device_port))
+            cur.execute("SELECT * FROM find_customer_service_by_ip(%s::inet)",
+                        (str(ip_addr),))
             res = cur.fetchone()
         f_id, f_title, f_descr, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst = res
         if f_id is None:
