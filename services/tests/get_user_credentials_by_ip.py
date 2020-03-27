@@ -65,25 +65,25 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
         self.assertEqual(customer_service.cost, 10.0)
         self.assertEqual(customer_service.calc_type, SERVICE_CHOICE_DEFAULT)
 
-    def test_get_user_credentials_by_ip_not_exists_lease(self):
+    def test_not_exists_lease(self):
         customer_service = Service.get_user_credentials_by_ip(
             ip_addr='10.11.12.12'
         )
         self.assertIsNone(customer_service)
 
-    def test_get_user_credentials_by_ip_if_ip_is_none(self):
+    def test_if_ip_is_none(self):
         customer_service = Service.get_user_credentials_by_ip(
             ip_addr=None
         )
         self.assertIsNone(customer_service)
 
-    def test_get_user_credentials_by_ip_if_ip_is_bad(self):
+    def test_if_ip_is_bad(self):
         customer_service = Service.get_user_credentials_by_ip(
             ip_addr='10.11.12.12.13'
         )
         self.assertIsNone(customer_service)
 
-    def test_get_user_credentials_by_ip_customer_disabled(self):
+    def test_customer_disabled(self):
         self.customer.is_active = False
         self.customer.save(update_fields=['is_active'])
         # self.customer.refresh_from_db()
@@ -92,18 +92,14 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
         )
         self.assertIsNone(customer_service)
 
-    def test_get_user_credentials_by_ip_customer_does_not_have_service(self):
+    def test_customer_does_not_have_service(self):
         self.customer.stop_service(self.customer)
         customer_service = Service.get_user_credentials_by_ip(
             ip_addr='10.11.12.2'
         )
         self.assertIsNone(customer_service)
 
-
-class GetUserCredentialsByDeviceOnuCredentialsTestCase(BaseServiceTestCase):
-    def setUp(self):
-        super().setUp()
-
+    def test_customer_with_onu_device(self):
         # customer for tests
         customer_onu = Customer.objects.create_user(
             telephone='+79782345679',
@@ -116,10 +112,16 @@ class GetUserCredentialsByDeviceOnuCredentialsTestCase(BaseServiceTestCase):
         customer_onu.refresh_from_db()
         customer_onu.pick_service(self.service, customer_onu)
         self.customer_onu = customer_onu
+        self.lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+            customer_mac='1:2:3:4:5:6',
+            device_mac='12:13:14:15:16:17',
+            device_port=2,
+        )
+        self.assertIsNotNone(self.lease)
+        # lease must be contain ip_address=10.11.12.2'
 
-    def test_get_user_credentials_by_device(self):
-        customer_service = Service.get_user_credentials_by_device_onu(
-            device_mac_addr=str(self.device_onu.mac_addr),
+        customer_service = Service.get_user_credentials_by_ip(
+            ip_addr='10.11.12.2',
         )
         self.assertIsNotNone(customer_service)
         self.assertEqual(customer_service.speed_in, 10.0)
@@ -127,25 +129,3 @@ class GetUserCredentialsByDeviceOnuCredentialsTestCase(BaseServiceTestCase):
         self.assertEqual(customer_service.speed_burst, 1)
         self.assertEqual(customer_service.cost, 10.0)
         self.assertEqual(customer_service.calc_type, SERVICE_CHOICE_DEFAULT)
-
-    def test_get_user_credentials_by_device_not_exists(self):
-        customer_service = Service.get_user_credentials_by_device_onu(
-            device_mac_addr='1:2:3:4:5:6',
-        )
-        self.assertIsNone(customer_service)
-
-    def test_get_user_credentials_by_device_customer_disabled(self):
-        self.customer_onu.is_active = False
-        self.customer_onu.save(update_fields=['is_active'])
-        # self.customer.refresh_from_db()
-        customer_service = Service.get_user_credentials_by_device_onu(
-            device_mac_addr=str(self.device_onu.mac_addr),
-        )
-        self.assertIsNone(customer_service)
-
-    def test_get_user_credentials_by_device_customer_does_not_have_service(self):
-        self.customer_onu.stop_service(self.customer_onu)
-        customer_service = Service.get_user_credentials_by_device_onu(
-            device_mac_addr=str(self.device_onu.mac_addr),
-        )
-        self.assertIsNone(customer_service)
