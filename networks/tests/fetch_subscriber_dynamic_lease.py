@@ -11,6 +11,13 @@ class FetchSubscriberDynamicLeaseTestCase(TestCase):
         # Initialize customers instances
         BaseServiceTestCase.setUp(self)
 
+        self.customer.device = self.device_switch
+        self.customer.dev_port = self.ports[1]
+        self.customer.add_balance(self.admin, 10000, 'test')
+        self.customer.save()
+        self.customer.refresh_from_db()
+        self.customer.pick_service(self.service, self.customer)
+
         # customer for tests
         custo2 = Customer.objects.create_user(
             telephone='+79782345679',
