@@ -10,6 +10,7 @@ app_name = 'profiles'
 router = DefaultRouter()
 router.register('accounts', views.UserProfileViewSet)
 router.register('log', views.UserProfileLogViewSet)
+router.register('current', views.CurrentAuthenticatedProfileROViewSet)
 
 
 urlpatterns = [
