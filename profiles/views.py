@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 
-from djing2.viewsets import DjingModelViewSet
+from djing2.viewsets import DjingModelViewSet, BaseNonAdminReadOnlyModelViewSet
 from profiles.models import UserProfile, UserProfileLog
 from profiles.serializers import UserProfileSerializer, UserProfileLogSerializer
 
@@ -43,3 +43,17 @@ class LocationAuth(APIView):
 
         token, created = Token.objects.get_or_create(user=user)
         return Response({'token': token.key})
+
+
+class CurrentAuthenticatedProfileROViewSet(BaseNonAdminReadOnlyModelViewSet):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+
+    def get_object(self):
+        return UserProfile.objects.get(pk=self.request.user.pk)
+
+    def list(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return super().get_queryset().filter(pk=self.request.user.pk)
