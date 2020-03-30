@@ -1,8 +1,7 @@
 from datetime import datetime
-from ipaddress import IPv4Address, AddressValueError
 from django.contrib.postgres.fields import JSONField
 from django.core.validators import MinValueValidator
-from django.db import models, IntegrityError, connection
+from django.db import models, IntegrityError
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
@@ -62,25 +61,6 @@ class Service(models.Model):
 
     def calc_deadline_formatted(self):
         return self.calc_deadline().strftime('%Y-%m-%dT%H:%M')
-
-    @staticmethod
-    def get_user_credentials_by_ip(ip_addr: str):
-        try:
-            ip_addr = IPv4Address(ip_addr)
-        except AddressValueError:
-            return None
-        with connection.cursor() as cur:
-            cur.execute("SELECT * FROM find_customer_service_by_ip(%s::inet)",
-                        (str(ip_addr),))
-            res = cur.fetchone()
-        f_id, f_title, f_descr, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst = res
-        if f_id is None:
-            return None
-        return Service(
-            pk=f_id, title=f_title, descr=f_descr, speed_in=f_speed_in,
-            speed_out=f_speed_out, cost=f_cost, calc_type=f_calc_type,
-            is_admin=f_is_admin, speed_burst=f_speed_burst
-        )
 
     def __str__(self):
         return "%s (%.2f)" % (self.title, self.cost)
