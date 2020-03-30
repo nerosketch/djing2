@@ -3,7 +3,7 @@ from netaddr import EUI
 
 from customers.models import Customer
 from networks.models import CustomerIpLeaseModel, NetworkIpPool
-from services.tests.get_user_credentials_by_ip import BaseServiceTestCase
+from customers.tests.get_user_credentials_by_ip import BaseServiceTestCase
 
 
 class FetchSubscriberDynamicLeaseTestCase(TestCase):
