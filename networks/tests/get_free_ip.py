@@ -1,6 +1,6 @@
 from django.test import TestCase
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
-from customers.tests import CustomAPITestCase
+from customers.tests.customer import CustomAPITestCase
 
 
 class IpPoolTestCase(TestCase):

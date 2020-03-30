@@ -1,11 +1,11 @@
 import re
-from datetime import datetime
-
+from datetime import datetime, timedelta
+from ipaddress import IPv4Address, AddressValueError
 from bitfield import BitField
 from django.conf import settings
 from django.core import validators
 from django.core.validators import RegexValidator
-from django.db import models, transaction
+from django.db import models, transaction, connection
 from django.db.models.signals import post_init, pre_save
 from django.dispatch.dispatcher import receiver
 from django.utils.translation import gettext as _
@@ -15,6 +15,8 @@ from djing2.lib import LogicError, safe_float
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.models import Service, OneShotPay, PeriodicPay
 from groupapp.models import Group
+
+RADIUS_SESSION_TIME = getattr(settings, 'RADIUS_SESSION_TIME', 3600)
 
 
 class NotEnoughMoney(LogicError):
@@ -30,9 +32,59 @@ class CustomerService(models.Model):
     start_time = models.DateTimeField(null=True, blank=True, default=None)
     deadline = models.DateTimeField(null=True, blank=True, default=None)
 
-    def calc_service_cost(self):
+    def calc_service_cost(self) -> float:
         amount = self.service.cost
         return round(amount, 2)
+
+    def calc_remaining_time(self) -> timedelta:
+        now = datetime.now()
+        dl = self.deadline
+        elapsed = dl - now
+        return elapsed
+
+    def calc_session_time(self) -> timedelta:
+        """
+        If remaining time more than session time then return session time,
+        return remaining time otherwise
+        :return: Current session time
+        """
+        remaining_time = self.calc_remaining_time()
+        radius_session_time = timedelta(seconds=RADIUS_SESSION_TIME)
+        if remaining_time > radius_session_time:
+            return radius_session_time
+        return remaining_time
+
+    @staticmethod
+    def get_user_credentials_by_ip(ip_addr: str):
+        try:
+            ip_addr = IPv4Address(ip_addr)
+        except AddressValueError:
+            return None
+        with connection.cursor() as cur:
+            cur.execute("SELECT * FROM find_customer_service_by_ip(%s::inet)",
+                        (str(ip_addr),))
+            res = cur.fetchone()
+        if res is None:
+            return None
+        f_id, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst, f_start_time, f_deadline = res
+        if f_id is None:
+            return None
+        srv = Service(
+            pk=f_id,
+            title=None,
+            descr=None,
+            speed_in=f_speed_in,
+            speed_out=f_speed_out,
+            speed_burst=f_speed_burst,
+            cost=f_cost,
+            calc_type=f_calc_type,
+            is_admin=f_is_admin,
+        )
+        return CustomerService(
+            service=srv,
+            start_time=f_start_time,
+            deadline=f_deadline
+        )
 
     def __str__(self):
         return self.service.title
