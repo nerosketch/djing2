@@ -8,8 +8,7 @@ from rest_framework.response import Response
 from djing2.lib import safe_int, macbin2str
 from djing2.viewsets import DjingAuthorizedViewSet
 from networks.exceptions import DhcpRequestError
-from networks.models import CustomerIpLeaseModel, DHCP_DEFAULT_LEASE_TIME, NetworkIpPool
-from networks.serializers.net import NetworkIpPoolModelSerializer
+from networks.models import CustomerIpLeaseModel, DHCP_DEFAULT_LEASE_TIME
 from networks.serializers.radius import RadiusDHCPRequestSerializer
 
 
@@ -104,65 +103,3 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
             "DHCP-IP-Address-Lease-Time": DHCP_DEFAULT_LEASE_TIME,
             # "Cleartext-Password": 'dc:0e:a1:66:2e:5d',
         })
-
-
-class CustomerRadiusAuthViewSet(DjingAuthorizedViewSet):
-    queryset = NetworkIpPool.objects.all()
-    serializer_class = NetworkIpPoolModelSerializer
-
-    @staticmethod
-    def authorize_service(service_name: str):
-        return {
-            "control:Auth-Type": 'Accept',
-            "Cleartext-Password": service_name,
-            "Password": service_name,
-            "User-Name": service_name,
-            "Cisco-AVPair": (
-                'subscriber:traffic-class=INTERNET',
-                'subscriber:filter-default-action=permit',
-                'subscriber:flow-status=enabled'
-            )
-        }
-
-    def is_access2service(self, username: str, password: str) -> bool:
-        return True
-
-    @action(methods=('post',), detail=False)
-    def authorize(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-
-        if self.is_access2service(username=username, password=password):
-            if self.is_allowed_subnet(ip_addr=username):
-                return Response({
-                    "control:Auth-Type": 'Accept',
-                    "User-Name": username,
-                    "Session-Timeout": sess_timeout,
-                    "Cisco-AVPair": (
-                        'subscriber:policer-rate-in=%d' % speed_in,
-                        'subscriber:policer-rate-out=%d' % speed_out,
-                        # 'subscriber:policer-burst-in=64',
-                        # 'subscriber:policer-burst-out=64',
-                    ),
-                    "Cisco-Account-Info": 'AINTERNET'
-                })
-            return Response(
-                self.authorize_service(service_name=username)
-            )
-        return Response({
-            "control:Auth-Type": 'Reject'
-        }, status=status.HTTP_403_FORBIDDEN)
-
-    @action(methods=('post',), detail=False)
-    def authenticate(self, request):
-        username = request.data.get('username')
-        if self.is_access2service(username=username, password=''):
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-    @action(methods=('post',), detail=False)
-    def accounting(self, request):
-        username = request.data.get('username')
-        if self.is_access2service(username=username, password=''):
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_401_UNAUTHORIZED)

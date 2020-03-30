@@ -1,12 +1,15 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from customers.views import admin_side, user_side
+from customers.views import admin_side, user_side, radius
 
 
 app_name = 'customers'
 
 
 router = DefaultRouter()
+
+# Radius views
+router.register('radius', radius.RadiusCustomerServiceRequestViewSet, basename='radius')
 
 # User side views
 router.register('users/me', user_side.CustomersUserSideModelViewSet)
