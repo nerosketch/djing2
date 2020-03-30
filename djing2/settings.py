@@ -274,5 +274,8 @@ if DEBUG:
 # Default dhcp lease time in seconds
 DHCP_DEFAULT_LEASE_TIME = 86400
 
+# Default radius session time
+RADIUS_SESSION_TIME = 3600
+
 # Address to websocket transmitter
 WS_ADDR = '127.0.0.1:3211'
