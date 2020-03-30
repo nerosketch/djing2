@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _, gettext
 from rest_framework import status
 from rest_framework.decorators import action
@@ -46,12 +47,13 @@ class CustomersUserSideModelViewSet(SingleListObjMixin, BaseNonAdminReadOnlyMode
 
         customer.pick_service(
             service=srv, author=None,
-            comment=_("Buy the service via user side, service '%s'") % srv
+            comment=_("Buy the service via user side, service '%s'") % srv,
+            allow_negative=False
         )
-        customer_gw_command.delay(
-            customer_uid=customer.pk,
-            command='sync'
-        )
+        # customer_gw_command.delay(
+        #     customer_uid=customer.pk,
+        #     command='sync'
+        # )
         return Response(
             data=_("The service '%s' was successfully activated") % srv,
             status=status.HTTP_200_OK
@@ -106,16 +108,17 @@ class DebtsList(BaseNonAdminReadOnlyModelViewSet):
         if customer.balance < debt.cost:
             raise LogicError(_('Your account have not enough money'))
 
-        amount = -debt.cost
-        customer.add_balance(
-            profile=self.request.user,
-            cost=amount,
-            comment=gettext('%(username)s paid the debt %(amount).2f') % {
-                'username': customer.get_full_name(),
-                'amount': amount
-            }
-        )
-        customer.save(update_fields=('balance',))
-        debt.set_ok()
-        debt.save(update_fields=('status', 'date_pay'))
+        with transaction.atomic():
+            amount = -debt.cost
+            customer.add_balance(
+                profile=self.request.user,
+                cost=amount,
+                comment=gettext('%(username)s paid the debt %(amount).2f') % {
+                    'username': customer.get_full_name(),
+                    'amount': amount
+                }
+            )
+            customer.save(update_fields=('balance',))
+            debt.set_ok()
+            debt.save(update_fields=('status', 'date_pay'))
         return Response(status=status.HTTP_200_OK)

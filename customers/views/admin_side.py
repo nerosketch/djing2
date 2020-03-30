@@ -100,20 +100,20 @@ class CustomerModelViewSet(DjingModelViewSet):
                 deadline=deadline,
                 allow_negative=True
             )
-            customer_gw_command.delay(customer.pk, 'sync')
+            # customer_gw_command.delay(customer.pk, 'sync')
         except models.NotEnoughMoney as e:
             return Response(data=str(e), status=status.HTTP_402_PAYMENT_REQUIRED)
         return Response(status=status.HTTP_200_OK)
 
     def perform_update(self, serializer):
         customer = serializer.save()
-        customer_gw_command.delay(customer.pk, 'sync')
+        # customer_gw_command.delay(customer.pk, 'sync')
 
     def perform_create(self, serializer):
         try:
             customer = serializer.save()
-            if customer.is_access():
-                customer_gw_command.delay(customer.pk, 'add')
+            # if customer.is_access():
+            #     customer_gw_command.delay(customer.pk, 'add')
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(str(e))
 
