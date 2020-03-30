@@ -46,17 +46,20 @@ class TestRadiusCustomerServiceRequestViewSet(CustomAPITestCase):
         )
         self.assertIsNotNone(self.lease)
         # lease must be contain ip_address=10.11.12.2'
+        self.customer_lease_ip = '10.11.12.2'
 
-    def test_auth_customer_service(self):
-        uname = '10.11.12.2'
-        r = self.post(path='/api/customers/radius/get_service/', data={
-            'username': uname,
+    def _make_request(self):
+        return self.post(path='/api/customers/radius/get_service/', data={
+            'username': self.customer_lease_ip,
             'password': 'blabla_doesntmatter'
         })
+
+    def test_auth_customer_service(self):
+        r = self._make_request()
         self.assertEqual(r.status_code, 200)
         self.assertDictEqual(r.data, {
             "control:Auth-Type": 'Accept',
-            "User-Name": uname,
+            "User-Name": self.customer_lease_ip,
             "Session-Timeout": 3600,
             "Idle-Timeout": 3600,
             "Cisco-AVPair": (
@@ -67,3 +70,14 @@ class TestRadiusCustomerServiceRequestViewSet(CustomAPITestCase):
             ),
             "Cisco-Account-Info": 'AINTERNET'
         })
+
+    def test_if_customer_not_have_service(self):
+        self.customer.stop_service(self.customer)
+        r = self._make_request()
+        self.assertEqual(r.status_code, 404)
+
+    def test_customer_disabled(self):
+        self.customer.is_active = False
+        self.customer.save(update_fields=['is_active'])
+        r = self._make_request()
+        self.assertEqual(r.status_code, 404)
