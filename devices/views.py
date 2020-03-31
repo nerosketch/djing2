@@ -53,6 +53,7 @@ class DeviceModelViewSet(DjingModelViewSet):
     filterset_fields = ('group', 'dev_type', 'status', 'is_noticeable')
     filter_backends = (SearchFilter, DjangoFilterBackend)
     search_fields = ('comment', 'ip_address', 'mac_addr')
+    ordering_fields = ('ip_address', 'mac_addr', 'comment', 'dev_type')
 
     def destroy(self, *args, **kwargs):
         r = super().destroy(*args, **kwargs)
