@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
                     fields=[
                         ('id',
                          models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                        ('network', models.GenericIPAddressField(
+                        ('network', netfields.fields.CidrAddressField(
                             help_text='Ip address of network. For example: 192.168.1.0 or fde8:6789:1234:1::',
                             unique=True, verbose_name='Ip network address')),
                         # ('net_mask', models.PositiveSmallIntegerField(default=24, verbose_name='Network mask')),
@@ -71,7 +71,7 @@ class Migration(migrations.Migration):
                     model_name='networkippool',
                     name='groups',
                     field=models.ManyToManyField(db_table='networks_ippool_groups', to='groupapp.Group',
-                                                 verbose_name='Description'),
+                                                 verbose_name='Member groups', blank=True),
                 ),
             ]
         ),
