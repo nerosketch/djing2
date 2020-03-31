@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from netaddr import EUI
-from netfields import MACAddressField
+from netfields import MACAddressField, CidrAddressField
 
 from customers.models.customer import Customer
 from groupapp.models import Group
@@ -36,7 +36,7 @@ class VlanIf(models.Model):
 
 
 class NetworkIpPool(models.Model):
-    network = models.GenericIPAddressField(
+    network = CidrAddressField(
         verbose_name=_('Ip network address'),
         help_text=_('Ip address of network. For example: '
                     '192.168.1.0 or fde8:6789:1234:1::'),
@@ -62,7 +62,11 @@ class NetworkIpPool(models.Model):
         choices=NETWORK_KINDS, default=NETWORK_KIND_NOT_DEFINED
     )
     description = models.CharField(_('Description'), max_length=64)
-    groups = models.ManyToManyField(Group, verbose_name=_('Description'), db_table='networks_ippool_groups')
+    groups = models.ManyToManyField(
+        Group, verbose_name=_('Member groups'),
+        db_table='networks_ippool_groups',
+        blank=True
+    )
 
     # Usable ip range
     ip_start = models.GenericIPAddressField(_('Start work ip range'))
