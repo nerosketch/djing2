@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(
-            sql=read_all_file('0003_add_procedures.sql', __file__),
+            sql=read_all_file('0002_add_procedures.sql', __file__),
             reverse_sql="DROP FUNCTION IF EXISTS find_customer_service_by_ip( inet );"
         )
     ]
