@@ -19,22 +19,25 @@ class ServiceManager(models.Manager):
 class Service(models.Model):
     title = models.CharField(_('Service title'), max_length=128)
     descr = models.TextField(_('Service description'), null=True, blank=True, default=None)
-    speed_in = models.FloatField(_('Speed in'), validators=(
+    speed_in = models.FloatField(_('Speed in'), validators=[
         MinValueValidator(limit_value=0.1),
-    ))
-    speed_out = models.FloatField(_('Speed out'), validators=(
+    ])
+    speed_out = models.FloatField(_('Speed out'), validators=[
         MinValueValidator(limit_value=0.1),
-    ))
+    ])
     speed_burst = models.FloatField(
         _('Speed burst'),
         help_text=_('Result burst = speed * speed_burst,'
                     ' speed_burst must be > 1.0'),
         default=1.0,
-        validators=(
+        validators=[
             MinValueValidator(limit_value=1.0),
-        )
+        ]
     )
-    cost = models.FloatField(_('Cost'))
+    cost = models.FloatField(
+        verbose_name=_('Cost'),
+        validators=[MinValueValidator(limit_value=0.0)]
+    )
     calc_type = models.PositiveSmallIntegerField(_('Script'), choices=MyChoicesAdapter(SERVICE_CHOICES))
     is_admin = models.BooleanField(_('Tech service'), default=False)
     groups = models.ManyToManyField(Group, blank=True, verbose_name=_('Groups'))
