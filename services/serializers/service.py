@@ -24,8 +24,8 @@ class PeriodicPayModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.PeriodicPay
         fields = (
-            'name', 'when_add',
-            'calc_type', 'amount'
+            'pk', 'name', 'when_add',
+            'amount'
         )
 
 
