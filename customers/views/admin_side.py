@@ -105,13 +105,13 @@ class CustomerModelViewSet(DjingModelViewSet):
             return Response(data=str(e), status=status.HTTP_402_PAYMENT_REQUIRED)
         return Response(status=status.HTTP_200_OK)
 
-    def perform_update(self, serializer):
-        customer = serializer.save()
-        # customer_gw_command.delay(customer.pk, 'sync')
+    # def perform_update(self, serializer):
+    #     customer = serializer.save()
+    #     customer_gw_command.delay(customer.pk, 'sync')
 
     def perform_create(self, serializer):
         try:
-            customer = serializer.save()
+            serializer.save()
             # if customer.is_access():
             #     customer_gw_command.delay(customer.pk, 'add')
         except IntegrityError as e:
@@ -143,15 +143,15 @@ class CustomerModelViewSet(DjingModelViewSet):
     def service_users(self, request):
         service_id = safe_int(request.query_params.get('service_id'))
         if service_id == 0:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response('service_id is required', status=status.HTTP_403_FORBIDDEN)
         qs = models.Customer.objects.filter(
             current_service__service__id=service_id
         ).select_related('group').values(
-            'id', 'group_id', 'username', 'fio'
+            'pk', 'group_id', 'username', 'fio'
         )
         return Response(qs)
 
-    @action(detail=True)
+    @action(methods=('get',), detail=True)
     @catch_customers_errs
     def stop_service(self, request, pk=None):
         del pk
@@ -324,6 +324,7 @@ class CustomerRawPasswordModelViewSet(DjingModelViewSet):
         'customer'
     )
     serializer_class = serializers.CustomerRawPasswordModelSerializer
+    filterset_fields = ('customer',)
 
 
 class AdditionalTelephoneModelViewSet(DjingModelViewSet):
