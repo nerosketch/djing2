@@ -53,7 +53,7 @@ class DetailedCustomerServiceModelSerializer(BaseCustomModelSerializer):
 class CustomerStreetModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerStreet
-        fields = ('id', 'name', 'group')
+        fields = ('pk', 'name', 'group')
 
 
 class CustomerLogModelSerializer(BaseCustomModelSerializer):
