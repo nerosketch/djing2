@@ -7,21 +7,21 @@ from groupapp.models import Group
 class DeviceModelSerializer(BaseCustomModelSerializer):
     dev_type_str = serializers.CharField(source='get_dev_type_display', read_only=True)
     parent_dev_name = serializers.CharField(source='parent_dev', allow_null=True, read_only=True)
-    parent_dev_group = serializers.IntegerField(source='parent_dev.group.pk', allow_null=True, read_only=True)
-    attached_users = serializers.ListField(
-        source='customer_set.all', read_only=True,
-        child=serializers.PrimaryKeyRelatedField(read_only=True)
-    )
+    parent_dev_group = serializers.IntegerField(source='parent_dev.group_pk', allow_null=True, read_only=True)
+    #attached_users = serializers.ListField(
+    #    source='customer_set.all', read_only=True,
+    #    child=serializers.PrimaryKeyRelatedField(read_only=True)
+    #)
 
     class Meta:
         model = Device
-        # depth = 1
+        depth = 0
         fields = (
             'pk', 'ip_address', 'mac_addr', 'comment',
             'dev_type', 'dev_type_str', 'man_passw', 'group',
             'parent_dev', 'parent_dev_name', 'parent_dev_group',
-            'snmp_extra', 'attached_users',
-            'extra_data', 'status', 'is_noticeable', 'vlans'
+            'snmp_extra',
+            'extra_data', 'status', 'is_noticeable'
         )
         extra_kwargs = {'ip_address': {'required': False}}
 
