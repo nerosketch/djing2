@@ -48,7 +48,7 @@ def catch_dev_manager_err(fn):
 
 
 class DeviceModelViewSet(DjingModelViewSet):
-    queryset = Device.objects.all()
+    queryset = Device.objects.select_related('parent_dev')
     serializer_class = dev_serializers.DeviceModelSerializer
     filterset_fields = ('group', 'dev_type', 'status', 'is_noticeable')
     filter_backends = (SearchFilter, DjangoFilterBackend)
