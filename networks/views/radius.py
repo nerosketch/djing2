@@ -1,5 +1,6 @@
 import base64
 from typing import Tuple, Optional
+from ipaddress import ip_interface, ip_network
 
 from rest_framework import status
 from rest_framework.decorators import action
@@ -25,6 +26,7 @@ def catch_radius_errs(fn):
 
 
 def _parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int]:
+    # 'remote_id': '0x000600ad24d0c544', 'circuit_id': '0x000400020002'
     mac, port = None, 0
     if circuit_id.startswith(b'ZTE'):
         mac = remote_id.decode()
@@ -43,6 +45,10 @@ def _return_bad_response(text: str):
         "control:Auth-Type": 'Reject',
         "Reply-Message": text
     }, status.HTTP_403_FORBIDDEN
+
+
+def _clear_ip(ip):
+    return str(ip_interface(ip).ip)
 
 
 class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
@@ -89,17 +95,12 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
         if ip_lease is None:
             return _return_bad_response("Can't issue a lease")
         pool_contains_ip = ip_lease.pool
+        net = ip_network(pool_contains_ip.network)
 
         return Response(data={
-            "control:Auth-Type": 'Accept',
-            "Framed-IP-Address": ip_lease.ip_address,
-            # Когда Offer то your ip address заполнен а client ip пустой
-            # А когда Inform то наоборот
-            # А когда Ack то оба одинаковы
-            "DHCP-Your-IP-Address": ip_lease.ip_address,
-            "DHCP-Subnet-Mask": '255.255.255.0',
-            "DHCP-Router-Address": str(pool_contains_ip.gateway),
-            # "DHCP-Domain-Name-Server": '10.12.1.4',
-            "DHCP-IP-Address-Lease-Time": DHCP_DEFAULT_LEASE_TIME,
-            # "Cleartext-Password": 'dc:0e:a1:66:2e:5d',
+            "ip": _clear_ip(ip_lease.ip_address),
+            "mask": str(net.netmask),
+            "gw": _clear_ip(pool_contains_ip.gateway),
+            # "dns": '10.12.1.4',
+            "lease_time": DHCP_DEFAULT_LEASE_TIME
         })
