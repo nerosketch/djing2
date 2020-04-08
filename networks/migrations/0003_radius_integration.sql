@@ -226,7 +226,6 @@ BEGIN
   left join customers on (customers.baseaccount_ptr_id = networks_ip_leases.customer_id)
   left join networks_ippool_groups on (networks_ippool_groups.networkippool_id = networks_ip_leases.pool_id)
   where networks_ip_leases.customer_id = t_customer_id
-    and networks_ip_leases.mac_address = v_mac_addr
     and networks_ippool_groups.group_id = customers.group_id
     and networks_ip_leases.is_dynamic
   limit 1;
