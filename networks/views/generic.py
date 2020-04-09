@@ -53,3 +53,4 @@ class VlanIfModelViewSet(DjingModelViewSet):
 class CustomerIpLeaseModelViewSet(DjingModelViewSet):
     queryset = CustomerIpLeaseModel.objects.all()
     serializer_class = CustomerIpLeaseModelSerializer
+    filterset_fields = ('customer',)
