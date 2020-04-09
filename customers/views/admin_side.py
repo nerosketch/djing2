@@ -19,6 +19,7 @@ from agent.commands.dhcp import dhcp_commit, dhcp_expiry, dhcp_release
 from customers import models
 from customers import serializers
 # from customers.tasks import customer_gw_command, customer_gw_remove
+from customers.models import Customer
 from customers.views.view_decorators import catch_customers_errs
 from djing2.exceptions import UniqueConstraintIntegrityError
 from djing2.lib import safe_int, LogicError, DuplicateEntry, safe_float
@@ -173,7 +174,7 @@ class CustomerModelViewSet(DjingModelViewSet):
         #         gw_pk=int(customer.gateway_id)
         #     )
         customer.stop_service(request.user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response()
 
     @action(methods=('post',), detail=False)
     @catch_customers_errs
@@ -265,7 +266,7 @@ class CustomerModelViewSet(DjingModelViewSet):
             'service': ser.data
         }
         if customer.last_connected_service:
-            r['last_connected_service'] = customer.last_connected_service.title
+            r['last_connected_service_title'] = customer.last_connected_service.title
         return Response(r)
 
     @action(methods=('post',), detail=True)
@@ -288,6 +289,20 @@ class CustomerModelViewSet(DjingModelViewSet):
             comment=' '.join(comment.split()) if comment else gettext('fill account through admin side')
         )
         customer.save(update_fields=('balance',))
+        return Response()
+
+    @action(methods=('post',), detail=True)
+    @catch_customers_errs
+    def set_group_accessory(self, request, pk=None):
+        # customer = self.get_object()
+        group_id = request.data.get('group_id')
+        if not group_id:
+            return Response('group_id is required', status=status.HTTP_400_BAD_REQUEST)
+        group = get_object_or_404(Group, pk=int(group_id))
+        wanted_service_ids = request.data.get('services')
+        if not wanted_service_ids:
+            return Response('services is required', status=status.HTTP_400_BAD_REQUEST)
+        Customer.set_group_accessory(group, wanted_service_ids)
         return Response()
 
 

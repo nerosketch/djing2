@@ -89,6 +89,9 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     service_title = serializers.CharField(
         source='current_service.service.title', read_only=True
     )
+    service_id = serializers.IntegerField(
+        source='current_service.service.id', read_only=True
+    )
     # device = serializers.PrimaryKeyRelatedField(queryset=Device.objects.exclude(group=None)[:12])
     password = serializers.CharField(write_only=True, required=False, initial=generate_random_password)
     raw_password = serializers.CharField(
@@ -126,7 +129,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             'group', 'group_title', 'balance', 'description', 'street', 'street_name',
             'house', 'is_active', 'gateway', 'gateway_title', 'auto_renewal_service',
             'device', 'device_comment', 'dev_port', 'last_connected_service', 'current_service',
-            'service_title', 'is_dynamic_ip', 'full_name', 'password', 'raw_password'
+            'service_title', 'service_id', 'is_dynamic_ip', 'full_name', 'password', 'raw_password'
         )
 
 
