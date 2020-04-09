@@ -514,6 +514,19 @@ class Customer(BaseAccount):
             'house': self.house
         }
 
+    @staticmethod
+    def set_group_accessory(group, wanted_service_ids: list):
+        existed_service_ids = frozenset(t.id for t in group.service_set.all())
+        wanted_service_ids = frozenset(map(int, wanted_service_ids))
+        sub = existed_service_ids - wanted_service_ids
+        add = wanted_service_ids - existed_service_ids
+        group.service_set.remove(*sub)
+        group.service_set.add(*add)
+        Customer.objects.filter(
+            group=group,
+            last_connected_service__in=sub
+        ).update(last_connected_service=None)
+
     class Meta:
         db_table = 'customers'
         permissions = (
