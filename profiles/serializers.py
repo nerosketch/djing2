@@ -6,7 +6,7 @@ from profiles.models import UserProfile, UserProfileLog
 
 
 class UserProfileSerializer(BaseCustomModelSerializer):
-    firbidden_usernames = ('log', 'api-token-auth', 'api')
+    forbidden_usernames = ('log', 'api-token-auth', 'api')
     full_name = serializers.CharField(source='get_full_name', read_only=True)
 
     class Meta:
@@ -23,7 +23,7 @@ class UserProfileSerializer(BaseCustomModelSerializer):
         # return UserProfile.objects.create(**validated_data)
 
     def is_valid(self, raise_exception: bool = ...):
-        if self.initial_data['username'] in self.firbidden_usernames:
+        if self.initial_data['username'] in self.forbidden_usernames:
             if raise_exception:
                 raise ValidationError({'username': ['Forbidden username']})
             return True
