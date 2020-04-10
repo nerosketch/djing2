@@ -7,43 +7,19 @@ from profiles.models import UserProfile
 from tasks.handle import handle as task_handle
 
 
-TASK_PRIORITIES = (
-    (0, _('Low')),
-    (1, _('Average')),
-    (2, _('Higher'))
-)
-
-TASK_STATES = (
-    (0, _('New')),
-    (1, _('Confused')),
-    (2, _('Completed'))
-)
-
-TASK_TYPES = (
-    (0, _('not chosen')),
-    (1, _('ip conflict')),
-    (2, _('yellow triangle')),
-    (3, _('red cross')),
-    (4, _('weak speed')),
-    (5, _('cable break')),
-    (6, _('connection')),
-    (7, _('periodic disappearance')),
-    (8, _('router setup')),
-    (9, _('configure onu')),
-    (10, _('crimp cable')),
-    (11, _('Internet crash')),
-    (12, _('other'))
-)
-
-
 class ChangeLog(models.Model):
     task = models.ForeignKey('Task', on_delete=models.CASCADE)
+    ACT_TYPE_CHANGE_TASK = 1
+    ACT_TYPE_CREATE_TASK = 2
+    ACT_TYPE_DELETE_TASK = 3
+    ACT_TYPE_COMPLETE_TASK = 4
+    ACT_TYPE_FAILED_TASK = 5
     ACT_CHOICES = (
-        (1, _('Change task')),
-        (2, _('Create task')),
-        (3, _('Delete task')),
-        (4, _('Completing tasks')),
-        (5, _('The task failed'))
+        (ACT_TYPE_CHANGE_TASK, _('Change task')),
+        (ACT_TYPE_CREATE_TASK, _('Create task')),
+        (ACT_TYPE_DELETE_TASK, _('Delete task')),
+        (ACT_TYPE_COMPLETE_TASK, _('Completing tasks')),
+        (ACT_TYPE_FAILED_TASK, _('The task failed'))
     )
     act_type = models.PositiveSmallIntegerField(choices=ACT_CHOICES)
     when = models.DateTimeField(auto_now_add=True)
@@ -80,9 +56,17 @@ class Task(models.Model):
         on_delete=models.SET_NULL, null=True,
         blank=True, verbose_name=_('Task author')
     )
+    TASK_PRIORITY_LOW = 0
+    TASK_PRIORITY_AVARAGE = 1
+    TASK_PRIORITY_HIGHER = 2
+    TASK_PRIORITIES = (
+        (TASK_PRIORITY_LOW, _('Low')),
+        (TASK_PRIORITY_AVARAGE, _('Average')),
+        (TASK_PRIORITY_HIGHER, _('Higher'))
+    )
     priority = models.PositiveSmallIntegerField(
         _('A priority'),
-        choices=TASK_PRIORITIES, default=0
+        choices=TASK_PRIORITIES, default=TASK_PRIORITY_LOW
     )
     out_date = models.DateField(
         _('Reality'), null=True,
@@ -91,13 +75,49 @@ class Task(models.Model):
     time_of_create = models.DateTimeField(
         _('Date of create'), auto_now_add=True
     )
+    TASK_STATE_NEW = 0
+    TASK_STATE_CONFUSED = 1
+    TASK_STATE_COMPLETED = 2
+    TASK_STATES = (
+        (TASK_STATE_NEW, _('New')),
+        (TASK_STATE_CONFUSED, _('Confused')),
+        (TASK_STATE_COMPLETED, _('Completed'))
+    )
     state = models.PositiveSmallIntegerField(
         _('Condition'), choices=TASK_STATES,
-        default=0
+        default=TASK_STATE_NEW
+    )
+    TASK_TYPE_NOT_CHOSEN = 0
+    TASK_TYPE_IP_CONFLICT = 1
+    TASK_TYPE_YELLOW_TRIANGLE = 2
+    TASK_TYPE_RED_CROSS = 3
+    TASK_TYPE_WAEK_SPEED = 4
+    TASK_TYPE_CABLE_BREAK = 5
+    TASK_TYPE_CONNECTION = 6
+    TASK_TYPE_PERIODIC_DISAPPEARANCE = 7
+    TASK_TYPE_ROUTER_SETUP = 8
+    TASK_TYPE_CONFIGURE_ONU = 9
+    TASK_TYPE_CRIMP_CABLE = 10
+    TASK_TYPE_INTERNET_CRASH = 11
+    TASK_TYPE_OTHER = 12
+    TASK_TYPES = (
+        (0, _('not chosen')),
+        (1, _('ip conflict')),
+        (2, _('yellow triangle')),
+        (3, _('red cross')),
+        (4, _('weak speed')),
+        (5, _('cable break')),
+        (6, _('connection')),
+        (7, _('periodic disappearance')),
+        (8, _('router setup')),
+        (9, _('configure onu')),
+        (10, _('crimp cable')),
+        (11, _('Internet crash')),
+        (12, _('other'))
     )
     mode = models.PositiveSmallIntegerField(
         _('The nature of the damage'),
-        choices=TASK_TYPES, default=0
+        choices=TASK_TYPES, default=TASK_TYPE_NOT_CHOSEN
     )
     customer = models.ForeignKey(
         Customer, on_delete=models.CASCADE,
@@ -105,20 +125,20 @@ class Task(models.Model):
     )
 
     def finish(self, current_user):
-        self.state = 2  # Completed. Task done
+        self.state = self.TASK_STATE_COMPLETED  # Completed. Task done
         self.out_date = timezone.now()  # End time
         ChangeLog.objects.create(
             task=self,
-            act_type=4,  # Completing tasks
+            act_type=ChangeLog.ACT_TYPE_COMPLETE_TASK,  # Completing tasks
             who=current_user
         )
         self.save(update_fields=('state', 'out_date'))
 
     def do_fail(self, current_user):
-        self.state = 1  # Confused(crashed)
+        self.state = self.TASK_STATE_CONFUSED  # Confused(crashed)
         ChangeLog.objects.create(
             task=self,
-            act_type=5,  # The task failed
+            act_type=ChangeLog.ACT_TYPE_FAILED_TASK,  # The task failed
             who=current_user
         )
         self.save(update_fields=('state',))
@@ -130,7 +150,7 @@ class Task(models.Model):
         )
 
     def is_relevant(self):
-        return self.out_date < timezone.now().date() or self.state == 2
+        return self.out_date < timezone.now().date() or self.state == self.TASK_STATE_COMPLETED
 
     def get_time_diff(self):
         now_date = datetime.now().date()
