@@ -84,13 +84,17 @@ class Device(models.Model):
     )
     vlans = models.ManyToManyField(VlanIf, verbose_name=_('Available vlans'), blank=True)
 
+    NETWORK_STATE_UNDEFINED = 0
+    NETWORK_STATE_UP = 1
+    NETWORK_STATE_UNREACHABLE = 2
+    NETWORK_STATE_DOWN = 3
     NETWORK_STATES = (
-        (0, _('Undefined')),
-        (1, _('Up')),
-        (2, _('Unreachable')),
-        (3, _('Down'))
+        (NETWORK_STATE_UNDEFINED, _('Undefined')),
+        (NETWORK_STATE_UP, _('Up')),
+        (NETWORK_STATE_UNREACHABLE, _('Unreachable')),
+        (NETWORK_STATE_DOWN, _('Down'))
     )
-    status = models.PositiveSmallIntegerField(_('Status'), choices=NETWORK_STATES, default=0)
+    status = models.PositiveSmallIntegerField(_('Status'), choices=NETWORK_STATES, default=NETWORK_STATE_UNDEFINED)
 
     is_noticeable = models.BooleanField(_('Send notify when monitoring state changed'), default=False)
 

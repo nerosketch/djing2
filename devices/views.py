@@ -229,16 +229,16 @@ class DeviceModelViewSet(DjingModelViewSet):
                 })
 
             status_map = {
-                'UP': 1,
-                'UNREACHABLE': 2,
-                'DOWN': 3
+                'UP': Device.NETWORK_STATE_UP,
+                'UNREACHABLE': Device.NETWORK_STATE_UNREACHABLE,
+                'DOWN': Device.NETWORK_STATE_DOWN
             }
             status_text_map = {
                 'UP': 'Device %(device_name)s is up',
                 'UNREACHABLE': 'Device %(device_name)s is unreachable',
                 'DOWN': 'Device %(device_name)s is down'
             }
-            device_down.status = status_map.get(dev_status, 0)
+            device_down.status = status_map.get(dev_status, Device.NETWORK_STATE_UNDEFINED)
 
             device_down.save(update_fields=('status',))
 
