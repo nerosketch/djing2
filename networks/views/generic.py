@@ -20,7 +20,7 @@ class NetworkIpPoolModelViewSet(DjingModelViewSet):
     @action(detail=True, methods=('post',))
     def group_attach(self, request, pk=None):
         network = self.get_object()
-        gr = request.POST.getlist('gr')
+        gr = request.data.getlist('gr')
         network.groups.clear()
         network.groups.add(*gr)
         return Response(status=status.HTTP_200_OK)
@@ -31,15 +31,11 @@ class NetworkIpPoolModelViewSet(DjingModelViewSet):
     #     selected_grps = (pk[0] for pk in net.groups.only('pk').values_list('pk'))
     #     return Response(selected_grps)
 
-    # @action(detail=True)
-    # def get_free_ip(self, request, pk=None):
-    #     network = self.get_object()
-    #     q = Customer.objects.exclude(ip_address=None).exclude(gateway=None).iterator()
-    #     used_ips = (c.ip_address for c in q)
-    #     ip = network.get_free_ip(employed_ips=used_ips)
-    #     if ip is None:
-    #         return Response()
-    #     return Response(str(ip))
+    @action(methods=('get',), detail=True)
+    def get_free_ip(self, request, pk=None):
+        network = self.get_object()
+        ip = network.get_free_ip()
+        return Response(str(ip))
 
 
 class VlanIfModelViewSet(DjingModelViewSet):
