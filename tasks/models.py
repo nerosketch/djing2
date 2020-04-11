@@ -1,6 +1,5 @@
 from datetime import timedelta, datetime
 from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
 from django.db import models
 from customers.models import Customer
 from profiles.models import UserProfile
@@ -39,7 +38,7 @@ class ChangeLog(models.Model):
 
 
 def delta_add_days():
-    return timezone.now() + timedelta(days=3)
+    return datetime.now() + timedelta(days=3)
 
 
 class Task(models.Model):
@@ -83,7 +82,7 @@ class Task(models.Model):
         (TASK_STATE_CONFUSED, _('Confused')),
         (TASK_STATE_COMPLETED, _('Completed'))
     )
-    state = models.PositiveSmallIntegerField(
+    task_state = models.PositiveSmallIntegerField(
         _('Condition'), choices=TASK_STATES,
         default=TASK_STATE_NEW
     )
@@ -125,23 +124,23 @@ class Task(models.Model):
     )
 
     def finish(self, current_user):
-        self.state = self.TASK_STATE_COMPLETED  # Completed. Task done
-        self.out_date = timezone.now()  # End time
+        self.task_state = self.TASK_STATE_COMPLETED  # Completed. Task done
+        self.out_date = datetime.now()  # End time
         ChangeLog.objects.create(
             task=self,
             act_type=ChangeLog.ACT_TYPE_COMPLETE_TASK,  # Completing tasks
             who=current_user
         )
-        self.save(update_fields=('state', 'out_date'))
+        self.save(update_fields=('task_state', 'out_date'))
 
     def do_fail(self, current_user):
-        self.state = self.TASK_STATE_CONFUSED  # Confused(crashed)
+        self.task_state = self.TASK_STATE_CONFUSED  # Confused(crashed)
         ChangeLog.objects.create(
             task=self,
             act_type=ChangeLog.ACT_TYPE_FAILED_TASK,  # The task failed
             who=current_user
         )
-        self.save(update_fields=('state',))
+        self.save(update_fields=('task_state',))
 
     def send_notification(self):
         task_handle(
@@ -149,8 +148,10 @@ class Task(models.Model):
            self.recipients.filter(is_active=True)
         )
 
-    def is_relevant(self):
-        return self.out_date < timezone.now().date() or self.state == self.TASK_STATE_COMPLETED
+    def is_expired(self):
+        if self.out_date:
+            return self.out_date < datetime.now().date()
+        return False
 
     def get_time_diff(self):
         now_date = datetime.now().date()
