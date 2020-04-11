@@ -27,7 +27,7 @@ class TaskModelViewSet(DjingModelViewSet):
     ).annotate(comment_count=Count('extracomment'))
     # TODO: Optimize. recipients field make request for each task entry
     serializer_class = serializers.TaskModelSerializer
-    filterset_fields = ('state', 'recipients', 'customer')
+    filterset_fields = ('task_state', 'recipients', 'customer')
 
     def destroy(self, request, *args, **kwargs):
         task = self.get_object()
@@ -46,7 +46,7 @@ class TaskModelViewSet(DjingModelViewSet):
         if uname:
             exists_task = models.Task.objects.filter(
                 customer__username=uname,
-                state=models.Task.TASK_STATE_NEW
+                task_state=models.Task.TASK_STATE_NEW
             )
             if exists_task.exists():
                 return Response(
@@ -66,7 +66,7 @@ class TaskModelViewSet(DjingModelViewSet):
         if isinstance(request.user, UserProfile):
             tasks_count = models.Task.objects.filter(
                 recipients__in=(request.user,),
-                state=models.Task.TASK_STATE_NEW
+                task_state=models.Task.TASK_STATE_NEW
             ).count()
         return Response(tasks_count)
 
@@ -107,7 +107,7 @@ class AllTasksList(DjingListAPIView):
 class AllNewTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(state=models.Task.TASK_STATE_NEW)
+        return qs.filter(task_state=models.Task.TASK_STATE_NEW)
 
 
 class NewTasksList(AllTasksList):
@@ -117,7 +117,7 @@ class NewTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
-            recipients=self.request.user, state=models.Task.TASK_STATE_NEW
+            recipients=self.request.user, task_state=models.Task.TASK_STATE_NEW
         )
 
 
@@ -125,7 +125,7 @@ class FailedTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
-            recipients=self.request.user, state=models.Task.TASK_STATE_CONFUSED
+            recipients=self.request.user, task_state=models.Task.TASK_STATE_CONFUSED
         )
 
 
@@ -133,7 +133,7 @@ class FinishedTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
-            recipients=self.request.user, state=models.Task.TASK_STATE_COMPLETED
+            recipients=self.request.user, task_state=models.Task.TASK_STATE_COMPLETED
         )
 
 
@@ -142,7 +142,7 @@ class OwnTasksList(AllTasksList):
         qs = super().get_queryset()
         return qs.filter(
             author=self.request.user
-        ).exclude(state=models.Task.TASK_STATE_COMPLETED)
+        ).exclude(task_state=models.Task.TASK_STATE_COMPLETED)
 
 
 class MyTasksList(AllTasksList):
