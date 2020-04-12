@@ -15,7 +15,7 @@ def accs_format(acc: Customer) -> dict:
     r = {
         'id': acc.pk,
         'fio': acc.fio,
-        'username': acc.username,
+        'username': acc.username
     }
     if acc.telephone:
         r.update({
@@ -23,7 +23,8 @@ def accs_format(acc: Customer) -> dict:
         })
     if acc.group:
         r.update({
-            'gid': acc.group.pk
+            'gid': acc.group.pk,
+            'group_title': acc.group.title
         })
     return r
 
@@ -53,7 +54,7 @@ class SearchApiView(DjingListAPIView):
             return Response(())
         s = s.replace('+', '')
 
-        limit_count = 10
+        limit_count = 100
 
         if s:
             customers = Customer.objects.filter(
@@ -61,7 +62,7 @@ class SearchApiView(DjingListAPIView):
                 Q(telephone__icontains=s) |
                 Q(additional_telephones__telephone__icontains=s) |
                 Q(ip_address__icontains=s)
-            )[:limit_count]
+            ).select_related('group')[:limit_count]
 
             if re.match(MAC_ADDR_REGEX, s):
                 devices = Device.objects.filter(mac_addr=s)[:limit_count]
