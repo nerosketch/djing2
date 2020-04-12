@@ -50,7 +50,7 @@ class TestRadiusCustomerServiceRequestViewSet(CustomAPITestCase):
 
     def _make_request(self):
         return self.post(path='/api/customers/radius/get_service/', data={
-            'username': self.customer_lease_ip,
+            'customer_ip': self.customer_lease_ip,
             'password': 'blabla_doesntmatter'
         })
 
@@ -58,17 +58,10 @@ class TestRadiusCustomerServiceRequestViewSet(CustomAPITestCase):
         r = self._make_request()
         self.assertEqual(r.status_code, 200)
         self.assertDictEqual(r.data, {
-            "control:Auth-Type": 'Accept',
-            "User-Name": self.customer_lease_ip,
-            "Session-Timeout": 3600,
-            "Idle-Timeout": 3600,
-            "Cisco-AVPair": (
-                'subscriber:policer-rate-in=%d' % 10 * 1024,
-                'subscriber:policer-rate-out=%d' % 10 * 1024,
-                'subscriber:policer-burst-in=188',
-                'subscriber:policer-burst-out=188',
-            ),
-            "Cisco-Account-Info": 'AINTERNET'
+            'ip': self.customer_lease_ip,
+            'session_time': 3600,
+            'speed_in': 10.0,
+            'speed_out': 10.0
         })
 
     def test_if_customer_not_have_service(self):

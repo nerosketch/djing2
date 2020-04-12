@@ -35,7 +35,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         sess_time = customer_service.calc_session_time()
         return Response({
             'ip': customer_ip,
-            'session_time': sess_time.total_seconds(),
+            'session_time': int(sess_time.total_seconds()),
             'speed_in': customer_service.service.speed_in,
             'speed_out': customer_service.service.speed_out
         })
