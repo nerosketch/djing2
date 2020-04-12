@@ -1,7 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.filters import OrderingFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 
 from djing2.viewsets import DjingModelViewSet
@@ -15,7 +15,7 @@ class NetworkIpPoolModelViewSet(DjingModelViewSet):
     queryset = NetworkIpPool.objects.all()
     serializer_class = NetworkIpPoolModelSerializer
     filter_backends = (OrderingFilter,)
-    ordering_fields = ('network', 'kind', 'description', 'cost', 'usercount')
+    ordering_fields = ('network', 'ip_start', 'ip_end', 'gateway')
 
     @action(detail=True, methods=('post',))
     def group_attach(self, request, pk=None):
@@ -49,4 +49,6 @@ class VlanIfModelViewSet(DjingModelViewSet):
 class CustomerIpLeaseModelViewSet(DjingModelViewSet):
     queryset = CustomerIpLeaseModel.objects.all()
     serializer_class = CustomerIpLeaseModelSerializer
+    filter_backends = (OrderingFilter, SearchFilter)
     filterset_fields = ('customer',)
+    ordering_fields = ('ip_address', 'lease_time', 'mac_address')
