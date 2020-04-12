@@ -10,7 +10,8 @@ class RadiusDHCPRequestTestCase(APITestCase):
     def setUp(self):
         FetchSubscriberDynamicLeaseTestCase.setUp(self)
 
-    def _make_dhcp_request(self, remote_id: bytes, circuit_id: bytes, client_mac: str, expected_ip: str, status_code=200, gw_ip='10.11.12.1'):
+    def _make_dhcp_request(self, remote_id: bytes, circuit_id: bytes, client_mac: str, expected_ip: str,
+                           status_code=200, gw_ip='10.11.12.1'):
         r = self.client.post('/api/networks/radius/dhcp_request/', data={
             'opt82': {
                 'remote_id': base64.b64encode(remote_id),
@@ -19,19 +20,15 @@ class RadiusDHCPRequestTestCase(APITestCase):
             'client_mac': client_mac
         })
         self.assertEqual(r.status_code, status_code)
-        self.assertDictEqual(r.data, {
-            "control:Auth-Type": 'Accept',
-            "Framed-IP-Address": expected_ip,
-            "DHCP-Your-IP-Address": expected_ip,
-            "DHCP-Subnet-Mask": '255.255.255.0',
-            "DHCP-Router-Address": gw_ip,
-            "DHCP-IP-Address-Lease-Time": 86400,
-        })
+        self.assertDictEqual(r.data, {'gw': gw_ip,
+                                      'ip': expected_ip,
+                                      'lease_time': 86400,
+                                      'mask': '255.255.255.0'})
 
     def test_get_new_ip(self):
         self._make_dhcp_request(
-            remote_id=b'\x12\x13\x14\x15\x16\x17',      # 12:13:14:15:16:17
-            circuit_id=b'\x12\x13\x14\x15\x16\x02',     # port #2
+            remote_id=b'\x12\x13\x14\x15\x16\x17',  # 12:13:14:15:16:17
+            circuit_id=b'\x12\x13\x14\x15\x16\x02',  # port #2
             client_mac='1:2:3:4:5:6',
             expected_ip='10.11.12.2'
         )

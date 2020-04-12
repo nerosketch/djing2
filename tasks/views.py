@@ -4,7 +4,6 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
-from profiles.serializers import UserProfileSerializer
 from tasks import models
 from tasks import serializers
 from profiles.models import UserProfile
@@ -88,12 +87,12 @@ class TaskModelViewSet(DjingModelViewSet):
         task.send_notification()
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=True)
-    def recipients(self, request, pk=None):
-        obj = self.get_object()
-        recs = obj.recipients.all()
-        ser = UserProfileSerializer(recs, many=True)
-        return Response(ser.data)
+    # @action(detail=True)
+    # def recipients(self, request, pk=None):
+    #     obj = self.get_object()
+    #     recs = obj.recipients.all()
+    #     ser = UserProfileSerializer(recs, many=True)
+    #     return Response(ser.data)
 
 
 class AllTasksList(DjingListAPIView):
