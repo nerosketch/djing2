@@ -39,10 +39,11 @@ class TestRadiusCustomerServiceRequestViewSet(CustomAPITestCase):
         self.customer.refresh_from_db()
         self.customer.pick_service(self.service, self.customer)
 
-        self.lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+        self.lease = CustomerIpLeaseModel.fetch_subscriber_lease(
             customer_mac='1:2:3:4:5:6',
             device_mac='12:13:14:15:16:17',
             device_port=2,
+            is_dynamic=True
         )
         self.assertIsNotNone(self.lease)
         # lease must be contain ip_address=10.11.12.2'
