@@ -185,12 +185,15 @@ INSERT INTO networks_ippool_groups ("networkippool_id", "group_id")
 
 
 --
--- fetch lease from dynamic subscriber
+-- Fetch lease from dynamic subscriber.
+-- If v_is_dynamic is False then v_mac_addr(users mac) is
+-- ignored during the search by leases
 --
-CREATE OR REPLACE FUNCTION fetch_subscriber_dynamic_lease(
+CREATE OR REPLACE FUNCTION fetch_subscriber_lease(
   v_mac_addr macaddr,
   v_dev_mac macaddr,
-  v_dev_port smallint)
+  v_dev_port smallint,
+  v_is_dynamic boolean)
   RETURNS networks_ip_leases
   LANGUAGE plpgsql
 AS
@@ -221,14 +224,26 @@ BEGIN
 
   -- Find leases by customer and mac, where pool of this lease in
   -- the same group as the subscriber
-  SELECT networks_ip_leases.* INTO t_lease
-  FROM networks_ip_leases
-  left join customers on (customers.baseaccount_ptr_id = networks_ip_leases.customer_id)
-  left join networks_ippool_groups on (networks_ippool_groups.networkippool_id = networks_ip_leases.pool_id)
-  where networks_ip_leases.customer_id = t_customer_id
-    and networks_ippool_groups.group_id = customers.group_id
-    and networks_ip_leases.is_dynamic
-  limit 1;
+  if v_is_dynamic then
+    SELECT networks_ip_leases.* INTO t_lease
+    FROM networks_ip_leases
+    left join customers on (customers.baseaccount_ptr_id = networks_ip_leases.customer_id)
+    left join networks_ippool_groups on (networks_ippool_groups.networkippool_id = networks_ip_leases.pool_id)
+    where networks_ip_leases.customer_id = t_customer_id
+      and networks_ip_leases.mac_address = v_mac_addr
+      and networks_ippool_groups.group_id = customers.group_id
+      and networks_ip_leases.is_dynamic
+    limit 1;
+  else
+    SELECT networks_ip_leases.* INTO t_lease
+    FROM networks_ip_leases
+    left join customers on (customers.baseaccount_ptr_id = networks_ip_leases.customer_id)
+    left join networks_ippool_groups on (networks_ippool_groups.networkippool_id = networks_ip_leases.pool_id)
+    where networks_ip_leases.customer_id = t_customer_id
+      and networks_ippool_groups.group_id = customers.group_id
+      and not networks_ip_leases.is_dynamic
+    limit 1;
+  end if;
   if FOUND then
     -- return it
     return t_lease;
@@ -253,7 +268,7 @@ BEGIN
 
       -- lease found, attach to customer and return it
       insert into networks_ip_leases(ip_address, pool_id, mac_address, customer_id, is_dynamic) values
-      (t_ip, t_net.pool_id, v_mac_addr, t_customer_id, true)
+      (t_ip, t_net.pool_id, v_mac_addr, t_customer_id, v_is_dynamic)
       returning * into t_lease;
       return t_lease;
     end if;
