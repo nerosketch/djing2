@@ -86,10 +86,11 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
 
         # If customer has an active leases then return latest.
         # If not found then assign new
-        ip_lease = CustomerIpLeaseModel.fetch_subscriber_dynamic_lease(
+        ip_lease = CustomerIpLeaseModel.fetch_subscriber_lease(
             customer_mac=user_mac,
             device_mac=dev_mac,
-            device_port=dev_port
+            device_port=dev_port,
+            is_dynamic=True
         )
 
         if ip_lease is None:
