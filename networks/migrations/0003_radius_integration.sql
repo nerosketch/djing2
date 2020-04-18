@@ -53,7 +53,7 @@ INSERT INTO networks_ip_pool ("id", "network", "kind", "description", "ip_start"
     "ip_start",
     "ip_end",
     "vlan_if_id",
-    NETWORK("network") :: inet + 1
+    HOST(NETWORK("network")::inet + 1)::inet
   FROM networks_network;
 
 
