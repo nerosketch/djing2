@@ -12,7 +12,7 @@ class UserProfileSerializer(BaseCustomModelSerializer):
     class Meta:
         model = UserProfile
         fields = ('pk', 'username', 'fio', 'is_active', 'is_admin', 'telephone',
-                  'avatar', 'email', 'full_name')
+                  'avatar', 'email', 'full_name', 'last_login', 'is_superuser')
 
     def create(self, validated_data):
         return UserProfile.objects.create_superuser(
