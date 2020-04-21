@@ -18,14 +18,14 @@ class UserProfileViewSet(DjingModelViewSet):
 
     @action(detail=False, url_path='get_profiles_by_group/(?P<group_id>\d{1,9})')
     def get_profiles_by_group(self, request, group_id: str):
-        profile_ids = UserProfile.objects.get_profiles_by_group(group_id).values_list('pk')
-        return Response(data=(pi[0] for pi in profile_ids))
+        profile_ids = UserProfile.objects.get_profiles_by_group(group_id).values_list('pk', flat=True)
+        return Response(data=profile_ids)
 
     @action(detail=True, methods=('get',))
     def get_responsibility_groups(self, request, username=None):
         profile = self.get_object()
-        group_ids = tuple(g[0] for g in profile.responsibility_groups.all().values_list('pk'))
-        return Response(group_ids)
+        group_ids = profile.responsibility_groups.values_list('pk', flat=True)
+        return Response(data=group_ids)
 
     @action(detail=True, methods=('put',))
     def set_responsibility_groups(self, request, username=None):
@@ -46,7 +46,8 @@ class LocationAuth(APIView):
     throttle_classes = ()
     permission_classes = ()
 
-    def get(self, request, *args, **kwargs):
+    @staticmethod
+    def get(request, *args, **kwargs):
         user = authenticate(
             request=request,
             byip=True
