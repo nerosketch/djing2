@@ -12,6 +12,7 @@ psycopg2==2.8.4
 git+git://github.com/nerosketch/easysnmp.git#egg=easysnmp
 pid==2.2.5
 django-guardian==2.1.0
+djangorestframework-guardian==0.3.0
 
 requests==2.22.0
 transliterate==1.10.2

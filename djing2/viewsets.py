@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, GenericViewSet
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, DjangoObjectPermissions
 from rest_framework.exceptions import AuthenticationFailed
 
 
@@ -11,8 +11,26 @@ from profiles.models import BaseAccount
 from djing2.exceptions import UniqueConstraintIntegrityError
 
 
+class GuardianObjectPermissions(DjangoObjectPermissions):
+    """
+    Similar to `DjangoObjectPermissions`, but adding 'view' permissions.
+    """
+    perms_map = {
+        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
+        'HEAD': ['%(app_label)s.view_%(model_name)s'],
+        'POST': ['%(app_label)s.add_%(model_name)s'],
+        'PUT': ['%(app_label)s.change_%(model_name)s'],
+        'PATCH': ['%(app_label)s.change_%(model_name)s'],
+        'DELETE': ['%(app_label)s.delete_%(model_name)s'],
+    }
+
+
+_admin_permission_classes = (IsAuthenticated, IsAdminUser, GuardianObjectPermissions)
+
+
 class DjingModelViewSet(ModelViewSet):
-    permission_classes = (IsAuthenticated, IsAdminUser)
+    permission_classes = _admin_permission_classes
 
     def perform_create(self, serializer) -> None:
         try:
@@ -45,7 +63,7 @@ class DjingModelViewSet(ModelViewSet):
 
 
 class DjingListAPIView(ListAPIView):
-    permission_classes = (IsAuthenticated, IsAdminUser)
+    permission_classes = _admin_permission_classes
 
 
 class BaseNonAdminReadOnlyModelViewSet(ReadOnlyModelViewSet):
@@ -67,4 +85,4 @@ class BaseNonAdminModelViewSet(ModelViewSet):
 
 
 class DjingAuthorizedViewSet(GenericViewSet):
-    permission_classes = (IsAuthenticated, IsAdminUser)
+    permission_classes = _admin_permission_classes
