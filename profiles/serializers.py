@@ -31,6 +31,9 @@ class UserProfileSerializer(BaseCustomModelSerializer):
 
 
 class UserProfileLogSerializer(BaseCustomModelSerializer):
+    do_type_text = serializers.CharField(source='get_do_type_display', read_only=True)
+
     class Meta:
         model = UserProfileLog
-        fields = ('do_type', 'additional_text', 'action_date')
+        fields = ('do_type', 'additional_text', 'action_date',
+                  'do_type_text')
