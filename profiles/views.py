@@ -40,6 +40,7 @@ class UserProfileViewSet(DjingModelViewSet):
 class UserProfileLogViewSet(DjingModelViewSet):
     queryset = UserProfileLog.objects.all()
     serializer_class = UserProfileLogSerializer
+    filterset_fields = ('account',)
 
 
 class LocationAuth(APIView):
