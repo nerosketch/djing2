@@ -63,7 +63,7 @@ class DjingModelViewSet(ModelViewSet):
 
 
 class DjingListAPIView(ListAPIView):
-    permission_classes = _admin_permission_classes
+    permission_classes = (IsAuthenticated, IsAdminUser)
 
 
 class BaseNonAdminReadOnlyModelViewSet(ReadOnlyModelViewSet):
@@ -85,4 +85,4 @@ class BaseNonAdminModelViewSet(ModelViewSet):
 
 
 class DjingAuthorizedViewSet(GenericViewSet):
-    permission_classes = _admin_permission_classes
+    permission_classes = (IsAuthenticated, IsAdminUser)
