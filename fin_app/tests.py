@@ -1,6 +1,6 @@
 from hashlib import md5
 
-from django.test.utils import override_settings
+# from django.test.utils import override_settings
 from django.utils import timezone
 from django.utils.html import escape
 from rest_framework.test import APITestCase
@@ -17,7 +17,7 @@ def _make_sign(act: int, pay_account: str, serv_id: str, pay_id, secret: str):
     return md.hexdigest()
 
 
-@override_settings(DEFAULT_TABLESPACE='ram')
+# @override_settings(DEFAULT_TABLESPACE='ram')
 class CustomAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
         return self.client.get(*args, **kwargs)
