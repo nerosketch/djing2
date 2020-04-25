@@ -6,7 +6,6 @@ from profiles.models import UserProfile, UserProfileLog
 
 
 class UserProfileSerializer(BaseCustomModelSerializer):
-    forbidden_usernames = ('log', 'api-token-auth', 'api')
     full_name = serializers.CharField(source='get_full_name', read_only=True)
 
     class Meta:
@@ -18,12 +17,17 @@ class UserProfileSerializer(BaseCustomModelSerializer):
         return UserProfile.objects.create_superuser(
             telephone=validated_data.get('telephone'),
             username=validated_data.get('username'),
-            password=validated_data.get('password')
+            password=validated_data.get('password'),
+            fio=validated_data.get('fio'),
+            email=validated_data.get('email'),
+            is_active=validated_data.get('is_active'),
+            birth_day=validated_data.get('birth_day'),
         )
         # return UserProfile.objects.create(**validated_data)
 
     def is_valid(self, raise_exception: bool = ...):
-        if self.initial_data['username'] in self.forbidden_usernames:
+        forbidden_usernames = ('log', 'api-token-auth', 'api')
+        if self.initial_data['username'] in forbidden_usernames:
             if raise_exception:
                 raise ValidationError({'username': ['Forbidden username']})
             return True

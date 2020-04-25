@@ -102,7 +102,8 @@ class RadiusDHCPRequestTestCase(APITestCase):
             description='test',
             ip_start='10.10.11.2',
             ip_end='10.10.11.254',
-            gateway='10.10.11.1'
+            gateway='10.10.11.1',
+            is_dynamic=True
         )
         self.ippool.groups.remove(self.group)
         ippool2.groups.add(self.group)
