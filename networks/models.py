@@ -80,6 +80,8 @@ class NetworkIpPool(models.Model):
 
     gateway = models.GenericIPAddressField(_('Gateway ip address'))
 
+    is_dynamic = models.BooleanField(_('Is dynamic'), default=False)
+
     def __str__(self):
         return "%s: %s" % (self.description, self.network)
 
@@ -149,7 +151,7 @@ class NetworkIpPool(models.Model):
         :return:
         """
         with connection.cursor() as cur:
-            cur.execute("SELECT find_new_ip_pool_lease(%d)" % self.pk)
+            cur.execute("SELECT find_new_ip_pool_lease(%d, %d::boolean)" % (self.pk, 0))
             free_ip = cur.fetchone()
         return ip_address(free_ip[0]) if free_ip and free_ip[0] else None
 
