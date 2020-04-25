@@ -14,7 +14,7 @@ from groupapp.models import Group
 
 
 class MyUserManager(BaseUserManager):
-    def create_user(self, telephone, username, password=None):
+    def create_user(self, telephone, username, password=None, **other_fields):
         """
         Creates and saves a User with the given email, date of
         birth and password.
@@ -25,21 +25,24 @@ class MyUserManager(BaseUserManager):
         user = self.model(
             telephone=telephone,
             username=username,
+            **other_fields
         )
         user.is_admin = False
 
-        user.set_password(password)
+        if password:
+            user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, telephone, username, password):
+    def create_superuser(self, telephone, username, password, **other_fields):
         """
         Creates and saves a superuser with the given email, date of
         birth and password.
         """
         user = self.create_user(telephone,
                                 password=password,
-                                username=username
+                                username=username,
+                                **other_fields
                                 )
         user.is_admin = True
         user.is_superuser = True
@@ -129,7 +132,7 @@ class UserProfileManager(MyUserManager):
     def get_profiles_by_group(self, group_id):
         return self.filter(responsibility_groups__id__in=(group_id,), is_admin=True, is_active=True)
 
-    def create_user(self, telephone, username, password=None):
+    def create_user(self, telephone, username, password=None, **other_fields):
         """
         Creates and saves a User with the given email, date of
         birth and password.
@@ -140,10 +143,12 @@ class UserProfileManager(MyUserManager):
         user = self.model(
             telephone=telephone,
             username=username,
+            **other_fields
         )
         user.is_admin = True
 
-        user.set_password(password)
+        if password:
+            user.set_password(password)
         user.save(using=self._db)
         return user
 
