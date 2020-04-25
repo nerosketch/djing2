@@ -35,7 +35,8 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
             ip_start='10.11.12.2',
             ip_end='10.11.12.254',
             # vlan_if=vlan,
-            gateway='10.11.12.1'
+            gateway='10.11.12.1',
+            is_dynamic=True
         )
         self.ippool.groups.add(self.group)
 
