@@ -4,7 +4,7 @@ from django.db.models import Q
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from djing2 import MAC_ADDR_REGEX
+from djing2 import MAC_ADDR_REGEX, IP_ADDR_REGEX
 from djing2.serializers import SearchSerializer
 from djing2.viewsets import DjingListAPIView
 from customers.models import Customer
@@ -15,7 +15,8 @@ def accs_format(acc: Customer) -> dict:
     r = {
         'id': acc.pk,
         'fio': acc.fio,
-        'username': acc.username
+        'username': acc.username,
+        'ips': acc.customeripleasemodel_set.select_related('ip_address').values_list('ip_address', flat=True)
     }
     if acc.telephone:
         r.update({
@@ -57,12 +58,19 @@ class SearchApiView(DjingListAPIView):
         limit_count = 100
 
         if s:
-            customers = Customer.objects.filter(
-                Q(fio__icontains=s) | Q(username__icontains=s) |
-                Q(telephone__icontains=s) |
-                Q(additional_telephones__telephone__icontains=s) |
-                Q(ip_address__icontains=s)
-            ).select_related('group')[:limit_count]
+            if re.match(IP_ADDR_REGEX, s):
+                customers = Customer.objects.filter(
+                    Q(customeripleasemodel__ip_address__icontains=s) |
+                    Q(ip_address__icontains=s)
+                )
+            else:
+                customers = Customer.objects.filter(
+                    Q(fio__icontains=s) | Q(username__icontains=s) |
+                    Q(telephone__icontains=s) |
+                    Q(additional_telephones__telephone__icontains=s) |
+                    Q(ip_address__icontains=s)
+                )
+            customers = customers.select_related('group')[:limit_count]
 
             if re.match(MAC_ADDR_REGEX, s):
                 devices = Device.objects.filter(mac_addr=s)[:limit_count]

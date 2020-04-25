@@ -41,10 +41,10 @@ def _parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], in
 
 
 def _return_bad_response(text: str):
-    return {
+    return Response({
         "control:Auth-Type": 'Reject',
         "Reply-Message": text
-    }, status.HTTP_403_FORBIDDEN
+    }, status.HTTP_403_FORBIDDEN)
 
 
 def _clear_ip(ip):

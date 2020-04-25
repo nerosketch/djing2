@@ -18,7 +18,8 @@ class IpPoolTestCase(TestCase):
             ip_start='192.168.0.2',
             ip_end='192.168.0.254',
             vlan_if=self.vlan1,
-            gateway='192.168.0.1'
+            gateway='192.168.0.1',
+            is_dynamic=False
         )
         self.pool_small = NetworkIpPool.objects.create(
             network='192.168.1.0/24',
@@ -27,7 +28,8 @@ class IpPoolTestCase(TestCase):
             ip_start='192.168.1.2',
             ip_end='192.168.1.4',
             vlan_if=self.vlan1,
-            gateway='192.168.1.1'
+            gateway='192.168.1.1',
+            is_dynamic=False
         )
 
         # Initialize customers instances
