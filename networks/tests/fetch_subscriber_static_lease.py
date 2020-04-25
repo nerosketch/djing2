@@ -35,7 +35,8 @@ class FetchSubscriberStaticLeaseTestCase(TestCase):
             ip_start='10.11.12.2',
             ip_end='10.11.12.254',
             # vlan_if=vlan,
-            gateway='10.11.12.1'
+            gateway='10.11.12.1',
+            is_dynamic=False
         )
         self.ippool.groups.add(self.group)
 
@@ -166,7 +167,8 @@ class FetchSubscriberStaticLeaseTestCase(TestCase):
             description='test',
             ip_start='10.10.11.2',
             ip_end='10.10.11.254',
-            gateway='10.10.11.1'
+            gateway='10.10.11.1',
+            is_dynamic=False
         )
         self.ippool.groups.remove(self.group)
         ippool2.groups.add(self.group)
