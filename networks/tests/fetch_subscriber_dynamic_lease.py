@@ -1,3 +1,5 @@
+from time import sleep
+
 from django.test import TestCase
 from netaddr import EUI
 
@@ -240,3 +242,46 @@ class FetchSubscriberDynamicLeaseTestCase(TestCase):
         self.assertEqual(lease.ip_address, '10.11.12.2')
         self.assertEqual(lease.customer, self.customer)
         self.assertTrue(lease.is_dynamic)
+
+    def test_returns_newer_lease(self):
+        CustomerIpLeaseModel.objects.create(
+            ip_address='10.11.12.13',
+            pool=self.ippool,
+            customer=self.customer,
+            mac_address='1:2:3:4:5:6',
+            is_dynamic=True
+        )
+        lease1 = CustomerIpLeaseModel.fetch_subscriber_lease(
+            customer_mac='1:2:3:4:5:6',
+            device_mac='12:13:14:15:16:17',
+            device_port=2,
+            is_dynamic=True
+        )
+        self.assertIsNotNone(lease1)
+        self.assertEqual(lease1.ip_address, '10.11.12.13')
+        self.assertEqual(lease1.pool, self.ippool)
+        self.assertEqual(lease1.customer, self.customer)
+        self.assertTrue(lease1.is_dynamic)
+
+        sleep(0.2)
+        CustomerIpLeaseModel.objects.create(
+            ip_address='10.11.12.14',
+            pool=self.ippool,
+            customer=self.customer,
+            mac_address='1:2:3:4:5:6',
+            is_dynamic=True
+        )
+        lease2 = CustomerIpLeaseModel.fetch_subscriber_lease(
+            customer_mac='1:2:3:4:5:6',
+            device_mac='12:13:14:15:16:17',
+            device_port=2,
+            is_dynamic=True
+        )
+        self.assertIsNotNone(lease2)
+        self.assertEqual(lease2.ip_address, '10.11.12.14')
+        self.assertEqual(lease2.pool, self.ippool)
+        self.assertEqual(lease2.customer, self.customer)
+        self.assertTrue(lease2.is_dynamic)
+
+        # lease2 must be newer than lease1
+        self.assertGreater(lease2.lease_time, lease1.lease_time)
