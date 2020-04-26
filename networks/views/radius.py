@@ -1,15 +1,13 @@
 import base64
-from typing import Tuple, Optional
 from ipaddress import ip_interface, ip_network
 
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from djing2.lib import safe_int, macbin2str
 from djing2.viewsets import DjingAuthorizedViewSet
 from networks.exceptions import DhcpRequestError
-from networks.models import CustomerIpLeaseModel, DHCP_DEFAULT_LEASE_TIME
+from networks.models import CustomerIpLeaseModel, DHCP_DEFAULT_LEASE_TIME, parse_opt82
 from networks.serializers.radius import RadiusDHCPRequestSerializer
 
 
@@ -25,26 +23,8 @@ def catch_radius_errs(fn):
     return _wrapper
 
 
-def _parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int]:
-    # 'remote_id': '0x000600ad24d0c544', 'circuit_id': '0x000400020002'
-    mac, port = None, 0
-    if circuit_id.startswith(b'ZTE'):
-        mac = remote_id.decode()
-    else:
-        try:
-            port = safe_int(circuit_id[-1:][0])
-        except IndexError:
-            port = 0
-        if len(remote_id) >= 6:
-            mac = macbin2str(remote_id[-6:])
-    return mac, port
-
-
 def _return_bad_response(text: str):
-    return Response({
-        "control:Auth-Type": 'Reject',
-        "Reply-Message": text
-    }, status.HTTP_403_FORBIDDEN)
+    return Response(text, status.HTTP_403_FORBIDDEN)
 
 
 def _clear_ip(ip):
@@ -80,9 +60,11 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
         # try to get switch mac addr
         if not all([remote_id, circuit_id]):
             return _return_bad_response('Bad option82')
-        dev_mac, dev_port = _parse_opt82(remote_id, circuit_id)
+        dev_mac, dev_port = parse_opt82(remote_id, circuit_id)
         if dev_mac is None:
             return _return_bad_response('Failed to parse option82')
+
+        pool_tag = data.get('pool_tag')
 
         # If customer has an active leases then return latest.
         # If not found then assign new
@@ -90,7 +72,8 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
             customer_mac=user_mac,
             device_mac=dev_mac,
             device_port=dev_port,
-            is_dynamic=True
+            is_dynamic=True,
+            pool_tag=pool_tag
         )
 
         if ip_lease is None:

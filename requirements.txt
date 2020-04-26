@@ -42,4 +42,5 @@ git+git://github.com/pexpect/pexpect.git#egg=pexpect
 django-filter==2.2.0
 pylibmc==1.6.1
 djangorestframework-queryfields==1.0.0
-django-debug-toolbar
+django-debug-toolbar==2.2
+isc-dhcp-leases==0.9.1
