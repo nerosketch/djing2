@@ -11,15 +11,16 @@ class RadiusDHCPRequestTestCase(APITestCase):
         FetchSubscriberDynamicLeaseTestCase.setUp(self)
 
     def _make_dhcp_request(self, remote_id: bytes, circuit_id: bytes, client_mac: str, expected_ip: str,
-                           status_code=200, gw_ip='10.11.12.1'):
+                           status_code=200, gw_ip='10.11.12.1', pool_tag=None):
         r = self.client.post('/api/networks/radius/dhcp_request/', data={
             'opt82': {
                 'remote_id': base64.b64encode(remote_id),
                 'circuit_id': base64.b64encode(circuit_id)
             },
-            'client_mac': client_mac
+            'client_mac': client_mac,
+            'pool_tag': pool_tag
         })
-        self.assertEqual(r.status_code, status_code)
+        self.assertEqual(r.status_code, status_code, msg=r.data)
         self.assertDictEqual(r.data, {'gw': gw_ip,
                                       'ip': expected_ip,
                                       'lease_time': 86400,
@@ -128,3 +129,40 @@ class RadiusDHCPRequestTestCase(APITestCase):
             expected_ip='10.10.11.2',
             gw_ip='10.10.11.1'
         )
+
+    def test_pool_with_tag(self):
+        ippool_wtag = NetworkIpPool.objects.create(
+            network='10.11.13.0/24',
+            kind=NetworkIpPool.NETWORK_KIND_INTERNET,
+            description='test tag',
+            ip_start='10.11.13.2',
+            ip_end='10.11.13.254',
+            # vlan_if=vlan,
+            gateway='10.11.13.1',
+            is_dynamic=True,
+            pool_tag='testtag'
+        )
+        ippool_wtag.groups.add(self.group)
+
+        print(self.customer.customeripleasemodel_set.all())
+
+        # Try to get ip from dynamic pool without tag
+        self._make_dhcp_request(
+            remote_id=b'\x12\x13\x14\x15\x16\x17',  # 12:13:14:15:16:17
+            circuit_id=b'\x12\x13\x14\x15\x16\x02',  # port #2
+            client_mac='1:2:3:4:5:6',
+            expected_ip='10.11.12.2',
+            gw_ip='10.11.12.1'
+        )
+        print(self.customer.customeripleasemodel_set.all())
+
+        # Try to get ip from dynamic pool with tag
+        self._make_dhcp_request(
+            remote_id=b'\x12\x13\x14\x15\x16\x17',  # 12:13:14:15:16:17
+            circuit_id=b'\x12\x13\x14\x15\x16\x02',  # port #2
+            client_mac='1:2:3:4:5:6',
+            expected_ip='10.11.13.2',
+            gw_ip='10.11.13.1',
+            pool_tag='testtag'
+        )
+        print(self.customer.customeripleasemodel_set.all())
