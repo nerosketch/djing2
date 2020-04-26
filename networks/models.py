@@ -1,16 +1,17 @@
 from datetime import datetime, timedelta
 from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 from django.conf import settings
-from django.db import models, connection, InternalError
-from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models, connection, InternalError
+from django.utils.translation import gettext_lazy as _
 from netaddr import EUI
 from netfields import MACAddressField, CidrAddressField
 
 from customers.models.customer import Customer
+from djing2.lib import macbin2str, safe_int
 from groupapp.models import Group
 from networks.exceptions import DhcpRequestError
 
@@ -82,6 +83,8 @@ class NetworkIpPool(models.Model):
 
     is_dynamic = models.BooleanField(_('Is dynamic'), default=False)
 
+    pool_tag = models.CharField(_('Tag'), max_length=32, null=True, blank=True, default=None)
+
     def __str__(self):
         return "%s: %s" % (self.description, self.network)
 
@@ -150,10 +153,30 @@ class NetworkIpPool(models.Model):
         Finds unused ip
         :return:
         """
+        pool_tag = str(self.pool_tag) if self.pool_tag else None
         with connection.cursor() as cur:
-            cur.execute("SELECT find_new_ip_pool_lease(%d, %d::boolean)" % (self.pk, 0))
+            if pool_tag is None:
+                cur.execute("SELECT find_new_ip_pool_lease(%d, %d::boolean, null)" % (self.pk, 0))
+            else:
+                cur.execute("SELECT find_new_ip_pool_lease(%d, %d::boolean, %s)" % (self.pk, 0, pool_tag))
             free_ip = cur.fetchone()
         return ip_address(free_ip[0]) if free_ip and free_ip[0] else None
+
+    @staticmethod
+    def find_ip_pool_by_ip(ip_addr: str):
+        with connection.cursor() as cur:
+            cur.execute("SELECT * FROM find_ip_pool_by_ip(%s::inet)",
+                        (ip_addr,))
+            res = cur.fetchone()
+        if isinstance(res[0], int) and res[0] > 0:
+            return NetworkIpPool(
+                pk=res[0], network=res[1],
+                kind=res[2], description=res[3],
+                ip_start=res[4], ip_end=res[5],
+                vlan_if_id=res[6],
+                gateway=res[7], is_dynamic=res[8]
+            )
+        return None
 
     class Meta:
         db_table = 'networks_ip_pool'
@@ -172,6 +195,22 @@ class CustomerIpLeaseModelQuerySet(models.QuerySet):
         return self.filter(lease_time__lt=expire_time)
 
 
+def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int]:
+    # 'remote_id': '0x000600ad24d0c544', 'circuit_id': '0x000400020002'
+    mac, port = None, 0
+    remote_id, circuit_id = bytes(remote_id), bytes(circuit_id)
+    if circuit_id.startswith(b'ZTE'):
+        mac = remote_id.decode()
+    else:
+        try:
+            port = safe_int(circuit_id[-1:][0])
+        except IndexError:
+            port = 0
+        if len(remote_id) >= 6:
+            mac = macbin2str(remote_id[-6:])
+    return mac, port
+
+
 class CustomerIpLeaseModel(models.Model):
     ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
     pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
@@ -186,15 +225,22 @@ class CustomerIpLeaseModel(models.Model):
         return "%s [%s]" % (self.ip_address, self.mac_address)
 
     @staticmethod
-    def fetch_subscriber_lease(customer_mac: str, device_mac: str, device_port: int = 0, is_dynamic: bool=True):
+    def fetch_subscriber_lease(customer_mac: str, device_mac: str, device_port: int = 0, is_dynamic: bool = True,
+                               pool_tag: str = None):
         customer_mac = str(EUI(customer_mac))
         device_mac = str(EUI(device_mac))
         device_port = int(device_port)
         is_dynamic = 1 if is_dynamic else 0
         try:
             with connection.cursor() as cur:
-                cur.execute("SELECT * from fetch_subscriber_lease(%s::macaddr, %s::macaddr, %s::smallint, %s::boolean)",
-                            (customer_mac, device_mac, device_port, is_dynamic))
+                if pool_tag is None:
+                    cur.execute(
+                        "SELECT * from fetch_subscriber_lease(%s::macaddr, %s::macaddr, %s::smallint, %s::boolean, null)",
+                        (customer_mac, device_mac, device_port, is_dynamic))
+                else:
+                    cur.execute(
+                        "SELECT * from fetch_subscriber_lease(%s::macaddr, %s::macaddr, %s::smallint, %s::boolean, %s)",
+                        (customer_mac, device_mac, device_port, is_dynamic, pool_tag[:32]))
                 res = cur.fetchone()
             v_id, v_ip_address, v_pool_id, v_lease_time, v_mac_address, v_customer_id, v_is_dynamic = res
             if v_id is None:
@@ -206,6 +252,14 @@ class CustomerIpLeaseModel(models.Model):
             )
         except InternalError as err:
             raise DhcpRequestError(err)
+
+    @staticmethod
+    def find_customer_id_by_device_credentials(device_mac: str, device_port: int = 0) -> int:
+        with connection.cursor() as cur:
+            cur.execute("SELECT * FROM find_customer_by_device_credentials(%s::macaddr, %s::smallint)",
+                        (device_mac, device_port))
+            res = cur.fetchone()
+        return res[0]
 
     class Meta:
         db_table = 'networks_ip_leases'
