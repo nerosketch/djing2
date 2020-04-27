@@ -86,6 +86,15 @@ class CustomerService(models.Model):
             deadline=f_deadline
         )
 
+    @staticmethod
+    def get_service_permit_by_ip(ip_addr: str) -> bool:
+        with connection.cursor() as cur:
+            cur.callproc('find_service_permit', [ip_addr])
+            res = cur.fetchone()
+            if len(res) > 0:
+                res = res[0]
+        return res
+
     def __str__(self):
         return self.service.title
 
