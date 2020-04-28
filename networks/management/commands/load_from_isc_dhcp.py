@@ -2,6 +2,7 @@ import os
 import gzip
 
 from django.core.management.base import BaseCommand, no_translations, CommandError
+from django.db import transaction
 from isc_dhcp_leases import Lease, IscDhcpLeases
 from isc_dhcp_leases.iscdhcpleases import _extract_properties, parse_time, Lease6
 
@@ -77,8 +78,6 @@ class Command(BaseCommand):
         if not(os.path.exists(leasefile) and os.path.isfile(leasefile)):
             raise CommandError('File "%s" does not exist' % leasefile)
 
-        CustomerIpLeaseModel.objects.filter(is_dynamic=True).delete()
-
         leases = IscDhcpLeasesGen(leasefile)
         it_count = 0
         new_leases = []
@@ -129,7 +128,9 @@ class Command(BaseCommand):
                 print('Maked', lease)
             except DhcpRequestError as err:
                 print('Err:', err)
-        created_objs = CustomerIpLeaseModel.objects.bulk_create(
-            objs=new_leases, batch_size=200
-        )
-        print('Count:', it_count, 'Created:', len(created_objs))
+        with transaction.atomic():
+            CustomerIpLeaseModel.objects.filter(is_dynamic=True).delete()
+            created_objs = CustomerIpLeaseModel.objects.bulk_create(
+                objs=new_leases, batch_size=200
+            )
+            print('Count:', it_count, 'Created:', len(created_objs))
