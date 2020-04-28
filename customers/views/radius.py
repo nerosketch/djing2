@@ -42,9 +42,9 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             'speed_out': customer_service.service.speed_out
         })
 
-    @action(methods=('get',), detail=False)
+    @action(methods=('post',), detail=False)
     def get_access(self, request):
-        user_ip = request.query_params.get('user_ip')
+        user_ip = request.data.get('user_ip')
         if not user_ip:
             return Response('user_ip parameter is required', status=status.HTTP_403_FORBIDDEN)
         try:
