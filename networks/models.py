@@ -261,6 +261,15 @@ class CustomerIpLeaseModel(models.Model):
             res = cur.fetchone()
         return res[0]
 
+    @staticmethod
+    def get_service_permit_by_ip(ip_addr: str) -> bool:
+        with connection.cursor() as cur:
+            cur.callproc('find_service_permit', [ip_addr])
+            res = cur.fetchone()
+            if len(res) > 0:
+                res = res[0]
+        return res
+
     class Meta:
         db_table = 'networks_ip_leases'
         verbose_name = _('IP lease')

@@ -1,5 +1,3 @@
-from ipaddress import ip_address
-
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -41,16 +39,3 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             'speed_in': customer_service.service.speed_in,
             'speed_out': customer_service.service.speed_out
         })
-
-    @action(methods=('post',), detail=False)
-    def get_access(self, request):
-        user_ip = request.data.get('user_ip')
-        if not user_ip:
-            return Response('user_ip parameter is required', status=status.HTTP_403_FORBIDDEN)
-        try:
-            user_ip = str(ip_address(user_ip))
-            is_access = CustomerService.get_service_permit_by_ip(ip_addr=user_ip)
-            ret_status = status.HTTP_200_OK if is_access else status.HTTP_403_FORBIDDEN
-            return Response(is_access, status=ret_status)
-        except ValueError as err:
-            return Response(str(err), status=status.HTTP_400_BAD_REQUEST)
