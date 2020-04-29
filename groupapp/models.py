@@ -9,6 +9,7 @@ from djing2.lib.validators import latinValidator
 
 class Group(models.Model):
     title = models.CharField(_('Title'), max_length=127, unique=True)
+    # Code is deprecated
     code = models.CharField(
         _('Tech code'), blank=True, null=True,
         default=None, max_length=12,

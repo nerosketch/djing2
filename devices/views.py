@@ -24,7 +24,6 @@ from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, macbi
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from devices.models import Device, Port, PortVlanMemberModel
 from devices import serializers as dev_serializers
-from devices.tasks import onu_register
 from groupapp.models import Group
 from profiles.models import UserProfile
 
@@ -54,20 +53,6 @@ class DeviceModelViewSet(DjingModelViewSet):
     filter_backends = (SearchFilter, DjangoFilterBackend)
     search_fields = ('comment', 'ip_address', 'mac_addr')
     ordering_fields = ('ip_address', 'mac_addr', 'comment', 'dev_type')
-
-    def destroy(self, *args, **kwargs):
-        r = super().destroy(*args, **kwargs)
-        onu_register.delay(
-            tuple(dev.pk for dev in Device.objects.exclude(group=None).only('pk').iterator())
-        )
-        return r
-
-    def create(self, *args, **kwargs):
-        r = super().create(*args, **kwargs)
-        onu_register.delay(
-            tuple(dev.pk for dev in Device.objects.exclude(group=None).only('pk').iterator())
-        )
-        return r
 
     @action(detail=True)
     @catch_dev_manager_err
