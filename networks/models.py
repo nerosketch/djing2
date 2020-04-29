@@ -129,6 +129,18 @@ class NetworkIpPool(models.Model):
                 _('End ip must be in subnet of specified network'),
                 code='invalid'
             )
+
+        gw = ip_address(self.gateway)
+        if gw not in net:
+            errs['gateway'] = ValidationError(
+                _('Gateway ip must be in subnet of specified network'),
+                code='invalid'
+            )
+        if start_ip <= gw <= end_ip:
+            errs['gateway'] = ValidationError(
+                _('Gateway must not be in the range of allowed ips'),
+                code='invalid'
+            )
         if errs:
             raise ValidationError(errs)
 
@@ -264,7 +276,7 @@ class CustomerIpLeaseModel(models.Model):
     @staticmethod
     def get_service_permit_by_ip(ip_addr: str) -> bool:
         with connection.cursor() as cur:
-            cur.callproc('find_service_permit', [ip_addr])
+            cur.execute("select * from find_service_permit(%s::inet)", [ip_addr])
             res = cur.fetchone()
             if len(res) > 0:
                 res = res[0]
