@@ -5,7 +5,6 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from customers.models import CustomerService
 from djing2.viewsets import DjingAuthorizedViewSet
 from networks.exceptions import DhcpRequestError
 from networks.models import CustomerIpLeaseModel, DHCP_DEFAULT_LEASE_TIME, parse_opt82
@@ -98,7 +97,7 @@ class RadiusRequestViewSet(DjingAuthorizedViewSet):
             return Response('user_ip parameter is required', status=status.HTTP_403_FORBIDDEN)
         try:
             user_ip = str(ip_address(user_ip))
-            is_access = CustomerService.get_service_permit_by_ip(ip_addr=user_ip)
+            is_access = CustomerIpLeaseModel.get_service_permit_by_ip(ip_addr=user_ip)
             ret_status = status.HTTP_200_OK if is_access else status.HTTP_403_FORBIDDEN
             return Response(is_access, status=ret_status)
         except ValueError as err:
