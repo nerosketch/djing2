@@ -282,3 +282,9 @@ msgstr "Сеть не может быть пустой"
 
 #~ msgid "Successfully saved"
 #~ msgstr "Успешно сохранено"
+
+msgid "Gateway must not be in the range of allowed ips"
+msgstr "Шлюз не должен быть в диапазоне доступных ip"
+
+msgid "Gateway ip must be in subnet of specified network"
+msgstr "Шлюз должен принадлежать текущей подсети"

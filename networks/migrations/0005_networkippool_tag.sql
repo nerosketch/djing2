@@ -25,28 +25,16 @@ DECLARE
 BEGIN
 
   -- Ищем текущий пул
-  if v_tag is null
-  then
-    select
-      network,
-      ip_start,
-      ip_end
-    into t_net_ippool_tbl
-    from networks_ip_pool
-    where id = v_pool_id and is_dynamic = v_is_dynamic and pool_tag is null
-    limit 1
-    for update skip locked;
-  else
-    select
-      network,
-      ip_start,
-      ip_end
-    into t_net_ippool_tbl
-    from networks_ip_pool
-    where id = v_pool_id and is_dynamic = v_is_dynamic and pool_tag = v_tag
-    limit 1
-    for update skip locked;
-  end if;
+  select
+    id,
+    network,
+    ip_start,
+    ip_end
+  into t_net_ippool_tbl
+  from networks_ip_pool
+  where id = v_pool_id and is_dynamic = v_is_dynamic and pool_tag is not distinct from v_tag
+  limit 1
+  for update skip locked;
 
   if not FOUND
   then
@@ -58,7 +46,7 @@ BEGIN
   open t_leases_curs no scroll for select ip_address
                                    from networks_ip_leases
                                    where
-                                     pool_id = v_pool_id and
+                                     pool_id = t_net_ippool_tbl.id and
                                      ip_address >= t_net_ippool_tbl.ip_start and
                                      ip_address <<= t_net_ippool_tbl.network
                                    order by ip_address
@@ -194,33 +182,20 @@ BEGIN
 
   -- Find leases by customer and mac, where pool of this lease in
   -- the same group as the subscriber
-  if v_is_dynamic
-  then
-    SELECT networks_ip_leases.*
-    INTO t_lease
-    FROM networks_ip_leases
-      left join customers on (customers.baseaccount_ptr_id = networks_ip_leases.customer_id)
-      left join networks_ippool_groups on (networks_ippool_groups.networkippool_id = networks_ip_leases.pool_id)
-    where networks_ip_leases.customer_id = t_customer.baseaccount_ptr_id
-          and networks_ip_leases.mac_address = v_mac_addr
-          and networks_ippool_groups.group_id = customers.group_id
-          and networks_ip_leases.is_dynamic
-    order by id desc
-    limit 1
-    for update skip locked;
-  else
-    SELECT networks_ip_leases.*
-    INTO t_lease
-    FROM networks_ip_leases
-      left join customers on (customers.baseaccount_ptr_id = networks_ip_leases.customer_id)
-      left join networks_ippool_groups on (networks_ippool_groups.networkippool_id = networks_ip_leases.pool_id)
-    where networks_ip_leases.customer_id = t_customer.baseaccount_ptr_id
-          and networks_ippool_groups.group_id = customers.group_id
-          and not networks_ip_leases.is_dynamic
-    order by id desc
-    limit 1
-    for update skip locked;
-  end if;
+  SELECT nil.*
+  INTO t_lease
+  FROM networks_ip_leases nil
+    left join customers cst on cst.baseaccount_ptr_id = nil.customer_id
+    left join networks_ippool_groups nipg on nipg.networkippool_id = nil.pool_id
+    left join networks_ip_pool nip on nil.pool_id = nip.id
+  where nil.customer_id = t_customer.baseaccount_ptr_id
+        and (not v_is_dynamic or nil.mac_address = v_mac_addr)
+        and nipg.group_id = cst.group_id
+        and nil.is_dynamic = v_is_dynamic
+        and nip.pool_tag is not distinct from v_tag
+  order by nil.id desc
+  limit 1;
+
   if FOUND
   then
     -- return it
@@ -231,9 +206,9 @@ BEGIN
 
   -- find pools for customer.
   -- fetched all pools that is available in customers group.
-  for t_net in select networks_ippool_groups.networkippool_id as pool_id
-               from networks_ippool_groups
-                 left join customers on (customers.group_id = networks_ippool_groups.group_id)
+  for t_net in select nipg.networkippool_id as pool_id
+               from networks_ippool_groups nipg
+                 left join customers on customers.group_id = nipg.group_id
                where customers.baseaccount_ptr_id = t_customer.baseaccount_ptr_id
                for update skip locked loop
 
