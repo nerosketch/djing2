@@ -1,10 +1,11 @@
 import base64
-from ipaddress import ip_interface, ip_network
+from ipaddress import ip_interface, ip_network, ip_address
 
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from customers.models import CustomerService
 from djing2.viewsets import DjingAuthorizedViewSet
 from networks.exceptions import DhcpRequestError
 from networks.models import CustomerIpLeaseModel, DHCP_DEFAULT_LEASE_TIME, parse_opt82
@@ -31,7 +32,7 @@ def _clear_ip(ip):
     return str(ip_interface(ip).ip)
 
 
-class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
+class RadiusRequestViewSet(DjingAuthorizedViewSet):
     serializer_class = RadiusDHCPRequestSerializer
 
     # def dispatch(self, request: http.HttpRequest, *args: Any, **kwargs: Any):
@@ -88,3 +89,17 @@ class RadiusDHCPRequestViewSet(DjingAuthorizedViewSet):
             # "dns": '10.12.1.4',
             "lease_time": DHCP_DEFAULT_LEASE_TIME
         })
+
+    @action(methods=('post',), detail=False)
+    @catch_radius_errs
+    def get_access(self, request):
+        user_ip = request.data.get('user_ip')
+        if not user_ip:
+            return Response('user_ip parameter is required', status=status.HTTP_403_FORBIDDEN)
+        try:
+            user_ip = str(ip_address(user_ip))
+            is_access = CustomerService.get_service_permit_by_ip(ip_addr=user_ip)
+            ret_status = status.HTTP_200_OK if is_access else status.HTTP_403_FORBIDDEN
+            return Response(is_access, status=ret_status)
+        except ValueError as err:
+            return Response(str(err), status=status.HTTP_400_BAD_REQUEST)
