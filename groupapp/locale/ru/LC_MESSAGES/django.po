@@ -21,10 +21,6 @@ msgstr ""
 msgid "Title"
 msgstr "Название"
 
-#: groupapp/models.py:13
-msgid "Tech code"
-msgstr "Тех. код"
-
 #: groupapp/models.py:23
 msgid "Group"
 msgstr "Группа"

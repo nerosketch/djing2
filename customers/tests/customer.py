@@ -5,7 +5,7 @@ from django.utils.translation import gettext as _
 from rest_framework.test import APITestCase
 from rest_framework import status
 from customers import models
-from groupapp.tests import BaseGroupTestCase
+from groupapp.models import Group
 from services.models import Service
 from profiles.models import UserProfile
 
@@ -19,7 +19,10 @@ class CustomAPITestCase(APITestCase):
         return self.client.post(*args, **kwargs)
 
     def setUp(self):
-        BaseGroupTestCase.setUp(self)
+        self.group = Group.objects.create(
+            title='test group',
+            code='tst'
+        )
 
         self.admin = UserProfile.objects.create_superuser(
             username='admin',
