@@ -3,6 +3,7 @@ from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address
 from typing import Optional, Union, Tuple
 
 from django.conf import settings
+from django.core import validators
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, connection, InternalError
@@ -83,7 +84,10 @@ class NetworkIpPool(models.Model):
 
     is_dynamic = models.BooleanField(_('Is dynamic'), default=False)
 
-    pool_tag = models.CharField(_('Tag'), max_length=32, null=True, blank=True, default=None)
+    pool_tag = models.CharField(
+        _('Tag'), max_length=32, null=True, blank=True,
+        default=None, validators=[validators.validate_slug]
+    )
 
     def __str__(self):
         return "%s: %s" % (self.description, self.network)

@@ -144,8 +144,6 @@ class RadiusDHCPRequestTestCase(APITestCase):
         )
         ippool_wtag.groups.add(self.group)
 
-        print(self.customer.customeripleasemodel_set.all())
-
         # Try to get ip from dynamic pool without tag
         self._make_dhcp_request(
             remote_id=b'\x12\x13\x14\x15\x16\x17',  # 12:13:14:15:16:17
@@ -154,7 +152,6 @@ class RadiusDHCPRequestTestCase(APITestCase):
             expected_ip='10.11.12.2',
             gw_ip='10.11.12.1'
         )
-        print(self.customer.customeripleasemodel_set.all())
 
         # Try to get ip from dynamic pool with tag
         self._make_dhcp_request(
@@ -165,4 +162,3 @@ class RadiusDHCPRequestTestCase(APITestCase):
             gw_ip='10.11.13.1',
             pool_tag='testtag'
         )
-        print(self.customer.customeripleasemodel_set.all())
