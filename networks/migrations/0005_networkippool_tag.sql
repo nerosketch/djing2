@@ -32,7 +32,7 @@ BEGIN
     ip_end
   into t_net_ippool_tbl
   from networks_ip_pool
-  where id = v_pool_id and is_dynamic = v_is_dynamic and pool_tag is not distinct from v_tag
+  where id = v_pool_id and is_dynamic = v_is_dynamic
   limit 1
   for update skip locked;
 
@@ -187,12 +187,12 @@ BEGIN
   FROM networks_ip_leases nil
     left join customers cst on cst.baseaccount_ptr_id = nil.customer_id
     left join networks_ippool_groups nipg on nipg.networkippool_id = nil.pool_id
-    left join networks_ip_pool nip on nil.pool_id = nip.id
+--     left join networks_ip_pool nip on nil.pool_id = nip.id
   where nil.customer_id = t_customer.baseaccount_ptr_id
         and (not v_is_dynamic or nil.mac_address = v_mac_addr)
         and nipg.group_id = cst.group_id
         and nil.is_dynamic = v_is_dynamic
-        and nip.pool_tag is not distinct from v_tag
+--         and nip.pool_tag is not distinct from v_tag
   order by nil.id desc
   limit 1;
 
