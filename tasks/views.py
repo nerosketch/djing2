@@ -175,3 +175,11 @@ class UserTaskHistory(BaseNonAdminReadOnlyModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(customer__id=self.request.user.pk)
+
+
+class TaskDocumentAttachmentViewSet(DjingModelViewSet):
+    queryset = models.TaskDocumentAttachment.objects.all()
+    serializer_class = serializers.TaskDocumentAttachmentSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
