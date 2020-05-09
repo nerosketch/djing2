@@ -7,6 +7,7 @@ app_name = 'tasks'
 router = DefaultRouter()
 router.register('comments', views.ExtraCommentModelViewSet)
 router.register('log', views.ChangeLogModelViewSet)
+router.register('attachment', views.TaskDocumentAttachmentViewSet)
 router.register('users/task_history', views.UserTaskHistory)
 router.register('', views.TaskModelViewSet)
 

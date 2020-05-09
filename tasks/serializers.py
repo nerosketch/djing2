@@ -53,3 +53,11 @@ class ExtraCommentModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.ExtraComment
         exclude = ('author',)
+
+
+class TaskDocumentAttachmentSerializer(BaseCustomModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = models.TaskDocumentAttachment
+        fields = '__all__'
