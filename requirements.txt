@@ -1,7 +1,7 @@
 wheel
 Django==2.2.10
 djangorestframework==3.10.3
-Pillow==6.2.0
+Pillow==7.1.2
 
 # for mac address field
 netaddr==0.7.19
