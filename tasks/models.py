@@ -194,3 +194,17 @@ class ExtraComment(models.Model):
         verbose_name = _('Extra comment')
         verbose_name_plural = _('Extra comments')
         ordering = ('-date_create',)
+
+
+class TaskDocumentAttachment(models.Model):
+    title = models.CharField(max_length=64)
+    doc_file = models.FileField(upload_to='task_attachments/%Y/%m/', max_length=128)
+    create_time = models.DateTimeField(auto_now_add=True)
+    author = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        db_table = 'task_doc_attachments'
