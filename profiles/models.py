@@ -1,14 +1,15 @@
 import os
+
 from PIL import Image
 from bitfield.models import BitField
-
-from django.db import models
 from django.conf import settings
+from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin
+from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from rest_framework.authtoken.models import Token
+
 from djing2.lib.validators import latinValidator, telephoneValidator
 from groupapp.models import Group
 
@@ -39,11 +40,11 @@ class MyUserManager(BaseUserManager):
         Creates and saves a superuser with the given email, date of
         birth and password.
         """
-        user = self.create_user(telephone,
-                                password=password,
-                                username=username,
-                                **other_fields
-                                )
+        user = UserProfile.objects.create_user(telephone,
+                                               password=password,
+                                               username=username,
+                                               **other_fields
+                                               )
 
         if password:
             user.set_password(password)
@@ -158,7 +159,8 @@ class UserProfileManager(MyUserManager):
 
 
 class UserProfile(BaseAccount):
-    avatar = models.ImageField(_('Avatar'), upload_to=os.path.join('user', 'avatar'), null=True, default=None, blank=True)
+    avatar = models.ImageField(_('Avatar'), upload_to=os.path.join('user', 'avatar'), null=True, default=None,
+                               blank=True)
     email = models.EmailField(default='', blank=True)
     responsibility_groups = models.ManyToManyField(Group, blank=True, verbose_name=_('Responsibility groups'))
     USER_PROFILE_FLAGS = (
