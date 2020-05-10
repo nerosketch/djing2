@@ -180,6 +180,7 @@ class UserTaskHistory(BaseNonAdminReadOnlyModelViewSet):
 class TaskDocumentAttachmentViewSet(DjingModelViewSet):
     queryset = models.TaskDocumentAttachment.objects.all()
     serializer_class = serializers.TaskDocumentAttachmentSerializer
+    filterset_fields = ('task',)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
