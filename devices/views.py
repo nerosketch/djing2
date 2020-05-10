@@ -20,7 +20,7 @@ from devices.switch_config import (
     ExpectValidationError, DeviceConnectionError,
     BaseSwitchInterface, BasePONInterface, BasePortInterface)
 from djing2 import IP_ADDR_REGEX
-from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, macbin2str
+from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, JSONBytesEncoder
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from devices.models import Device, Port, PortVlanMemberModel
 from devices import serializers as dev_serializers
@@ -76,7 +76,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             raise DeviceImplementationError('Expected BasePONInterface subclass')
 
         def chunk_cook(chunk: dict) -> bytes:
-            chunk_json = json_dumps(chunk, ensure_ascii=False)
+            chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONBytesEncoder)
             chunk_json = '%s\n' % chunk_json
             format_string = '{:%ds}' % chunk_max_len
             dat = format_string.format(chunk_json)
@@ -88,9 +88,9 @@ class DeviceModelViewSet(DjingModelViewSet):
             chunk_max_len = next(onu_list)
             r = StreamingHttpResponse(streaming_content=(chunk_cook({
                 'number': p.num,
-                'title': p.title,
+                'title': p.name,
                 'status': p.status,
-                'mac_addr': macbin2str(p.mac),
+                'mac_addr': p.mac,
                 'signal': p.signal,
                 'uptime': str(RuTimedelta(seconds=p.uptime / 100)) if p.uptime else None
             }) for p in onu_list))
