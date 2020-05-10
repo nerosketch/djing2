@@ -4,7 +4,7 @@ from easysnmp import EasySNMPTimeoutError
 from django.utils.translation import gettext
 from netaddr import EUI, mac_cisco
 
-from djing2.lib import safe_int, RuTimedelta, safe_float
+from djing2.lib import safe_int, RuTimedelta, safe_float, macbin2str
 from ..utils import plain_ip_device_mon_template
 from ..base import (
     BasePONInterface,
@@ -36,7 +36,7 @@ class BDCOM_P3310C(BasePONInterface):
             snmp_community=str(dev_instance.man_passw)
         )
 
-    def scan_onu_list(self) -> Generator:
+    def scan_onu_list(self) -> Generator[ONUdevPort, None, None]:
         """
         If fast operation then just return tuple.
         If long operation then return the generator of ports count first,
@@ -66,11 +66,12 @@ class BDCOM_P3310C(BasePONInterface):
                         continue
                     status = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.26.%d' % onu_num)
                     signal = safe_float(self.get_item('.1.3.6.1.4.1.3320.101.10.5.1.5.%d' % onu_num))
+                    mac = self.get('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % onu_num)
                     yield ONUdevPort(
                         num=onu_num,
                         name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % onu_num),
                         status=status == '3',
-                        mac=self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % onu_num),
+                        mac=macbin2str(mac.value),
                         signal=signal / 10 if signal else '—',
                         uptime=safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % onu_num))
                     )

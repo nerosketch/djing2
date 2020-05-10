@@ -86,6 +86,7 @@ class BaseSNMPWorker(Session):
         if isinstance(v, str):
             if v and v != 'NOSUCHINSTANCE':
                 return v.encode()
+            return None
         return v
 
 
