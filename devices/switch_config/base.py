@@ -89,6 +89,14 @@ class BaseSNMPWorker(Session):
             return None
         return v
 
+    def get_item_plain(self, oid) -> Any:
+        v = self.get(oid).value
+        if isinstance(v, str):
+            if v and v != 'NOSUCHINSTANCE':
+                return v
+            return None
+        return v
+
 
 # class BaseTelnetWorker(Telnet):
 #     def __init__(self, host: str, prompt: bytes = b'#', endl: bytes = b'\n', port=23):
@@ -368,6 +376,10 @@ class BasePONInterface(BaseDeviceInterface):
 
     @abstractmethod
     def scan_onu_list(self) -> Generator:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_fibers(self) -> Generator:
         raise NotImplementedError
 
 

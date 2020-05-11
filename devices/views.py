@@ -92,7 +92,8 @@ class DeviceModelViewSet(DjingModelViewSet):
                 'status': p.status,
                 'mac_addr': p.mac,
                 'signal': p.signal,
-                'uptime': str(RuTimedelta(seconds=p.uptime / 100)) if p.uptime else None
+                'uptime': str(RuTimedelta(seconds=p.uptime / 100)) if p.uptime else None,
+                'fiberid': p.fiberid
             }) for p in onu_list))
             r['Content-Length'] = item_size * chunk_max_len
             r['Cache-Control'] = 'no-store'
