@@ -49,7 +49,7 @@ class Device(models.Model):
 
     ip_address = models.GenericIPAddressField(
         verbose_name=_('Ip address'),
-        null=True, blank=True
+        null=True, blank=True, default=None
     )
     mac_addr = MACAddressField(
         verbose_name=_('Mac address'),
