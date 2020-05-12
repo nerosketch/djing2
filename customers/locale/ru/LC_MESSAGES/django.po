@@ -321,3 +321,6 @@ msgstr "пингуется, %(return)d/%(all)d"
 
 msgid "no ping, %(return)d/%(all)d loses"
 msgstr "не пингуется, %(return)d/%(all)d"
+
+msgid "Subscribers on port does not exist"
+msgstr "Абоненты на порту не найдены"
