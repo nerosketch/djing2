@@ -14,6 +14,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import NotFound
 
 from agent.commands.dhcp import dhcp_commit, dhcp_expiry, dhcp_release
 from customers import models
@@ -26,7 +27,7 @@ from djing2.lib import safe_int, LogicError, DuplicateEntry, safe_float
 from djing2.lib.mixins import SecureApiView
 from djing2.lib.paginator import QueryPageNumberPagination
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
-from gateways.models import Gateway
+# from gateways.models import Gateway
 # from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
 from groupapp.models import Group
 from services.models import Service, OneShotPay
@@ -176,28 +177,28 @@ class CustomerModelViewSet(DjingModelViewSet):
         customer.stop_service(request.user)
         return Response()
 
-    @action(methods=('post',), detail=False)
-    @catch_customers_errs
-    def attach_nas(self, request):
-        gateway_id = request.data.get('gateway')
-        if not gateway_id:
-            return Response(_('You must specify gateway'), status=status.HTTP_400_BAD_REQUEST)
-        gateway_id = safe_int(gateway_id)
-        gid = request.data.get('group')
-        if not gid:
-            return Response(_('You must specify group'), status=status.HTTP_400_BAD_REQUEST)
-        gid = safe_int(gid)
-        gw = get_object_or_404(Gateway, pk=gateway_id)
-        customers = models.Customer.objects.filter(group__id=gid)
-        if customers.exists():
-            customers.update(gateway=gw)
-            return Response(
-                _('Network access server for users in this '
-                  'group, has been updated'),
-                status=status.HTTP_200_OK
-            )
-        else:
-            return Response(_('Users not found'))
+    # @action(methods=('post',), detail=False)
+    # @catch_customers_errs
+    # def attach_nas(self, request):
+    #     gateway_id = request.data.get('gateway')
+    #     if not gateway_id:
+    #         return Response(_('You must specify gateway'), status=status.HTTP_400_BAD_REQUEST)
+    #     gateway_id = safe_int(gateway_id)
+    #     gid = request.data.get('group')
+    #     if not gid:
+    #         return Response(_('You must specify group'), status=status.HTTP_400_BAD_REQUEST)
+    #     gid = safe_int(gid)
+    #     gw = get_object_or_404(Gateway, pk=gateway_id)
+    #     customers = models.Customer.objects.filter(group__id=gid)
+    #     if customers.exists():
+    #         customers.update(gateway=gw)
+    #         return Response(
+    #             _('Network access server for users in this '
+    #               'group, has been updated'),
+    #             status=status.HTTP_200_OK
+    #         )
+    #     else:
+    #         return Response(_('Users not found'))
 
     # @action(detail=True)
     # @catch_customers_errs
@@ -304,6 +305,16 @@ class CustomerModelViewSet(DjingModelViewSet):
             return Response('services is required', status=status.HTTP_400_BAD_REQUEST)
         Customer.set_group_accessory(group, wanted_service_ids)
         return Response()
+
+    @action(methods=('get',), detail=False)
+    @catch_customers_errs
+    def filter_device_port(self, request):
+        dev_id = request.query_params.get('device_id')
+        port_id = request.query_params.get('port_id')
+        if not all([dev_id, port_id]):
+            return Response('Required paramemters: [dev_id, port_id]', status=status.HTTP_400_BAD_REQUEST)
+        customers = Customer.objects.filter(device_id=dev_id, dev_port_id=port_id)
+        return Response(self.get_serializer(customers, many=True).data)
 
 
 class CustomersGroupsListAPIView(DjingListAPIView):
