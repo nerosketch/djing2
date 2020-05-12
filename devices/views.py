@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 from rest_framework import status
-from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
+from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError, EasySNMPConnectionError
 from django_filters.rest_framework import DjangoFilterBackend
 
 from messenger.tasks import multicast_viber_notify
@@ -34,7 +34,8 @@ def catch_dev_manager_err(fn):
             return fn(self, *args, **kwargs)
         except (DeviceImplementationError, ExpectValidationError) as err:
             return Response(str(err))
-        except (ConnectionResetError, ConnectionRefusedError, OSError, DeviceConnectionError, EasySNMPError) as err:
+        except (ConnectionResetError, ConnectionRefusedError, OSError,
+                DeviceConnectionError, EasySNMPConnectionError, EasySNMPError) as err:
             return Response(str(err), status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except EasySNMPTimeoutError as err:
             return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
@@ -111,19 +112,7 @@ class DeviceModelViewSet(DjingModelViewSet):
         if not issubclass(manager.__class__, BaseSwitchInterface):
             raise DeviceImplementationError('Expected BaseSwitchInterface subclass')
         ports = manager.get_ports()
-        db_ports = Port.objects.filter(device__id=pk).annotate(user_count=Count('customer'))
-
-        def join_with_db(p: BasePortInterface):
-            r = p.to_dict()
-            try:
-                ps_el = next(dbp for dbp in db_ports if p.num == dbp.num)
-                db_port = dev_serializers.PortModelSerializer(ps_el).data
-                r.update(db_port)
-            except StopIteration:
-                pass
-            return r
-
-        return Response(data=(join_with_db(p) for p in ports))
+        return Response(data=(p.to_dict() for p in ports))
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -305,7 +294,7 @@ class PortModelViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_dev_manager_err
     def toggle_port(self, request, pk=None):
-        port_state = request.query_params.get('state')
+        port_state = request.query_params.get('port_state')
         port = self.get_object()
         port_num = int(port.num)
         manager = port.device.get_manager_object_switch()
