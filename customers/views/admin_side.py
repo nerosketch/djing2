@@ -75,7 +75,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     filter_backends = (SearchFilter, DjangoFilterBackend, OrderingFilter)
     search_fields = ('username', 'fio', 'telephone', 'description')
     filterset_fields = ('group', 'street', 'device', 'dev_port')
-    ordering_fields = ('username', 'fio', 'house', 'balance')
+    ordering_fields = ('username', 'fio', 'house', 'balance', 'current_service__service__title')
 
     @action(methods=('post',), detail=True)
     @catch_customers_errs
