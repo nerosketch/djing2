@@ -1,38 +1,37 @@
-wheel
-Django==2.2.10
-djangorestframework==3.10.3
+Django==2.2
+djangorestframework==3.11.0
 Pillow==7.1.2
 
 # for mac address field
 netaddr==0.7.19
 
 # db client for Postgres
-psycopg2==2.8.4
+psycopg2==2.8.5
 
 git+git://github.com/nerosketch/easysnmp.git#egg=easysnmp
-pid==2.2.5
-django-guardian==2.1.0
+pid==3.0.3
+django-guardian==2.2.0
 djangorestframework-guardian==0.3.0
 
-requests==2.22.0
+requests==2.23.0
 transliterate==1.10.2
 
 # xml for pay system allpay
-djangorestframework-xml==1.4.0
+djangorestframework-xml==2.0.0
 
 # django-bitfield
 git+git://github.com/disqus/django-bitfield.git#egg=django-bitfield
 
-# django_cleanup for clean unused media
-git+git://github.com/un1t/django-cleanup.git#egg=django_cleanup
+# for clean unused media
+django-cleanup==4.0.0
 
 # viberbot
 git+git://github.com/Viber/viber-bot-python.git#egg=viberbot
 
-celery==4.3.0
-redis==3.3.8
+celery==4.4.2
+redis==3.5.1
 
-django-cors-headers==3.1.0
+django-cors-headers==3.2.1
 django-encrypted-model-fields==0.5.8
 django-netfields==1.2.2
 

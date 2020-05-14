@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
     'guardian',
+    'django_cleanup.apps.CleanupConfig',
     'groupapp',
     'profiles',
     'services',
