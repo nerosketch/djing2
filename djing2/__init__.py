@@ -1,6 +1,6 @@
 import re
 import os
-from .celery import app as celery_app
+from uwsgi_tasks import set_uwsgi_callbacks
 
 MAC_ADDR_REGEX = '^([0-9A-Fa-f]{1,2}[:-]){5}([0-9A-Fa-f]{1,2})$'
 
@@ -20,4 +20,6 @@ def ping(ip_addr: str, count=1):
         return False
 
 
-__all__ = ('celery_app', 'ping', 'MAC_ADDR_REGEX', 'IP_ADDR_REGEX')
+__all__ = ('ping', 'MAC_ADDR_REGEX', 'IP_ADDR_REGEX')
+
+set_uwsgi_callbacks()
