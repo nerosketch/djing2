@@ -244,7 +244,7 @@ class DeviceModelViewSet(DjingModelViewSet):
                     device_down.comment
                 )
             }
-            multicast_viber_notify.delay(
+            multicast_viber_notify(
                 messenger_id=None,
                 account_id_list=user_ids,
                 message_text=text
