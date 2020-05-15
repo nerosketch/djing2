@@ -215,7 +215,7 @@ class Conversation(models.Model):
                         continue
                     MessageStatus.objects.create(msg=msg, user=participant)
                     if participant.flags.notify_msg:
-                        send_email_notify.delay(
+                        send_email_notify(
                             msg_text=text,
                             account_id=participant.pk
                         )
