@@ -44,10 +44,10 @@ def handle(task, author, recipients):
     try:
         if task.task_state in (1, 2):
             # If task completed or failed than send one message to author
-            # send_email_notify.delay(fulltext, author.pk)
-            send_viber_message.delay(None, author.pk, fulltext)
+            # send_email_notify(fulltext, author.pk)
+            send_viber_message(None, author.pk, fulltext)
         else:
-            # multicast_email_notify.delay(fulltext, profile_ids)
-            multicast_viber_notify.delay(None, profile_ids, fulltext)
+            # multicast_email_notify(fulltext, profile_ids)
+            multicast_viber_notify(None, profile_ids, fulltext)
     except OperationalError as e:
         raise TaskException(e)
