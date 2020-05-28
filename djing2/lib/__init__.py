@@ -1,8 +1,8 @@
 import socket
+from collections.abc import Iterator
+from datetime import timedelta
 from functools import wraps
 from hashlib import sha256
-from datetime import timedelta
-from collections.abc import Iterator
 from json import JSONEncoder
 from typing import Any
 
@@ -66,6 +66,16 @@ class RuTimedelta(timedelta):
         return text_date
 
 
+def bytes2human(bytes_len: int, bsize=1024) -> str:
+    notation = 0
+    curr_len = bytes_len
+    while curr_len > bsize:
+        curr_len = curr_len / bsize
+        notation += 1
+    a = {0: 'bytes', 1: 'kb', 2: 'mb', 3: 'gb', 4: 'tb', 5: 'pb', 6: 'eb'}
+    return "%d %s" % (curr_len, a.get(notation, 'X3'))
+
+
 class Singleton(type):
     _instances = {}
 
@@ -111,6 +121,7 @@ def process_lock(fn):
         finally:
             if s is not None:
                 s.close()
+
     return wrapped
 
 
