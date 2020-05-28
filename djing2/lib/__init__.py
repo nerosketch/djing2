@@ -73,7 +73,7 @@ def bytes2human(bytes_len: int, bsize=1024) -> str:
         curr_len = curr_len / bsize
         notation += 1
     a = {0: 'bytes', 1: 'kb', 2: 'mb', 3: 'gb', 4: 'tb', 5: 'pb', 6: 'eb'}
-    return "%d %s" % (curr_len, a.get(notation, 'X3'))
+    return "%.2f %s" % (curr_len, a.get(notation, 'X3'))
 
 
 class Singleton(type):
