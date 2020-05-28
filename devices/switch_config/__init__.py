@@ -41,6 +41,12 @@ DEVICE_TYPES = [
     (DEVICE_TYPE_DlinkDGS_3627GSwitchInterface, DlinkDGS_3627GSwitchInterface)
 ]
 
+DEVICE_ONU_TYPES = (
+    DEVICE_TYPE_EPON_BDCOM_FORA,
+    DEVICE_TYPE_OnuZTE_F660,
+    DEVICE_TYPE_OnuZTE_F601
+)
+
 port_templates_modules = {}
 #
 # Import port template modules from 'port_templates' subdirectory of each
@@ -75,6 +81,7 @@ __all__ = (
     'DEVICE_TYPE_ZTE_C320', 'DEVICE_TYPE_OnuZTE_F660', 'DEVICE_TYPE_OnuZTE_F601',
     'DEVICE_TYPE_HuaweiS2300', 'DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface',
     'DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface', 'DEVICE_TYPE_DlinkDGS_3627GSwitchInterface',
+    'DEVICE_ONU_TYPES',
     'DeviceImplementationError', 'DeviceConfigurationError',
     'DeviceConnectionError', 'BaseSNMPWorker',
     'BaseDeviceInterface', 'BasePortInterface', 'port_template',

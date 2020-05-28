@@ -18,7 +18,7 @@ from messenger.tasks import multicast_viber_notify
 from devices.switch_config import (
     DeviceImplementationError, DeviceConsoleError,
     ExpectValidationError, DeviceConnectionError,
-    BaseSwitchInterface, BasePONInterface, BasePortInterface)
+    BaseSwitchInterface, BasePONInterface)
 from djing2 import IP_ADDR_REGEX
 from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, JSONBytesEncoder
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -33,7 +33,10 @@ def catch_dev_manager_err(fn):
         try:
             return fn(self, *args, **kwargs)
         except (DeviceImplementationError, ExpectValidationError) as err:
-            return Response(str(err))
+            return Response({
+                'text': str(err),
+                'status': 2
+            })
         except (ConnectionResetError, ConnectionRefusedError, OSError,
                 DeviceConnectionError, EasySNMPConnectionError, EasySNMPError) as err:
             return Response(str(err), status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -148,15 +151,15 @@ class DeviceModelViewSet(DjingModelViewSet):
     def fix_onu(self, request, pk=None):
         onu = self.get_object()
         fix_status, text = onu.fix_onu()
-        if fix_status:
-            return Response(text, status.HTTP_200_OK)
-        return Response(text, status.HTTP_404_NOT_FOUND)
+        return Response({
+            'text': text,
+            'status': 1 if fix_status else 2
+        })
 
     @action(detail=True)
     @catch_dev_manager_err
     def register_device(self, request, pk=None):
         device = self.get_object()
-        http_status = status.HTTP_200_OK
         res_status = 1  # 'ok'
         try:
             device.register_device()
@@ -164,23 +167,28 @@ class DeviceModelViewSet(DjingModelViewSet):
             text = str(e)
             res_status = 2
         except (ConnectionRefusedError, ExpectValidationError) as e:
-            text = e
-            http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+            text = str(e)
             res_status = 2
         except ProcessLocked:
             text = gettext('Process locked by another process')
             res_status = 2
         else:
             text = gettext('ok')
-        return Response({'text': text, 'status': res_status}, status=http_status)
+        return Response({'text': text, 'status': res_status})
 
     @action(detail=True)
     @catch_dev_manager_err
     def remove_from_olt(self, request, pk=None):
         device = self.get_object()
         if device.remove_from_olt():
-            return Response(_('Deleted'))
-        return Response(_('Failed'))
+            return Response({
+                'text': _('Deleted'),
+                'status': 1
+            })
+        return Response({
+            'text': _('Failed'),
+            'status': 2
+        })
 
     @action(detail=True)
     @catch_dev_manager_err

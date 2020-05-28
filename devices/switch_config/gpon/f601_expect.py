@@ -149,6 +149,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 @process_lock
 def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_login: str,
                  telnet_passw: str, telnet_prompt: str, onu_vlan: int):
+    serial = serial.upper()
 
     if not re.match(r'^ZTEG[0-9A-F]{8}$', serial):
         raise expect_util.ExpectValidationError('Serial not valid, match: ^ZTEG[0-9A-F]{8}$')

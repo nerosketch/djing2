@@ -4,7 +4,7 @@ from easysnmp import EasySNMPTimeoutError
 from transliterate import translit
 
 from devices.switch_config.utils import norm_name
-from djing2.lib import safe_int, safe_float, macbin2str
+from djing2.lib import safe_int, safe_float, macbin2str, RuTimedelta, bytes2human
 from ..base import BasePON_ONU_Interface, DeviceImplementationError, DeviceConfigurationError
 from ..expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
@@ -53,22 +53,50 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
             2: 'down'
         }
         try:
+            # https://www.zabbix.com/documentation/1.8/ru/manual/advanced_snmp
             status = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.26.%d' % num)
             signal = safe_float(self.get_item('.1.3.6.1.4.1.3320.101.10.5.1.5.%d' % num))
-            distance = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.27.%d' % num)
+            # distance = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.27.%d' % num)
             mac = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % num)
-            # uptime = self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % num)
+            uptime = safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % num))
+            if uptime > 0:
+                uptime = RuTimedelta(seconds=uptime / 100)
+            # speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % num)
             if isinstance(status, str) and status.isdigit():
                 status = int(status)
             if status is not None:
-                basic_info = {
+                return {
                     'status': status_map.get(status, 'unknown'),
                     'signal': signal / 10 if signal else '—',
-                    'name': self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % num),
-                    'mac': macbin2str(mac),
-                    'distance': distance / 10
+                    'info': (
+                        # IF-MIB::ifDescr
+                        (_('name'), self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % num)),
+                        (_('Mac address'), macbin2str(mac)),
+                        # IF-MIB::ifMtu
+                        (_('mtu'), self.get_item('.1.3.6.1.2.1.2.2.1.4.%d' % num)),
+                        # IF-MIB::ifInOctets
+                        (_('in_octets'), bytes2human(safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.10.%d' % num)))),
+                        # IF-MIB::ifInUcastPkts
+                        (_('in_ucst_pkts'), self.get_item('.1.3.6.1.2.1.2.2.1.11.%d' % num)),
+                        # IF-MIB::ifInNUcastPkts
+                        (_('in_not_ucst_pkts'), self.get_item('.1.3.6.1.2.1.2.2.1.12.%d' % num)),
+                        # IF-MIB::ifInDiscards
+                        (_('in_discards'), self.get_item('.1.3.6.1.2.1.2.2.1.13.%d' % num)),
+                        # IF-MIB::ifInErrors
+                        (_('in_errors'), self.get_item('.1.3.6.1.2.1.2.2.1.14.%d' % num)),
+                        # IF-MIB::ifOutOctets
+                        (_('out_octets'), bytes2human(safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.16.%d' % num)))),
+                        # IF-MIB::ifOutUcastPkts
+                        (_('out_ucst_pkts'), self.get_item('.1.3.6.1.2.1.2.2.1.17.%d' % num)),
+                        # IF-MIB::ifOutNUcastPkts
+                        (_('out_not_ucst_pkts'), self.get_item('.1.3.6.1.2.1.2.2.1.18.%d' % num)),
+                        # IF-MIB::ifOutDiscards
+                        (_('out_discards'), self.get_item('.1.3.6.1.2.1.2.2.1.19.%d' % num)),
+                        # IF-MIB::ifOutErrors
+                        (_('out_errors'), self.get_item('.1.3.6.1.2.1.2.2.1.20.%d' % num)),
+                        (_('uptime'), str(uptime))
+                    )
                 }
-                return basic_info
         except EasySNMPTimeoutError as e:
             return {'err': "%s: %s" % (_('ONU not connected'), e)}
 
