@@ -57,7 +57,7 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
             status = safe_int(self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.26.%d' % num))
             signal = safe_float(self.get_item('.1.3.6.1.4.1.3320.101.10.5.1.5.%d' % num))
             # distance = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.27.%d' % num)
-            mac = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % num)
+            mac = self.get_item_plain('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % num)
             uptime = safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % num))
             if uptime > 0:
                 uptime = RuTimedelta(seconds=uptime / 100)
