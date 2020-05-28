@@ -39,34 +39,36 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         fiber_addr = '%d.%d' % (fiber_num, onu_num)
 
         signal = safe_int(self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%s.1' % fiber_addr))
-        distance = self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.18.%s.1' % fiber_addr)
+        # distance = self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.18.%s.1' % fiber_addr)
 
         sn = self.get_item_plain('.1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s' % fiber_addr)
         if sn is not None:
-            sn = 'ZTEG%s' % ''.join('%.2X' % ord(x) for x in sn[-4:])
+            if isinstance(sn, bytes):
+                sn = 'ZTEG%s' % ''.join('%.2X' % int(x) for x in sn[-4:])
+            else:
+                sn = 'ZTEG%s' % ''.join('%.2X' % ord(x) for x in sn[-4:])
 
         status_map = {
             1: 'ok',
             2: 'down'
         }
-        info = {
+        return {
             'status': status_map.get(
                 safe_int(self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1' % fiber_addr)),
                 'unknown'
             ),
             'signal': _conv_zte_signal(signal),
-            'distance': safe_float(distance) / 10,
-            # 'ip_addr': self.get_item('.1.3.6.1.4.1.3902.1012.3.50.16.1.1.10.%s' % fiber_addr),
-            'vlans': self.get_item('.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%s.1.1' % fiber_addr),
-            'serial': sn,
-            'int_name': self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s' % fiber_addr),
-            'onu_type': self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%s' % fiber_addr),
-            'mac': sn_to_mac(sn)
+            'info': (
+                (_('name'), self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s' % fiber_addr)),
+                (_('Mac address'), sn_to_mac(sn)),
+
+                # 'distance': safe_float(distance) / 10,
+                # 'ip_addr': self.get_item('.1.3.6.1.4.1.3902.1012.3.50.16.1.1.10.%s' % fiber_addr),
+                (_('vlans'), self.get_item('.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%s.1.1' % fiber_addr)),
+                (_('serial'), sn),
+                (_('onu_type'), self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%s' % fiber_addr)),
+            )
         }
-        basic_info = super().get_details()
-        if basic_info:
-            info.update(basic_info)
-        return info
 
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
