@@ -54,7 +54,7 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
         }
         try:
             # https://www.zabbix.com/documentation/1.8/ru/manual/advanced_snmp
-            status = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.26.%d' % num)
+            status = safe_int(self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.26.%d' % num))
             signal = safe_float(self.get_item('.1.3.6.1.4.1.3320.101.10.5.1.5.%d' % num))
             # distance = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.27.%d' % num)
             mac = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.3.%d' % num)
@@ -62,9 +62,7 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
             if uptime > 0:
                 uptime = RuTimedelta(seconds=uptime / 100)
             # speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % num)
-            if isinstance(status, str) and status.isdigit():
-                status = int(status)
-            if status is not None:
+            if status > 0:
                 return {
                     'status': status_map.get(status, 'unknown'),
                     'signal': signal / 10 if signal else '—',
