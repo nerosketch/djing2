@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     'profiles',
     'services',
     'gateways',
-    'devices',
+    'devices.apps.DevicesConfig',
     'networks',
     'customers',
     'messenger',
