@@ -30,7 +30,7 @@ def send_viber_message(messenger_id: Optional[int], account_id: int, message_tex
 
 
 @task(executor=TaskExecutor.SPOOLER)
-def multicast_viber_notify(messenger_id: Optional[int], account_id_list: Iterable[int], message_text: str):
+def multicast_viber_notify(messenger_id: Optional[int], account_id_list: Iterable[int], message_text: str) -> Optional[str]:
     """
     Send multiple message via Viber to several addresses
     :param messenger_id: Primary key UID for messanger.ViberMessenger
