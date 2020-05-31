@@ -73,7 +73,7 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
                         # IF-MIB::ifMtu
                         (_('mtu'), self.get_item('.1.3.6.1.2.1.2.2.1.4.%d' % num)),
                         # IF-MIB::ifInOctets
-                        (_('in_octets'), bytes2human(safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.10.%d' % num)))),
+                        (_('in_octets'), bytes2human(safe_float(self.get_item('.1.3.6.1.2.1.2.2.1.10.%d' % num)))),
                         # IF-MIB::ifInUcastPkts
                         (_('in_ucst_pkts'), self.get_item('.1.3.6.1.2.1.2.2.1.11.%d' % num)),
                         # IF-MIB::ifInNUcastPkts
@@ -83,7 +83,7 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
                         # IF-MIB::ifInErrors
                         (_('in_errors'), self.get_item('.1.3.6.1.2.1.2.2.1.14.%d' % num)),
                         # IF-MIB::ifOutOctets
-                        (_('out_octets'), bytes2human(safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.16.%d' % num)))),
+                        (_('out_octets'), bytes2human(safe_float(self.get_item('.1.3.6.1.2.1.2.2.1.16.%d' % num)))),
                         # IF-MIB::ifOutUcastPkts
                         (_('out_ucst_pkts'), self.get_item('.1.3.6.1.2.1.2.2.1.17.%d' % num)),
                         # IF-MIB::ifOutNUcastPkts
