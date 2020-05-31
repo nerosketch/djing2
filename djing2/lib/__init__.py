@@ -4,7 +4,7 @@ from datetime import timedelta
 from functools import wraps
 from hashlib import sha256
 from json import JSONEncoder
-from typing import Any
+from typing import Any, Union
 
 
 def safe_float(fl: Any) -> float:
@@ -66,7 +66,7 @@ class RuTimedelta(timedelta):
         return text_date
 
 
-def bytes2human(bytes_len: int, bsize=1024) -> str:
+def bytes2human(bytes_len: Union[int, float], bsize=1024) -> str:
     notation = 0
     curr_len = bytes_len
     while curr_len > bsize:
