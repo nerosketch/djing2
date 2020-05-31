@@ -9,6 +9,8 @@ from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
 
 class NetworkIpPoolModelSerializer(BaseCustomModelSerializer):
     kind_name = serializers.CharField(source='get_kind_display', read_only=True)
+    # ToDO: optimize
+    usage_count = serializers.IntegerField(source='customeripleasemodel_set.count', read_only=True)
 
     @staticmethod
     def validate_network(value):
