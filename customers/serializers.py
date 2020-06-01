@@ -86,6 +86,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     street_name = serializers.CharField(source='street.name', read_only=True)
     gateway_title = serializers.CharField(source='gateway.title', read_only=True)
     device_comment = serializers.CharField(source='device.comment', read_only=True)
+    last_connected_service_title = serializers.CharField(source='last_connected_service.title', read_only=True)
     service_title = serializers.CharField(
         source='current_service.service.title', read_only=True
     )
@@ -128,8 +129,9 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             'pk', 'username', 'telephone', 'fio',
             'group', 'group_title', 'balance', 'description', 'street', 'street_name',
             'house', 'is_active', 'gateway', 'gateway_title', 'auto_renewal_service',
-            'device', 'device_comment', 'dev_port', 'last_connected_service', 'current_service',
-            'service_title', 'service_id', 'is_dynamic_ip', 'full_name', 'password', 'raw_password'
+            'device', 'device_comment', 'dev_port', 'last_connected_service',
+            'last_connected_service_title', 'current_service', 'service_title',
+            'service_id', 'is_dynamic_ip', 'full_name', 'password', 'raw_password'
         )
 
 
