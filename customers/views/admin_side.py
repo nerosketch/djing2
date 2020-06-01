@@ -266,8 +266,6 @@ class CustomerModelViewSet(DjingModelViewSet):
             'deadline': curr_srv.deadline,
             'service': ser.data
         }
-        if customer.last_connected_service:
-            r['last_connected_service_title'] = customer.last_connected_service.title
         return Response(r)
 
     @action(methods=('post',), detail=True)
