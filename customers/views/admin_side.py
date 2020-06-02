@@ -14,7 +14,6 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import NotFound
 
 from agent.commands.dhcp import dhcp_commit, dhcp_expiry, dhcp_release
 from customers import models
