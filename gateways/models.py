@@ -1,5 +1,5 @@
 from django.utils.translation import gettext_lazy as _
-from django.db import models
+from django.db import models, connection
 from encrypted_model_fields.fields import EncryptedCharField
 from djing2.lib import MyChoicesAdapter
 from gateways.nas_managers import GW_TYPES, GatewayNetworkError
@@ -38,6 +38,17 @@ class Gateway(models.Model):
             return o
         except ConnectionResetError:
             raise GatewayNetworkError('ConnectionResetError')
+
+    @staticmethod
+    def get_user_credentials_by_ip(gw_id: int):
+        with connection.cursor() as cur:
+            cur.execute("SELECT ip_address, speed_in, speed_out FROM fetch_customers_srvnet_credentials_by_gw(%s::integer)",
+                        (str(gw_id),))
+            while True:
+                ip_address, speed_in, speed_out = cur.fetchone()
+                if ip_address is None:
+                    break
+                yield ip_address, speed_in, speed_out
 
     def __str__(self):
         return self.title
