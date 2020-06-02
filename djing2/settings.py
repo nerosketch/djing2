@@ -55,7 +55,7 @@ INSTALLED_APPS = [
     'groupapp',
     'profiles',
     'services',
-    'gateways',
+    'gateways.apps.GatewaysConfig',
     'devices.apps.DevicesConfig',
     'networks',
     'customers',
