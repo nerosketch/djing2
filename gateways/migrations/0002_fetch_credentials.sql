@@ -1,7 +1,7 @@
 --
 -- Fetch customers service and network credentials by gateway.
 --
-DROP FUNCTION IF EXISTS fetch_customers_srvnet_credentials_by_gw;
+DROP FUNCTION IF EXISTS fetch_customers_srvnet_credentials_by_gw( integer );
 CREATE OR REPLACE FUNCTION fetch_customers_srvnet_credentials_by_gw(
   v_gw_id integer
 )
