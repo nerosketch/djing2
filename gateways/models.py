@@ -1,8 +1,5 @@
 from django.utils.translation import gettext_lazy as _
 from django.db import models
-from django.db.models.signals import pre_delete
-from django.dispatch import receiver
-from django.contrib.messages import MessageFailure
 from encrypted_model_fields.fields import EncryptedCharField
 from djing2.lib import MyChoicesAdapter
 from gateways.nas_managers import GW_TYPES, GatewayNetworkError
@@ -50,12 +47,3 @@ class Gateway(models.Model):
         verbose_name = _('Network access server. Gateway')
         verbose_name_plural = _('Network access servers. Gateways')
         ordering = 'ip_address',
-
-
-@receiver(pre_delete, sender=Gateway)
-def nas_pre_delete(sender, **kwargs):
-    nas = kwargs.get("instance")
-    # check if this gateway is default.
-    # You cannot remove default server
-    if nas.is_default:
-        raise MessageFailure(_('You cannot remove default server'))
