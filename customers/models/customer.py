@@ -681,3 +681,17 @@ class PeriodicPayForId(models.Model):
     class Meta:
         db_table = 'periodic_pay_for_id'
         ordering = ('last_pay',)
+
+
+class CustomerAttachment(models.Model):
+    title = models.CharField(max_length=64)
+    doc_file = models.FileField(upload_to='customer_attachments/%Y/%m/', max_length=128)
+    create_time = models.DateTimeField(auto_now_add=True)
+    author = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        db_table = 'customer_attachments'
