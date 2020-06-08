@@ -3,10 +3,6 @@
 !requirements.txt
 !TODO.txt
 media/
-!media/task_attachments/.keep
-!media/viber_avatar/.keep
-!media/user/avatar/.keep
-!media/messages_attachments/.keep
 .idea/
 djing2/local_settings.py
 *.json
