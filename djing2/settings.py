@@ -58,7 +58,7 @@ INSTALLED_APPS = [
     'gateways.apps.GatewaysConfig',
     'devices.apps.DevicesConfig',
     'networks',
-    'customers',
+    'customers.apps.CustomersConfig',
     'messenger',
     'tasks',
     'fin_app',
