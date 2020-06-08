@@ -409,6 +409,15 @@ class AttachServicesToGroups(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
+class CustomerAttachmentViewSet(DjingModelViewSet):
+    queryset = models.CustomerAttachment.objects.select_related('author')
+    serializer_class = serializers.CustomerAttachmentSerializer
+    filterset_fields = ('customer',)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+
 class DhcpLever(SecureApiView):
     #
     # Api view for dhcp event
