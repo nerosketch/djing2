@@ -4,10 +4,7 @@ from ipaddress import IPv4Address, AddressValueError
 from bitfield import BitField
 from django.conf import settings
 from django.core import validators
-from django.core.validators import RegexValidator
 from django.db import models, transaction, connection
-from django.db.models.signals import post_init, pre_save
-from django.dispatch.dispatcher import receiver
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
@@ -625,7 +622,7 @@ class AdditionalTelephone(models.Model):
         max_length=16,
         verbose_name=_('Telephone'),
         # unique=True,
-        validators=(RegexValidator(
+        validators=(validators.RegexValidator(
             getattr(settings, 'TELEPHONE_REGEXP', r'^(\+[7893]\d{10,11})?$')
         ),)
     )
@@ -684,21 +681,3 @@ class PeriodicPayForId(models.Model):
     class Meta:
         db_table = 'periodic_pay_for_id'
         ordering = ('last_pay',)
-
-
-@receiver(post_init, sender=CustomerService)
-def customer_service_post_init(sender, **kwargs):
-    customer_service = kwargs["instance"]
-    if getattr(customer_service, 'start_time') is None:
-        customer_service.start_time = datetime.now()
-    if getattr(customer_service, 'deadline') is None:
-        calc_obj = customer_service.service.get_calc_type()(customer_service)
-        customer_service.deadline = calc_obj.calc_deadline()
-
-
-@receiver(pre_save, sender=CustomerService)
-def customer_service_pre_save(sender, **kwargs):
-    customer_service = kwargs["instance"]
-    if getattr(customer_service, 'deadline') is None:
-        calc_obj = customer_service.service.get_calc_type()(customer_service)
-        customer_service.deadline = calc_obj.calc_deadline()
