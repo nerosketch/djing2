@@ -14,8 +14,9 @@ from networks.serializers import (NetworkIpPoolModelSerializer,
 class NetworkIpPoolModelViewSet(DjingModelViewSet):
     queryset = NetworkIpPool.objects.all()
     serializer_class = NetworkIpPoolModelSerializer
-    filter_backends = (OrderingFilter,)
+    filter_backends = (OrderingFilter, DjangoFilterBackend)
     ordering_fields = ('network', 'ip_start', 'ip_end', 'gateway')
+    filterset_fields = ('groups',)
 
     @action(detail=True, methods=('post',))
     def group_attach(self, request, pk=None):
