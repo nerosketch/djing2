@@ -3,6 +3,8 @@ from django.utils.translation import gettext
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
 from tasks import models
 from tasks import serializers
@@ -87,12 +89,13 @@ class TaskModelViewSet(DjingModelViewSet):
         task.send_notification()
         return Response(status=status.HTTP_200_OK)
 
-    # @action(detail=True)
-    # def recipients(self, request, pk=None):
-    #     obj = self.get_object()
-    #     recs = obj.recipients.all()
-    #     ser = UserProfileSerializer(recs, many=True)
-    #     return Response(ser.data)
+    @action(detail=False)
+    def get_initial_recipients(self, request):
+        group_id = safe_int(request.query_params.get('group_id'))
+        if group_id > 0:
+            recipients = UserProfile.objects.get_profiles_by_group(group_id=group_id).only('pk').values_list('pk', flat=True)
+            return Response(recipients)
+        return Response('"group_id" parameter is required', status=status.HTTP_400_BAD_REQUEST)
 
 
 class AllTasksList(DjingListAPIView):
