@@ -8,7 +8,7 @@ from .dlink import (
 from .eltex import EltexSwitch
 from .epon import BDCOM_P3310C, EPON_BDCOM_FORA
 from .expect_util import *
-from .gpon import ZTE_C320, OnuZTE_F660, OnuZTE_F601
+from .gpon import ZTE_C320, OnuZTE_F660, OnuZTE_F601, OnuZTE_F660_Bridge
 from .huawei import HuaweiS2300
 from .unknown_device import UnknownDevice
 
@@ -25,6 +25,7 @@ DEVICE_TYPE_HuaweiS2300 = 8
 DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface = 9
 DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface = 10
 DEVICE_TYPE_DlinkDGS_3627GSwitchInterface = 11
+DEVICE_TYPE_OnuZTE_F660_BRIDGE = 12
 
 DEVICE_TYPES = [
     (DEVICE_TYPE_UNKNOWN, UnknownDevice),
@@ -38,7 +39,8 @@ DEVICE_TYPES = [
     (DEVICE_TYPE_HuaweiS2300, HuaweiS2300),
     (DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface, DlinkDGS_3120_24SCSwitchInterface),
     (DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface, DlinkDGS_1100_06MESwitchInterface),
-    (DEVICE_TYPE_DlinkDGS_3627GSwitchInterface, DlinkDGS_3627GSwitchInterface)
+    (DEVICE_TYPE_DlinkDGS_3627GSwitchInterface, DlinkDGS_3627GSwitchInterface),
+    (DEVICE_TYPE_OnuZTE_F660_BRIDGE, OnuZTE_F660_Bridge)
 ]
 
 DEVICE_ONU_TYPES = (

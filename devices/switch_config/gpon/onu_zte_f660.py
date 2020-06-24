@@ -2,7 +2,7 @@ from typing import Optional, Dict
 from django.utils.translation import gettext_lazy as _
 from transliterate import translit
 
-from djing2.lib import safe_int, safe_float
+from djing2.lib import safe_int
 from ..base import DeviceConsoleError
 from ..utils import norm_name
 from ..expect_util import ExpectValidationError
@@ -119,9 +119,12 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         fiber_num, onu_num = str(dev.snmp_extra).split('.')
         fiber_num, onu_num = safe_int(fiber_num), safe_int(onu_num)
         fiber_addr = '%d.%d' % (fiber_num, onu_num)
-        sn = self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s' % fiber_addr)
+        sn = self.get_item_plain('.1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s' % fiber_addr)
         if sn is not None:
-            sn = 'ZTEG%s' % ''.join('%.2X' % x for x in sn[-4:])
+            if isinstance(sn, str):
+                sn = 'ZTEG%s' % ''.join('%.2X' % ord(x) for x in sn[-4:])
+            else:
+                sn = 'ZTEG%s' % ''.join('%.2X' % x for x in sn[-4:])
             sn_mac = sn_to_mac(sn)
             if str(dev.mac_addr) != sn_mac:
                 raise ExpectValidationError(
