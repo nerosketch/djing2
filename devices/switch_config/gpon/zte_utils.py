@@ -39,7 +39,7 @@ def reg_dev_zte(device, extra_data: Dict, reg_func):
 
         # Format serial number from mac address
         # because saved mac address was make from serial number
-        sn = "ZTEG%s" % ''.join('%.x' % int(x, base=16) for x in mac.split(':')[-4:])
+        sn = "ZTEG%s" % ''.join('%.2X' % int(x, base=16) for x in mac.split(':')[-4:])
         telnet = extra_data.get('telnet')
         try:
             onu_snmp = reg_func(
