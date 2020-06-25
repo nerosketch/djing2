@@ -1,3 +1,4 @@
+from django.contrib.messages.api import MessageFailure
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -19,3 +20,15 @@ class GatewayModelViewSet(DjingModelViewSet):
             ips = Gateway.get_user_credentials_by_ip(gw_id=service_id)
             return Response(ips)
         return Response(status=status.HTTP_403_FORBIDDEN)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except MessageFailure as msg:
+            return Response(str(msg), status=status.HTTP_403_FORBIDDEN)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            return super().update(request, *args, **kwargs)
+        except MessageFailure as msg:
+            return Response(str(msg), status=status.HTTP_403_FORBIDDEN)
