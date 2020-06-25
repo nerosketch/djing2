@@ -151,9 +151,8 @@ class Device(models.Model):
         return mngr.has_attachable_to_customer
 
     def __str__(self):
-        return "%s: (%s) %s. %s" % (
-            self.comment, self.get_dev_type_display(),
-            self.ip_address or '', self.mac_addr or ''
+        return "%s %s" % (
+            self.ip_address or '', self.comment
         )
 
     def generate_config_template(self):
