@@ -66,8 +66,11 @@ msgid "You cannot remove default server"
 msgstr "Вы не можете удалить шлюз по умолчанию"
 
 #: gateways/nas_managers/mod_mikrotik.py:171
-msgid "Mikrotik NAS"
-msgstr ""
+msgid "Mikrotik gateway"
+msgstr "Mikrotik шлюз"
+
+msgid "Linux gateway"
+msgstr "Linux шлюз"
 
 #: gateways/nas_managers/mod_mikrotik.py:176
 msgid "Gateway disabled"
