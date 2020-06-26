@@ -2,7 +2,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db import models, connection
 from encrypted_model_fields.fields import EncryptedCharField
 from djing2.lib import MyChoicesAdapter
-from gateways.nas_managers import GW_TYPES, GatewayNetworkError
+# from gateways.nas_managers import GW_TYPES, GatewayNetworkError
 
 
 class Gateway(models.Model):
