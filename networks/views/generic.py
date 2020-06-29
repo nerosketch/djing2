@@ -1,4 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -53,3 +54,12 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
     filter_backends = (OrderingFilter, DjangoFilterBackend)
     filterset_fields = ('customer',)
     ordering_fields = ('ip_address', 'lease_time', 'mac_address')
+
+    @action(methods=('get',), detail=True)
+    def ping_ip(self, request, pk=None):
+        lease = self.get_object()
+        is_pinged = lease.ping_icmp()
+        return Response({
+            'text': _('Ping ok') if is_pinged else _('no ping'),
+            'status': is_pinged
+        })
