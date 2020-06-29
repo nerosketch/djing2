@@ -1,16 +1,16 @@
-Django==2.2.13
+Django==3.0.7
 djangorestframework==3.11.0
 Pillow==7.1.2
 
 # for mac address field
-netaddr==0.7.19
+netaddr==0.7.20
 
 # db client for Postgres
 psycopg2==2.8.5
 
 git+git://github.com/nerosketch/easysnmp.git#egg=easysnmp
 pid==3.0.3
-django-guardian==2.2.0
+django-guardian==2.3.0
 djangorestframework-guardian==0.3.0
 
 transliterate==1.10.2
@@ -22,16 +22,16 @@ djangorestframework-xml==2.0.0
 git+git://github.com/disqus/django-bitfield.git#egg=django-bitfield
 
 # for clean unused media
-django-cleanup==4.0.0
+django-cleanup==5.0.0
 
 # viberbot
 git+git://github.com/Viber/viber-bot-python.git#egg=viberbot
 
 uwsgi_tasks==0.7.3
-redis==3.5.1
+redis==3.5.3
 
 django-cors-headers==3.2.1
-django-encrypted-model-fields==0.5.8
+git+https://gitlab.com/slei99/django-encrypted-model-fields.git#egg=django-encrypted-model-fields
 django-netfields==1.2.2
 
 # pexpect
