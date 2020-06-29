@@ -1,4 +1,3 @@
-from kombu.exceptions import OperationalError
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 # from djing.tasks import send_email_notify # , multicast_email_notify
@@ -41,13 +40,10 @@ def handle(task, author, recipients):
         'text': fulltext
     })
 
-    try:
-        if task.task_state in (1, 2):
-            # If task completed or failed than send one message to author
-            # send_email_notify(fulltext, author.pk)
-            send_viber_message(None, author.pk, fulltext)
-        else:
-            # multicast_email_notify(fulltext, profile_ids)
-            multicast_viber_notify(None, profile_ids, fulltext)
-    except OperationalError as e:
-        raise TaskException(e)
+    if task.task_state in (1, 2):
+        # If task completed or failed than send one message to author
+        # send_email_notify(fulltext, author.pk)
+        send_viber_message(None, author.pk, fulltext)
+    else:
+        # multicast_email_notify(fulltext, profile_ids)
+        multicast_viber_notify(None, profile_ids, fulltext)
