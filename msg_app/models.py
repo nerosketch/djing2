@@ -1,5 +1,4 @@
 from django.shortcuts import resolve_url
-from kombu.exceptions import OperationalError
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -208,20 +207,17 @@ class Conversation(models.Model):
             text=text, conversation=self,
             attachment=attachment, author=author
         )
-        try:
-            if with_status:
-                for participant in self.participants.filter(is_active=True):
-                    if participant == author:
-                        continue
-                    MessageStatus.objects.create(msg=msg, user=participant)
-                    if participant.flags.notify_msg:
-                        send_email_notify(
-                            msg_text=text,
-                            account_id=participant.pk
-                        )
-            return msg
-        except OperationalError as e:
-            raise MessageError(e)
+        if with_status:
+            for participant in self.participants.filter(is_active=True):
+                if participant == author:
+                    continue
+                MessageStatus.objects.create(msg=msg, user=participant)
+                if participant.flags.notify_msg:
+                    send_email_notify(
+                        msg_text=text,
+                        account_id=participant.pk
+                    )
+        return msg
 
     @staticmethod
     def remove_message(msg):
