@@ -12,9 +12,9 @@ IP_ADDR_REGEX = (
 )
 
 
-def ping(ip_addr: str, count=1):
+def ping(ip_addr: str, count=1) -> bool:
     if re.match(IP_ADDR_REGEX, ip_addr):
-        response = os.system("`which ping` -4Anq -c%d -W1 %s > /dev/null" % (count, ip_addr))
+        response = os.system("`which ping` -4Anq -i 0.2 -c%d -W1 %s > /dev/null" % (count, ip_addr))
         return response == 0
     else:
         return False
