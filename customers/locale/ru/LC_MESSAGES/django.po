@@ -299,9 +299,12 @@ msgstr "Ip адрес не передан"
 msgid "no ping"
 msgstr "не пингуется"
 
+msgid "Ping ok"
+msgstr "Пингуется OK"
+
 #: customers/views/admin_side.py:274
 msgid "fill account through admin side"
-msgstr ""
+msgstr "Пополнение счёта сотрудником"
 
 #: customers/views/user_side.py:49
 #, python-format
