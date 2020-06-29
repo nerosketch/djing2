@@ -2,7 +2,6 @@ import re
 from json import dumps as json_dumps
 
 from django.db.models import Count
-from kombu.exceptions import OperationalError
 
 from django.utils.translation import gettext_lazy as _, gettext
 from django.http.response import StreamingHttpResponse
@@ -193,80 +192,75 @@ class DeviceModelViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_dev_manager_err
     def monitoring_event(self, request, pk=None):
-        try:
-            dev_ip = request.query_params.get('dev_ip')
-            dev_status = safe_int(request.query_params.get('status'))
-            if not dev_ip:
-                return Response({'text': 'ip does not passed'})
-            if not re.match(IP_ADDR_REGEX, dev_ip):
-                return Response({'text': 'ip address %s is not valid' % dev_ip})
+        dev_ip = request.query_params.get('dev_ip')
+        dev_status = safe_int(request.query_params.get('status'))
+        if not dev_ip:
+            return Response({'text': 'ip does not passed'})
+        if not re.match(IP_ADDR_REGEX, dev_ip):
+            return Response({'text': 'ip address %s is not valid' % dev_ip})
 
-            device_down = self.get_queryset().filter(
-                ip_address=dev_ip
-            ).defer(
-                'extra_data'
-            ).first()
-            if device_down is None:
-                return Response({
-                    'text': 'Devices with ip %s does not exist' % dev_ip
-                })
-
-            status_map = {
-                'UP': Device.NETWORK_STATE_UP,
-                'UNREACHABLE': Device.NETWORK_STATE_UNREACHABLE,
-                'DOWN': Device.NETWORK_STATE_DOWN
-            }
-            status_text_map = {
-                'UP': 'Device %(device_name)s is up',
-                'UNREACHABLE': 'Device %(device_name)s is unreachable',
-                'DOWN': 'Device %(device_name)s is down'
-            }
-            device_down.status = status_map.get(dev_status, Device.NETWORK_STATE_UNDEFINED)
-
-            device_down.save(update_fields=('status',))
-
-            if not device_down.is_noticeable:
-                return {
-                    'text': 'Notification for %s is unnecessary' %
-                            device_down.ip_address or device_down.comment
-                }
-
-            if not device_down.group:
-                return Response({
-                    'text': 'Device has not have a group'
-                })
-
-            recipients = UserProfile.objects.get_profiles_by_group(
-                group_id=device_down.group.pk
-            ).filter(flags=UserProfile.flags.notify_mon)
-            user_ids = tuple(recipient.pk for recipient in recipients.only('pk').iterator())
-
-            notify_text = status_text_map.get(
-                dev_status,
-                default='Device %(device_name)s getting undefined status code'
-            )
-            text = gettext(notify_text) % {
-                'device_name': "%s(%s) %s" % (
-                    device_down.ip_address or '',
-                    device_down.mac_addr,
-                    device_down.comment
-                )
-            }
-            multicast_viber_notify(
-                messenger_id=None,
-                account_id_list=user_ids,
-                message_text=text
-            )
-            ws_connector.send_data({
-                'type': 'monitoring_event',
-                'recipients': user_ids,
-                'text': text
-            })
-            return Response({'text': 'notification successfully sent'})
-        except (ValueError, OperationalError) as e:
+        device_down = self.get_queryset().filter(
+            ip_address=dev_ip
+        ).defer(
+            'extra_data'
+        ).first()
+        if device_down is None:
             return Response({
-                'text': str(e)
+                'text': 'Devices with ip %s does not exist' % dev_ip
             })
+
+        status_map = {
+            'UP': Device.NETWORK_STATE_UP,
+            'UNREACHABLE': Device.NETWORK_STATE_UNREACHABLE,
+            'DOWN': Device.NETWORK_STATE_DOWN
+        }
+        status_text_map = {
+            'UP': 'Device %(device_name)s is up',
+            'UNREACHABLE': 'Device %(device_name)s is unreachable',
+            'DOWN': 'Device %(device_name)s is down'
+        }
+        device_down.status = status_map.get(dev_status, Device.NETWORK_STATE_UNDEFINED)
+
+        device_down.save(update_fields=('status',))
+
+        if not device_down.is_noticeable:
+            return {
+                'text': 'Notification for %s is unnecessary' %
+                        device_down.ip_address or device_down.comment
+            }
+
+        if not device_down.group:
+            return Response({
+                'text': 'Device has not have a group'
+            })
+
+        recipients = UserProfile.objects.get_profiles_by_group(
+            group_id=device_down.group.pk
+        ).filter(flags=UserProfile.flags.notify_mon)
+        user_ids = tuple(recipient.pk for recipient in recipients.only('pk').iterator())
+
+        notify_text = status_text_map.get(
+            dev_status,
+            default='Device %(device_name)s getting undefined status code'
+        )
+        text = gettext(notify_text) % {
+            'device_name': "%s(%s) %s" % (
+                device_down.ip_address or '',
+                device_down.mac_addr,
+                device_down.comment
+            )
+        }
+        multicast_viber_notify(
+            messenger_id=None,
+            account_id_list=user_ids,
+            message_text=text
+        )
+        ws_connector.send_data({
+            'type': 'monitoring_event',
+            'recipients': user_ids,
+            'text': text
+        })
+        return Response({'text': 'notification successfully sent'})
 
     @action(detail=True)
     @catch_dev_manager_err
