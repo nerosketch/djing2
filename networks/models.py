@@ -12,6 +12,7 @@ from netaddr import EUI
 from netfields import MACAddressField, CidrAddressField
 
 from customers.models.customer import Customer
+from djing2 import ping as icmp_ping
 from djing2.lib import macbin2str, safe_int
 from groupapp.models import Group
 from networks.exceptions import DhcpRequestError
@@ -285,6 +286,10 @@ class CustomerIpLeaseModel(models.Model):
             if len(res) > 0:
                 res = res[0]
         return res
+
+    def ping_icmp(self, num_count=10) -> bool:
+        host_ip = str(self.ip_address)
+        return icmp_ping(ip_addr=host_ip, count=num_count)
 
     class Meta:
         db_table = 'networks_ip_leases'
