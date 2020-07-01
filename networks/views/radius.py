@@ -85,7 +85,6 @@ class RadiusRequestViewSet(DjingAuthorizedViewSet):
             "ip": _clear_ip(ip_lease.ip_address),
             "mask": str(net.netmask),
             "gw": _clear_ip(pool_contains_ip.gateway),
-            # "dns": '10.12.1.4',
             "lease_time": DHCP_DEFAULT_LEASE_TIME
         })
 

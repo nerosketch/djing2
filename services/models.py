@@ -5,7 +5,6 @@ from django.db import models, IntegrityError
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
-from djing2.lib import MyChoicesAdapter
 from groupapp.models import Group
 from services.custom_logic import *
 from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase, OneShotBaseService
@@ -28,7 +27,7 @@ class Service(models.Model):
     speed_burst = models.FloatField(
         _('Speed burst'),
         help_text=_('Result burst = speed * speed_burst,'
-                    ' speed_burst must be > 1.0'),
+                    ' speed_burst must be >= 1.0'),
         default=1.0,
         validators=[
             MinValueValidator(limit_value=1.0),
@@ -38,7 +37,7 @@ class Service(models.Model):
         verbose_name=_('Cost'),
         validators=[MinValueValidator(limit_value=0.0)]
     )
-    calc_type = models.PositiveSmallIntegerField(_('Script'), choices=MyChoicesAdapter(SERVICE_CHOICES))
+    calc_type = models.PositiveSmallIntegerField(_('Script'), choices=SERVICE_CHOICES.choices)
     is_admin = models.BooleanField(_('Tech service'), default=False)
     groups = models.ManyToManyField(Group, blank=True, verbose_name=_('Groups'))
 
@@ -81,7 +80,7 @@ class PeriodicPay(models.Model):
     when_add = models.DateTimeField(_('When pay created'), auto_now_add=True)
     calc_type = models.PositiveSmallIntegerField(
         verbose_name=_('Script type for calculations'),
-        default=0, choices=MyChoicesAdapter(PERIODIC_PAY_CHOICES)
+        default=PERIODIC_PAY_CHOICES.PERIODIC_PAY_CALC_DEFAULT, choices=PERIODIC_PAY_CHOICES.choices
     )
     amount = models.FloatField(_('Total amount'))
     extra_info = JSONField(_('Extra info'), null=True, blank=True)
@@ -132,8 +131,8 @@ class OneShotPay(models.Model):
     pay_type = models.PositiveSmallIntegerField(
         _('One shot pay type'),
         help_text=_('Uses for callbacks before pay and after pay'),
-        choices=MyChoicesAdapter(ONE_SHOT_TYPES),
-        default=0
+        choices=ONE_SHOT_TYPES.choices,
+        default=ONE_SHOT_TYPES.ONE_SHOT_DEFAULT
     )
     _pay_type_cache = None
 
@@ -145,7 +144,7 @@ class OneShotPay(models.Model):
         if self._pay_type_cache is not None:
             return self._pay_type_cache
         pay_type = self.pay_type
-        for choice_pair in ONE_SHOT_TYPES:
+        for choice_pair in ONE_SHOT_TYPES.choices:
             choice_code, logic_class = choice_pair
             if choice_code == pay_type:
                 if not issubclass(logic_class, OneShotBaseService):
