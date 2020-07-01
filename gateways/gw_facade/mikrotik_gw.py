@@ -6,14 +6,14 @@ from gateways.gw_facade.base_gw import BaseGateway
 class MikrotikGateway(BaseGateway):
     description = _('Mikrotik gateway')
 
-    def send_command_add_customer(self) -> Optional[str]:
+    def send_command_add_customer(self, *args, **kwargs) -> Optional[str]:
         pass
 
-    def send_command_del_customer(self) -> Optional[str]:
+    def send_command_del_customer(self, *args, **kwargs) -> Optional[str]:
         pass
 
-    def send_command_sync_customer(self) -> Optional[str]:
+    def send_command_sync_customer(self, *args, **kwargs) -> Optional[str]:
         pass
 
-    def ping_customer(self) -> Optional[str]:
+    def ping_customer(self, *args, **kwargs) -> Optional[str]:
         pass

@@ -2,8 +2,6 @@
 
 from django.db import migrations, models
 
-from djing2.lib.for_migrations import read_all_file
-
 
 class Migration(migrations.Migration):
 
@@ -16,8 +14,5 @@ class Migration(migrations.Migration):
             model_name='networkippool',
             name='is_dynamic',
             field=models.BooleanField(default=False, verbose_name='Is dynamic'),
-        ),
-        migrations.RunSQL(
-            sql=read_all_file('0004_networkippool_is_dynamic.sql', __file__)
         )
     ]
