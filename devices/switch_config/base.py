@@ -180,10 +180,6 @@ class BaseDeviceInterface(BaseSNMPWorker):
     def description(self) -> str:
         """Base device interface"""
 
-    @classmethod
-    def get_description(cls) -> str:
-        return getattr(cls, 'description', 'Base device interface')
-
     def reboot(self, save_before_reboot=False) -> Tuple[int, AnyStr]:
         """
         Send signal reboot to device
