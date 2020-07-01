@@ -2,7 +2,7 @@ import base64
 
 from rest_framework.test import APITestCase
 
-from networks.models import NetworkIpPool
+from networks.models import NetworkIpPool, NetworkIpPoolKind
 from networks.tests import FetchSubscriberDynamicLeaseTestCase
 
 
@@ -99,7 +99,7 @@ class RadiusDHCPRequestTestCase(APITestCase):
         )
         ippool2 = NetworkIpPool.objects.create(
             network='10.10.11.0/24',
-            kind=NetworkIpPool.NETWORK_KIND_INTERNET,
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
             description='test',
             ip_start='10.10.11.2',
             ip_end='10.10.11.254',

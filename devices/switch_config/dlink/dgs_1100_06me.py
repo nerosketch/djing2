@@ -1,5 +1,3 @@
-from typing import Generator
-
 from devices.switch_config import Vlans, Vlan
 from djing2.lib import safe_int
 from .dgs_3120_24sc import DlinkDGS_3120_24SCSwitchInterface

@@ -252,20 +252,29 @@ class Device(models.Model):
     #     return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
 
 
+class PortVlanMemberMode(models.IntegerChoices):
+    NOT_CHOSEN = 0, _('Not chosen')
+    DEFAULT = 1, _('Default')
+    UNTAG = 2, _('Untagged')
+    TAGGED = 3, _('Tagged')
+    HYBRID = 4, _('Hybrid')
+
+
 class PortVlanMemberModel(models.Model):
     vlanif = models.ForeignKey(VlanIf, on_delete=models.CASCADE)
     port = models.ForeignKey('Port', on_delete=models.CASCADE)
-    VLAN_OPERATING_MODES = (
-        (0, _('Not chosen')),
-        (1, _('Default')),
-        (2, _('Untagged')),
-        (3, _('Tagged')),
-        (4, _('Hybrid'))
-    )
     mode = models.PositiveSmallIntegerField(
-        _('Operating mode'), default=0,
-        choices=VLAN_OPERATING_MODES
+        _('Operating mode'), default=PortVlanMemberMode.NOT_CHOSEN,
+        choices=PortVlanMemberMode.choices
     )
+
+
+class PortOperatingMode(models.IntegerChoices):
+    NOT_CHOSEN = 0, _('Not chosen')
+    ACCESS = 1, _('Access')
+    TRUNK = 2, _('Trunk')
+    HYBRID = 3, _('Hybrid')
+    GENERAL = 4, _('General')
 
 
 class Port(models.Model):
@@ -275,16 +284,9 @@ class Port(models.Model):
     )
     num = models.PositiveSmallIntegerField(_('Number'), default=0)
     descr = models.CharField(_('Description'), max_length=60, null=True, blank=True)
-    PORT_OPERATING_MODES = (
-        (0, _('Not chosen')),
-        (1, _('Access')),
-        (2, _('Trunk')),
-        (3, _('Hybrid')),
-        (4, _('General'))
-    )
     operating_mode = models.PositiveSmallIntegerField(
-        _('Operating mode'), default=0,
-        choices=PORT_OPERATING_MODES
+        _('Operating mode'), default=PortOperatingMode.NOT_CHOSEN,
+        choices=PortOperatingMode.choices
     )
     vlans = models.ManyToManyField(
         VlanIf, through=PortVlanMemberModel,

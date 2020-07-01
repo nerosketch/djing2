@@ -15,8 +15,8 @@ from customers.models.customer import Customer
 from djing2 import ping as icmp_ping
 from djing2.lib import macbin2str, safe_int
 from groupapp.models import Group
+from .events import on_new_lease_assigned
 from .exceptions import DhcpRequestError
-from .tasks import send_signal_dhcp2gateway_add_subscriber_task
 
 DHCP_DEFAULT_LEASE_TIME = getattr(settings, 'DHCP_DEFAULT_LEASE_TIME', 86400)
 
@@ -39,6 +39,15 @@ class VlanIf(models.Model):
         verbose_name_plural = _('Vlan list')
 
 
+class NetworkIpPoolKind(models.IntegerChoices):
+    NETWORK_KIND_NOT_DEFINED = 0, _('Not defined')
+    NETWORK_KIND_INTERNET = 1, _('Internet')
+    NETWORK_KIND_GUEST = 2, _('Guest')
+    NETWORK_KIND_TRUST = 3, _('Trusted')
+    NETWORK_KIND_DEVICES = 4, _('Devices')
+    NETWORK_KIND_ADMIN = 5, _('Admin')
+
+
 class NetworkIpPool(models.Model):
     network = CidrAddressField(
         verbose_name=_('Ip network address'),
@@ -46,24 +55,10 @@ class NetworkIpPool(models.Model):
                     '192.168.1.0 or fde8:6789:1234:1::'),
         unique=True
     )
-    NETWORK_KIND_NOT_DEFINED = 0
-    NETWORK_KIND_INTERNET = 1
-    NETWORK_KIND_GUEST = 2
-    NETWORK_KIND_TRUST = 3
-    NETWORK_KIND_DEVICES = 4
-    NETWORK_KIND_ADMIN = 5
-
-    NETWORK_KINDS = (
-        (NETWORK_KIND_NOT_DEFINED, _('Not defined')),
-        (NETWORK_KIND_INTERNET, _('Internet')),
-        (NETWORK_KIND_GUEST, _('Guest')),
-        (NETWORK_KIND_TRUST, _('Trusted')),
-        (NETWORK_KIND_DEVICES, _('Devices')),
-        (NETWORK_KIND_ADMIN, _('Admin'))
-    )
     kind = models.PositiveSmallIntegerField(
         _('Kind of network'),
-        choices=NETWORK_KINDS, default=NETWORK_KIND_NOT_DEFINED
+        choices=NetworkIpPoolKind.choices,
+        default=NetworkIpPoolKind.NETWORK_KIND_NOT_DEFINED
     )
     description = models.CharField(_('Description'), max_length=64)
     groups = models.ManyToManyField(
@@ -268,9 +263,9 @@ class CustomerIpLeaseModel(models.Model):
                     return None
                 if is_assigned:
                     # New lease, makes signal for gateway
-                    send_signal_dhcp2gateway_add_subscriber_task(v_id, v_ip_address, v_pool_id, v_lease_time,
-                                                                 v_mac_address,
-                                                                 v_customer_id, v_is_dynamic, is_assigned)
+                    on_new_lease_assigned(v_id, v_ip_address, v_pool_id, v_lease_time,
+                                          v_mac_address,
+                                          v_customer_id, v_is_dynamic, is_assigned)
                 return CustomerIpLeaseModel(
                     pk=v_id, ip_address=v_ip_address, pool_id=v_pool_id,
                     lease_time=v_lease_time, customer_id=v_customer_id,

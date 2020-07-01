@@ -1,8 +1,9 @@
 from django.test import override_settings
 
 from devices.tests import DeviceTestCase
-from networks.models import CustomerIpLeaseModel, NetworkIpPool
-from services.models import Service, SERVICE_CHOICE_DEFAULT
+from networks.models import CustomerIpLeaseModel, NetworkIpPool, NetworkIpPoolKind
+from services.models import Service
+from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from .customer import CustomAPITestCase
 
 
@@ -24,7 +25,7 @@ class TestRadiusCustomerServiceRequestViewSet(CustomAPITestCase):
         )
         self.ippool = NetworkIpPool.objects.create(
             network='10.11.12.0/24',
-            kind=NetworkIpPool.NETWORK_KIND_INTERNET,
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET.value,
             description='test',
             ip_start='10.11.12.2',
             ip_end='10.11.12.254',
