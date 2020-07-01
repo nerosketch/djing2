@@ -4,7 +4,7 @@ from calendar import monthrange
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase
+from services.custom_logic.base_intr import ServiceBase
 
 
 class ServiceDefault(ServiceBase):

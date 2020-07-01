@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     'django_cleanup.apps.CleanupConfig',
     'groupapp',
     'profiles',
-    'services',
+    'services.apps.ServicesConfig',
     'gateways.apps.GatewaysConfig',
     'devices.apps.DevicesConfig',
     'networks',
@@ -105,8 +105,8 @@ TEMPLATES = [
 
 AUTHENTICATION_BACKENDS = (
     'djing2.lib.auth_backends.DjingAuthBackend',
-    'guardian.backends.ObjectPermissionBackend',
-    'djing2.lib.auth_backends.LocationAuthBackend'
+    'djing2.lib.auth_backends.LocationAuthBackend',
+    'guardian.backends.ObjectPermissionBackend'
 )
 
 WSGI_APPLICATION = 'djing2.wsgi.application'

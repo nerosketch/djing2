@@ -101,21 +101,23 @@ class BaseAccount(AbstractBaseUser, PermissionsMixin):
         ordering = 'username',
 
 
+class UserProfileLogActionType(models.IntegerChoices):
+    UNDEFINED = 0, _('Undefined')
+    CREATE_USER = 1, _('Create user')
+    DELETE_USER = 2, _('Delete user')
+    CREATE_DEVICE = 3, _('Create device')
+    DELETE_DEVICE = 4, _('Delete device')
+    CREATE_NAS = 5, _('Create NAS')
+    DELETE_NAS = 6, _('Delete NAS')
+    CREATE_SERVICE = 7, _('Create service')
+    DELETE_SERVICE = 8, _('Delete service')
+
+
 class UserProfileLog(models.Model):
     account = models.ForeignKey('UserProfile', on_delete=models.CASCADE, verbose_name=_('Author'))
     # meta_info = JSONField(verbose_name=_('Meta information'))
-    ACTION_TYPES = (
-        (0, _('Undefined')),
-        (1, _('Create user')),
-        (2, _('Delete user')),
-        (3, _('Create device')),
-        (4, _('Delete device')),
-        (5, _('Create NAS')),
-        (6, _('Delete NAS')),
-        (7, _('Create service')),
-        (8, _('Delete service'))
-    )
-    do_type = models.PositiveSmallIntegerField(_('Action type'), choices=ACTION_TYPES, default=0)
+    do_type = models.PositiveSmallIntegerField(_('Action type'), choices=UserProfileLogActionType.choices,
+                                               default=UserProfileLogActionType.UNDEFINED)
     additional_text = models.CharField(_('Additional info'), blank=True, null=True, max_length=512)
     action_date = models.DateTimeField(_('Action date'), auto_now_add=True)
 

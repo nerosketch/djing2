@@ -1,8 +1,7 @@
 from datetime import datetime
 from django.contrib.postgres.fields import JSONField
 from django.core.validators import MinValueValidator
-from django.db import models, IntegrityError
-from django.dispatch import receiver
+from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from groupapp.models import Group
@@ -37,7 +36,7 @@ class Service(models.Model):
         verbose_name=_('Cost'),
         validators=[MinValueValidator(limit_value=0.0)]
     )
-    calc_type = models.PositiveSmallIntegerField(_('Script'), choices=SERVICE_CHOICES.choices)
+    calc_type = models.PositiveSmallIntegerField(_('Script'), choices=SERVICE_CHOICES)
     is_admin = models.BooleanField(_('Tech service'), default=False)
     groups = models.ManyToManyField(Group, blank=True, verbose_name=_('Groups'))
 
@@ -80,7 +79,7 @@ class PeriodicPay(models.Model):
     when_add = models.DateTimeField(_('When pay created'), auto_now_add=True)
     calc_type = models.PositiveSmallIntegerField(
         verbose_name=_('Script type for calculations'),
-        default=PERIODIC_PAY_CHOICES.PERIODIC_PAY_CALC_DEFAULT, choices=PERIODIC_PAY_CHOICES.choices
+        default=PERIODIC_PAY_CALC_DEFAULT, choices=PERIODIC_PAY_CHOICES
     )
     amount = models.FloatField(_('Total amount'))
     extra_info = JSONField(_('Extra info'), null=True, blank=True)
@@ -131,8 +130,8 @@ class OneShotPay(models.Model):
     pay_type = models.PositiveSmallIntegerField(
         _('One shot pay type'),
         help_text=_('Uses for callbacks before pay and after pay'),
-        choices=ONE_SHOT_TYPES.choices,
-        default=ONE_SHOT_TYPES.ONE_SHOT_DEFAULT
+        choices=ONE_SHOT_TYPES,
+        default=ONE_SHOT_DEFAULT
     )
     _pay_type_cache = None
 
@@ -144,7 +143,7 @@ class OneShotPay(models.Model):
         if self._pay_type_cache is not None:
             return self._pay_type_cache
         pay_type = self.pay_type
-        for choice_pair in ONE_SHOT_TYPES.choices:
+        for choice_pair in ONE_SHOT_TYPES:
             choice_code, logic_class = choice_pair
             if choice_code == pay_type:
                 if not issubclass(logic_class, OneShotBaseService):
@@ -170,8 +169,3 @@ class OneShotPay(models.Model):
     class Meta:
         db_table = 'service_one_shot'
         ordering = ('name',)
-
-
-@receiver(models.signals.pre_delete, sender=PeriodicPay)
-def periodic_pay_pre_delete(sender, **kwargs):
-    raise IntegrityError('All linked abonapp.PeriodicPayForId will be removed, be careful')

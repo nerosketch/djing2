@@ -239,6 +239,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         >>> tuple(EltexSwitch.parse_eltex_vlan_map(bitmap))
         (5, 143, 152)
         """
+        assert isinstance(bitmap, bytes)
         if table < 0 or table > 3:
             raise ValueError('table must be in range 1-3')
         r = (bin_num == '1' for octet_num in bitmap for bin_num in f'{octet_num:08b}')

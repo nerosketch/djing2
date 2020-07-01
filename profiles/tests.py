@@ -28,7 +28,8 @@ class ProfileApiTestCase(APITestCase):
             'fio': 'test fio',
             'is_active': True,
             'telephone': '+79781234567',
-            'email': 'test@mail.ex'
+            'email': 'test@mail.ex',
+            'password': '8LsjW5dim'
         })
         self.assertEqual(r.status_code, status.HTTP_201_CREATED)
         profile = r.data
