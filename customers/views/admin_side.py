@@ -24,7 +24,6 @@ from customers.views.view_decorators import catch_customers_errs
 from djing2.exceptions import UniqueConstraintIntegrityError
 from djing2.lib import safe_int, LogicError, DuplicateEntry, safe_float
 from djing2.lib.mixins import SecureApiView
-from djing2.lib.paginator import QueryPageNumberPagination
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 # from gateways.models import Gateway
 # from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
@@ -315,7 +314,6 @@ class CustomerModelViewSet(DjingModelViewSet):
 
 
 class CustomersGroupsListAPIView(DjingListAPIView):
-    pagination_class = QueryPageNumberPagination
     serializer_class = serializers.CustomerGroupSerializer
     filter_backends = (OrderingFilter,)
     ordering_fields = ('title', 'usercount')
@@ -369,7 +367,8 @@ class AttachServicesToGroups(APIView):
         authentication_classes = TokenAuthentication,
     permission_classes = (IsAuthenticated, IsAdminUser)
 
-    def get(self, request, format=None):
+    @staticmethod
+    def get(request, format=None):
         del format
         gid = safe_int(request.query_params.get('group'))
         grp = get_object_or_404(Group, pk=gid)
@@ -384,7 +383,8 @@ class AttachServicesToGroups(APIView):
             'check': srv.pk in selected_services_id
         } for srv in services))
 
-    def post(self, request, format=None):
+    @staticmethod
+    def post(request, format=None):
         del format
         group = safe_int(request.query_params.get('group'))
         group = get_object_or_404(Group, pk=group)
