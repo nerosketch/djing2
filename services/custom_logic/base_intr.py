@@ -18,13 +18,9 @@ class ServiceBase(ABC):
     @abstractmethod
     def description(self) -> AnyStr:
         """
-        Usage in djing2.lib.MyChoicesAdapter for choices fields.
+        Usage in djing2.lib.IntegerChoicesClassAdapter for choices fields.
         :return: human readable description
         """
-
-    @classmethod
-    def get_description(cls):
-        return cls.description
 
     @staticmethod
     def manage_access(customer) -> bool:
@@ -35,6 +31,10 @@ class ServiceBase(ABC):
         if act_srv:
             return True
         return False
+
+    @classmethod
+    def __str__(cls):
+        return cls.description
 
 
 class PeriodicPayCalcBase(ABC):
@@ -59,11 +59,7 @@ class PeriodicPayCalcBase(ABC):
     @abstractmethod
     def description(self) -> AnyStr:
         """Return text description.
-        Uses in djing2.lib.MyChoicesAdapter for CHOICES fields"""
-
-    @classmethod
-    def get_description(cls):
-        return cls.description
+        Uses in djing2.lib.IntegerChoicesClassAdapter for CHOICES fields"""
 
 
 class OneShotBaseService(ABC):
@@ -71,11 +67,7 @@ class OneShotBaseService(ABC):
     @abstractmethod
     def description(self) -> AnyStr:
         """Return text description.
-        Uses in djing2.lib.MyChoicesAdapter for CHOICES fields"""
-
-    @classmethod
-    def get_description(cls):
-        return cls.description
+        Uses in djing2.lib.IntegerChoicesClassAdapter for CHOICES fields"""
 
     @abstractmethod
     def calc_cost(self, model_object, request, customer) -> float:

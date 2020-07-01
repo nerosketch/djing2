@@ -1,5 +1,4 @@
 from typing import Optional
-from django.db import models
 from gateways.gw_facade.base_gw import BaseGateway
 from gateways.gw_facade.linux_gw import LinuxGateway
 from gateways.gw_facade.mikrotik_gw import MikrotikGateway
@@ -9,30 +8,24 @@ class GatewayNetworkError(Exception):
     pass
 
 
-class GatewayTypes(models.IntegerChoices):
-    MIKROTIK = 0, MikrotikGateway.description
-    LINUX = 1, LinuxGateway.description
+MIKROTIK = 0
+LINUX = 1
+
+GATEWAY_TYPES = (
+    (MIKROTIK, MikrotikGateway),
+    (LINUX, LinuxGateway)
+)
 
 
 class GatewayFacade(BaseGateway):
     description = 'GatewayFacade'
 
-    def __init__(self, gw_type: Optional[GatewayTypes, int], *args, **kwargs):
-        if isinstance(gw_type, int):
-            try:
-                gw_type = next(ch for ch in GatewayTypes if ch.value == gw_type)
-            except StopIteration:
-                raise ValueError('GatewayFacade required GatewayTypes choice in "gw_type" parameter')
-        elif isinstance(gw_type, GatewayTypes):
-            pass
-        else:
-            raise TypeError('gw_type must be instance of GatewayTypes or int')
+    def __init__(self, gw_type: int, *args, **kwargs):
         self._gw_type = gw_type
-        gw_map = {
-            GatewayTypes.LINUX: LinuxGateway,
-            GatewayTypes.MIKROTIK: MikrotikGateway
-        }
-        gw_class = gw_map.get(gw_type)
+        try:
+            gw_class = next(klass for num, klass in GATEWAY_TYPES if num == gw_type)
+        except StopIteration:
+            raise TypeError('gw_type must be GATEWAY_TYPES choice')
         self.gw_instance = gw_class(*args, **kwargs)
 
     def send_command_add_customer(self, *args, **kwargs) -> Optional[str]:
@@ -48,4 +41,4 @@ class GatewayFacade(BaseGateway):
         return self.gw_instance.ping_customer(*args, **kwargs)
 
 
-__all__ = 'GatewayFacade', 'GatewayTypes', 'GatewayNetworkError'
+__all__ = 'GatewayFacade', 'GATEWAY_TYPES', 'GatewayNetworkError'

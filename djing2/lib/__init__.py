@@ -46,7 +46,7 @@ class MyChoicesAdapter(Iterator):
     def __next__(self):
         obj = next(self._chs)
         choice_code, choice_class = obj
-        return choice_code, choice_class.get_description()
+        return choice_code, choice_class.description
 
 
 # Russian localized timedelta

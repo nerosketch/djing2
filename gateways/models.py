@@ -2,7 +2,7 @@ from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedCharField
 
-from .gw_facade import GatewayTypes, GatewayFacade, GatewayNetworkError
+from .gw_facade import GATEWAY_TYPES, GatewayFacade, GatewayNetworkError
 
 
 class Gateway(models.Model):
@@ -12,8 +12,8 @@ class Gateway(models.Model):
     auth_login = models.CharField(_('Auth login'), max_length=64)
     auth_passw = EncryptedCharField(_('Auth password'), max_length=127)
     gw_type = models.PositiveSmallIntegerField(_('Type'),
-                                               choices=GatewayTypes.choices,
-                                               default=GatewayTypes.MIKROTIK)
+                                               choices=GATEWAY_TYPES,
+                                               default=0)
     is_default = models.BooleanField(_('Is default'), default=False)
     enabled = models.BooleanField(_('Enabled'), default=True)
 
