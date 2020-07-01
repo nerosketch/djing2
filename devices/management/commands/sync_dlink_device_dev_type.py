@@ -17,7 +17,7 @@ class Command(BaseCommand):
         for dev in devs:
             try:
                 print('Try to scan', str(dev))
-                ses = Session(str(dev.ip_address), 2, str(dev.man_passw or 'ertNjuWr'))
+                ses = Session(str(dev.ip_address), 2, str(dev.man_passw or 'public'))
                 sys_name = ses.get('.1.3.6.1.2.1.1.1.0').value
                 if not sys_name or sys_name == 'NOSUCHINSTANCE':
                     continue

@@ -1,5 +1,5 @@
 from django.test import TestCase
-from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
+from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel, NetworkIpPoolKind
 from customers.tests.customer import CustomAPITestCase
 
 
@@ -13,7 +13,7 @@ class IpPoolTestCase(TestCase):
 
         self.pool1 = NetworkIpPool.objects.create(
             network='192.168.0.0/24',
-            kind=NetworkIpPool.NETWORK_KIND_GUEST,
+            kind=NetworkIpPoolKind.NETWORK_KIND_GUEST.value,
             description='TEST1',
             ip_start='192.168.0.2',
             ip_end='192.168.0.254',
@@ -23,7 +23,7 @@ class IpPoolTestCase(TestCase):
         )
         self.pool_small = NetworkIpPool.objects.create(
             network='192.168.1.0/24',
-            kind=NetworkIpPool.NETWORK_KIND_DEVICES,
+            kind=NetworkIpPoolKind.NETWORK_KIND_DEVICES.value,
             description='TEST2',
             ip_start='192.168.1.2',
             ip_end='192.168.1.4',

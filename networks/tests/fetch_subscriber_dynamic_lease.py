@@ -4,7 +4,7 @@ from django.test import TestCase
 from netaddr import EUI
 
 from customers.models import Customer
-from networks.models import CustomerIpLeaseModel, NetworkIpPool
+from networks.models import CustomerIpLeaseModel, NetworkIpPool, NetworkIpPoolKind
 from customers.tests.get_user_credentials_by_ip import BaseServiceTestCase
 
 
@@ -33,7 +33,7 @@ class FetchSubscriberDynamicLeaseTestCase(TestCase):
 
         self.ippool = NetworkIpPool.objects.create(
             network='10.11.12.0/24',
-            kind=NetworkIpPool.NETWORK_KIND_INTERNET,
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
             description='test',
             ip_start='10.11.12.2',
             ip_end='10.11.12.254',
@@ -166,7 +166,7 @@ class FetchSubscriberDynamicLeaseTestCase(TestCase):
 
         ippool2 = NetworkIpPool.objects.create(
             network='10.10.11.0/24',
-            kind=NetworkIpPool.NETWORK_KIND_INTERNET,
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
             description='test',
             ip_start='10.10.11.2',
             ip_end='10.10.11.254',
@@ -212,7 +212,7 @@ class FetchSubscriberDynamicLeaseTestCase(TestCase):
     def test_dynamic_or_static(self):
         ippool_stat = NetworkIpPool.objects.create(
             network='10.11.13.0/24',
-            kind=NetworkIpPool.NETWORK_KIND_INTERNET,
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
             description='test',
             ip_start='10.11.13.2',
             ip_end='10.11.13.254',
