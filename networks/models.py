@@ -15,7 +15,8 @@ from customers.models.customer import Customer
 from djing2 import ping as icmp_ping
 from djing2.lib import macbin2str, safe_int
 from groupapp.models import Group
-from networks.exceptions import DhcpRequestError
+from .exceptions import DhcpRequestError
+from .tasks import send_signal_dhcp2gateway_add_subscriber_task
 
 DHCP_DEFAULT_LEASE_TIME = getattr(settings, 'DHCP_DEFAULT_LEASE_TIME', 86400)
 
@@ -252,21 +253,32 @@ class CustomerIpLeaseModel(models.Model):
             with connection.cursor() as cur:
                 if pool_tag is None:
                     cur.execute(
-                        "SELECT * from fetch_subscriber_lease(%s::macaddr, %s::macaddr, %s::smallint, %s::boolean, null)",
+                        "SELECT * from fetch_subscriber_lease"
+                        "(%s::macaddr, %s::macaddr, %s::smallint, %s::boolean, null)",
                         (customer_mac, device_mac, device_port, is_dynamic))
                 else:
                     cur.execute(
-                        "SELECT * from fetch_subscriber_lease(%s::macaddr, %s::macaddr, %s::smallint, %s::boolean, %s)",
+                        "SELECT * from fetch_subscriber_lease"
+                        "(%s::macaddr, %s::macaddr, %s::smallint, %s::boolean, %s)",
                         (customer_mac, device_mac, device_port, is_dynamic, pool_tag[:32]))
                 res = cur.fetchone()
-            v_id, v_ip_address, v_pool_id, v_lease_time, v_mac_address, v_customer_id, v_is_dynamic = res
-            if v_id is None:
-                return None
-            return CustomerIpLeaseModel(
-                pk=v_id, ip_address=v_ip_address, pool_id=v_pool_id,
-                lease_time=v_lease_time, customer_id=v_customer_id,
-                mac_address=v_mac_address, is_dynamic=v_is_dynamic
-            )
+            if len(res) == 8:
+                v_id, v_ip_address, v_pool_id, v_lease_time, v_mac_address, v_customer_id, v_is_dynamic, is_assigned = res
+                if v_id is None:
+                    return None
+                if is_assigned:
+                    # New lease, makes signal for gateway
+                    send_signal_dhcp2gateway_add_subscriber_task(v_id, v_ip_address, v_pool_id, v_lease_time,
+                                                                 v_mac_address,
+                                                                 v_customer_id, v_is_dynamic, is_assigned)
+                return CustomerIpLeaseModel(
+                    pk=v_id, ip_address=v_ip_address, pool_id=v_pool_id,
+                    lease_time=v_lease_time, customer_id=v_customer_id,
+                    mac_address=v_mac_address, is_dynamic=v_is_dynamic
+                )
+            else:
+                raise DhcpRequestError('8 results expected from sql procedure'
+                                       ' "fetch_subscriber_lease", got %d' % len(res))
         except InternalError as err:
             raise DhcpRequestError(err)
 
@@ -276,16 +288,14 @@ class CustomerIpLeaseModel(models.Model):
             cur.execute("SELECT * FROM find_customer_by_device_credentials(%s::macaddr, %s::smallint)",
                         (device_mac, device_port))
             res = cur.fetchone()
-        return res[0]
+        return res[0] if len(res) > 0 else None
 
     @staticmethod
     def get_service_permit_by_ip(ip_addr: str) -> bool:
         with connection.cursor() as cur:
             cur.execute("select * from find_service_permit(%s::inet)", [ip_addr])
             res = cur.fetchone()
-            if len(res) > 0:
-                res = res[0]
-        return res
+        return res[0] if len(res) > 0 else None
 
     def ping_icmp(self, num_count=10) -> bool:
         host_ip = str(self.ip_address)
