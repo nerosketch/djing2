@@ -16,7 +16,7 @@ CREATE TYPE FetchSubscriberLeaseReturnType AS (
 -- If v_is_dynamic is False then v_mac_addr(users mac) is
 -- ignored during the search by leases
 --
-DROP FUNCTION IF EXISTS fetch_subscriber_lease;
+DROP FUNCTION IF EXISTS fetch_subscriber_lease(macaddr,macaddr,smallint,boolean,character varying);
 CREATE OR REPLACE FUNCTION fetch_subscriber_lease(v_mac_addr macaddr,
                                                   v_dev_mac macaddr,
                                                   v_dev_port smallint,
