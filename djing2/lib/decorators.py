@@ -22,13 +22,11 @@ def hash_auth_view(fn):
     @wraps(fn)
     def wrapped(request, *args, **kwargs):
         api_auth_secret = getattr(settings, 'API_AUTH_SECRET')
-        sign = request.GET.get('sign')
+        sign = request.headers.get('Api-Auth-Secret')
         if sign is None or sign == '':
             return HttpResponseForbidden('Access Denied')
 
-        # Transmittent get list without sign
         get_values = request.GET.copy()
-        del get_values['sign']
         values_list = [l for l in get_values.values() if l]
         values_list.sort()
         values_list.append(api_auth_secret)
