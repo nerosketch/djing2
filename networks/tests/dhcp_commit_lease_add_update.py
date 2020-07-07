@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.test.utils import override_settings
 
 from customers.models import Customer
 from networks.models import NetworkIpPool, NetworkIpPoolKind
@@ -40,13 +41,20 @@ class DhcpCommitLeaseAddUpdateTestCase(TestCase):
         )
         self.ippool.groups.add(self.group)
 
-    def _make_dhcp_event_request(self, client_ip: str, client_mac: str, switch_mac: str, switch_port: int, cmd: str,
-                                 status_code: int = 200):
+    def _make_dhcp_event_request(self, client_ip: str, client_mac: str, switch_mac: str,
+                                 switch_port: int, cmd: str, status_code: int = 200):
         r = self.client.post('/api/networks/dhcp_lever/', data={
             'client_ip': client_ip,
             'client_mac': client_mac,
             'switch_mac': switch_mac,
             'switch_port': switch_port,
             'cmd': cmd
+        }, headers={
+            'Api-Auth-Secret': 'sdfsdf'
         })
-        self.assertEqual(r.status_code, status_code, msg=r.data)
+        #TODO: Pass headers into post request
+        self.assertEqual(r.status_code, status_code)
+
+    @override_settings(API_AUTH_SECRET="sdfsdf")
+    def test_ok(self):
+        self._make_dhcp_event_request('10.11.12.55', '12:13:14:15:16:17', '12:13:14:15:16:18', 0, 'commit')
