@@ -296,6 +296,25 @@ class CustomerIpLeaseModel(models.Model):
         host_ip = str(self.ip_address)
         return icmp_ping(ip_addr=host_ip, count=num_count)
 
+    @staticmethod
+    def dhcp_commit_lease_add_update(client_ip: str, mac_addr: str,
+                                     dev_mac: str,
+                                     dev_port: int) -> str:
+        """
+        When external system assign ip address for customer
+        then it ip address may be store to billing via this method.
+        :param client_ip: client ip address
+        :param mac_addr: client mac address
+        :param dev_mac: device mac address
+        :param dev_port: device port number
+        :return: str about result
+        """
+        with connection.cursor() as cur:
+            cur.execute("SELECT * FROM dhcp_commit_lease_add_update(%s::inet, %s::macaddr, %s::macaddr, %s::smallint)",
+                        (client_ip, mac_addr, dev_mac, str(dev_port)))
+            res = cur.fetchone()
+        return "Assigned %s" % (res[1] or 'null')
+
     class Meta:
         db_table = 'networks_ip_leases'
         verbose_name = _('IP lease')

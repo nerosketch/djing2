@@ -16,4 +16,5 @@ router.register('vlan', generic.VlanIfModelViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('dhcp_lever/', generic.DhcpLever.as_view()),
 ]
