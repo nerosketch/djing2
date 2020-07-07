@@ -32,7 +32,6 @@ router.register('', admin_side.CustomerModelViewSet)
 urlpatterns = [
     path('attach_group_service/', admin_side.AttachServicesToGroups.as_view()),
     path('groups/', admin_side.CustomersGroupsListAPIView.as_view()),
-    path('dhcp_lever/', admin_side.DhcpLever.as_view()),
 
     path('', include(router.urls)),
 ]
