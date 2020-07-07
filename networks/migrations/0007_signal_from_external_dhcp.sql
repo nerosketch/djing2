@@ -1,11 +1,12 @@
 --
 -- dhcp commit event
 --
+DROP FUNCTION IF EXISTS dhcp_commit_lease_add_update;
 CREATE OR REPLACE FUNCTION dhcp_commit_lease_add_update(v_client_ip inet,
                                                         v_mac_addr macaddr,
                                                         v_dev_mac macaddr,
                                                         v_dev_port smallint)
-  RETURNS RECORD
+  RETURNS networks_ip_leases
   LANGUAGE plpgsql
 AS
 $$
@@ -55,4 +56,4 @@ BEGIN
 
   return t_lease;
 END;
-$$
+$$;
