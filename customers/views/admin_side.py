@@ -15,18 +15,14 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from agent.commands.dhcp import dhcp_commit, dhcp_expiry, dhcp_release
 from customers import models
 from customers import serializers
-# from customers.tasks import customer_gw_command, customer_gw_remove
 from customers.models import Customer
 from customers.views.view_decorators import catch_customers_errs
 from djing2.exceptions import UniqueConstraintIntegrityError
-from djing2.lib import safe_int, LogicError, DuplicateEntry, safe_float
-from djing2.lib.mixins import SecureApiView
+from djing2.lib import safe_int, safe_float
+
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
-# from gateways.models import Gateway
-# from gateways.nas_managers import GatewayNetworkError, GatewayFailedResult
 from groupapp.models import Group
 from services.models import Service, OneShotPay
 from services.serializers import ServiceModelSerializer
@@ -416,57 +412,3 @@ class CustomerAttachmentViewSet(DjingModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-
-
-class DhcpLever(SecureApiView):
-    #
-    # Api view for dhcp event
-    #
-    http_method_names = ('get',)
-
-    def get(self, request, format=None):
-        del format
-        data = request.query_params.copy()
-        try:
-            r = self.on_dhcp_event(data)
-            if r is not None:
-                if issubclass(r.__class__, Exception):
-                    return Response({'error': str(r)})
-                return Response({'text': r})
-            return Response({'status': 'ok'})
-        except IntegrityError as e:
-            return Response({
-                'status': str(e).replace('\n', ' ')
-            })
-
-    @staticmethod
-    def on_dhcp_event(data: dict):
-        """
-        :param data = {
-            'client_ip': ip_address('127.0.0.1'),
-            'client_mac': 'aa:bb:cc:dd:ee:ff',
-            'switch_mac': 'aa:bb:cc:dd:ee:ff',
-            'switch_port': 3,
-            'cmd': 'commit'
-        }"""
-        try:
-            act = data.get('cmd')
-            if act is None:
-                return '"cmd" parameter is missing'
-            client_ip = data.get('client_ip')
-            if client_ip is None:
-                return '"client_ip" parameter is missing'
-            if act == 'commit':
-                return dhcp_commit(
-                    client_ip, data.get('client_mac'),
-                    data.get('switch_mac'), data.get('switch_port')
-                )
-            elif act == 'expiry':
-                return dhcp_expiry(client_ip)
-            elif act == 'release':
-                return dhcp_release(client_ip)
-            else:
-                return '"cmd" parameter is invalid: %s' % act
-        except (LogicError, DuplicateEntry) as e:
-            print('%s:' % e.__class__.__name__, e)
-            return str(e)
