@@ -1,7 +1,7 @@
 --
 -- dhcp commit event
 --
-DROP FUNCTION IF EXISTS dhcp_commit_lease_add_update;
+DROP FUNCTION IF EXISTS dhcp_commit_lease_add_update(inet, macaddr, macaddr, smallint);
 CREATE OR REPLACE FUNCTION dhcp_commit_lease_add_update(v_client_ip inet,
                                                         v_mac_addr macaddr,
                                                         v_dev_mac macaddr,
@@ -11,9 +11,9 @@ CREATE OR REPLACE FUNCTION dhcp_commit_lease_add_update(v_client_ip inet,
 AS
 $$
 DECLARE
-  t_customer record;
-  t_pool     record;
-  t_lease    record;
+  t_customer customers;
+  t_pool     networks_ip_pool;
+  t_lease    networks_ip_leases;
 BEGIN
   -- find customer by device
   -- if customer is dynamic then check
@@ -31,7 +31,7 @@ BEGIN
   end if;
 
   -- Find customer leases
-  select nil.id
+  perform nil.id
   from networks_ip_leases nil
   where nil.customer_id = t_customer.baseaccount_ptr_id and
         nil.ip_address = v_client_ip and
@@ -46,6 +46,10 @@ BEGIN
   -- Create lease for customer.
   --  Find pool for new lease.
   select id into t_pool from networks_ip_pool where v_client_ip << network limit 1;
+  if not FOUND then
+    raise exception 'client_ip in unknown subnet';
+    return null;
+  end if;
 
   --  Insert new lease
   insert into networks_ip_leases (ip_address, pool_id, mac_address, customer_id, is_dynamic)
