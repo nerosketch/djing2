@@ -309,11 +309,15 @@ class CustomerIpLeaseModel(models.Model):
         :param dev_port: device port number
         :return: str about result
         """
-        with connection.cursor() as cur:
-            cur.execute("SELECT * FROM dhcp_commit_lease_add_update(%s::inet, %s::macaddr, %s::macaddr, %s::smallint)",
-                        (client_ip, mac_addr, dev_mac, str(dev_port)))
-            res = cur.fetchone()
-        return "Assigned %s" % (res[1] or 'null')
+        try:
+            with connection.cursor() as cur:
+                cur.execute("SELECT * FROM dhcp_commit_lease_add_update"
+                            "(%s::inet, %s::macaddr, %s::macaddr, %s::smallint)",
+                            (client_ip, mac_addr, dev_mac, str(dev_port)))
+                res = cur.fetchone()
+            return "Assigned %s" % (res[1] or 'null')
+        except InternalError as err:
+            raise DhcpRequestError(str(err))
 
     class Meta:
         db_table = 'networks_ip_leases'
