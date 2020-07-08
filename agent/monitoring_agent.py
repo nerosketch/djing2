@@ -3,7 +3,7 @@ import sys
 import re
 import os
 from hashlib import sha256
-from typing import Iterable, Union, AnyStr
+from typing import Union, AnyStr
 
 import requests
 
@@ -27,12 +27,6 @@ def calc_hash(data):
     return sha256(result_data).hexdigest()
 
 
-def check_sign(get_list: Iterable, sign_str: str):
-    hashed = '_'.join(get_list)
-    my_sign = calc_hash(hashed)
-    return sign_str == my_sign
-
-
 def validate(regexp: Union[bytes, str], string: AnyStr):
     if not re.match(regexp, string):
         raise ValueError
@@ -50,8 +44,9 @@ def send_request(ip_addr, stat, sign_hash):
         os.path.join(SERVER_DOMAIN, 'dev', 'on_device_event'),
         params={
             'dev_ip': ip_addr,
-            'status': stat,
-            'sign': sign_hash
+            'status': stat
+        }, headers={
+            'Api-Auth-Sign': sign_hash
         })
     if r.status_code == 200:
         print(r.json())

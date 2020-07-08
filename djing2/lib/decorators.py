@@ -1,5 +1,4 @@
 from functools import wraps
-from django.conf import settings
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect
 
@@ -21,16 +20,11 @@ def only_admins(fn):
 def hash_auth_view(fn):
     @wraps(fn)
     def wrapped(request, *args, **kwargs):
-        api_auth_secret = getattr(settings, 'API_AUTH_SECRET')
-        sign = request.headers.get('Api-Auth-Secret')
-        if sign is None or sign == '':
-            return HttpResponseForbidden('Access Denied')
-
+        sign = request.META.get('Api-Auth-Sign')
+        if not sign:
+            return HttpResponseForbidden('Access Denied!')
         get_values = request.GET.copy()
-        values_list = [l for l in get_values.values() if l]
-        values_list.sort()
-        values_list.append(api_auth_secret)
-        if check_sign(values_list, sign):
+        if check_sign(get_values, sign):
             return fn(request, *args, **kwargs)
         else:
             return HttpResponseForbidden('Access Denied')
