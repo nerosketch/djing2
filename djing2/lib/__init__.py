@@ -6,6 +6,8 @@ from hashlib import sha256
 from json import JSONEncoder
 from typing import Any, Union
 
+from django.conf import settings
+
 
 def safe_float(fl: Any) -> float:
     try:
@@ -89,18 +91,23 @@ class Singleton(type):
 # Function for hash auth
 #
 
-def calc_hash(data):
-    if isinstance(data, str):
-        result_data = data.encode('utf-8')
+def calc_hash(get_values: dict):
+    api_auth_secret = getattr(settings, 'API_AUTH_SECRET')
+    get_list = [l for l in get_values.values() if l]
+    get_list.sort()
+    get_list.append(api_auth_secret)
+    hashed = '_'.join(get_list)
+
+    if isinstance(hashed, str):
+        result_data = hashed.encode('utf-8')
     else:
-        result_data = bytes(data)
+        result_data = bytes(hashed)
     return sha256(result_data).hexdigest()
 
 
-def check_sign(get_list, sign):
-    hashed = '_'.join(get_list)
-    my_sign = calc_hash(hashed)
-    return sign == my_sign
+def check_sign(get_values: dict, external_sign):
+    my_sign = calc_hash(get_values)
+    return external_sign == my_sign
 
 
 class ProcessLocked(OSError):
