@@ -1,12 +1,13 @@
-from django.test import TestCase
 from django.test.utils import override_settings
 
 from customers.models import Customer
+from customers.tests.customer import CustomAPITestCase
+from djing2.lib import calc_hash
 from networks.models import NetworkIpPool, NetworkIpPoolKind
 from customers.tests.get_user_credentials_by_ip import BaseServiceTestCase
 
 
-class DhcpCommitLeaseAddUpdateTestCase(TestCase):
+class DhcpCommitLeaseAddUpdateTestCase(CustomAPITestCase):
     def setUp(self):
         # Initialize customers instances
         BaseServiceTestCase.setUp(self)
@@ -43,15 +44,18 @@ class DhcpCommitLeaseAddUpdateTestCase(TestCase):
 
     def _make_dhcp_event_request(self, client_ip: str, client_mac: str, switch_mac: str,
                                  switch_port: int, cmd: str, status_code: int = 200):
-        r = self.client.post('/api/networks/dhcp_lever/', data={
+        request_data = {
             'client_ip': client_ip,
             'client_mac': client_mac,
             'switch_mac': switch_mac,
-            'switch_port': switch_port,
+            'switch_port': str(switch_port),
             'cmd': cmd
-        }, headers={
-            'Api-Auth-Secret': 'sdfsdf'
-        })
+        }
+        hdrs = {
+            'Api-Auth-Sign': calc_hash(request_data),
+            'content_type': 'application/json'
+        }
+        r = self.client.get('/api/networks/dhcp_lever/', data=request_data, **hdrs)
         #TODO: Pass headers into post request
         self.assertEqual(r.status_code, status_code)
 
