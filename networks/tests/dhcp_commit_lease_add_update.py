@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from django.test.utils import override_settings
 
 from customers.models import Customer
@@ -44,21 +46,20 @@ class DhcpCommitLeaseAddUpdateTestCase(CustomAPITestCase):
 
     def _make_dhcp_event_request(self, client_ip: str, client_mac: str, switch_mac: str,
                                  switch_port: int, cmd: str, status_code: int = 200):
-        request_data = {
+        request_data = OrderedDict({
             'client_ip': client_ip,
             'client_mac': client_mac,
             'switch_mac': switch_mac,
             'switch_port': str(switch_port),
             'cmd': cmd
-        }
+        })
         hdrs = {
             'Api-Auth-Sign': calc_hash(request_data),
             'content_type': 'application/json'
         }
         r = self.client.get('/api/networks/dhcp_lever/', data=request_data, **hdrs)
-        #TODO: Pass headers into post request
         self.assertEqual(r.status_code, status_code)
 
     @override_settings(API_AUTH_SECRET="sdfsdf")
     def test_ok(self):
-        self._make_dhcp_event_request('10.11.12.55', '12:13:14:15:16:17', '12:13:14:15:16:18', 0, 'commit')
+        self._make_dhcp_event_request('10.11.12.55', '12:13:14:15:16:15', '12:13:14:15:16:17', 2, 'commit')

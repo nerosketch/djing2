@@ -91,7 +91,7 @@ class Singleton(type):
 # Function for hash auth
 #
 
-def calc_hash(get_values: dict):
+def calc_hash(get_values: dict) -> str:
     api_auth_secret = getattr(settings, 'API_AUTH_SECRET')
     get_list = [l for l in get_values.values() if l]
     get_list.sort()
@@ -105,7 +105,7 @@ def calc_hash(get_values: dict):
     return sha256(result_data).hexdigest()
 
 
-def check_sign(get_values: dict, external_sign):
+def check_sign(get_values: dict, external_sign) -> bool:
     my_sign = calc_hash(get_values)
     return external_sign == my_sign
 
