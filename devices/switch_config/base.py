@@ -406,6 +406,10 @@ class BasePON_ONU_Interface(BaseDeviceInterface):
     def mac(self) -> str:
         return macbin2str(self._mac)
 
+    @abstractmethod
+    def get_fiber_str(self):
+        return '¯ \ _ (ツ) _ / ¯'
+
 
 def port_template(fn):
     def _wrapper(*args, **kwargs):
