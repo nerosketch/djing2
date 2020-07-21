@@ -155,3 +155,4 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             return 'gpon-onu_1/%d/%d:%s' % (
                 rack_num, fiber_num, onu_port_num
             )
+        return '¯ \ _ (ツ) _ / ¯'
