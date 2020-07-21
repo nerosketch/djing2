@@ -204,6 +204,13 @@ class Device(models.Model):
             return True, _('Fixed')
         return False, err_text
 
+    def get_if_name(self):
+        mng = self.get_manager_object_olt()
+        if hasattr(mng, 'get_fiber_str'):
+            return mng.get_fiber_str()
+        return '¯ \ _ (ツ) _ / ¯'
+
+
     #############################
     #  Remote access(i.e. snmp)
     #############################

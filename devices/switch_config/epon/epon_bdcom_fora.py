@@ -158,3 +158,6 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
 
     def port_enable(self, port_num: int):
         pass
+
+    def get_fiber_str(self):
+        return '¯ \ _ (ツ) _ / ¯'
