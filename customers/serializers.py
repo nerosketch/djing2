@@ -101,6 +101,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     balance = serializers.DecimalField(
         max_digits=12, decimal_places=2, coerce_to_string=False, required=False
     )
+    create_date = serializers.CharField(read_only=True)
 
     def create(self, validated_data):
         validated_data.update({
@@ -131,7 +132,8 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             'house', 'is_active', 'gateway', 'gateway_title', 'auto_renewal_service',
             'device', 'device_comment', 'dev_port', 'last_connected_service',
             'last_connected_service_title', 'current_service', 'service_title',
-            'service_id', 'is_dynamic_ip', 'full_name', 'password', 'raw_password'
+            'service_id', 'is_dynamic_ip', 'full_name', 'password', 'raw_password',
+            'create_date', 'birth_day'
         )
 
 
