@@ -8,12 +8,13 @@ from profiles.models import UserProfile, UserProfileLog
 class UserProfileSerializer(BaseCustomModelSerializer):
     full_name = serializers.CharField(source='get_full_name', read_only=True)
     password = serializers.CharField(write_only=True)
+    create_date = serializers.CharField(read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ('pk', 'username', 'fio', 'is_active', 'is_admin', 'telephone',
-                  'avatar', 'email', 'full_name', 'last_login', 'is_superuser',
-                  'password')
+        fields = ('pk', 'username', 'fio', 'birth_day', 'create_date', 'is_active',
+                  'is_admin', 'telephone', 'avatar', 'email', 'full_name',
+                  'last_login', 'is_superuser', 'password')
 
     def create(self, validated_data):
         return UserProfile.objects.create_superuser(
