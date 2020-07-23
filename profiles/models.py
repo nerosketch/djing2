@@ -63,7 +63,8 @@ class BaseAccount(AbstractBaseUser, PermissionsMixin):
         validators=(latinValidator,)
     )
     fio = models.CharField(_('fio'), max_length=256)
-    birth_day = models.DateField(_('birth day'), auto_now_add=True)
+    birth_day = models.DateField(_('birth day'), null=True, blank=True, default=None)
+    create_date = models.DateField(_('Create date'), auto_now_add=True)
     is_active = models.BooleanField(_('Is active'), default=True)
     is_admin = models.BooleanField(default=False)
     telephone = models.CharField(
