@@ -40,6 +40,8 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             member_ports, vid = self.get_next_keyval('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vid)
             if not member_ports:
                 break
+            if isinstance(member_ports, str):
+                member_ports = member_ports.encode()
             vid = safe_int(vid)
             if vid in (0, 1):
                 break
