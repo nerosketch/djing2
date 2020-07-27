@@ -324,3 +324,5 @@ class CustomerIpLeaseModel(models.Model):
         verbose_name = _('IP lease')
         verbose_name_plural = _('IP leases')
         unique_together = ('ip_address', 'mac_address', 'pool', 'customer')
+        ordering = ('id',)
+
