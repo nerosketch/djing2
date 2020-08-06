@@ -5,7 +5,7 @@ from netaddr import EUI
 from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import safe_int, RuTimedelta
-from ..base import BasePortInterface, Vlans, Vlan, MacItem, Macs
+from ..base import BasePortInterface, Vlans, Vlan, MacItem, Macs, DeviceImplementationError
 from ..utils import plain_ip_device_mon_template
 from ..dlink import DlinkDGS1100_10ME
 
@@ -19,7 +19,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
     is_use_device_port = False
     has_attachable_to_customer = True
     tech_code = 'eltex_sw'
-    ports_len = 26
+    ports_len = 24
 
     def get_ports(self) -> tuple:
         def build_port(s, i: int, n: int):
@@ -34,7 +34,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 speed=int(speed or 0)
             )
 
-        return tuple(build_port(self, i, n) for i, n in enumerate(range(49, self.ports_len+50), 1))
+        return tuple(build_port(self, i, n) for i, n in enumerate(range(49, self.ports_len+49), 1))
 
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.5.0')
@@ -87,12 +87,12 @@ class EltexSwitch(DlinkDGS1100_10ME):
             is_native = next((v == 1 for i, v in enumerate(vlan_untagged_egress, 1) if i >= port), False)
             return (Vlan(
                 vid=vid,
-                title=None,
+                title=self._get_vid_name(vid=vid),
                 native=is_native
             ) for vid in self.parse_eltex_vlan_map(vlan_egress_bitmap, table=table_no))
 
         if port > self.ports_len or port < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+            raise DeviceImplementationError('Port must be in range 1-%d' % self.ports_len)
         port = port + 48
 
         # rldot1qPortVlanStaticEgressList1to1024
@@ -148,7 +148,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
 
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+            raise DeviceImplementationError('Port must be in range 1-%d' % self.ports_len)
         try:
             ports_map = {int(i): n+1 for n, i in enumerate(self.get_list('.1.3.6.1.2.1.2.2.1.1')) if int(i) > 0}
         except ValueError:
@@ -209,7 +209,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         res = {}
         for vid in vids:
             if vid > 4095 or vid < 1:
-                raise ValueError('VID must be in range 1-%d' % 4095)
+                raise DeviceImplementationError('VID must be in range 1-%d' % 4095)
             table_no = int(math.floor(vid / 1024))
             vid -= int(math.floor(vid / 1024)) * 1024
             if res.get(table_no) is None:
@@ -241,13 +241,13 @@ class EltexSwitch(DlinkDGS1100_10ME):
         """
         assert isinstance(bitmap, bytes)
         if table < 0 or table > 3:
-            raise ValueError('table must be in range 1-3')
+            raise DeviceImplementationError('table must be in range 1-3')
         r = (bin_num == '1' for octet_num in bitmap for bin_num in f'{octet_num:08b}')
         return ((numer + 1) + (table * 1024) for numer, bit in enumerate(r) if bit)
 
     def _set_vlans_on_port(self, vlan_list: Vlans, port_num: int):
         if port_num > self.ports_len or port_num < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+            raise DeviceImplementationError('Port must be in range 1-%d' % self.ports_len)
         port_num = port_num + 48
         vids = (v.vid for v in vlan_list)
         bit_maps = self.make_eltex_map_vlan(vids=vids)

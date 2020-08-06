@@ -57,7 +57,7 @@ class BDCOM_P3310C(BasePONInterface):
 
         try:
             for fiber_onu_num, fiber_id in fiber_onu_id_nums:
-                for onu_num in fiber_onu_num.split(','):
+                for onu_num in fiber_onu_num.split(b','):
                     if not onu_num:
                         continue
                     onu_num = safe_int(onu_num)
