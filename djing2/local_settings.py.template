@@ -51,3 +51,5 @@ VIBER_BOT_PUBLIC_URL = 'https://your_domain.name'
 # Encrypted fields
 FIELD_ENCRYPTION_KEY = 'Your SECRET_KEY'
 
+# arping command
+ARPING_COMMAND = '/usr/sbin/arping'
