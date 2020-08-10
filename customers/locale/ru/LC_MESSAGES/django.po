@@ -295,13 +295,6 @@ msgstr "Пользователи не найдены"
 msgid "Ip not passed"
 msgstr "Ip адрес не передан"
 
-#: customers/views/admin_side.py:206
-msgid "no ping"
-msgstr "не пингуется"
-
-msgid "Ping ok"
-msgstr "Пингуется OK"
-
 #: customers/views/admin_side.py:274
 msgid "fill account through admin side"
 msgstr "Пополнение счёта сотрудником"

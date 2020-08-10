@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-18 00:39+0300\n"
+"POT-Creation-Date: 2020-08-10 13:42+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,124 +17,215 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: networks/models.py:14 networks/models.py:59
+#: models.py:25
 msgid "Vlan title"
 msgstr "Название vlan"
 
-#: networks/models.py:15
+#: models.py:26
 msgid "VID"
 msgstr ""
 
-#: networks/models.py:16
+#: models.py:27
 msgid "Vid could not be less then 2"
 msgstr "VID не может быть меньше чем 2"
 
-#: networks/models.py:17
+#: models.py:28
 msgid "Vid could not be more than 4094"
 msgstr "VID не может быть больше чем 4094"
 
-#: networks/models.py:19
+#: models.py:30
 msgid "Is management"
 msgstr "Управляемый"
 
-#: networks/models.py:26
+#: models.py:38
 msgid "Vlan"
 msgstr ""
 
-#: networks/models.py:27
-#, fuzzy
-#| msgid "Ip leases list"
+#: models.py:39
 msgid "Vlan list"
-msgstr "Список аренд ip"
+msgstr "Список vlan"
 
-#: networks/models.py:34
-msgid "IP network"
-msgstr "IP подсеть"
-
-#: networks/models.py:35
-msgid "Ip address of network. For example: 192.168.1.0 or fde8:6789:1234:1::"
-msgstr "IP адрес подсети. На пример: 192.168.1.0 or fde8:6789:1234:1::"
-
-#: networks/models.py:40
+#: models.py:43
 msgid "Not defined"
 msgstr "Не определённая"
 
-#: networks/models.py:41
+#: models.py:44
 msgid "Internet"
 msgstr "Интернет"
 
-#: networks/models.py:42
+#: models.py:45
 msgid "Guest"
 msgstr "Гостевая"
 
-#: networks/models.py:43
+#: models.py:46
 msgid "Trusted"
 msgstr "Доверенная"
 
-#: networks/models.py:44
+#: models.py:47
 msgid "Devices"
 msgstr "Устройства"
 
-#: networks/models.py:45
+#: models.py:48
 msgid "Admin"
 msgstr "Административная"
 
-#: networks/models.py:48
+#: models.py:53
+msgid "Ip network address"
+msgstr "IP адрес сети"
+
+#: models.py:54
+msgid "Ip address of network. For example: 192.168.1.0 or fde8:6789:1234:1::"
+msgstr "IP адрес подсети. На пример: 192.168.1.0 or fde8:6789:1234:1::"
+
+#: models.py:59
 msgid "Kind of network"
 msgstr "Тип сети"
 
-#: networks/models.py:51
+#: models.py:63
 msgid "Description"
 msgstr "Описание"
 
-#: networks/models.py:52
-msgid "Groups"
+#: models.py:65
+msgid "Member groups"
 msgstr "Группы"
 
-#: networks/models.py:55
+#: models.py:71
 msgid "Start work ip range"
 msgstr "Начальный ip из диапазона"
 
-#: networks/models.py:56
+#: models.py:72
 msgid "End work ip range"
 msgstr "Конечный ip из диапазона"
 
-#: networks/models.py:71
+#: models.py:75
+msgid "Vlan interface"
+msgstr "Интерфейс vlan"
+
+#: models.py:80
+msgid "Gateway ip address"
+msgstr "IP адрес шлюза"
+
+#: models.py:82
+msgid "Is dynamic"
+msgstr "Динамичейский"
+
+#: models.py:85
+msgid "Tag"
+msgstr ""
+
+#: models.py:96
 msgid "Network is invalid"
 msgstr "Подсеть не правильная"
 
-#: networks/models.py:78
+#: models.py:111
 msgid "Ip start is invalid"
 msgstr "Начальный ip из диапазона не верный"
 
-#: networks/models.py:85
+#: models.py:118
 msgid "Start ip must be in subnet of specified network"
 msgstr "Начальный ip должен быть в указанной подсети"
 
-#: networks/models.py:90
+#: models.py:123
 msgid "Ip end is invalid"
 msgstr "Конечный ip из диапазона не верный"
 
-#: networks/models.py:97
+#: models.py:130
 msgid "End ip must be in subnet of specified network"
 msgstr "Конечный ip должен быть в указанной подсети"
 
-#: networks/models.py:112
+#: models.py:137
+msgid "Gateway ip must be in subnet of specified network"
+msgstr "Шлюз должен принадлежать текущей подсети"
+
+#: models.py:142
+msgid "Gateway must not be in the range of allowed ips"
+msgstr "Шлюз не должен быть в диапазоне доступных ip"
+
+#: models.py:157
 #, python-format
 msgid "Network is overlaps with %(other_network)s"
 msgstr "Подсеть пересекается с сетью '%(other_network)s'"
 
-#: networks/models.py:153
-msgid "Network"
+#: models.py:196
+msgid "Network ip pool"
 msgstr "Подсеть"
 
-#: networks/models.py:154
-msgid "Networks"
+#: models.py:197
+msgid "Network ip pools"
 msgstr "Подсети"
 
-#: networks/serializers.py:16
+#: models.py:228
+msgid "Ip address"
+msgstr "IP адрес"
+
+#: models.py:230
+msgid "Lease time"
+msgstr "Время аредны"
+
+#: models.py:232
+msgid "Mac address"
+msgstr "MAC адрес"
+
+#: models.py:233
+msgid "Is synamic"
+msgstr "Динамический"
+
+#: models.py:325
+msgid "IP lease"
+msgstr "IP аренда"
+
+#: models.py:326
+msgid "IP leases"
+msgstr "IP аренды"
+
+#: serializers/net.py:18
 msgid "Network can not be empty"
 msgstr "Сеть не может быть пустой"
+
+#: serializers/radius.py:7
+msgid "remote id"
+msgstr ""
+
+#: serializers/radius.py:8
+msgid "circuit id"
+msgstr ""
+
+#: serializers/radius.py:12
+msgid "Option82"
+msgstr ""
+
+#: serializers/radius.py:13
+msgid "Client mac address"
+msgstr "MAC адрес клиента"
+
+#: serializers/radius.py:14
+msgid "Location pool tag"
+msgstr ""
+
+#: views/generic.py:64
+msgid "Ping ok"
+msgstr "Пингуется OK"
+
+#: views/generic.py:70
+msgid "arp ping ok"
+msgstr "Пингуется по ARP"
+
+#: views/generic.py:72
+msgid "no ping"
+msgstr "не пингуется"
+
+#: views/generic.py:75
+msgid "Process locked by another process"
+msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
+
+#~ msgid "IP network"
+#~ msgstr "IP подсеть"
+
+#~ msgid "Groups"
+#~ msgstr "Группы"
+
+#~ msgid "Network"
+#~ msgstr "Подсеть"
 
 #~ msgid "IP address with prefix length, or subnet for ipv4"
 #~ msgstr "IP адрес с длиной префикса, или подсеть IPv4)"
@@ -166,23 +257,11 @@ msgstr "Сеть не может быть пустой"
 #~ msgid "Ip that you have passed is greater than allowed network range"
 #~ msgstr "IP который вы указали больше чем разрешённый диапазон ip адресов"
 
-#~ msgid "Ip address"
-#~ msgstr "IP адрес"
-
-#~ msgid "Is dynamic"
-#~ msgstr "Динамичейский"
-
 #~ msgid "Possible networks"
 #~ msgstr "Доступные подсети"
 
 #~ msgid "Parent network"
 #~ msgstr "Родительская подсеть"
-
-#~ msgid "Mac address"
-#~ msgstr "MAC адрес"
-
-#~ msgid "Lease time"
-#~ msgstr "Время аредны"
 
 #~ msgid "Is active"
 #~ msgstr "Активный"
@@ -282,9 +361,3 @@ msgstr "Сеть не может быть пустой"
 
 #~ msgid "Successfully saved"
 #~ msgstr "Успешно сохранено"
-
-msgid "Gateway must not be in the range of allowed ips"
-msgstr "Шлюз не должен быть в диапазоне доступных ip"
-
-msgid "Gateway ip must be in subnet of specified network"
-msgstr "Шлюз должен принадлежать текущей подсети"
