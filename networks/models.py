@@ -13,7 +13,7 @@ from netfields import MACAddressField, CidrAddressField
 
 from customers.models.customer import Customer
 from djing2 import ping as icmp_ping
-from djing2.lib import macbin2str, safe_int
+from djing2.lib import macbin2str, safe_int, process_lock
 from groupapp.models import Group
 from .events import on_new_lease_assigned
 from .exceptions import DhcpRequestError
@@ -292,9 +292,10 @@ class CustomerIpLeaseModel(models.Model):
             res = cur.fetchone()
         return res[0] if len(res) > 0 else None
 
-    def ping_icmp(self, num_count=10) -> bool:
+    @process_lock
+    def ping_icmp(self, num_count=10, arp=False) -> bool:
         host_ip = str(self.ip_address)
-        return icmp_ping(ip_addr=host_ip, count=num_count)
+        return icmp_ping(ip_addr=host_ip, count=num_count, arp=arp)
 
     @staticmethod
     def dhcp_commit_lease_add_update(client_ip: str, mac_addr: str,

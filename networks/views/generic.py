@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SecureApiView
-from djing2.lib import LogicError, DuplicateEntry
+from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
 from networks.serializers import (NetworkIpPoolModelSerializer,
                                   VlanIfModelSerializer,
@@ -61,7 +61,15 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
     @action(methods=('get',), detail=True)
     def ping_ip(self, request, pk=None):
         lease = self.get_object()
-        is_pinged = lease.ping_icmp()
+        try:
+            is_pinged = lease.ping_icmp()
+            if not is_pinged:
+                is_pinged = lease.ping_icmp(arp=True)
+        except ProcessLocked:
+            return Response({
+                'text': _('Process locked by another process'),
+                'status': False
+            })
         return Response({
             'text': _('Ping ok') if is_pinged else _('no ping'),
             'status': is_pinged
