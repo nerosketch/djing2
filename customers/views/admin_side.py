@@ -311,8 +311,8 @@ class CustomerModelViewSet(DjingModelViewSet):
 
 class CustomersGroupsListAPIView(DjingListAPIView):
     serializer_class = serializers.CustomerGroupSerializer
-    filter_backends = (OrderingFilter,)
-    ordering_fields = ('title', 'usercount')
+    #filter_backends = (OrderingFilter,)
+    #ordering_fields = ('title', 'usercount')
 
     def get_queryset(self):
         return get_objects_for_user(
