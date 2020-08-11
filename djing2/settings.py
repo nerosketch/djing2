@@ -31,9 +31,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = local_settings.SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = local_settings.DEBUG
+DEBUG = getattr(local_settings, 'DEBUG', True)
 
-ALLOWED_HOSTS = local_settings.ALLOWED_HOSTS
+ALLOWED_HOSTS = getattr(local_settings, 'ALLOWED_HOSTS', '*')
 
 ADMINS = getattr(local_settings, 'ADMINS', ())
 
@@ -106,7 +106,6 @@ TEMPLATES = [
 AUTHENTICATION_BACKENDS = (
     'djing2.lib.auth_backends.DjingAuthBackend',
     'djing2.lib.auth_backends.LocationAuthBackend',
-    'guardian.backends.ObjectPermissionBackend'
 )
 
 WSGI_APPLICATION = 'djing2.wsgi.application'
@@ -215,13 +214,16 @@ AUTH_USER_MODEL = 'profiles.BaseAccount'
 # LOGIN_REDIRECT_URL = reverse_lazy('acc_app:setup_info')
 # LOGOUT_URL = reverse_lazy('acc_app:logout')
 
-TELEPHONE_REGEXP = local_settings.TELEPHONE_REGEXP
+TELEPHONE_REGEXP = getattr(local_settings, 'TELEPHONE_REGEXP', r'^(\+[7893]\d{10,11})?$')
 
 # Secret word for auth to api views by hash
-API_AUTH_SECRET = local_settings.API_AUTH_SECRET
+API_AUTH_SECRET = getattr(local_settings, 'API_AUTH_SECRET', 'secret')
+
+# Allowed subnet for api
+API_AUTH_SUBNET = getattr(local_settings, 'API_AUTH_SUBNET', ('127.0.0.0/8', '10.0.0.0/8'))
 
 # Company name
-COMPANY_NAME = local_settings.COMPANY_NAME
+COMPANY_NAME = getattr(local_settings, 'COMPANY_NAME', 'Company Name')
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'djing2.lib.paginator.QueryPageNumberPagination',
@@ -260,12 +262,6 @@ FIELD_ENCRYPTION_KEY = getattr(
 
 DIAL_RECORDS_PATH = '/var/spool/asterisk/monitor/'
 DIAL_RECORDS_EXTENSION = 'wav'
-
-# Secret word for auth to api views by hash
-API_AUTH_SECRET = local_settings.API_AUTH_SECRET
-
-# Allowed subnet for api
-API_AUTH_SUBNET = local_settings.API_AUTH_SUBNET
 
 # DEBUG TOOLBAR
 if DEBUG:
