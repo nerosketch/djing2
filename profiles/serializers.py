@@ -30,7 +30,7 @@ class UserProfileSerializer(BaseCustomModelSerializer):
 
     def is_valid(self, raise_exception: bool = ...):
         forbidden_usernames = ('log', 'api-token-auth', 'api')
-        if self.initial_data['username'] in forbidden_usernames:
+        if hasattr(self.initial_data, 'username') and self.initial_data['username'] in forbidden_usernames:
             if raise_exception:
                 raise ValidationError({'username': ['Forbidden username']})
             return True
