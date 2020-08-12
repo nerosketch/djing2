@@ -50,7 +50,6 @@ INSTALLED_APPS = [
     'encrypted_model_fields',
     'django_filters',
     'corsheaders',
-    'guardian',
     'django_cleanup.apps.CleanupConfig',
     'groupapp',
     'profiles',
