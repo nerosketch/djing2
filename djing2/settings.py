@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'guardian',
     'django_cleanup.apps.CleanupConfig',
     'groupapp',
-    'profiles',
+    'profiles.apps.ProfilesConfig',
     'services.apps.ServicesConfig',
     'gateways.apps.GatewaysConfig',
     'devices.apps.DevicesConfig',
