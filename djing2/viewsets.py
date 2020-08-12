@@ -11,7 +11,7 @@ from profiles.models import BaseAccount
 from djing2.exceptions import UniqueConstraintIntegrityError
 
 
-class GuardianObjectPermissions(DjangoObjectPermissions):
+class CustomizedDjangoObjectPermissions(DjangoObjectPermissions):
     """
     Similar to `DjangoObjectPermissions`, but adding 'view' permissions.
     """
@@ -26,11 +26,8 @@ class GuardianObjectPermissions(DjangoObjectPermissions):
     }
 
 
-_admin_permission_classes = (IsAuthenticated, IsAdminUser, GuardianObjectPermissions)
-
-
 class DjingModelViewSet(ModelViewSet):
-    permission_classes = _admin_permission_classes
+    permission_classes = (IsAuthenticated, IsAdminUser, CustomizedDjangoObjectPermissions)
 
     def perform_create(self, serializer) -> None:
         try:

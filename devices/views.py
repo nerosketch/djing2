@@ -5,7 +5,7 @@ from django.db.models import Count
 
 from django.utils.translation import gettext_lazy as _, gettext
 from django.http.response import StreamingHttpResponse
-from guardian.shortcuts import get_objects_for_user
+# from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
@@ -361,9 +361,10 @@ class DeviceGroupsList(DjingListAPIView):
     ordering_fields = ('title', 'code')
 
     def get_queryset(self):
-        groups = get_objects_for_user(
-            self.request.user,
-            'groupapp.view_group', klass=Group,
-            accept_global_perms=False
-        ).annotate(device_count=Count('device'))
+        groups = Group.objects.annotate(device_count=Count('device'))
+        # groups = get_objects_for_user(
+        #     self.request.user,
+        #     'groupapp.view_group', klass=Group,
+        #     accept_global_perms=False
+        # ).annotate(device_count=Count('device'))
         return groups
