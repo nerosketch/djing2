@@ -139,3 +139,6 @@ msgstr "Не получается войти с предоставленными
 
 #~ msgid "Login is not possible"
 #~ msgstr "Не получается войти в предоставленными учётными данными"
+
+msgid "Wrong old password"
+msgstr "Не правильный старый пароль"
