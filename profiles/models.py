@@ -91,12 +91,6 @@ class BaseAccount(AbstractBaseUser, PermissionsMixin):
         # Simplest possible answer: All admins are staff
         return self.is_admin
 
-    def save(self, *args, **kwargs):
-        ps = self.password
-        if ps:
-            self.set_password(ps)
-        super(BaseAccount, self).save(*args, **kwargs)
-
     def __str__(self):
         return self.get_full_name()
 
