@@ -57,7 +57,7 @@ class BaseSNMPWorker(Session):
         except OSError as e:
             raise DeviceConnectionError(e)
 
-    def set_int_value(self, oid: str, value) -> bool:
+    def set_int_value(self, oid: str, value: int) -> bool:
         return self.set(oid, value, 'i')
 
     def get_list(self, oid) -> Generator:
