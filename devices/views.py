@@ -137,6 +137,22 @@ class DeviceModelViewSet(DjingModelViewSet):
                 'text': 'Manager has not get_fibers attribute'
             }})
 
+    @action(detail=True, methods=['get'], url_path='scan_onu_on_fiber/(?P<fiber_num>\d{8,12})')
+    @catch_dev_manager_err
+    def scan_onu_on_fiber(self, request, fiber_num=0, pk=None):
+        if not str(fiber_num).isdigit() or safe_int(fiber_num) < 1:
+            return Response('"fiber_num" number param required', status=status.HTTP_400_BAD_REQUEST)
+        fiber_num = safe_int(fiber_num)
+        device = self.get_object()
+        manager = device.get_manager_object_olt()
+        if hasattr(manager, 'get_ports_on_fiber'):
+            onu_list = tuple(manager.get_ports_on_fiber(fiber_num=fiber_num))
+            return Response(onu_list)
+        else:
+            return Response({'Error': {
+                'text': 'Manager has not "get_ports_on_fiber" attribute'
+            }})
+
     @action(detail=True, methods=('put',))
     @catch_dev_manager_err
     def send_reboot(self, request, pk=None):

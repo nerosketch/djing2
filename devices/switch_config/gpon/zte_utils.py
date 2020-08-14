@@ -121,3 +121,14 @@ def zte_onu_conv_from_onu(snmp_info: str) -> tuple:
         return rack_num, fiber_num, onu_num
     except ValueError:
         raise OnuZteRegisterError('Bad snmp info format for zte')
+
+
+def conv_zte_signal(lvl: int) -> float:
+    if lvl == 65535:
+        return 0.0
+    r = 0
+    if 0 < lvl < 30000:
+        r = lvl * 0.002 - 30
+    elif 60000 < lvl < 65534:
+        r = (lvl - 65534) * 0.002 - 30
+    return round(r, 2)
