@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 # from telnetlib import Telnet
 from typing import Generator, Optional, Dict, AnyStr, Tuple, Any
-from easysnmp import Session
+from easysnmp import Session, EasySNMPConnectionError
 from transliterate import translit
 
 from django.utils.translation import gettext_lazy as _, gettext
@@ -58,16 +58,25 @@ class BaseSNMPWorker(Session):
             raise DeviceConnectionError(e)
 
     def set_int_value(self, oid: str, value: int) -> bool:
-        return self.set(oid, value, 'i')
+        try:
+            return self.set(oid, value, 'i')
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
     def get_list(self, oid) -> Generator:
-        for v in self.walk(oid):
-            yield v.value
+        try:
+            for v in self.walk(oid):
+                yield v.value
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
     def get_list_keyval(self, oid) -> Generator:
-        for v in self.walk(oid):
-            snmpnum = v.oid.split('.')[-1:]
-            yield v.value, snmpnum[0] if len(snmpnum) > 0 else None
+        try:
+            for v in self.walk(oid):
+                snmpnum = v.oid.split('.')[-1:]
+                yield v.value, snmpnum[0] if len(snmpnum) > 0 else None
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
     def get_next_keyval(self, oid) -> Tuple:
         v = self.get_next(oid)
@@ -77,25 +86,34 @@ class BaseSNMPWorker(Session):
         return v.value, snmpnum[0] if len(snmpnum) > 0 else None
 
     def get_list_with_oid(self, oid) -> Generator:
-        for v in self.walk(oid):
-            res_oid = v.oid.split('.')
-            yield v.value, res_oid
+        try:
+            for v in self.walk(oid):
+                res_oid = v.oid.split('.')
+                yield v.value, res_oid
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
     def get_item(self, oid) -> Any:
-        v = self.get(oid).value
-        if isinstance(v, str):
-            if v and v != 'NOSUCHINSTANCE':
-                return v.encode()
-            return None
-        return v
+        try:
+            v = self.get(oid).value
+            if isinstance(v, str):
+                if v and v != 'NOSUCHINSTANCE':
+                    return v.encode()
+                return None
+            return v
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
     def get_item_plain(self, oid) -> Any:
-        v = self.get(oid).value
-        if isinstance(v, str):
-            if v and v != 'NOSUCHINSTANCE':
-                return v
-            return None
-        return v
+        try:
+            v = self.get(oid).value
+            if isinstance(v, str):
+                if v and v != 'NOSUCHINSTANCE':
+                    return v
+                return None
+            return v
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
 
 # class BaseTelnetWorker(Telnet):

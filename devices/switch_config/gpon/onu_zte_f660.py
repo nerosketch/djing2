@@ -9,17 +9,7 @@ from ..expect_util import ExpectValidationError
 from .f660_expect import register_onu
 from .f601_expect import remove_from_olt
 from ..epon import EPON_BDCOM_FORA
-from .zte_utils import reg_dev_zte, sn_to_mac
-
-
-def _conv_zte_signal(lvl: int) -> float:
-    if lvl == 65535: return 0.0
-    r = 0
-    if 0 < lvl < 30000:
-        r = lvl * 0.002 - 30
-    elif 60000 < lvl < 65534:
-        r = (lvl - 65534) * 0.002 - 30
-    return round(r, 2)
+from .zte_utils import reg_dev_zte, sn_to_mac, conv_zte_signal
 
 
 class OnuZTE_F660(EPON_BDCOM_FORA):
@@ -57,7 +47,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 safe_int(self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1' % fiber_addr)),
                 'unknown'
             ),
-            'signal': _conv_zte_signal(signal),
+            'signal': conv_zte_signal(signal),
             'info': (
                 (_('name'), self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s' % fiber_addr)),
                 (_('Mac address'), sn_to_mac(sn)),
