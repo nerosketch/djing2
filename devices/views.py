@@ -146,8 +146,11 @@ class DeviceModelViewSet(DjingModelViewSet):
         device = self.get_object()
         manager = device.get_manager_object_olt()
         if hasattr(manager, 'get_ports_on_fiber'):
-            onu_list = tuple(manager.get_ports_on_fiber(fiber_num=fiber_num))
-            return Response(onu_list)
+            try:
+                onu_list = tuple(manager.get_ports_on_fiber(fiber_num=fiber_num))
+                return Response(onu_list)
+            except ProcessLocked:
+                return Response(_('Process locked by another process'), status=status.HTTP_503_SERVICE_UNAVAILABLE)
         else:
             return Response({'Error': {
                 'text': 'Manager has not "get_ports_on_fiber" attribute'

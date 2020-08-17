@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from djing2.lib import RuTimedelta, safe_int, safe_float, macbin2str
+from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock
 from .zte_utils import conv_zte_signal
 from ..epon import BDCOM_P3310C
 from ..base import Vlans, Vlan
@@ -35,6 +35,7 @@ class ZTE_C320(BDCOM_P3310C):
         details.update(super().get_details())
         return details
 
+    @process_lock
     def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
         onu_types = self.get_list_keyval('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%d' % fiber_num)
         onu_ports = self.get_list('.1.3.6.1.4.1.3902.1012.3.28.1.1.2.%d' % fiber_num)
@@ -104,39 +105,36 @@ class ZTE_C320(BDCOM_P3310C):
     #     out = self.read_until(self.prompt)
     #     return b'bad password' in out
 
+    @process_lock
     def read_all_vlan_info(self) -> Vlans:
         for vid, vname in self.get_list_keyval('.1.3.6.1.4.1.3902.1015.20.2.1.2'):
             yield Vlan(vid=int(vid), title=vname)
 
-    def enter_config(self) -> None:
-        self.write('conf t')
-        self.read_until('(config)#')
+    # def create_vlans(self, vlan_list: Vlans) -> bool:
+    #     for v in vlan_list:
+    #         self.write('vlan %d' % v.vid)
+    #         self.read_until('(config-vlan)#')
+    #         self.write('name %s' % self._normalize_name(v.title))
+    #         self.read_until('(config-vlan)#')
+    #         self.write('exit')
+    #         self.read_until('(config)#')
+    #     return True
 
-    def create_vlans(self, vlan_list: Vlans) -> bool:
-        for v in vlan_list:
-            self.write('vlan %d' % v.vid)
-            self.read_until('(config-vlan)#')
-            self.write('name %s' % self._normalize_name(v.title))
-            self.read_until('(config-vlan)#')
-            self.write('exit')
-            self.read_until('(config)#')
-        return True
+    # def delete_vlans(self, vlan_list: Vlans) -> bool:
+    #     for v in vlan_list:
+    #         self.write('no vlan %d' % v.vid)
+    #         self.read_until('(config)#')
+    #     return True
 
-    def delete_vlans(self, vlan_list: Vlans) -> bool:
-        for v in vlan_list:
-            self.write('no vlan %d' % v.vid)
-            self.read_until('(config)#')
-        return True
-
-    def attach_vlans_to_uplink(self, vids: Iterable[int], stack_num: int,
-                               rack_num: int, port_num: int) -> None:
-        self.write('int gei_%d/%d/%d' % (stack_num, rack_num, port_num))
-        self.read_until('(config-if)#')
-        for v in vids:
-            self.write('switchport vlan %d tag' % v)
-            self.read_until('(config-if)#')
-        self.write('exit')
-        self.read_until('(config)#')
+    # def attach_vlans_to_uplink(self, vids: Iterable[int], stack_num: int,
+    #                            rack_num: int, port_num: int) -> None:
+    #     self.write('int gei_%d/%d/%d' % (stack_num, rack_num, port_num))
+    #     self.read_until('(config-if)#')
+    #     for v in vids:
+    #         self.write('switchport vlan %d tag' % v)
+    #         self.read_until('(config-if)#')
+    #     self.write('exit')
+    #     self.read_until('(config)#')
 
 
 class OLT_ZTE_C320_ONU(object):
