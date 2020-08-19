@@ -20,9 +20,11 @@ def ping(ip_addr: str, count=1, arp=False, interval=0.2) -> bool:
             response = os.system(f'{ARPING_COMMAND} -qc{count} -W {interval} {ip_addr} > /dev/null')
         else:
             response = os.system(f"`which ping` -4Anq -i {interval} -c{count} -W1 {ip_addr} > /dev/null")
+        if response == 256:
+            raise ValueError('arping: not found')
         return response == 0
     else:
-        return False
+        raise ValueError('"ip_addr" is not valid ip address')
 
 
 __all__ = ('ping', 'MAC_ADDR_REGEX', 'IP_ADDR_REGEX')
