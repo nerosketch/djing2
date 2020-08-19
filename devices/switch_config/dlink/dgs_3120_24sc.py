@@ -193,15 +193,15 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             dev_interface=self
         )
 
+    def port_toggle(self, port_num: int, state: int):
+        oid = "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num)
+        self.set_int_value(oid, state)
+
     def port_disable(self, port_num: int):
-        self.set_int_value(
-            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num), 2
-        )
+        self.port_toggle(port_num, 2)
 
     def port_enable(self, port_num: int):
-        self.set_int_value(
-            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num), 1
-        )
+        self.port_toggle(port_num, 1)
 
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.1.0')
