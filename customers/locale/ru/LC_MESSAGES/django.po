@@ -157,11 +157,6 @@ msgstr "Завершение услуги"
 msgid "Buy one-shot service for \"%(title)s\""
 msgstr "Услуга \"%(title)s\""
 
-#: customers/models.py:410 customers/models.py:428
-#: customers/views/admin_side.py:196
-msgid "gateway required"
-msgstr "Необходимо выбрать шлюз"
-
 #: customers/models.py:469
 msgid "Buy service perm"
 msgstr "Покупка тарифа абоненту"
@@ -291,10 +286,6 @@ msgstr "Сервер доступа в интернет привязан к по
 msgid "Users not found"
 msgstr "Пользователи не найдены"
 
-#: customers/views/admin_side.py:194
-msgid "Ip not passed"
-msgstr "Ip адрес не передан"
-
 #: customers/views/admin_side.py:274
 msgid "fill account through admin side"
 msgstr "Пополнение счёта сотрудником"
@@ -309,14 +300,8 @@ msgstr "Покупка тарифного плана через личный к�
 msgid "%(username)s paid the debt %(amount).2f"
 msgstr "%(username)s заплатил долг в размере %(amount).2f"
 
-msgid "IP Conflict! %(return)d/%(all)d results"
-msgstr "IP Конфликт! ping %(return)d из %(all)d"
-
-msgid "ok ping, %(return)d/%(all)d loses"
-msgstr "пингуется, %(return)d/%(all)d"
-
-msgid "no ping, %(return)d/%(all)d loses"
-msgstr "не пингуется, %(return)d/%(all)d"
-
 msgid "Subscribers on port does not exist"
 msgstr "Абоненты на порту не найдены"
+
+msgid "Customer has not ips"
+msgstr "У абонента нет ip адресов"
