@@ -428,6 +428,10 @@ class BasePON_ONU_Interface(BaseDeviceInterface):
     def get_fiber_str(self):
         return '¯ \ _ (ツ) _ / ¯'
 
+    @abstractmethod
+    def read_onu_vlan_info(self):
+        raise NotImplementedError
+
 
 def port_template(fn):
     def _wrapper(*args, **kwargs):
