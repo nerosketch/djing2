@@ -102,7 +102,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         max_digits=12, decimal_places=2, coerce_to_string=False, required=False
     )
     create_date = serializers.CharField(read_only=True)
-    lease_count = serializers.IntegerField()
+    lease_count = serializers.IntegerField(read_only=True)
 
     def create(self, validated_data):
         validated_data.update({
