@@ -1,15 +1,16 @@
 from typing import Optional, Dict
+
 from django.utils.translation import gettext_lazy as _
 from transliterate import translit
 
 from djing2.lib import safe_int
-from ..base import DeviceConsoleError
-from ..utils import norm_name
-from ..expect_util import ExpectValidationError
-from .f660_expect import register_onu
 from .f601_expect import remove_from_olt
-from ..epon import EPON_BDCOM_FORA
+from .f660_expect import register_onu
 from .zte_utils import reg_dev_zte, sn_to_mac, conv_zte_signal
+from ..base import DeviceConsoleError
+from ..epon import EPON_BDCOM_FORA
+from ..expect_util import ExpectValidationError
+from ..utils import norm_name
 
 
 class OnuZTE_F660(EPON_BDCOM_FORA):
@@ -59,6 +60,40 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 (_('onu_type'), self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%s' % fiber_addr)),
             )
         }
+
+    def read_onu_vlan_info(self):
+        if self.dev_instance is None:
+            return
+        snmp_extra = self.dev_instance.snmp_extra
+        if not snmp_extra:
+            return
+        fiber_num, onu_num = snmp_extra.split('.')
+        fiber_num, onu_num = int(fiber_num), int(onu_num)
+
+        vlans = {
+            i: {
+                'access': self.get_item(
+                    '.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.4.%(fiber_num)d.%(onu_num)d.1.%(port_num)d' % {
+                        'port_num': i,
+                        'fiber_num': fiber_num,
+                        'onu_num': onu_num
+                    })
+            }
+            for i in range(1, 5)
+        }
+        for i in range(1, 5):
+            port_vlans: bytes = self.get_item(
+                '.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%(fiber_num)d.%(onu_num)d.1.%(port_num)d' % {
+                    'port_num': i,
+                    'fiber_num': fiber_num,
+                    'onu_num': onu_num
+                })
+            if port_vlans:
+                vlans[i]['trunk'] = list(map(int, port_vlans.split(b',')))
+            else:
+                vlans[i]['trunk'] = None
+
+        return vlans
 
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
