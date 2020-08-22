@@ -1,9 +1,10 @@
 import re
 from typing import Optional
 
+from devices.switch_config.gpon.zte_utils import zte_onu_conv_from_onu
 from djing2.lib import process_lock
-from .. import expect_util
 from . import zte_utils
+from .. import expect_util
 from ..expect_util import ExpectValidationError
 
 
@@ -118,7 +119,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 
 
 # Main Entry point
-@process_lock
+@process_lock(lock_name='zte_olt')
 def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_login: str,
                  telnet_passw: str, telnet_prompt: str, onu_vlan: int):
     serial = serial.upper()
@@ -140,3 +141,96 @@ def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_l
         telnet_login, telnet_passw,
         telnet_prompt, onu_vlan
     )
+
+
+# apply vlan config
+@process_lock(lock_name='zte_olt')
+def zte_onu_vlan_config_apply(zte_ip_addr: str, telnet_login: str, telnet_passw: str, telnet_prompt: str,
+                              snmp_info: str, vlans: dict):
+    if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
+        raise ExpectValidationError('ip address for zte not valid')
+
+    # vlans = {
+    #     1: {
+    #         'access': 109,
+    #         'trunk': [1032, 1520]
+    #     },
+    #     2: {
+    #         'access': 145,
+    #         'trunk': None
+    #     }
+    # }
+
+    rack_num, fiber_num, onu_num = zte_onu_conv_from_onu(snmp_info)
+
+    # Входим
+    ch = expect_util.MySpawn('telnet %s' % zte_ip_addr)
+    ch.timeout = 15
+    ch.expect_exact('Username:')
+    ch.do_cmd(telnet_login, 'Password:')
+
+    choice = ch.do_cmd(telnet_passw, ['bad password.', '%s#' % telnet_prompt])
+    if choice == 0:
+        raise zte_utils.ZteOltLoginFailed
+
+    ch.do_cmd('terminal length 0', '%s#' % telnet_prompt)
+
+    # enter to config
+    ch.do_cmd('conf t', '%s(config)#' % telnet_prompt)
+
+    int_addr = 'gpon-onu_1/%d/%d:%d' % (
+        rack_num,
+        fiber_num,
+        onu_num
+    )
+
+    # Enter to int onu
+    ch.do_cmd('int %(int_addr)s' % {
+        'int_addr': int_addr
+    }, '%s(config-if)#' % telnet_prompt)
+
+    access_vids = [port_conf.get('access') for port_num, port_conf in vlans.items()]
+    trunk_vids = [port_conf.get('trunk') for port_num, port_conf in vlans.items()]
+    trunk_vids = [x for b in trunk_vids if b for x in b]
+    all_vids = ','.join(map(str, access_vids + trunk_vids))
+
+
+    # Apply int onu config
+    int_prompt = '%s(config-if)#' % telnet_prompt
+    ch.do_cmd('no switchport vlan %d' % old_vids, int_prompt)
+    ch.do_cmd('switchport vlan %s tag vport 1' % all_vids, int_prompt)
+
+    # Exit from top onu chunk
+    ch.do_cmd('exit', '%s(config)#' % telnet_prompt)
+
+    # Go to pon-onu-mng
+    int_prompt = '%s(gpon-onu-mng)#' % telnet_prompt
+    ch.do_cmd('pon-onu-mng %(int_addr)s' % {
+        'int_addr': int_addr
+    }, int_prompt)
+
+    # Apply mng onu template
+    ch.do_cmd('no service HSI', int_prompt)
+    ch.do_cmd('service HSI type internet gemport 1 vlan %s' % all_vids, int_prompt)
+
+    # apply to ports
+    for port in range(1, 5):
+        port_conf = vlans.get(port)
+        if not port_conf:
+            continue
+        port_trunk_vlans = ','.join(map(str, port_conf.get('trunk')))
+        if len(port_trunk_vlans) > 0:
+            ch.do_cmd(f'vlan port eth_0/{port} mode trunk', int_addr)
+            ch.do_cmd(f'vlan port eth_0/{port} vlan {port_trunk_vlans}', int_addr)
+        access_vlan = port_conf.get('access')
+        ch.do_cmd(f'vlan port eth_0/{port} mode tag vlan {access_vlan}', int_addr)
+
+    # forbidden dhcp
+    for i in range(1, 5):
+        ch.do_cmd('dhcp-ip ethuni eth_0/%d forbidden' % i, int_prompt)
+
+    # Exit
+    ch.do_cmd('exit', '%s(config)#' % telnet_prompt)
+    ch.do_cmd('exit', '%s#' % telnet_prompt)
+    ch.close()
+    return True
