@@ -114,22 +114,25 @@ class ProcessLocked(OSError):
     """only one process for function"""
 
 
-def process_lock(fn):
-    @wraps(fn)
-    def wrapped(*args, **kwargs):
-        s = None
-        try:
-            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            # Create an abstract socket, by prefixing it with null.
-            s.bind('\0postconnect_djing2_lock_func_%s' % fn.__name__)
-            return fn(*args, **kwargs)
-        except socket.error:
-            raise ProcessLocked
-        finally:
-            if s is not None:
-                s.close()
+def process_lock(lock_name=None):
+    def process_lock_wrap(fn):
+        @wraps(fn)
+        def wrapped(*args, **kwargs):
+            s = None
+            try:
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                # Create an abstract socket, by prefixing it with null.
+                lock_fn_name = lock_name if lock_name is not None else fn.__name__
+                s.bind('\0postconnect_djing2_lock_func_%s' % lock_fn_name)
+                return fn(*args, **kwargs)
+            except socket.error:
+                raise ProcessLocked
+            finally:
+                if s is not None:
+                    s.close()
 
-    return wrapped
+        return wrapped
+    return process_lock_wrap
 
 
 def macbin2str(bin_mac: bytes) -> str:
