@@ -118,7 +118,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 
 
 # Main Entry point
-@process_lock
+@process_lock(lock_name='zte_olt')
 def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_login: str,
                  telnet_passw: str, telnet_prompt: str, onu_vlan: int):
     serial = serial.upper()
