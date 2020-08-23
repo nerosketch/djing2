@@ -5,8 +5,8 @@ from netaddr import EUI
 from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import safe_int, RuTimedelta
-from ..base import BasePortInterface, Vlans, Vlan, MacItem, Macs, DeviceImplementationError
-from ..utils import plain_ip_device_mon_template
+from devices.device_config.base import BasePortInterface, Vlans, Vlan, MacItem, Macs, DeviceImplementationError
+from devices.device_config.utils import plain_ip_device_mon_template
 from ..dlink import DlinkDGS1100_10ME
 
 
