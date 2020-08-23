@@ -5,8 +5,8 @@ from django.utils.translation import gettext
 # from netaddr import EUI, mac_cisco
 
 from djing2.lib import safe_int, RuTimedelta, safe_float, macbin2str
-from ..utils import plain_ip_device_mon_template
-from ..base import (
+from devices.device_config.utils import plain_ip_device_mon_template
+from devices.device_config.base import (
     BasePONInterface,
     DeviceImplementationError
 )
@@ -114,13 +114,6 @@ class BDCOM_P3310C(BasePONInterface):
     def register_device(self, extra_data: Dict):
         pass
 
-    def port_disable(self, port_num: int):
-        # May be disabled
-        raise NotImplementedError
-
-    def port_enable(self, port_num: int):
-        # May be enabled
-        raise NotImplementedError
 
     #############################
     #      Telnet access

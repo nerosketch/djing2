@@ -1,40 +1,21 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterator
 
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
-from devices.switch_config import (
+from devices.device_config import (
     DEVICE_TYPES, Vlans, Macs,
     BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
-    BaseDeviceInterface,
+    DeviceConfigType,
     DeviceConfigurationError,
     DeviceImplementationError, Vlan, DEVICE_TYPE_UNKNOWN)
+from devices.device_config.device_config_util import get_all_device_config_types
 
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
 from groupapp.models import Group
 from networks.models import VlanIf
-
-
-class DeviceConfigBindModel(models.Model):
-    title = models.CharField(_('Title'), max_length=128)
-    code = models.CharField(_('Code'), max_length=64)
-
-    def run_config(self):
-        pass
-
-    def get_required_fields(self):
-        pass
-
-    def __str__(self):
-        return self.title
-
-    class Meta:
-        db_table = 'device_config_bind'
-        verbose_name = _('Device config bind')
-        verbose_name_plural = _('Device config binds')
-        ordering = ('title',)
 
 
 class Device(models.Model):
@@ -91,7 +72,7 @@ class Device(models.Model):
 
     is_noticeable = models.BooleanField(_('Send notify when monitoring state changed'), default=False)
 
-    config_bind = models.ForeignKey(DeviceConfigBindModel, blank=True, null=True, default=None, on_delete=models.SET_NULL)
+    config_bind = models.ForeignKey('DeviceConfigBindModel', blank=True, null=True, default=None, on_delete=models.SET_NULL)
 
     class Meta:
         db_table = 'device'
@@ -99,7 +80,7 @@ class Device(models.Model):
         verbose_name_plural = _('Devices')
         ordering = ('id',)
 
-    def get_manager_klass(self) -> BaseDeviceInterface:
+    def get_manager_klass(self):
         try:
             return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
         except StopIteration:
@@ -244,6 +225,41 @@ class Device(models.Model):
     # @_telnet_methods_wrapper
     # def telnet_pon_attach_vlans_to_uplink(self, tln: BasePONInterface, vids: Iterable[int], *args, **kwargs) -> None:
     #     return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
+
+
+def _make_device_code_config_choices():
+    return tuple((dtype.short_code, dtype.title) for dtype in get_all_device_config_types())
+
+
+class DeviceConfigBindModel(models.Model):
+    title = models.CharField(_('Title'), max_length=128)
+
+    # TODO: Must be validate, code must be one of codes
+    # TODO: from all implemented automation subclasses
+    # TODO: of DeviceConfigType
+    code = models.CharField(_('Code'), max_length=64, unique=True, choices=_make_device_code_config_choices())
+
+    def get_required_fields(self):
+        pass
+
+    def _gen_device_config_types(self, dev: Device) -> Iterator[DeviceConfigType]:
+        mng_klass = dev.get_manager_klass()
+        dtypes = mng_klass.get_config_types()
+        return (dtype for dtype in dtypes if dtype.short_code == str(self.code))
+
+    def apply_onu_config(self, device_instance: Device):
+        dtype_for_run = next(self._gen_device_config_types(dev=device_instance), None)
+        if dtype_for_run is not None:
+            return dtype_for_run()
+
+    def __str__(self) -> str:
+        return self.title
+
+    class Meta:
+        db_table = 'device_config_bind'
+        verbose_name = _('Device config bind')
+        verbose_name_plural = _('Device config binds')
+        ordering = ('title',)
 
 
 class PortVlanMemberMode(models.IntegerChoices):

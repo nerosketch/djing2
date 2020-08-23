@@ -9,4 +9,5 @@ class OnuZTE_F660_Bridge(OnuZTE_F660):
     description = 'Zte ONU F660 Bridge'
 
     def register_device(self, extra_data: Dict):
+        # TODO: It may be deprecated
         return reg_dev_zte(self.dev_instance, extra_data, register_onu)

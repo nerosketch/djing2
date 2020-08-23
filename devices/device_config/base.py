@@ -2,12 +2,16 @@ import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
 # from telnetlib import Telnet
-from typing import Generator, Optional, Dict, AnyStr, Tuple, Any
+from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Callable
 from easysnmp import Session, EasySNMPConnectionError
 from transliterate import translit
 
 from django.utils.translation import gettext_lazy as _, gettext
+from django.conf import settings
 from djing2.lib import RuTimedelta, macbin2str
+
+
+OptionalScriptCallResult = Optional[Dict[int, str]]
 
 
 class DeviceImplementationError(NotImplementedError):
@@ -114,34 +118,6 @@ class BaseSNMPWorker(Session):
             return v
         except EasySNMPConnectionError as err:
             raise DeviceConnectionError(err)
-
-
-# class BaseTelnetWorker(Telnet):
-#     def __init__(self, host: str, prompt: bytes = b'#', endl: bytes = b'\n', port=23):
-#         super().__init__(host=host, port=port)
-#         self.prompt = prompt
-#         if isinstance(endl, bytes):
-#             self.endl = endl
-#         else:
-#             self.endl = str(endl).encode()
-#
-#     def login(self, login_prompt: bytes, login: str, password_prompt: bytes, password: str) -> bool:
-#         self.read_until(login_prompt)
-#         self.write(login)
-#         self.read_until(password_prompt)
-#         self.write(password)
-#         self.read_until(self.prompt)
-#         return True
-#
-#     def write(self, buffer: AnyStr) -> None:
-#         if isinstance(buffer, bytes):
-#             return super().write(buffer + self.endl)
-#         return super().write(buffer.encode() + self.endl)
-#
-#     def read_until(self, match, timeout=None):
-#         if isinstance(match, bytes):
-#             return super().read_until(match=match, timeout=timeout)
-#         return super().read_until(match=str(match).encode(), timeout=timeout)
 
 
 class BaseDeviceInterface(BaseSNMPWorker):
@@ -326,7 +302,7 @@ class BaseSwitchInterface(BaseDeviceInterface):
     def detach_vlan_from_port(self, vlan: Vlan, port: int) -> bool:
         """
         Detach vlan from switch port
-        :param vid:
+        :param vlan:
         :param port:
         :return: Operation result
         """
@@ -334,8 +310,57 @@ class BaseSwitchInterface(BaseDeviceInterface):
 
     @staticmethod
     def _normalize_name(name: str) -> str:
-        vname = translit(name, language_code='ru', reversed=True)
+        language_code = getattr(settings, 'LANGUAGE_CODE', 'ru')
+        vname = translit(name, language_code=language_code, reversed=True)
         return re.sub(r'\W+', '_', vname)[:32]
+
+
+class BaseScriptModule(Callable, ABC):
+    """
+    This class is base for all custom automation for devices
+    """
+
+    @abstractmethod
+    def entry_point(self, *args, **kwargs) -> OptionalScriptCallResult:
+        """
+        This method is entry point for all custom device automation
+        :param args:
+        :param kwargs:
+        :return: Result from call automation script, that is then
+                 returned to user side by HTTP
+        """
+        raise NotImplementedError
+
+    def __call__(self, *args, **kwargs):
+        return self.entry_point(*args, **kwargs)
+
+
+class DeviceConfigType(object):
+    title: str
+    script_module: BaseScriptModule
+    short_code: str
+
+    def __init__(self, title: str, script: BaseScriptModule, code: str):
+        if not isinstance(title, str):
+            raise TypeError
+        if not isinstance(code, str):
+            raise TypeError
+        if not issubclass(script.__class__, BaseScriptModule):
+            raise TypeError('script must be subclass of "BaseScriptModule"')
+        self.title = title
+        self.script_module = script
+        self.short_code = code
+
+    def __call__(self, *args, **kwargs) -> OptionalScriptCallResult:
+        if self.script_module is None:
+            raise RuntimeError('script_module is None')
+        return self.script_module(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return str(self.title)
+
+
+ListDeviceConfigType = List[DeviceConfigType]
 
 
 class BasePortInterface(ABC):
@@ -367,6 +392,15 @@ class BasePortInterface(ABC):
             'uptime': str(RuTimedelta(seconds=self._uptime / 100)) if self._uptime else None
         }
 
+    @staticmethod
+    @abstractmethod
+    def get_config_types() -> ListDeviceConfigType:
+        """
+        Returns all possible config type for this device type
+        :return: List instance of DeviceConfigType
+        """
+        raise NotImplementedError
+
 
 class BasePONInterface(BaseDeviceInterface):
     @abstractmethod
@@ -381,7 +415,7 @@ class BasePONInterface(BaseDeviceInterface):
     def attach_vlans_to_uplink(self, vlans: Vlans, *args, **kwargs) -> None:
         """
         Attach vlan to uplink port
-        :param vids: vid iterable, each element must be instance of Int
+        :param vlans: vlan iterable, each element must be instance of Vlan
         :param args: optional parameters for each implementation
         :param kwargs: optional parameters for each implementation
         :return: nothing
@@ -402,7 +436,7 @@ class BasePON_ONU_Interface(BaseDeviceInterface):
                  num=0, name='', status=False, mac: bytes=b'',
                  speed=0, uptime=None, snmp_num=None, *args, **kwargs):
         """
-        :param dev_interface: a subclass of devices.switch_config.base.BasePONInterface
+        :param dev_interface: a subclass of devices.device_config.base.BasePONInterface
         :param dev_instance: an instance of devices.models.Device
         :param num: onu number
         :param name: onu name
@@ -431,6 +465,15 @@ class BasePON_ONU_Interface(BaseDeviceInterface):
     @abstractmethod
     def read_onu_vlan_info(self):
         raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def get_config_types() -> ListDeviceConfigType:
+        """
+        Returns all possible config type for this device type
+        :return: List instance of DeviceConfigType
+        """
+        return []
 
 
 def port_template(fn):
