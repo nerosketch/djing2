@@ -2,7 +2,7 @@ from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import safe_int
 from ..eltex import EltexSwitch, EltexPort
-from ..base import DeviceImplementationError, Vlan, Vlans, Macs, MacItem
+from devices.device_config.base import DeviceImplementationError, Vlan, Vlans, Macs, MacItem
 
 
 class HuaweiS2300(EltexSwitch):
