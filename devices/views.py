@@ -2,18 +2,18 @@ import re
 from json import dumps as json_dumps
 
 from django.db.models import Count
-
-from django.utils.translation import gettext_lazy as _, gettext
 from django.http.response import StreamingHttpResponse
+from django.utils.translation import gettext_lazy as _, gettext
+from django_filters.rest_framework import DjangoFilterBackend
+from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError, EasySNMPConnectionError
 from guardian.shortcuts import get_objects_for_user
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
-from rest_framework import status
-from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError, EasySNMPConnectionError
-from django_filters.rest_framework import DjangoFilterBackend
 
-from messenger.tasks import multicast_viber_notify
+from devices import serializers as dev_serializers
+from devices.models import Device, Port, PortVlanMemberModel
 from devices.switch_config import (
     DeviceImplementationError, DeviceConsoleError,
     ExpectValidationError, DeviceConnectionError,
@@ -21,9 +21,8 @@ from devices.switch_config import (
 from djing2 import IP_ADDR_REGEX
 from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, JSONBytesEncoder
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
-from devices.models import Device, Port, PortVlanMemberModel
-from devices import serializers as dev_serializers
 from groupapp.models import Group
+from messenger.tasks import multicast_viber_notify
 from profiles.models import UserProfile
 
 
@@ -49,9 +48,9 @@ def catch_dev_manager_err(fn):
     return wrapper
 
 
-class DeviceModelViewSet(DjingModelViewSet):
+class DevicePONViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related('parent_dev')
-    serializer_class = dev_serializers.DeviceModelSerializer
+    serializer_class = dev_serializers.DevicePONModelSerializer
     filterset_fields = ('group', 'dev_type', 'status', 'is_noticeable')
     filter_backends = (SearchFilter, DjangoFilterBackend)
     search_fields = ('comment', 'ip_address', 'mac_addr')
@@ -74,7 +73,7 @@ class DeviceModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_onu_list(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object()
+        manager = device.get_manager_object_olt()
         if not issubclass(manager.__class__, BasePONInterface):
             raise DeviceImplementationError('Expected BasePONInterface subclass')
 
@@ -108,24 +107,6 @@ class DeviceModelViewSet(DjingModelViewSet):
 
     @action(detail=True)
     @catch_dev_manager_err
-    def scan_ports(self, request, pk=None):
-        device = self.get_object()
-        manager = device.get_manager_object()
-        if not issubclass(manager.__class__, BaseSwitchInterface):
-            raise DeviceImplementationError('Expected BaseSwitchInterface subclass')
-        ports = manager.get_ports()
-        return Response(data=(p.to_dict() for p in ports))
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_details(self, request, pk=None):
-        device = self.get_object()
-        manager = device.get_manager_object()
-        data = manager.get_details()
-        return Response(data)
-
-    @action(detail=True)
-    @catch_dev_manager_err
     def scan_olt_fibers(self, request, pk=None):
         device = self.get_object()
         manager = device.get_manager_object_olt()
@@ -155,14 +136,6 @@ class DeviceModelViewSet(DjingModelViewSet):
             return Response({'Error': {
                 'text': 'Manager has not "get_ports_on_fiber" attribute'
             }})
-
-    @action(detail=True, methods=('put',))
-    @catch_dev_manager_err
-    def send_reboot(self, request, pk=None):
-        device = self.get_object()
-        manager = device.get_manager_object()
-        manager.reboot(save_before_reboot=False)
-        return Response(status=status.HTTP_200_OK)
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -208,11 +181,48 @@ class DeviceModelViewSet(DjingModelViewSet):
             'status': 2
         })
 
+
+class DeviceModelViewSet(DjingModelViewSet):
+    queryset = Device.objects.select_related('parent_dev')
+    serializer_class = dev_serializers.DeviceModelSerializer
+    filterset_fields = ('group', 'dev_type', 'status', 'is_noticeable')
+    filter_backends = (SearchFilter, DjangoFilterBackend)
+    search_fields = ('comment', 'ip_address', 'mac_addr')
+    ordering_fields = ('ip_address', 'mac_addr', 'comment', 'dev_type')
+
     @action(detail=True)
+    @catch_dev_manager_err
+    def scan_ports(self, request, pk=None):
+        device = self.get_object()
+        manager = device.get_manager_object_switch()
+        if not issubclass(manager.__class__, BaseSwitchInterface):
+            raise DeviceImplementationError('Expected BaseSwitchInterface subclass')
+        ports = manager.get_ports()
+        return Response(data=(p.to_dict() for p in ports))
+
+    @action(detail=True)
+    @catch_dev_manager_err
+    def scan_details(self, request, pk=None):
+        device = self.get_object()
+        manager = device.get_manager_object_switch()
+        data = manager.get_details()
+        return Response(data)
+
+    @action(detail=True, methods=['put'])
+    @catch_dev_manager_err
+    def send_reboot(self, request, pk=None):
+        device = self.get_object()
+        manager = device.get_manager_object_switch()
+        manager.reboot(save_before_reboot=False)
+        return Response(status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['put'])
     @catch_dev_manager_err
     def monitoring_event(self, request, pk=None):
         dev_ip = request.query_params.get('dev_ip')
-        dev_status = safe_int(request.query_params.get('status'))
+        dev_status = request.query_params.get('status')
+        if dev_status not in ('UP', 'UNREACHABLE', 'DOWN'):
+            return Response('bad "status" parameter', status=status.HTTP_400_BAD_REQUEST)
         if not dev_ip:
             return Response({'text': 'ip does not passed'})
         if not re.match(IP_ADDR_REGEX, dev_ip):
