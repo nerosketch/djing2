@@ -4,11 +4,11 @@ import struct
 from netaddr import EUI
 from django.utils.translation import gettext
 from djing2.lib import safe_int, RuTimedelta
-from ..base import (
+from devices.device_config.base import (
     Vlans, Vlan, Macs, MacItem, BaseSwitchInterface, BasePortInterface,
     DeviceImplementationError
 )
-from ..utils import plain_ip_device_mon_template
+from devices.device_config.utils import plain_ip_device_mon_template
 
 
 class DLinkPort(BasePortInterface):

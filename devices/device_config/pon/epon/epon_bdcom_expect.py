@@ -1,8 +1,8 @@
 import re
 from django.utils.translation import gettext
 from djing2.lib import process_lock, safe_int
-from ..base import DeviceConsoleError, DeviceImplementationError
-from .. import expect_util
+from devices.device_config.base import DeviceConsoleError, DeviceImplementationError
+from devices.device_config import expect_util
 
 
 @process_lock

@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
 from .dgs_3120_24sc import DlinkDGS_3120_24SCSwitchInterface
-from ..base import DeviceConfigurationError
+from devices.device_config.base import DeviceConfigurationError
 
 
 def _ex_expect(filename, params=()):

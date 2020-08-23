@@ -3,7 +3,7 @@ from typing import Dict
 from pexpect import TIMEOUT
 
 from django.utils.translation import gettext, gettext_lazy as _
-from ..base import DeviceConfigurationError, DeviceConsoleError
+from devices.device_config.base import DeviceConfigurationError, DeviceConsoleError
 
 
 class ZteOltConsoleError(DeviceConsoleError):

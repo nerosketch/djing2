@@ -3,7 +3,7 @@ from typing import Iterable
 from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock
 from .zte_utils import conv_zte_signal
 from ..epon import BDCOM_P3310C
-from ..base import Vlans, Vlan
+from devices.device_config.base import Vlans, Vlan
 
 
 class ZTE_C320(BDCOM_P3310C):
