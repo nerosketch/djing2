@@ -10,7 +10,6 @@ from devices.switch_config import (
     BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
     BaseDeviceInterface,
     DeviceConfigurationError,
-    # port_templates_modules,
     DeviceImplementationError, Vlan, DEVICE_TYPE_UNKNOWN)
 
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
@@ -18,30 +17,24 @@ from groupapp.models import Group
 from networks.models import VlanIf
 
 
-# def _telnet_methods_wrapper(fn):
-#     def _wrapper(self, *args, **kwargs):
-#         if not self.extra_data:
-#             raise DeviceConfigurationError(_('You have not info in extra_data '
-#                                              'field, please fill it in JSON'))
-#         extra_data = dict(self.extra_data)
-#         extra_data_telnet = extra_data.get('telnet')
-#         if not extra_data_telnet:
-#             raise DeviceConfigurationError('telnet credentials required in "extra_data"')
-#         tlogin = extra_data_telnet.get('login')
-#         tpassw = extra_data_telnet.get('password')
-#         tprompt = extra_data_telnet.get('prompt')
-#         if not all((tlogin, tpassw, extra_data_telnet, tprompt)):
-#             raise DeviceConfigurationError('telnet credentials required in "extra_data"')
-#         mng = self.get_manager_klass()
+class DeviceConfigBindModel(models.Model):
+    title = models.CharField(_('Title'), max_length=128)
+    code = models.CharField(_('Code'), max_length=64)
 
-#         with mng(host=str(self.ip_address), prompt=tprompt.encode()) as tln:
-#             if not tln.login(login=tlogin, password=tpassw):
-#                 raise DeviceConsoleError(_('Login failed'))
-#             try:
-#                 return fn(self, tln, *args, **kwargs)
-#             except (ValueError, RuntimeError) as e:
-#                 raise DeviceConsoleError(e)
-#     return _wrapper
+    def run_config(self):
+        pass
+
+    def get_required_fields(self):
+        pass
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        db_table = 'device_config_bind'
+        verbose_name = _('Device config bind')
+        verbose_name_plural = _('Device config binds')
+        ordering = ('title',)
 
 
 class Device(models.Model):
@@ -98,6 +91,8 @@ class Device(models.Model):
 
     is_noticeable = models.BooleanField(_('Send notify when monitoring state changed'), default=False)
 
+    config_bind = models.ForeignKey(DeviceConfigBindModel, blank=True, null=True, default=None, on_delete=models.SET_NULL)
+
     class Meta:
         db_table = 'device'
         verbose_name = _('Device')
@@ -110,14 +105,6 @@ class Device(models.Model):
         except StopIteration:
             raise TypeError('one of types is not subclass of BaseDeviceInterface. '
                             'Or implementation of that device type is not found')
-
-    def get_manager_object(self) -> BaseDeviceInterface:
-        man_klass = self.get_manager_klass()
-        if self._cached_manager is None:
-            self._cached_manager = man_klass(
-                dev_instance=self
-            )
-        return self._cached_manager
 
     def get_manager_object_switch(self) -> BaseSwitchInterface:
         man_klass = self.get_manager_klass()
@@ -156,7 +143,7 @@ class Device(models.Model):
         )
 
     def generate_config_template(self):
-        mng = self.get_manager_object()
+        mng = self.get_manager_object_switch()
         return mng.monitoring_template()
 
     def register_device(self):
