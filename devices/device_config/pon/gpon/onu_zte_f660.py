@@ -4,13 +4,13 @@ from django.utils.translation import gettext_lazy as _
 from transliterate import translit
 
 from djing2.lib import safe_int
+from devices.device_config.base import DeviceConsoleError, ListDeviceConfigType
+from devices.device_config.utils import norm_name
+from devices.device_config.expect_util import ExpectValidationError
 from .f601_expect import remove_from_olt
 from .f660_expect import register_onu
 from .zte_utils import reg_dev_zte, sn_to_mac, conv_zte_signal
-from ..base import DeviceConsoleError
 from ..epon import EPON_BDCOM_FORA
-from ..expect_util import ExpectValidationError
-from ..utils import norm_name
 
 
 class OnuZTE_F660(EPON_BDCOM_FORA):
@@ -129,6 +129,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         return '\n'.join(i for i in r if i)
 
     def register_device(self, extra_data: Dict):
+        # TODO: It may be deprecated
         return reg_dev_zte(self.dev_instance, extra_data, register_onu)
 
     def remove_from_olt(self, extra_data: Dict):
@@ -180,4 +181,8 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             return 'gpon-onu_1/%d/%d:%s' % (
                 rack_num, fiber_num, onu_port_num
             )
-        return '¯ \ _ (ツ) _ / ¯'
+        return super().get_fiber_str()
+
+    @staticmethod
+    def get_config_types() -> ListDeviceConfigType:
+        return []
