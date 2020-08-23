@@ -33,6 +33,11 @@ class DeviceModelSerializer(BaseCustomModelSerializer):
         extra_kwargs = {'ip_address': {'required': False}}
 
 
+class DevicePONModelSerializer(DeviceModelSerializer):
+    class Meta(DeviceModelSerializer.Meta):
+        pass
+
+
 class DeviceWithoutGroupModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = Device
