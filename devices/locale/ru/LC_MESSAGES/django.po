@@ -95,8 +95,8 @@ msgstr "Устройства"
 msgid "You should config parent OLT device for ONU"
 msgstr "Вы должны указать родительское устройство OLT для ONU"
 
-#: devices/models.py:110 devices/switch_config/dlink/dgs1100_10me.py:49
-#: devices/switch_config/gpon/zte_utils.py:30
+#: devices/models.py:110 devices/device_config/dlink/dgs1100_10me.py:49
+#: devices/device_config/gpon/zte_utils.py:30
 msgid "You have not info in extra_data field, please fill it in JSON"
 msgstr ""
 "Не заполнено поле 'Техническая информация', обратитесь к администратору"
@@ -174,66 +174,66 @@ msgstr "Порт"
 msgid "Ports"
 msgstr "Порты"
 
-#: devices/switch_config/base.py:43
+#: devices/device_config/base.py:43
 msgid "Reboot not ready"
 msgstr "Перезагрузка для устройства не готова"
 
-#: devices/switch_config/dlink/dgs1100_10me.py:30
+#: devices/device_config/dlink/dgs1100_10me.py:30
 #, python-format
 msgid "File %(filename)s is not exists or not executable"
 msgstr "Файл '%(filename)s' не существует или не исполняем"
 
-#: devices/switch_config/eltex/general.py:20
+#: devices/device_config/eltex/general.py:20
 msgid "Eltex switch"
 msgstr "Элтекс свич"
 
-#: devices/switch_config/epon/bdcom_p3310c.py:79
+#: devices/device_config/epon/bdcom_p3310c.py:79
 msgid "wait for a reply from the SNMP Timeout"
 msgstr "Время ожидания ответа от SNMP истекло"
 
-#: devices/switch_config/epon/epon_bdcom_expect.py:33
-#: devices/switch_config/gpon/zte_utils.py:25
+#: devices/device_config/epon/epon_bdcom_expect.py:33
+#: devices/device_config/gpon/zte_utils.py:25
 msgid "Wrong login or password for telnet access"
 msgstr "Не правильный логин или пароль для доступа по telnet"
 
-#: devices/switch_config/epon/epon_bdcom_fora.py:31
+#: devices/device_config/epon/epon_bdcom_fora.py:31
 msgid "Ip address or parent device with ip address required for ONU device"
 msgstr ""
 "Необходим ip адрес. Или родительское устройство с назначенным ip адресом "
 "необходимо."
 
-#: devices/switch_config/epon/epon_bdcom_fora.py:35
+#: devices/device_config/epon/epon_bdcom_fora.py:35
 msgid "For fetch additional device info, snmp community required"
 msgstr ""
 "Для получения дополнительной информации по устройству требуются snmp данные"
 
-#: devices/switch_config/epon/epon_bdcom_fora.py:77
+#: devices/device_config/epon/epon_bdcom_fora.py:77
 msgid "ONU not connected"
 msgstr "ONU не в сети"
 
-#: devices/switch_config/epon/epon_bdcom_fora.py:85
+#: devices/device_config/epon/epon_bdcom_fora.py:85
 msgid "Onu snmp field must be en integer"
 msgstr "Поле для snmp информации об ONU должно быть числом"
 
-#: devices/switch_config/gpon/onu_zte_f660.py:75
+#: devices/device_config/gpon/onu_zte_f660.py:75
 msgid "Zte onu snmp field must be two dot separated integers"
 msgstr ""
 "Поле snmp информации для ZTE ONU должно быть двумя целыми числами, "
 "разделенными точкой"
 
-#: devices/switch_config/gpon/onu_zte_f660.py:123
+#: devices/device_config/gpon/onu_zte_f660.py:123
 msgid "Mac of device not equal mac by snmp"
 msgstr "Мак устройства не совпадает с маком, полученным по snmp"
 
-#: devices/switch_config/gpon/onu_zte_f660.py:133
+#: devices/device_config/gpon/onu_zte_f660.py:133
 msgid "Could not fetch serial for onu"
 msgstr "Не получается получить серийный номер для onu"
 
-#: devices/switch_config/huawei/s2300.py:8
+#: devices/device_config/huawei/s2300.py:8
 msgid "Huawei switch"
 msgstr ""
 
-#: devices/switch_config/snmp_util.py:13
+#: devices/device_config/snmp_util.py:13
 msgid "Ip address is required"
 msgstr "Ip адрес необходим"
 
