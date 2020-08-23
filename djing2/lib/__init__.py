@@ -55,14 +55,17 @@ class MyChoicesAdapter(Iterator):
 class RuTimedelta(timedelta):
 
     def __str__(self):
-        if self.days > 1:
+        if not str(self.days).isnumeric():
+            raise TypeError('Date days is not numeric')
+        last_digit = int(str(self.days)[-1:])
+        if last_digit > 1:
             ru_days = 'дней'
-            if 5 > self.days > 1:
+            if 5 > last_digit > 1:
                 ru_days = 'дня'
-            elif self.days == 1:
+            elif last_digit == 1:
                 ru_days = 'день'
             # text_date = '%d %s %s' % (self.days, ru_days, text_date)
-            text_date = '%d %s' % (self.days, ru_days)
+            text_date = '%d %s' % (last_digit, ru_days)
         else:
             text_date = super().__str__()
         return text_date
