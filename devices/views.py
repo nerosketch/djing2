@@ -15,9 +15,9 @@ from rest_framework.response import Response
 from devices import serializers as dev_serializers
 from devices.models import Device, Port, PortVlanMemberModel
 from devices.device_config import (
-    DeviceImplementationError, DeviceConsoleError,
+    DeviceImplementationError,
     ExpectValidationError, DeviceConnectionError,
-    BaseSwitchInterface, BasePONInterface)
+    BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface)
 from djing2 import IP_ADDR_REGEX
 from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, JSONBytesEncoder
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -147,25 +147,16 @@ class DevicePONViewSet(DjingModelViewSet):
             'status': 1 if fix_status else 2
         })
 
-    @action(detail=True)
+    @action(detail=True, methods=['put'])
     @catch_dev_manager_err
-    def register_device(self, request, pk=None):
+    def apply_device_onu_config_template(self, request, pk=None):
         device = self.get_object()
-        res_status = 1  # 'ok'
-        try:
-            device.register_device()
-        except DeviceConsoleError as e:
-            text = str(e)
-            res_status = 2
-        except (ConnectionRefusedError, ExpectValidationError) as e:
-            text = str(e)
-            res_status = 2
-        except ProcessLocked:
-            text = gettext('Process locked by another process')
-            res_status = 2
-        else:
-            text = gettext('ok')
-        return Response({'text': text, 'status': res_status})
+        mng = device.get_manager_object_onu()
+        if not issubclass(mng, BasePON_ONU_Interface):
+            return Response('device must be PON ONU type', status=status.HTTP_400_BAD_REQUEST)
+        # TODO: pass additional parameters
+        res = device.apply_onu_config()
+        return Response(res)
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -180,6 +171,14 @@ class DevicePONViewSet(DjingModelViewSet):
             'text': _('Failed'),
             'status': 2
         })
+
+    @action(detail=True)
+    @catch_dev_manager_err
+    def scan_pon_details(self, request, pk=None):
+        device = self.get_object()
+        manager = device.get_manager_object_olt()
+        data = manager.get_details()
+        return Response(data)
 
 
 class DeviceModelViewSet(DjingModelViewSet):
@@ -199,14 +198,6 @@ class DeviceModelViewSet(DjingModelViewSet):
             raise DeviceImplementationError('Expected BaseSwitchInterface subclass')
         ports = manager.get_ports()
         return Response(data=(p.to_dict() for p in ports))
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_details(self, request, pk=None):
-        device = self.get_object()
-        manager = device.get_manager_object_switch()
-        data = manager.get_details()
-        return Response(data)
 
     @action(detail=True, methods=['put'])
     @catch_dev_manager_err

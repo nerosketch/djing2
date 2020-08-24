@@ -1,8 +1,10 @@
 import re
 from typing import Optional
-from djing2.lib import process_lock, safe_int
+
 from devices.device_config import expect_util
-from .zte_utils import (
+from devices.device_config.base import OptionalScriptCallResult, DeviceConfigType
+from djing2.lib import process_lock, safe_int
+from ..zte_utils import (
     get_unregistered_onu, get_free_registered_onu_number,
     zte_onu_conv_to_num, sn_to_mac, zte_onu_conv_from_onu,
     ZteOltLoginFailed, OnuZteRegisterError, ZTEFiberIsFull,
@@ -206,3 +208,13 @@ def remove_from_olt(zte_ip_addr: str, telnet_login: str,
     ch.do_cmd('exit', '%s(config)#' % telnet_prompt)
     ch.close()
     return True
+
+
+class ZteF601BridgeScriptModule(DeviceConfigType):
+    title = 'Zte F601 bridge'
+    short_code = 'zte_f601_bridge'
+
+    def entry_point(self, *args, **kwargs) -> OptionalScriptCallResult:
+        print('###################### ZteF601BridgeScriptModule ######################')
+        # return reg_dev_zte(self.dev_instance, extra_data, register_onu)
+        return {1: 'success'}
