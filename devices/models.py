@@ -8,14 +8,17 @@ from netfields import MACAddressField
 from devices.device_config import (
     DEVICE_TYPES, Vlans, Macs,
     BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
-    DeviceConfigType,
-    DeviceConfigurationError,
-    DeviceImplementationError, Vlan, DEVICE_TYPE_UNKNOWN)
+    DeviceConfigType, DeviceConfigurationError,
+    DeviceImplementationError, Vlan, DEVICE_TYPE_UNKNOWN,
+    OptionalScriptCallResult)
 from devices.device_config.device_config_util import get_all_device_config_types
-
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
 from groupapp.models import Group
 from networks.models import VlanIf
+
+
+def _make_device_code_config_choices():
+    return tuple(set((dtype.short_code, dtype.title) for dtype in get_all_device_config_types()))
 
 
 class Device(models.Model):
@@ -56,7 +59,10 @@ class Device(models.Model):
         help_text=_('Extra data in JSON format. You may use it for your custom data'),
         blank=True, null=True
     )
-    vlans = models.ManyToManyField(VlanIf, verbose_name=_('Available vlans'), blank=True)
+    vlans = models.ManyToManyField(
+        VlanIf, verbose_name=_('Available vlans'),
+        blank=True
+    )
 
     NETWORK_STATE_UNDEFINED = 0
     NETWORK_STATE_UP = 1
@@ -68,11 +74,19 @@ class Device(models.Model):
         (NETWORK_STATE_UNREACHABLE, _('Unreachable')),
         (NETWORK_STATE_DOWN, _('Down'))
     )
-    status = models.PositiveSmallIntegerField(_('Status'), choices=NETWORK_STATES, default=NETWORK_STATE_UNDEFINED)
+    status = models.PositiveSmallIntegerField(
+        _('Status'), choices=NETWORK_STATES,
+        default=NETWORK_STATE_UNDEFINED
+    )
 
-    is_noticeable = models.BooleanField(_('Send notify when monitoring state changed'), default=False)
+    is_noticeable = models.BooleanField(
+        _('Send notify when monitoring state changed'),
+        default=False
+    )
 
-    config_bind = models.ForeignKey('DeviceConfigBindModel', blank=True, null=True, default=None, on_delete=models.SET_NULL)
+    code = models.CharField(_('Code'), max_length=64, blank=True,
+                            null=True, default=None,
+                            choices=_make_device_code_config_choices())
 
     class Meta:
         db_table = 'device'
@@ -127,13 +141,6 @@ class Device(models.Model):
         mng = self.get_manager_object_switch()
         return mng.monitoring_template()
 
-    def register_device(self):
-        mng = self.get_manager_object_olt()
-        if not self.extra_data:
-            if self.parent_dev and self.parent_dev.extra_data:
-                return mng.register_device(self.parent_dev.extra_data)
-        return mng.register_device(dict(self.extra_data or {}))
-
     def remove_from_olt(self):
         pdev = self.parent_dev
         if not pdev:
@@ -178,6 +185,16 @@ class Device(models.Model):
             return mng.get_fiber_str()
         return '¯ \ _ (ツ) _ / ¯'
 
+    def get_config_types(self) -> Iterator[DeviceConfigType]:
+        mng_klass = self.get_manager_klass()
+        return mng_klass.get_config_types()
+
+    def apply_onu_config(self) -> OptionalScriptCallResult:
+        all_device_types = self.get_config_types()
+        dtypes = (dtype for dtype in all_device_types if dtype.short_code == str(self.code))
+        dtype_for_run = next(dtypes, None)
+        if dtype_for_run is not None:
+            return dtype_for_run.entry_point()
 
     #############################
     #  Remote access(i.e. snmp)
@@ -227,41 +244,6 @@ class Device(models.Model):
     #     return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
 
 
-def _make_device_code_config_choices():
-    return tuple((dtype.short_code, dtype.title) for dtype in get_all_device_config_types())
-
-
-class DeviceConfigBindModel(models.Model):
-    title = models.CharField(_('Title'), max_length=128)
-
-    # TODO: Must be validate, code must be one of codes
-    # TODO: from all implemented automation subclasses
-    # TODO: of DeviceConfigType
-    code = models.CharField(_('Code'), max_length=64, unique=True, choices=_make_device_code_config_choices())
-
-    def get_required_fields(self):
-        pass
-
-    def _gen_device_config_types(self, dev: Device) -> Iterator[DeviceConfigType]:
-        mng_klass = dev.get_manager_klass()
-        dtypes = mng_klass.get_config_types()
-        return (dtype for dtype in dtypes if dtype.short_code == str(self.code))
-
-    def apply_onu_config(self, device_instance: Device):
-        dtype_for_run = next(self._gen_device_config_types(dev=device_instance), None)
-        if dtype_for_run is not None:
-            return dtype_for_run()
-
-    def __str__(self) -> str:
-        return self.title
-
-    class Meta:
-        db_table = 'device_config_bind'
-        verbose_name = _('Device config bind')
-        verbose_name_plural = _('Device config binds')
-        ordering = ('title',)
-
-
 class PortVlanMemberMode(models.IntegerChoices):
     NOT_CHOSEN = 0, _('Not chosen')
     DEFAULT = 1, _('Default')
@@ -303,6 +285,7 @@ class Port(models.Model):
         verbose_name=_('VLan list'),
         through_fields=('port', 'vlanif')
     )
+
     # config_type = models.PositiveSmallIntegerField
 
     def __str__(self):

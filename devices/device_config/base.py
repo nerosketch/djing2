@@ -2,7 +2,7 @@ import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
 # from telnetlib import Telnet
-from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Callable
+from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List
 from easysnmp import Session, EasySNMPConnectionError
 from transliterate import translit
 
@@ -150,8 +150,8 @@ class BaseDeviceInterface(BaseSNMPWorker):
         _vlan_gen = (v for v in (vlan,))
         return self.create_vlans(_vlan_gen)
 
-    def delete_vlan(self, vid: int) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, title=None),))
+    def delete_vlan(self, vid: int, is_management: bool) -> bool:
+        _vlan_gen = (v for v in (Vlan(vid=vid, title=None, is_management=is_management, native=False),))
         return self.delete_vlans(_vlan_gen)
 
     def read_all_vlan_info(self) -> Vlans:
@@ -287,7 +287,7 @@ class BaseSwitchInterface(BaseDeviceInterface):
     def attach_vlan_to_port(self, vlan: Vlan, port: int, tag: bool = True) -> bool:
         """
         Attach vlan to switch port
-        :param vid:
+        :param vlan:
         :param port:
         :param tag: Tagged if True or untagged otherwise
         :return:
@@ -315,10 +315,17 @@ class BaseSwitchInterface(BaseDeviceInterface):
         return re.sub(r'\W+', '_', vname)[:32]
 
 
-class BaseScriptModule(Callable, ABC):
-    """
-    This class is base for all custom automation for devices
-    """
+class DeviceConfigType(object):
+    title: str
+    short_code: str
+
+    def __init__(self, title: str, code: str):
+        if not isinstance(title, str):
+            raise TypeError
+        if not isinstance(code, str):
+            raise TypeError
+        self.title = title
+        self.short_code = code
 
     @abstractmethod
     def entry_point(self, *args, **kwargs) -> OptionalScriptCallResult:
@@ -331,30 +338,8 @@ class BaseScriptModule(Callable, ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, *args, **kwargs):
-        return self.entry_point(*args, **kwargs)
-
-
-class DeviceConfigType(object):
-    title: str
-    script_module: BaseScriptModule
-    short_code: str
-
-    def __init__(self, title: str, script: BaseScriptModule, code: str):
-        if not isinstance(title, str):
-            raise TypeError
-        if not isinstance(code, str):
-            raise TypeError
-        if not issubclass(script.__class__, BaseScriptModule):
-            raise TypeError('script must be subclass of "BaseScriptModule"')
-        self.title = title
-        self.script_module = script
-        self.short_code = code
-
     def __call__(self, *args, **kwargs) -> OptionalScriptCallResult:
-        if self.script_module is None:
-            raise RuntimeError('script_module is None')
-        return self.script_module(*args, **kwargs)
+        return self.entry_point(*args, **kwargs)
 
     def __str__(self) -> str:
         return str(self.title)
@@ -403,9 +388,6 @@ class BasePortInterface(ABC):
 
 
 class BasePONInterface(BaseDeviceInterface):
-    @abstractmethod
-    def register_device(self, extra_data: Dict) -> None:
-        pass
 
     @abstractmethod
     def remove_from_olt(self, extra_data: Dict) -> None:
