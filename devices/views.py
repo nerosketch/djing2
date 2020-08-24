@@ -302,6 +302,21 @@ class DeviceModelViewSet(DjingModelViewSet):
         res = (i._asdict() for i in vlan_list)
         return Response(res)
 
+    @action(detail=True)
+    def get_onu_config_options(self, request, pk=None):
+        dev = self.get_object()
+        config_types = dev.get_config_types()
+        config_choices = (i.to_dict() for i in config_types if i)
+        klass = dev.get_manager_klass()
+
+        res = {
+            'port_num': klass.ports_len,
+            'config_choices': config_choices,
+            'accept_vlan': True or not True  # or not to be :)
+        }
+
+        return Response(res)
+
 
 class DeviceWithoutGroupListAPIView(DjingListAPIView):
     queryset = Device.objects.filter(group=None)
