@@ -121,6 +121,10 @@ class BaseSNMPWorker(Session):
 
 
 class BaseDeviceInterface(BaseSNMPWorker):
+
+    """How much ports is available for switch"""
+    ports_len: int
+
     def __init__(self, dev_instance=None, host: str=None, snmp_community='public'):
         """
         :param dev_instance: an instance of devices.models.Device
@@ -251,11 +255,6 @@ class BaseSwitchInterface(BaseDeviceInterface):
         """Disable port by number"""
         pass
 
-    @property
-    @abstractmethod
-    def ports_len(self) -> int:
-        """How much ports is available for switch"""
-
     @abstractmethod
     def read_port_vlan_info(self, port: int) -> Vlans:
         """
@@ -343,6 +342,13 @@ class DeviceConfigType(object):
 
     def __str__(self) -> str:
         return str(self.title)
+
+    @classmethod
+    def to_dict(cls):
+        return {
+            'title': cls.title,
+            'code': cls.short_code
+        }
 
 
 ListDeviceConfigType = List[DeviceConfigType]
