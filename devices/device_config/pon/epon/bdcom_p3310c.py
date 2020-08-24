@@ -111,9 +111,6 @@ class BDCOM_P3310C(BasePONInterface):
         device = self.dev_instance
         return plain_ip_device_mon_template(device)
 
-    def register_device(self, extra_data: Dict):
-        pass
-
 
     #############################
     #      Telnet access
