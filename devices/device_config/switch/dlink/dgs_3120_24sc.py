@@ -219,6 +219,3 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
         device = self.dev_instance
         return plain_ip_device_mon_template(device)
-
-    def register_device(self, extra_data: dict):
-        pass
