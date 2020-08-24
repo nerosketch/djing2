@@ -17,6 +17,7 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
     description = 'PON ONU BDCOM'
     tech_code = 'bdcom_onu'
     is_use_device_port = False
+    ports_len = 1
 
     def __init__(self, dev_instance, *args, **kwargs):
         dev_ip_addr = None

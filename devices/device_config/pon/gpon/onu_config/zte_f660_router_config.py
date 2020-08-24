@@ -238,7 +238,7 @@ def zte_onu_vlan_config_apply(zte_ip_addr: str, telnet_login: str, telnet_passw:
 
 
 class ZteF660RouterScriptModule(DeviceConfigType):
-    title = 'Zte F660 router'
+    title = 'Zte ONU F660 Router'
     short_code = 'zte_f660_router'
 
     def entry_point(self, *args, **kwargs) -> OptionalScriptCallResult:
