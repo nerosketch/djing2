@@ -132,9 +132,6 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
         )
         return '\n'.join(i for i in r if i)
 
-    def register_device(self, extra_data: Dict):
-        pass
-
     def remove_from_olt(self, extra_data: Dict):
         dev = self.dev_instance
         if not dev:

@@ -7,9 +7,8 @@ from djing2.lib import safe_int
 from devices.device_config.base import DeviceConsoleError, ListDeviceConfigType
 from devices.device_config.utils import norm_name
 from devices.device_config.expect_util import ExpectValidationError
-from .f601_expect import remove_from_olt
-from .f660_expect import register_onu
-from .zte_utils import reg_dev_zte, sn_to_mac, conv_zte_signal
+from .onu_config.zte_f601_bridge_config import remove_from_olt
+from .zte_utils import sn_to_mac, conv_zte_signal
 from ..epon import EPON_BDCOM_FORA
 
 
@@ -128,10 +127,6 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         )
         return '\n'.join(i for i in r if i)
 
-    def register_device(self, extra_data: Dict):
-        # TODO: It may be deprecated
-        return reg_dev_zte(self.dev_instance, extra_data, register_onu)
-
     def remove_from_olt(self, extra_data: Dict):
         dev = self.dev_instance
         if not dev:
@@ -185,4 +180,6 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
 
     @staticmethod
     def get_config_types() -> ListDeviceConfigType:
-        return []
+        from .onu_config.zte_f660_router_config import ZteF660RouterScriptModule
+        from .onu_config.zte_f660_bridge_config import ZteF660BridgeScriptModule
+        return [ZteF660RouterScriptModule, ZteF660BridgeScriptModule]
