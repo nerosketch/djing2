@@ -303,6 +303,13 @@ class DeviceModelViewSet(DjingModelViewSet):
         return Response(res)
 
     @action(detail=True)
+    @catch_dev_manager_err
+    def read_onu_vlan_info(self, request, pk=None):
+        dev = self.get_object()
+        vlans = dev.read_onu_vlan_info()
+        return Response(vlans)
+
+    @action(detail=True)
     def get_onu_config_options(self, request, pk=None):
         dev = self.get_object()
         config_types = dev.get_config_types()

@@ -204,6 +204,10 @@ class Device(models.Model):
         mng = self.get_manager_object_switch()
         return mng.read_all_vlan_info()
 
+    def read_onu_vlan_info(self) -> Vlans:
+        mng = self.get_manager_object_onu()
+        return mng.read_onu_vlan_info()
+
     # @_telnet_methods_wrapper
     # def dev_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
     #     if not tln.create_vlans(vids):
