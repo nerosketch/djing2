@@ -69,30 +69,45 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         fiber_num, onu_num = snmp_extra.split('.')
         fiber_num, onu_num = int(fiber_num), int(onu_num)
 
-        vlans = {
-            i: {
-                'access': self.get_item(
-                    '.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.4.%(fiber_num)d.%(onu_num)d.1.%(port_num)d' % {
-                        'port_num': i,
-                        'fiber_num': fiber_num,
-                        'onu_num': onu_num
-                    })
-            }
-            for i in range(1, 5)
-        }
-        for i in range(1, 5):
-            port_vlans: bytes = self.get_item(
+        def _get_access_vlan(port_num: int) -> int:
+            return safe_int(self.get_item(
+                '.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.4.%(fiber_num)d.%(onu_num)d.1.%(port_num)d' % {
+                    'port_num': port_num,
+                    'fiber_num': fiber_num,
+                    'onu_num': onu_num
+                }))
+
+        def _get_trunk_vlans(port_num: int) -> list:
+            trunk_vlans = self.get_item(
                 '.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%(fiber_num)d.%(onu_num)d.1.%(port_num)d' % {
-                    'port_num': i,
+                    'port_num': port_num,
                     'fiber_num': fiber_num,
                     'onu_num': onu_num
                 })
-            if port_vlans:
-                vlans[i]['trunk'] = list(map(int, port_vlans.split(b',')))
-            else:
-                vlans[i]['trunk'] = None
+            trunk_vlans = list(map(int, trunk_vlans.split(b','))) if trunk_vlans else []
+            return [
+                {'vid': v, 'native': False}
+                for v in trunk_vlans
+            ]
 
-        return vlans
+        # Result example
+        # [
+        #     {
+        #         'port': 1,
+        #         'vids': [
+        #             {'vid': 143, 'native': True},
+        #             {'vid': 144, 'native': False},
+        #             {'vid': 145, 'native': False},
+        #         ]
+        #     }
+        # ]
+        return [
+            {
+                'port': i,
+                'vids': [{'vid': _get_access_vlan(port_num=i), 'native': True}] + _get_trunk_vlans(port_num=i),
+            } for i in range(1, 5)
+        ]
+
 
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
