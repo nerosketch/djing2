@@ -30,6 +30,10 @@ class DeviceConnectionError(ConnectionError):
     pass
 
 
+class UnsupportedReadingVlan(NotImplementedError):
+    pass
+
+
 class Vlan(namedtuple('Vlan', 'vid title native is_management')):
 
     def __new__(cls, vid: int, title: str, native: bool = False, is_management: bool = False):
@@ -452,7 +456,7 @@ class BasePON_ONU_Interface(BaseDeviceInterface):
 
     @abstractmethod
     def read_onu_vlan_info(self):
-        raise NotImplementedError
+        raise UnsupportedReadingVlan
 
     @staticmethod
     @abstractmethod
