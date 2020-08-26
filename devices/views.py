@@ -5,7 +5,10 @@ from django.db.models import Count
 from django.http.response import StreamingHttpResponse
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
-from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError, EasySNMPConnectionError
+from easysnmp.exceptions import (
+    EasySNMPTimeoutError, EasySNMPError,
+    EasySNMPConnectionError
+)
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
@@ -17,9 +20,13 @@ from devices.models import Device, Port, PortVlanMemberModel
 from devices.device_config import (
     DeviceImplementationError,
     ExpectValidationError, DeviceConnectionError,
-    BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface)
+    BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
+    UnsupportedReadingVlan)
 from djing2 import IP_ADDR_REGEX
-from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, JSONBytesEncoder
+from djing2.lib import (
+    ProcessLocked, safe_int, ws_connector,
+    RuTimedelta, JSONBytesEncoder
+)
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
 from messenger.tasks import multicast_viber_notify
@@ -305,9 +312,12 @@ class DeviceModelViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_dev_manager_err
     def read_onu_vlan_info(self, request, pk=None):
-        dev = self.get_object()
-        vlans = dev.read_onu_vlan_info()
-        return Response(vlans)
+        try:
+            dev = self.get_object()
+            vlans = dev.read_onu_vlan_info()
+            return Response(vlans)
+        except UnsupportedReadingVlan:
+            return Response('unsupported', status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True)
     def get_onu_config_options(self, request, pk=None):
