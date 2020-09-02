@@ -25,7 +25,7 @@ class ZteOltLoginFailed(ZteOltConsoleError):
         self.message = message or gettext('Wrong login or password for telnet access')
 
 
-def reg_dev_zte(device, extra_data: Dict, reg_func):
+def reg_dev_zte(device, extra_data: Dict, config: dict, reg_func):
     if not extra_data:
         raise DeviceConfigurationError(_('You have not info in extra_data '
                                          'field, please fill it in JSON'))
@@ -34,32 +34,33 @@ def reg_dev_zte(device, extra_data: Dict, reg_func):
         ip = device.ip_address
     elif device.parent_dev:
         ip = device.parent_dev.ip_address
-    if ip:
-        mac = str(device.mac_addr) if device.mac_addr else None
-
-        # Format serial number from mac address
-        # because saved mac address was make from serial number
-        sn = "ZTEG%s" % ''.join('%.2X' % int(x, base=16) for x in mac.split(':')[-4:])
-        telnet = extra_data.get('telnet')
-        try:
-            onu_snmp = reg_func(
-                onu_mac=mac,
-                serial=sn,
-                zte_ip_addr=str(ip),
-                telnet_login=telnet.get('login'),
-                telnet_passw=telnet.get('password'),
-                telnet_prompt=telnet.get('prompt'),
-                onu_vlan=extra_data.get('default_vid')
-            )
-            if onu_snmp is not None:
-                device.snmp_extra = onu_snmp
-                device.save(update_fields=('snmp_extra',))
-            else:
-                raise DeviceConfigurationError('unregistered onu not found, sn=%s' % sn)
-        except TIMEOUT as e:
-            raise OnuZteRegisterError(e)
-    else:
+    if not ip:
         raise DeviceConfigurationError('not have ip')
+    mac = str(device.mac_addr) if device.mac_addr else None
+
+    # Format serial number from mac address
+    # because saved mac address was make from serial number
+    sn = "ZTEG%s" % ''.join('%.2X' % int(x, base=16) for x in mac.split(':')[-4:])
+    telnet = extra_data.get('telnet')
+    try:
+        onu_snmp = reg_func(
+            onu_mac=mac,
+            serial=sn,
+            zte_ip_addr=str(ip),
+            telnet_login=telnet.get('login'),
+            telnet_passw=telnet.get('password'),
+            telnet_prompt=telnet.get('prompt'),
+            config=config,
+            snmp_info=str(device.snmp_extra),
+            user_vid=extra_data.get('default_vid')
+        )
+        if onu_snmp is not None:
+            device.snmp_extra = onu_snmp
+            device.save(update_fields=('snmp_extra',))
+        else:
+            raise DeviceConfigurationError('unregistered onu not found, sn=%s' % sn)
+    except TIMEOUT as e:
+        raise OnuZteRegisterError(e)
 
 
 def parse_onu_name(onu_name: str, name_regexp=re.compile('[/:_]')):
@@ -113,6 +114,7 @@ def zte_onu_conv_to_num(rack_num: int, fiber_num: int, port_num: int):
 
 
 def zte_onu_conv_from_onu(snmp_info: str) -> tuple:
+    print('snmp_info', snmp_info)
     try:
         fiber_num, onu_num = (int(i) for i in snmp_info.split('.'))
         fiber_num_bin = bin(fiber_num)[2:]

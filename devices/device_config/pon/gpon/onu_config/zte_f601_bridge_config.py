@@ -213,8 +213,10 @@ def remove_from_olt(zte_ip_addr: str, telnet_login: str,
 class ZteF601BridgeScriptModule(DeviceConfigType):
     title = 'Zte F601 bridge'
     short_code = 'zte_f601_bridge'
+    accept_vlan = True
 
-    def entry_point(self, *args, **kwargs) -> OptionalScriptCallResult:
+    @staticmethod
+    def entry_point(config: dict, *args, **kwargs) -> OptionalScriptCallResult:
         print('###################### ZteF601BridgeScriptModule ######################')
         # return reg_dev_zte(self.dev_instance, extra_data, register_onu)
         return {1: 'success'}
