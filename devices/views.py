@@ -154,15 +154,39 @@ class DevicePONViewSet(DjingModelViewSet):
             'status': 1 if fix_status else 2
         })
 
-    @action(detail=True, methods=['put'])
+    @action(detail=True, methods=['post'])
     @catch_dev_manager_err
     def apply_device_onu_config_template(self, request, pk=None):
         device = self.get_object()
         mng = device.get_manager_object_onu()
-        if not issubclass(mng, BasePON_ONU_Interface):
+        if not issubclass(mng.__class__, BasePON_ONU_Interface):
             return Response('device must be PON ONU type', status=status.HTTP_400_BAD_REQUEST)
-        # TODO: pass additional parameters
-        res = device.apply_onu_config()
+
+        # TODO: Describe this as TypedDict from python3.8
+        # apply config
+        # example = {
+        #     'configTypeCode': 'zte_f660_bridge',
+        #     'vlanConfig': [
+        #         {
+        #             'port': 1,
+        #             'vids': [
+        #                 {'vid': 151, 'native': True}
+        #             ]
+        #         },
+        #         {
+        #             'port': 2,
+        #             'vids': [
+        #                 {'vid': 263, 'native': False},
+        #                 {'vid': 264, 'native': False},
+        #                 {'vid': 265, 'native': False},
+        #             ]
+        #         }
+        #     ]
+        # }
+        device_config_serializer = dev_serializers.DeviceOnuConfigTemplate(data=request.data)
+        device_config_serializer.is_valid(raise_exception=True)
+
+        res = device.apply_onu_config(config=device_config_serializer.data)
         return Response(res)
 
     @action(detail=True)
@@ -186,6 +210,31 @@ class DevicePONViewSet(DjingModelViewSet):
         manager = device.get_manager_object_olt()
         data = manager.get_details()
         return Response(data)
+
+    @action(detail=True)
+    def get_onu_config_options(self, request, pk=None):
+        dev = self.get_object()
+        config_types = dev.get_config_types()
+        config_choices = (i.to_dict() for i in config_types if i)
+        # klass = dev.get_manager_klass()
+
+        res = {
+            # 'port_num': klass.ports_len,
+            'config_choices': config_choices,
+            # 'accept_vlan': True or not True  # or not to be :)
+        }
+
+        return Response(res)
+
+    @action(detail=True)
+    @catch_dev_manager_err
+    def read_onu_vlan_info(self, request, pk=None):
+        try:
+            dev = self.get_object()
+            vlans = dev.read_onu_vlan_info()
+            return Response(vlans)
+        except UnsupportedReadingVlan:
+            return Response('Vlan config unsupported', status=status.HTTP_400_BAD_REQUEST)
 
 
 class DeviceModelViewSet(DjingModelViewSet):
@@ -307,31 +356,6 @@ class DeviceModelViewSet(DjingModelViewSet):
         dev = self.get_object()
         vlan_list = dev.dev_get_all_vlan_list()
         res = (i._asdict() for i in vlan_list)
-        return Response(res)
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def read_onu_vlan_info(self, request, pk=None):
-        try:
-            dev = self.get_object()
-            vlans = dev.read_onu_vlan_info()
-            return Response(vlans)
-        except UnsupportedReadingVlan:
-            return Response('unsupported', status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True)
-    def get_onu_config_options(self, request, pk=None):
-        dev = self.get_object()
-        config_types = dev.get_config_types()
-        config_choices = (i.to_dict() for i in config_types if i)
-        klass = dev.get_manager_klass()
-
-        res = {
-            'port_num': klass.ports_len,
-            'config_choices': config_choices,
-            'accept_vlan': True or not True  # or not to be :)
-        }
-
         return Response(res)
 
 
