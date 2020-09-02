@@ -463,6 +463,10 @@ class BasePON_ONU_Interface(BaseDeviceInterface):
     def read_onu_vlan_info(self):
         raise UnsupportedReadingVlan
 
+    @abstractmethod
+    def default_vlan_info(self):
+        raise UnsupportedReadingVlan
+
     @staticmethod
     @abstractmethod
     def get_config_types() -> ListDeviceConfigType:

@@ -21,7 +21,7 @@ from devices.device_config import (
     DeviceImplementationError,
     ExpectValidationError, DeviceConnectionError,
     BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
-    UnsupportedReadingVlan)
+    UnsupportedReadingVlan, DeviceConsoleError)
 from djing2 import IP_ADDR_REGEX
 from djing2.lib import (
     ProcessLocked, safe_int, ws_connector,
@@ -186,8 +186,11 @@ class DevicePONViewSet(DjingModelViewSet):
         device_config_serializer = dev_serializers.DeviceOnuConfigTemplate(data=request.data)
         device_config_serializer.is_valid(raise_exception=True)
 
-        res = device.apply_onu_config(config=device_config_serializer.data)
-        return Response(res)
+        try:
+            res = device.apply_onu_config(config=device_config_serializer.data)
+            return Response(res)
+        except DeviceConsoleError as err:
+            return Response(str(err), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -231,7 +234,10 @@ class DevicePONViewSet(DjingModelViewSet):
     def read_onu_vlan_info(self, request, pk=None):
         try:
             dev = self.get_object()
-            vlans = dev.read_onu_vlan_info()
+            if dev.is_onu_registered():
+                vlans = dev.read_onu_vlan_info()
+            else:
+                vlans = dev.default_vlan_info()
             return Response(vlans)
         except UnsupportedReadingVlan:
             return Response('Vlan config unsupported', status=status.HTTP_400_BAD_REQUEST)
