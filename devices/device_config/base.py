@@ -321,6 +321,7 @@ class BaseSwitchInterface(BaseDeviceInterface):
 class DeviceConfigType(object):
     title: str
     short_code: str
+    accept_vlan: bool
 
     def __init__(self, title: str, code: str):
         if not isinstance(title, str):
@@ -330,10 +331,13 @@ class DeviceConfigType(object):
         self.title = title
         self.short_code = code
 
+    @staticmethod
     @abstractmethod
-    def entry_point(self, *args, **kwargs) -> OptionalScriptCallResult:
+    def entry_point(config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
         """
         This method is entry point for all custom device automation
+        :param config: Dict from views.apply_device_onu_config_template
+        :param device: devices.models.Device instance
         :param args:
         :param kwargs:
         :return: Result from call automation script, that is then
@@ -351,7 +355,8 @@ class DeviceConfigType(object):
     def to_dict(cls):
         return {
             'title': cls.title,
-            'code': cls.short_code
+            'code': cls.short_code,
+            'accept_vlan': cls.accept_vlan
         }
 
 

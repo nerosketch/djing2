@@ -108,7 +108,6 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             } for i in range(1, 5)
         ]
 
-
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
         # for example 268501760.5

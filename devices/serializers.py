@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.utils.translation import gettext_lazy as _
 from devices.models import Device, Port, PortVlanMemberModel
 from djing2.lib.mixins import BaseCustomModelSerializer
 from groupapp.models import Group
@@ -84,3 +85,18 @@ class PortVlanMemberModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = PortVlanMemberModel
         fields = '__all__'
+
+
+class DevOnuVlan(serializers.Serializer):
+    vid = serializers.IntegerField(default=1)
+    native = serializers.BooleanField(default=False)
+
+
+class DevOnuVlanInfoTemplate(serializers.Serializer):
+    port = serializers.IntegerField(default=0)
+    vids = serializers.ListField(DevOnuVlan)
+
+
+class DeviceOnuConfigTemplate(serializers.Serializer):
+    configTypeCode = serializers.CharField(label=_('Config code'), max_length=64)
+    vlanConfig = serializers.ListField(DevOnuVlanInfoTemplate)
