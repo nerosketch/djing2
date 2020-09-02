@@ -208,6 +208,13 @@ class Device(models.Model):
         mng = self.get_manager_object_onu()
         return mng.read_onu_vlan_info()
 
+    def default_vlan_info(self) -> Vlans:
+        mng = self.get_manager_object_onu()
+        return mng.default_vlan_info()
+
+    def is_onu_registered(self) -> bool:
+        return self.snmp_extra is not None
+
     # @_telnet_methods_wrapper
     # def dev_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
     #     if not tln.create_vlans(vids):
