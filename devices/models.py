@@ -189,12 +189,12 @@ class Device(models.Model):
         mng_klass = self.get_manager_klass()
         return mng_klass.get_config_types()
 
-    def apply_onu_config(self) -> OptionalScriptCallResult:
+    def apply_onu_config(self, config: dict) -> OptionalScriptCallResult:
         all_device_types = self.get_config_types()
         dtypes = (dtype for dtype in all_device_types if dtype.short_code == str(self.code))
         dtype_for_run = next(dtypes, None)
         if dtype_for_run is not None:
-            return dtype_for_run.entry_point()
+            return dtype_for_run.entry_point(config=config, device=self)
 
     #############################
     #  Remote access(i.e. snmp)

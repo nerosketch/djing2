@@ -1,16 +1,13 @@
-from devices.device_config.base import DeviceConfigType, OptionalScriptCallResult
-
-
 import re
-from typing import Optional
-
+from django.utils.translation import gettext_lazy as _
 from djing2.lib import process_lock
+from devices.device_config.base import DeviceConfigType, OptionalScriptCallResult, DeviceConfigurationError
 from devices.device_config.pon.gpon import zte_utils
 from devices.device_config import expect_util
 
 
-def get_onu_template(vlan_id: int, mac_addr: str):
-    template = (
+def get_onu_template(vlan_id: int, mac_addr: str) -> tuple:
+    return (
         'switchport mode hybrid vport 1',
         'service-port 1 vport 1 user-vlan %d vlan %d' % (vlan_id, vlan_id),
         'port-location format flexible-syntax vport 1',
@@ -21,93 +18,95 @@ def get_onu_template(vlan_id: int, mac_addr: str):
         'ip dhcp snooping enable vport 1',
         'ip-service ip-source-guard enable sport 1'
     )
-    return template
 
 
-def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str, prompt: str, vlan: int):
-    onu_type = 'ZTE-F660'
+# apply vlan config
+@process_lock(lock_name='zte_olt')
+def zte_onu_vlan_config_apply(serial: str, onu_mac: str, zte_ip_addr: str, telnet_login: str,
+                              telnet_passw: str, telnet_prompt: str,
+                              user_vid: int, *args, **kwargs):
+    if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
+        raise expect_util.ExpectValidationError('ip address for zte not valid')
 
     # Входим
-    ch = expect_util.MySpawn('telnet %s' % hostname)
+    ch = expect_util.MySpawn('telnet %s' % zte_ip_addr)
     ch.timeout = 15
     ch.expect_exact('Username:')
-    ch.do_cmd(login, 'Password:')
+    ch.do_cmd(telnet_login, 'Password:')
 
-    choice = ch.do_cmd(password, ['bad password.', '%s#' % prompt])
+    choice = ch.do_cmd(telnet_passw, ['bad password.', f'{telnet_prompt}#'])
     if choice == 0:
         raise zte_utils.ZteOltLoginFailed
 
-    ch.do_cmd('terminal length 0', '%s#' % prompt)
-    choice = ch.do_cmd('show gpon onu uncfg', ['No related information to show', '%s#' % prompt])
+    ch.do_cmd('terminal length 0', f'{telnet_prompt}#')
+
+    # Find unregistered onu ↓
+    choice = ch.do_cmd('show gpon onu uncfg', [
+        'No related information to show',
+        f'{telnet_prompt}#'
+    ])
     if choice == 0:
         ch.close()
-        raise zte_utils.OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
-    elif choice == 1:
-        # Получим незареганные onu
+        raise zte_utils.OnuZteRegisterError(f'unregistered onu not found, sn={serial}')
+    if choice == 1:
+        # get unregistered onu devices
         unregistered_onu = zte_utils.get_unregistered_onu(
             lines=ch.get_lines_before(),
-            serial=sn
+            serial=serial
         )
         if unregistered_onu is None:
             ch.close()
-            raise zte_utils.OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
+            raise zte_utils.OnuZteRegisterError(f'unregistered onu not found, sn={serial}')
         stack_num = int(unregistered_onu.get('stack_num'))
         rack_num = int(unregistered_onu.get('rack_num'))
         fiber_num = int(unregistered_onu.get('fiber_num'))
 
-        # Получим последнюю зарегистрированную onu
-        ch.do_cmd('show run int gpon-olt_%(stack)s/%(rack)s/%(fiber)s' % {
-            'stack': stack_num,
-            'rack': rack_num,
-            'fiber': fiber_num
-        }, '%s#' % prompt)
+        # get last registered onu
+        ch.do_cmd(f'show run int gpon-olt_{stack_num}/{rack_num}/{fiber_num}',
+                  f'{telnet_prompt}#')
         free_onu_number = zte_utils.get_free_registered_onu_number(
             ch.get_lines_before()
         )
-        if free_onu_number > 126:
+        if free_onu_number > 127:
             ch.close()
-            raise zte_utils.ZTEFiberIsFull('olt fiber %d is full' % fiber_num)
+            raise zte_utils.ZTEFiberIsFull(f'olt fiber {fiber_num} is full')
 
         # enter to config
-        ch.do_cmd('conf t', '%s(config)#' % prompt)
-        int_addr = '%d/%d/%d' % (
-            stack_num,
-            rack_num,
-            fiber_num
-        )
+        ch.do_cmd('conf t', f'{telnet_prompt}(config)#')
+
+        config_if_prompt = f'{telnet_prompt}(config-if)#'
 
         # go to olt interface
-        ch.do_cmd('interface gpon-olt_%s' % int_addr, '%s(config-if)#' % prompt)
+        ch.do_cmd(f'interface gpon-olt_1/{rack_num}/{fiber_num}', config_if_prompt)
 
         # register onu on olt interface
-        ch.do_cmd('onu %d type %s sn %s' % (
-            free_onu_number,
-            onu_type,
-            sn
-        ), '%s(config-if)#' % prompt)
+        ch.do_cmd(
+            f'onu {free_onu_number} type ZTE-F660 sn {serial}',
+            config_if_prompt
+        )
         # register onu profile on olt interface
         ch.do_cmd(
-            'onu %d profile line ZTE-F660-LINE remote ZTE-F660-ROUTER' % free_onu_number,
-            '%s(config-if)#' % prompt
+            f'onu {free_onu_number} profile line ZTE-F660-LINE remote ZTE-F660-ROUTER',
+            config_if_prompt
         )
 
         # Exit from int olt
-        ch.do_cmd('exit', '%s(config)#' % prompt)
+        ch.do_cmd('exit', f'{telnet_prompt}(config)#')
 
         # Enter to int onu
-        ch.do_cmd('int gpon-onu_%(int_addr)s:%(onu_num)d' % {
-            'int_addr': int_addr,
-            'onu_num': free_onu_number
-        }, '%s(config-if)#' % prompt)
+        ch.do_cmd(
+            f'int gpon-onu_1/{rack_num}/{fiber_num}:{free_onu_number}',
+            config_if_prompt
+        )
 
         # Apply int onu config
-        template = get_onu_template(vlan, onu_mac)
+        template = get_onu_template(vlan_id=user_vid, mac_addr=onu_mac)
         for line in template:
-            ch.do_cmd(line, '%s(config-if)#' % prompt)
+            ch.do_cmd(line, config_if_prompt)
 
         # Exit
-        ch.do_cmd('exit', '%s(config)#' % prompt)
-        ch.do_cmd('exit', '%s#' % prompt)
+        ch.do_cmd('exit', f'{telnet_prompt}(config)#')
+        ch.do_cmd('exit', f'{telnet_prompt}#')
         ch.close()
         return zte_utils.zte_onu_conv_to_num(
             rack_num=rack_num,
@@ -116,132 +115,27 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
         )
     else:
         ch.close()
-        raise zte_utils.ZteOltConsoleError("I don't know what is that choice: %d" % choice)
-
-
-# Main Entry point
-@process_lock(lock_name='zte_olt')
-def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_login: str,
-                 telnet_passw: str, telnet_prompt: str, onu_vlan: int):
-    serial = serial.upper()
-
-    if not re.match(r'^ZTEG[0-9A-F]{8}$', serial):
-        raise expect_util.ExpectValidationError('Serial not valid, match: ^ZTEG[0-9A-F]{8}$')
-
-    if not isinstance(onu_vlan, int):
-        onu_vlan = int(onu_vlan)
-
-    if onu_mac is None:
-        onu_mac = zte_utils.sn_to_mac(serial)
-
-    if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
-        raise expect_util.ExpectValidationError('ip address for zte not valid')
-
-    return appy_config(
-        onu_mac, serial, zte_ip_addr,
-        telnet_login, telnet_passw,
-        telnet_prompt, onu_vlan
-    )
-
-
-# apply vlan config
-@process_lock(lock_name='zte_olt')
-def zte_onu_vlan_config_apply(zte_ip_addr: str, telnet_login: str, telnet_passw: str, telnet_prompt: str,
-                              snmp_info: str, vlans: dict):
-    if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
-        raise expect_util.ExpectValidationError('ip address for zte not valid')
-
-    # vlans = {
-    #     1: {
-    #         'access': 109,
-    #         'trunk': [1032, 1520]
-    #     },
-    #     2: {
-    #         'access': 145,
-    #         'trunk': None
-    #     }
-    # }
-
-    rack_num, fiber_num, onu_num = zte_utils.zte_onu_conv_from_onu(snmp_info)
-
-    # Входим
-    ch = expect_util.MySpawn('telnet %s' % zte_ip_addr)
-    ch.timeout = 15
-    ch.expect_exact('Username:')
-    ch.do_cmd(telnet_login, 'Password:')
-
-    choice = ch.do_cmd(telnet_passw, ['bad password.', '%s#' % telnet_prompt])
-    if choice == 0:
-        raise zte_utils.ZteOltLoginFailed
-
-    ch.do_cmd('terminal length 0', '%s#' % telnet_prompt)
-
-    # enter to config
-    ch.do_cmd('conf t', '%s(config)#' % telnet_prompt)
-
-    int_addr = 'gpon-onu_1/%d/%d:%d' % (
-        rack_num,
-        fiber_num,
-        onu_num
-    )
-
-    # Enter to int onu
-    ch.do_cmd('int %(int_addr)s' % {
-        'int_addr': int_addr
-    }, '%s(config-if)#' % telnet_prompt)
-
-    access_vids = [port_conf.get('access') for port_num, port_conf in vlans.items()]
-    trunk_vids = [port_conf.get('trunk') for port_num, port_conf in vlans.items()]
-    trunk_vids = [x for b in trunk_vids if b for x in b]
-    all_vids = ','.join(map(str, access_vids + trunk_vids))
-
-
-    # Apply int onu config
-    int_prompt = '%s(config-if)#' % telnet_prompt
-    ch.do_cmd('no switchport vlan %d' % old_vids, int_prompt)
-    ch.do_cmd('switchport vlan %s tag vport 1' % all_vids, int_prompt)
-
-    # Exit from top onu chunk
-    ch.do_cmd('exit', '%s(config)#' % telnet_prompt)
-
-    # Go to pon-onu-mng
-    int_prompt = '%s(gpon-onu-mng)#' % telnet_prompt
-    ch.do_cmd('pon-onu-mng %(int_addr)s' % {
-        'int_addr': int_addr
-    }, int_prompt)
-
-    # Apply mng onu template
-    ch.do_cmd('no service HSI', int_prompt)
-    ch.do_cmd('service HSI type internet gemport 1 vlan %s' % all_vids, int_prompt)
-
-    # apply to ports
-    for port in range(1, 5):
-        port_conf = vlans.get(port)
-        if not port_conf:
-            continue
-        port_trunk_vlans = ','.join(map(str, port_conf.get('trunk')))
-        if len(port_trunk_vlans) > 0:
-            ch.do_cmd(f'vlan port eth_0/{port} mode trunk', int_addr)
-            ch.do_cmd(f'vlan port eth_0/{port} vlan {port_trunk_vlans}', int_addr)
-        access_vlan = port_conf.get('access')
-        ch.do_cmd(f'vlan port eth_0/{port} mode tag vlan {access_vlan}', int_addr)
-
-    # forbidden dhcp
-    for i in range(1, 5):
-        ch.do_cmd('dhcp-ip ethuni eth_0/%d forbidden' % i, int_prompt)
-
-    # Exit
-    ch.do_cmd('exit', '%s(config)#' % telnet_prompt)
-    ch.do_cmd('exit', '%s#' % telnet_prompt)
-    ch.close()
-    return True
+        raise zte_utils.ZteOltConsoleError(f"I don't know what is that choice: {choice}")
 
 
 class ZteF660RouterScriptModule(DeviceConfigType):
     title = 'Zte ONU F660 Router'
     short_code = 'zte_f660_router'
+    accept_vlan = False
 
-    def entry_point(self, *args, **kwargs) -> OptionalScriptCallResult:
-        print('###################### ZteF660RouterScriptModule ######################')
-        # return reg_dev_zte(self.dev_instance, extra_data, register_onu)
+    @staticmethod
+    def entry_point(config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
+        # print('###################### ZteF660RouterScriptModule ######################')
+        pdev = device.parent_dev
+        if not pdev:
+            raise DeviceConfigurationError(_('You should config parent OLT device for ONU'))
+        if not pdev.extra_data:
+            raise DeviceConfigurationError(_('You have not info in extra_data '
+                                             'field, please fill it in JSON'))
+        zte_utils.reg_dev_zte(
+            device=device,
+            extra_data=dict(pdev.extra_data),
+            reg_func=zte_onu_vlan_config_apply,
+            config=config
+        )
         return {1: 'success'}

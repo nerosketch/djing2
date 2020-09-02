@@ -146,8 +146,10 @@ def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_l
 class ZteF660BridgeScriptModule(DeviceConfigType):
     title = 'Zte ONU F660 Bridge'
     short_code = 'zte_f660_bridge'
+    accept_vlan = True
 
-    def entry_point(self, *args, **kwargs) -> OptionalScriptCallResult:
+    @staticmethod
+    def entry_point(config: dict, *args, **kwargs) -> OptionalScriptCallResult:
         print('###################### ZteF660BridgeScriptModule ######################')
         # return reg_dev_zte(self.dev_instance, extra_data, register_onu)
         # register_onu()
