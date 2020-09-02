@@ -60,12 +60,36 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             )
         }
 
+    def default_vlan_info(self):
+        default_vid = 1
+        if self.dev_instance and self.dev_instance.parent_dev and self.dev_instance.parent_dev.extra_data:
+            default_vid = self.dev_instance.parent_dev.extra_data.get('default_vid', 1)
+        def_vids = [{'vid': default_vid, 'native': True}]
+        return [
+            {
+                'port': 1,
+                'vids': def_vids
+            },
+            {
+                'port': 2,
+                'vids': def_vids
+            },
+            {
+                'port': 3,
+                'vids': def_vids
+            },
+            {
+                'port': 4,
+                'vids': def_vids
+            }
+        ]
+
     def read_onu_vlan_info(self):
         if self.dev_instance is None:
             return
         snmp_extra = self.dev_instance.snmp_extra
         if not snmp_extra:
-            return
+            return self.default_vlan_info()
         fiber_num, onu_num = snmp_extra.split('.')
         fiber_num, onu_num = int(fiber_num), int(onu_num)
 
@@ -195,5 +219,5 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
     @staticmethod
     def get_config_types() -> ListDeviceConfigType:
         from .onu_config.zte_f660_router_config import ZteF660RouterScriptModule
-        from .onu_config.zte_f660_bridge_config import ZteF660BridgeScriptModule
-        return [ZteF660RouterScriptModule, ZteF660BridgeScriptModule]
+        from .onu_config.zte_f660_static_bridge_config import ZteF660BridgeStaticScriptModule
+        return [ZteF660RouterScriptModule, ZteF660BridgeStaticScriptModule]
