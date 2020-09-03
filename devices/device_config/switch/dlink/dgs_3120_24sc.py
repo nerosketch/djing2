@@ -1,18 +1,18 @@
 from typing import Optional, AnyStr, List, Generator
 import struct
 
-from netaddr import EUI
 from django.utils.translation import gettext
-from djing2.lib import safe_int, RuTimedelta
+from djing2.lib import safe_int, RuTimedelta, process_lock
 from devices.device_config.base import (
     Vlans, Vlan, Macs, MacItem, BaseSwitchInterface, BasePortInterface,
-    DeviceImplementationError
+    DeviceImplementationError, ListDeviceConfigType
 )
 from devices.device_config.utils import plain_ip_device_mon_template
 
 
 class DLinkPort(BasePortInterface):
-    pass
+    def get_config_types(self) -> ListDeviceConfigType:
+        return []
 
 
 class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
@@ -79,6 +79,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
                 continue
             yield Vlan(vid=vid, title=vid_name)
 
+    @process_lock()
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
             raise ValueError('Port must be in range 1-%d' % self.ports_len)
@@ -87,7 +88,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             if port_num != int(fdb_port):
                 continue
             vid = safe_int(oid[-7:-6][0])
-            fdb_mac = str(EUI(':'.join('%.2x' % int(i) for i in oid[-6:])))
+            fdb_mac = ':'.join('%.2x' % int(i) for i in oid[-6:])
             vid_name = self._get_vid_name(vid)
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
 
@@ -98,7 +99,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         fdb = self.get_list_with_oid('.1.3.6.1.2.1.17.7.1.2.2.1.2.%d' % vid)
         vid_name = self._get_vid_name(vid)
         for port_num, oid in fdb:
-            fdb_mac = str(EUI(':'.join('%.2x' % int(i) for i in oid[-6:])))
+            fdb_mac = ':'.join('%.2x' % int(i) for i in oid[-6:])
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
 
     def create_vlans(self, vlan_list: Vlans) -> bool:
