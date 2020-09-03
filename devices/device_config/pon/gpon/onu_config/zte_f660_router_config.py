@@ -1,12 +1,14 @@
 import re
+
 from django.utils.translation import gettext_lazy as _
-from djing2.lib import process_lock
+
+from devices.device_config import expect_util
 from devices.device_config.base import DeviceConfigType, OptionalScriptCallResult, DeviceConfigurationError
 from devices.device_config.pon.gpon import zte_utils
-from devices.device_config import expect_util
+from djing2.lib import process_lock
 
 
-def get_onu_template(vlan_id: int, mac_addr: str) -> tuple:
+def _get_onu_template(vlan_id: int, mac_addr: str) -> tuple:
     return (
         'switchport mode hybrid vport 1',
         'service-port 1 vport 1 user-vlan %d vlan %d' % (vlan_id, vlan_id),
@@ -22,9 +24,9 @@ def get_onu_template(vlan_id: int, mac_addr: str) -> tuple:
 
 # apply vlan config
 @process_lock(lock_name='zte_olt')
-def zte_onu_vlan_config_apply(serial: str, onu_mac: str, zte_ip_addr: str, telnet_login: str,
-                              telnet_passw: str, telnet_prompt: str,
-                              user_vid: int, *args, **kwargs):
+def _zte_onu_router_config_apply(serial: str, onu_mac: str, zte_ip_addr: str, telnet_login: str,
+                                 telnet_passw: str, telnet_prompt: str,
+                                 user_vid: int, *args, **kwargs):
     if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
         raise expect_util.ExpectValidationError('ip address for zte not valid')
 
@@ -100,7 +102,7 @@ def zte_onu_vlan_config_apply(serial: str, onu_mac: str, zte_ip_addr: str, telne
         )
 
         # Apply int onu config
-        template = get_onu_template(vlan_id=user_vid, mac_addr=onu_mac)
+        template = _get_onu_template(vlan_id=user_vid, mac_addr=onu_mac)
         for line in template:
             ch.do_cmd(line, config_if_prompt)
 
@@ -123,9 +125,9 @@ class ZteF660RouterScriptModule(DeviceConfigType):
     short_code = 'zte_f660_router'
     accept_vlan = False
 
-    @staticmethod
-    def entry_point(config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
-        # print('###################### ZteF660RouterScriptModule ######################')
+    @classmethod
+    def entry_point(cls, config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
+        # return
         pdev = device.parent_dev
         if not pdev:
             raise DeviceConfigurationError(_('You should config parent OLT device for ONU'))
@@ -135,7 +137,7 @@ class ZteF660RouterScriptModule(DeviceConfigType):
         zte_utils.reg_dev_zte(
             device=device,
             extra_data=dict(pdev.extra_data),
-            reg_func=zte_onu_vlan_config_apply,
+            reg_func=_zte_onu_router_config_apply,
             config=config
         )
         return {1: 'success'}
