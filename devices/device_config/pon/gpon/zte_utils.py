@@ -114,7 +114,6 @@ def zte_onu_conv_to_num(rack_num: int, fiber_num: int, port_num: int):
 
 
 def zte_onu_conv_from_onu(snmp_info: str) -> tuple:
-    print('snmp_info', snmp_info)
     try:
         fiber_num, onu_num = (int(i) for i in snmp_info.split('.'))
         fiber_num_bin = bin(fiber_num)[2:]
