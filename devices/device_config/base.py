@@ -331,9 +331,9 @@ class DeviceConfigType(object):
         self.title = title
         self.short_code = code
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def entry_point(config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
+    def entry_point(cls, config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
         """
         This method is entry point for all custom device automation
         :param config: Dict from views.apply_device_onu_config_template
