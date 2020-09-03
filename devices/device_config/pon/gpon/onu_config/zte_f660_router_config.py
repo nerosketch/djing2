@@ -49,7 +49,7 @@ def _zte_onu_router_config_apply(serial: str, onu_mac: str, zte_ip_addr: str, te
     ])
     if choice == 0:
         ch.close()
-        raise zte_utils.OnuZteRegisterError(f'unregistered onu not found, sn={serial}')
+        raise zte_utils.OnuZteRegisterError(_('unregistered onu not found, sn=%s') % serial)
     if choice == 1:
         # get unregistered onu devices
         unregistered_onu = zte_utils.get_unregistered_onu(
@@ -58,7 +58,7 @@ def _zte_onu_router_config_apply(serial: str, onu_mac: str, zte_ip_addr: str, te
         )
         if unregistered_onu is None:
             ch.close()
-            raise zte_utils.OnuZteRegisterError(f'unregistered onu not found, sn={serial}')
+            raise zte_utils.OnuZteRegisterError(_('unregistered onu not found, sn=%s') % serial)
         stack_num = int(unregistered_onu.get('stack_num'))
         rack_num = int(unregistered_onu.get('rack_num'))
         fiber_num = int(unregistered_onu.get('fiber_num'))
