@@ -17,7 +17,7 @@ def get_onu_template(vlan_id: int, mac_addr: str):
         'sn-bind enable sn',
         'tcont 1 profile HSI_100',
         'gemport 1 unicast tcont 1 dir both',
-        'switchport mode hybrid vport 1',
+        'switchport mode trunk vport 1',
         'service-port 1 vport 1 user-vlan %d vlan %d' % (vlan_id, vlan_id),
         'port-location format flexible-syntax vport 1',
         'port-location sub-option remote-id enable vport 1',
