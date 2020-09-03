@@ -308,3 +308,6 @@ msgstr "тип onu"
 
 msgid "uptime"
 msgstr "Время в сети"
+
+msgid "Multiple native vid is not allowed on one port"
+msgstr "Несколько untagged vid не может быть на одном порту"
