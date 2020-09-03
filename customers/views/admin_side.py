@@ -20,7 +20,7 @@ from customers import serializers
 from customers.models import Customer
 from customers.views.view_decorators import catch_customers_errs
 from djing2.exceptions import UniqueConstraintIntegrityError
-from djing2.lib import safe_int, safe_float
+from djing2.lib import safe_int, safe_float, ProcessLocked
 
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
@@ -64,7 +64,7 @@ class CustomerModelViewSet(DjingModelViewSet):
         'group', 'street', 'gateway', 'device', 'dev_port',
         'current_service', 'last_connected_service',
         'current_service__service', 'customerrawpassword'
-    )
+    ).annotate(lease_count=Count('customeripleasemodel'))
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, OrderingFilter)
     search_fields = ('username', 'fio', 'telephone', 'description')
@@ -194,57 +194,45 @@ class CustomerModelViewSet(DjingModelViewSet):
     #     else:
     #         return Response(_('Users not found'))
 
-    # @action(detail=True)
-    # @catch_customers_errs
-    # def ping(self, request, pk=None):
-    #     del request, pk
-    #     customer = self.get_object()
-    #     ip = customer.ip_address
-    #     if ip is None:
-    #         raise LogicError(_('Ip not passed'))
-    #     if customer.gateway is None:
-    #         raise LogicError(_('gateway required'))
-    #     mngr = customer.gateway.get_gw_manager()
-    #     try:
-    #         ping_result = mngr.ping(ip)
-    #     except (GatewayNetworkError, GatewayFailedResult) as e:
-    #         return Response({
-    #             'text': str(e),
-    #             'status': False
-    #         })
-    #     no_ping_response = Response({
-    #         'text': _('no ping'),
-    #         'status': False
-    #     })
-    #     r_status = True
-    #     if ping_result is None:
-    #         return no_ping_response
-    #     if isinstance(ping_result, tuple):
-    #         received, sent = ping_result
-    #         if received == 0:
-    #             ping_result = mngr.ping(ip, arp=True)
-    #             if ping_result is not None and isinstance(ping_result, tuple):
-    #                 received, sent = ping_result
-    #             else:
-    #                 return no_ping_response
-    #         loses_percent = (
-    #             received / sent if sent != 0 else 1
-    #         )
-    #         ping_result = {'return': received, 'all': sent}
-    #         if loses_percent > 1.0:
-    #             text = 'IP Conflict! %(return)d/%(all)d results'
-    #             r_status = False
-    #         elif loses_percent > 0.5:
-    #             text = 'ok ping, %(return)d/%(all)d loses'
-    #         else:
-    #             text = 'no ping, %(return)d/%(all)d loses'
-    #             r_status = False
-    #         text = gettext(text) % ping_result
-    #         return Response({
-    #             'text': text,
-    #             'status': r_status
-    #         })
-    #     return no_ping_response
+    @action(detail=True, methods=['get'])
+    @catch_customers_errs
+    def ping_all_ips(self, request, pk=None):
+        del request, pk
+        customer = self.get_object()
+
+        leases = customer.customeripleasemodel_set.all()
+        if leases.count() == 0:
+            return Response({
+                'text': _('Customer has not ips'),
+                'status': False
+            })
+        try:
+            for lease in leases:
+                if lease.ping_icmp():
+                    return Response({
+                        'text': _('Ping ok'),
+                        'status': True
+                    })
+                else:
+                    if lease.ping_icmp(arp=True):
+                        return Response({
+                            'text': _('arp ping ok'),
+                            'status': True
+                        })
+            return Response({
+                'text': _('no ping'),
+                'status': False
+            })
+        except ProcessLocked:
+            return Response({
+                'text': _('Process locked by another process'),
+                'status': False
+            })
+        except ValueError as err:
+            return Response({
+                'text': str(err),
+                'status': False
+            })
 
     @action(detail=True)
     @catch_customers_errs

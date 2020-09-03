@@ -47,7 +47,7 @@ def catch_dev_manager_err(fn):
             return Response(str(err), status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except EasySNMPTimeoutError as err:
             return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
-        except SystemError as err:
+        except (SystemError, DeviceConsoleError) as err:
             return Response(str(err), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # Hack for decorator @action
