@@ -19,6 +19,7 @@ class HuaweiS2300(EltexSwitch):
         interfaces_ids = self.get_list('.1.3.6.1.2.1.17.1.4.1.2')
         if interfaces_ids is None:
             raise DeviceImplementationError('Switch returned null')
+        interfaces_ids = tuple(next(interfaces_ids) for _ in range(self.ports_len))
 
         def build_port(i: int, n: int):
             speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % n)
