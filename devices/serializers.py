@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 from devices.models import Device, Port, PortVlanMemberModel
@@ -93,10 +95,17 @@ class DevOnuVlan(serializers.Serializer):
 
 
 class DevOnuVlanInfoTemplate(serializers.Serializer):
-    port = serializers.IntegerField(default=0)
-    vids = serializers.ListField(DevOnuVlan)
+    port = serializers.IntegerField(default=1)
+    vids = serializers.ListField(child=DevOnuVlan())
 
 
 class DeviceOnuConfigTemplate(serializers.Serializer):
     configTypeCode = serializers.CharField(label=_('Config code'), max_length=64)
-    vlanConfig = serializers.ListField(DevOnuVlanInfoTemplate)
+    vlanConfig = serializers.ListField(child=DevOnuVlanInfoTemplate(), allow_empty=False)
+
+    def validate(self, data: OrderedDict):
+        vlan_config = data.get('vlanConfig')
+        if not vlan_config:
+            raise serializers.ValidationError('vlanConfig can not be empty')
+        # TODO: Add validations
+        return data
