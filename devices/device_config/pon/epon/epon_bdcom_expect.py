@@ -5,7 +5,7 @@ from devices.device_config.base import DeviceConsoleError, DeviceImplementationE
 from devices.device_config import expect_util
 
 
-@process_lock
+@process_lock()
 def remove_from_olt(ip_addr: str, telnet_login: str, telnet_passw: str,
                     telnet_prompt: str, int_name: str):
     if not re.match(expect_util.IP4_ADDR_REGEX, ip_addr):
