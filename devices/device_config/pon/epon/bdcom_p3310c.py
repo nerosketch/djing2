@@ -69,7 +69,7 @@ class BDCOM_P3310C(BasePONInterface):
                     yield ONUdevPort(
                         num=onu_num,
                         name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % onu_num),
-                        status=status is 3,
+                        status=status == 3,
                         mac=macbin2str(mac.value),
                         signal=signal / 10 if signal else '—',
                         uptime=safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % onu_num)),
