@@ -5,13 +5,17 @@ from netaddr import EUI
 from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import safe_int, RuTimedelta
-from devices.device_config.base import BasePortInterface, Vlans, Vlan, MacItem, Macs, DeviceImplementationError
+from devices.device_config.base import (
+    BasePortInterface, Vlans, Vlan, MacItem, Macs,
+    DeviceImplementationError, ListDeviceConfigType
+)
 from devices.device_config.utils import plain_ip_device_mon_template
 from ..dlink import DlinkDGS1100_10ME
 
 
 class EltexPort(BasePortInterface):
-    pass
+    def get_config_types(self) -> ListDeviceConfigType:
+        return []
 
 
 class EltexSwitch(DlinkDGS1100_10ME):
