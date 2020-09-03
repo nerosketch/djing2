@@ -131,7 +131,7 @@ def _get_all_vlans_from_config(config: dict) -> Optional[VlanList]:
 
 
 @process_lock(lock_name='zte_olt')
-def _zte_onu_bridge_config_apply(serial: str, onu_mac: str, zte_ip_addr: str, telnet_login: str,
+def _zte_onu_bridge_config_apply(serial: str, zte_ip_addr: str, telnet_login: str,
                                  telnet_passw: str, telnet_prompt: str, config: dict,
                                  *args, **kwargs):
     if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
