@@ -190,6 +190,8 @@ class Device(models.Model):
         return mng_klass.get_config_types()
 
     def apply_onu_config(self, config: dict) -> OptionalScriptCallResult:
+        self.code = config.get('configTypeCode')
+        self.save(update_fields=['code'])
         all_device_types = self.get_config_types()
         dtypes = (dtype for dtype in all_device_types if dtype.short_code == str(self.code))
         dtype_for_run = next(dtypes, None)
