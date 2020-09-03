@@ -409,9 +409,9 @@ class PortModelViewSet(DjingModelViewSet):
         dev = port.device
         if dev is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        macs = dev.dev_switch_get_mac_address_port(
+        macs = tuple(dev.dev_switch_get_mac_address_port(
             device_port_num=port.num
-        )
+        ))
         return Response(m._asdict() for m in macs)
 
     @action(detail=True)
