@@ -58,7 +58,7 @@ def reg_dev_zte(device, extra_data: Dict, config: dict, reg_func):
             device.snmp_extra = onu_snmp
             device.save(update_fields=('snmp_extra',))
         else:
-            raise DeviceConfigurationError('unregistered onu not found, sn=%s' % sn)
+            raise DeviceConfigurationError(_('unregistered onu not found, sn=%s') % sn)
     except TIMEOUT as e:
         raise OnuZteRegisterError(e)
 
