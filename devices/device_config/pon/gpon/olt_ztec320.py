@@ -35,7 +35,7 @@ class ZTE_C320(BDCOM_P3310C):
         details.update(super().get_details())
         return details
 
-    @process_lock
+    @process_lock()
     def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
         onu_types = self.get_list_keyval('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%d' % fiber_num)
         onu_ports = self.get_list('.1.3.6.1.4.1.3902.1012.3.28.1.1.2.%d' % fiber_num)
@@ -105,7 +105,7 @@ class ZTE_C320(BDCOM_P3310C):
     #     out = self.read_until(self.prompt)
     #     return b'bad password' in out
 
-    @process_lock
+    @process_lock()
     def read_all_vlan_info(self) -> Vlans:
         for vid, vname in self.get_list_keyval('.1.3.6.1.4.1.3902.1015.20.2.1.2'):
             yield Vlan(vid=int(vid), title=vname)
