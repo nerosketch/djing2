@@ -217,6 +217,6 @@ class ZteF601BridgeScriptModule(DeviceConfigType):
 
     @staticmethod
     def entry_point(config: dict, *args, **kwargs) -> OptionalScriptCallResult:
-        print('###################### ZteF601BridgeScriptModule ######################')
+        # print('###################### ZteF601BridgeScriptModule ######################')
         # return reg_dev_zte(self.dev_instance, extra_data, register_onu)
         return {1: 'success'}
