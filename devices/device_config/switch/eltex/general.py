@@ -1,10 +1,9 @@
 import math
 from typing import Optional, Generator, Iterable, Dict
 
-from netaddr import EUI
 from django.utils.translation import gettext_lazy as _
 
-from djing2.lib import safe_int, RuTimedelta
+from djing2.lib import safe_int, RuTimedelta, process_lock
 from devices.device_config.base import (
     BasePortInterface, Vlans, Vlan, MacItem, Macs,
     DeviceImplementationError, ListDeviceConfigType
@@ -150,6 +149,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
             name = self._get_vid_name(vid=vid)
             yield Vlan(vid=vid, title=name)
 
+    @process_lock()
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError('Port must be in range 1-%d' % self.ports_len)
@@ -162,7 +162,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
             if port_num != real_fdb_port_num:
                 continue
             vid = safe_int(oid[-7:-6][0])
-            fdb_mac = str(EUI(':'.join('%.2x' % int(i) for i in oid[-6:])))
+            fdb_mac = ':'.join('%.2x' % int(i) for i in oid[-6:])
             vid_name = self._get_vid_name(vid)
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
@@ -173,7 +173,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
             return
         for fdb_port, oid in self.get_list_with_oid('.1.3.6.1.2.1.17.7.1.2.2.1.2.%d' % vid):
             real_fdb_port_num = ports_map.get(int(fdb_port))
-            fdb_mac = str(EUI(':'.join('%.2x' % int(i) for i in oid[-6:])))
+            fdb_mac = ':'.join('%.2x' % int(i) for i in oid[-6:])
             vid_name = self._get_vid_name(vid)
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
