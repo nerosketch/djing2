@@ -1,6 +1,8 @@
 import re
 from typing import Optional
 
+from django.utils.translation import gettext_lazy as _
+
 from devices.device_config import expect_util
 from devices.device_config.base import OptionalScriptCallResult, DeviceConfigType
 from djing2.lib import process_lock, safe_int
@@ -59,7 +61,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 
     if choice == 0:
         ch.close()
-        raise OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
+        raise OnuZteRegisterError(_('unregistered onu not found, sn=%s') % sn)
     elif choice == 1:
         # Получим незареганные onu
         unregistered_onu = get_unregistered_onu(
@@ -68,7 +70,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
         )
         if unregistered_onu is None:
             ch.close()
-            raise OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
+            raise OnuZteRegisterError(_('unregistered onu not found, sn=%s') % sn)
 
         stack_num = int(unregistered_onu.get('stack_num'))
         rack_num = int(unregistered_onu.get('rack_num'))
