@@ -2,6 +2,7 @@ from hashlib import md5
 
 from django.db import transaction
 from django.db.utils import DatabaseError
+from django.db.models import Count
 from django.utils import timezone
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -15,7 +16,9 @@ from fin_app.models import AllTimePayLog, PayAllTimeGateway
 
 
 class AllTimeGatewayModelViewSet(DjingModelViewSet):
-    queryset = PayAllTimeGateway.objects.all()
+    queryset = PayAllTimeGateway.objects.annotate(
+        pay_count=Count('alltimepaylog')
+    )
     serializer_class = serializers.AllTimeGatewayModelSerializer
 
 

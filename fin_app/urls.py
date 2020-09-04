@@ -6,6 +6,7 @@ app_name = 'fin_app'
 
 
 router = DefaultRouter()
+router.register('log', views.AllTimePayLogModelViewSet)
 router.register('', views.AllTimeGatewayModelViewSet)
 
 urlpatterns = [
