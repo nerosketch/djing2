@@ -48,10 +48,9 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 'unknown'
             ),
             'signal': conv_zte_signal(signal),
+            'mac': sn_to_mac(sn),
             'info': (
                 (_('name'), self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s' % fiber_addr)),
-                (_('Mac address'), sn_to_mac(sn)),
-
                 # 'distance': safe_float(distance) / 10,
                 # 'ip_addr': self.get_item('.1.3.6.1.4.1.3902.1012.3.50.16.1.1.10.%s' % fiber_addr),
                 (_('vlans'), self.get_item('.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%s.1.1' % fiber_addr)),

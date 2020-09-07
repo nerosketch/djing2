@@ -149,9 +149,11 @@ class DevicePONViewSet(DjingModelViewSet):
     def fix_onu(self, request, pk=None):
         onu = self.get_object()
         fix_status, text = onu.fix_onu()
+        onu_serializer = self.get_serializer(onu)
         return Response({
             'text': text,
-            'status': 1 if fix_status else 2
+            'status': 1 if fix_status else 2,
+            'device': onu_serializer.data
         })
 
     @action(detail=True, methods=['post'])
@@ -240,7 +242,8 @@ class DevicePONViewSet(DjingModelViewSet):
                 vlans = dev.default_vlan_info()
             return Response(vlans)
         except UnsupportedReadingVlan:
-            return Response('Vlan config unsupported', status=status.HTTP_400_BAD_REQUEST)
+            # Vlan config unsupported
+            return Response(())
 
 
 class DeviceModelViewSet(DjingModelViewSet):
