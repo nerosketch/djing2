@@ -69,10 +69,10 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
                 return {
                     'status': status_map.get(status, 'unknown'),
                     'signal': signal / 10 if signal else '—',
+                    'mac': macbin2str(mac),
                     'info': (
                         # IF-MIB::ifDescr
                         (_('name'), self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % num)),
-                        (_('Mac address'), macbin2str(mac)),
                         # IF-MIB::ifMtu
                         (_('mtu'), self.get_item('.1.3.6.1.2.1.2.2.1.4.%d' % num)),
                         # IF-MIB::ifInOctets

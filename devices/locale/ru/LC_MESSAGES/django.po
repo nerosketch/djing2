@@ -272,10 +272,6 @@ msgstr "Onu с мак адресом \"%(onu_mac)s\" не найдено на OL
 msgid "Parent device not found"
 msgstr "Вышестоящее устройство не найдено"
 
-#: models.py:179
-msgid "Fixed"
-msgstr "Исправлено, обновите страницу"
-
 #: models.py:261 models.py:278
 msgid "Not chosen"
 msgstr "Не выбрано"
