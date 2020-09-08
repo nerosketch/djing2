@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from django.utils.translation import gettext_lazy as _
+from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
@@ -7,9 +8,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 
-from djing2.viewsets import DjingModelViewSet, BaseNonAdminReadOnlyModelViewSet
+from djing2.viewsets import (
+    DjingModelViewSet, BaseNonAdminReadOnlyModelViewSet,
+    DjingSuperUserModelViewSet
+)
 from profiles.models import UserProfile, UserProfileLog
-from profiles.serializers import UserProfileSerializer, UserProfileLogSerializer, UserProfilePasswordSerializer
+from profiles.serializers import (
+    UserProfileSerializer, UserProfileLogSerializer,
+    UserProfilePasswordSerializer,
+    UserObjectPermissionSerializer,
+    GroupObjectPermissionSerializer)
 
 
 class UserProfileViewSet(DjingModelViewSet):
@@ -37,7 +45,8 @@ class UserProfileViewSet(DjingModelViewSet):
         profile.responsibility_groups.set(checked_groups)
         return Response()
 
-    def _check_passw_data(self, data):
+    @staticmethod
+    def _check_passw_data(data):
         serializer = UserProfilePasswordSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         return serializer.data
@@ -96,3 +105,13 @@ class CurrentAuthenticatedProfileROViewSet(BaseNonAdminReadOnlyModelViewSet):
 
     def get_queryset(self):
         return super().get_queryset().filter(pk=self.request.user.pk)
+
+
+class UserObjectPermissionViewSet(DjingSuperUserModelViewSet):
+    queryset = UserObjectPermission.objects.all()
+    serializer_class = UserObjectPermissionSerializer
+
+
+class GroupObjectPermissionViewSet(DjingSuperUserModelViewSet):
+    queryset = GroupObjectPermission.objects.all()
+    serializer_class = GroupObjectPermissionSerializer
