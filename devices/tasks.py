@@ -1,7 +1,7 @@
 from uwsgi_tasks import task, TaskExecutor
 
 from devices.models import Device
-from devices.switch_config import DEVICE_ONU_TYPES
+from devices.device_config import DEVICE_ONU_TYPES
 
 
 @task(executor=TaskExecutor.SPOOLER)

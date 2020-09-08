@@ -1,25 +1,15 @@
 from typing import Optional, Dict
+
 from django.utils.translation import gettext_lazy as _
 from transliterate import translit
 
 from djing2.lib import safe_int
-from ..base import DeviceConsoleError
-from ..utils import norm_name
-from ..expect_util import ExpectValidationError
-from .f660_expect import register_onu
-from .f601_expect import remove_from_olt
+from devices.device_config.base import DeviceConsoleError, ListDeviceConfigType
+from devices.device_config.utils import norm_name
+from devices.device_config.expect_util import ExpectValidationError
+from .onu_config.zte_f601_bridge_config import remove_from_olt
+from .zte_utils import sn_to_mac, conv_zte_signal
 from ..epon import EPON_BDCOM_FORA
-from .zte_utils import reg_dev_zte, sn_to_mac
-
-
-def _conv_zte_signal(lvl: int) -> float:
-    if lvl == 65535: return 0.0
-    r = 0
-    if 0 < lvl < 30000:
-        r = lvl * 0.002 - 30
-    elif 60000 < lvl < 65534:
-        r = (lvl - 65534) * 0.002 - 30
-    return round(r, 2)
 
 
 class OnuZTE_F660(EPON_BDCOM_FORA):
@@ -57,11 +47,10 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 safe_int(self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1' % fiber_addr)),
                 'unknown'
             ),
-            'signal': _conv_zte_signal(signal),
+            'signal': conv_zte_signal(signal),
+            'mac': sn_to_mac(sn),
             'info': (
                 (_('name'), self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s' % fiber_addr)),
-                (_('Mac address'), sn_to_mac(sn)),
-
                 # 'distance': safe_float(distance) / 10,
                 # 'ip_addr': self.get_item('.1.3.6.1.4.1.3902.1012.3.50.16.1.1.10.%s' % fiber_addr),
                 (_('vlans'), self.get_item('.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%s.1.1' % fiber_addr)),
@@ -69,6 +58,78 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 (_('onu_type'), self.get_item('.1.3.6.1.4.1.3902.1012.3.28.1.1.1.%s' % fiber_addr)),
             )
         }
+
+    def default_vlan_info(self):
+        default_vid = 1
+        if self.dev_instance and self.dev_instance.parent_dev and self.dev_instance.parent_dev.extra_data:
+            default_vid = self.dev_instance.parent_dev.extra_data.get('default_vid', 1)
+        def_vids = [{'vid': default_vid, 'native': True}]
+        return [
+            {
+                'port': 1,
+                'vids': def_vids
+            },
+            {
+                'port': 2,
+                'vids': def_vids
+            },
+            {
+                'port': 3,
+                'vids': def_vids
+            },
+            {
+                'port': 4,
+                'vids': def_vids
+            }
+        ]
+
+    def read_onu_vlan_info(self):
+        if self.dev_instance is None:
+            return
+        snmp_extra = self.dev_instance.snmp_extra
+        if not snmp_extra:
+            return self.default_vlan_info()
+        fiber_num, onu_num = snmp_extra.split('.')
+        fiber_num, onu_num = int(fiber_num), int(onu_num)
+
+        def _get_access_vlan(port_num: int) -> int:
+            return safe_int(self.get_item(
+                '.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.4.%(fiber_num)d.%(onu_num)d.1.%(port_num)d' % {
+                    'port_num': port_num,
+                    'fiber_num': fiber_num,
+                    'onu_num': onu_num
+                }))
+
+        def _get_trunk_vlans(port_num: int) -> list:
+            trunk_vlans = self.get_item(
+                '.1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%(fiber_num)d.%(onu_num)d.1.%(port_num)d' % {
+                    'port_num': port_num,
+                    'fiber_num': fiber_num,
+                    'onu_num': onu_num
+                })
+            trunk_vlans = list(map(int, trunk_vlans.split(b','))) if trunk_vlans else []
+            return [
+                {'vid': v, 'native': False}
+                for v in trunk_vlans
+            ]
+
+        # Result example
+        # [
+        #     {
+        #         'port': 1,
+        #         'vids': [
+        #             {'vid': 143, 'native': True},
+        #             {'vid': 144, 'native': False},
+        #             {'vid': 145, 'native': False},
+        #         ]
+        #     }
+        # ]
+        return [
+            {
+                'port': i,
+                'vids': [{'vid': _get_access_vlan(port_num=i), 'native': True}] + _get_trunk_vlans(port_num=i),
+            } for i in range(1, 5)
+        ]
 
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
@@ -102,9 +163,6 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             "}\n"
         )
         return '\n'.join(i for i in r if i)
-
-    def register_device(self, extra_data: Dict):
-        return reg_dev_zte(self.dev_instance, extra_data, register_onu)
 
     def remove_from_olt(self, extra_data: Dict):
         dev = self.dev_instance
@@ -155,4 +213,10 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             return 'gpon-onu_1/%d/%d:%s' % (
                 rack_num, fiber_num, onu_port_num
             )
-        return '¯ \ _ (ツ) _ / ¯'
+        return super().get_fiber_str()
+
+    @staticmethod
+    def get_config_types() -> ListDeviceConfigType:
+        from .onu_config.zte_f660_router_config import ZteF660RouterScriptModule
+        from .onu_config.zte_f660_static_bridge_config import ZteF660BridgeStaticScriptModule
+        return [ZteF660RouterScriptModule, ZteF660BridgeStaticScriptModule]
