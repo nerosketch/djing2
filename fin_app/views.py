@@ -5,6 +5,7 @@ from django.db.utils import DatabaseError
 from django.db.models import Count
 from django.utils import timezone
 from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_xml.renderers import XMLRenderer
 
@@ -38,6 +39,7 @@ class AllTimePay(GenericAPIView):
     serializer_class = serializers.PayAllTimeGatewayModelSerializer
     lookup_field = 'slug'
     lookup_url_kwarg = 'pay_slug'
+    permission_classes = [AllowAny]
 
     @staticmethod
     def _bad_ret(err_id: int, err_description: str=None) -> Response:

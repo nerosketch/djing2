@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'encrypted_model_fields',
     'django_filters',
     'corsheaders',
+    'guardian',
     'django_cleanup.apps.CleanupConfig',
     'groupapp',
     'profiles.apps.ProfilesConfig',
@@ -235,10 +236,19 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
     'DATETIME_FORMAT': '%d %B %H:%M',
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.IsAdminUser',
+        'djing2.permissions.CustomizedDjangoModelPermissions'
+    ]
     # 'DEFAULT_RENDERER_CLASSES': (
     #     'rest_framework.renderers.JSONRenderer',
     # )
 }
+
+# Guardian options
+GUARDIAN_RAISE_403 = True
+# GUARDIAN_AUTO_PREFETCH = True
 
 if DEBUG:
     CORS_ORIGIN_ALLOW_ALL = True
