@@ -44,3 +44,15 @@ class UserProfileLogSerializer(BaseCustomModelSerializer):
         model = UserProfileLog
         fields = ('do_type', 'additional_text', 'action_date',
                   'do_type_text')
+
+
+class UserProfilePasswordSerializer(serializers.Serializer):
+    old_passw = serializers.CharField(label='Old password', max_length=128, required=True)
+    new_passw = serializers.CharField(label='Old password', max_length=128, required=True)
+
+    # def update(self, instance, validated_data):
+    #     print('UserProfilePasswordSerializer.update', instance, validated_data)
+    #     return instance
+
+    # def create(self, validated_data):
+    #     print('UserProfilePasswordSerializer.create', validated_data)

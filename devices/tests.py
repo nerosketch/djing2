@@ -1,8 +1,8 @@
 from django.test import SimpleTestCase, TestCase
 
 from devices.models import Device, Port
-from devices.switch_config import DEVICE_TYPE_DlinkDGS1100_10ME, DEVICE_TYPE_OnuZTE_F601
-from devices.switch_config.eltex import EltexSwitch
+from devices.device_config import DEVICE_TYPE_DlinkDGS1100_10ME, DEVICE_TYPE_OnuZTE_F601
+from devices.device_config.switch.eltex import EltexSwitch
 
 
 class DeviceTestCase(TestCase):

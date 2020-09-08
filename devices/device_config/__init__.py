@@ -1,17 +1,10 @@
 import importlib
 import os
+from devices.device_config.pon import *
+from devices.device_config.switch import *
 from .base import *
-from .dlink import (
-    DlinkDGS1100_10ME, DlinkDGS_3120_24SCSwitchInterface,
-    DlinkDGS_1100_06MESwitchInterface, DlinkDGS_3627GSwitchInterface
-)
-from .eltex import EltexSwitch
-from .epon import BDCOM_P3310C, EPON_BDCOM_FORA
-from .expect_util import *
-from .gpon import ZTE_C320, OnuZTE_F660, OnuZTE_F601, OnuZTE_F660_Bridge
-from .huawei import HuaweiS2300
+from .expect_util import ExpectValidationError
 from .unknown_device import UnknownDevice
-
 
 DEVICE_TYPE_UNKNOWN = 0
 DEVICE_TYPE_DlinkDGS1100_10ME = 1
@@ -25,7 +18,6 @@ DEVICE_TYPE_HuaweiS2300 = 8
 DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface = 9
 DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface = 10
 DEVICE_TYPE_DlinkDGS_3627GSwitchInterface = 11
-DEVICE_TYPE_OnuZTE_F660_BRIDGE = 12
 
 DEVICE_TYPES = [
     (DEVICE_TYPE_UNKNOWN, UnknownDevice),
@@ -40,14 +32,13 @@ DEVICE_TYPES = [
     (DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface, DlinkDGS_3120_24SCSwitchInterface),
     (DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface, DlinkDGS_1100_06MESwitchInterface),
     (DEVICE_TYPE_DlinkDGS_3627GSwitchInterface, DlinkDGS_3627GSwitchInterface),
-    (DEVICE_TYPE_OnuZTE_F660_BRIDGE, OnuZTE_F660_Bridge)
 ]
 
-DEVICE_ONU_TYPES = (
+DEVICE_ONU_TYPES = [
     DEVICE_TYPE_EPON_BDCOM_FORA,
     DEVICE_TYPE_OnuZTE_F660,
     DEVICE_TYPE_OnuZTE_F601
-)
+]
 
 port_templates_modules = {}
 #
@@ -67,7 +58,7 @@ for dirc in all_directories:
         for port_template_module_file in port_template_module_files:
             port_template_module_file = port_template_module_file.split('.')[0]
             port_template_mod = importlib.import_module(
-                'devices.switch_config.%s.port_templates.%s' % (dirc, port_template_module_file))
+                'devices.device_config.%s.port_templates.%s' % (dirc, port_template_module_file))
             func_names = filter(lambda fn: not fn.startswith('_'), dir(port_template_mod))
             for func_name in func_names:
                 func = getattr(port_template_mod, func_name)
@@ -77,17 +68,21 @@ for dirc in all_directories:
     except (ModuleNotFoundError, FileNotFoundError):
         continue
 
-__all__ = (
-    'DEVICE_TYPES', 'DEVICE_TYPE_UNKNOWN', 'DEVICE_TYPE_DlinkDGS1100_10ME',
-    'DEVICE_TYPE_BDCOM_P3310C', 'DEVICE_TYPE_EPON_BDCOM_FORA', 'DEVICE_TYPE_EltexSwitch',
-    'DEVICE_TYPE_ZTE_C320', 'DEVICE_TYPE_OnuZTE_F660', 'DEVICE_TYPE_OnuZTE_F601',
-    'DEVICE_TYPE_HuaweiS2300', 'DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface',
-    'DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface', 'DEVICE_TYPE_DlinkDGS_3627GSwitchInterface',
-    'DEVICE_ONU_TYPES',
-    'DeviceImplementationError', 'DeviceConfigurationError',
-    'DeviceConnectionError', 'BaseSNMPWorker',
-    'BaseDeviceInterface', 'BasePortInterface', 'port_template',
-    'ExpectValidationError', 'BasePON_ONU_Interface', 'BaseSwitchInterface',
-    'BasePONInterface', 'BasePON_ONU_Interface', 'port_templates_modules',
-    'Vlans', 'Macs', 'Vlan', 'MacItem', 'DeviceConsoleError'
-)
+
+# Check type for device config classes
+def _check_device_config_types():
+    allowed_symbols_pattern = re.compile(r'^\w{1,64}$')
+    all_dtypes = (klass.get_config_types() for code, klass in DEVICE_TYPES if
+                  issubclass(klass, (BasePON_ONU_Interface, BasePortInterface)))
+    all_dtypes = (a for b in all_dtypes if b for a in b)
+    for dtype in all_dtypes:
+        if not issubclass(dtype, DeviceConfigType):
+            raise DeviceImplementationError(
+                'device config type "%s" must be subclass of DeviceConfigType' % repr(dtype))
+        device_config_short_code = str(dtype.short_code)
+        if not allowed_symbols_pattern.match(device_config_short_code):
+            raise DeviceImplementationError(
+                'device config "%s" short_code must be equal regexp "^\w{1,64}$"' % repr(dtype))
+
+
+_check_device_config_types()

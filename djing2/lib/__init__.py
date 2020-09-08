@@ -55,14 +55,17 @@ class MyChoicesAdapter(Iterator):
 class RuTimedelta(timedelta):
 
     def __str__(self):
-        if self.days > 1:
+        if not str(self.days).isnumeric():
+            raise TypeError('Date days is not numeric')
+        last_digit = int(str(self.days)[-1:])
+        if last_digit > 1:
             ru_days = 'дней'
-            if 5 > self.days > 1:
+            if 5 > last_digit > 1:
                 ru_days = 'дня'
-            elif self.days == 1:
+            elif last_digit == 1:
                 ru_days = 'день'
             # text_date = '%d %s %s' % (self.days, ru_days, text_date)
-            text_date = '%d %s' % (self.days, ru_days)
+            text_date = '%d %s' % (last_digit, ru_days)
         else:
             text_date = super().__str__()
         return text_date
@@ -114,22 +117,25 @@ class ProcessLocked(OSError):
     """only one process for function"""
 
 
-def process_lock(fn):
-    @wraps(fn)
-    def wrapped(*args, **kwargs):
-        s = None
-        try:
-            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            # Create an abstract socket, by prefixing it with null.
-            s.bind('\0postconnect_djing2_lock_func_%s' % fn.__name__)
-            return fn(*args, **kwargs)
-        except socket.error:
-            raise ProcessLocked
-        finally:
-            if s is not None:
-                s.close()
+def process_lock(lock_name=None):
+    def process_lock_wrap(fn):
+        @wraps(fn)
+        def wrapped(*args, **kwargs):
+            s = None
+            try:
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                # Create an abstract socket, by prefixing it with null.
+                lock_fn_name = lock_name if lock_name is not None else fn.__name__
+                s.bind('\0postconnect_djing2_lock_func_%s' % lock_fn_name)
+                return fn(*args, **kwargs)
+            except socket.error:
+                raise ProcessLocked
+            finally:
+                if s is not None:
+                    s.close()
 
-    return wrapped
+        return wrapped
+    return process_lock_wrap
 
 
 def macbin2str(bin_mac: bytes) -> str:
