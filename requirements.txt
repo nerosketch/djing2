@@ -2,6 +2,9 @@ Django==3.0.8
 djangorestframework==3.11.0
 Pillow==7.1.2
 
+# permissions
+django-guardian
+
 # for mac address field
 netaddr==0.7.20
 
