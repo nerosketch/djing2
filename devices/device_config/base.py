@@ -2,12 +2,16 @@ import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
 # from telnetlib import Telnet
-from typing import Generator, Optional, Dict, AnyStr, Tuple, Any
-from easysnmp import Session
+from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List
+from easysnmp import Session, EasySNMPConnectionError
 from transliterate import translit
 
 from django.utils.translation import gettext_lazy as _, gettext
+from django.conf import settings
 from djing2.lib import RuTimedelta, macbin2str
+
+
+OptionalScriptCallResult = Optional[Dict[int, str]]
 
 
 class DeviceImplementationError(NotImplementedError):
@@ -23,6 +27,10 @@ class DeviceConsoleError(Exception):
 
 
 class DeviceConnectionError(ConnectionError):
+    pass
+
+
+class UnsupportedReadingVlan(NotImplementedError):
     pass
 
 
@@ -57,17 +65,26 @@ class BaseSNMPWorker(Session):
         except OSError as e:
             raise DeviceConnectionError(e)
 
-    def set_int_value(self, oid: str, value) -> bool:
-        return self.set(oid, value, 'i')
+    def set_int_value(self, oid: str, value: int) -> bool:
+        try:
+            return self.set(oid, value, 'i')
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
     def get_list(self, oid) -> Generator:
-        for v in self.walk(oid):
-            yield v.value
+        try:
+            for v in self.walk(oid):
+                yield v.value
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
     def get_list_keyval(self, oid) -> Generator:
-        for v in self.walk(oid):
-            snmpnum = v.oid.split('.')[-1:]
-            yield v.value, snmpnum[0] if len(snmpnum) > 0 else None
+        try:
+            for v in self.walk(oid):
+                snmpnum = v.oid.split('.')[-1:]
+                yield v.value, snmpnum[0] if len(snmpnum) > 0 else None
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
     def get_next_keyval(self, oid) -> Tuple:
         v = self.get_next(oid)
@@ -77,56 +94,41 @@ class BaseSNMPWorker(Session):
         return v.value, snmpnum[0] if len(snmpnum) > 0 else None
 
     def get_list_with_oid(self, oid) -> Generator:
-        for v in self.walk(oid):
-            res_oid = v.oid.split('.')
-            yield v.value, res_oid
+        try:
+            for v in self.walk(oid):
+                res_oid = v.oid.split('.')
+                yield v.value, res_oid
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
     def get_item(self, oid) -> Any:
-        v = self.get(oid).value
-        if isinstance(v, str):
-            if v and v != 'NOSUCHINSTANCE':
-                return v.encode()
-            return None
-        return v
+        try:
+            v = self.get(oid).value
+            if isinstance(v, str):
+                if v and v != 'NOSUCHINSTANCE':
+                    return v.encode()
+                return None
+            return v
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
     def get_item_plain(self, oid) -> Any:
-        v = self.get(oid).value
-        if isinstance(v, str):
-            if v and v != 'NOSUCHINSTANCE':
-                return v
-            return None
-        return v
-
-
-# class BaseTelnetWorker(Telnet):
-#     def __init__(self, host: str, prompt: bytes = b'#', endl: bytes = b'\n', port=23):
-#         super().__init__(host=host, port=port)
-#         self.prompt = prompt
-#         if isinstance(endl, bytes):
-#             self.endl = endl
-#         else:
-#             self.endl = str(endl).encode()
-#
-#     def login(self, login_prompt: bytes, login: str, password_prompt: bytes, password: str) -> bool:
-#         self.read_until(login_prompt)
-#         self.write(login)
-#         self.read_until(password_prompt)
-#         self.write(password)
-#         self.read_until(self.prompt)
-#         return True
-#
-#     def write(self, buffer: AnyStr) -> None:
-#         if isinstance(buffer, bytes):
-#             return super().write(buffer + self.endl)
-#         return super().write(buffer.encode() + self.endl)
-#
-#     def read_until(self, match, timeout=None):
-#         if isinstance(match, bytes):
-#             return super().read_until(match=match, timeout=timeout)
-#         return super().read_until(match=str(match).encode(), timeout=timeout)
+        try:
+            v = self.get(oid).value
+            if isinstance(v, str):
+                if v and v != 'NOSUCHINSTANCE':
+                    return v
+                return None
+            return v
+        except EasySNMPConnectionError as err:
+            raise DeviceConnectionError(err)
 
 
 class BaseDeviceInterface(BaseSNMPWorker):
+
+    """How much ports is available for switch"""
+    ports_len: int
+
     def __init__(self, dev_instance=None, host: str=None, snmp_community='public'):
         """
         :param dev_instance: an instance of devices.models.Device
@@ -156,8 +158,8 @@ class BaseDeviceInterface(BaseSNMPWorker):
         _vlan_gen = (v for v in (vlan,))
         return self.create_vlans(_vlan_gen)
 
-    def delete_vlan(self, vid: int) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, title=None),))
+    def delete_vlan(self, vid: int, is_management: bool) -> bool:
+        _vlan_gen = (v for v in (Vlan(vid=vid, title=None, is_management=is_management, native=False),))
         return self.delete_vlans(_vlan_gen)
 
     def read_all_vlan_info(self) -> Vlans:
@@ -257,11 +259,6 @@ class BaseSwitchInterface(BaseDeviceInterface):
         """Disable port by number"""
         pass
 
-    @property
-    @abstractmethod
-    def ports_len(self) -> int:
-        """How much ports is available for switch"""
-
     @abstractmethod
     def read_port_vlan_info(self, port: int) -> Vlans:
         """
@@ -293,7 +290,7 @@ class BaseSwitchInterface(BaseDeviceInterface):
     def attach_vlan_to_port(self, vlan: Vlan, port: int, tag: bool = True) -> bool:
         """
         Attach vlan to switch port
-        :param vid:
+        :param vlan:
         :param port:
         :param tag: Tagged if True or untagged otherwise
         :return:
@@ -308,7 +305,7 @@ class BaseSwitchInterface(BaseDeviceInterface):
     def detach_vlan_from_port(self, vlan: Vlan, port: int) -> bool:
         """
         Detach vlan from switch port
-        :param vid:
+        :param vlan:
         :param port:
         :return: Operation result
         """
@@ -316,8 +313,54 @@ class BaseSwitchInterface(BaseDeviceInterface):
 
     @staticmethod
     def _normalize_name(name: str) -> str:
-        vname = translit(name, language_code='ru', reversed=True)
+        language_code = getattr(settings, 'LANGUAGE_CODE', 'ru')
+        vname = translit(name, language_code=language_code, reversed=True)
         return re.sub(r'\W+', '_', vname)[:32]
+
+
+class DeviceConfigType(object):
+    title: str
+    short_code: str
+    accept_vlan: bool
+
+    def __init__(self, title: str, code: str):
+        if not isinstance(title, str):
+            raise TypeError
+        if not isinstance(code, str):
+            raise TypeError
+        self.title = title
+        self.short_code = code
+
+    @classmethod
+    @abstractmethod
+    def entry_point(cls, config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
+        """
+        This method is entry point for all custom device automation
+        :param config: Dict from views.apply_device_onu_config_template
+        :param device: devices.models.Device instance
+        :param args:
+        :param kwargs:
+        :return: Result from call automation script, that is then
+                 returned to user side by HTTP
+        """
+        raise NotImplementedError
+
+    def __call__(self, *args, **kwargs) -> OptionalScriptCallResult:
+        return self.entry_point(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return str(self.title)
+
+    @classmethod
+    def to_dict(cls):
+        return {
+            'title': cls.title,
+            'code': cls.short_code,
+            'accept_vlan': cls.accept_vlan
+        }
+
+
+ListDeviceConfigType = List[DeviceConfigType]
 
 
 class BasePortInterface(ABC):
@@ -349,11 +392,17 @@ class BasePortInterface(ABC):
             'uptime': str(RuTimedelta(seconds=self._uptime / 100)) if self._uptime else None
         }
 
+    @staticmethod
+    @abstractmethod
+    def get_config_types() -> ListDeviceConfigType:
+        """
+        Returns all possible config type for this device type
+        :return: List instance of DeviceConfigType
+        """
+        raise NotImplementedError
+
 
 class BasePONInterface(BaseDeviceInterface):
-    @abstractmethod
-    def register_device(self, extra_data: Dict) -> None:
-        pass
 
     @abstractmethod
     def remove_from_olt(self, extra_data: Dict) -> None:
@@ -363,7 +412,7 @@ class BasePONInterface(BaseDeviceInterface):
     def attach_vlans_to_uplink(self, vlans: Vlans, *args, **kwargs) -> None:
         """
         Attach vlan to uplink port
-        :param vids: vid iterable, each element must be instance of Int
+        :param vlans: vlan iterable, each element must be instance of Vlan
         :param args: optional parameters for each implementation
         :param kwargs: optional parameters for each implementation
         :return: nothing
@@ -384,7 +433,7 @@ class BasePON_ONU_Interface(BaseDeviceInterface):
                  num=0, name='', status=False, mac: bytes=b'',
                  speed=0, uptime=None, snmp_num=None, *args, **kwargs):
         """
-        :param dev_interface: a subclass of devices.switch_config.base.BasePONInterface
+        :param dev_interface: a subclass of devices.device_config.base.BasePONInterface
         :param dev_instance: an instance of devices.models.Device
         :param num: onu number
         :param name: onu name
@@ -409,6 +458,23 @@ class BasePON_ONU_Interface(BaseDeviceInterface):
     @abstractmethod
     def get_fiber_str(self):
         return '¯ \ _ (ツ) _ / ¯'
+
+    @abstractmethod
+    def read_onu_vlan_info(self):
+        raise UnsupportedReadingVlan
+
+    @abstractmethod
+    def default_vlan_info(self):
+        raise UnsupportedReadingVlan
+
+    @staticmethod
+    @abstractmethod
+    def get_config_types() -> ListDeviceConfigType:
+        """
+        Returns all possible config type for this device type
+        :return: List instance of DeviceConfigType
+        """
+        return []
 
 
 def port_template(fn):

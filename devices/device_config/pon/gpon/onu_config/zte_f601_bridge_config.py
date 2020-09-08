@@ -1,8 +1,12 @@
 import re
 from typing import Optional
+
+from django.utils.translation import gettext_lazy as _
+
+from devices.device_config import expect_util
+from devices.device_config.base import OptionalScriptCallResult, DeviceConfigType
 from djing2.lib import process_lock, safe_int
-from .. import expect_util
-from .zte_utils import (
+from ..zte_utils import (
     get_unregistered_onu, get_free_registered_onu_number,
     zte_onu_conv_to_num, sn_to_mac, zte_onu_conv_from_onu,
     ZteOltLoginFailed, OnuZteRegisterError, ZTEFiberIsFull,
@@ -15,7 +19,7 @@ def get_onu_template(vlan_id: int, mac_addr: str):
         'sn-bind enable sn',
         'tcont 1 profile HSI_100',
         'gemport 1 unicast tcont 1 dir both',
-        'switchport mode hybrid vport 1',
+        'switchport mode trunk vport 1',
         'service-port 1 vport 1 user-vlan %d vlan %d' % (vlan_id, vlan_id),
         'port-location format flexible-syntax vport 1',
         'port-location sub-option remote-id enable vport 1',
@@ -57,7 +61,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 
     if choice == 0:
         ch.close()
-        raise OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
+        raise OnuZteRegisterError(_('unregistered onu not found, sn=%s') % sn)
     elif choice == 1:
         # Получим незареганные onu
         unregistered_onu = get_unregistered_onu(
@@ -66,7 +70,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
         )
         if unregistered_onu is None:
             ch.close()
-            raise OnuZteRegisterError('unregistered onu not found, sn=%s' % sn)
+            raise OnuZteRegisterError(_('unregistered onu not found, sn=%s') % sn)
 
         stack_num = int(unregistered_onu.get('stack_num'))
         rack_num = int(unregistered_onu.get('rack_num'))
@@ -147,7 +151,7 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 
 
 # Main Entry point
-@process_lock
+@process_lock(lock_name='zte_olt')
 def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_login: str,
                  telnet_passw: str, telnet_prompt: str, onu_vlan: int):
     serial = serial.upper()
@@ -171,7 +175,7 @@ def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_l
     )
 
 
-@process_lock
+@process_lock(lock_name='zte_olt')
 def remove_from_olt(zte_ip_addr: str, telnet_login: str,
                     telnet_passw: str, telnet_prompt: str, snmp_info: str):
     if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
@@ -206,3 +210,15 @@ def remove_from_olt(zte_ip_addr: str, telnet_login: str,
     ch.do_cmd('exit', '%s(config)#' % telnet_prompt)
     ch.close()
     return True
+
+
+class ZteF601BridgeScriptModule(DeviceConfigType):
+    title = 'Zte F601 bridge'
+    short_code = 'zte_f601_bridge'
+    accept_vlan = True
+
+    @staticmethod
+    def entry_point(config: dict, *args, **kwargs) -> OptionalScriptCallResult:
+        # print('###################### ZteF601BridgeScriptModule ######################')
+        # return reg_dev_zte(self.dev_instance, extra_data, register_onu)
+        return {1: 'success'}

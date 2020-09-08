@@ -1,6 +1,6 @@
 from typing import Optional
 
-from .base import BaseDeviceInterface
+from .base import BaseDeviceInterface, ListDeviceConfigType
 
 
 class UnknownDevice(BaseDeviceInterface):
@@ -20,3 +20,7 @@ class UnknownDevice(BaseDeviceInterface):
 
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
         return ''
+
+    @staticmethod
+    def get_config_types() -> ListDeviceConfigType:
+        return []

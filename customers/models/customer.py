@@ -107,7 +107,7 @@ class CustomerStreet(models.Model):
         db_table = 'customer_street'
         verbose_name = _('Street')
         verbose_name_plural = _('Streets')
-        ordering = 'id',
+        ordering = 'name',
 
 
 class CustomerLog(models.Model):
@@ -533,7 +533,7 @@ class Customer(BaseAccount):
         )
         verbose_name = _('Customer')
         verbose_name_plural = _('Customers')
-        ordering = ('id',)
+        ordering = ('fio',)
         unique_together = ('ip_address', 'gateway')
 
 
