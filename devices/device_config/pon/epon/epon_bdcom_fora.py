@@ -3,10 +3,12 @@ from django.utils.translation import gettext, gettext_lazy as _
 from easysnmp import EasySNMPTimeoutError
 from transliterate import translit
 
-from devices.switch_config.utils import norm_name
 from djing2.lib import safe_int, safe_float, macbin2str, RuTimedelta, bytes2human
-from ..base import BasePON_ONU_Interface, DeviceImplementationError, DeviceConfigurationError
-from ..expect_util import ExpectValidationError
+from devices.device_config.base import (
+    BasePON_ONU_Interface, DeviceImplementationError,
+    DeviceConfigurationError)
+from devices.device_config.utils import norm_name
+from devices.device_config.expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
 
 
@@ -15,6 +17,7 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
     description = 'PON ONU BDCOM'
     tech_code = 'bdcom_onu'
     is_use_device_port = False
+    ports_len = 1
 
     def __init__(self, dev_instance, *args, **kwargs):
         dev_ip_addr = None
@@ -66,10 +69,10 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
                 return {
                     'status': status_map.get(status, 'unknown'),
                     'signal': signal / 10 if signal else '—',
+                    'mac': macbin2str(mac),
                     'info': (
                         # IF-MIB::ifDescr
                         (_('name'), self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % num)),
-                        (_('Mac address'), macbin2str(mac)),
                         # IF-MIB::ifMtu
                         (_('mtu'), self.get_item('.1.3.6.1.2.1.2.2.1.4.%d' % num)),
                         # IF-MIB::ifInOctets
@@ -130,9 +133,6 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
         )
         return '\n'.join(i for i in r if i)
 
-    def register_device(self, extra_data: Dict):
-        pass
-
     def remove_from_olt(self, extra_data: Dict):
         dev = self.dev_instance
         if not dev:
@@ -152,12 +152,3 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
             telnet_prompt=telnet.get('prompt'),
             int_name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % onu_sn)
         )
-
-    def port_disable(self, port_num: int):
-        pass
-
-    def port_enable(self, port_num: int):
-        pass
-
-    def get_fiber_str(self):
-        return '¯ \ _ (ツ) _ / ¯'

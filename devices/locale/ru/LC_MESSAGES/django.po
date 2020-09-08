@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-18 00:39+0300\n"
+"POT-Creation-Date: 2020-09-03 15:23+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,294 +17,340 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: devices/models.py:19
-msgid "Ip address"
-msgstr "Ip адрес"
+#: device_config/base.py:59
+msgid "Hostname required for snmp"
+msgstr "Адрес хоста необходим для snmp"
 
-#: devices/models.py:23
-msgid "Mac address"
-msgstr "Мак адрес"
-
-#: devices/models.py:26
-msgid "Comment"
-msgstr "Комментарий"
-
-#: devices/models.py:28
-msgid "Device type"
-msgstr "Тип устройства"
-
-#: devices/models.py:32
-msgid "SNMP password"
-msgstr "Пароль SNMP"
-
-#: devices/models.py:37
-msgid "Device group"
-msgstr "Группа устройства"
-
-#: devices/models.py:40
-msgid "Parent device"
-msgstr "Родительское устройство"
-
-#: devices/models.py:45
-msgid "SNMP extra info"
-msgstr "Доп. инфо для snmp"
-
-#: devices/models.py:49
-msgid "Extra data"
-msgstr "Дополнительные данные"
-
-#: devices/models.py:50
-msgid "Extra data in JSON format. You may use it for your custom data"
-msgstr ""
-"Дополнительные данные в формате JSON. Вы можете хранить там собственные "
-"данные"
-
-#: devices/models.py:55
-msgid "Undefined"
-msgstr "Не определено"
-
-#: devices/models.py:56
-msgid "Up"
-msgstr "В сети"
-
-#: devices/models.py:57
-msgid "Unreachable"
-msgstr "Не доступно"
-
-#: devices/models.py:58
-msgid "Down"
-msgstr "Не в сети"
-
-#: devices/models.py:60
-msgid "Status"
-msgstr "Состояние"
-
-#: devices/models.py:62
-msgid "Send notify when monitoring state changed"
-msgstr "Отправлять уведомления при событиях мониторинга"
-
-#: devices/models.py:66 devices/models.py:163
-msgid "Device"
-msgstr "Устройство"
-
-#: devices/models.py:67
-msgid "Devices"
-msgstr "Устройства"
-
-#: devices/models.py:108
-msgid "You should config parent OLT device for ONU"
-msgstr "Вы должны указать родительское устройство OLT для ONU"
-
-#: devices/models.py:110 devices/switch_config/dlink/dgs1100_10me.py:49
-#: devices/switch_config/gpon/zte_utils.py:30
-msgid "You have not info in extra_data field, please fill it in JSON"
-msgstr ""
-"Не заполнено поле 'Техническая информация', обратитесь к администратору"
-
-#: devices/models.py:130
-#, python-format
-msgid "Onu with mac \"%(onu_mac)s\" not found on OLT"
-msgstr "Onu с мак адресом \"%(onu_mac)s\" не найдено на OLT"
-
-#: devices/models.py:133
-msgid "Parent device not found"
-msgstr "Вышестоящее устройство не найдено"
-
-#: devices/models.py:140
-msgid "Fixed"
-msgstr "Исправлено, обновите страницу"
-
-#: devices/models.py:148 devices/models.py:168
-msgid "Not chosen"
-msgstr "Не выбрано"
-
-#: devices/models.py:149
-msgid "Default"
-msgstr "По умолчанию"
-
-#: devices/models.py:150
-msgid "Untagged"
-msgstr "Не тегирован"
-
-#: devices/models.py:151
-msgid "Tagged"
-msgstr "Тегирован"
-
-#: devices/models.py:152 devices/models.py:171
-msgid "Hybrid"
-msgstr "Гибрид"
-
-#: devices/models.py:155 devices/models.py:175
-msgid "Operating mode"
-msgstr "Режим"
-
-#: devices/models.py:165
-msgid "Number"
-msgstr "Номер"
-
-#: devices/models.py:166
-msgid "Description"
-msgstr "Описание"
-
-#: devices/models.py:169
-msgid "Access"
-msgstr "Доступ"
-
-#: devices/models.py:170
-msgid "Trunk"
-msgstr "Транк"
-
-#: devices/models.py:172
-msgid "General"
-msgstr ""
-
-#: devices/models.py:180
-msgid "VLan list"
-msgstr "Список VLAN'ов"
-
-#: devices/models.py:198
-msgid "Can toggle ports"
-msgstr "Может переключать порты"
-
-#: devices/models.py:200
-msgid "Port"
-msgstr "Порт"
-
-#: devices/models.py:201
-msgid "Ports"
-msgstr "Порты"
-
-#: devices/switch_config/base.py:43
+#: device_config/base.py:191
 msgid "Reboot not ready"
 msgstr "Перезагрузка для устройства не готова"
 
-#: devices/switch_config/dlink/dgs1100_10me.py:30
-#, python-format
-msgid "File %(filename)s is not exists or not executable"
-msgstr "Файл '%(filename)s' не существует или не исполняем"
+#: device_config/pon/epon/bdcom_p3310c.py:26
+#: device_config/switch/dlink/dgs_3120_24sc.py:28
+msgid "Ip address required"
+msgstr "Ip адрес необходим"
 
-#: devices/switch_config/eltex/general.py:20
-msgid "Eltex switch"
-msgstr "Элтекс свич"
+#: device_config/pon/epon/bdcom_p3310c.py:31
+#: device_config/pon/epon/epon_bdcom_fora.py:36
+msgid "For fetch additional device info, snmp community required"
+msgstr ""
+"Для получения дополнительной информации по устройству требуются snmp данные"
 
-#: devices/switch_config/epon/bdcom_p3310c.py:79
+#: device_config/pon/epon/bdcom_p3310c.py:80
 msgid "wait for a reply from the SNMP Timeout"
 msgstr "Время ожидания ответа от SNMP истекло"
 
-#: devices/switch_config/epon/epon_bdcom_expect.py:33
-#: devices/switch_config/gpon/zte_utils.py:25
+#: device_config/pon/epon/epon_bdcom_expect.py:33
+#: device_config/pon/gpon/zte_utils.py:25
 msgid "Wrong login or password for telnet access"
 msgstr "Не правильный логин или пароль для доступа по telnet"
 
-#: devices/switch_config/epon/epon_bdcom_fora.py:31
+#: device_config/pon/epon/epon_bdcom_fora.py:32
 msgid "Ip address or parent device with ip address required for ONU device"
 msgstr ""
 "Необходим ip адрес. Или родительское устройство с назначенным ip адресом "
 "необходимо."
 
-#: devices/switch_config/epon/epon_bdcom_fora.py:35
-msgid "For fetch additional device info, snmp community required"
-msgstr ""
-"Для получения дополнительной информации по устройству требуются snmp данные"
+#: device_config/pon/epon/epon_bdcom_fora.py:74
+#: device_config/pon/gpon/onu_zte_f660.py:52
+msgid "name"
+msgstr "имя"
 
-#: devices/switch_config/epon/epon_bdcom_fora.py:77
+#: device_config/pon/epon/epon_bdcom_fora.py:75
+#: device_config/pon/gpon/onu_zte_f660.py:53 models.py:32
+msgid "Mac address"
+msgstr "Мак адрес"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:77
+msgid "mtu"
+msgstr ""
+
+#: device_config/pon/epon/epon_bdcom_fora.py:79
+msgid "in_octets"
+msgstr "входящий трафик"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:81
+msgid "in_ucst_pkts"
+msgstr "входящие unicast пакеты"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:83
+msgid "in_not_ucst_pkts"
+msgstr "входящие не unicast пакеты"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:85
+msgid "in_discards"
+msgstr "входящие отброшенные пакеты"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:87
+msgid "in_errors"
+msgstr "входящие ошибки"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:89
+msgid "out_octets"
+msgstr "исходящий трафик"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:91
+msgid "out_ucst_pkts"
+msgstr "исходящие unicast пакеты"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:93
+msgid "out_not_ucst_pkts"
+msgstr "исходящие не unicast пакеты"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:95
+msgid "out_discards"
+msgstr "исходящие отброшенные пакеты"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:97
+msgid "out_errors"
+msgstr "исходящие ошибки"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:98
+msgid "uptime"
+msgstr "Время в сети"
+
+#: device_config/pon/epon/epon_bdcom_fora.py:102
 msgid "ONU not connected"
 msgstr "ONU не в сети"
 
-#: devices/switch_config/epon/epon_bdcom_fora.py:85
+#: device_config/pon/epon/epon_bdcom_fora.py:110
 msgid "Onu snmp field must be en integer"
 msgstr "Поле для snmp информации об ONU должно быть числом"
 
-#: devices/switch_config/gpon/onu_zte_f660.py:75
+#: device_config/pon/gpon/onu_config/zte_f601_bridge_config.py:64
+#: device_config/pon/gpon/onu_config/zte_f601_bridge_config.py:73
+#: device_config/pon/gpon/onu_config/zte_f660_router_config.py:52
+#: device_config/pon/gpon/onu_config/zte_f660_router_config.py:61
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:169
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:178
+#: device_config/pon/gpon/zte_utils.py:61
+#, python-format
+msgid "unregistered onu not found, sn=%s"
+msgstr "Незарегистрированная onu с серийным номером '%s' не найдена"
+
+#: device_config/pon/gpon/onu_config/zte_f660_router_config.py:133
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:257
+#: models.py:147
+msgid "You should config parent OLT device for ONU"
+msgstr "Вы должны указать родительское устройство OLT для ONU"
+
+#: device_config/pon/gpon/onu_config/zte_f660_router_config.py:135
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:259
+#: device_config/pon/gpon/zte_utils.py:30
+#: device_config/switch/dlink/dgs_1100_10me.py:37 models.py:149
+msgid "You have not info in extra_data field, please fill it in JSON"
+msgstr ""
+"Не заполнено поле 'Техническая информация', обратитесь к администратору"
+
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:51
+msgid "Multiple native vid is not allowed on one port"
+msgstr "Несколько untagged vid не может быть на одном порту"
+
+#: device_config/pon/gpon/onu_zte_f660.py:57
+msgid "vlans"
+msgstr "вланы"
+
+#: device_config/pon/gpon/onu_zte_f660.py:58
+msgid "serial"
+msgstr "серийник"
+
+#: device_config/pon/gpon/onu_zte_f660.py:59
+msgid "onu_type"
+msgstr "тип onu"
+
+#: device_config/pon/gpon/onu_zte_f660.py:142
 msgid "Zte onu snmp field must be two dot separated integers"
 msgstr ""
 "Поле snmp информации для ZTE ONU должно быть двумя целыми числами, "
 "разделенными точкой"
 
-#: devices/switch_config/gpon/onu_zte_f660.py:123
+#: device_config/pon/gpon/onu_zte_f660.py:190
 msgid "Mac of device not equal mac by snmp"
 msgstr "Мак устройства не совпадает с маком, полученным по snmp"
 
-#: devices/switch_config/gpon/onu_zte_f660.py:133
+#: device_config/pon/gpon/onu_zte_f660.py:200
 msgid "Could not fetch serial for onu"
 msgstr "Не получается получить серийный номер для onu"
 
-#: devices/switch_config/huawei/s2300.py:8
+#: device_config/switch/dlink/dgs_1100_10me.py:20
+#, python-format
+msgid "File %(filename)s is not exists or not executable"
+msgstr "Файл '%(filename)s' не существует или не исполняем"
+
+#: device_config/switch/eltex/general.py:18
+msgid "Eltex switch"
+msgstr "Элтекс свич"
+
+#: device_config/switch/huawei/s2300.py:9
 msgid "Huawei switch"
+msgstr "Huawei свич"
+
+#: models.py:28
+msgid "Ip address"
+msgstr "Ip адрес"
+
+#: models.py:35
+msgid "Comment"
+msgstr "Комментарий"
+
+#: models.py:37
+msgid "Device type"
+msgstr "Тип устройства"
+
+#: models.py:41
+msgid "SNMP password"
+msgstr "Пароль SNMP"
+
+#: models.py:46
+msgid "Device group"
+msgstr "Группа устройства"
+
+#: models.py:49
+msgid "Parent device"
+msgstr "Родительское устройство"
+
+#: models.py:54
+msgid "SNMP extra info"
+msgstr "Доп. инфо для snmp"
+
+#: models.py:58
+msgid "Extra data"
+msgstr "Дополнительные данные"
+
+#: models.py:59
+msgid "Extra data in JSON format. You may use it for your custom data"
+msgstr ""
+"Дополнительные данные в формате JSON. Вы можете хранить там собственные "
+"данные"
+
+#: models.py:63
+msgid "Available vlans"
+msgstr "Доступные vlan'ы"
+
+#: models.py:72
+msgid "Undefined"
+msgstr "Не определено"
+
+#: models.py:73
+msgid "Up"
+msgstr "В сети"
+
+#: models.py:74
+msgid "Unreachable"
+msgstr "Не доступно"
+
+#: models.py:75
+msgid "Down"
+msgstr "Не в сети"
+
+#: models.py:78
+msgid "Status"
+msgstr "Состояние"
+
+#: models.py:83
+msgid "Send notify when monitoring state changed"
+msgstr "Отправлять уведомления при событиях мониторинга"
+
+#: models.py:87
+msgid "Code"
+msgstr "Код"
+
+#: models.py:93 models.py:288
+msgid "Device"
+msgstr "Устройство"
+
+#: models.py:94
+msgid "Devices"
+msgstr "Устройства"
+
+#: models.py:169
+#, python-format
+msgid "Onu with mac \"%(onu_mac)s\" not found on OLT"
+msgstr "Onu с мак адресом \"%(onu_mac)s\" не найдено на OLT"
+
+#: models.py:172
+msgid "Parent device not found"
+msgstr "Вышестоящее устройство не найдено"
+
+#: models.py:261 models.py:278
+msgid "Not chosen"
+msgstr "Не выбрано"
+
+#: models.py:262
+msgid "Default"
+msgstr "По умолчанию"
+
+#: models.py:263
+msgid "Untagged"
+msgstr "Не тегирован"
+
+#: models.py:264
+msgid "Tagged"
+msgstr "Тегирован"
+
+#: models.py:265 models.py:281
+msgid "Hybrid"
+msgstr "Гибрид"
+
+#: models.py:272 models.py:293
+msgid "Operating mode"
+msgstr "Режим"
+
+#: models.py:279
+msgid "Access"
+msgstr "Доступ"
+
+#: models.py:280
+msgid "Trunk"
+msgstr "Транк"
+
+#: models.py:282
+msgid "General"
 msgstr ""
 
-#: devices/switch_config/snmp_util.py:13
-msgid "Ip address is required"
-msgstr "Ip адрес необходим"
+#: models.py:290
+msgid "Number"
+msgstr "Номер"
 
-#: devices/views.py:159
-msgid "Parameter port_state is bad"
-msgstr "Параметр port_state плох"
+#: models.py:291
+msgid "Description"
+msgstr "Описание"
 
-#: devices/views.py:187
+#: models.py:298
+msgid "VLan list"
+msgstr "Список VLAN'ов"
+
+#: models.py:333
+msgid "Can toggle ports"
+msgstr "Может переключать порты"
+
+#: models.py:335
+msgid "Port"
+msgstr "Порт"
+
+#: models.py:336
+msgid "Ports"
+msgstr "Порты"
+
+#: serializers.py:103
+msgid "Config code"
+msgstr "Код конфига"
+
+#: views.py:141
 msgid "Process locked by another process"
 msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
 
-#: devices/views.py:190
-msgid "ok"
-msgstr ""
-
-#: devices/views.py:198
+#: views.py:201
 msgid "Deleted"
 msgstr "Удалено"
 
-#: devices/views.py:199
+#: views.py:205
 msgid "Failed"
 msgstr "Не получилось"
 
-#: devices/views.py:303
-msgid "Subscribers on port does not exist"
-msgstr "Абоненты на порту не найдены"
+#: views.py:390
+msgid "Parameter port_state is bad"
+msgstr "Параметр port_state плох"
 
-msgid "name"
-msgstr "имя"
-
-msgid "mtu"
-msgstr ""
-
-msgid "in_octets"
-msgstr "входящий трафик"
-
-msgid "in_ucst_pkts"
-msgstr "входящие unicast пакеты"
-
-msgid "in_not_ucst_pkts"
-msgstr "входящие не unicast пакеты"
-
-msgid "in_discards"
-msgstr "входящие отброшенные пакеты"
-
-msgid "in_errors"
-msgstr "входящие ошибки"
-
-msgid "out_octets"
-msgstr "исходящий трафик"
-
-msgid "out_ucst_pkts"
-msgstr "исходящие unicast пакеты"
-
-msgid "out_not_ucst_pkts"
-msgstr "исходящие не unicast пакеты"
-
-msgid "out_discards"
-msgstr "исходящие отброшенные пакеты"
-
-msgid "out_errors"
-msgstr "исходящие ошибки"
-
-msgid "vlans"
-msgstr "вланы"
-
-msgid "serial"
-msgstr "серийник"
-
-msgid "onu_type"
-msgstr "тип onu"
-
-msgid "uptime"
-msgstr "Время в сети"
+#~ msgid "Subscribers on port does not exist"
+#~ msgstr "Абоненты на порту не найдены"
