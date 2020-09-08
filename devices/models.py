@@ -93,6 +93,11 @@ class Device(models.Model):
         verbose_name = _('Device')
         verbose_name_plural = _('Devices')
         ordering = ('id',)
+        permissions = [
+            ('can_remove_from_olt', _('Can remove from OLT')),
+            ('can_fix_onu', _('Can fix onu')),
+            ('can_register_onu', _('Can register onu')),
+        ]
 
     def get_manager_klass(self):
         try:
