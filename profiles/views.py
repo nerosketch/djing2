@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from django.utils.translation import gettext_lazy as _
+from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -8,7 +9,7 @@ from rest_framework.authtoken.models import Token
 
 from djing2.viewsets import DjingModelViewSet, BaseNonAdminReadOnlyModelViewSet
 from profiles.models import UserProfile, UserProfileLog
-from profiles.serializers import UserProfileSerializer, UserProfileLogSerializer
+from profiles.serializers import UserProfileSerializer, UserProfileLogSerializer, UserProfilePasswordSerializer
 
 
 class UserProfileViewSet(DjingModelViewSet):
@@ -35,6 +36,27 @@ class UserProfileViewSet(DjingModelViewSet):
         # profile.responsibility_groups.clear()
         profile.responsibility_groups.set(checked_groups)
         return Response()
+
+    def _check_passw_data(self, data):
+        serializer = UserProfilePasswordSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        return serializer.data
+
+    @action(detail=True, methods=('put', 'get'))
+    def change_password(self, request, username=None):
+        if request.method == 'GET':
+            ser = UserProfilePasswordSerializer()
+            return Response(ser.data)
+        data = self._check_passw_data(request.data)
+
+        profile = self.get_object()
+        old_passw = data.get('old_passw')
+        if not profile.check_password(old_passw):
+            return Response(_('Wrong old password'), status=status.HTTP_400_BAD_REQUEST)
+        new_passw = data.get('new_passw')
+        profile.set_password(new_passw)
+        profile.save(update_fields=['password'])
+        return Response('ok', status=status.HTTP_200_OK)
 
 
 class UserProfileLogViewSet(DjingModelViewSet):

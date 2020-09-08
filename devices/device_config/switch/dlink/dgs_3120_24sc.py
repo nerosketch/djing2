@@ -1,18 +1,18 @@
 from typing import Optional, AnyStr, List, Generator
 import struct
 
-from netaddr import EUI
 from django.utils.translation import gettext
-from djing2.lib import safe_int, RuTimedelta
-from ..base import (
+from djing2.lib import safe_int, RuTimedelta, process_lock
+from devices.device_config.base import (
     Vlans, Vlan, Macs, MacItem, BaseSwitchInterface, BasePortInterface,
-    DeviceImplementationError
+    DeviceImplementationError, ListDeviceConfigType
 )
-from ..utils import plain_ip_device_mon_template
+from devices.device_config.utils import plain_ip_device_mon_template
 
 
 class DLinkPort(BasePortInterface):
-    pass
+    def get_config_types(self) -> ListDeviceConfigType:
+        return []
 
 
 class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
@@ -34,7 +34,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
 
     def read_port_vlan_info(self, port: int) -> Vlans:
         if port > self.ports_len or port < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+            raise DeviceImplementationError('Port must be in range 1-%d' % self.ports_len)
         vid = 1
         while True:
             member_ports, vid = self.get_next_keyval('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vid)
@@ -62,7 +62,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         if isinstance(data, bytes):
             data = data[:4]
         else:
-            raise TypeError('data must be instance of bytes, %s got instead' % data.__class__)
+            raise DeviceImplementationError('data must be instance of bytes, %s got instead' % data.__class__)
         i = int.from_bytes(data, 'big')
         return list(v == '1' for v in f'{i:032b}')
 
@@ -79,26 +79,27 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
                 continue
             yield Vlan(vid=vid, title=vid_name)
 
+    @process_lock()
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+            raise DeviceImplementationError('Port must be in range 1-%d' % self.ports_len)
         fdb = self.get_list_with_oid('.1.3.6.1.2.1.17.7.1.2.2.1.2')
         for fdb_port, oid in fdb:
             if port_num != int(fdb_port):
                 continue
             vid = safe_int(oid[-7:-6][0])
-            fdb_mac = str(EUI(':'.join('%.2x' % int(i) for i in oid[-6:])))
+            fdb_mac = ':'.join('%.2x' % int(i) for i in oid[-6:])
             vid_name = self._get_vid_name(vid)
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
 
     def read_mac_address_vlan(self, vid: int) -> Macs:
         vid = safe_int(vid)
         if vid > 4095 or vid < 1:
-            raise ValueError('VID must be in range 1-%d' % 4095)
+            raise DeviceImplementationError('VID must be in range 1-%d' % 4095)
         fdb = self.get_list_with_oid('.1.3.6.1.2.1.17.7.1.2.2.1.2.%d' % vid)
         vid_name = self._get_vid_name(vid)
         for port_num, oid in fdb:
-            fdb_mac = str(EUI(':'.join('%.2x' % int(i) for i in oid[-6:])))
+            fdb_mac = ':'.join('%.2x' % int(i) for i in oid[-6:])
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
 
     def create_vlans(self, vlan_list: Vlans) -> bool:
@@ -127,7 +128,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
 
     def _toggle_vlan_on_port(self, vlan: Vlan, port: int, member: bool):
         if port > self.ports_len or port < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+            raise DeviceImplementationError('Port must be in range 1-%d' % self.ports_len)
 
         # if vlan does not exsists on device, then create it
         self._add_vlan_if_not_exists(vlan)
@@ -161,7 +162,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
 
     def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> tuple:
         if port_num > self.ports_len or port_num < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
+            raise DeviceImplementationError('Port must be in range 1-%d' % self.ports_len)
 
         results = tuple(
             self._toggle_vlan_on_port(vlan=v, port=port_num, member=True)
@@ -177,6 +178,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
 
     def get_ports(self) -> Generator:
         ifs_ids = self.get_list('.1.3.6.1.2.1.10.7.2.1.1')
+        ifs_ids = tuple(next(ifs_ids) for _ in range(self.ports_len))
         return (self.get_port(snmp_num=if_id) for if_id in ifs_ids)
 
     def get_port(self, snmp_num: int):
@@ -193,15 +195,15 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             dev_interface=self
         )
 
+    def port_toggle(self, port_num: int, state: int):
+        oid = "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num)
+        self.set_int_value(oid, state)
+
     def port_disable(self, port_num: int):
-        self.set_int_value(
-            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num), 2
-        )
+        self.port_toggle(port_num, 2)
 
     def port_enable(self, port_num: int):
-        self.set_int_value(
-            "%s.%d" % ('.1.3.6.1.2.1.2.2.1.7', port_num), 1
-        )
+        self.port_toggle(port_num, 1)
 
     def get_device_name(self):
         return self.get_item('.1.3.6.1.2.1.1.1.0')
@@ -219,6 +221,3 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
         device = self.dev_instance
         return plain_ip_device_mon_template(device)
-
-    def register_device(self, extra_data: dict):
-        pass

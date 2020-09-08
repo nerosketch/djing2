@@ -1,47 +1,24 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterator
 
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
-from devices.switch_config import (
+from devices.device_config import (
     DEVICE_TYPES, Vlans, Macs,
     BaseSwitchInterface, BasePONInterface, BasePON_ONU_Interface,
-    BaseDeviceInterface,
-    DeviceConfigurationError,
-    # port_templates_modules,
-    DeviceImplementationError, Vlan, DEVICE_TYPE_UNKNOWN)
-
+    DeviceConfigType, DeviceConfigurationError,
+    DeviceImplementationError, Vlan, DEVICE_TYPE_UNKNOWN,
+    OptionalScriptCallResult)
+from devices.device_config.device_config_util import get_all_device_config_types
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
 from groupapp.models import Group
 from networks.models import VlanIf
 
 
-# def _telnet_methods_wrapper(fn):
-#     def _wrapper(self, *args, **kwargs):
-#         if not self.extra_data:
-#             raise DeviceConfigurationError(_('You have not info in extra_data '
-#                                              'field, please fill it in JSON'))
-#         extra_data = dict(self.extra_data)
-#         extra_data_telnet = extra_data.get('telnet')
-#         if not extra_data_telnet:
-#             raise DeviceConfigurationError('telnet credentials required in "extra_data"')
-#         tlogin = extra_data_telnet.get('login')
-#         tpassw = extra_data_telnet.get('password')
-#         tprompt = extra_data_telnet.get('prompt')
-#         if not all((tlogin, tpassw, extra_data_telnet, tprompt)):
-#             raise DeviceConfigurationError('telnet credentials required in "extra_data"')
-#         mng = self.get_manager_klass()
-
-#         with mng(host=str(self.ip_address), prompt=tprompt.encode()) as tln:
-#             if not tln.login(login=tlogin, password=tpassw):
-#                 raise DeviceConsoleError(_('Login failed'))
-#             try:
-#                 return fn(self, tln, *args, **kwargs)
-#             except (ValueError, RuntimeError) as e:
-#                 raise DeviceConsoleError(e)
-#     return _wrapper
+def _make_device_code_config_choices():
+    return tuple(set((dtype.short_code, dtype.title) for dtype in get_all_device_config_types()))
 
 
 class Device(models.Model):
@@ -82,7 +59,10 @@ class Device(models.Model):
         help_text=_('Extra data in JSON format. You may use it for your custom data'),
         blank=True, null=True
     )
-    vlans = models.ManyToManyField(VlanIf, verbose_name=_('Available vlans'), blank=True)
+    vlans = models.ManyToManyField(
+        VlanIf, verbose_name=_('Available vlans'),
+        blank=True
+    )
 
     NETWORK_STATE_UNDEFINED = 0
     NETWORK_STATE_UP = 1
@@ -94,9 +74,19 @@ class Device(models.Model):
         (NETWORK_STATE_UNREACHABLE, _('Unreachable')),
         (NETWORK_STATE_DOWN, _('Down'))
     )
-    status = models.PositiveSmallIntegerField(_('Status'), choices=NETWORK_STATES, default=NETWORK_STATE_UNDEFINED)
+    status = models.PositiveSmallIntegerField(
+        _('Status'), choices=NETWORK_STATES,
+        default=NETWORK_STATE_UNDEFINED
+    )
 
-    is_noticeable = models.BooleanField(_('Send notify when monitoring state changed'), default=False)
+    is_noticeable = models.BooleanField(
+        _('Send notify when monitoring state changed'),
+        default=False
+    )
+
+    code = models.CharField(_('Code'), max_length=64, blank=True,
+                            null=True, default=None,
+                            choices=_make_device_code_config_choices())
 
     class Meta:
         db_table = 'device'
@@ -104,20 +94,12 @@ class Device(models.Model):
         verbose_name_plural = _('Devices')
         ordering = ('id',)
 
-    def get_manager_klass(self) -> BaseDeviceInterface:
+    def get_manager_klass(self):
         try:
             return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
         except StopIteration:
             raise TypeError('one of types is not subclass of BaseDeviceInterface. '
                             'Or implementation of that device type is not found')
-
-    def get_manager_object(self) -> BaseDeviceInterface:
-        man_klass = self.get_manager_klass()
-        if self._cached_manager is None:
-            self._cached_manager = man_klass(
-                dev_instance=self
-            )
-        return self._cached_manager
 
     def get_manager_object_switch(self) -> BaseSwitchInterface:
         man_klass = self.get_manager_klass()
@@ -156,15 +138,8 @@ class Device(models.Model):
         )
 
     def generate_config_template(self):
-        mng = self.get_manager_object()
+        mng = self.get_manager_object_switch()
         return mng.monitoring_template()
-
-    def register_device(self):
-        mng = self.get_manager_object_olt()
-        if not self.extra_data:
-            if self.parent_dev and self.parent_dev.extra_data:
-                return mng.register_device(self.parent_dev.extra_data)
-        return mng.register_device(dict(self.extra_data or {}))
 
     def remove_from_olt(self):
         pdev = self.parent_dev
@@ -210,6 +185,18 @@ class Device(models.Model):
             return mng.get_fiber_str()
         return '¯ \ _ (ツ) _ / ¯'
 
+    def get_config_types(self) -> Iterator[DeviceConfigType]:
+        mng_klass = self.get_manager_klass()
+        return mng_klass.get_config_types()
+
+    def apply_onu_config(self, config: dict) -> OptionalScriptCallResult:
+        self.code = config.get('configTypeCode')
+        self.save(update_fields=['code'])
+        all_device_types = self.get_config_types()
+        dtypes = (dtype for dtype in all_device_types if dtype.short_code == str(self.code))
+        dtype_for_run = next(dtypes, None)
+        if dtype_for_run is not None:
+            return dtype_for_run.entry_point(config=config, device=self)
 
     #############################
     #  Remote access(i.e. snmp)
@@ -218,6 +205,17 @@ class Device(models.Model):
     def dev_get_all_vlan_list(self) -> Vlans:
         mng = self.get_manager_object_switch()
         return mng.read_all_vlan_info()
+
+    def read_onu_vlan_info(self) -> Vlans:
+        mng = self.get_manager_object_onu()
+        return mng.read_onu_vlan_info()
+
+    def default_vlan_info(self) -> Vlans:
+        mng = self.get_manager_object_onu()
+        return mng.default_vlan_info()
+
+    def is_onu_registered(self) -> bool:
+        return self.snmp_extra is not None
 
     # @_telnet_methods_wrapper
     # def dev_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
@@ -300,6 +298,7 @@ class Port(models.Model):
         verbose_name=_('VLan list'),
         through_fields=('port', 'vlanif')
     )
+
     # config_type = models.PositiveSmallIntegerField
 
     def __str__(self):
