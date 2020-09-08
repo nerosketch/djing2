@@ -529,7 +529,8 @@ class Customer(BaseAccount):
         permissions = (
             ('can_buy_service', _('Buy service perm')),
             ('can_add_balance', _('fill account')),
-            ('can_ping', _('Can ping'))
+            ('can_ping', _('Can ping')),
+            ('can_stop_service', _('Can stop service')),
         )
         verbose_name = _('Customer')
         verbose_name_plural = _('Customers')

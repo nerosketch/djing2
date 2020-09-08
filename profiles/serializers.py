@@ -1,3 +1,4 @@
+from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -56,3 +57,19 @@ class UserProfilePasswordSerializer(serializers.Serializer):
 
     # def create(self, validated_data):
     #     print('UserProfilePasswordSerializer.create', validated_data)
+
+
+class UserObjectPermissionSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=UserProfile.objects.all()
+    )
+
+    class Meta:
+        model = UserObjectPermission
+        fields = '__all__'
+
+
+class GroupObjectPermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupObjectPermission
+        fields = '__all__'
