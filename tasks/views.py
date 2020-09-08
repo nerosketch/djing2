@@ -89,12 +89,30 @@ class TaskModelViewSet(DjingModelViewSet):
         task.send_notification()
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=False)
-    def get_initial_recipients(self, request):
-        group_id = safe_int(request.query_params.get('group_id'))
+    @action(detail=False, url_path="new_task_initial/(?P<group_id>\d{1,18})/(?P<customer_id>\d{1,18})")
+    def new_task_initial(self, request, group_id: str, customer_id: str):
+        customer_id = safe_int(customer_id)
+        if customer_id == 0:
+            return Response('bad customer_id', status=status.HTTP_400_BAD_REQUEST)
+        exists_task = models.Task.objects.filter(
+            customer__id=customer_id,
+            task_state=models.Task.TASK_STATE_NEW
+        )
+        if exists_task.exists():
+            # Task with this customer already exists
+            return Response({
+                'status': 0,
+                'text': gettext('New task with this customer already exists.'),
+                'task_id': exists_task.first().pk
+            })
+
+        group_id = safe_int(group_id)
         if group_id > 0:
             recipients = UserProfile.objects.get_profiles_by_group(group_id=group_id).only('pk').values_list('pk', flat=True)
-            return Response(recipients)
+            return Response({
+                'status': 1,
+                'recipients': recipients
+            })
         return Response('"group_id" parameter is required', status=status.HTTP_400_BAD_REQUEST)
 
 
