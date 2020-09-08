@@ -1,6 +1,7 @@
 *.pyc
 *.txt
 !requirements.txt
+!debian_apt_requirements.txt
 !TODO.txt
 media/
 .idea/
@@ -12,5 +13,5 @@ db.sqlite3
 venv/
 static/
 __pycache__/
-devices/switch_config/custom/*.py
-!devices/switch_config/custom/__init__.py
+devices/device_config/custom/*.py
+!devices/device_config/custom/__init__.py

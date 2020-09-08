@@ -75,6 +75,11 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
                 'text': _('Process locked by another process'),
                 'status': False
             })
+        except ValueError as err:
+            return Response({
+                'text': str(err),
+                'status': False
+            })
         return Response({
             'text': text,
             'status': is_pinged

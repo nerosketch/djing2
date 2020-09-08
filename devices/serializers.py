@@ -1,4 +1,7 @@
+from collections import OrderedDict
+
 from rest_framework import serializers
+from django.utils.translation import gettext_lazy as _
 from devices.models import Device, Port, PortVlanMemberModel
 from djing2.lib.mixins import BaseCustomModelSerializer
 from groupapp.models import Group
@@ -28,9 +31,14 @@ class DeviceModelSerializer(BaseCustomModelSerializer):
             'dev_type', 'dev_type_str', 'man_passw', 'group',
             'parent_dev', 'parent_dev_name', 'parent_dev_group',
             'snmp_extra', 'attached_users', 'iface_name',
-            'extra_data', 'status', 'is_noticeable'
+            'extra_data', 'status', 'is_noticeable', 'code'
         )
         extra_kwargs = {'ip_address': {'required': False}}
+
+
+class DevicePONModelSerializer(DeviceModelSerializer):
+    class Meta(DeviceModelSerializer.Meta):
+        pass
 
 
 class DeviceWithoutGroupModelSerializer(BaseCustomModelSerializer):
@@ -79,3 +87,25 @@ class PortVlanMemberModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = PortVlanMemberModel
         fields = '__all__'
+
+
+class DevOnuVlan(serializers.Serializer):
+    vid = serializers.IntegerField(default=1)
+    native = serializers.BooleanField(default=False)
+
+
+class DevOnuVlanInfoTemplate(serializers.Serializer):
+    port = serializers.IntegerField(default=1)
+    vids = serializers.ListField(child=DevOnuVlan())
+
+
+class DeviceOnuConfigTemplate(serializers.Serializer):
+    configTypeCode = serializers.CharField(label=_('Config code'), max_length=64)
+    vlanConfig = serializers.ListField(child=DevOnuVlanInfoTemplate(), allow_empty=False)
+
+    def validate(self, data: OrderedDict):
+        vlan_config = data.get('vlanConfig')
+        if not vlan_config:
+            raise serializers.ValidationError('vlanConfig can not be empty')
+        # TODO: Add validations
+        return data
