@@ -32,7 +32,7 @@ class DjingModelViewSet(ModelViewSet):
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(str(e))
 
-    @action(methods=('get',), detail=False)
+    @action(detail=False)
     def get_initial(self, request):
         serializer = self.get_serializer()
         return Response(serializer.get_initial())

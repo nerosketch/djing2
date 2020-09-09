@@ -18,7 +18,7 @@ class GatewayModelViewSet(DjingModelViewSet):
     )
     serializer_class = GatewayModelSerializer
 
-    @action(methods=('get',), detail=False)
+    @action(detail=False)
     def fetch_customers_srvnet_credentials_by_gw(self, request, *args, **kwargs):
         service_id = safe_int(request.query_params.get('gw_id'))
         if service_id > 0:
