@@ -34,11 +34,25 @@ class UserProfileViewSet(DjingModelViewSet):
         profile_ids = UserProfile.objects.get_profiles_by_group(group_id).values_list('pk', flat=True)
         return Response(data=profile_ids)
 
-    @action(detail=True, methods=('get',))
+    @action(detail=True)
     def get_responsibility_groups(self, request, username=None):
         profile = self.get_object()
         group_ids = profile.responsibility_groups.values_list('pk', flat=True)
         return Response(data=group_ids)
+
+    @action(detail=False)
+    def get_active_profiles(self, request):
+        queryset = self.filter_queryset(
+            self.get_queryset().filter(is_active=True)
+        )
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=('put',))
     def set_responsibility_groups(self, request, username=None):
