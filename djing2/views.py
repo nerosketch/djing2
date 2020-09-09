@@ -88,7 +88,7 @@ class SearchApiView(DjingListAPIView):
         })
 
 
-@api_view(http_method_names=['get'])
+@api_view()
 def can_login_by_location(request):
     try:
         remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
