@@ -125,7 +125,7 @@ class DevicePONViewSet(DjingModelViewSet):
                 'text': 'Manager has not get_fibers attribute'
             }})
 
-    @action(detail=True, methods=['get'], url_path='scan_onu_on_fiber/(?P<fiber_num>\d{8,12})')
+    @action(detail=True, url_path='scan_onu_on_fiber/(?P<fiber_num>\d{8,12})')
     @catch_dev_manager_err
     def scan_onu_on_fiber(self, request, fiber_num=0, pk=None):
         if not str(fiber_num).isdigit() or safe_int(fiber_num) < 1:
