@@ -1,3 +1,5 @@
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -15,7 +17,7 @@ class UserProfileSerializer(BaseCustomModelSerializer):
         model = UserProfile
         fields = ('pk', 'username', 'fio', 'birth_day', 'create_date', 'is_active',
                   'is_admin', 'telephone', 'avatar', 'email', 'full_name',
-                  'last_login', 'is_superuser', 'password')
+                  'last_login', 'is_superuser', 'password', 'groups', 'user_permissions')
 
     def create(self, validated_data):
         return UserProfile.objects.create_superuser(
@@ -59,7 +61,7 @@ class UserProfilePasswordSerializer(serializers.Serializer):
     #     print('UserProfilePasswordSerializer.create', validated_data)
 
 
-class UserObjectPermissionSerializer(serializers.ModelSerializer):
+class UserObjectPermissionSerializer(BaseCustomModelSerializer):
     user = serializers.PrimaryKeyRelatedField(
         queryset=UserProfile.objects.all()
     )
@@ -69,7 +71,19 @@ class UserObjectPermissionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class GroupObjectPermissionSerializer(serializers.ModelSerializer):
+class GroupObjectPermissionSerializer(BaseCustomModelSerializer):
     class Meta:
         model = GroupObjectPermission
+        fields = '__all__'
+
+
+class PermissionModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = Permission
+        fields = '__all__'
+
+
+class ContentTypeModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = ContentType
         fields = '__all__'
