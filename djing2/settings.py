@@ -228,7 +228,7 @@ COMPANY_NAME = getattr(local_settings, 'COMPANY_NAME', 'Company Name')
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'djing2.lib.paginator.QueryPageNumberPagination',
-    'PAGE_SIZE': 180,
+    # 'PAGE_SIZE': 180,
     'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'djing2.lib.authenticators.CustomTokenAuthentication'
