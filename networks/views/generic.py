@@ -36,7 +36,7 @@ class NetworkIpPoolModelViewSet(DjingModelViewSet):
     #     selected_grps = (pk[0] for pk in net.groups.only('pk').values_list('pk'))
     #     return Response(selected_grps)
 
-    @action(methods=('get',), detail=True)
+    @action(detail=True)
     def get_free_ip(self, request, pk=None):
         network = self.get_object()
         ip = network.get_free_ip()
@@ -58,7 +58,7 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
     filterset_fields = ('customer',)
     ordering_fields = ('ip_address', 'lease_time', 'mac_address')
 
-    @action(methods=('get',), detail=True)
+    @action(detail=True)
     def ping_ip(self, request, pk=None):
         lease = self.get_object()
         text = _('Ping ok')
