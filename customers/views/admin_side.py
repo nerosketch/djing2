@@ -134,7 +134,7 @@ class CustomerModelViewSet(DjingModelViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
         return Response(r)
 
-    @action(methods=('get',), detail=False)
+    @action(detail=False)
     @catch_customers_errs
     def service_users(self, request):
         service_id = safe_int(request.query_params.get('service_id'))
@@ -147,7 +147,7 @@ class CustomerModelViewSet(DjingModelViewSet):
         )
         return Response(qs)
 
-    @action(methods=('get',), detail=True)
+    @action(detail=True)
     @catch_customers_errs
     def stop_service(self, request, pk=None):
         del pk
@@ -194,7 +194,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     #     else:
     #         return Response(_('Users not found'))
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True)
     @catch_customers_errs
     def ping_all_ips(self, request, pk=None):
         del request, pk
@@ -286,7 +286,7 @@ class CustomerModelViewSet(DjingModelViewSet):
         Customer.set_group_accessory(group, wanted_service_ids)
         return Response()
 
-    @action(methods=('get',), detail=False)
+    @action(detail=False)
     @catch_customers_errs
     def filter_device_port(self, request):
         dev_id = request.query_params.get('device_id')
