@@ -86,6 +86,7 @@ class TaskModelViewSet(DjingModelViewSet):
 
     @action(detail=True)
     def remind(self, request, pk=None):
+        self.check_permission_code(request, 'tasks.can_remind')
         task = self.get_object()
         task.send_notification()
         return Response(status=status.HTTP_200_OK)
@@ -118,11 +119,15 @@ class TaskModelViewSet(DjingModelViewSet):
 
 
 class AllTasksList(DjingListAPIView):
-    queryset = models.Task.objects.all().select_related(
+    queryset = models.Task.objects.select_related(
         'customer', 'customer__street',
         'customer__group', 'author'
     ).annotate(comment_count=Count('extracomment'))
     serializer_class = serializers.TaskModelSerializer
+
+    def dispatch(self, request, *args, **kwargs):
+        self.check_permission_code(request, 'tasks.can_viewall')
+        return super(AllTasksList, self).dispatch(request, *args, **kwargs)
 
 
 class AllNewTasksList(AllTasksList):

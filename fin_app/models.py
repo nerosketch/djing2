@@ -57,4 +57,4 @@ class AllTimePayLog(models.Model):
 
     class Meta:
         db_table = 'all_time_pay_log'
-        ordering = ('-date_add',)
+        ordering = '-date_add',
