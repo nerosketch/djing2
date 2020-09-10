@@ -233,7 +233,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'djing2.lib.authenticators.CustomTokenAuthentication'
     ],
-    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
+    'DEFAULT_FILTER_BACKENDS': [
+        'djing2.lib.filters.CustomObjectPermissionsFilter',
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ],
     'DATETIME_FORMAT': '%d %B %H:%M',
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
     'DEFAULT_PERMISSION_CLASSES': [

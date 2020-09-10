@@ -9,7 +9,6 @@ from easysnmp.exceptions import (
     EasySNMPTimeoutError, EasySNMPError,
     EasySNMPConnectionError
 )
-# from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -441,15 +440,7 @@ class PortVlanMemberModelViewSet(DjingModelViewSet):
 
 
 class DeviceGroupsList(DjingListAPIView):
+    queryset = Group.objects.annotate(device_count=Count('device'))
     serializer_class = dev_serializers.DeviceGroupsModelSerializer
     filter_backends = (OrderingFilter,)
     ordering_fields = ('title', 'code')
-
-    def get_queryset(self):
-        groups = Group.objects.annotate(device_count=Count('device'))
-        # groups = get_objects_for_user(
-        #     self.request.user,
-        #     'groupapp.view_group', klass=Group,
-        #     accept_global_perms=False
-        # ).annotate(device_count=Count('device'))
-        return groups
