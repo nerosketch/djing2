@@ -92,11 +92,11 @@ class Device(models.Model):
         db_table = 'device'
         verbose_name = _('Device')
         verbose_name_plural = _('Devices')
-        ordering = ('id',)
+        ordering = 'id',
         permissions = [
             ('can_remove_from_olt', _('Can remove from OLT')),
             ('can_fix_onu', _('Can fix onu')),
-            ('can_register_onu', _('Can register onu')),
+            ('can_apply_onu_config', _('Can apply onu config')),
         ]
 
     def get_manager_klass(self):
@@ -334,9 +334,9 @@ class Port(models.Model):
     class Meta:
         db_table = 'device_port'
         unique_together = ('device', 'num')
-        permissions = (
+        permissions = [
             ('can_toggle_ports', _('Can toggle ports')),
-        )
+        ]
         verbose_name = _('Port')
         verbose_name_plural = _('Ports')
-        ordering = ('num',)
+        ordering = 'num',

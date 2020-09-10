@@ -146,6 +146,7 @@ class DevicePONViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_dev_manager_err
     def fix_onu(self, request, pk=None):
+        self.check_permission_code(request, 'devices.can_fix_onu')
         onu = self.get_object()
         fix_status, text = onu.fix_onu()
         onu_serializer = self.get_serializer(onu)
@@ -158,6 +159,7 @@ class DevicePONViewSet(DjingModelViewSet):
     @action(detail=True, methods=['post'])
     @catch_dev_manager_err
     def apply_device_onu_config_template(self, request, pk=None):
+        self.check_permission_code(request, 'devices.can_apply_onu_config')
         device = self.get_object()
         mng = device.get_manager_object_onu()
         if not issubclass(mng.__class__, BasePON_ONU_Interface):
@@ -196,6 +198,7 @@ class DevicePONViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_dev_manager_err
     def remove_from_olt(self, request, pk=None):
+        self.check_permission_code(request, 'devices.can_remove_from_olt')
         device = self.get_object()
         if device.remove_from_olt():
             return Response({
@@ -380,6 +383,7 @@ class PortModelViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_dev_manager_err
     def toggle_port(self, request, pk=None):
+        self.check_permission_code(request, 'devices.can_toggle_ports')
         port_state = request.query_params.get('port_state')
         port = self.get_object()
         port_num = int(port.num)
