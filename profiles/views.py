@@ -1,5 +1,5 @@
 from django.contrib.auth import authenticate
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _
 from guardian.models import GroupObjectPermission, UserObjectPermission
@@ -21,7 +21,8 @@ from profiles.serializers import (
     UserObjectPermissionSerializer,
     GroupObjectPermissionSerializer,
     PermissionModelSerializer,
-    ContentTypeModelSerializer)
+    ContentTypeModelSerializer,
+    UserGroupModelSerializer)
 
 
 class UserProfileViewSet(DjingModelViewSet):
@@ -143,3 +144,8 @@ class PermissionViewSet(DjingSuperUserModelViewSet):
 class ContentTypeViewSet(DjingSuperUserModelViewSet):
     queryset = ContentType.objects.all()
     serializer_class = ContentTypeModelSerializer
+
+
+class UserGroupModelViewSet(DjingSuperUserModelViewSet):
+    queryset = Group.objects.all()
+    serializer_class = UserGroupModelSerializer

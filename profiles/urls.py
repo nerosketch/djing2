@@ -13,6 +13,7 @@ router.register('current', views.CurrentAuthenticatedProfileROViewSet)
 router.register('perms/object/user', views.UserObjectPermissionViewSet)
 router.register('perms/object/group', views.GroupObjectPermissionViewSet)
 router.register('perms/content-types', views.ContentTypeViewSet)
+router.register('perms/groups', views.UserGroupModelViewSet)
 router.register('perms', views.PermissionViewSet)
 router.register('', views.UserProfileViewSet)
 

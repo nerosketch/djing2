@@ -1,4 +1,4 @@
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework import serializers
@@ -86,4 +86,10 @@ class PermissionModelSerializer(BaseCustomModelSerializer):
 class ContentTypeModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = ContentType
+        fields = '__all__'
+
+
+class UserGroupModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = Group
         fields = '__all__'
