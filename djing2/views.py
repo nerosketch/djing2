@@ -1,6 +1,7 @@
 import re
 from ipaddress import ip_address, AddressValueError
 from django.db.models import Q
+from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -58,13 +59,17 @@ class SearchApiView(DjingListAPIView):
         limit_count = 100
 
         if s:
+            customers = get_objects_for_user(
+                request.user,
+                'customers.view_customer', klass=Customer
+            )
             if re.match(IP_ADDR_REGEX, s):
-                customers = Customer.objects.filter(
+                customers = customers.filter(
                     Q(customeripleasemodel__ip_address__icontains=s) |
                     Q(ip_address__icontains=s)
                 )
             else:
-                customers = Customer.objects.filter(
+                customers = customers.filter(
                     Q(fio__icontains=s) | Q(username__icontains=s) |
                     Q(telephone__icontains=s) |
                     Q(additional_telephones__telephone__icontains=s) |
