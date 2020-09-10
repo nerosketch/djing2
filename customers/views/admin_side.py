@@ -5,7 +5,6 @@ from django.db.models import Count
 from django.db.utils import IntegrityError
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
-# from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
@@ -298,18 +297,10 @@ class CustomerModelViewSet(DjingModelViewSet):
 
 
 class CustomersGroupsListAPIView(DjingListAPIView):
+    queryset = Group.objects.annotate(usercount=Count('customer'))
     serializer_class = serializers.CustomerGroupSerializer
     # filter_backends = (OrderingFilter,)
     # ordering_fields = ('title', 'usercount')
-
-    def get_queryset(self):
-        return Group.objects.annotate(usercount=Count('customer'))
-        # return get_objects_for_user(
-        #     self.request.user,
-        #     'groupapp.view_group', klass=Group,
-        #     use_groups=False,
-        #     accept_global_perms=False
-        # ).annotate(usercount=Count('customer'))
 
 
 class PassportInfoModelViewSet(DjingModelViewSet):

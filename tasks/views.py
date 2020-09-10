@@ -2,6 +2,7 @@ from django.db.models import Count
 from django.utils.translation import gettext
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
 from djing2.lib import safe_int
@@ -61,7 +62,7 @@ class TaskModelViewSet(DjingModelViewSet):
             author=self.request.user
         )
 
-    @action(detail=False)
+    @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
     def active_task_count(self, request):
         tasks_count = 0
         if isinstance(request.user, UserProfile):
