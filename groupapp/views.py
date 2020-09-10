@@ -8,4 +8,4 @@ class GroupsModelViewSets(DjingModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupsSerializer
     filter_backends = (OrderingFilter,)
-    ordering_fields = ('title',)
+    ordering_fields = 'title',

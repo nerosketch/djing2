@@ -88,12 +88,9 @@ class CustomerService(models.Model):
 
     class Meta:
         db_table = 'customer_service'
-        permissions = [
-            ('can_complete_service', _('finish service perm')),
-        ]
         verbose_name = _('Customer service')
         verbose_name_plural = _('Customer services')
-        ordering = ('start_time',)
+        ordering = 'start_time',
 
 
 class CustomerStreet(models.Model):
@@ -526,15 +523,15 @@ class Customer(BaseAccount):
 
     class Meta:
         db_table = 'customers'
-        permissions = (
+        permissions = [
             ('can_buy_service', _('Buy service perm')),
             ('can_add_balance', _('fill account')),
             ('can_ping', _('Can ping')),
             ('can_stop_service', _('Can stop service')),
-        )
+        ]
         verbose_name = _('Customer')
         verbose_name_plural = _('Customers')
-        ordering = ('fio',)
+        ordering = 'fio',
         unique_together = ('ip_address', 'gateway')
 
 
@@ -562,7 +559,7 @@ class InvoiceForPayment(models.Model):
         self.date_pay = datetime.now()
 
     class Meta:
-        ordering = ('id',)
+        ordering = 'id',
         db_table = 'customer_inv_pay'
         verbose_name = _('Debt')
         verbose_name_plural = _('Debts')
@@ -596,7 +593,7 @@ class PassportInfo(models.Model):
         db_table = 'passport_info'
         verbose_name = _('Passport Info')
         verbose_name_plural = _('Passport Info')
-        ordering = ('id',)
+        ordering = 'id',
 
     def __str__(self):
         return "%s %s" % (self.series, self.number)
@@ -634,7 +631,7 @@ class AdditionalTelephone(models.Model):
 
     class Meta:
         db_table = 'additional_telephones'
-        ordering = ('id',)
+        ordering = 'id',
         verbose_name = _('Additional telephone')
         verbose_name_plural = _('Additional telephones')
 
@@ -681,7 +678,7 @@ class PeriodicPayForId(models.Model):
 
     class Meta:
         db_table = 'periodic_pay_for_id'
-        ordering = ('last_pay',)
+        ordering = 'last_pay',
 
 
 class CustomerAttachment(models.Model):
@@ -696,5 +693,5 @@ class CustomerAttachment(models.Model):
 
     class Meta:
         db_table = 'customer_attachments'
-        ordering = ('id',)
+        ordering = 'id',
 

@@ -74,6 +74,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @catch_customers_errs
     def pick_service(self, request, pk=None):
         del pk
+        self.check_permission_code(request, 'customers.can_buy_service')
         service_id = safe_int(request.data.get('service_id'))
         deadline = request.data.get('deadline')
         srv = get_object_or_404(Service, pk=service_id)
@@ -150,6 +151,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @catch_customers_errs
     def stop_service(self, request, pk=None):
         del pk
+        self.check_permission_code(request, 'customers.can_stop_service')
         customer = self.get_object()
         cust_srv = customer.active_service()
         if cust_srv is None:
@@ -196,6 +198,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @action(detail=True)
     @catch_customers_errs
     def ping_all_ips(self, request, pk=None):
+        self.check_permission_code(request, 'customers.can_ping')
         del request, pk
         customer = self.get_object()
 
@@ -253,6 +256,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @catch_customers_errs
     def add_balance(self, request, pk=None):
         del pk
+        self.check_permission_code(request, 'customers.can_add_balance')
         customer = self.get_object()
 
         cost = safe_float(request.data.get('cost'))
