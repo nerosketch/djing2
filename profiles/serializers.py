@@ -90,6 +90,8 @@ class ContentTypeModelSerializer(BaseCustomModelSerializer):
 
 
 class UserGroupModelSerializer(BaseCustomModelSerializer):
+    permcount = serializers.IntegerField(required=True)
+
     class Meta:
         model = Group
         fields = '__all__'

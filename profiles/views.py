@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework import status
@@ -147,5 +148,5 @@ class ContentTypeViewSet(DjingSuperUserModelViewSet):
 
 
 class UserGroupModelViewSet(DjingSuperUserModelViewSet):
-    queryset = Group.objects.all()
+    queryset = Group.objects.annotate(permcount=Count('permissions'))
     serializer_class = UserGroupModelSerializer
