@@ -88,9 +88,9 @@ class CustomerService(models.Model):
 
     class Meta:
         db_table = 'customer_service'
-        permissions = (
+        permissions = [
             ('can_complete_service', _('finish service perm')),
-        )
+        ]
         verbose_name = _('Customer service')
         verbose_name_plural = _('Customer services')
         ordering = ('start_time',)
