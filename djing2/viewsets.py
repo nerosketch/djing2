@@ -55,10 +55,6 @@ class DjingSuperUserModelViewSet(DjingModelViewSet):
 class DjingListAPIView(ListAPIView):
     permission_classes = (IsAuthenticated, IsAdminUser)
 
-    def check_permission_code(self, request, perm_codename: str):
-        if not request.user.has_perm(perm=perm_codename):
-            self.permission_denied(request)
-
 
 class BaseNonAdminReadOnlyModelViewSet(ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticated,)
