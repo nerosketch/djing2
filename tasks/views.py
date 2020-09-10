@@ -125,10 +125,6 @@ class AllTasksList(DjingListAPIView):
     ).annotate(comment_count=Count('extracomment'))
     serializer_class = serializers.TaskModelSerializer
 
-    def dispatch(self, request, *args, **kwargs):
-        self.check_permission_code(request, 'tasks.can_viewall')
-        return super(AllTasksList, self).dispatch(request, *args, **kwargs)
-
 
 class AllNewTasksList(AllTasksList):
     def get_queryset(self):
