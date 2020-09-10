@@ -34,7 +34,7 @@ class VlanIf(models.Model):
 
     class Meta:
         db_table = 'networks_vlan'
-        ordering = ('-id',)
+        ordering = '-id',
         verbose_name = _('Vlan')
         verbose_name_plural = _('Vlan list')
 
@@ -195,7 +195,7 @@ class NetworkIpPool(models.Model):
         db_table = 'networks_ip_pool'
         verbose_name = _('Network ip pool')
         verbose_name_plural = _('Network ip pools')
-        ordering = ('network',)
+        ordering = 'network',
 
 
 class CustomerIpLeaseModelQuerySet(models.QuerySet):
@@ -325,5 +325,5 @@ class CustomerIpLeaseModel(models.Model):
         verbose_name = _('IP lease')
         verbose_name_plural = _('IP leases')
         unique_together = ('ip_address', 'mac_address', 'pool', 'customer')
-        ordering = ('id',)
+        ordering = 'id',
 
