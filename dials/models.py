@@ -20,7 +20,7 @@ class ATSDeviceModel(models.Model):
 
     class Meta:
         db_table = 'ats_devices'
-        ordering = ('-id',)
+        ordering = '-id',
 
 
 class DialAccount(UserProfile):
@@ -135,7 +135,7 @@ class DialLog(models.Model):
 
     class Meta:
         db_table = 'dial_log'
-        ordering = ('-id',)
+        ordering = '-id',
 
 
 class SMSModel(models.Model):
@@ -149,4 +149,4 @@ class SMSModel(models.Model):
 
     class Meta:
         db_table = 'dial_sms'
-        ordering = ('-id',)
+        ordering = '-id',
