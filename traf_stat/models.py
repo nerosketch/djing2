@@ -143,4 +143,4 @@ class StatCache(models.Model):
     class Meta:
         db_table = 'flowcache'
         # db_tablespace = 'ram'
-        ordering = ('-last_time',)
+        ordering = '-last_time',

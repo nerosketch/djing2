@@ -43,6 +43,10 @@ class DjingModelViewSet(ModelViewSet):
     # def list(self, request, *args, **kwargs):
     #     return super().list(request, *args, **kwargs)
 
+    def check_permission_code(self, request, perm_codename: str):
+        if not request.user.has_perm(perm=perm_codename):
+            self.permission_denied(request)
+
 
 class DjingSuperUserModelViewSet(DjingModelViewSet):
     permission_classes = [IsAuthenticated, IsAdminUser, IsSuperUser]
@@ -50,6 +54,10 @@ class DjingSuperUserModelViewSet(DjingModelViewSet):
 
 class DjingListAPIView(ListAPIView):
     permission_classes = (IsAuthenticated, IsAdminUser)
+
+    def check_permission_code(self, request, perm_codename: str):
+        if not request.user.has_perm(perm=perm_codename):
+            self.permission_denied(request)
 
 
 class BaseNonAdminReadOnlyModelViewSet(ReadOnlyModelViewSet):
