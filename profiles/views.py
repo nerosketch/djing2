@@ -87,6 +87,10 @@ class UserProfileViewSet(DjingModelViewSet):
         profile.save(update_fields=['password'])
         return Response('ok', status=status.HTTP_200_OK)
 
+    @action(detail=False)
+    def get_current_auth_permissions(self, request):
+        return Response(request.user.get_all_permissions())
+
 
 class UserProfileLogViewSet(DjingModelViewSet):
     queryset = UserProfileLog.objects.all()
@@ -148,5 +152,8 @@ class ContentTypeViewSet(DjingSuperUserModelViewSet):
 
 
 class UserGroupModelViewSet(DjingSuperUserModelViewSet):
-    queryset = Group.objects.annotate(permcount=Count('permissions'))
+    queryset = Group.objects.annotate(
+        permcount=Count('permissions'),
+        usercount=Count('user')
+    )
     serializer_class = UserGroupModelSerializer
