@@ -12,12 +12,14 @@ class UserProfileSerializer(BaseCustomModelSerializer):
     full_name = serializers.CharField(source='get_full_name', read_only=True)
     password = serializers.CharField(write_only=True)
     create_date = serializers.CharField(read_only=True)
+    access_level = serializers.IntegerField(source='calc_access_level_percent', read_only=True)
 
     class Meta:
         model = UserProfile
         fields = ('pk', 'username', 'fio', 'birth_day', 'create_date', 'is_active',
                   'is_admin', 'telephone', 'avatar', 'email', 'full_name',
-                  'last_login', 'is_superuser', 'password', 'groups', 'user_permissions')
+                  'last_login', 'is_superuser', 'password', 'groups', 'user_permissions',
+                  'access_level')
 
     def create(self, validated_data):
         return UserProfile.objects.create_superuser(
@@ -90,7 +92,8 @@ class ContentTypeModelSerializer(BaseCustomModelSerializer):
 
 
 class UserGroupModelSerializer(BaseCustomModelSerializer):
-    permcount = serializers.IntegerField(required=True)
+    permcount = serializers.IntegerField(read_only=True)
+    usercount = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Group
