@@ -5,6 +5,7 @@ from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -26,7 +27,7 @@ from profiles.serializers import (
     UserGroupModelSerializer)
 
 
-class UserProfileViewSet(DjingModelViewSet):
+class UserProfileViewSet(DjingSuperUserModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     lookup_field = 'username'
@@ -87,7 +88,7 @@ class UserProfileViewSet(DjingModelViewSet):
         profile.save(update_fields=['password'])
         return Response('ok', status=status.HTTP_200_OK)
 
-    @action(detail=False)
+    @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
     def get_current_auth_permissions(self, request):
         return Response(request.user.get_all_permissions())
 
