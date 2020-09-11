@@ -3,7 +3,10 @@ import os
 from PIL import Image
 from bitfield.models import BitField
 from django.conf import settings
-from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin
+from django.contrib.auth.models import (
+    BaseUserManager, AbstractBaseUser,
+    PermissionsMixin, Permission
+)
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -211,3 +214,13 @@ class UserProfile(BaseAccount):
             return self.avatar.url
         except ValueError:
             return getattr(settings, 'DEFAULT_PICTURE', '/static/img/user_ava.gif')
+
+    def calc_access_level_percent(self) -> float:
+        assigned_perms = self.get_all_permissions()
+        all_perms_count = Permission.objects.all().count()
+        if all_perms_count > 0:
+            res = (100 * len(assigned_perms)) / all_perms_count
+            return res
+        if self.is_superuser:
+            return 100.0
+        return 0.0
