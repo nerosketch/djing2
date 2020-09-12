@@ -6,13 +6,12 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, GenericV
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import AuthenticationFailed
 
-from djing2.permissions import CustomizedDjangoModelPermissions, IsSuperUser
+from djing2.permissions import IsSuperUser
 from profiles.models import BaseAccount
 from djing2.exceptions import UniqueConstraintIntegrityError
 
 
 class DjingModelViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated, IsAdminUser, CustomizedDjangoModelPermissions]
 
     def perform_create(self, serializer) -> None:
         try:
