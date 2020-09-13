@@ -52,7 +52,7 @@ class DjingSuperUserModelViewSet(DjingModelViewSet):
 
 
 class DjingListAPIView(ListAPIView):
-    pass
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
 
 class BaseNonAdminReadOnlyModelViewSet(ReadOnlyModelViewSet):
