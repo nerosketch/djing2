@@ -1,5 +1,6 @@
 from django.db.models import Count
 from django.utils.translation import gettext
+from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -119,11 +120,18 @@ class TaskModelViewSet(DjingModelViewSet):
 
 
 class AllTasksList(DjingListAPIView):
-    queryset = models.Task.objects.select_related(
-        'customer', 'customer__street',
-        'customer__group', 'author'
-    ).annotate(comment_count=Count('extracomment'))
     serializer_class = serializers.TaskModelSerializer
+
+    def get_queryset(self):
+        qs = get_objects_for_user(
+            user=self.request.user,
+            perms='tasks.view_task',
+            klass=models.Task
+        )
+        return qs.select_related(
+            'customer', 'customer__street',
+            'customer__group', 'author'
+        ).annotate(comment_count=Count('extracomment'))
 
 
 class AllNewTasksList(AllTasksList):
