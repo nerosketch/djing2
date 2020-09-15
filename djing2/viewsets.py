@@ -88,10 +88,10 @@ class DjingModelViewSet(ModelViewSet):
         ctype = get_content_type(obj)
         perms_qs = Permission.objects.filter(content_type=ctype)
 
-        return {
+        return Response({
             'groupIds': groups.values_list('pk', flat=True),
             'selectedPerms': perms_qs.values_list('pk', flat=True)
-        }
+        })
 
 
 class DjingSuperUserModelViewSet(DjingModelViewSet):
