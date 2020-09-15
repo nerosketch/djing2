@@ -3,7 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from guardian.core import ObjectPermissionChecker
 from guardian.ctypes import get_content_type
-from guardian.shortcuts import assign_perm, get_perms, get_groups_with_perms
+from guardian.shortcuts import assign_perm, get_perms, get_groups_with_perms, remove_perm
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView
@@ -65,20 +65,32 @@ class DjingModelViewSet(ModelViewSet):
         data = serializer.validated_data
 
         group_ids = [safe_int(i) for i in data.get('groupIds') if safe_int(i) > 0]
-        if len(group_ids) == 0:
-            return Response('bad groupIds', status=status.HTTP_400_BAD_REQUEST)
 
         selected_perms = [safe_int(i) for i in data.get('selectedPerms') if safe_int(i) > 0]
-        if len(selected_perms) == 0:
-            return Response('bad selectedPerms', status=status.HTTP_400_BAD_REQUEST)
 
         selected_groups = Group.objects.filter(pk__in=group_ids)
-        selected_perms = Permission.objects.filter(pk__in=selected_perms)
-        obj = self.get_object()
+        selected_perms = Permission.objects.filter(pk__in=selected_perms).iterator()
 
-        for perm in selected_perms.iterator():
+        obj = self.get_object()
+        ctype = get_content_type(obj)
+        existing_perm_codes = {p.codename for p in Permission.objects.filter(content_type=ctype, group__in=selected_groups).iterator()}
+        selected_perm_codes = {p.codename for p in selected_perms}
+        for_del = existing_perm_codes - selected_perm_codes
+        for_add = selected_perm_codes - existing_perm_codes
+
+        print('Existing perms', existing_perm_codes)
+        print('Selected perms', selected_perm_codes)
+        # del perms
+        print('For Delete:', for_del)
+        for perm in for_del:
+            for grp in selected_groups:
+                remove_perm(perm, grp, obj)
+
+        # add perms
+        for perm in for_add:
+            print('For Add:', for_add)
             assign_perm(perm, selected_groups, obj)
-        return Response()
+        return Response('ok')
 
     @action(detail=True)
     def get_object_perms(self, *args, **kwargs):
@@ -88,9 +100,12 @@ class DjingModelViewSet(ModelViewSet):
         ctype = get_content_type(obj)
         perms_qs = Permission.objects.filter(content_type=ctype)
 
+        selected_perms = perms_qs.filter(group__in=groups)
+
         return Response({
             'groupIds': groups.values_list('pk', flat=True),
-            'selectedPerms': perms_qs.values_list('pk', flat=True)
+            'availablePerms': perms_qs.values('id', 'name', 'content_type', 'codename'),
+            'selectedPerms': selected_perms.values('id', 'name', 'content_type', 'codename')
         })
 
 
