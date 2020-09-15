@@ -1,10 +1,7 @@
 from django.contrib.auth.models import Group, Permission
-from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
-from guardian.core import ObjectPermissionChecker
 from guardian.ctypes import get_content_type
-from guardian.shortcuts import assign_perm, get_perms, get_groups_with_perms, remove_perm
-from rest_framework import status
+from guardian.shortcuts import assign_perm, get_groups_with_perms, remove_perm
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -73,39 +70,46 @@ class DjingModelViewSet(ModelViewSet):
 
         obj = self.get_object()
         ctype = get_content_type(obj)
-        existing_perm_codes = {p.codename for p in Permission.objects.filter(content_type=ctype, group__in=selected_groups).iterator()}
+        existing_perm_codes = {p.codename for p in Permission.objects.filter(
+            groupobjectpermission__content_type=ctype,
+            groupobjectpermission__object_pk__in=[obj.pk]
+        ).iterator()}
+
         selected_perm_codes = {p.codename for p in selected_perms}
         for_del = existing_perm_codes - selected_perm_codes
         for_add = selected_perm_codes - existing_perm_codes
 
-        print('Existing perms', existing_perm_codes)
-        print('Selected perms', selected_perm_codes)
         # del perms
-        print('For Delete:', for_del)
         for perm in for_del:
             for grp in selected_groups:
                 remove_perm(perm, grp, obj)
 
         # add perms
         for perm in for_add:
-            print('For Add:', for_add)
             assign_perm(perm, selected_groups, obj)
         return Response('ok')
 
     @action(detail=True)
     def get_object_perms(self, *args, **kwargs):
         obj = self.get_object()
-        groups = get_groups_with_perms(obj)
 
-        ctype = get_content_type(obj)
-        perms_qs = Permission.objects.filter(content_type=ctype)
+        available_perms = Permission.objects.filter(
+            content_type=get_content_type(obj)
+        )
 
-        selected_perms = perms_qs.filter(group__in=groups)
+        selected_perms = available_perms.filter(
+            groupobjectpermission__object_pk__in=[obj.pk]
+        ).values_list('id', flat=True)
 
+        available_perms = available_perms.values('id', 'name', 'content_type', 'codename')
+        # available_perm_ids = tuple(ap.get('id') for ap in available_perms)
+        for ap in available_perms:
+            ap['checked'] = ap.get('id') in selected_perms
+
+        groups = get_groups_with_perms(obj).values_list('pk', flat=True)
         return Response({
-            'groupIds': groups.values_list('pk', flat=True),
-            'availablePerms': perms_qs.values('id', 'name', 'content_type', 'codename'),
-            'selectedPerms': selected_perms.values('id', 'name', 'content_type', 'codename')
+            'groupIds': groups,
+            'availablePerms': available_perms
         })
 
 
