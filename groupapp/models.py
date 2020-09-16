@@ -19,6 +19,11 @@ class Group(models.Model):
     def get_absolute_url(self):
         return resolve_url('group_app:edit', self.pk)
 
+    @staticmethod
+    def get_all_related_models():
+        g = Group.objects.select_related()
+        return tuple(rel_item.related_model for rel_name, rel_item in g.model._meta.fields_map.items())
+
     class Meta:
         db_table = 'groups'
         verbose_name = _('Group')
