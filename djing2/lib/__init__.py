@@ -140,8 +140,8 @@ def process_lock(lock_name=None):
 
 def macbin2str(bin_mac: bytes) -> str:
     if isinstance(bin_mac, (bytes, bytearray)):
-        return ':'.join('%x' % i for i in bin_mac) if bin_mac else None
-    return ':'.join('%x' % ord(i) for i in bin_mac) if bin_mac else None
+        return ':'.join('%.2x' % i for i in bin_mac) if bin_mac else None
+    return ':'.join('%.2x' % ord(i) for i in bin_mac) if bin_mac else None
 
 
 class JSONBytesEncoder(JSONEncoder):
