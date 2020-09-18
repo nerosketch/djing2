@@ -34,7 +34,7 @@ class VlanIf(models.Model):
 
     class Meta:
         db_table = 'networks_vlan'
-        ordering = '-id',
+        ordering = 'vid',
         verbose_name = _('Vlan')
         verbose_name_plural = _('Vlan list')
 
