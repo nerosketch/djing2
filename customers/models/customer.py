@@ -1,6 +1,8 @@
 import re
 from datetime import datetime, timedelta
 from ipaddress import IPv4Address, AddressValueError
+from typing import Optional
+
 from bitfield import BitField
 from django.conf import settings
 from django.core import validators
@@ -9,9 +11,9 @@ from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
 from djing2.lib import LogicError, safe_float
+from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.models import Service, OneShotPay, PeriodicPay
-from groupapp.models import Group
 
 RADIUS_SESSION_TIME = getattr(settings, 'RADIUS_SESSION_TIME', 3600)
 
@@ -252,7 +254,7 @@ class Customer(BaseAccount):
     def active_service(self):
         return self.current_service
 
-    def add_balance(self, profile, cost: float, comment: str) -> None:
+    def add_balance(self, profile: UserProfile, cost: float, comment: str) -> None:
         CustomerLog.objects.create(
             customer=self,
             cost=cost,
@@ -261,7 +263,8 @@ class Customer(BaseAccount):
         )
         self.balance += cost
 
-    def pick_service(self, service, author, comment=None, deadline=None, allow_negative=False) -> None:
+    def pick_service(self, service, author: Optional[UserProfile], comment=None, deadline=None,
+                     allow_negative=False) -> None:
         """
         Trying to buy a service if enough money.
         :param allow_negative: Allows negative balance
@@ -325,11 +328,11 @@ class Customer(BaseAccount):
                 comment=comment or _('Buy service default log')
             )
 
-    def stop_service(self, profile) -> None:
+    def stop_service(self, profile: UserProfile) -> None:
         """
         Removing current connected customer service
-        :param profile:
-        :return:
+        :param profile: Instance of profiles.models.UserProfile.
+        :return: nothing
         """
         with transaction.atomic():
             cost_to_return = self.calc_cost_to_return()
@@ -343,7 +346,7 @@ class Customer(BaseAccount):
             else:
                 self.add_balance(
                     profile,
-                    cost=cost_to_return,
+                    cost=0,
                     comment=_('End of service')
                 )
             customer_service = self.active_service()
@@ -482,24 +485,127 @@ class Customer(BaseAccount):
     #     except LogicError:
     #         pass
 
-    def enable_service(self, service: Service, deadline=None, time_start=None):
+    # def enable_service(self, service: Service, deadline=None, time_start=None):
+    #     """
+    #     Makes a services for current user, without money
+    #     :param service: Instance of Service
+    #     :param deadline: Time when service is expired
+    #     :param time_start: Time when service has started
+    #     :return: None
+    #     """
+    #     if deadline is None:
+    #         deadline = service.calc_deadline()
+    #     if time_start is None:
+    #         time_start = datetime.now()
+    #     self.current_service = CustomerService.objects.create(
+    #         deadline=deadline, service=service,
+    #         start_time=time_start
+    #     )
+    #     self.last_connected_service = service
+    #     self.save(update_fields=('current_service', 'last_connected_service'))
+
+    def finish_service_if_expired(self, profile: UserProfile, comment=None) -> None:
         """
-        Makes a services for current user, without money
-        :param service: Instance of Service
-        :param deadline: Time when service is expired
-        :param time_start: Time when service has started
-        :return: None
+        If customer service has expired, and automatic connect
+         is disabled, then finish that service and log about it
+        :param profile: Instance of profiles.models.UserProfile.
+        :param comment: comment for log
+        :return: nothing
         """
-        if deadline is None:
-            deadline = service.calc_deadline()
-        if time_start is None:
-            time_start = datetime.now()
-        self.current_service = CustomerService.objects.create(
-            deadline=deadline, service=service,
-            start_time=time_start
+        if comment is None:
+            comment = _("Service for customer %(customer_name)s with name '%(service_name)s' has expired")
+        now = datetime.now()
+        expired_service = CustomerService.objects.filter(
+            deadline__lt=now,
+            customer=self,
+            customer_auto_renewal_service=False
         )
-        self.last_connected_service = service
-        self.save(update_fields=('current_service', 'last_connected_service'))
+        if expired_service.exists():
+            for exp_srv in expired_service:
+                with transaction.atomic():
+                    CustomerLog.objects.create(
+                        customer=self,
+                        cost=0,
+                        author=profile if isinstance(profile, UserProfile) else None,
+                        comment=comment % {
+                            'customer_name': self.get_short_name(),
+                            'service_name': exp_srv.service.title
+                        }
+                    )
+            expired_service.delete()
+
+    def continue_service_if_autoconnect(self) -> None:
+        """
+        If customer service has expired and automatic connect
+        is enabled, then update service start_time, deadline,
+        and flush money from customer balance
+        :return: nothing
+        """
+        if not self.auto_renewal_service:
+            return
+        now = datetime.now()
+        expired_service = CustomerService.objects.filter(
+            deadline__lt=now,
+            customer=self,
+            customer_auto_renewal_service=True
+        )
+        if not expired_service.exists():
+            return
+        expired_service = expired_service.first()
+        service = expired_service.service
+        amount = round(service.amount, 2)
+        if self.balance >= amount:
+            # can continue service
+            with transaction.atomic():
+                self.balance -= amount
+                expired_service.time_start = now
+                expired_service.deadline = None  # Deadline sets automatically in signal pre_save
+                expired_service.save(update_fields=['time_start', 'deadline'])
+                self.save(update_fields=['balance'])
+                # make log about it
+                CustomerLog.objects.create(
+                    customer=self, cost=-amount,
+                    comment=_("Automatic connect new service %(service_name)s for %(customer_name)s") % {
+                        'service_name': service.title,
+                        'customer_name': self.get_short_name()
+                    }
+                )
+        else:
+            # finish service otherwise
+            with transaction.atomic():
+                expired_service.delete()
+                CustomerLog.objects.create(
+                    customer=self, cost=0,
+                    comment=_("Service '%(service_name)s' has expired") % {
+                        'service_name': service.title
+                    }
+                )
+
+    def connect_service_if_autoconnect(self):
+        """
+        If customer service has expired, and then finished, and
+        automatic continue is enabled, then connect new service
+        from now
+        :return: nothing
+        """
+        if not self.is_active:
+            return
+        if self.current_service:
+            return
+        if not self.auto_renewal_service:
+            return
+        if not self.last_connected_service:
+            return
+
+        srv = self.last_connected_service
+        if not srv or srv.is_admin:
+            return
+        self.pick_service(
+            service=srv, author=None,
+            comment=_("Automatic connect service '%(service_name)s'") % {
+                'service_name': srv.title
+            }
+        )
 
     def get_address(self):
         return "%(group)s. %(street)s %(house)s" % {
@@ -694,4 +800,3 @@ class CustomerAttachment(models.Model):
     class Meta:
         db_table = 'customer_attachments'
         ordering = 'id',
-
