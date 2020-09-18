@@ -1,8 +1,13 @@
-from django.contrib.auth.models import Permission
+from typing import List
+
+from django.contrib.auth.models import Permission, Group as ProfileGroup
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _
 from django.shortcuts import resolve_url
 from django.db import models
+from guardian.shortcuts import assign_perm
+
+from djing2.lib import safe_int
 from djing2.lib.validators import latinValidator
 
 
@@ -35,6 +40,21 @@ class Group(models.Model):
 
     def get_absolute_url(self):
         return resolve_url('group_app:edit', self.pk)
+
+    def set_permissions_recursive(self, permission_ids: List[int], profile_group: ProfileGroup) -> bool:
+        permission_ids = [safe_int(pk) for pk in permission_ids if safe_int(pk) > 0]
+        if len(permission_ids) == 0:
+            return False
+
+        related_models = Group.objects.select_related()
+        related_ctypes = ContentType.objects.get_for_models(*related_models)
+
+        for rel_ctype, rel_mod in related_ctypes.items():
+            perms = Permission.objects.filter(content_type=rel_ctype, pk__in=permission_ids)
+            for perm in perms:
+                related_objs = rel_mod.objects.filter(group=self)
+                assign_perm(perm, profile_group, related_objs)
+        return True
 
     class Meta:
         db_table = 'groups'
