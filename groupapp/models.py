@@ -1,10 +1,25 @@
-# from django.db.models.signals import pre_save
-# from django.dispatch import receiver
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _
 from django.shortcuts import resolve_url
 from django.db import models
-# from rest_framework.exceptions import ValidationError
 from djing2.lib.validators import latinValidator
+
+
+class GroupManager(models.Manager):
+
+    def get_all_related_models(self):
+        g = self.select_related()
+        return tuple(rel_item.related_model for rel_name, rel_item in g.model._meta.fields_map.items())
+
+    def get_perms4related_models(self):
+        related_models = self.get_all_related_models()
+        ctypes = ContentType.objects.get_for_models(*related_models)
+        ctype_ids = [ct.pk for md, ct in ctypes.items()]
+        related_perms = Permission.objects.filter(
+            content_type__in=ctype_ids
+        )
+        return related_perms
 
 
 class Group(models.Model):
@@ -13,16 +28,13 @@ class Group(models.Model):
     code = models.CharField(
         _('Tech code'), blank=True, null=True,
         default=None, max_length=12,
-        validators=(latinValidator,)
+        validators=[latinValidator]
     )
+
+    objects = GroupManager()
 
     def get_absolute_url(self):
         return resolve_url('group_app:edit', self.pk)
-
-    @staticmethod
-    def get_all_related_models():
-        g = Group.objects.select_related()
-        return tuple(rel_item.related_model for rel_name, rel_item in g.model._meta.fields_map.items())
 
     class Meta:
         db_table = 'groups'
