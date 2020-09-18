@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from uwsgi_tasks import task, TaskExecutor
 
-# from customers.models import Customer
+from djing2.lib import LogicError
+from customers.models import Customer
 
 
 @task(executor=TaskExecutor.SPOOLER)
@@ -83,3 +86,37 @@ def customer_gw_command_remove(customer_id: int):
     #     return 'ABONAPP ERROR: %s' % e
     # except NASModel.DoesNotExist:
     #     return 'NASModel.DoesNotExist id=%d' % nas_pk
+
+
+@task(executor=TaskExecutor.SPOOLER)
+def customer_check_service_for_expiration(customer_id: int):
+    """
+    Finish expired services and connect new services if enough money
+    :param customer_id: customers.customer.Customer primary key
+    :return: nothing
+    """
+    try:
+        customer = Customer.objects.get(pk=customer_id)
+        if customer.auto_renewal_service:
+            if customer.current_service:
+                customer.continue_service_if_autoconnect()
+            else:
+                customer.connect_service_if_autoconnect()
+        else:
+            customer.finish_service_if_expired(profile=None)
+
+        with open('/tmp/test_pay.log', 'a') as f:
+            f.write("%s: Customer %s, " % (
+                datetime.now(),
+                customer.get_short_name(),
+            ))
+
+    except Customer.DoesNotExist:
+        pass
+    except LogicError as err:
+        print(err)
+        with open('/tmp/test_pay.log', 'a') as f:
+            f.write("%s: LogicError: %s" % (
+                datetime.now(),
+                str(err)
+            ))
