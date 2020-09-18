@@ -46,10 +46,13 @@ class Group(models.Model):
         if len(permission_ids) == 0:
             return False
 
-        related_models = Group.objects.select_related()
+        related_models = Group.objects.get_all_related_models()
         related_ctypes = ContentType.objects.get_for_models(*related_models)
 
-        for rel_ctype, rel_mod in related_ctypes.items():
+        _tmp_all_perms = Permission.objects.filter(pk__in=permission_ids)
+
+        # TODO: Optimize
+        for rel_mod, rel_ctype in related_ctypes.items():
             perms = Permission.objects.filter(content_type=rel_ctype, pk__in=permission_ids)
             for perm in perms:
                 related_objs = rel_mod.objects.filter(group=self)

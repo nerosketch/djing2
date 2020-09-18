@@ -1,9 +1,10 @@
+from django.contrib.auth.models import Group as ProfileGroup
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
-from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet
 from groupapp.models import Group
 from groupapp.serializers import GroupsSerializer, SetRelatedPermsRecursiveSerializer
@@ -36,10 +37,10 @@ class GroupsModelViewSets(DjingModelViewSet):
 
         data = serializer.data
         perms = data.get('permission_ids', [])
-        profile_group = data.get('profile_group')
+        profile_group = get_object_or_404(ProfileGroup, pk=data.get('profile_group'))
 
         r = current_group.set_permissions_recursive(
             permission_ids=perms,
-            profile_group=safe_int(profile_group)
+            profile_group=profile_group
         )
-        return Response(status=status.HTTP_200_OK if r else status.HTTP_400_BAD_REQUEST)
+        return Response('ok', status=status.HTTP_200_OK if r else status.HTTP_400_BAD_REQUEST)
