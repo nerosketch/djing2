@@ -1,9 +1,10 @@
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Permission, Group as ProfileGroup
 from django.db import IntegrityError
 from guardian.ctypes import get_content_type
 from guardian.shortcuts import assign_perm, get_groups_with_perms, remove_perm
+from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, GenericViewSet
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -57,6 +58,9 @@ class DjingModelViewSet(ModelViewSet):
         #     'groupIds': [1, 2, 3],
         #     'selectedPerms': [1, 2, 3]
         # }
+        if not request.user.is_superuser:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
         serializer = RequestObjectsPermsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -65,7 +69,7 @@ class DjingModelViewSet(ModelViewSet):
 
         selected_perms = [safe_int(i) for i in data.get('selectedPerms') if safe_int(i) > 0]
 
-        selected_groups = Group.objects.filter(pk__in=group_ids)
+        selected_groups = ProfileGroup.objects.filter(pk__in=group_ids)
         selected_perms = Permission.objects.filter(pk__in=selected_perms).iterator()
 
         obj = self.get_object()
@@ -90,27 +94,37 @@ class DjingModelViewSet(ModelViewSet):
         return Response('ok')
 
     @action(detail=True)
-    def get_object_perms(self, *args, **kwargs):
+    def get_object_perms(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
         obj = self.get_object()
 
         available_perms = Permission.objects.filter(
             content_type=get_content_type(obj)
         )
 
-        selected_perms = available_perms.filter(
-            groupobjectpermission__object_pk__in=[obj.pk]
-        ).values_list('id', flat=True)
-
         available_perms = available_perms.values('id', 'name', 'content_type', 'codename')
-        # available_perm_ids = tuple(ap.get('id') for ap in available_perms)
-        for ap in available_perms:
-            ap['checked'] = ap.get('id') in selected_perms
 
         groups = get_groups_with_perms(obj).values_list('pk', flat=True)
         return Response({
             'groupIds': groups,
             'availablePerms': available_perms
         })
+
+    @action(detail=True, url_path="get_selected_object_perms/(?P<profile_group_id>\d+)")
+    def get_selected_object_perms(self, request, profile_group_id, pk=None):
+        if not request.user.is_superuser:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        obj = self.get_object()
+
+        selected_perms = Permission.objects.filter(
+            content_type=get_content_type(obj),
+            groupobjectpermission__object_pk__in=[pk],
+            groupobjectpermission__group=profile_group_id
+        ).values_list('id', flat=True)
+        return Response(selected_perms)
 
 
 class DjingSuperUserModelViewSet(DjingModelViewSet):
