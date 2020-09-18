@@ -6,8 +6,8 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2019-12-18 00:39+0300\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-09-08 17:30+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,291 +17,327 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: customers/models.py:47
+#: models/customer.py:94
 msgid "finish service perm"
 msgstr "Завершение услуги"
 
-#: customers/models.py:49
+#: models/customer.py:96
 msgid "Customer service"
 msgstr "Услуга абонента"
 
-#: customers/models.py:50
+#: models/customer.py:97
 msgid "Customer services"
 msgstr "Услуги абонента"
 
-#: customers/models.py:63 customers/models.py:141
+#: models/customer.py:110 models/customer.py:191
 msgid "Street"
 msgstr "Улица"
 
-#: customers/models.py:64
+#: models/customer.py:111
 msgid "Streets"
 msgstr "Улицы"
 
-#: customers/models.py:95
+#: models/customer.py:142
 msgid "Users must have an telephone number"
-msgstr ""
+msgstr "Пользователь должен иметь телефонный номер"
 
-#: customers/models.py:120
+#: models/customer.py:168
 msgid "Customer group"
 msgstr "Группа абонента"
 
-#: customers/models.py:124
+#: models/customer.py:174
 msgid "Ip address"
 msgstr "Ip адрес"
 
-#: customers/models.py:130
+#: models/customer.py:180
 msgid "Comment"
 msgstr "Описание"
 
-#: customers/models.py:144
+#: models/customer.py:194
 msgid "House"
 msgstr "Дом"
 
-#: customers/models.py:165
+#: models/customer.py:215
 msgid "Is dynamic ip"
 msgstr "Динамический ip"
 
-#: customers/models.py:173
+#: models/customer.py:223
 msgid "Gateway"
 msgstr "Шлюз"
 
-#: customers/models.py:174
+#: models/customer.py:224
 msgid "Network access server"
 msgstr "Сервер доступа в интернет"
 
-#: customers/models.py:178
+#: models/customer.py:228
 msgid "Automatically connect next service"
 msgstr "Автоматическое подключение следующей услуги"
 
-#: customers/models.py:182
+#: models/customer.py:232
 msgid "Last connected service"
 msgstr "Последняя подключённая услуга"
 
-#: customers/models.py:186
+#: models/customer.py:236
 msgid "Donkey"
 msgstr "Ослик"
 
-#: customers/models.py:187
+#: models/customer.py:237
 msgid "Fire"
 msgstr "Огонь"
 
-#: customers/models.py:188
+#: models/customer.py:238
 msgid "Ok"
 msgstr ""
 
-#: customers/models.py:189
+#: models/customer.py:239
 msgid "King"
 msgstr "Король"
 
-#: customers/models.py:190
+#: models/customer.py:240
 msgid "TV"
 msgstr "ТВ"
 
-#: customers/models.py:191
+#: models/customer.py:241
 msgid "Smile"
 msgstr "Улыбка"
 
-#: customers/models.py:192
+#: models/customer.py:242
 msgid "Dollar"
 msgstr "Долар"
 
-#: customers/models.py:193
+#: models/customer.py:243
 msgid "Service"
 msgstr "Услуга"
 
-#: customers/models.py:194
+#: models/customer.py:244
 msgid "Marker"
 msgstr "Маркер"
 
-#: customers/models.py:239
+#: models/customer.py:290
 msgid "User who is no staff can not buy admin services"
 msgstr ""
 "Этот пользователь не является сотрудником и не может назначать "
 "административные услуги"
 
-#: customers/models.py:245 customers/tests.py:101
+#: models/customer.py:296 tests/customer.py:109
 msgid "That service already activated"
 msgstr "Эта услуга уже подключена"
 
-#: customers/models.py:248
+#: models/customer.py:299
 msgid "Service already activated"
 msgstr "Услуга уже подключена"
 
-#: customers/models.py:251
+#: models/customer.py:302
 msgid "User, who is no staff, can not be buy services on credit"
 msgstr ""
 "Пользователь, который не является сотрудником, не может покупать услуги в "
 "долг"
 
-#: customers/models.py:255 customers/models.py:323 customers/tests.py:78
-#: customers/tests.py:142
+#: models/customer.py:306 models/customer.py:374 tests/customer.py:150
 #, python-format
 msgid "%(uname)s not enough money for service %(srv_name)s"
 msgstr ""
 "У абонента %(uname)s не достаточно денег на счету для услуги %(srv_name)s"
 
-#: customers/models.py:280
+#: models/customer.py:331
 msgid "Buy service default log"
 msgstr "Покупка тарифного плана через админку"
 
-#: customers/models.py:295
+#: models/customer.py:346
 msgid "End of service, refund of balance"
 msgstr "Завершение услуги, возврат остатка на счёт"
 
-#: customers/models.py:302
+#: models/customer.py:353
 msgid "End of service"
 msgstr "Завершение услуги"
 
-#: customers/models.py:336
+#: models/customer.py:387
 #, python-format
 msgid "Buy one-shot service for \"%(title)s\""
 msgstr "Услуга \"%(title)s\""
 
-#: customers/models.py:469
+#: models/customer.py:519
+#, python-format
+msgid ""
+"Service for customer %(customer_name)s with name '%(service_name)s' has "
+"expired"
+msgstr ""
+"Срок действия услуги '%(service_name)s' для '%(customer_name)s' истёк"
+
+#: models/customer.py:571
+#, python-format
+msgid "Automatic connect new service %(service_name)s for %(customer_name)s"
+msgstr ""
+"Автоматическое продление услуги '%(service_name)s' для %(customer_name)s"
+
+#: models/customer.py:582
+#, python-format
+msgid "Service '%(service_name)s' has expired"
+msgstr "Срок действия услуги '%(service_name)s' истёк"
+
+#: models/customer.py:608
+#, python-format
+msgid "Automatic connect service '%(service_name)s'"
+msgstr "Автоматическое включение услуги '%(service_name)s'"
+
+#: models/customer.py:636
 msgid "Buy service perm"
 msgstr "Покупка тарифа абоненту"
 
-#: customers/models.py:470
+#: models/customer.py:637
 msgid "fill account"
 msgstr "Пополнение счёта"
 
-#: customers/models.py:471
+#: models/customer.py:638
 msgid "Can ping"
 msgstr "Может пинговать"
 
-#: customers/models.py:473
+#: models/customer.py:640
 msgid "Customer"
 msgstr "Абонент"
 
-#: customers/models.py:474
+#: models/customer.py:641
 msgid "Customers"
 msgstr "Абоненты"
 
-#: customers/models.py:481
-msgid "Passport serial"
-msgstr "Серия пас."
-
-#: customers/models.py:486
-msgid "Passport number"
-msgstr "Номер пас."
-
-#: customers/models.py:491
-msgid "Distributor"
-msgstr "Кем выдан"
-
-#: customers/models.py:494
-msgid "Date of acceptance"
-msgstr "Дата выдачи"
-
-#: customers/models.py:505 customers/models.py:506
-msgid "Passport Info"
-msgstr "Паспортные данные"
-
-#: customers/models.py:539
+#: models/customer.py:672
 msgid "Debt"
 msgstr "Квитанция (долг)"
 
-#: customers/models.py:540
+#: models/customer.py:673
 msgid "Debts"
 msgstr "Квитанции (долги)"
 
-#: customers/models.py:562
+#: models/customer.py:678
+msgid "Passport serial"
+msgstr "Серия пас."
+
+#: models/customer.py:683
+msgid "Passport number"
+msgstr "Номер пас."
+
+#: models/customer.py:688
+msgid "Distributor"
+msgstr "Кем выдан"
+
+#: models/customer.py:691
+msgid "Date of acceptance"
+msgstr "Дата выдачи"
+
+#: models/customer.py:702 models/customer.py:703
+msgid "Passport Info"
+msgstr "Паспортные данные"
+
+#: models/customer.py:729
 msgid "Telephone"
 msgstr "Номер телефона"
 
-#: customers/models.py:576
+#: models/customer.py:743
 msgid "Additional telephone"
 msgstr "Дополнительный телефон"
 
-#: customers/models.py:577
+#: models/customer.py:744
 msgid "Additional telephones"
 msgstr "Дополнительные телефоны"
 
-#: customers/models.py:584
+#: models/customer.py:751
 msgid "Periodic pay"
 msgstr "Периодический платёж"
 
-#: customers/models.py:586
+#: models/customer.py:753
 msgid "Last pay time"
 msgstr "Последний платёж"
 
-#: customers/models.py:587
+#: models/customer.py:754
 msgid "Next time to pay"
 msgstr "Следующий платёж"
 
-#: customers/models.py:591
+#: models/customer.py:758
 msgid "Account"
 msgstr "Учётная запись"
 
-#: customers/models.py:609
+#: models/customer.py:776
 #, python-format
 msgid "Charge for \"%(service)s\""
 msgstr "Плата за \"%(service)s\""
 
-#: customers/tests.py:42 customers/views/admin_side.py:40
+#: tests/customer.py:50 views/admin_side.py:37
 msgid "Not allowed to direct create Customer service, use 'pick_service' url"
 msgstr ""
 "Запрещено прямое создание привязанных к абоненту услуг, используйте "
 "'pick_service' url"
 
-#: customers/tests.py:49 customers/views/admin_side.py:61
+#: tests/customer.py:57 views/admin_side.py:58
 msgid "Not allowed to direct create Customer log"
 msgstr "Запрещено прямое создание логов абонента"
 
-#: customers/tests.py:113 customers/views/admin_side.py:147
+#: tests/customer.py:121 views/admin_side.py:157
 msgid "Service not connected"
-msgstr ""
+msgstr "Услуга не подключена"
 
-#: customers/tests.py:160 customers/views/user_side.py:56
+#: tests/customer.py:168 views/user_side.py:58
 #, python-format
 msgid "The service '%s' was successfully activated"
 msgstr "Услуга '%s' успешно подключена"
 
-#: customers/tests.py:234 customers/views/user_side.py:104
+#: tests/customer.py:243 views/user_side.py:106
 msgid "Are you not sure that you want buy the service?"
 msgstr "Вы не уверены что хотите оплатить долг?"
 
-#: customers/tests.py:246 customers/views/user_side.py:107
+#: tests/customer.py:256 views/user_side.py:109
 msgid "Your account have not enough money"
 msgstr "Недостаточно средств на счету"
 
-#: customers/views/admin_side.py:96
+#: views/admin_side.py:86
 #, python-format
 msgid "Service '%(service_name)s' has connected via admin until %(deadline)s"
 msgstr "Услуга '%(service_name)s' подключена администратором до %(deadline)s"
 
-#: customers/views/admin_side.py:169
-msgid "You must specify gateway"
-msgstr "Вы должны указать шлюз"
+#: views/admin_side.py:206
+msgid "Customer has not ips"
+msgstr "У абонента нет ip адресов"
 
-#: customers/views/admin_side.py:173
-msgid "You must specify group"
-msgstr "Вы должны указать группу"
+#: views/admin_side.py:213
+msgid "Ping ok"
+msgstr "Пингуется ok"
 
-#: customers/views/admin_side.py:180
-msgid "Network access server for users in this group, has been updated"
-msgstr "Сервер доступа в интернет привязан к пользователям в этой группе"
+#: views/admin_side.py:219
+msgid "arp ping ok"
+msgstr "Пингуется по ARP"
 
-#: customers/views/admin_side.py:185
-msgid "Users not found"
-msgstr "Пользователи не найдены"
+#: views/admin_side.py:223
+msgid "no ping"
+msgstr "не пингуется"
 
-#: customers/views/admin_side.py:274
+#: views/admin_side.py:228
+msgid "Process locked by another process"
+msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
+
+#: views/admin_side.py:270
 msgid "fill account through admin side"
 msgstr "Пополнение счёта сотрудником"
 
-#: customers/views/user_side.py:49
+#: views/user_side.py:50
 #, python-format
 msgid "Buy the service via user side, service '%s'"
 msgstr "Покупка тарифного плана через личный кабинет, тариф '%s'"
 
-#: customers/views/user_side.py:113
+#: views/user_side.py:116
 #, python-format
 msgid "%(username)s paid the debt %(amount).2f"
 msgstr "%(username)s заплатил долг в размере %(amount).2f"
 
-msgid "Subscribers on port does not exist"
-msgstr "Абоненты на порту не найдены"
+#~ msgid "You must specify gateway"
+#~ msgstr "Вы должны указать шлюз"
 
-msgid "Customer has not ips"
-msgstr "У абонента нет ip адресов"
+#~ msgid "You must specify group"
+#~ msgstr "Вы должны указать группу"
+
+#~ msgid "Network access server for users in this group, has been updated"
+#~ msgstr "Сервер доступа в интернет привязан к пользователям в этой группе"
+
+#~ msgid "Users not found"
+#~ msgstr "Пользователи не найдены"
+
+#~ msgid "Subscribers on port does not exist"
+#~ msgstr "Абоненты на порту не найдены"

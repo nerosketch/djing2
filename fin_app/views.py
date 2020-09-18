@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework_xml.renderers import XMLRenderer
 
 from customers.models import Customer
+from customers.tasks import customer_check_service_for_expiration
 from djing2.lib import safe_int, safe_float
 from djing2.viewsets import DjingModelViewSet
 from fin_app import serializers
@@ -137,6 +138,9 @@ class AllTimePay(GenericAPIView):
                 trade_point=trade_point,
                 receipt_num=receipt_num,
                 pay_gw=self.object
+            )
+            customer_check_service_for_expiration(
+                customer_id=customer.pk
             )
         return Response({
             'pay_id': pay_id,
