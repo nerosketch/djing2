@@ -12,9 +12,7 @@ class SearchSerializer(serializers.Serializer):
 
 
 class RequestObjectsPermsSerializer(serializers.Serializer):
-    groupIds = serializers.ListField(
-        child=serializers.IntegerField(min_value=1)
-    )
+    groupId = serializers.IntegerField(min_value=1)
     selectedPerms = serializers.ListField(
         child=serializers.IntegerField(min_value=1)
     )

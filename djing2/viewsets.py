@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Permission, Group as ProfileGroup
 from django.db import IntegrityError
 from guardian.ctypes import get_content_type
-from guardian.shortcuts import assign_perm, get_groups_with_perms, remove_perm
+from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView, get_object_or_404
@@ -55,7 +55,7 @@ class DjingModelViewSet(ModelViewSet):
     @action(detail=True, methods=['put'])
     def set_object_perms(self, request, *args, **kwargs):
         # request.data = {
-        #     'groupIds': [1, 2, 3],
+        #     'groupId': 2,
         #     'selectedPerms': [1, 2, 3]
         # }
         if not request.user.is_superuser:
@@ -65,11 +65,10 @@ class DjingModelViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        group_ids = [safe_int(i) for i in data.get('groupIds') if safe_int(i) > 0]
+        selected_profile_group = get_object_or_404(ProfileGroup, pk=data.get('groupId'))
 
         selected_perms = [safe_int(i) for i in data.get('selectedPerms') if safe_int(i) > 0]
 
-        selected_groups = ProfileGroup.objects.filter(pk__in=group_ids)
         selected_perms = Permission.objects.filter(pk__in=selected_perms).iterator()
 
         obj = self.get_object()
@@ -85,12 +84,11 @@ class DjingModelViewSet(ModelViewSet):
 
         # del perms
         for perm in for_del:
-            for grp in selected_groups:
-                remove_perm(perm, grp, obj)
+            remove_perm(perm, selected_profile_group, obj)
 
         # add perms
         for perm in for_add:
-            assign_perm(perm, selected_groups, obj)
+            assign_perm(perm, selected_profile_group, obj)
         return Response('ok')
 
     @action(detail=True)
@@ -106,9 +104,8 @@ class DjingModelViewSet(ModelViewSet):
 
         available_perms = available_perms.values('id', 'name', 'content_type', 'codename')
 
-        groups = get_groups_with_perms(obj).values_list('pk', flat=True)
+        # groups = get_groups_with_perms(obj).values_list('pk', flat=True)
         return Response({
-            'groupIds': groups,
             'availablePerms': available_perms
         })
 
