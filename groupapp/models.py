@@ -55,8 +55,9 @@ class Group(models.Model):
         for rel_mod, rel_ctype in related_ctypes.items():
             perms = Permission.objects.filter(content_type=rel_ctype, pk__in=permission_ids)
             for perm in perms:
-                related_objs = rel_mod.objects.filter(group=self)
-                assign_perm(perm, profile_group, related_objs)
+                if hasattr(rel_mod, 'group'):
+                    related_objs = rel_mod.objects.filter(group=self)
+                    assign_perm(perm, profile_group, related_objs)
         return True
 
     class Meta:
