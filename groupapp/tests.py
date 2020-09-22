@@ -1,8 +1,7 @@
+from django.contrib.auth.models import Group as ProfileGroup, Permission
 from rest_framework import status
 
 from customers.tests.customer import CustomAPITestCase
-from devices.device_config import DEVICE_TYPE_DlinkDGS1100_10ME, DEVICE_TYPE_OnuZTE_F601
-from devices.models import Device
 
 
 # Test recursive permission assignment
@@ -11,18 +10,8 @@ class GroupAppTestCase(CustomAPITestCase):
     def setUp(self):
         super().setUp()
 
-        self.device_switch = Device.objects.create(
-            ip_address='192.168.2.3',
-            mac_addr='12:13:14:15:16:17',
-            comment='test',
-            dev_type=DEVICE_TYPE_DlinkDGS1100_10ME,
-            group=self.group
-        )
-        self.device_onu = Device.objects.create(
-            mac_addr='11:13:14:15:16:18',
-            comment='test2',
-            dev_type=DEVICE_TYPE_OnuZTE_F601,
-            group=self.group
+        self.profile_group = ProfileGroup.objects.create(
+            name='Test profile group'
         )
 
     def test_get_perms(self):
@@ -39,3 +28,12 @@ class GroupAppTestCase(CustomAPITestCase):
 
         for perm in r.data:
             self.assertIn(perm.get('codename'), codes)
+
+    def test_set_related_perms(self):
+        read_perms = Permission.objects.filter(codename__startswith='view_')
+        read_perm_ids = [p.pk for p in read_perms]
+        r = self.client.put('/api/groups/%d/set_related_perms_recursive/' % self.group.pk, {
+            'profile_group': self.profile_group.pk,
+            'permission_ids': read_perm_ids
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
