@@ -521,7 +521,7 @@ class Customer(BaseAccount):
         expired_service = CustomerService.objects.filter(
             deadline__lt=now,
             customer=self,
-            customer_auto_renewal_service=False
+            customer__auto_renewal_service=False
         )
         if expired_service.exists():
             for exp_srv in expired_service:
@@ -550,7 +550,7 @@ class Customer(BaseAccount):
         expired_service = CustomerService.objects.filter(
             deadline__lt=now,
             customer=self,
-            customer_auto_renewal_service=True
+            customer__auto_renewal_service=True
         )
         if not expired_service.exists():
             return
