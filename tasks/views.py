@@ -28,7 +28,6 @@ class TaskModelViewSet(DjingModelViewSet):
     queryset = models.Task.objects.select_related(
         'author', 'customer', 'customer__group', 'customer__street'
     ).annotate(comment_count=Count('extracomment'))
-    # TODO: Optimize. recipients field make request for each task entry
     serializer_class = serializers.TaskModelSerializer
     filterset_fields = ('task_state', 'recipients', 'customer')
 
