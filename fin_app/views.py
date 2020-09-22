@@ -4,6 +4,7 @@ from django.db import transaction
 from django.db.utils import DatabaseError
 from django.db.models import Count
 from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -41,6 +42,7 @@ class AllTimePay(GenericAPIView):
     lookup_field = 'slug'
     lookup_url_kwarg = 'pay_slug'
     permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend]
 
     @staticmethod
     def _bad_ret(err_id: int, err_description: str=None) -> Response:

@@ -299,7 +299,7 @@ class UserTaskAPITestCase(CustomAPITestCase):
             password='admin'
         )
         r = self.get('/api/tasks/users/task_history/')
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_task_link_unauth(self):
         self.client.logout()
