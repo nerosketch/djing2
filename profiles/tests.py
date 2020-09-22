@@ -52,3 +52,10 @@ class ProfileApiTestCase(APITestCase):
         self.assertTrue(content.get('is_admin'))
         self.assertTrue(content.get('is_superuser'))
         self.assertEqual(content.get('telephone'), '+797812345678')
+
+    def test_change_password(self):
+        r = self.post('/api/profiles/admin/change_password/', {
+            'old_passw': 'new password',
+            'new_passw': 'new password'
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK)

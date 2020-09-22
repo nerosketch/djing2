@@ -147,3 +147,6 @@ msgstr "Не получается войти с предоставленными
 
 #~ msgid "Login is not possible"
 #~ msgstr "Не получается войти в предоставленными учётными данными"
+
+msgid "Passwords must be same"
+msgstr "Пароли должны быть одинаковыми"
