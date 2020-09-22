@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from uwsgi_tasks import task, TaskExecutor
 
 from djing2.lib import LogicError
@@ -105,18 +103,7 @@ def customer_check_service_for_expiration(customer_id: int):
         else:
             customer.finish_service_if_expired(profile=None)
 
-        with open('/tmp/test_pay.log', 'a') as f:
-            f.write("%s: Customer %s, " % (
-                datetime.now(),
-                customer.get_short_name(),
-            ))
-
     except Customer.DoesNotExist:
         pass
     except LogicError as err:
         print(err)
-        with open('/tmp/test_pay.log', 'a') as f:
-            f.write("%s: LogicError: %s" % (
-                datetime.now(),
-                str(err)
-            ))
