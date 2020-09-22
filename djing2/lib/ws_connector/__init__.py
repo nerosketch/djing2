@@ -4,9 +4,12 @@ from django.conf import settings
 
 
 def send_data(dat: dict, host: str = getattr(settings, 'WS_ADDR', '127.0.0.1:3211')) -> None:
+    assert isinstance(dat, dict)
+    assert bool(dat.get('eventType'))
+    assert bool(dat.get('data'))
     dat = dumps(dat)
     try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        with socket.socket() as s:
             ipaddr, hport = host.split(':')
             s.connect((ipaddr, int(hport)))
             s.sendall(dat.encode())
