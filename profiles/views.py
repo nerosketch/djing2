@@ -79,11 +79,17 @@ class UserProfileViewSet(DjingSuperUserModelViewSet):
             return Response(ser.data)
         data = self._check_passw_data(request.data)
 
-        profile = self.get_object()
         old_passw = data.get('old_passw')
-        if not profile.check_password(old_passw):
-            return Response(_('Wrong old password'), status=status.HTTP_400_BAD_REQUEST)
         new_passw = data.get('new_passw')
+
+        profile = self.get_object()
+
+        if not request.user.is_superuser:
+            if old_passw != new_passw:
+                return Response(_('Passwords must be same'), status=status.HTTP_400_BAD_REQUEST)
+            if not profile.check_password(old_passw):
+                return Response(_('Wrong old password'), status=status.HTTP_400_BAD_REQUEST)
+
         profile.set_password(new_passw)
         profile.save(update_fields=['password'])
         return Response('ok', status=status.HTTP_200_OK)
