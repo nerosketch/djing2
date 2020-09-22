@@ -75,7 +75,7 @@ class ZTE_C320(BDCOM_P3310C):
             'firmware_ver': frm_ver,
             'loid_passw': loid_passw,
             'loid': loid,
-            'sn': 'ZTEG' + ''.join('%x' % i for i in sn[-4:]).upper()
+            'sn': 'ZTEG' + ''.join('%.2x' % i for i in sn[-4:]).upper()
         } for frm_ver, loid_passw, loid, (sn, num) in zip(
             firmware_ver, loid_passws, loids, sn_num_list
         ))
