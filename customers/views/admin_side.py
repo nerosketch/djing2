@@ -21,6 +21,7 @@ from customers.models import Customer
 from customers.views.view_decorators import catch_customers_errs
 from djing2.exceptions import UniqueConstraintIntegrityError
 from djing2.lib import safe_int, safe_float, ProcessLocked
+from djing2.lib.filters import CustomObjectPermissionsFilter
 
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
@@ -60,13 +61,9 @@ class CustomerLogModelViewSet(DjingModelViewSet):
 
 
 class CustomerModelViewSet(DjingModelViewSet):
-    queryset = models.Customer.objects.select_related(
-        'group', 'street', 'gateway', 'device', 'dev_port',
-        'current_service', 'last_connected_service',
-        'current_service__service', 'customerrawpassword'
-    ).annotate(lease_count=Count('customeripleasemodel'))
+    queryset = models.Customer.objects.annotate(lease_count=Count('customeripleasemodel'))
     serializer_class = serializers.CustomerModelSerializer
-    filter_backends = (SearchFilter, DjangoFilterBackend, OrderingFilter)
+    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ('username', 'fio', 'telephone', 'description')
     filterset_fields = ('group', 'street', 'device', 'dev_port')
     ordering_fields = ('username', 'fio', 'house', 'balance', 'current_service__service__title')

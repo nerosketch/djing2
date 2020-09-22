@@ -27,6 +27,7 @@ from djing2.lib import (
     ProcessLocked, safe_int, ws_connector,
     RuTimedelta, JSONBytesEncoder
 )
+from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
 from messenger.tasks import multicast_viber_notify
@@ -59,7 +60,7 @@ class DevicePONViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related('parent_dev')
     serializer_class = dev_serializers.DevicePONModelSerializer
     filterset_fields = ('group', 'dev_type', 'status', 'is_noticeable')
-    filter_backends = (SearchFilter, DjangoFilterBackend)
+    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend]
     search_fields = ('comment', 'ip_address', 'mac_addr')
     ordering_fields = ('ip_address', 'mac_addr', 'comment', 'dev_type')
 
@@ -253,7 +254,7 @@ class DeviceModelViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related('parent_dev')
     serializer_class = dev_serializers.DeviceModelSerializer
     filterset_fields = ('group', 'dev_type', 'status', 'is_noticeable')
-    filter_backends = (SearchFilter, DjangoFilterBackend)
+    filter_backends = (CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend)
     search_fields = ('comment', 'ip_address', 'mac_addr')
     ordering_fields = ('ip_address', 'mac_addr', 'comment', 'dev_type')
 
@@ -453,7 +454,7 @@ class PortVlanMemberModelViewSet(DjingModelViewSet):
 
 class DeviceGroupsList(DjingListAPIView):
     serializer_class = dev_serializers.DeviceGroupsModelSerializer
-    filter_backends = (OrderingFilter,)
+    filter_backends = (CustomObjectPermissionsFilter, OrderingFilter,)
     ordering_fields = ('title', 'code')
 
     def get_queryset(self):

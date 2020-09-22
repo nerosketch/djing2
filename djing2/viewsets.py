@@ -74,12 +74,12 @@ class DjingModelViewSet(ModelViewSet):
 
         obj = self.get_object()
         ctype = get_content_type(obj)
-        existing_perm_codes = {p.codename for p in Permission.objects.filter(
+        existing_perm_codes = {p for p in Permission.objects.filter(
             groupobjectpermission__content_type=ctype,
             groupobjectpermission__object_pk__in=[obj.pk]
         ).iterator()}
 
-        selected_perm_codes = {p.codename for p in selected_perms}
+        selected_perm_codes = {p for p in selected_perms}
         for_del = existing_perm_codes - selected_perm_codes
         for_add = selected_perm_codes - existing_perm_codes
 
