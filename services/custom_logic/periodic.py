@@ -1,5 +1,6 @@
+from calendar import monthrange
 from random import uniform
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 
 from django.utils.translation import gettext as _
 
@@ -13,8 +14,10 @@ class PeriodicPayCalcDefault(PeriodicPayCalcBase):
         return model_object.amount
 
     def get_next_time_to_pay(self, model_object, last_time_payment) -> datetime:
-        # TODO: решить какой будет расёт периодических платежей
-        return datetime.now() + timedelta(days=30)
+        today = date.today()
+        nw = datetime(today.year, today.month, today.day)
+        days = monthrange(nw.year, nw.month)[1]
+        return nw + timedelta(days - nw.day + 1)
 
 
 class PeriodicPayCalcRandom(PeriodicPayCalcDefault):
