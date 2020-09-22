@@ -241,3 +241,9 @@ msgstr "Заявка для этого абонента уже создана."
 
 #~ msgid "Attached image"
 #~ msgstr "Прикреплённое изображение"
+
+msgid "High priority task was created"
+msgstr "Создана высокоприоритетная задача"
+
+msgid "High priority task was updated"
+msgstr "Высокоприоритетная задача обновлена"
