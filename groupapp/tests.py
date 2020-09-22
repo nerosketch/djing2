@@ -37,3 +37,31 @@ class GroupAppTestCase(CustomAPITestCase):
             'permission_ids': read_perm_ids
         })
         self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+    def test_set_related_perms_bad_profile_group(self):
+        r = self.client.put('/api/groups/%d/set_related_perms_recursive/' % self.group.pk, {
+            'profile_group': 0,
+            'permission_ids': [1, 2, 3]
+        })
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_set_related_perms_bad_neg_profile_group(self):
+        r = self.client.put('/api/groups/%d/set_related_perms_recursive/' % self.group.pk, {
+            'profile_group': -1,
+            'permission_ids': [1, 2, 3]
+        })
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_set_related_perms_bad_permissions(self):
+        r = self.client.put('/api/groups/%d/set_related_perms_recursive/' % self.group.pk, {
+            'profile_group': self.profile_group.pk,
+            'permission_ids': [1000, 2000, 3000]
+        })
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_set_related_perms_bad_text_permissions(self):
+        r = self.client.put('/api/groups/%d/set_related_perms_recursive/' % self.group.pk, {
+            'profile_group': self.profile_group.pk,
+            'permission_ids': ['sdfsdf', 'yj', 'sdfdf']
+        })
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
