@@ -25,7 +25,7 @@ class TaskModelSerializer(BaseCustomModelSerializer):
     customer_uname = serializers.CharField(source='customer.username', read_only=True)
     customer_group = serializers.IntegerField(source='customer.group_id', read_only=True)
     comment_count = serializers.IntegerField(read_only=True)
-    recipients = serializers.PrimaryKeyRelatedField(many=True, queryset=UserProfile.objects.only('pk', 'username', 'fio'))
+    recipients = serializers.PrimaryKeyRelatedField(many=True, queryset=UserProfile.objects.only('pk'))
     state_str = serializers.CharField(source='get_task_state_display', read_only=True)
     mode_str = serializers.CharField(source='get_mode_display', read_only=True)
     time_of_create = serializers.DateTimeField(read_only=True)

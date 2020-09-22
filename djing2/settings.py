@@ -31,7 +31,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = local_settings.SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = getattr(local_settings, 'DEBUG', True)
+DEBUG = getattr(local_settings, 'DEBUG', False)
 
 ALLOWED_HOSTS = getattr(local_settings, 'ALLOWED_HOSTS', '*')
 
