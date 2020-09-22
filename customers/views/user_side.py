@@ -93,13 +93,13 @@ class DebtsList(BaseNonAdminReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(customer__id=self.request.user.pk)
+        return qs.filter(customer=self.request.user)
 
-    @action(methods=('post',), detail=True)
+    @action(methods=['post'], detail=True)
     @catch_customers_errs
     def buy(self, request, pk=None):
         debt = self.get_object()
-        customer = self.request.user
+        customer = request.user
         sure = request.data.get('sure')
         if sure != 'on':
             raise LogicError(
@@ -111,7 +111,7 @@ class DebtsList(BaseNonAdminReadOnlyModelViewSet):
         with transaction.atomic():
             amount = -debt.cost
             customer.add_balance(
-                profile=self.request.user,
+                profile=request.user,
                 cost=amount,
                 comment=gettext('%(username)s paid the debt %(amount).2f') % {
                     'username': customer.get_full_name(),
