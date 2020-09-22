@@ -242,7 +242,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
         'rest_framework.permissions.IsAdminUser',
-        'djing2.permissions.CustomizedDjangoModelPermissions'
+        # 'djing2.permissions.CustomizedDjangoObjectPermissions'
     ]
     # 'DEFAULT_RENDERER_CLASSES': (
     #     'rest_framework.renderers.JSONRenderer',

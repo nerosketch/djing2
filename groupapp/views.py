@@ -5,6 +5,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
+from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet
 from groupapp.models import Group
 from groupapp.serializers import GroupsSerializer, SetRelatedPermsRecursiveSerializer
@@ -14,7 +15,7 @@ from profiles.serializers import PermissionModelSerializer
 class GroupsModelViewSets(DjingModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupsSerializer
-    filter_backends = (OrderingFilter,)
+    filter_backends = [CustomObjectPermissionsFilter, OrderingFilter]
     ordering_fields = 'title',
 
     @action(detail=False)
