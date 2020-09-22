@@ -1,3 +1,5 @@
+import json
+
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -40,3 +42,13 @@ class ProfileApiTestCase(APITestCase):
         self.assertTrue(profile['is_active'])
         self.assertTrue(profile['is_admin'])
         self.assertTrue(profile['is_superuser'])
+
+    def test_get_self_profile(self):
+        r = self.get('/api/profiles/current/')
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        content = json.loads(r.content.decode())
+        self.assertEqual(content.get('username'), 'admin')
+        self.assertTrue(content.get('is_active'))
+        self.assertTrue(content.get('is_admin'))
+        self.assertTrue(content.get('is_superuser'))
+        self.assertEqual(content.get('telephone'), '+797812345678')
