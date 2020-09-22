@@ -146,10 +146,10 @@ execute _tp('networks', 'add_networkippool', 'Может добавлять по
 execute _tp('networks', 'change_networkippool', 'Может изменять подсеть');
 execute _tp('networks', 'delete_networkippool', 'Может удалять подсеть');
 execute _tp('networks', 'view_networkippool', 'Может видеть подсети');
-execute _tp('admin', 'add_logentry', 'Может добавлять логи');
-execute _tp('admin', 'change_logentry', 'Может добавлять логи');
-execute _tp('admin', 'delete_logentry', 'Может удалять логи');
-execute _tp('admin', 'view_logentry', 'Может видеть логи');
+-- execute _tp('admin', 'add_logentry', 'Может добавлять логи');
+-- execute _tp('admin', 'change_logentry', 'Может добавлять логи');
+-- execute _tp('admin', 'delete_logentry', 'Может удалять логи');
+-- execute _tp('admin', 'view_logentry', 'Может видеть логи');
 
 
 deallocate _tp;
