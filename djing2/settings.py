@@ -60,7 +60,7 @@ INSTALLED_APPS = [
     'networks',
     'customers.apps.CustomersConfig',
     'messenger',
-    'tasks',
+    'tasks.apps.TasksConfig',
     'fin_app',
     'dials',
     'msg_app',
