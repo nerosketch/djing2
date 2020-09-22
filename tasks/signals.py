@@ -9,5 +9,5 @@ from tasks.models import Task
 def task_post_save(sender, **kwargs):
     send_data({
         'eventType': 'updatetask',
-        'data': None
+        'data': 'nevermind'
     })
