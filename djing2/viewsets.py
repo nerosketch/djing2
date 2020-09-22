@@ -1,5 +1,6 @@
 from django.contrib.auth.models import Permission, Group as ProfileGroup
 from django.db import IntegrityError
+from django_filters.rest_framework import DjangoFilterBackend
 from guardian.ctypes import get_content_type
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import status
@@ -11,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import AuthenticationFailed
 
 from djing2.lib import safe_int
-from djing2.permissions import IsSuperUser
+from djing2.permissions import IsSuperUser, IsCustomer
 from djing2.serializers import RequestObjectsPermsSerializer
 from profiles.models import BaseAccount
 from djing2.exceptions import UniqueConstraintIntegrityError
@@ -133,16 +134,17 @@ class DjingListAPIView(ListAPIView):
 
 
 class BaseNonAdminReadOnlyModelViewSet(ReadOnlyModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated, IsCustomer]
+    filter_backends = [DjangoFilterBackend]
 
     def get_queryset(self):
-        if isinstance(self.request.user, BaseAccount):
+        if isinstance(self.request.user, BaseAccount) and not self.request.user.is_staff:
             return super().get_queryset()
         raise AuthenticationFailed
 
 
 class BaseNonAdminModelViewSet(ModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         if isinstance(self.request.user, BaseAccount):
@@ -151,4 +153,4 @@ class BaseNonAdminModelViewSet(ModelViewSet):
 
 
 class DjingAuthorizedViewSet(GenericViewSet):
-    permission_classes = (IsAuthenticated, IsAdminUser)
+    permission_classes = [IsAuthenticated, IsAdminUser]
