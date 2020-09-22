@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 
+from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SecureApiView
 from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
@@ -18,7 +19,7 @@ from networks.serializers import (NetworkIpPoolModelSerializer,
 class NetworkIpPoolModelViewSet(DjingModelViewSet):
     queryset = NetworkIpPool.objects.all()
     serializer_class = NetworkIpPoolModelSerializer
-    filter_backends = (OrderingFilter, DjangoFilterBackend)
+    filter_backends = (CustomObjectPermissionsFilter, OrderingFilter, DjangoFilterBackend)
     ordering_fields = ('network', 'ip_start', 'ip_end', 'gateway')
     filterset_fields = ('groups',)
 
@@ -46,7 +47,7 @@ class NetworkIpPoolModelViewSet(DjingModelViewSet):
 class VlanIfModelViewSet(DjingModelViewSet):
     queryset = VlanIf.objects.all()
     serializer_class = VlanIfModelSerializer
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filter_backends = (CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter)
     ordering_fields = ('title', 'vid')
     filterset_fields = ('device',)
 
@@ -54,7 +55,7 @@ class VlanIfModelViewSet(DjingModelViewSet):
 class CustomerIpLeaseModelViewSet(DjingModelViewSet):
     queryset = CustomerIpLeaseModel.objects.all()
     serializer_class = CustomerIpLeaseModelSerializer
-    filter_backends = (OrderingFilter, DjangoFilterBackend)
+    filter_backends = (CustomObjectPermissionsFilter, OrderingFilter, DjangoFilterBackend)
     filterset_fields = ('customer',)
     ordering_fields = ('ip_address', 'lease_time', 'mac_address')
 

@@ -121,6 +121,7 @@ class LocationAuth(APIView):
 class CurrentAuthenticatedProfileROViewSet(BaseNonAdminReadOnlyModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         return UserProfile.objects.get(pk=self.request.user.pk)
