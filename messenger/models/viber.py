@@ -7,6 +7,8 @@ from django.conf import settings
 from viberbot import Api, BotConfiguration
 from viberbot.api.messages import TextMessage
 from viberbot.api.messages.message import Message
+
+from djing2.models import BaseAbstractModel
 from messenger.models import Messenger
 from profiles.models import UserProfile
 
@@ -74,7 +76,7 @@ class ViberMessenger(Messenger):
         ordering = 'title',
 
 
-class ViberMessage(models.Model):
+class ViberMessage(BaseAbstractModel):
     msg = models.TextField(_('Message'))
     date = models.DateTimeField(
         _('Date'), auto_now_add=True
@@ -101,7 +103,7 @@ class ViberMessage(models.Model):
         ordering = '-date',
 
 
-class ViberSubscriber(models.Model):
+class ViberSubscriber(BaseAbstractModel):
     uid = models.CharField(
         _('User unique id in viber'),
         max_length=32

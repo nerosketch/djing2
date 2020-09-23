@@ -14,6 +14,7 @@ from netfields import MACAddressField, CidrAddressField
 from customers.models.customer import Customer
 from djing2 import ping as icmp_ping
 from djing2.lib import macbin2str, safe_int, process_lock
+from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from .events import on_new_lease_assigned
 from .exceptions import DhcpRequestError
@@ -21,7 +22,7 @@ from .exceptions import DhcpRequestError
 DHCP_DEFAULT_LEASE_TIME = getattr(settings, 'DHCP_DEFAULT_LEASE_TIME', 86400)
 
 
-class VlanIf(models.Model):
+class VlanIf(BaseAbstractModel):
     title = models.CharField(_('Vlan title'), max_length=128)
     vid = models.PositiveSmallIntegerField(_('VID'), default=1, validators=[
         MinValueValidator(2, message=_('Vid could not be less then 2')),
@@ -48,7 +49,7 @@ class NetworkIpPoolKind(models.IntegerChoices):
     NETWORK_KIND_ADMIN = 5, _('Admin')
 
 
-class NetworkIpPool(models.Model):
+class NetworkIpPool(BaseAbstractModel):
     network = CidrAddressField(
         verbose_name=_('Ip network address'),
         help_text=_('Ip address of network. For example: '
@@ -224,7 +225,7 @@ def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int
     return mac, port
 
 
-class CustomerIpLeaseModel(models.Model):
+class CustomerIpLeaseModel(BaseAbstractModel):
     ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
     pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
     lease_time = models.DateTimeField(_('Lease time'), auto_now_add=True)
