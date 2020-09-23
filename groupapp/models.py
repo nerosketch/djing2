@@ -9,6 +9,7 @@ from guardian.shortcuts import assign_perm
 
 from djing2.lib import safe_int
 from djing2.lib.validators import latinValidator
+from djing2.models import BaseAbstractModel
 
 
 class GroupManager(models.Manager):
@@ -27,7 +28,7 @@ class GroupManager(models.Manager):
         return related_perms
 
 
-class Group(models.Model):
+class Group(BaseAbstractModel):
     title = models.CharField(_('Title'), max_length=127, unique=True)
     # Code is deprecated
     code = models.CharField(

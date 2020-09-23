@@ -11,6 +11,7 @@ from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
 from djing2.lib import LogicError, safe_float
+from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.models import Service, OneShotPay, PeriodicPay
@@ -22,7 +23,7 @@ class NotEnoughMoney(LogicError):
     pass
 
 
-class CustomerService(models.Model):
+class CustomerService(BaseAbstractModel):
     service = models.ForeignKey(
         Service,
         on_delete=models.CASCADE,
@@ -95,7 +96,7 @@ class CustomerService(models.Model):
         ordering = 'start_time',
 
 
-class CustomerStreet(models.Model):
+class CustomerStreet(BaseAbstractModel):
     name = models.CharField(max_length=64)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
 
@@ -109,7 +110,7 @@ class CustomerStreet(models.Model):
         ordering = 'name',
 
 
-class CustomerLog(models.Model):
+class CustomerLog(BaseAbstractModel):
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
     author = models.ForeignKey(
@@ -641,7 +642,7 @@ class Customer(BaseAccount):
         unique_together = ('ip_address', 'gateway')
 
 
-class InvoiceForPayment(models.Model):
+class InvoiceForPayment(BaseAbstractModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     status = models.BooleanField(default=False)
     cost = models.FloatField(default=0.0)
@@ -671,7 +672,7 @@ class InvoiceForPayment(models.Model):
         verbose_name_plural = _('Debts')
 
 
-class PassportInfo(models.Model):
+class PassportInfo(BaseAbstractModel):
     series = models.CharField(
         _('Passport serial'),
         max_length=4,
@@ -705,7 +706,7 @@ class PassportInfo(models.Model):
         return "%s %s" % (self.series, self.number)
 
 
-class CustomerRawPassword(models.Model):
+class CustomerRawPassword(BaseAbstractModel):
     customer = models.OneToOneField(Customer, models.CASCADE)
     passw_text = EncryptedCharField(max_length=64)
 
@@ -716,7 +717,7 @@ class CustomerRawPassword(models.Model):
         db_table = 'customer_raw_password'
 
 
-class AdditionalTelephone(models.Model):
+class AdditionalTelephone(BaseAbstractModel):
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
@@ -742,7 +743,7 @@ class AdditionalTelephone(models.Model):
         verbose_name_plural = _('Additional telephones')
 
 
-class PeriodicPayForId(models.Model):
+class PeriodicPayForId(BaseAbstractModel):
     periodic_pay = models.ForeignKey(
         PeriodicPay,
         on_delete=models.CASCADE,
@@ -787,7 +788,7 @@ class PeriodicPayForId(models.Model):
         ordering = 'last_pay',
 
 
-class CustomerAttachment(models.Model):
+class CustomerAttachment(BaseAbstractModel):
     title = models.CharField(max_length=64)
     doc_file = models.FileField(upload_to='customer_attachments/%Y/%m/', max_length=128)
     create_time = models.DateTimeField(auto_now_add=True)

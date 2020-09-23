@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from services.custom_logic import *
 from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase, OneShotBaseService
@@ -14,7 +15,7 @@ class ServiceManager(models.Manager):
         return self.filter(groups__id__in=group_id)
 
 
-class Service(models.Model):
+class Service(BaseAbstractModel):
     title = models.CharField(_('Service title'), max_length=128)
     descr = models.TextField(_('Service description'), null=True, blank=True, default=None)
     speed_in = models.FloatField(_('Speed in'), validators=[
@@ -74,7 +75,7 @@ class Service(models.Model):
         unique_together = ('speed_in', 'speed_out', 'cost', 'calc_type')
 
 
-class PeriodicPay(models.Model):
+class PeriodicPay(BaseAbstractModel):
     name = models.CharField(_('Periodic pay name'), max_length=64)
     when_add = models.DateTimeField(_('When pay created'), auto_now_add=True)
     calc_type = models.PositiveSmallIntegerField(
@@ -124,7 +125,7 @@ class PeriodicPay(models.Model):
         ordering = '-id',
 
 
-class OneShotPay(models.Model):
+class OneShotPay(BaseAbstractModel):
     name = models.CharField(_('Shot pay name'), max_length=64)
     cost = models.FloatField(_('Total cost'))
     pay_type = models.PositiveSmallIntegerField(
