@@ -126,7 +126,7 @@ class CustomerModelViewSet(DjingModelViewSet):
     @catch_customers_errs
     def stop_service(self, request, pk=None):
         del pk
-        self.check_permission_code(request, 'customers.can_stop_service')
+        self.check_permission_code(request, 'customers.can_complete_service')
         customer = self.get_object()
         cust_srv = customer.active_service()
         if cust_srv is None:
