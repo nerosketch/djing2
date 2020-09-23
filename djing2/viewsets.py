@@ -22,7 +22,8 @@ class DjingModelViewSet(ModelViewSet):
 
     def perform_create(self, serializer) -> None:
         try:
-            super().perform_create(serializer)
+            inst = serializer.save()
+            inst.assign_rights2new_obj(self.request)
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(str(e))
 
