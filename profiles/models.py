@@ -11,6 +11,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from djing2.lib.validators import latinValidator, telephoneValidator
+from djing2.models import BaseAbstractModel, BaseAbstractModelMixin
 from groupapp.models import Group
 
 
@@ -55,7 +56,7 @@ class MyUserManager(BaseUserManager):
         return user
 
 
-class BaseAccount(AbstractBaseUser, PermissionsMixin):
+class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
     username = models.CharField(
         _('profile username'),
         max_length=127,
@@ -114,7 +115,7 @@ class UserProfileLogActionType(models.IntegerChoices):
     DELETE_SERVICE = 8, _('Delete service')
 
 
-class UserProfileLog(models.Model):
+class UserProfileLog(BaseAbstractModel):
     account = models.ForeignKey('UserProfile', on_delete=models.CASCADE, verbose_name=_('Author'))
     # meta_info = JSONField(verbose_name=_('Meta information'))
     do_type = models.PositiveSmallIntegerField(_('Action type'), choices=UserProfileLogActionType.choices,

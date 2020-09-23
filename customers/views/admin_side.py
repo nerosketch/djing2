@@ -2,7 +2,6 @@ from datetime import datetime
 
 from django.conf import settings
 from django.db.models import Count
-from django.db.utils import IntegrityError
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
@@ -19,7 +18,6 @@ from customers import models
 from customers import serializers
 from customers.models import Customer
 from customers.views.view_decorators import catch_customers_errs
-from djing2.exceptions import UniqueConstraintIntegrityError
 from djing2.lib import safe_int, safe_float, ProcessLocked
 from djing2.lib.filters import CustomObjectPermissionsFilter
 
@@ -94,30 +92,9 @@ class CustomerModelViewSet(DjingModelViewSet):
                 deadline=deadline,
                 allow_negative=True
             )
-            # customer_gw_command.delay(customer.pk, 'sync')
         except models.NotEnoughMoney as e:
             return Response(data=str(e), status=status.HTTP_402_PAYMENT_REQUIRED)
         return Response(status=status.HTTP_200_OK)
-
-    # def perform_update(self, serializer):
-    #     customer = serializer.save()
-    #     customer_gw_command.delay(customer.pk, 'sync')
-
-    def perform_create(self, serializer):
-        try:
-            serializer.save()
-            # if customer.is_access():
-            #     customer_gw_command.delay(customer.pk, 'add')
-        except IntegrityError as e:
-            raise UniqueConstraintIntegrityError(str(e))
-
-    # def perform_destroy(self, instance):
-    #     customer_gw_remove.delay(
-    #         customer_uid=instance.pk, ip_addr=instance.ip_address,
-    #         speed=(0, 0),
-    #         is_access=instance.is_access(), gw_pk=instance.gateway_id
-    #     )
-    #     super().perform_destroy(instance)
 
     @action(methods=('post',), detail=True)
     @catch_customers_errs

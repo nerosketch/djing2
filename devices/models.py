@@ -13,6 +13,7 @@ from devices.device_config import (
     OptionalScriptCallResult)
 from devices.device_config.device_config_util import get_all_device_config_types
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
+from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from networks.models import VlanIf
 
@@ -21,7 +22,7 @@ def _make_device_code_config_choices():
     return tuple(set((dtype.short_code, dtype.title) for dtype in get_all_device_config_types()))
 
 
-class Device(models.Model):
+class Device(BaseAbstractModel):
     _cached_manager = None
 
     ip_address = models.GenericIPAddressField(
@@ -270,13 +271,16 @@ class PortVlanMemberMode(models.IntegerChoices):
     HYBRID = 4, _('Hybrid')
 
 
-class PortVlanMemberModel(models.Model):
+class PortVlanMemberModel(BaseAbstractModel):
     vlanif = models.ForeignKey(VlanIf, on_delete=models.CASCADE)
     port = models.ForeignKey('Port', on_delete=models.CASCADE)
     mode = models.PositiveSmallIntegerField(
         _('Operating mode'), default=PortVlanMemberMode.NOT_CHOSEN,
         choices=PortVlanMemberMode.choices
     )
+
+    class Meta:
+        abstract = False
 
 
 class PortOperatingMode(models.IntegerChoices):
@@ -287,7 +291,7 @@ class PortOperatingMode(models.IntegerChoices):
     GENERAL = 4, _('General')
 
 
-class Port(models.Model):
+class Port(BaseAbstractModel):
     device = models.ForeignKey(
         Device, on_delete=models.CASCADE,
         verbose_name=_('Device')
