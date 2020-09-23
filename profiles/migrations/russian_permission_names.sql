@@ -100,6 +100,7 @@ execute _tp('customers', 'add_customerattachment', 'Может добавлят�
 execute _tp('customers', 'change_customerattachment', 'Может изменять приложения к абонентам');
 execute _tp('customers', 'delete_customerattachment', 'Может удалять приложения к абонентам');
 execute _tp('customers', 'view_customerattachment', 'Может видеть приложения к абонентам');
+execute _tp('customers', 'view_customerlog', 'Может видеть финансы абонентов');
 execute _tp('messenger', 'add_messenger', 'Может добавлять мессенджеры');
 execute _tp('messenger', 'delete_messenger', 'Может удалять мессенджеры');
 execute _tp('messenger', 'view_messenger', 'Может видеть мессенджеры');
