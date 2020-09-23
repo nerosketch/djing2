@@ -3,10 +3,11 @@ from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedCharField
 
 from djing2.lib import MyChoicesAdapter
+from djing2.models import BaseAbstractModel
 from .gw_facade import GATEWAY_TYPES, GatewayFacade, GatewayNetworkError
 
 
-class Gateway(models.Model):
+class Gateway(BaseAbstractModel):
     title = models.CharField(_('Title'), max_length=127, unique=True)
     ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
     ip_port = models.PositiveSmallIntegerField(_('Port'))
