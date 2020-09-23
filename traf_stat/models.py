@@ -3,6 +3,8 @@ import math
 
 from django.db import models, connection, ProgrammingError
 from django.utils.timezone import now
+
+from djing2.models import BaseAbstractModel
 from .fields import UnixDateTimeField
 
 
@@ -50,7 +52,7 @@ class StatManager(models.Manager):
                 return
 
 
-class StatElem(models.Model):
+class StatElem(BaseAbstractModel):
     cur_time = UnixDateTimeField(primary_key=True)
     customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE, null=True, default=None, blank=True)
     ip = models.PositiveIntegerField()
@@ -112,7 +114,7 @@ def getModel(want_date=None):
     return se
 
 
-class StatCache(models.Model):
+class StatCache(BaseAbstractModel):
     last_time = UnixDateTimeField()
     customer = models.OneToOneField('customers.Customer', on_delete=models.CASCADE, primary_key=True)
     octets = models.PositiveIntegerField(default=0)

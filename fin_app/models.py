@@ -3,9 +3,10 @@ from django.db import models
 from encrypted_model_fields.fields import EncryptedCharField
 
 from customers.models import Customer
+from djing2.models import BaseAbstractModel
 
 
-class PayAllTimeGateway(models.Model):
+class PayAllTimeGateway(BaseAbstractModel):
     title = models.CharField(_('Title'), max_length=64)
     secret = EncryptedCharField(verbose_name=_('Secret'), max_length=64)
     service_id = models.CharField(_('Service id'), max_length=64)
@@ -23,7 +24,7 @@ class PayAllTimeGateway(models.Model):
         ordering = 'title',
 
 
-class AllTimePayLog(models.Model):
+class AllTimePayLog(BaseAbstractModel):
     customer = models.ForeignKey(
         Customer,
         on_delete=models.SET_DEFAULT,

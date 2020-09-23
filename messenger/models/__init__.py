@@ -1,12 +1,14 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from djing2.models import BaseAbstractModel
+
 
 class MessengerBotType(models.IntegerChoices):
     VIBER = 1, _('Viber')
 
 
-class Messenger(models.Model):
+class Messenger(BaseAbstractModel):
     title = models.CharField(_('Title'), max_length=64)
     bot_type = models.PositiveSmallIntegerField(_('Bot type'), choices=MessengerBotType.choices, blank=True)
     slug = models.SlugField(_('Slug'))

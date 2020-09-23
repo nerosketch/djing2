@@ -2,11 +2,12 @@ from datetime import timedelta, datetime
 from django.utils.translation import gettext_lazy as _
 from django.db import models
 from customers.models import Customer
+from djing2.models import BaseAbstractModel
 from profiles.models import UserProfile
 from tasks.handle import handle as task_handle
 
 
-class ChangeLog(models.Model):
+class ChangeLog(BaseAbstractModel):
     task = models.ForeignKey('Task', on_delete=models.CASCADE)
     ACT_TYPE_CHANGE_TASK = 1
     ACT_TYPE_CREATE_TASK = 2
@@ -41,7 +42,7 @@ def delta_add_days():
     return datetime.now() + timedelta(days=3)
 
 
-class Task(models.Model):
+class Task(BaseAbstractModel):
     descr = models.CharField(
         _('Description'), max_length=128,
         null=True, blank=True
@@ -173,7 +174,7 @@ class Task(models.Model):
         ]
 
 
-class ExtraComment(models.Model):
+class ExtraComment(BaseAbstractModel):
     text = models.TextField(_('Text of comment'))
     task = models.ForeignKey(
         Task, verbose_name=_('Task'),
@@ -195,7 +196,7 @@ class ExtraComment(models.Model):
         ordering = '-date_create',
 
 
-class TaskDocumentAttachment(models.Model):
+class TaskDocumentAttachment(BaseAbstractModel):
     title = models.CharField(max_length=64)
     doc_file = models.FileField(upload_to='task_attachments/%Y/%m/', max_length=128)
     create_time = models.DateTimeField(auto_now_add=True)
