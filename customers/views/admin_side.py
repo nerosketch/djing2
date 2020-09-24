@@ -296,6 +296,32 @@ class CustomerModelViewSet(DjingModelViewSet):
         customers = Customer.objects.filter(device_id=dev_id, dev_port_id=port_id)
         return Response(self.get_serializer(customers, many=True).data)
 
+    @action(methods=['get', 'put'], detail=True)
+    @catch_customers_errs
+    def passport(self, request, pk=None):
+        passport_obj = models.PassportInfo.objects.filter(customer__id=pk).first()
+        if request.method == 'GET':
+            serializer = serializers.PassportInfoModelSerializer(instance=passport_obj)
+            return Response(serializer.data)
+
+        if passport_obj is None:
+            # create passport info for customer
+            serializer = serializers.PassportInfoModelSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            models.PassportInfo.objects.create(
+                customer=self.get_object(),
+                **serializer.validated_data
+            )
+            res_stat = status.HTTP_201_CREATED
+        else:
+            # change passport info for customer
+            serializer = serializers.PassportInfoModelSerializer(instance=passport_obj, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.update(instance=passport_obj, validated_data=serializer.validated_data)
+            res_stat = status.HTTP_200_OK
+
+        return Response(serializer.validated_data, status=res_stat)
+
 
 class CustomersGroupsListAPIView(DjingListAPIView):
     serializer_class = serializers.CustomerGroupSerializer
@@ -309,11 +335,6 @@ class CustomersGroupsListAPIView(DjingListAPIView):
             use_groups=False,
             accept_global_perms=False
         ).annotate(usercount=Count('customer'))
-
-
-class PassportInfoModelViewSet(DjingModelViewSet):
-    queryset = models.PassportInfo.objects.defer('customer')
-    serializer_class = serializers.PassportInfoModelSerializer
 
 
 class InvoiceForPaymentModelViewSet(DjingModelViewSet):
