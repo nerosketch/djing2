@@ -14,6 +14,7 @@ def task_post_save(sender, instance: Task, created=False, **kwargs):
             'text': _('High priority task was created') if created else _('High priority task was updated'),
             'data': {
                 'recipients': list(instance.recipients.only('pk').values_list('pk', flat=True)),
+                'author': instance.author_id if instance.author else None
             }
         })
         return
