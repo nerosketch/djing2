@@ -1,7 +1,11 @@
 from datetime import timedelta, datetime
+from typing import Tuple
+
+from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
-from django.db import models
+
 from customers.models import Customer
+from djing2.lib import safe_float, safe_int
 from profiles.models import UserProfile
 from tasks.handle import handle as task_handle
 
@@ -39,6 +43,31 @@ class ChangeLog(models.Model):
 
 def delta_add_days():
     return datetime.now() + timedelta(days=3)
+
+
+class TaskQuerySet(models.QuerySet):
+    def task_mode_report(self):
+        """
+        Returns queryset with annotate how many
+        tasks with each task mode was
+        """
+        return self.values('mode').annotate(uc=models.Count('pk')).order_by('mode')
+
+    @staticmethod
+    def task_state_percent(task_state: int) -> Tuple[int, float]:
+        """
+        Returns percent of specified task state
+        :param task_state: int of task state
+        :return: tuple(state_count: int, state_percent: float)
+        """
+        with connection.cursor() as c:
+            c.execute("SELECT count(id) as cnt, "
+                      "round(count(id) * 100.0 / (SELECT count(id) FROM task), 6) AS prc "
+                      "FROM task WHERE task_state=%s::int",
+                      [int(task_state)])
+            r = c.fetchone()
+        state_count, state_percent = r
+        return safe_int(state_count), safe_float(state_percent)
 
 
 class Task(models.Model):
@@ -123,6 +152,8 @@ class Task(models.Model):
         verbose_name=_('Customer')
     )
 
+    objects = TaskQuerySet.as_manager()
+
     def finish(self, current_user):
         self.task_state = self.TASK_STATE_COMPLETED  # Completed. Task done
         self.out_date = datetime.now()  # End time
@@ -144,8 +175,8 @@ class Task(models.Model):
 
     def send_notification(self):
         task_handle(
-           self, self.author,
-           self.recipients.filter(is_active=True)
+            self, self.author,
+            self.recipients.filter(is_active=True)
         )
 
     def is_expired(self):
