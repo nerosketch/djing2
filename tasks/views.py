@@ -130,6 +130,27 @@ class TaskModelViewSet(DjingModelViewSet):
             'state_percent': state_percent
         })
 
+    @action(detail=False)
+    def task_mode_report(self, request):
+        report = models.Task.objects.task_mode_report()
+
+        all_task_count = models.Task.objects.count()
+
+        def _get_display(val: int) -> str:
+            r = (str(ttext) for tval, ttext in models.Task.TASK_TYPES if tval == val)
+            try:
+                return next(r)
+            except StopIteration:
+                return ''
+        res = [{
+            'mode': _get_display(vals.get('mode')),
+            'task_count': vals.get('task_count')
+        } for vals in report.values('mode', 'task_count')]
+        return Response({
+            'all_task_count': all_task_count,
+            'annotation': res
+        })
+
 
 class AllTasksList(DjingListAPIView):
     queryset = models.Task.objects.all().select_related(
