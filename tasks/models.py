@@ -51,7 +51,7 @@ class TaskQuerySet(models.QuerySet):
         Returns queryset with annotate how many
         tasks with each task mode was
         """
-        return self.values('mode').annotate(uc=models.Count('pk')).order_by('mode')
+        return self.values('mode').annotate(task_count=models.Count('pk')).order_by('mode')
 
     @staticmethod
     def task_state_percent(task_state: int) -> Tuple[int, float]:
