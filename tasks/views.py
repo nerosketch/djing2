@@ -6,9 +6,9 @@ from rest_framework.response import Response
 
 from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
+from profiles.models import UserProfile
 from tasks import models
 from tasks import serializers
-from profiles.models import UserProfile
 
 
 class ChangeLogModelViewSet(DjingModelViewSet):
@@ -107,12 +107,28 @@ class TaskModelViewSet(DjingModelViewSet):
 
         group_id = safe_int(group_id)
         if group_id > 0:
-            recipients = UserProfile.objects.get_profiles_by_group(group_id=group_id).only('pk').values_list('pk', flat=True)
+            recipients = UserProfile.objects.get_profiles_by_group(
+                group_id=group_id
+            ).only('pk').values_list(
+                'pk', flat=True
+            )
             return Response({
                 'status': 1,
                 'recipients': recipients
             })
         return Response('"group_id" parameter is required', status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, url_path="state_percent_report/(?P<state_num>\d{1,18})")
+    def state_percent_report(self, request, state_num: str = None):
+        if not state_num.isnumeric():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        state_count, state_percent = models.Task.objects.task_state_percent(
+            task_state=int(state_num)
+        )
+        return Response({
+            'state_count': state_count,
+            'state_percent': state_percent
+        })
 
 
 class AllTasksList(DjingListAPIView):
@@ -133,6 +149,7 @@ class NewTasksList(AllTasksList):
     """
     Returns tasks that new for current user
     """
+
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
