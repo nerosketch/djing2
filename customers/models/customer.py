@@ -13,6 +13,7 @@ from encrypted_model_fields.fields import EncryptedCharField
 from djing2.lib import LogicError, safe_float
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
+from services.custom_logic import SERVICE_CHOICES
 from services.models import Service, OneShotPay, PeriodicPay
 
 RADIUS_SESSION_TIME = getattr(settings, 'RADIUS_SESSION_TIME', 3600)
@@ -151,6 +152,24 @@ class CustomerManager(MyUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
+
+    def customer_service_type_report(self):
+        qs = super().get_queryset().filter(is_active=True).exclude(current_service=None)
+        all_count = qs.count()
+        admin_count = qs.filter(current_service__service__is_admin=True).count()
+        zero_cost = qs.filter(current_service__service__cost=0).count()
+
+        calc_type_counts = [{
+            'calc_type_count': qs.filter(current_service__service__calc_type=sc_num).count(),
+            'service_descr': str(sc_class.description)
+        } for sc_num, sc_class in SERVICE_CHOICES]
+
+        return {
+            'all_count': all_count,
+            'admin_count': admin_count,
+            'zero_cost_count': zero_cost,
+            'calc_type_counts': calc_type_counts
+        }
 
 
 class Customer(BaseAccount):
