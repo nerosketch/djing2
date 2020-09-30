@@ -1,9 +1,12 @@
+import json
 from string import digits, ascii_lowercase
 from random import choice
 
+from bitfield import BitHandler, BitField, Bit
 from django.contrib.auth.hashers import make_password
 from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from customers import models
 from djing2.lib import safe_int
@@ -78,6 +81,45 @@ def update_passw(acc, raw_password):
             )
 
 
+class SerializerBitField(serializers.IntegerField):
+
+    def to_representation(self, value):
+        print('to_representation', value, type(value))
+        return value
+
+    def to_internal_value(self, data):
+        print('to_internal_value', data, type(data))
+        try:
+            if isinstance(data, str):
+                r = json.loads(data)
+            else:
+                r = data
+            print('R', r, type(r))
+            # ---
+            # models.Customer.markers.flags
+            # bf = BitField(flags=r)
+            # print('BF', bf)
+
+            flags = models.Customer.markers.items()
+            flags_flat = [f[0] for f in flags]
+            print('flags', flags)
+            new_value = 0
+            for flag in r:
+                print('r flag', flag)
+                f_ind = flags_flat.index(flag)
+                print('index', f_ind)
+                new_value |= flags[f_ind][1]
+                print('Add num', flags[f_ind][1])
+                print('new val', new_value)
+            return new_value
+
+            # print('to_python', bf.to_python(r))
+            # print('get_prep_value', bf.get_prep_value(r))
+            # return bf
+        except json.JSONDecodeError as e:
+            raise ValidationError(detail=e, code='invalid')
+
+
 class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     username = serializers.CharField(initial=generate_random_username)
     is_active = serializers.BooleanField(initial=True)
@@ -103,6 +145,33 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     )
     create_date = serializers.CharField(read_only=True)
     lease_count = serializers.IntegerField(read_only=True)
+
+    # marker_icons = serializers.ListField(
+    #     source='get_flag_icons',
+    #     child=serializers.CharField(),
+    #     read_only=True
+    # )
+
+    markers = SerializerBitField(source='get_flag_icons')
+
+    # group = serializers.PrimaryKeyRelatedField(
+    #     queryset=Group.objects.all()[:10]
+    # )
+    # street = serializers.PrimaryKeyRelatedField(
+    #     queryset=models.CustomerStreet.objects.all()[:10]
+    # )
+    # device = serializers.PrimaryKeyRelatedField(
+    #     queryset=Device.objects.all()[:10]
+    # )
+    # dev_port = serializers.PrimaryKeyRelatedField(
+    #     queryset=Port.objects.all()[:10]
+    # )
+    # last_connected_service = serializers.PrimaryKeyRelatedField(
+    #     queryset=models.Service.objects.all()[:10]
+    # )
+    # current_service = serializers.PrimaryKeyRelatedField(
+    #     queryset=models.CustomerService.objects.all()[:10]
+    # )
 
     def create(self, validated_data):
         validated_data.update({
@@ -134,7 +203,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             'device', 'device_comment', 'dev_port', 'last_connected_service',
             'last_connected_service_title', 'current_service', 'service_title',
             'service_id', 'is_dynamic_ip', 'full_name', 'password', 'raw_password',
-            'create_date', 'birth_day', 'lease_count'
+            'create_date', 'birth_day', 'lease_count', 'markers'
         )
 
 
