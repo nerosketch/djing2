@@ -134,8 +134,6 @@ class TaskModelViewSet(DjingModelViewSet):
     def task_mode_report(self, request):
         report = models.Task.objects.task_mode_report()
 
-        all_task_count = models.Task.objects.count()
-
         def _get_display(val: int) -> str:
             r = (str(ttext) for tval, ttext in models.Task.TASK_TYPES if tval == val)
             try:
@@ -147,7 +145,6 @@ class TaskModelViewSet(DjingModelViewSet):
             'task_count': vals.get('task_count')
         } for vals in report.values('mode', 'task_count')]
         return Response({
-            'all_task_count': all_task_count,
             'annotation': res
         })
 
