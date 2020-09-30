@@ -118,17 +118,21 @@ class TaskModelViewSet(DjingModelViewSet):
             })
         return Response('"group_id" parameter is required', status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, url_path="state_percent_report/(?P<state_num>\d{1,18})")
-    def state_percent_report(self, request, state_num: str = None):
-        if not state_num.isnumeric():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        state_count, state_percent = models.Task.objects.task_state_percent(
-            task_state=int(state_num)
-        )
-        return Response({
-            'state_count': state_count,
-            'state_percent': state_percent
-        })
+    @action(detail=False)
+    def state_percent_report(self, request):
+        def _build_format(num: int, name: str):
+            state_count, state_percent = models.Task.objects.task_state_percent(
+                task_state=int(num)
+            )
+            return {
+                'num': num,
+                'name': name,
+                'count': state_count,
+                'percent': state_percent
+            }
+        r = [_build_format(task_state_num, task_state_name) for task_state_num, task_state_name in models.Task.TASK_STATES]
+
+        return Response(r)
 
     @action(detail=False)
     def task_mode_report(self, request):
