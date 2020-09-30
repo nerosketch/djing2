@@ -1,11 +1,15 @@
 from datetime import datetime
+
 from django.contrib.postgres.fields import JSONField
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from groupapp.models import Group
-from services.custom_logic import *
+from services.custom_logic import (
+    SERVICE_CHOICES, PERIODIC_PAY_CALC_DEFAULT,
+    PERIODIC_PAY_CHOICES, ONE_SHOT_TYPES,
+    ONE_SHOT_DEFAULT)
 from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase, OneShotBaseService
 
 
