@@ -322,6 +322,11 @@ class CustomerModelViewSet(DjingModelViewSet):
 
         return Response(serializer.validated_data, status=res_stat)
 
+    @action(detail=False)
+    def service_type_report(self, request):
+        r = models.Customer.objects.customer_service_type_report()
+        return Response(r)
+
 
 class CustomersGroupsListAPIView(DjingListAPIView):
     serializer_class = serializers.CustomerGroupSerializer
