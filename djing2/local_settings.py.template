@@ -48,6 +48,9 @@ COMPANY_NAME = 'Your company name'
 # public url for Viber Bot
 VIBER_BOT_PUBLIC_URL = 'https://your_domain.name'
 
+#Public url for Telegram Bot
+TELEGRAM_BOT_PUBLIC_URL = 'https://your_domain.name'
+
 # Encrypted fields
 FIELD_ENCRYPTION_KEY = 'Your SECRET_KEY'
 
