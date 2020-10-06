@@ -54,7 +54,7 @@ class ProfileApiTestCase(APITestCase):
         self.assertEqual(content.get('telephone'), '+797812345678')
 
     def test_change_password(self):
-        r = self.post('/api/profiles/admin/change_password/', {
+        r = self.client.put('/api/profiles/admin/change_password/', {
             'old_passw': 'new password',
             'new_passw': 'new password'
         })
