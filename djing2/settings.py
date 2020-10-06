@@ -263,6 +263,17 @@ if DEBUG:
         'rest_framework.authentication.SessionAuthentication'
     )
 
+# public url for Viber Bot
+VIBER_BOT_PUBLIC_URL = getattr(
+    local_settings,
+    'VIBER_BOT_PUBLIC_URL'
+)
+
+# Public url for Telegram Bot
+TELEGRAM_BOT_PUBLIC_URL = getattr(
+    local_settings,
+    'TELEGRAM_BOT_PUBLIC_URL'
+)
 
 # Encrypted fields
 # https://pypi.org/project/django-encrypted-model-fields/

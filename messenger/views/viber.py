@@ -10,6 +10,7 @@ from viberbot.api.viber_requests import (
     ViberMessageRequest, ViberSubscribedRequest,
     ViberFailedRequest, ViberUnsubscribedRequest
 )
+
 from djing2.viewsets import DjingModelViewSet
 from messenger.models import viber as models
 from messenger.serializers import viber as serializers
@@ -28,7 +29,7 @@ class ViberMessengerModelViewSet(DjingModelViewSet):
         obj.send_webhook()
         return Response(status=status.HTTP_200_OK)
 
-    @action(methods=('post',), detail=True, permission_classes=[], url_name='listen_viber_bot')
+    @action(methods=(), detail=True, permission_classes=[], url_name='listen_viber_bot')
     def listen(self, request, pk=None):
         obj = self.get_object()
         self.object = obj

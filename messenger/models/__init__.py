@@ -6,6 +6,7 @@ from djing2.models import BaseAbstractModel
 
 class MessengerBotType(models.IntegerChoices):
     VIBER = 1, _('Viber')
+    TELEGRAM = 2, _('Telegram')
 
 
 class Messenger(BaseAbstractModel):
