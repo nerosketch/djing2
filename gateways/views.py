@@ -14,7 +14,7 @@ class GatewayModelViewSet(DjingModelViewSet):
     queryset = Gateway.objects.annotate(
         customer_count=Count('customer'),
         customer_count_active=Count('customer', filter=Q(customer__is_active=True)),
-        customer_count_w_service=Count('customer', filter=Q(customer__is_active=True) & Q(customer__current_service=None)),
+        customer_count_w_service=Count('customer', filter=Q(customer__is_active=True) & ~Q(customer__current_service=None)),
     )
     serializer_class = GatewayModelSerializer
 
