@@ -173,14 +173,30 @@ class CustomerManager(MyUserManager):
         qs = super().get_queryset()
         all_count = qs.count()
         enabled_count = qs.filter(is_active=True).count()
-        with_services_count = qs.exclude(current_service=None).count()
-        active_count = qs.annotate(ips=models.Count('customeripleasemodel')).filter(is_active=True, ips__gt=0).exclude(
-            current_service=None).count()
+        with_services_count = qs.filter(is_active=True).exclude(current_service=None).count()
+
+        active_count = qs.annotate(
+            ips=models.Count('customeripleasemodel')
+        ).filter(
+            is_active=True, ips__gt=0
+        ).exclude(
+            current_service=None
+        ).count()
+
+        commercial_customers = qs.filter(
+            is_active=True,
+            current_service__service__is_admin=False,
+            current_service__service__cost__gt=0
+        ).exclude(
+            current_service=None
+        ).count()
+
         return {
             'all_count': all_count,
             'enabled_count': enabled_count,
             'with_services_count': with_services_count,
-            'active_count': active_count
+            'active_count': active_count,
+            'commercial_customers': commercial_customers
         }
 
 
