@@ -8,9 +8,9 @@ from rest_framework.response import Response
 
 from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
+from profiles.models import UserProfile
 from tasks import models
 from tasks import serializers
-from profiles.models import UserProfile
 
 
 class ChangeLogModelViewSet(DjingModelViewSet):
@@ -110,12 +110,50 @@ class TaskModelViewSet(DjingModelViewSet):
 
         group_id = safe_int(group_id)
         if group_id > 0:
-            recipients = UserProfile.objects.get_profiles_by_group(group_id=group_id).only('pk').values_list('pk', flat=True)
+            recipients = UserProfile.objects.get_profiles_by_group(
+                group_id=group_id
+            ).only('pk').values_list(
+                'pk', flat=True
+            )
             return Response({
                 'status': 1,
                 'recipients': recipients
             })
         return Response('"group_id" parameter is required', status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False)
+    def state_percent_report(self, request):
+        def _build_format(num: int, name: str):
+            state_count, state_percent = models.Task.objects.task_state_percent(
+                task_state=int(num)
+            )
+            return {
+                'num': num,
+                'name': name,
+                'count': state_count,
+                'percent': state_percent
+            }
+        r = [_build_format(task_state_num, task_state_name) for task_state_num, task_state_name in models.Task.TASK_STATES]
+
+        return Response(r)
+
+    @action(detail=False)
+    def task_mode_report(self, request):
+        report = models.Task.objects.task_mode_report()
+
+        def _get_display(val: int) -> str:
+            r = (str(ttext) for tval, ttext in models.Task.TASK_TYPES if tval == val)
+            try:
+                return next(r)
+            except StopIteration:
+                return ''
+        res = [{
+            'mode': _get_display(vals.get('mode')),
+            'task_count': vals.get('task_count')
+        } for vals in report.values('mode', 'task_count')]
+        return Response({
+            'annotation': res
+        })
 
 
 class AllTasksList(DjingListAPIView):
@@ -143,6 +181,7 @@ class NewTasksList(AllTasksList):
     """
     Returns tasks that new for current user
     """
+
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
