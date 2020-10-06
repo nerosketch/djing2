@@ -45,3 +45,5 @@ django-debug-toolbar==2.2
 isc-dhcp-leases==0.9.1
 
 djangorestframework-guardian
+
+pyTelegramBotAPI
