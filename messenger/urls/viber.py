@@ -8,4 +8,4 @@ router.register('msg', viber.ViberMessageModelViewSet)
 router.register('', viber.ViberMessengerModelViewSet)
 
 
-urlpatterns_viber = router.urls
+urlpatterns = router.urls
