@@ -1,8 +1,6 @@
 from django.contrib import admin
-from messenger.models import Messenger
-from messenger.models import viber
+from messenger import models
 
-admin.site.register(Messenger)
-admin.site.register(viber.ViberMessenger)
-admin.site.register(viber.ViberMessage)
-admin.site.register(viber.ViberSubscriber)
+admin.site.register(models.Messenger)
+admin.site.register(models.MessengerMessage)
+admin.site.register(models.MessengerSubscriber)
