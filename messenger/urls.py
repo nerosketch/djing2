@@ -7,6 +7,11 @@ from messenger.urls import telegram
 
 app_name = 'messenger'
 
+router.register('', telegram.TelegramMessengerModelViewSet)
+router.register('subscriber', viber.ViberSubscriberModelViewSet)
+router.register('msg', viber.ViberMessageModelViewSet)
+router.register('', viber.ViberMessengerModelViewSet)
+
 router = DefaultRouter()
 router.register('', MessengerModelViewSet)
 
