@@ -1,12 +1,15 @@
-from messenger import models
-from messenger import serializers
-from djing2.viewsets import DjingModelViewSet
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from djing2.viewsets import DjingModelViewSet
+from messenger import models
+from messenger import serializers
+
 
 class MessengerModelViewSet(DjingModelViewSet):
+    queryset = models.Messenger.objects.all()
+    serializer_class = serializers.MessengerModelSerializer
 
     @action(detail=True)
     def send_webhook(self, request, pk=None):

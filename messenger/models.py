@@ -1,32 +1,14 @@
-import inspect
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from profiles.models import UserProfile
+from messenger.messenger_implementation import MESSENGER_CHOICES
 from djing2.models import BaseAbstractModel
-from messenger.messenger_implementation.base import BaseMessengerInterface
-
-
-class MessengerBotType(models.IntegerChoices):
-    VIBER = 1, _('Viber')
-    TELEGRAM = 2, _('Telegram')
-
-
-def _load_messenger_impl():
-    from messenger import messenger_implementation
-    for name, obj in inspect.getmembers(messenger_implementation):
-        print('################ obj', name, obj)
-        if issubclass(obj.__class__, BaseMessengerInterface):
-            yield obj
-
-
-r = _load_messenger_impl()
-print('Impls:', list(r))
+from profiles.models import UserProfile
 
 
 class Messenger(BaseAbstractModel):
     title = models.CharField(_('Title'), max_length=64)
     description = models.TextField(_('Description'), null=True, blank=True, default=None)
-    bot_type = models.PositiveSmallIntegerField(_('Bot type'), choices=MessengerBotType.choices, blank=True)
+    bot_type = models.PositiveSmallIntegerField(_('Bot type'), choices=MESSENGER_CHOICES, blank=True)
     slug = models.SlugField(_('Slug'))
     token = models.CharField(_('Bot secret token'), max_length=128)
     avatar = models.ImageField(_('Avatar'), upload_to='viber_avatar', null=True)
@@ -54,7 +36,7 @@ class MessengerMessage(BaseAbstractModel):
         on_delete=models.CASCADE
     )
     subscriber = models.ForeignKey(
-        'Subscriber', on_delete=models.SET_NULL,
+        'MessengerSubscriber', on_delete=models.SET_NULL,
         verbose_name=_('Subscriber'), null=True
     )
 
