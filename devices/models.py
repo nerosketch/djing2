@@ -279,9 +279,6 @@ class PortVlanMemberModel(BaseAbstractModel):
         choices=PortVlanMemberMode.choices
     )
 
-    class Meta:
-        abstract = False
-
 
 class PortOperatingMode(models.IntegerChoices):
     NOT_CHOSEN = 0, _('Not chosen')
