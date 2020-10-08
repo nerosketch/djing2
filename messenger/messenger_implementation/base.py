@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
+from django.utils.translation import gettext_lazy as _
 
 
 class BaseMessengerInterface(ABC):
+    data_value = 0
+    description = _('Undefined')
 
     @abstractmethod
     def send_webhook(self):
