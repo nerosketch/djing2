@@ -1,36 +1,27 @@
 import importlib
 import inspect
 import os
-# from .telegram import TelegramMessenger
-# from .viber import ViberMessenger
 from .base import BaseMessengerInterface
+
+
+def _import_mods(mod_name: str):
+    viber = importlib.import_module(name='messenger.messenger_implementation.%s' % mod_name)
+    pred = lambda v: inspect.isclass(v) and issubclass(v, BaseMessengerInterface) and v is not BaseMessengerInterface
+    membs = inspect.getmembers(viber, predicate=pred)
+    return membs
 
 
 def _read_mods():
     fls = set(os.listdir(os.path.realpath(os.path.dirname(__file__))))
     fls -= {'__pycache__', 'base.py', '__init__.py'}
-    return list(fls)
+    fls = [fl.split('.')[0] for fl in fls if fl.endswith('.py')]
+    for fl in fls:
+        membs = _import_mods(fl)
+        for memb in membs:
+            yield memb
 
 
-def _import_mods(mod_name: str):
-    mod = importlib.import_module(name='.'.join(('messenger', 'messenger_implementation', mod_name)))
-    membs = inspect.getmembers(mod)
-    for mn, mo in membs:
-        try:
-            moo = getattr(mo, mn)
-
-            s = issubclass(mo.__class__, BaseMessengerInterface)
-            print(mn, mo, moo, s)
-        except AttributeError:
-            pass
-    memb = [mobj for mname, mobj in membs if issubclass(mobj.__class__, BaseMessengerInterface)]
-    print('\tMEMBERS', memb)
+MESSENGER_CHOICES = tuple((mod_obj.data_value, mod_obj.description) for mod_name, mod_obj in _read_mods())
 
 
-MODS = _import_mods('viber')
-
-
-MOD_NAMES = _read_mods()
-
-
-__all__ = ['MODS'] + MOD_NAMES
+__all__ = ['MESSENGER_CHOICES', 'BaseMessengerInterface']
