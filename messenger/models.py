@@ -11,7 +11,7 @@ class Messenger(BaseAbstractModel):
     bot_type = models.PositiveSmallIntegerField(_('Bot type'), choices=MESSENGER_CHOICES, blank=True)
     slug = models.SlugField(_('Slug'))
     token = models.CharField(_('Bot secret token'), max_length=128)
-    avatar = models.ImageField(_('Avatar'), upload_to='viber_avatar', null=True)
+    avatar = models.ImageField(_('Avatar'), upload_to='messenger_avatar', null=True)
 
     def __str__(self):
         return self.title
