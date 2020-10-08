@@ -1,20 +1,20 @@
-from messenger.messenger_implementation.base import BaseMessengerInterface
+from urllib.parse import urljoin
+
 from django.conf import settings
+from django.shortcuts import resolve_url
+from django.utils.translation import gettext_lazy as _
 from viberbot import Api, BotConfiguration
-from profiles.models import UserProfile
 from viberbot.api.messages import TextMessage
 from viberbot.api.messages.message import Message
-from django.shortcuts import resolve_url
-from urllib.parse import urljoin
-from viberbot.api.messages import ContactMessage, KeyboardMessage
 from viberbot.api.user_profile import UserProfile as ViberUserProfile
-from viberbot.api.viber_requests import (
-    ViberMessageRequest, ViberSubscribedRequest,
-    ViberFailedRequest, ViberUnsubscribedRequest
-)
+
+from messenger.messenger_implementation.base import BaseMessengerInterface
+from profiles.models import UserProfile
 
 
 class ViberMessenger(BaseMessengerInterface):
+    data_value = 1
+    description = _('Viber')
 
     def get_viber(self):
         if self._viber_cache is None:

@@ -8,6 +8,9 @@ from django.utils.translation import gettext_lazy as _
 
 
 class TelegramMessenger(BaseMessengerInterface):
+    data_value = 2
+    description = _('Telegram')
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         token = str(self.token)
