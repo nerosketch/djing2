@@ -1,1 +1,4 @@
 libmemcached-dev
+python3-psycopg2
+postgresql-server-dev-12
+libsnmp-dev
