@@ -52,7 +52,8 @@ VIBER_BOT_PUBLIC_URL = 'https://your_domain.name'
 TELEGRAM_BOT_PUBLIC_URL = 'https://your_domain.name'
 
 # Encrypted fields
-FIELD_ENCRYPTION_KEY = 'Your SECRET_KEY'
+# This is example, change key for your own secret key
+FIELD_ENCRYPTION_KEY = 'ZMxB-3nccx78Ifgyr3tRpR4PJFUej4Phegjo7d2WmXY='
 
 # arping command
 ARPING_COMMAND = '/usr/sbin/arping'
