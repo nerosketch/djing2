@@ -23,7 +23,8 @@ class DjingModelViewSet(ModelViewSet):
     def perform_create(self, serializer) -> None:
         try:
             inst = serializer.save()
-            inst.assign_rights2new_obj(self.request)
+            if hasattr(inst, 'assign_rights2new_obj'):
+                inst.assign_rights2new_obj(self.request)
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(str(e))
 
