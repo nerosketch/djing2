@@ -2,6 +2,7 @@
 from django.core.validators import MinValueValidator
 from django.db import migrations, models
 
+from djing2.lib.for_migrations import model2default_site
 from services.custom_logic import periodic, oneshot, services
 
 
@@ -59,5 +60,14 @@ class Migration(migrations.Migration):
             field=models.FloatField(default=1.0,
                                     help_text='Result burst = speed * speed_burst, speed_burst must be >= 1.0',
                                     validators=[MinValueValidator(limit_value=1.0)], verbose_name='Speed burst'),
+        ),
+        migrations.RunPython(
+            lambda apps, schema_editor: model2default_site(apps, schema_editor, 'services', 'Service')
+        ),
+        migrations.RunPython(
+            lambda apps, schema_editor: model2default_site(apps, schema_editor, 'services', 'PeriodicPay')
+        ),
+        migrations.RunPython(
+            lambda apps, schema_editor: model2default_site(apps, schema_editor, 'services', 'OneShotPay')
         ),
     ]
