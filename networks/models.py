@@ -3,6 +3,7 @@ from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address
 from typing import Optional, Union, Tuple
 
 from django.conf import settings
+from django.contrib.sites.models import Site
 from django.core import validators
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -29,6 +30,7 @@ class VlanIf(BaseAbstractModel):
         MaxValueValidator(4094, message=_('Vid could not be more than 4094'))
     ], unique=True)
     is_management = models.BooleanField(_('Is management'), default=False)
+    sites = models.ManyToManyField(Site, blank=True)
 
     def __str__(self):
         return self.title
@@ -86,6 +88,7 @@ class NetworkIpPool(BaseAbstractModel):
         _('Tag'), max_length=32, null=True, blank=True,
         default=None, validators=[validators.validate_slug]
     )
+    sites = models.ManyToManyField(Site, blank=True)
 
     def __str__(self):
         return "%s: %s" % (self.description, self.network)
