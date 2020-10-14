@@ -2,6 +2,7 @@
 
 from django.contrib.auth.models import Permission, Group as ProfileGroup
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
 from django.utils.translation import gettext_lazy as _
 from django.shortcuts import resolve_url
 from django.db import models
@@ -36,6 +37,7 @@ class Group(BaseAbstractModel):
         default=None, max_length=12,
         validators=[latinValidator]
     )
+    sites = models.ManyToManyField(Site, blank=True)
 
     # objects = GroupManager()
 

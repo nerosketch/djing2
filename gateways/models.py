@@ -1,3 +1,4 @@
+from django.contrib.sites.models import Site
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedCharField
@@ -18,6 +19,7 @@ class Gateway(BaseAbstractModel):
                                                default=0)
     is_default = models.BooleanField(_('Is default'), default=False)
     enabled = models.BooleanField(_('Enabled'), default=True)
+    sites = models.ManyToManyField(Site, blank=True)
 
     def get_gw_manager(self) -> GatewayFacade:
         try:

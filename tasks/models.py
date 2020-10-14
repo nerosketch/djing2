@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 from typing import Tuple
 
+from django.contrib.sites.models import Site
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 
@@ -152,6 +153,7 @@ class Task(BaseAbstractModel):
         Customer, on_delete=models.CASCADE,
         verbose_name=_('Customer')
     )
+    site = models.ForeignKey(Site, blank=True, on_delete=models.CASCADE)
 
     objects = TaskQuerySet.as_manager()
 

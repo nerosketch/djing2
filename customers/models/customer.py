@@ -5,6 +5,7 @@ from typing import Optional
 
 from bitfield import BitField
 from django.conf import settings
+from django.contrib.sites.models import Site
 from django.core import validators
 from django.db import models, transaction, connection
 from django.utils.translation import gettext as _
@@ -291,6 +292,7 @@ class Customer(BaseAccount):
         ('icon_mrk', _('Marker'))
     )
     markers = BitField(flags=MARKER_FLAGS, default=0)
+    sites = models.ManyToManyField(Site, blank=True)
 
     objects = CustomerManager()
 
