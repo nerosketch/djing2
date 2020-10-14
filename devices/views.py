@@ -270,6 +270,18 @@ class DeviceModelViewSet(DjingModelViewSet):
     search_fields = ('comment', 'ip_address', 'mac_addr')
     ordering_fields = ('ip_address', 'mac_addr', 'comment', 'dev_type')
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_superuser:
+            return qs
+        # TODO: May optimize
+        grps = get_objects_for_user(
+            user=self.request.user,
+            perms='groupapp.view_group',
+            klass=Group
+        )
+        return qs.filter(group__in=grps)
+
     @action(detail=True)
     @catch_dev_manager_err
     def scan_ports(self, request, pk=None):
