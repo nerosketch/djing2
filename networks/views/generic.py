@@ -1,6 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.translation import gettext_lazy as _
 from django.db.utils import IntegrityError
+from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -10,6 +11,7 @@ from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SecureApiView
 from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
+from groupapp.models import Group
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
 from networks.serializers import (NetworkIpPoolModelSerializer,
                                   VlanIfModelSerializer,
@@ -42,6 +44,18 @@ class NetworkIpPoolModelViewSet(DjingModelViewSet):
         network = self.get_object()
         ip = network.get_free_ip()
         return Response(str(ip))
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_superuser:
+            return qs
+        # TODO: May optimize
+        grps = get_objects_for_user(
+            user=self.request.user,
+            perms='groupapp.view_group',
+            klass=Group
+        )
+        return qs.filter(groups__in=grps)
 
 
 class VlanIfModelViewSet(DjingModelViewSet):
