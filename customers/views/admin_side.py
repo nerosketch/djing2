@@ -44,6 +44,18 @@ class CustomerStreetModelViewSet(DjingModelViewSet):
     serializer_class = serializers.CustomerStreetModelSerializer
     filterset_fields = ('group',)
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_superuser:
+            return qs
+        # TODO: May optimize
+        grps = get_objects_for_user(
+            user=self.request.user,
+            perms='groupapp.view_group',
+            klass=Group
+        )
+        return qs.filter(group__in=grps)
+
 
 class CustomerLogModelViewSet(DjingModelViewSet):
     queryset = models.CustomerLog.objects.select_related(
@@ -65,6 +77,15 @@ class CustomerModelViewSet(DjingModelViewSet):
     search_fields = ('username', 'fio', 'telephone', 'description')
     filterset_fields = ('group', 'street', 'device', 'dev_port')
     ordering_fields = ('username', 'fio', 'house', 'balance', 'current_service__service__title')
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        grps = get_objects_for_user(
+            user=self.request.user,
+            perms='groupapp.view_group',
+            klass=Group
+        )
+        return qs.filter(group__in=grps)
 
     @action(methods=('post',), detail=True)
     @catch_customers_errs
