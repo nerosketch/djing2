@@ -2,6 +2,8 @@
 
 from django.db import migrations, models
 
+from djing2.lib.for_migrations import model2default_site
+
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -20,5 +22,8 @@ class Migration(migrations.Migration):
             name='gw_type',
             field=models.PositiveSmallIntegerField(choices=[(0, 'Mikrotik gateway'), (1, 'Linux gateway')], default=0,
                                                    verbose_name='Type'),
+        ),
+        migrations.RunPython(
+            lambda apps, schema_editor: model2default_site(apps, schema_editor, 'gateways', 'Gateway')
         ),
     ]
