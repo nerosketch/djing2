@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.contrib.postgres.fields import JSONField
+from django.contrib.sites.models import Site
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -44,6 +45,7 @@ class Service(BaseAbstractModel):
     calc_type = models.PositiveSmallIntegerField(_('Script'), choices=SERVICE_CHOICES)
     is_admin = models.BooleanField(_('Tech service'), default=False)
     groups = models.ManyToManyField(Group, blank=True, verbose_name=_('Groups'))
+    sites = models.ManyToManyField(Site, blank=True)
 
     objects = ServiceManager()
 
@@ -88,6 +90,7 @@ class PeriodicPay(BaseAbstractModel):
     )
     amount = models.FloatField(_('Total amount'))
     extra_info = JSONField(_('Extra info'), null=True, blank=True)
+    sites = models.ManyToManyField(Site, blank=True)
 
     def _get_calc_object(self):
         """
@@ -139,6 +142,7 @@ class OneShotPay(BaseAbstractModel):
         default=ONE_SHOT_DEFAULT
     )
     _pay_type_cache = None
+    sites = models.ManyToManyField(Site, blank=True)
 
     def _get_calc_object(self):
         """

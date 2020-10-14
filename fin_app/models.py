@@ -1,3 +1,4 @@
+from django.contrib.sites.models import Site
 from django.utils.translation import gettext_lazy as _
 from django.db import models
 from encrypted_model_fields.fields import EncryptedCharField
@@ -14,6 +15,7 @@ class PayAllTimeGateway(BaseAbstractModel):
         _('Slug'), max_length=32,
         unique=True, allow_unicode=False
     )
+    sites = models.ManyToManyField(Site, blank=True)
 
     def __str__(self):
         return self.title
