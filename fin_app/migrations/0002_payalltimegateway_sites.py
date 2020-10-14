@@ -2,6 +2,8 @@
 
 from django.db import migrations, models
 
+from djing2.lib.for_migrations import model2default_site
+
 
 class Migration(migrations.Migration):
 
@@ -15,5 +17,8 @@ class Migration(migrations.Migration):
             model_name='payalltimegateway',
             name='sites',
             field=models.ManyToManyField(blank=True, to='sites.Site'),
+        ),
+        migrations.RunPython(
+            lambda apps, schema_editor: model2default_site(apps, schema_editor, 'fin_app', 'PayAllTimeGateway')
         ),
     ]
