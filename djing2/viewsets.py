@@ -78,7 +78,8 @@ class DjingModelViewSet(ModelViewSet):
         ctype = get_content_type(obj)
         existing_perm_codes = {p for p in Permission.objects.filter(
             groupobjectpermission__content_type=ctype,
-            groupobjectpermission__object_pk__in=[obj.pk]
+            groupobjectpermission__group=selected_profile_group,
+            groupobjectpermission__object_pk=obj.pk
         ).iterator()}
 
         selected_perm_codes = {p for p in selected_perms}
@@ -118,10 +119,11 @@ class DjingModelViewSet(ModelViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         obj = self.get_object()
+        ctype = get_content_type(obj)
 
         selected_perms = Permission.objects.filter(
-            content_type=get_content_type(obj),
-            groupobjectpermission__object_pk__in=[pk],
+            groupobjectpermission__content_type=ctype,
+            groupobjectpermission__object_pk=pk,
             groupobjectpermission__group=profile_group_id
         ).values_list('id', flat=True)
         return Response(selected_perms)
