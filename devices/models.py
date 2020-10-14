@@ -1,6 +1,7 @@
 from typing import Optional, Tuple, Iterator
 
 from django.contrib.postgres.fields import JSONField
+from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
@@ -88,6 +89,8 @@ class Device(BaseAbstractModel):
     code = models.CharField(_('Code'), max_length=64, blank=True,
                             null=True, default=None,
                             choices=_make_device_code_config_choices())
+
+    sites = models.ManyToManyField(Site, blank=True)
 
     class Meta:
         db_table = 'device'
