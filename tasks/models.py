@@ -153,7 +153,10 @@ class Task(BaseAbstractModel):
         Customer, on_delete=models.CASCADE,
         verbose_name=_('Customer')
     )
-    site = models.ForeignKey(Site, blank=True, on_delete=models.CASCADE)
+    site = models.ForeignKey(
+        Site, blank=True, null=True, default=None,
+        on_delete=models.CASCADE
+    )
 
     objects = TaskQuerySet.as_manager()
 
