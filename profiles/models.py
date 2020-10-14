@@ -7,6 +7,7 @@ from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser,
     PermissionsMixin, Permission
 )
+from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -76,6 +77,7 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
         default=None,
         validators=(telephoneValidator,)
     )
+    sites = models.ManyToManyField(Site, blank=True)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ('telephone',)
