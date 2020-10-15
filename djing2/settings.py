@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'dials',
     'msg_app',
     'traf_stat',
+    'sitesapp.apps.SitesAppConfig',
 ]
 
 if DEBUG:
