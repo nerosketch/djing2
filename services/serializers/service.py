@@ -16,7 +16,8 @@ class ServiceModelSerializer(BaseCustomModelSerializer):
         fields = (
             'pk', 'title', 'descr', 'speed_in', 'speed_out',
             'speed_burst', 'cost', 'calc_type', 'is_admin',
-            'usercount', 'planned_deadline', 'calc_type_name'
+            'usercount', 'planned_deadline', 'calc_type_name',
+            'sites'
         )
 
 
@@ -25,7 +26,7 @@ class PeriodicPayModelSerializer(BaseCustomModelSerializer):
         model = models.PeriodicPay
         fields = (
             'pk', 'name', 'when_add',
-            'amount'
+            'amount', 'sites'
         )
 
 
