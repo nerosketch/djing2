@@ -8,7 +8,7 @@ from groupapp.models import Group
 class GroupsSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     class Meta:
         model = Group
-        fields = ('pk', 'title')
+        fields = ('pk', 'title', 'sites')
 
 
 class SetRelatedPermsRecursiveSerializer(serializers.Serializer):
