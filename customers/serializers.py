@@ -134,7 +134,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             'device', 'device_comment', 'dev_port', 'last_connected_service',
             'last_connected_service_title', 'current_service', 'service_title',
             'service_id', 'is_dynamic_ip', 'full_name', 'password', 'raw_password',
-            'create_date', 'birth_day', 'lease_count'
+            'create_date', 'birth_day', 'lease_count', 'sites'
         )
 
 
