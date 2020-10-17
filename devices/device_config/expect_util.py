@@ -16,7 +16,7 @@ IP4_ADDR_REGEX = (
 
 class MySpawn(spawn):
     def __init__(self, *args, **kwargs):
-        super(MySpawn, self).__init__(encoding='utf-8', *args, **kwargs)
+        super(MySpawn, self).__init__(encoding='utf-8', timeout=120, *args, **kwargs)
         self.logfile = sys.stdout
 
     def do_cmd(self, c, prompt):
