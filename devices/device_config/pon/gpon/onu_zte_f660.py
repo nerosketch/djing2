@@ -124,12 +124,12 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         #         ]
         #     }
         # ]
-        return [
+        return (
             {
                 'port': i,
                 'vids': [{'vid': _get_access_vlan(port_num=i), 'native': True}] + _get_trunk_vlans(port_num=i),
             } for i in range(1, 5)
-        ]
+        )
 
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
