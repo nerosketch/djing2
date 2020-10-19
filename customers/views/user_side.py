@@ -10,6 +10,7 @@ from customers import models
 from customers.views.view_decorators import catch_customers_errs
 # from customers.tasks import customer_gw_command
 from djing2.lib import safe_int, LogicError
+from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet
 from services.models import Service
 
@@ -21,7 +22,7 @@ class SingleListObjMixin:
         return Response(sr.data)
 
 
-class CustomersUserSideModelViewSet(SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
+class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
     queryset = models.Customer.objects.select_related(
         'group', 'street', 'gateway', 'device', 'current_service'
     ).only(
@@ -69,7 +70,7 @@ class CustomersUserSideModelViewSet(SingleListObjMixin, BaseNonAdminReadOnlyMode
         return Response()
 
 
-class CustomerServiceModelViewSet(SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
+class CustomerServiceModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
     queryset = models.CustomerService.objects.all()
     serializer_class = serializers.DetailedCustomerServiceModelSerializer
 
