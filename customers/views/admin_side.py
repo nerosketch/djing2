@@ -20,6 +20,7 @@ from customers.models import Customer
 from customers.views.view_decorators import catch_customers_errs
 from djing2.lib import safe_int, safe_float, ProcessLocked
 from djing2.lib.filters import CustomObjectPermissionsFilter
+from djing2.lib.mixins import SitesFilterMixin
 
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
@@ -44,18 +45,6 @@ class CustomerStreetModelViewSet(DjingModelViewSet):
     serializer_class = serializers.CustomerStreetModelSerializer
     filterset_fields = ('group',)
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if self.request.user.is_superuser:
-            return qs
-        # TODO: May optimize
-        grps = get_objects_for_user(
-            user=self.request.user,
-            perms='groupapp.view_group',
-            klass=Group
-        )
-        return qs.filter(group__in=grps)
-
 
 class CustomerLogModelViewSet(DjingModelViewSet):
     queryset = models.CustomerLog.objects.select_related(
@@ -70,22 +59,13 @@ class CustomerLogModelViewSet(DjingModelViewSet):
         ), status=status.HTTP_403_FORBIDDEN)
 
 
-class CustomerModelViewSet(DjingModelViewSet):
+class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = models.Customer.objects.annotate(lease_count=Count('customeripleasemodel'))
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ('username', 'fio', 'telephone', 'description')
     filterset_fields = ('group', 'street', 'device', 'dev_port')
     ordering_fields = ('username', 'fio', 'house', 'balance', 'current_service__service__title')
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        grps = get_objects_for_user(
-            user=self.request.user,
-            perms='groupapp.view_group',
-            klass=Group
-        )
-        return qs.filter(group__in=grps)
 
     @action(methods=('post',), detail=True)
     @catch_customers_errs
@@ -342,8 +322,10 @@ class CustomersGroupsListAPIView(DjingListAPIView):
             self.request.user,
             perms='groupapp.view_group',
             klass=Group
-        )
-        return qs.annotate(usercount=Count('customer'))
+        ).annotate(usercount=Count('customer'))
+        if self.request.user.is_superuser:
+            return qs
+        return qs.filter(sites__in=[self.request.site])
 
 
 class InvoiceForPaymentModelViewSet(DjingModelViewSet):

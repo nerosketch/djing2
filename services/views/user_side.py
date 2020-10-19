@@ -1,9 +1,10 @@
+from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet
 from services.models import Service
 from services import serializers
 
 
-class UserSideServiceModelViewSet(BaseNonAdminReadOnlyModelViewSet):
+class UserSideServiceModelViewSet(SitesFilterMixin, BaseNonAdminReadOnlyModelViewSet):
     queryset = Service.objects.filter(is_admin=False)
     serializer_class = serializers.ServiceModelSerializer
     qs_cache = None
