@@ -19,7 +19,7 @@ class RadiusDHCPRequestTestCase(APITestCase):
             },
             'client_mac': client_mac,
             'pool_tag': pool_tag
-        })
+        }, SERVER_NAME='example.com')
         self.assertEqual(r.status_code, status_code, msg=r.data)
         self.assertDictEqual(r.data, {'gw': gw_ip,
                                       'ip': expected_ip,
