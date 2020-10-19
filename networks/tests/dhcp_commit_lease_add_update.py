@@ -57,7 +57,7 @@ class DhcpCommitLeaseAddUpdateTestCase(CustomAPITestCase):
             'Api-Auth-Sign': calc_hash(request_data),
             'content_type': 'application/json'
         }
-        r = self.client.get('/api/networks/dhcp_lever/', data=request_data, **hdrs)
+        r = self.client.get('/api/networks/dhcp_lever/', data=request_data, SERVER_NAME='example.com', **hdrs)
         self.assertEqual(r.status_code, status_code)
 
     @override_settings(API_AUTH_SECRET="sdfsdf")
