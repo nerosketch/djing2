@@ -26,5 +26,7 @@ class OnuZTE_F601(OnuZTE_F660):
         r = super().read_onu_vlan_info()
         try:
             return [next(r)]
+        except TypeError:
+            return r[:1]
         except StopIteration:
             return ()
