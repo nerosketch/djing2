@@ -20,10 +20,10 @@ def _make_sign(act: int, pay_account: str, serv_id: str, pay_id, secret: str):
 # @override_settings(DEFAULT_TABLESPACE='ram')
 class CustomAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
-        return self.client.get(*args, **kwargs)
+        return self.client.get(SERVER_NAME='example.com', *args, **kwargs)
 
     def post(self, *args, **kwargs):
-        return self.client.post(*args, **kwargs)
+        return self.client.post(SERVER_NAME='example.com', *args, **kwargs)
 
     def setUp(self):
         self.admin = UserProfile.objects.create_superuser(
