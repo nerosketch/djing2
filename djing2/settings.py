@@ -82,7 +82,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.contrib.sites.middleware.CurrentSiteMiddleware'
+    'djing2.lib.mixins.CustomCurrentSiteMiddleware'
 ]
 
 if DEBUG:
@@ -295,4 +295,4 @@ WS_ADDR = '127.0.0.1:3211'
 # absolute path to arping command
 ARPING_COMMAND = getattr(local_settings, 'ARPING_COMMAND', '/usr/sbin/arping')
 
-SITE_ID = 1
+# SITE_ID = 1

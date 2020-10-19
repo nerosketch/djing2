@@ -1,16 +1,21 @@
 from ipaddress import ip_address, ip_network
 
 from django.conf import settings
+from django.contrib.sites.middleware import CurrentSiteMiddleware
+from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.decorators import method_decorator
 from django.views.generic.base import View
+from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
+from rest_framework.exceptions import bad_request
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 from rest_framework.views import APIView
 from drf_queryfields import QueryFieldsMixin
 
+from groupapp.models import Group
 from .decorators import hash_auth_view
 
 
@@ -64,3 +69,50 @@ class SecureApiView(AllowedSubnetMixin, HashAuthView):
 
 class BaseCustomModelSerializer(QueryFieldsMixin, ModelSerializer):
     pass
+
+
+class GroupsFilterMixin:
+    """
+    Can use only if model has field groups
+    groups = models.ManyToManyField(Group)
+    """
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_superuser:
+            return qs
+        # TODO: May optimize
+        grps = get_objects_for_user(
+            user=self.request.user,
+            perms='groupapp.view_group',
+            klass=Group
+        )
+        return qs.filter(groups__in=grps)
+
+
+class SitesFilterMixin:
+    """
+    Can use only if model has field sites
+    sites = models.ManyToManyField(Site)
+    """
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_superuser:
+            return qs
+        return qs.filter(sites__in=[self.request.site])
+
+
+class SitesGroupFilterMixin(SitesFilterMixin, GroupsFilterMixin):
+    """
+    Can use only if model has both fields groups and sites
+    groups = models.ManyToManyField(Group)
+    sites = models.ManyToManyField(Site)
+    """
+
+
+class CustomCurrentSiteMiddleware(CurrentSiteMiddleware):
+
+    def process_request(self, request):
+        try:
+            return super().process_request(request=request)
+        except Site.DoesNotExist:
+            return bad_request(request, None)
