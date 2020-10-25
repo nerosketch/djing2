@@ -21,7 +21,7 @@ def _read_mods():
             yield memb
 
 
-MESSENGER_CHOICES = tuple((mod_obj.data_value, mod_obj.description) for mod_name, mod_obj in _read_mods())
+MESSENGER_MAP = {mod_obj.data_value: mod_obj for mod_name, mod_obj in _read_mods()}
 
 
-__all__ = ['MESSENGER_CHOICES', 'BaseMessengerInterface']
+__all__ = ['MESSENGER_MAP', 'BaseMessengerInterface']
