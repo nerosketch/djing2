@@ -2,7 +2,7 @@ from .base import BaseMessengerInterface
 from urllib.parse import urljoin
 
 from django.shortcuts import resolve_url
-from telebot import TeleBot
+from telebot import TeleBot, types
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
@@ -13,12 +13,12 @@ class TelegramMessenger(BaseMessengerInterface):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        token = str(self.token)
+        token = str(self.model.token)
         self.tlgrm = TeleBot(token)
 
     def send_webhook(self):
         pub_url = getattr(settings, 'TELEGRAM_BOT_PUBLIC_URL')
-        listen_url = resolve_url('messenger:listen_telegram_bot', self.slug)
+        listen_url = resolve_url('messenger:listen_telegram_bot', self.model.slug)
         public_url = urljoin(pub_url, listen_url)
         self.tlgrm.set_webhook(url=public_url)
 
@@ -47,7 +47,7 @@ class TelegramMessenger(BaseMessengerInterface):
     def inbox_data(self, data):
         # obj = self.get_object()
 
-        upd = types.Update.de_json(request.data)
+        upd = types.Update.de_json(data)
         # Incoming updates from telegram bot
         update_id = upd.update_id
         print('update_id', update_id)

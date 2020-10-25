@@ -15,27 +15,25 @@ from profiles.models import UserProfile
 class ViberMessenger(BaseMessengerInterface):
     data_value = 1
     description = _('Viber')
+    _viber_cache = None
 
     def get_viber(self):
         if self._viber_cache is None:
             self._viber_cache = Api(BotConfiguration(
-                name=str(self.slug),
-                avatar=self.avatar.url,
-                auth_token=str(self.token)
+                name=str(self.model.slug),
+                avatar=self.model.avatar.url,
+                auth_token=str(self.model.token)
             ))
         return self._viber_cache
 
     def send_webhook(self):
         pub_url = getattr(settings, 'VIBER_BOT_PUBLIC_URL')
-        listen_url = resolve_url('messenger:listen_viber_bot', self.slug)
+        listen_url = resolve_url('messenger:listen_viber_bot', self.model.slug)
         public_url = urljoin(pub_url, listen_url)
         viber = self.get_viber()
         viber.set_webhook(public_url, ['failed', 'subscribed', 'unsubscribed', 'conversation_started'])
 
     def remove_webhook(self):
-        pass
-
-    def send_message_to_accs(self, receivers, msg_text: str):
         pass
 
     def send_message(self, msg_text: str):

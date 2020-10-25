@@ -26,7 +26,7 @@ class MessengerModelViewSet(DjingModelViewSet):
     @action(methods=['post'], detail=True, permission_classes=[], url_name='listen_telegram_bot')
     def listen(self, request, pk=None):
         obj = self.get_object()
-        r = obj.inbox_data(request.data)
+        r = obj.inbox_data(request)
         return Response(r, status=status.HTTP_200_OK)
 
 
