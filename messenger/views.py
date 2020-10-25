@@ -27,7 +27,12 @@ class MessengerModelViewSet(DjingModelViewSet):
     def listen(self, request, pk=None):
         obj = self.get_object()
         r = obj.inbox_data(request)
-        return Response(r, status=status.HTTP_200_OK)
+        if isinstance(r, (tuple, list)):
+            ret_text, ret_code = r
+            return Response(ret_text, status=ret_code)
+        elif isinstance(r, str) or hasattr(r, '__str__'):
+            return Response(r, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class MessageModelViewSet(DjingModelViewSet):
