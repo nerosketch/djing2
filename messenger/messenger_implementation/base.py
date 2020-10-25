@@ -6,6 +6,10 @@ class BaseMessengerInterface(ABC):
     data_value = 0
     description = _('Undefined')
 
+    def __init__(self, model, request):
+        self.model = model
+        self.request = request
+
     @abstractmethod
     def send_webhook(self):
         raise NotImplementedError
