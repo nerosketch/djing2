@@ -3,12 +3,17 @@ from urllib.parse import urljoin
 from django.conf import settings
 from django.shortcuts import resolve_url
 from django.utils.translation import gettext_lazy as _
+from rest_framework import status
 from viberbot import Api, BotConfiguration
-from viberbot.api.messages import TextMessage
+from viberbot.api.messages import TextMessage, ContactMessage
 from viberbot.api.messages.message import Message
 from viberbot.api.user_profile import UserProfile as ViberUserProfile
+from viberbot.api.viber_requests import (
+    ViberMessageRequest, ViberSubscribedRequest,
+    ViberFailedRequest, ViberUnsubscribedRequest
+)
 
-from messenger.messenger_implementation.base import BaseMessengerInterface
+from .base import BaseMessengerInterface
 from profiles.models import UserProfile
 
 
@@ -71,36 +76,28 @@ class ViberMessenger(BaseMessengerInterface):
             viber.send_messages(subscriber_id, TextMessage(text=msg))
 
     def inbox_data(self, data):
-        # obj = self.get_object()
-        # self.object = obj
-        #
-        # viber = obj.get_viber()
-        # if not viber.verify_signature(request.body, request.META.get('HTTP_X_VIBER_CONTENT_SIGNATURE')):
-        #     return Response(status=status.HTTP_403_FORBIDDEN)
-        #
-        # vr = viber.parse_request(request.body)
-        # if isinstance(vr, ViberMessageRequest):
-        #     in_msg = vr.message
-        #     if isinstance(in_msg, ContactMessage):
-        #         self.inbox_contact(in_msg, vr.sender)
-        #     subscriber, created = self.make_subscriber(vr.sender)
-        #     if not created:
-        #         models.ViberMessage.objects.create(
-        #             msg=vr.message,
-        #             sender=vr.sender.id,
-        #             messenger=obj,
-        #             subscriber=subscriber
-        #         )
-        # elif isinstance(vr, ViberSubscribedRequest):
-        #     self.make_subscriber(vr.user)
-        # elif isinstance(vr, ViberFailedRequest):
-        #     print("client failed receiving message. failure: {0}".format(vr))
-        # elif isinstance(vr, ViberUnsubscribedRequest):
-        #     models.ViberSubscriber.objects.filter(
-        #         uid=vr.user_id
-        #     ).delete()
-        # return Response(status=status.HTTP_200_OK)
-        pass
+        # obj = self.model
+        request = self.request
+
+        viber = self.get_viber()
+        if not viber.verify_signature(request.body, request.META.get('HTTP_X_VIBER_CONTENT_SIGNATURE')):
+            return '', status.HTTP_403_FORBIDDEN
+
+        vr = viber.parse_request(request.body)
+        if isinstance(vr, ViberMessageRequest):
+            in_msg = vr.message
+            if isinstance(in_msg, ContactMessage):
+                self.inbox_contact(in_msg, vr.sender)
+            subscriber, created = self.make_subscriber(vr.sender)
+        elif isinstance(vr, ViberSubscribedRequest):
+            self.make_subscriber(vr.user)
+        elif isinstance(vr, ViberFailedRequest):
+            print("client failed receiving message. failure: {0}".format(vr))
+        elif isinstance(vr, ViberUnsubscribedRequest):
+            MessengerSubscriber.objects.filter(
+                uid=vr.user_id
+            ).delete()
+        return ''
 
     def make_subscriber(self, viber_user_profile: ViberUserProfile):
         # subscriber, created = models.ViberSubscriber.objects.get_or_create(
