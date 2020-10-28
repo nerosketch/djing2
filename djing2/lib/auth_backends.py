@@ -1,4 +1,4 @@
-# from ipaddress import ip_address, AddressValueError
+from ipaddress import ip_address, AddressValueError
 
 from django.contrib.auth.backends import ModelBackend
 
@@ -43,19 +43,19 @@ class DjingAuthBackend(ModelBackend):
         return _get_right_user(user)
 
 
-# class LocationAuthBackend(DjingAuthBackend):
-#     def authenticate(self, request, byip=None, **kwargs):
-#         if byip is None:
-#             return
-#         try:
-#             remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
-#             user = Customer.objects.filter(
-#                 ip_address=str(remote_ip),
-#                 is_active=True
-#             ).first()
-#             if user is None:
-#                 return None
-#             if self.user_can_authenticate(user):
-#                 return user
-#         except AddressValueError:
-#             return None
+class LocationAuthBackend(DjingAuthBackend):
+    def authenticate(self, request, byip=None, **kwargs):
+        if byip is None:
+            return
+        try:
+            remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
+            user = Customer.objects.filter(
+                ip_address=str(remote_ip),
+                is_active=True
+            ).first()
+            if user is None:
+                return None
+            if self.user_can_authenticate(user):
+                return user
+        except AddressValueError:
+            return None
