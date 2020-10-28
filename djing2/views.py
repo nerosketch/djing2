@@ -2,7 +2,7 @@ import re
 from ipaddress import ip_address, AddressValueError
 from django.db.models import Q
 from guardian.shortcuts import get_objects_for_user
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 
 from djing2 import MAC_ADDR_REGEX, IP_ADDR_REGEX
@@ -98,6 +98,8 @@ class SearchApiView(DjingListAPIView):
 
 
 @api_view()
+@authentication_classes([])
+@permission_classes([])
 def can_login_by_location(request):
     try:
         remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
