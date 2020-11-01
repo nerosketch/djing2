@@ -10,6 +10,7 @@ from djing2.serializers import SearchSerializer
 from djing2.viewsets import DjingListAPIView
 from customers.models import Customer
 from devices.models import Device
+from networks.models import CustomerIpLeaseModel
 
 
 def accs_format(acc: Customer) -> dict:
@@ -104,6 +105,11 @@ def can_login_by_location(request):
     try:
         remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
         if remote_ip.version == 4:
+            ips_count = CustomerIpLeaseModel.objects.filter(
+                ip_address=str(remote_ip)
+            ).count()
+            if ips_count == 1:
+                return Response(True)
             has_exist = Customer.objects.filter(
                 ip_address=str(remote_ip),
                 is_active=True
