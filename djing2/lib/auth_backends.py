@@ -3,6 +3,7 @@ from ipaddress import ip_address, AddressValueError
 from django.contrib.auth.backends import ModelBackend
 
 from customers.models import Customer
+from networks.models import CustomerIpLeaseModel
 from profiles.models import BaseAccount, UserProfile
 
 
@@ -54,7 +55,13 @@ class LocationAuthBackend(DjingAuthBackend):
                 is_active=True
             ).first()
             if user is None:
-                return None
+                ip_users = CustomerIpLeaseModel.objects.filter(
+                    ip_address=str(remote_ip)
+                )
+                if ip_users.count() == 1:
+                    usr = ip_users.first()
+                    if usr and usr.customer:
+                        return usr.customer
             if self.user_can_authenticate(user):
                 return user
         except AddressValueError:
