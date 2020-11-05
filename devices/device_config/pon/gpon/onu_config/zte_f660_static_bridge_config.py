@@ -200,6 +200,7 @@ def _zte_onu_bridge_config_apply(serial: str, zte_ip_addr: str, telnet_login: st
         # Exit
         ch.do_cmd('exit', f'{telnet_prompt}(config)#')
         ch.do_cmd('exit', f'{telnet_prompt}#')
+        ch.sendline('exit')
         ch.close()
         return zte_utils.zte_onu_conv_to_num(
             rack_num=rack_num,
