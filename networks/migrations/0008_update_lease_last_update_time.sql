@@ -57,7 +57,7 @@ BEGIN
   then
     -- raise notice 'Ip has already attached';
     -- Update `last_update` field in customer lease
-    execute update_customer_lease_last_update_time_field(t_customer.baseaccount_ptr_id, v_client_ip);
+    perform update_customer_lease_last_update_time_field(t_customer.baseaccount_ptr_id, v_client_ip);
     return null;
   end if;
 
