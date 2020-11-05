@@ -139,6 +139,8 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 
         # Exit
         ch.do_cmd('exit', '%s(config)#' % prompt)
+        ch.do_cmd('exit', '%s#' % prompt)
+        ch.sendline('exit')
 
         ch.close()
         return zte_onu_conv_to_num(
@@ -216,6 +218,8 @@ def remove_from_olt(zte_ip_addr: str, telnet_login: str,
 
     # Exit
     ch.do_cmd('exit', '%s(config)#' % telnet_prompt)
+    ch.do_cmd('exit', '%s#' % telnet_prompt)
+    ch.sendline('exit')
     ch.close()
     return True
 
