@@ -150,3 +150,6 @@ msgstr "Не получается войти с предоставленными
 
 msgid "Passwords must be same"
 msgstr "Пароли должны быть одинаковыми"
+
+msgid "Incorrect provided credentials."
+msgstr "Авторизация с предоставленными учётными данными невозможна"
