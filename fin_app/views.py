@@ -141,9 +141,9 @@ class AllTimePay(GenericAPIView):
                 receipt_num=receipt_num,
                 pay_gw=self.object
             )
-            customer_check_service_for_expiration(
-                customer_id=customer.pk
-            )
+        customer_check_service_for_expiration(
+            customer_id=customer.pk
+        )
         return Response({
             'pay_id': pay_id,
             'service_id': data.get('SERVICE_ID'),
