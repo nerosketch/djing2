@@ -27,7 +27,7 @@ class HashAuthView(APIView):
         if api_auth_secret is None or api_auth_secret == 'your api secret':
             raise ImproperlyConfigured('You must specified API_AUTH_SECRET in settings')
         else:
-            super(HashAuthView, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
 
 class AuthenticatedOrHashAuthView(HashAuthView):
@@ -52,14 +52,14 @@ class AllowedSubnetMixin(object):
         api_auth_subnet = getattr(settings, 'API_AUTH_SUBNET')
         if isinstance(api_auth_subnet, str):
             if ip in ip_network(api_auth_subnet):
-                return super(AllowedSubnetMixin, self).dispatch(request, *args, **kwargs)
+                return super().dispatch(request, *args, **kwargs)
         try:
             for subnet in api_auth_subnet:
                 if ip in ip_network(subnet, strict=False):
-                    return super(AllowedSubnetMixin, self).dispatch(request, *args, **kwargs)
+                    return super().dispatch(request, *args, **kwargs)
         except TypeError:
             if ip in ip_network(str(api_auth_subnet)):
-                return super(AllowedSubnetMixin, self).dispatch(request, *args, **kwargs)
+                return super().dispatch(request, *args, **kwargs)
         return Response(status=status.HTTP_403_FORBIDDEN)
 
 
