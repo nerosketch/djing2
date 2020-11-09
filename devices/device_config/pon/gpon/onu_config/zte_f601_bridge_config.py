@@ -4,13 +4,14 @@ from typing import Optional
 from django.utils.translation import gettext_lazy as _
 
 from devices.device_config import expect_util
-from devices.device_config.base import OptionalScriptCallResult, DeviceConfigType
+from devices.device_config.base import OptionalScriptCallResult, DeviceConfigType, DeviceConfigurationError
+from devices.device_config.pon.utils import get_all_vlans_from_config
 from djing2.lib import process_lock, safe_int
 from ..zte_utils import (
     get_unregistered_onu, get_free_registered_onu_number,
     zte_onu_conv_to_num, sn_to_mac, zte_onu_conv_from_onu,
     ZteOltLoginFailed, OnuZteRegisterError, ZTEFiberIsFull,
-    ZteOltConsoleError
+    ZteOltConsoleError, reg_dev_zte
 )
 
 
@@ -27,7 +28,7 @@ def get_onu_template(vlan_id: int, mac_addr: str):
         'dhcp-option82 enable vport 1',
         'dhcp-option82 trust true replace vport 1',
         'ip dhcp snooping enable vport 1',
-        'ip-service ip-source-guard enable sport 1'
+        # 'ip-service ip-source-guard enable sport 1'
     )
     return template
 
@@ -138,6 +139,8 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 
         # Exit
         ch.do_cmd('exit', '%s(config)#' % prompt)
+        ch.do_cmd('exit', '%s#' % prompt)
+        ch.sendline('exit')
 
         ch.close()
         return zte_onu_conv_to_num(
@@ -152,15 +155,21 @@ def appy_config(onu_mac: str, sn: str, hostname: str, login: str, password: str,
 
 # Main Entry point
 @process_lock(lock_name='zte_olt')
-def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_login: str,
-                 telnet_passw: str, telnet_prompt: str, onu_vlan: int):
+def _register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_login: str,
+                  telnet_passw: str, telnet_prompt: str, config: dict,
+                  *args, **kwargs):
     serial = serial.upper()
 
     if not re.match(r'^ZTEG[0-9A-F]{8}$', serial):
         raise expect_util.ExpectValidationError('Serial not valid, match: ^ZTEG[0-9A-F]{8}$')
 
-    if not isinstance(onu_vlan, int):
-        onu_vlan = safe_int(onu_vlan)
+    all_vids = get_all_vlans_from_config(config=config)
+    if not all_vids:
+        raise OnuZteRegisterError(f'not passed vlan list')
+
+    onu_vlan = safe_int(all_vids[0])
+    if onu_vlan == 0:
+        raise OnuZteRegisterError('Bad vlan passed in config')
 
     if onu_mac is None:
         onu_mac = sn_to_mac(serial)
@@ -177,7 +186,8 @@ def register_onu(onu_mac: Optional[str], serial: str, zte_ip_addr: str, telnet_l
 
 @process_lock(lock_name='zte_olt')
 def remove_from_olt(zte_ip_addr: str, telnet_login: str,
-                    telnet_passw: str, telnet_prompt: str, snmp_info: str):
+                    telnet_passw: str, telnet_prompt: str, snmp_info: str,
+                    *args, **kwargs):
     if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
         raise expect_util.ExpectValidationError('ip address for zte not valid')
 
@@ -208,17 +218,29 @@ def remove_from_olt(zte_ip_addr: str, telnet_login: str,
 
     # Exit
     ch.do_cmd('exit', '%s(config)#' % telnet_prompt)
+    ch.do_cmd('exit', '%s#' % telnet_prompt)
+    ch.sendline('exit')
     ch.close()
     return True
 
 
 class ZteF601BridgeScriptModule(DeviceConfigType):
-    title = 'Zte F601 bridge'
+    title = 'Zte F601 dhcp'
     short_code = 'zte_f601_bridge'
     accept_vlan = True
 
-    @staticmethod
-    def entry_point(config: dict, *args, **kwargs) -> OptionalScriptCallResult:
-        # print('###################### ZteF601BridgeScriptModule ######################')
-        # return reg_dev_zte(self.dev_instance, extra_data, register_onu)
+    @classmethod
+    def entry_point(cls, config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
+        pdev = device.parent_dev
+        if not pdev:
+            raise DeviceConfigurationError(_('You should config parent OLT device for ONU'))
+        if not pdev.extra_data:
+            raise DeviceConfigurationError(_('You have not info in extra_data '
+                                             'field, please fill it in JSON'))
+        reg_dev_zte(
+            device=device,
+            extra_data=dict(pdev.extra_data),
+            reg_func=_register_onu,
+            config=config
+        )
         return {1: 'success'}
