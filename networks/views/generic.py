@@ -94,7 +94,6 @@ class DhcpLever(SecureApiView):
     http_method_names = ('get',)
 
     def get(self, request, format=None):
-        del format
         data = request.query_params.copy()
         try:
             r = self.on_dhcp_event(data)

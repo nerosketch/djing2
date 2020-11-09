@@ -22,7 +22,7 @@ def hash_auth_view(fn):
     @wraps(fn)
     def wrapped(request, *args, **kwargs):
         sign = request.headers.get('Api-Auth-Sign')
-        if getattr(settings, 'DEBUG', False) or sign is None:
+        if getattr(settings, 'DEBUG', False) and sign is None:
             sign = request.META.get('Api-Auth-Sign')
         if not sign:
             return HttpResponseForbidden('Access Denied!')
