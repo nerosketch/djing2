@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from time import sleep
 
 from django.test.utils import override_settings
 
@@ -63,3 +64,9 @@ class DhcpCommitLeaseAddUpdateTestCase(CustomAPITestCase):
     @override_settings(API_AUTH_SECRET="sdfsdf")
     def test_ok(self):
         self._make_dhcp_event_request('10.11.12.55', '12:13:14:15:16:15', '12:13:14:15:16:17', 2, 'commit')
+
+    @override_settings(API_AUTH_SECRET="sdfsdf")
+    def test_update_last_update_time(self):
+        self._make_dhcp_event_request('10.11.12.60', '12:13:14:15:16:20', '12:13:14:15:16:17', 2, 'commit')
+        sleep(2)
+        self._make_dhcp_event_request('10.11.12.60', '12:13:14:15:16:20', '12:13:14:15:16:17', 2, 'commit')
