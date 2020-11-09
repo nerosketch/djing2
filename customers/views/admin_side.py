@@ -64,7 +64,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ('username', 'fio', 'telephone', 'description')
-    filterset_fields = ('group', 'street', 'device', 'dev_port')
+    filterset_fields = ('group', 'street', 'device', 'dev_port', 'current_service__service')
     ordering_fields = ('username', 'fio', 'house', 'balance', 'current_service__service__title')
 
     @action(methods=('post',), detail=True)
