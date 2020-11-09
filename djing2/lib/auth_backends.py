@@ -1,8 +1,9 @@
-# from ipaddress import ip_address, AddressValueError
+from ipaddress import ip_address, AddressValueError
 
 from django.contrib.auth.backends import ModelBackend
 
 from customers.models import Customer
+from networks.models import CustomerIpLeaseModel
 from profiles.models import BaseAccount, UserProfile
 
 
@@ -43,19 +44,25 @@ class DjingAuthBackend(ModelBackend):
         return _get_right_user(user)
 
 
-# class LocationAuthBackend(DjingAuthBackend):
-#     def authenticate(self, request, byip=None, **kwargs):
-#         if byip is None:
-#             return
-#         try:
-#             remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
-#             user = Customer.objects.filter(
-#                 ip_address=str(remote_ip),
-#                 is_active=True
-#             ).first()
-#             if user is None:
-#                 return None
-#             if self.user_can_authenticate(user):
-#                 return user
-#         except AddressValueError:
-#             return None
+class LocationAuthBackend(DjingAuthBackend):
+    def authenticate(self, request, byip=None, **kwargs):
+        if byip is None:
+            return
+        try:
+            remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
+            user = Customer.objects.filter(
+                ip_address=str(remote_ip),
+                is_active=True
+            ).first()
+            if user is None:
+                ip_users = CustomerIpLeaseModel.objects.filter(
+                    ip_address=str(remote_ip)
+                )
+                if ip_users.count() == 1:
+                    usr = ip_users.first()
+                    if usr and usr.customer:
+                        return usr.customer
+            if self.user_can_authenticate(user):
+                return user
+        except AddressValueError:
+            return None
