@@ -235,6 +235,7 @@ class CustomerIpLeaseModel(BaseAbstractModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     mac_address = MACAddressField(verbose_name=_('Mac address'), null=True, default=None)
     is_dynamic = models.BooleanField(_('Is synamic'), default=False)
+    last_update = models.DateTimeField(_('Last update'), blank=True, null=True, default=None)
 
     objects = CustomerIpLeaseModelQuerySet.as_manager()
 
