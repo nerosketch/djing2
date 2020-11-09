@@ -1,8 +1,7 @@
 from django.urls import path, include
-from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.routers import DefaultRouter
 from profiles import views
-
+from profiles.views import SitesObtainAuthToken
 
 app_name = 'profiles'
 
@@ -20,6 +19,6 @@ router.register('', views.UserProfileViewSet)
 
 urlpatterns = [
     path('location-auth/', views.LocationAuth.as_view()),
-    path('token-auth/', obtain_auth_token),
+    path('token-auth/', SitesObtainAuthToken.as_view()),
     path('', include(router.urls))
 ]
