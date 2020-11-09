@@ -1,7 +1,10 @@
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from guardian.models import GroupObjectPermission, UserObjectPermission
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
+from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.exceptions import ValidationError
 
 from djing2.lib.mixins import BaseCustomModelSerializer
@@ -98,3 +101,31 @@ class UserGroupModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = Group
         fields = '__all__'
+
+
+class SitesAuthTokenSerializer(AuthTokenSerializer):
+
+    def validate(self, attrs):
+        username = attrs.get('username')
+        password = attrs.get('password')
+
+        if username and password:
+            user = authenticate(request=self.context.get('request'),
+                                username=username, password=password)
+
+            # The authenticate call simply returns None for is_active=False
+            # users. (Assuming the default ModelBackend authentication
+            # backend.)
+            err_msg = _('Unable to log in with provided credentials.')
+            if not user:
+                raise serializers.ValidationError(err_msg, code='authorization')
+
+            if not self.context['request'].site or not user.sites.filter(pk=self.context['request'].site.pk).exists():
+                raise ValidationError(err_msg, code='authorization')
+
+        else:
+            msg = _('Must include "username" and "password".')
+            raise serializers.ValidationError(msg, code='authorization')
+
+        attrs['user'] = user
+        return attrs
