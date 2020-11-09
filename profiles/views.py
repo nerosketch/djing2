@@ -5,6 +5,7 @@ from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework import status
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
@@ -24,7 +25,7 @@ from profiles.serializers import (
     GroupObjectPermissionSerializer,
     PermissionModelSerializer,
     ContentTypeModelSerializer,
-    UserGroupModelSerializer)
+    UserGroupModelSerializer, SitesAuthTokenSerializer)
 
 
 class UserProfileViewSet(DjingSuperUserModelViewSet):
@@ -120,6 +121,10 @@ class LocationAuth(APIView):
             msg = _('Unable to log in with provided credentials.')
             raise ValidationError(msg, code='authorization')
 
+        if not user.sites.filter(pk=request.site.pk).exists():
+            msg = _('Incorrect provided credentials.')
+            raise ValidationError(msg, code='authorization')
+
         token, created = Token.objects.get_or_create(user=user)
         return Response({'token': token.key})
 
@@ -165,3 +170,7 @@ class UserGroupModelViewSet(DjingSuperUserModelViewSet):
         usercount=Count('user')
     )
     serializer_class = UserGroupModelSerializer
+
+
+class SitesObtainAuthToken(ObtainAuthToken):
+    serializer_class = SitesAuthTokenSerializer
