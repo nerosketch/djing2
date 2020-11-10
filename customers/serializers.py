@@ -117,8 +117,9 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         raw_password = validated_data.get('password')
-        update_passw(acc=instance, raw_password=raw_password)
-        validated_data['password'] = make_password(raw_password)
+        if raw_password:
+            update_passw(acc=instance, raw_password=raw_password)
+            validated_data['password'] = make_password(raw_password)
 
         instance = super().update(instance, validated_data)
 
