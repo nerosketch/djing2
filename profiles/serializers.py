@@ -120,8 +120,11 @@ class SitesAuthTokenSerializer(AuthTokenSerializer):
             if not user:
                 raise serializers.ValidationError(err_msg, code='authorization')
 
-            if not self.context['request'].site or not user.sites.filter(pk=self.context['request'].site.pk).exists():
-                raise ValidationError(err_msg, code='authorization')
+            if not user.is_superuser:
+                if not self.context['request'].site or not user.sites.filter(
+                        pk=self.context['request'].site.pk
+                ).exists():
+                    raise ValidationError(err_msg, code='authorization')
 
         else:
             msg = _('Must include "username" and "password".')
