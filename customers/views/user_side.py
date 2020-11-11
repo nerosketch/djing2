@@ -70,7 +70,7 @@ class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNo
         return Response()
 
 
-class CustomerServiceModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
+class CustomerServiceModelViewSet(SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
     queryset = models.CustomerService.objects.all()
     serializer_class = serializers.DetailedCustomerServiceModelSerializer
 
