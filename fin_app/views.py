@@ -24,6 +24,12 @@ class AllTimeGatewayModelViewSet(DjingModelViewSet):
     )
     serializer_class = serializers.AllTimeGatewayModelSerializer
 
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
+
 
 class AllTimePayLogModelViewSet(DjingModelViewSet):
     queryset = AllTimePayLog.objects.all()

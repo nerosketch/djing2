@@ -12,6 +12,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 
 from customers import models
@@ -67,6 +68,12 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     filterset_fields = ('group', 'street', 'device', 'dev_port', 'current_service__service')
     ordering_fields = ('username', 'fio', 'house', 'balance', 'current_service__service__title')
 
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
+
     @action(methods=('post',), detail=True)
     @catch_customers_errs
     def pick_service(self, request, pk=None):
@@ -78,7 +85,8 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         customer = self.get_object()
         log_comment = None
         if deadline:
-            deadline = datetime.strptime(deadline, '%Y-%m-%dT%H:%M')
+            dtime_fmt = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M')
+            deadline = datetime.strptime(deadline, dtime_fmt)
             log_comment = _(
                 "Service '%(service_name)s' "
                 "has connected via admin until %(deadline)s") % {
