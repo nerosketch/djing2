@@ -57,9 +57,11 @@ class TaskModelViewSet(DjingModelViewSet):
                 )
         return super().create(request, *args, **kwargs)
 
-    def perform_create(self, serializer):
-        serializer.save(
-            author=self.request.user
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            author=self.request.user,
+            site=self.request.site
         )
 
     @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])

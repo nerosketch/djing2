@@ -20,12 +20,30 @@ class ServiceModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
     filter_backends = (CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter,)
     ordering_fields = ('title', 'speed_in', 'speed_out', 'cost', 'usercount')
 
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
+
 
 class PeriodicPayModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = PeriodicPay.objects.all()
     serializer_class = PeriodicPayModelSerializer
 
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
+
 
 class OneShotModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = OneShotPay.objects.all()
     serializer_class = OneShotPaySerializer
+
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
