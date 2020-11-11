@@ -1,5 +1,4 @@
 from functools import wraps
-from django.conf import settings
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect
 
@@ -22,7 +21,7 @@ def hash_auth_view(fn):
     @wraps(fn)
     def wrapped(request, *args, **kwargs):
         sign = request.headers.get('Api-Auth-Sign')
-        if getattr(settings, 'DEBUG', False) and sign is None:
+        if sign is None:
             sign = request.META.get('Api-Auth-Sign')
         if not sign:
             return HttpResponseForbidden('Access Denied!')

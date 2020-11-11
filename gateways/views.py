@@ -37,3 +37,9 @@ class GatewayModelViewSet(DjingModelViewSet):
             return super().update(request, *args, **kwargs)
         except MessageFailure as msg:
             return Response(str(msg), status=status.HTTP_403_FORBIDDEN)
+
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
