@@ -5,6 +5,7 @@ import datetime
 import time
 
 import django.db.models as models
+from rest_framework.settings import api_settings
 
 
 class UnixDateTimeField(models.DateTimeField):
@@ -12,7 +13,7 @@ class UnixDateTimeField(models.DateTimeField):
     # TODO(niklas9):
     # * should we take care of transforming between time zones in any way here ?
     # * get default datetime format from settings ?
-    DEFAULT_DATETIME_FMT = '%Y-%m-%d %H:%M:%S'
+    DEFAULT_DATETIME_FMT = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M:%S')
     TZ_CONST = '+'
     # TODO(niklas9):
     # * metaclass below just for Django < 1.9, fix a if stmt for it?
