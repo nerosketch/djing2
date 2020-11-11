@@ -20,9 +20,9 @@ from djing2.exceptions import UniqueConstraintIntegrityError
 
 class DjingModelViewSet(ModelViewSet):
 
-    def perform_create(self, serializer) -> None:
+    def perform_create(self, serializer, *args, **kwargs) -> None:
         try:
-            inst = serializer.save()
+            inst = serializer.save(*args, **kwargs)
             if hasattr(inst, 'assign_rights2new_obj'):
                 inst.assign_rights2new_obj(self.request)
         except IntegrityError as e:

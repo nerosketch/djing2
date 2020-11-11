@@ -282,6 +282,12 @@ class DeviceModelViewSet(DjingModelViewSet):
         )
         return qs.filter(group__in=grps)
 
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
+
     @action(detail=True)
     @catch_dev_manager_err
     def scan_ports(self, request, pk=None):

@@ -99,6 +99,12 @@ class UserProfileViewSet(DjingSuperUserModelViewSet):
     def get_current_auth_permissions(self, request):
         return Response(request.user.get_all_permissions())
 
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
+
 
 class UserProfileLogViewSet(DjingModelViewSet):
     queryset = UserProfileLog.objects.all()
