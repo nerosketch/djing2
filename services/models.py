@@ -5,6 +5,7 @@ from django.contrib.sites.models import Site
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from rest_framework.settings import api_settings
 
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
@@ -74,7 +75,8 @@ class Service(BaseAbstractModel):
         return calc_obj.calc_deadline()
 
     def calc_deadline_formatted(self):
-        return self.calc_deadline().strftime('%Y-%m-%dT%H:%M')
+        dtime_fmt = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M')
+        return self.calc_deadline().strftime(dtime_fmt)
 
     def __str__(self):
         return "%s (%.2f)" % (self.title, self.cost)
