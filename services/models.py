@@ -49,6 +49,12 @@ class Service(BaseAbstractModel):
 
     objects = ServiceManager()
 
+    def calc_type_name(self):
+        logic_class = self.get_calc_type()
+        if hasattr(logic_class, 'description'):
+            return getattr(logic_class, 'description')
+        return str(logic_class)
+
     def get_calc_type(self):
         """
         :return: Child of services.base_intr.ServiceBase,
