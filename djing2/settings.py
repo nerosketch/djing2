@@ -205,8 +205,9 @@ if DEBUG:
 
 # STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-# Example output: 16 09 2018
-DATE_FORMAT = 'd b Y'
+# Example output: 2018-09-16
+DATE_FORMAT = 'Y-b-d'
+DATETIME_FORMAT = 'Y-b-d H:i'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -240,8 +241,9 @@ REST_FRAMEWORK = {
         'djing2.lib.filters.CustomObjectPermissionsFilter',
         'django_filters.rest_framework.DjangoFilterBackend'
     ],
-    'DATETIME_FORMAT': '%d.%m.%Y %H:%M',
-    'DATE_FORMAT': '%d.%m.%Y',
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M',
+    'DATE_FORMAT': '%Y-%m-%d',
+    'DATETIME_INPUT_FORMATS': ['%Y-%m-%d %H:%M', '%Y-%m-%dT%H:%M', '%Y-%m-%d'],
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
