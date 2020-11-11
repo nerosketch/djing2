@@ -19,6 +19,12 @@ class GroupsModelViewSets(SitesFilterMixin, DjingModelViewSet):
     filter_backends = [CustomObjectPermissionsFilter, OrderingFilter]
     ordering_fields = 'title',
 
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
+
     # @action(detail=False)
     # def get_all_related_perms(self, request):
     #     if not request.user.is_superuser:

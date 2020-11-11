@@ -43,6 +43,12 @@ class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
         ip = network.get_free_ip()
         return Response(str(ip))
 
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
+
 
 class VlanIfModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = VlanIf.objects.all()
@@ -50,6 +56,12 @@ class VlanIfModelViewSet(SitesFilterMixin, DjingModelViewSet):
     filter_backends = (CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter)
     ordering_fields = ('title', 'vid')
     filterset_fields = ('device',)
+
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
 
 
 class CustomerIpLeaseModelViewSet(DjingModelViewSet):
