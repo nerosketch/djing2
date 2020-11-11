@@ -9,7 +9,7 @@ from services import models
 class ServiceModelSerializer(BaseCustomModelSerializer):
     usercount = IntegerField(read_only=True)
     planned_deadline = DateTimeField(source='calc_deadline_formatted', read_only=True)
-    calc_type_name = CharField(source='get_calc_type_display', read_only=True)
+    calc_type_name = CharField(read_only=True)
 
     class Meta:
         model = models.Service
