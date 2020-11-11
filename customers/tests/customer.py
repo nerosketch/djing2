@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from django.test import override_settings
+from rest_framework.settings import api_settings
 from rest_framework.test import APITestCase
 from rest_framework import status
 from customers import models
@@ -78,9 +79,10 @@ class CustomerModelAPITestCase(CustomAPITestCase):
 
     def test_pick_service_not_enough_money(self):
         models.Customer.objects.filter(username='custo1').update(balance=0)
+        dtime_fmt = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M')
         r = self.post('/api/customers/%d/pick_service/' % self.customer.pk, {
             'service_id': self.service.pk,
-            'deadline': (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M')
+            'deadline': (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)
         })
         self.customer.refresh_from_db()
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -91,9 +93,10 @@ class CustomerModelAPITestCase(CustomAPITestCase):
     def test_pick_service(self):
         models.Customer.objects.filter(username='custo1').update(balance=2)
         self.customer.refresh_from_db()
+        dtime_fmt = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M')
         r = self.post('/api/customers/%d/pick_service/' % self.customer.pk, {
             'service_id': self.service.pk,
-            'deadline': (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M')
+            'deadline': (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)
         })
         self.assertFalse(r.content)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -101,9 +104,10 @@ class CustomerModelAPITestCase(CustomAPITestCase):
     def test_pick_service_again(self):
         self.test_pick_service()
         self.customer.refresh_from_db()
+        dtime_fmt = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M')
         r = self.post('/api/customers/%d/pick_service/' % self.customer.pk, {
             'service_id': self.service.pk,
-            'deadline': (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M')
+            'deadline': (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)
         })
         self.assertEqual(r.content, b'"That service already activated"')
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
@@ -127,9 +131,10 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             password='passw'
         )
         self.assertTrue(login_r)
+        dtime_fmt = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M')
         r = self.post('/api/customers/%d/pick_service/' % self.customer.pk, {
             'service_id': self.service.pk,
-            'deadline': (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M')
+            'deadline': (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)
         })
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
