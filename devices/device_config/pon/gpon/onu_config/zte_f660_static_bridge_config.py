@@ -152,7 +152,7 @@ def _zte_onu_bridge_config_apply(serial: str, zte_ip_addr: str, telnet_login: st
         )
         if free_onu_number > 127:
             ch.close()
-            raise zte_utils.ZTEFiberIsFull(f'olt fiber {fiber_num} is full')
+            raise zte_utils.ZTEFiberIsFull(_('olt fiber %d is full') % fiber_num)
 
         # enter to config
         ch.do_cmd('conf t', f'{telnet_prompt}(config)#')
