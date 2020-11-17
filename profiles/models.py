@@ -17,7 +17,7 @@ from groupapp.models import Group
 
 
 class MyUserManager(BaseUserManager):
-    def create_user(self, telephone, username, password=None, **other_fields):
+    def create_user(self, telephone, username, password=None, is_save=True, **other_fields):
         """
         Creates and saves a User with the given email, date of
         birth and password.
@@ -34,10 +34,11 @@ class MyUserManager(BaseUserManager):
 
         if password:
             user.set_password(password)
-        user.save(using=self._db)
+        if is_save:
+            user.save(using=self._db)
         return user
 
-    def create_superuser(self, telephone, username, password, **other_fields):
+    def create_superuser(self, telephone, username, password=None, is_save=True, **other_fields):
         """
         Creates and saves a superuser with the given email, date of
         birth and password.
@@ -45,15 +46,14 @@ class MyUserManager(BaseUserManager):
         user = UserProfile.objects.create_user(telephone,
                                                password=password,
                                                username=username,
+                                               is_save=False,
                                                **other_fields
                                                )
 
-        if password:
-            user.set_password(password)
-
         user.is_admin = True
         user.is_superuser = True
-        user.save(using=self._db)
+        if is_save:
+            user.save(using=self._db)
         return user
 
 
@@ -143,7 +143,7 @@ class UserProfileManager(MyUserManager):
     def get_profiles_by_group(self, group_id):
         return self.filter(responsibility_groups__id__in=(group_id,), is_admin=True, is_active=True)
 
-    def create_user(self, telephone, username, password=None, **other_fields):
+    def create_user(self, telephone, username, password=None, is_save=True, **other_fields):
         """
         Creates and saves a User with the given email, date of
         birth and password.
@@ -160,7 +160,8 @@ class UserProfileManager(MyUserManager):
 
         if password:
             user.set_password(password)
-        user.save(using=self._db)
+        if is_save:
+            user.save(using=self._db)
         return user
 
 
