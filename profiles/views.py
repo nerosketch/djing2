@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 
+from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import (
     DjingModelViewSet, BaseNonAdminReadOnlyModelViewSet,
     DjingSuperUserModelViewSet
@@ -28,7 +29,7 @@ from profiles.serializers import (
     UserGroupModelSerializer, SitesAuthTokenSerializer)
 
 
-class UserProfileViewSet(DjingSuperUserModelViewSet):
+class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     lookup_field = 'username'
@@ -44,10 +45,12 @@ class UserProfileViewSet(DjingSuperUserModelViewSet):
         group_ids = profile.responsibility_groups.values_list('pk', flat=True)
         return Response(data=group_ids)
 
-    @action(detail=False)
+    @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
     def get_active_profiles(self, request):
         queryset = self.filter_queryset(
-            self.get_queryset().filter(is_active=True)
+            self.get_queryset().filter(
+                is_active=True
+            )
         )
 
         page = self.paginate_queryset(queryset)
