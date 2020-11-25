@@ -50,7 +50,7 @@ class Gateway(BaseAbstractModel):
                 customer_id, *other = cur.fetchone()
                 if customer_id is None:
                     break
-                yield customer_id, *other
+                yield [customer_id] + other
 
     def __str__(self):
         return self.title
