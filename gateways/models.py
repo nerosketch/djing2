@@ -37,17 +37,20 @@ class Gateway(BaseAbstractModel):
             raise GatewayNetworkError('ConnectionResetError')
 
     @staticmethod
-    def get_user_credentials_by_ip(gw_id: int):
+    def get_user_credentials_by_gw(gw_id: int):
         with connection.cursor() as cur:
             cur.execute(
-                "SELECT ip_address, speed_in, speed_out FROM"
-                " fetch_customers_srvnet_credentials_by_gw(%s::integer)",
+                "SELECT * FROM "
+                "fetch_customers_srvnet_credentials_by_gw(%s::integer)",
                 (str(gw_id),))
             while True:
-                ip_address, speed_in, speed_out = cur.fetchone()
-                if ip_address is None:
+                # (customer_id, lease_id, lease_time, lease_mac, ip_address,
+                #  speed_in, speed_out, speed_burst, service_start_time,
+                #  service_deadline)
+                customer_id, *other = cur.fetchone()
+                if customer_id is None:
                     break
-                yield ip_address, speed_in, speed_out
+                yield customer_id, *other
 
     def __str__(self):
         return self.title

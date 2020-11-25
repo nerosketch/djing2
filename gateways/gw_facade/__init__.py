@@ -41,4 +41,4 @@ class GatewayFacade(BaseGateway):
         return self.gw_instance.ping_customer(*args, **kwargs)
 
 
-__all__ = 'GatewayFacade', 'GATEWAY_TYPES', 'GatewayNetworkError'
+__all__ = 'GatewayFacade', 'GATEWAY_TYPES', 'GatewayNetworkError', 'MIKROTIK', 'LINUX'
