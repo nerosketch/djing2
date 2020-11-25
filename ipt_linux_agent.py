@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import os
 from typing import Tuple
+
 from requests import get as httpget
+
 
 def diff_set(one: set, two: set) -> Tuple[set, set]:
     list_for_del = (one ^ two) - one
@@ -80,9 +82,12 @@ class IptRatelimitIntrfc:
 
 def main():
     # получим всё из билинга
-    biling_users = set((ip_addr, int(speed_in * 1000000)) for ip_addr, speed_in, *other in get_users_from_biling())
-    # ip, speed_in, speed_out
-    # ['10.152.132.13', 100.0, 100.0]
+    biling_users = set(
+        (ip_address, int(speed_in * 1000000)) for customer_id, lease_id, lease_time,
+                                                  lease_mac, ip_address, speed_in,
+                                                  *other
+        in get_users_from_biling()
+    )
 
     # получим из ядра
     ipt_users = set(i for i in IptRatelimitIntrfc.read_users_from_ipt())
