@@ -319,6 +319,12 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         r = models.Customer.objects.activity_report()
         return Response(r)
 
+    @action(methods=['get'], detail=True)
+    def is_access(self, request, pk=None):
+        customer = self.get_object()
+        is_acc = customer.is_access()
+        return Response(is_acc)
+
 
 class CustomersGroupsListAPIView(DjingListAPIView):
     serializer_class = serializers.CustomerGroupSerializer
