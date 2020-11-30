@@ -34,8 +34,6 @@ def _clear_ip(ip):
 class RadiusRequestViewSet(DjingAuthorizedViewSet):
     serializer_class = RadiusDHCPRequestSerializer
 
-    # def dispatch(self, request: http.HttpRequest, *args: Any, **kwargs: Any):
-
     def _show_serializer(self):
         serializer = self.get_serializer()
         return Response(serializer.data)
