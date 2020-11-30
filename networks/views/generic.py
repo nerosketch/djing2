@@ -130,22 +130,22 @@ class DhcpLever(SecureApiView):
             'cmd': 'commit'
         }"""
         try:
-            act = data.get('cmd')
-            if act is None:
+            data_action = data.get('cmd')
+            if data_action is None:
                 return '"cmd" parameter is missing'
             client_ip = data.get('client_ip')
             if client_ip is None:
                 return '"client_ip" parameter is missing'
-            if act == 'commit':
+            if data_action == 'commit':
                 return CustomerIpLeaseModel.dhcp_commit_lease_add_update(
                     client_ip=client_ip, mac_addr=data.get('client_mac'),
                     dev_mac=data.get('switch_mac'), dev_port=data.get('switch_port')
                 )
-            elif act in ['expiry', 'release']:
+            elif data_action in ['expiry', 'release']:
                 del_count, del_details = CustomerIpLeaseModel.objects.filter(ip_address=client_ip).delete()
                 return "Removed: %d" % del_count
             else:
-                return '"cmd" parameter is invalid: %s' % act
+                return '"cmd" parameter is invalid: %s' % data_action
         except (LogicError, DuplicateEntry) as e:
             print('Error: %s:' % e.__class__.__name__, e)
             return str(e)
