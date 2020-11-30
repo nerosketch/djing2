@@ -23,7 +23,7 @@ def catch_radius_errs(fn):
     return _wrapper
 
 
-def _return_bad_response(text: str):
+def _bad_response(text: str):
     return Response(text, status.HTTP_403_FORBIDDEN)
 
 
@@ -57,10 +57,10 @@ class RadiusRequestViewSet(DjingAuthorizedViewSet):
 
         # try to get switch mac addr
         if not all([remote_id, circuit_id]):
-            return _return_bad_response('Bad option82')
+            return _bad_response('Bad option82')
         dev_mac, dev_port = parse_opt82(remote_id, circuit_id)
         if dev_mac is None:
-            return _return_bad_response('Failed to parse option82')
+            return _bad_response('Failed to parse option82')
 
         pool_tag = data.get('pool_tag')
 
@@ -75,7 +75,7 @@ class RadiusRequestViewSet(DjingAuthorizedViewSet):
         )
 
         if ip_lease is None:
-            return _return_bad_response("Can't issue a lease")
+            return _bad_response("Can't issue a lease")
         pool_contains_ip = ip_lease.pool
         net = ip_network(pool_contains_ip.network)
 

@@ -85,8 +85,8 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         customer = self.get_object()
         log_comment = None
         if deadline:
-            dtime_fmt = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M')
-            deadline = datetime.strptime(deadline, dtime_fmt)
+            datetime_fmt = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M')
+            deadline = datetime.strptime(deadline, datetime_fmt)
             log_comment = _(
                 "Service '%(service_name)s' "
                 "has connected via admin until %(deadline)s") % {
@@ -424,5 +424,5 @@ class CustomerAttachmentViewSet(DjingModelViewSet):
     serializer_class = serializers.CustomerAttachmentSerializer
     filterset_fields = ('customer',)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer, *args, **kwargs) -> None:
         serializer.save(author=self.request.user)
