@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address
-from typing import Optional, Union, Tuple
+from typing import Optional, Union
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -9,16 +9,13 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, connection, InternalError
 from django.utils.translation import gettext_lazy as _
-from netaddr import EUI
 from netfields import MACAddressField, CidrAddressField
 
-from customers.models.customer import Customer
+from customers.models import Customer
 from djing2 import ping as icmp_ping
-from djing2.lib import macbin2str, safe_int, process_lock
+from djing2.lib import process_lock, LogicError
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
-from .events import on_new_lease_assigned
-from .exceptions import DhcpRequestError
 
 DHCP_DEFAULT_LEASE_TIME = getattr(settings, 'DHCP_DEFAULT_LEASE_TIME', 86400)
 
@@ -212,22 +209,6 @@ class CustomerIpLeaseModelQuerySet(models.QuerySet):
         return self.filter(lease_time__lt=expire_time)
 
 
-def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int]:
-    # 'remote_id': '0x000600ad24d0c544', 'circuit_id': '0x000400020002'
-    mac, port = None, 0
-    remote_id, circuit_id = bytes(remote_id), bytes(circuit_id)
-    if circuit_id.startswith(b'ZTE'):
-        mac = remote_id.decode()
-    else:
-        try:
-            port = safe_int(circuit_id[-1:][0])
-        except IndexError:
-            port = 0
-        if len(remote_id) >= 6:
-            mac = macbin2str(remote_id[-6:])
-    return mac, port
-
-
 class CustomerIpLeaseModel(BaseAbstractModel):
     ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
     pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
@@ -241,46 +222,6 @@ class CustomerIpLeaseModel(BaseAbstractModel):
 
     def __str__(self):
         return "%s [%s]" % (self.ip_address, self.mac_address)
-
-    @staticmethod
-    def fetch_subscriber_lease(customer_mac: str, device_mac: str, device_port: int = 0, is_dynamic: bool = True,
-                               pool_tag: str = None):
-        customer_mac = str(EUI(customer_mac))
-        device_mac = str(EUI(device_mac))
-        device_port = int(device_port)
-        is_dynamic = 1 if is_dynamic else 0
-        try:
-            with connection.cursor() as cur:
-                if pool_tag is None:
-                    cur.execute(
-                        "SELECT * from fetch_subscriber_lease"
-                        "(%s::macaddr, %s::macaddr, %s::smallint, %s::boolean, null)",
-                        (customer_mac, device_mac, device_port, is_dynamic))
-                else:
-                    cur.execute(
-                        "SELECT * from fetch_subscriber_lease"
-                        "(%s::macaddr, %s::macaddr, %s::smallint, %s::boolean, %s)",
-                        (customer_mac, device_mac, device_port, is_dynamic, pool_tag[:32]))
-                res = cur.fetchone()
-            if len(res) == 8:
-                v_id, v_ip_address, v_pool_id, v_lease_time, v_mac_address, v_customer_id, v_is_dynamic, is_assigned = res
-                if v_id is None:
-                    return None
-                if is_assigned:
-                    # New lease, makes signal for gateway
-                    on_new_lease_assigned(v_id, v_ip_address, v_pool_id, v_lease_time,
-                                          v_mac_address,
-                                          v_customer_id, v_is_dynamic, is_assigned)
-                return CustomerIpLeaseModel(
-                    pk=v_id, ip_address=v_ip_address, pool_id=v_pool_id,
-                    lease_time=v_lease_time, customer_id=v_customer_id,
-                    mac_address=v_mac_address, is_dynamic=v_is_dynamic
-                )
-            else:
-                raise DhcpRequestError('8 results expected from sql procedure'
-                                       ' "fetch_subscriber_lease", got %d' % len(res))
-        except InternalError as err:
-            raise DhcpRequestError(err)
 
     @staticmethod
     def find_customer_id_by_device_credentials(device_mac: str, device_port: int = 0) -> int:
@@ -303,9 +244,9 @@ class CustomerIpLeaseModel(BaseAbstractModel):
         return icmp_ping(ip_addr=host_ip, count=num_count, arp=arp)
 
     @staticmethod
-    def dhcp_commit_lease_add_update(client_ip: str, mac_addr: str,
-                                     dev_mac: str,
-                                     dev_port: int) -> str:
+    def lease_commit_add_update(client_ip: str, mac_addr: str,
+                                dev_mac: str,
+                                dev_port: int) -> str:
         """
         When external system assign ip address for customer
         then it ip address may be store to billing via this method.
@@ -317,13 +258,13 @@ class CustomerIpLeaseModel(BaseAbstractModel):
         """
         try:
             with connection.cursor() as cur:
-                cur.execute("SELECT * FROM dhcp_commit_lease_add_update"
+                cur.execute("SELECT * FROM lease_commit_add_update"
                             "(%s::inet, %s::macaddr, %s::macaddr, %s::smallint)",
                             (client_ip, mac_addr, dev_mac, str(dev_port)))
                 res = cur.fetchone()
             return "Assigned %s" % (res[1] or 'null')
         except InternalError as err:
-            raise DhcpRequestError(str(err))
+            raise LogicError(str(err))
 
     class Meta:
         db_table = 'networks_ip_leases'
@@ -331,4 +272,3 @@ class CustomerIpLeaseModel(BaseAbstractModel):
         verbose_name_plural = _('IP leases')
         unique_together = ('ip_address', 'mac_address', 'pool', 'customer')
         ordering = 'id',
-

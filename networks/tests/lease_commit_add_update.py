@@ -10,7 +10,7 @@ from networks.models import NetworkIpPool, NetworkIpPoolKind
 from customers.tests.get_user_credentials_by_ip import BaseServiceTestCase
 
 
-class DhcpCommitLeaseAddUpdateTestCase(CustomAPITestCase):
+class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
     def setUp(self):
         # Initialize customers instances
         BaseServiceTestCase.setUp(self)
@@ -45,8 +45,8 @@ class DhcpCommitLeaseAddUpdateTestCase(CustomAPITestCase):
         )
         self.ippool.groups.add(self.group)
 
-    def _make_dhcp_event_request(self, client_ip: str, client_mac: str, switch_mac: str,
-                                 switch_port: int, cmd: str, status_code: int = 200):
+    def _make_event_request(self, client_ip: str, client_mac: str, switch_mac: str,
+                            switch_port: int, cmd: str, status_code: int = 200):
         request_data = OrderedDict({
             'client_ip': client_ip,
             'client_mac': client_mac,
@@ -63,10 +63,10 @@ class DhcpCommitLeaseAddUpdateTestCase(CustomAPITestCase):
 
     @override_settings(API_AUTH_SECRET="sdfsdf")
     def test_ok(self):
-        self._make_dhcp_event_request('10.11.12.55', '12:13:14:15:16:15', '12:13:14:15:16:17', 2, 'commit')
+        self._make_event_request('10.11.12.55', '12:13:14:15:16:15', '12:13:14:15:16:17', 2, 'commit')
 
     @override_settings(API_AUTH_SECRET="sdfsdf")
     def test_update_last_update_time(self):
-        self._make_dhcp_event_request('10.11.12.60', '12:13:14:15:16:20', '12:13:14:15:16:17', 2, 'commit')
+        self._make_event_request('10.11.12.60', '12:13:14:15:16:20', '12:13:14:15:16:17', 2, 'commit')
         sleep(2)
-        self._make_dhcp_event_request('10.11.12.60', '12:13:14:15:16:20', '12:13:14:15:16:17', 2, 'commit')
+        self._make_event_request('10.11.12.60', '12:13:14:15:16:20', '12:13:14:15:16:17', 2, 'commit')
