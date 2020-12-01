@@ -50,4 +50,8 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
 
     @action(methods=['get'], detail=False)
     def acct(self, request):
-        return Response({})
+        return Response({
+            'Acct-Interim-Interval': 300,
+            'Mikrotik-Address-List': 'DjingUsersAllowed',
+            'Mikrotik-Rate-Limit': '50M/43M'
+        })
