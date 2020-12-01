@@ -17,3 +17,10 @@ $$
 
 $$
 LANGUAGE sql;
+
+-- Drop unused func
+DROP FUNCTION IF EXISTS fetch_subscriber_lease(macaddr,macaddr,smallint,boolean,character varying);
+DROP TYPE if exists FetchSubscriberLeaseReturnType CASCADE;
+
+-- Rename `dhcp_commit_lease_add_update` to `lease_commit_add_update`
+ALTER FUNCTION dhcp_commit_lease_add_update(inet, macaddr, macaddr, smallint) RENAME TO lease_commit_add_update;
