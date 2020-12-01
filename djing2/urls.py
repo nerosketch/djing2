@@ -16,6 +16,7 @@ api_urls = [
     path('fin/', include('fin_app.urls', namespace='fin_app')),
     path('dial/', include('dials.urls', namespace='dials')),
     path('sites/', include('sitesapp.urls', namespace='sitesapp')),
+    path('radius/', include('radiusapp.urls', namespace='radiusapp')),
     path('can_login_by_location/', can_login_by_location),
     path('search/', SearchApiView.as_view())
 ]

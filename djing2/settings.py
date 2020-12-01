@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'msg_app',
     'traf_stat',
     'sitesapp.apps.SitesAppConfig',
+    'radiusapp',
 ]
 
 if DEBUG:
