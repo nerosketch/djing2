@@ -49,6 +49,18 @@ class AllTimePay(GenericAPIView):
     lookup_url_kwarg = 'pay_slug'
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend]
+    _obj_cache = None
+
+    @property
+    def _lazy_object(self):
+        if self._obj_cache is None:
+            self._obj_cache = self.get_object()
+        self.object = self._obj_cache
+        return self.object
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(sites__in=[self.request.site])
 
     @staticmethod
     def _bad_ret(err_id: int, err_description: str=None) -> Response:
@@ -69,14 +81,13 @@ class AllTimePay(GenericAPIView):
         md = md5()
         s = '_'.join(
             (str(act), pay_account or '', serv_id or '',
-             pay_id or '', self.object.secret)
+             pay_id or '', self._lazy_object.secret)
         )
         md.update(bytes(s, 'utf-8'))
         our_sign = md.hexdigest()
         return our_sign == sign
 
     def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
         act: int = safe_int(request.GET.get('ACT'))
         self.current_date = timezone.now().strftime("%d.%m.%Y %H:%M")
 
@@ -110,12 +121,12 @@ class AllTimePay(GenericAPIView):
         pay_account = data.get('PAY_ACCOUNT')
         customer = Customer.objects.get(username=pay_account)
         return Response({
-            'balance': float(customer.balance),
+            'balance': round(customer.balance, 2),
             'name': customer.fio,
             'account': pay_account,
-            'service_id': self.object.service_id,
+            'service_id': self._lazy_object.service_id,
             'min_amount': 10.0,
-            'max_amount': 5000,
+            'max_amount': 15000,
             'status_code': 21,
             'time_stamp': self.current_date
         })
@@ -135,7 +146,7 @@ class AllTimePay(GenericAPIView):
             customer.add_balance(
                 profile=None,
                 cost=pay_amount,
-                comment='%s %.2f' % (self.object.title, pay_amount)
+                comment='%s %.2f' % (self._lazy_object.title, pay_amount)
             )
             customer.save(update_fields=('balance',))
 
@@ -145,7 +156,7 @@ class AllTimePay(GenericAPIView):
                 sum=pay_amount,
                 trade_point=trade_point,
                 receipt_num=receipt_num,
-                pay_gw=self.object
+                pay_gw=self._lazy_object
             )
         customer_check_service_for_expiration(
             customer_id=customer.pk
@@ -153,7 +164,7 @@ class AllTimePay(GenericAPIView):
         return Response({
             'pay_id': pay_id,
             'service_id': data.get('SERVICE_ID'),
-            'amount': pay_amount,
+            'amount': round(pay_amount, 2),
             'status_code': 22,
             'time_stamp': self.current_date
         })
@@ -167,7 +178,7 @@ class AllTimePay(GenericAPIView):
             'transaction': {
                 'pay_id': pay_id,
                 'service_id': data.get('SERVICE_ID'),
-                'amount': pay.sum,
+                'amount': round(pay.sum, 2),
                 'status': 111,
                 'time_stamp': pay.date_add.strftime("%d.%m.%Y %H:%M")
             }
