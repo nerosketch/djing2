@@ -12,6 +12,10 @@ class AllTimeGatewayModelSerializer(BaseCustomModelSerializer):
 
 
 class AllTimePayLogModelSerializer(BaseCustomModelSerializer):
+    sum = serializers.DecimalField(
+        max_digits=12, decimal_places=2, coerce_to_string=False, required=False
+    )
+
     class Meta:
         model = models.AllTimePayLog
         fields = '__all__'
