@@ -1,6 +1,7 @@
 from hashlib import md5
 
 # from django.test.utils import override_settings
+from django.contrib.sites.models import Site
 from django.utils import timezone
 from django.utils.html import escape
 from rest_framework.test import APITestCase
@@ -50,6 +51,8 @@ class CustomAPITestCase(APITestCase):
             service_id='service_id',
             slug='pay_gw_slug'
         )
+        example_site = Site.objects.first()
+        pay_system.sites.add(example_site)
         pay_system.refresh_from_db()
         self.pay_system = pay_system
 
@@ -73,11 +76,12 @@ class AllPayTestCase(CustomAPITestCase):
                 "<account>custo1</account>",
                 "<service_id>%s</service_id>" % escape(service_id),
                 "<min_amount>10.0</min_amount>",
-                "<max_amount>5000</max_amount>",
+                "<max_amount>15000</max_amount>",
                 "<status_code>21</status_code>",
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
             "</pay-response>"
         ))
+        self.maxDiff = None
         self.assertXMLEqual(r.content.decode('utf8'), o)
         self.assertEqual(r.status_code, 200)
 
@@ -135,3 +139,32 @@ class AllPayTestCase(CustomAPITestCase):
         ))
         self.assertXMLEqual(r.content.decode(), xml)
         self.assertEqual(r.status_code, 200)
+
+
+class SitesAllPayTestCase(CustomAPITestCase):
+    url = '/api/fin/pay_gw_slug/pay/'
+
+    def setUp(self):
+        super().setUp()
+        another_site = Site.objects.create(
+            domain='another.ru',
+            name='another'
+        )
+        pay_system = self.pay_system
+        pay_system.sites.set([another_site])
+        pay_system.refresh_from_db()
+
+    def test_another_site(self):
+        r = self.get(self.url, {
+            'ACT': 1,
+            'PAY_ACCOUNT': 'custo1',
+            'SIGN': _make_sign(1, 'custo1', '', '', self.pay_system.secret)
+        })
+        o = ''.join((
+            "<pay-response>",
+                "<detail>Не найдено.</detail>",
+            "</pay-response>"
+        ))
+        self.maxDiff = None
+        self.assertXMLEqual(r.content.decode('utf8'), o)
+        self.assertEqual(r.status_code, 404)
