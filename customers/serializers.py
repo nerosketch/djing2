@@ -59,6 +59,9 @@ class CustomerStreetModelSerializer(BaseCustomModelSerializer):
 class CustomerLogModelSerializer(BaseCustomModelSerializer):
     author_name = serializers.CharField(source='author.get_short_name', read_only=True)
     # customer_name = serializers.CharField(source='customer.get_short_name')
+    cost = serializers.DecimalField(
+        max_digits=12, decimal_places=2, coerce_to_string=False, required=False
+    )
 
     class Meta:
         model = models.CustomerLog
@@ -155,6 +158,9 @@ class PassportInfoModelSerializer(BaseCustomModelSerializer):
 class InvoiceForPaymentModelSerializer(BaseCustomModelSerializer):
     author_name = serializers.CharField(source='author.get_full_name', read_only=True)
     author_uname = serializers.CharField(source='author.username', read_only=True)
+    cost = serializers.DecimalField(
+        max_digits=12, decimal_places=2, coerce_to_string=False, required=False
+    )
 
     class Meta:
         model = models.InvoiceForPayment
