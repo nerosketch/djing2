@@ -137,7 +137,7 @@ class DhcpLever(SecureApiView):
             if client_ip is None:
                 return '"client_ip" parameter is missing'
             if data_action == 'commit':
-                return CustomerIpLeaseModel.dhcp_commit_lease_add_update(
+                return CustomerIpLeaseModel.lease_commit_add_update(
                     client_ip=client_ip, mac_addr=data.get('client_mac'),
                     dev_mac=data.get('switch_mac'), dev_port=data.get('switch_port')
                 )
