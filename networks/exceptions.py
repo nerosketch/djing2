@@ -1,2 +1,0 @@
-class DhcpRequestError(Exception):
-    pass

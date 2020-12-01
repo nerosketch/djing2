@@ -48,10 +48,11 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
         self.customer.refresh_from_db()
         self.customer.pick_service(self.service, self.customer)
 
-        self.lease = CustomerIpLeaseModel.fetch_subscriber_lease(
-            customer_mac='1:2:3:4:5:6',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
+        self.lease = CustomerIpLeaseModel.objects.create(
+            ip_address='10.11.12.2',
+            mac_address='1:2:3:4:5:6',
+            pool=self.ippool,
+            customer=self.customer,
             is_dynamic=True
         )
         self.assertIsNotNone(self.lease)
@@ -115,17 +116,19 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
         customer_onu.refresh_from_db()
         customer_onu.pick_service(self.service, customer_onu)
         self.customer_onu = customer_onu
-        self.lease = CustomerIpLeaseModel.fetch_subscriber_lease(
-            customer_mac='1:2:3:4:5:6',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
+
+        self.lease = CustomerIpLeaseModel.objects.create(
+            ip_address='10.11.12.3',
+            mac_address='1:2:3:4:5:6',
+            pool=self.ippool,
+            customer=customer_onu,
             is_dynamic=True
         )
         self.assertIsNotNone(self.lease)
-        # lease must be contain ip_address=10.11.12.2'
+        # lease must be contain ip_address=10.11.12.3'
 
         customer_service = CustomerService.get_user_credentials_by_ip(
-            ip_addr='10.11.12.2',
+            ip_addr='10.11.12.3',
         )
         self.assertIsNotNone(customer_service)
         self.assertEqual(customer_service.service.speed_in, 10.0)
