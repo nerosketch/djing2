@@ -1,3 +1,4 @@
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import customers
 from .views import networks
@@ -11,3 +12,7 @@ router.register('customer', customers.RadiusCustomerServiceRequestViewSet, basen
 
 # network radius api
 router.register('network', networks.RadiusRequestViewSet, basename='network')
+
+urlpatterns = [
+    path('', include(router.urls))
+]
