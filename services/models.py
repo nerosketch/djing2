@@ -3,7 +3,7 @@ from datetime import datetime
 from django.contrib.postgres.fields import JSONField
 from django.contrib.sites.models import Site
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 from rest_framework.settings import api_settings
 
@@ -77,6 +77,28 @@ class Service(BaseAbstractModel):
     def calc_deadline_formatted(self):
         dtime_fmt = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M')
         return self.calc_deadline().strftime(dtime_fmt)
+
+    @staticmethod
+    def find_customer_service_by_device_credentials(dev_mac: str, dev_port: int):
+        # TODO: make tests for it
+        with connection.cursor() as cur:
+            cur.execute("select * from find_customer_service_by_device_credentials(%s::macaddr, %s::smallint)",
+                        [dev_mac, dev_port])
+            res = cur.fetchone()
+        if res is None or res[0] is None:
+            return None
+        pk, title, descr, speed_in, speed_out, cost, calc_type, is_admin, speed_burst, *other = res
+        return Service(
+            pk=pk,
+            title=title,
+            descr=descr,
+            speed_in=float(speed_in),
+            speed_out=float(speed_out),
+            cost=float(cost),
+            calc_type=calc_type,
+            is_admin=is_admin,
+            speed_burst=speed_burst
+        )
 
     def __str__(self):
         return "%s (%.2f)" % (self.title, self.cost)
