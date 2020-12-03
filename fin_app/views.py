@@ -110,6 +110,8 @@ class AllTimePay(GenericAPIView):
                 return self._bad_ret(-101, 'ACT is not passed')
         except Customer.DoesNotExist:
             return self._bad_ret(-40, 'Account does not exist')
+        except PayAllTimeGateway.DoesNotExist:
+            return self._bad_ret(-40, 'Pay gateway does not exist')
         except DatabaseError:
             return self._bad_ret(-90)
         except AllTimePayLog.DoesNotExist:
