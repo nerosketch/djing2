@@ -3,6 +3,7 @@ from hashlib import md5
 from django.db import transaction
 from django.db.utils import DatabaseError
 from django.db.models import Count
+from django.http import Http404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.generics import GenericAPIView
@@ -93,13 +94,14 @@ class AllTimePay(GenericAPIView):
 
         if act <= 0:
             return self._bad_ret(-101, 'ACT must be more than 0')
-        sign = request.GET.get('SIGN')
-        if not sign:
-            return self._bad_ret(-101, 'SIGN not passed')
-        if not self.check_sign(request.GET, sign.lower()):
-            return self._bad_ret(-101, 'Bad sign')
 
         try:
+            sign = request.GET.get('SIGN')
+            if not sign:
+                return self._bad_ret(-101, 'SIGN not passed')
+            if not self.check_sign(request.GET, sign.lower()):
+                return self._bad_ret(-101, 'Bad sign')
+
             if act == 1:
                 return self._fetch_user_info(request.GET)
             elif act == 4:
@@ -110,7 +112,7 @@ class AllTimePay(GenericAPIView):
                 return self._bad_ret(-101, 'ACT is not passed')
         except Customer.DoesNotExist:
             return self._bad_ret(-40, 'Account does not exist')
-        except PayAllTimeGateway.DoesNotExist:
+        except (PayAllTimeGateway.DoesNotExist, Http404):
             return self._bad_ret(-40, 'Pay gateway does not exist')
         except DatabaseError:
             return self._bad_ret(-90)
@@ -121,7 +123,7 @@ class AllTimePay(GenericAPIView):
 
     def _fetch_user_info(self, data: dict) -> Response:
         pay_account = data.get('PAY_ACCOUNT')
-        customer = Customer.objects.get(username=pay_account)
+        customer = Customer.objects.get(username=pay_account, sites__in=[self.request.site])
         return Response({
             'balance': round(customer.balance, 2),
             'name': customer.fio,
@@ -139,7 +141,7 @@ class AllTimePay(GenericAPIView):
         pay_account = data.get('PAY_ACCOUNT')
         pay_id = data.get('PAY_ID')
         pay_amount = safe_float(data.get('PAY_AMOUNT'))
-        customer = Customer.objects.get(username=pay_account)
+        customer = Customer.objects.get(username=pay_account, sites__in=[self.request.site])
         pays = AllTimePayLog.objects.filter(pay_id=pay_id)
         if pays.exists():
             return self._bad_ret(-100, 'Pay already exists')
