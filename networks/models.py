@@ -224,12 +224,20 @@ class CustomerIpLeaseModel(BaseAbstractModel):
         return "%s [%s]" % (self.ip_address, self.mac_address)
 
     @staticmethod
-    def find_customer_id_by_device_credentials(device_mac: str, device_port: int = 0) -> int:
+    def find_customer_by_device_credentials(device_mac: str, device_port: int = 0) -> Optional[tuple]:
         with connection.cursor() as cur:
             cur.execute("SELECT * FROM find_customer_by_device_credentials(%s::macaddr, %s::smallint)",
                         (device_mac, device_port))
             res = cur.fetchone()
-        return res[0] if len(res) > 0 else None
+        if res is None or res[0] is None:
+            return None
+        # (
+        #     pk, balance, ip_addr, descr, house, is_dyn_ip, auto_renw_srv,
+        #     markers, curr_srv_id, dev_port_id, dev_id, gw_id, grp_id,
+        #     last_srv_id, street_id, *others
+        # ) = res
+
+        return res
 
     @staticmethod
     def get_service_permit_by_ip(ip_addr: str) -> bool:
