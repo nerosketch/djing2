@@ -53,16 +53,19 @@ class CustomAPITestCase(APITestCase):
         )
         example_site = Site.objects.first()
         pay_system.sites.add(example_site)
+        custo1.sites.add(example_site)
         pay_system.refresh_from_db()
         self.pay_system = pay_system
 
 
+time_format = '%d.%m.%Y %H:%M'
+
+
 class AllPayTestCase(CustomAPITestCase):
-    time_format = '%d.%m.%Y %H:%M'
     url = '/api/fin/pay_gw_slug/pay/'
 
     def test_user_pay_view_info(self):
-        current_date = timezone.now().strftime(self.time_format)
+        current_date = timezone.now().strftime(time_format)
         service_id = self.pay_system.service_id
         r = self.get(self.url, {
                 'ACT': 1,
@@ -86,7 +89,7 @@ class AllPayTestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, 200)
 
     def test_user_pay_pay(self):
-        current_date = timezone.now().strftime(self.time_format)
+        current_date = timezone.now().strftime(time_format)
         service_id = self.pay_system.service_id
         r = self.get(self.url, {
             'ACT': 4,
@@ -115,7 +118,7 @@ class AllPayTestCase(CustomAPITestCase):
         self.user_pay_check(current_date)
 
     def user_pay_check(self, test_pay_time):
-        current_date = timezone.now().strftime(self.time_format)
+        current_date = timezone.now().strftime(time_format)
         service_id = self.pay_system.service_id
         r = self.get(self.url, {
             'ACT': 7,
@@ -155,6 +158,7 @@ class SitesAllPayTestCase(CustomAPITestCase):
         pay_system.refresh_from_db()
 
     def test_another_site(self):
+        current_date = timezone.now().strftime(time_format)
         r = self.get(self.url, {
             'ACT': 1,
             'PAY_ACCOUNT': 'custo1',
@@ -162,9 +166,11 @@ class SitesAllPayTestCase(CustomAPITestCase):
         })
         o = ''.join((
             "<pay-response>",
-                "<detail>Не найдено.</detail>",
+                "<status_code>-40</status_code>",
+                "<time_stamp>%s</time_stamp>" % escape(current_date),
+                "<description>Pay gateway does not exist</description>"
             "</pay-response>"
         ))
         self.maxDiff = None
         self.assertXMLEqual(r.content.decode('utf8'), o)
-        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.status_code, 200)
