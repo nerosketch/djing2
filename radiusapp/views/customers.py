@@ -4,7 +4,9 @@ from rest_framework.response import Response
 
 from customers.models import CustomerService
 from customers.serializers import RadiusCustomerServiceRequestSerializer
+from djing2.lib import LogicError
 from djing2.viewsets import DjingAuthorizedViewSet
+from networks.models import CustomerIpLeaseModel
 from radiusapp.models import parse_opt82
 from services.models import Service
 
@@ -15,6 +17,22 @@ def _get_rad_val(data, v: str):
         k = k.get('value')
         if k:
             return k[0]
+
+
+def _bad_ret(text):
+    return Response({
+        'Reply-Message': text
+    }, status=status.HTTP_403_FORBIDDEN)
+
+
+def _build_dev_mac_by_opt82(aget_remote_id: str, aget_circuit_id: str):
+    dig = int(aget_remote_id, base=16)
+    aget_remote_id = dig.to_bytes((dig.bit_length() + 7) // 8, 'big')
+    dig = int(aget_circuit_id, base=16)
+    aget_circ_id = dig.to_bytes((dig.bit_length() + 7) // 8, 'big')
+
+    dev_mac, dev_port = parse_opt82(aget_remote_id, aget_circ_id)
+    return dev_mac, dev_port
 
 
 class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
@@ -40,7 +58,9 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             ip_addr=customer_ip
         )
         if customer_service is None:
-            return Response('Customer service not found', status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                'Reply-Message': 'Customer service not found'
+            }, status=status.HTTP_404_NOT_FOUND)
 
         sess_time = customer_service.calc_session_time()
         return Response({
@@ -59,28 +79,29 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         # ip = _get_rad_val(request.data, 'Framed-IP-Address')  # possible none
 
         if not all([aget_remote_id, aget_circ_id]):
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            return _bad_ret('Bad opt82')
 
-        dig = int(aget_remote_id, base=16)
-        aget_remote_id = dig.to_bytes((dig.bit_length() + 7) // 8, 'big')
-        dig = int(aget_circ_id, base=16)
-        aget_circ_id = dig.to_bytes((dig.bit_length() + 7) // 8, 'big')
-
-        dev_mac, dev_port = parse_opt82(aget_remote_id, aget_circ_id)
+        dev_mac, dev_port = _build_dev_mac_by_opt82(
+            aget_remote_id=aget_remote_id,
+            aget_circuit_id=aget_circ_id
+        )
 
         if dev_mac is None:
-            return Response('Failed to parse option82', status=status.HTTP_403_FORBIDDEN)
+            return _bad_ret('Failed to parse option82')
 
         service = Service.find_customer_service_by_device_credentials(
             dev_mac=dev_mac,
             dev_port=dev_port
         )
         if service is None:
-            return Response('Service not found', status=status.HTTP_403_FORBIDDEN)
-        sin, sout = int(service.speed_in * 0x400), int(service.speed_out * 0x400)
+            # user can't access to service
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        sin, sout = int(service.speed_in * 1024.0), int(service.speed_out * 1024.0)
         speed = f"{sin}k/{sout}k"
         return Response({
             'Mikrotik-Rate-Limit': speed,
+            'Mikrotik-Address-List': 'DjingUsersAllowed'
             # 'Session-Timeout': 15
         })
         # r = {
@@ -135,13 +156,51 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         #     'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:34:46 MSK'], 'Tmp-String-9': ['ai:'],
         #     'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']
         # }
-        #
+
         # r4 = {'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'], 'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'], 'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'], 'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'], 'Event-Timestamp': ['Dec  2 2020 16:39:45 MSK'], 'Acct-Status-Type': ['Interim-Update'], 'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'], 'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'], 'Acct-Output-Octets': ['93095'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['790'], 'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['0'], 'NAS-IP-Address': ['10.12.2.10'], 'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:39:45 MSK'], 'Tmp-String-9': ['ai:'], 'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']}
         # r5 = {'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'], 'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'], 'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'], 'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'], 'Event-Timestamp': ['Dec  2 2020 16:39:45 MSK'], 'Acct-Status-Type': ['Interim-Update'], 'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'], 'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'], 'Acct-Output-Octets': ['93095'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['790'], 'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['0'], 'NAS-IP-Address': ['10.12.2.10'], 'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:39:46 MSK'], 'Tmp-String-9': ['ai:'], 'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']}
         # r6 = {'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'], 'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'], 'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'], 'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'], 'Event-Timestamp': ['Dec  2 2020 16:39:45 MSK'], 'Acct-Status-Type': ['Interim-Update'], 'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'], 'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'], 'Acct-Output-Octets': ['93095'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['790'], 'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['1'], 'NAS-IP-Address': ['10.12.2.10'], 'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:39:45 MSK'], 'Tmp-String-9': ['ai:'], 'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']}
         # r7 = {'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'], 'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'], 'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'], 'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'], 'Event-Timestamp': ['Dec  2 2020 16:44:45 MSK'], 'Acct-Status-Type': ['Interim-Update'], 'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'], 'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'], 'Acct-Output-Octets': ['114268'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['894'], 'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['1'], 'NAS-IP-Address': ['10.12.2.10'], 'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:44:45 MSK'], 'Tmp-String-9': ['ai:'], 'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']}
         # return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_403_FORBIDDEN)
+
+        # act_type = request.data.get('Acct-Status-Type')
+        # if act_type not in ['Start', 'Stop', 'Interim-Update', 'Accounting-On']:
+        #     return _bad_ret('Bad Acct-Status-Type')
+        #
+
+        # username as client mac addr
+        mac = request.data.get('User-Name')
+        if mac is None:
+            return _bad_ret('User-Name is required')
+        ip = request.data.get('Framed-IP-Address')
+        if ip is None:
+            return _bad_ret('Framed-IP-Address required')
+
+        aget_remote_id = request.data.get('Agent-Remote-Id')
+        aget_circ_id = request.data.get('Agent-Circuit-Id')
+        if not all([aget_remote_id, aget_circ_id]):
+            return _bad_ret('Bad opt82')
+
+        dev_mac, dev_port = _build_dev_mac_by_opt82(
+            aget_remote_id=aget_remote_id,
+            aget_circuit_id=aget_circ_id
+        )
+
+        try:
+            res_text = CustomerIpLeaseModel.lease_commit_add_update(
+                client_ip=ip,
+                mac_addr=mac,
+                dev_mac=dev_mac,
+                dev_port=dev_port
+            )
+        except LogicError as err:
+            res_text = str(err)
+        return Response({
+            'Reply-Message': res_text
+        }, status=status.HTTP_204_NO_CONTENT if res_text is None else status.HTTP_200_OK)
+        # is_access = CustomerIpLeaseModel.objects.get_service_permit_by_ip()
+        # access_status = status.HTTP_200_OK if is_access else status.HTTP_403_FORBIDDEN
+        # return Response(status=access_status)
         # return Response({
         #     'Acct-Interim-Interval': 300,
         #     # 'Mikrotik-Address-List': 'DjingUsersAllowed',
