@@ -244,7 +244,7 @@ class CustomerIpLeaseModel(BaseAbstractModel):
         with connection.cursor() as cur:
             cur.execute("select * from find_service_permit(%s::inet)", [ip_addr])
             res = cur.fetchone()
-        return res[0] if len(res) > 0 else None
+        return res[0] if len(res) > 0 else False
 
     @process_lock()
     def ping_icmp(self, num_count=10, arp=False) -> bool:
