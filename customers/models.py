@@ -87,6 +87,37 @@ class CustomerService(BaseAbstractModel):
             deadline=f_deadline
         )
 
+    @staticmethod
+    def find_customer_service_by_device_credentials(dev_mac: str, dev_port: int):
+        # TODO: make tests for it
+        with connection.cursor() as cur:
+            cur.execute("select * from find_customer_service_by_device_credentials(%s::macaddr, %s::smallint)",
+                        [dev_mac, dev_port])
+            res = cur.fetchone()
+        if res is None or res[0] is None:
+            return None
+        (customer_service_id, service_id, speed_in, speed_out, cost, calc_type,
+         is_admin, speed_burst, start_time, deadline) = res
+
+        srv = Service(
+            pk=service_id,
+            title='',
+            descr='',
+            speed_in=float(speed_in),
+            speed_out=float(speed_out),
+            cost=float(cost),
+            calc_type=calc_type,
+            is_admin=is_admin,
+            speed_burst=speed_burst
+        )
+        customer_service = CustomerService(
+            pk=customer_service_id,
+            service=srv,
+            start_time=start_time,
+            deadline=deadline
+        )
+        return customer_service
+
     def __str__(self):
         return self.service.title
 
