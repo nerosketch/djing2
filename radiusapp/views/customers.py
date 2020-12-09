@@ -203,6 +203,10 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             aget_circuit_id=aget_circ_id
         )
 
+        # create or update radius session
+        # UserSession.objects.update_or_create()
+
+        # update ip addr in customer profile
         try:
             res_text = CustomerIpLeaseModel.lease_commit_add_update(
                 client_ip=ip,
