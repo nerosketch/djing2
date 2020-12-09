@@ -8,7 +8,6 @@ from djing2.lib import LogicError
 from djing2.viewsets import DjingAuthorizedViewSet
 from networks.models import CustomerIpLeaseModel
 from radiusapp.models import parse_opt82
-from services.models import Service
 
 
 def _get_rad_val(data, v: str):
@@ -72,11 +71,10 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
 
     @action(methods=['post'], detail=False)
     def auth(self, request):
-        # print('Auth:', request.data)
         aget_remote_id = _get_rad_val(request.data, 'Agent-Remote-Id')
         aget_circ_id = _get_rad_val(request.data, 'Agent-Circuit-Id')
         # event_time = _get_rad_val(request.data, 'Event-Timestamp')
-        # ip = _get_rad_val(request.data, 'Framed-IP-Address')  # possible none
+        ip = _get_rad_val(request.data, 'Framed-IP-Address')  # possible none
 
         if not all([aget_remote_id, aget_circ_id]):
             return _bad_ret('Bad opt82')
@@ -89,20 +87,39 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         if dev_mac is None:
             return _bad_ret('Failed to parse option82')
 
-        service = Service.find_customer_service_by_device_credentials(
+        customer_service = CustomerService.find_customer_service_by_device_credentials(
             dev_mac=dev_mac,
             dev_port=dev_port
         )
-        if service is None:
+        if customer_service is None:
             # user can't access to service
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        sin, sout = int(service.speed_in * 1024.0), int(service.speed_out * 1024.0)
-        speed = f"{sin}k/{sout}k"
+        # username as client mac addr
+        mac = _get_rad_val(request.data, 'User-Name')
+        if mac is None:
+            return _bad_ret('User-Name is required')
+        try:
+            if ip and mac:
+                CustomerIpLeaseModel.lease_commit_add_update(
+                    client_ip=ip,
+                    mac_addr=mac,
+                    dev_mac=dev_mac,
+                    dev_port=dev_port
+                )
+        except LogicError:
+            pass
+
+        sin, sout = int(customer_service.speed_in * 1024.0), int(customer_service.speed_out * 1024.0)
+        if sin == sout:
+            speed = f'{sin}k'
+        else:
+            speed = f"{sin}k/{sout}k"
+        sess_time = customer_service.calc_session_time()
         return Response({
             'Mikrotik-Rate-Limit': speed,
-            'Mikrotik-Address-List': 'DjingUsersAllowed'
-            # 'Session-Timeout': 15
+            'Mikrotik-Address-List': 'DjingUsersAllowed',
+            'Session-Timeout': sess_time.total_seconds()
         })
         # r = {
         #     'User-Name': {'type': 'string', 'value': ['F8:75:A4:AA:C9:E0']},
@@ -195,9 +212,13 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             )
         except LogicError as err:
             res_text = str(err)
-        return Response({
-            'Reply-Message': res_text
-        }, status=status.HTTP_204_NO_CONTENT if res_text is None else status.HTTP_200_OK)
+        if res_text is not None:
+            res_text = {
+                'Reply-Message': res_text
+            }
+        else:
+            res_text = None
+        return Response(res_text, status=status.HTTP_204_NO_CONTENT if res_text is None else status.HTTP_200_OK)
         # is_access = CustomerIpLeaseModel.objects.get_service_permit_by_ip()
         # access_status = status.HTTP_200_OK if is_access else status.HTTP_403_FORBIDDEN
         # return Response(status=access_status)
