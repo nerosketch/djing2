@@ -8,7 +8,7 @@ from djing2.lib.for_migrations import read_all_file
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('services', '0004_auto_20201014_1859'),
+        ('customers', '0004_auto_20201014_1859'),
     ]
 
     operations = [
