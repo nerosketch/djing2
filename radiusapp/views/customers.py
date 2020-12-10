@@ -1,13 +1,16 @@
+from datetime import timedelta
+from typing import Optional, Union
+
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from customers.models import CustomerService
 from customers.serializers import RadiusCustomerServiceRequestSerializer
-from djing2.lib import LogicError
+from djing2.lib import LogicError, safe_int
 from djing2.viewsets import DjingAuthorizedViewSet
 from networks.models import CustomerIpLeaseModel
-from radiusapp.models import parse_opt82
+from radiusapp.models import parse_opt82, UserSession
 
 
 def _get_rad_val(data, v: str):
@@ -16,6 +19,21 @@ def _get_rad_val(data, v: str):
         k = k.get('value')
         if k:
             return k[0]
+
+
+def _get_acct_rad_val(data, v) -> Optional[Union[str, int]]:
+    attr = data.get(v)
+    if isinstance(attr, (list, tuple)):
+        return attr[0]
+    if attr:
+        return attr
+    return None
+
+
+def _gigaword_imp(num: int, gwords: int) -> int:
+    num = safe_int(num)
+    gwords = safe_int(gwords)
+    return num + gwords * (10 ** 9)
 
 
 def _bad_ret(text):
@@ -180,21 +198,25 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         # r7 = {'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'], 'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'], 'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'], 'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'], 'Event-Timestamp': ['Dec  2 2020 16:44:45 MSK'], 'Acct-Status-Type': ['Interim-Update'], 'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'], 'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'], 'Acct-Output-Octets': ['114268'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['894'], 'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['1'], 'NAS-IP-Address': ['10.12.2.10'], 'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:44:45 MSK'], 'Tmp-String-9': ['ai:'], 'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']}
         # return Response(status=status.HTTP_204_NO_CONTENT)
 
-        # act_type = request.data.get('Acct-Status-Type')
+        dat = request.data
+
+        is_stop_radius_session = False
+        act_type = _get_acct_rad_val(dat, 'Acct-Status-Type')
         # if act_type not in ['Start', 'Stop', 'Interim-Update', 'Accounting-On']:
         #     return _bad_ret('Bad Acct-Status-Type')
-        #
+        if act_type == 'Stop':
+            is_stop_radius_session = True
 
         # username as client mac addr
-        mac = request.data.get('User-Name')
+        mac = _get_acct_rad_val(dat, 'User-Name')
         if mac is None:
             return _bad_ret('User-Name is required')
-        ip = request.data.get('Framed-IP-Address')
+        ip = _get_acct_rad_val(dat, 'Framed-IP-Address')
         if ip is None:
             return _bad_ret('Framed-IP-Address required')
 
-        aget_remote_id = request.data.get('Agent-Remote-Id')
-        aget_circ_id = request.data.get('Agent-Circuit-Id')
+        aget_remote_id = _get_acct_rad_val(dat, 'Agent-Remote-Id')
+        aget_circ_id = _get_acct_rad_val(dat, 'Agent-Circuit-Id')
         if not all([aget_remote_id, aget_circ_id]):
             return _bad_ret('Bad opt82')
 
@@ -204,7 +226,25 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         )
 
         # create or update radius session
-        # UserSession.objects.update_or_create()
+        UserSession.objects.create_or_update_session(
+            session_id=_get_acct_rad_val(dat, 'Acct-Unique-Session-Id'),
+            v_ip_addr=ip,
+            v_dev_mac=dev_mac,
+            v_dev_port=dev_port,
+            v_sess_time=timedelta(seconds=safe_int(_get_acct_rad_val(dat, 'Acct-Session-Time'))),
+            v_uname=mac,
+            v_inp_oct=_gigaword_imp(
+                num=_get_acct_rad_val(dat, 'Acct-Input-Octets'),
+                gwords=_get_acct_rad_val(dat, 'Acct-Input-Gigawords')
+            ),
+            v_out_oct=_gigaword_imp(
+                num=_get_acct_rad_val(dat, 'Acct-Output-Octets'),
+                gwords=_get_acct_rad_val(dat, 'Acct-Output-Gigawords')
+            ),
+            v_in_pkt=_get_acct_rad_val(dat, 'Acct-Input-Packets'),
+            v_out_pkt=_get_acct_rad_val(dat, 'Acct-Output-Packets'),
+            v_is_stop=is_stop_radius_session
+        )
 
         # update ip addr in customer profile
         try:
