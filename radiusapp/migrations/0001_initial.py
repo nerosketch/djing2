@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('last_event_time', models.DateTimeField(verbose_name='Last update time')),
                 ('radius_username', models.CharField(max_length=32, verbose_name='User-Name av pair from radius')),
                 ('framed_ip_addr', models.GenericIPAddressField(verbose_name='Framed-IP-Address')),
-                ('session_id', models.UUIDField(blank=True, default=None, null=True)),
+                ('session_id', models.UUIDField(verbose_name='Unique session id')),
                 ('session_duration', models.DurationField(blank=True, default=None, null=True, verbose_name='most often this is Acct-Session-Time av pair')),
                 ('input_octets', models.PositiveIntegerField(default=0)),
                 ('output_octets', models.PositiveIntegerField(default=0)),
@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             sql=read_all_file('0001_initial.sql', __file__),
             reverse_sql="DROP FUNCTION IF EXISTS create_or_update_radius_session"
-                        "( uuid, inet, macaddr, smallint, interval, varchar(32), integer, "
+                        "( uuid, inet, macaddr, smallint, integer, varchar(32), integer, "
                         "integer, integer, integer, boolean );"
         )
     ]
