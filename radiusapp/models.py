@@ -1,5 +1,7 @@
+from datetime import timedelta
 from typing import Tuple, Optional
-from django.db import models
+
+from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
@@ -37,8 +39,37 @@ def _human_readable_int(num: int) -> str:
 
 
 class UserSessionManager(models.Manager):
-    def create_or_update_session(self, session_id, ):
-        pass
+    @staticmethod
+    def create_or_update_session(session_id: str, v_ip_addr: str, v_dev_mac: str,
+                                 v_dev_port: int, v_sess_time: timedelta, v_uname: str,
+                                 v_inp_oct: int, v_out_oct: int,
+                                 v_in_pkt: int, v_out_pkt: int,
+                                 v_is_stop: bool) -> bool:
+        if not all([session_id, v_ip_addr, v_dev_mac]):
+            return False
+        session_id = str(session_id)
+        v_ip_addr = str(v_ip_addr)
+        v_dev_mac = str(v_dev_mac)
+        v_dev_port = safe_int(v_dev_port)
+        v_uname = str(v_uname)
+        v_in_pkt = safe_int(v_in_pkt)
+        v_out_pkt = safe_int(v_out_pkt)
+        v_inp_oct = safe_int(v_inp_oct)
+        v_out_oct = safe_int(v_out_oct)
+        v_is_stop = bool(v_is_stop)
+        with connection.cursor() as cur:
+            cur.execute("select * from create_or_update_radius_session"
+                        "(%s::uuid, %s::inet, %s::macaddr, %s::smallint, %s::interval, "
+                        "%s::varchar(32), %s::integer, %s::integer, %s::integer, "
+                        "%s::integer, %s::boolean)",
+                        [session_id, v_ip_addr, v_dev_mac,
+                         v_dev_port, v_sess_time, v_uname,
+                         v_inp_oct, v_out_oct,
+                         v_in_pkt, v_out_pkt,
+                         v_is_stop])
+            is_created = cur.fetchone()[0]
+        # print('is_created:', is_created)
+        return is_created
 
 
 class UserSession(models.Model):
@@ -46,9 +77,10 @@ class UserSession(models.Model):
     assign_time = models.DateTimeField(auto_now_add=True, help_text=_('Time when session assigned first time'))
     last_event_time = models.DateTimeField(_('Last update time'))
     radius_username = models.CharField(_('User-Name av pair from radius'), max_length=32)
-    framed_ip_addr = models.IPAddressField(_('Framed-IP-Address'))
-    session_id = models.UUIDField(blank=True, null=True, default=None, unique=True)
-    session_duration = models.DurationField(_('most often this is Acct-Session-Time av pair'), blank=True, null=True, default=None)
+    framed_ip_addr = models.GenericIPAddressField(_('Framed-IP-Address'))
+    session_id = models.UUIDField(blank=True, null=True, default=None)
+    session_duration = models.DurationField(_('most often this is Acct-Session-Time av pair'), blank=True, null=True,
+                                            default=None)
     input_octets = models.PositiveIntegerField(default=0)
     output_octets = models.PositiveIntegerField(default=0)
     input_packets = models.PositiveIntegerField(default=0)
@@ -75,7 +107,3 @@ class UserSession(models.Model):
 
     class Meta:
         db_table = 'user_session'
-
-
-# CREATE UNIQUE INDEX usrses_uid_uni_idx ON user_session (session_id)
-# WHERE session_id IS NOT NULL;
