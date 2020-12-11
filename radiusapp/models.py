@@ -26,15 +26,15 @@ def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int
 
 def _human_readable_int(num: int) -> str:
     decs = (
-        (10 ** 12, 't'),
-        (10 ** 9, 'g'),
-        (10 ** 6, 'm'),
-        (10 ** 3, 'k'),
+        (10 ** 12, 'T'),
+        (10 ** 9, 'G'),
+        (10 ** 6, 'M'),
+        (10 ** 3, 'K'),
     )
     for dec, pref in decs:
         if num >= dec:
-            num -= dec
-            return f'{num}{pref}'
+            num = round(num / dec, 2)
+            return f'{num} {pref}b'
     return str(num)
 
 
@@ -83,10 +83,10 @@ class UserSession(models.Model):
     session_id = models.UUIDField(_('Unique session id'))
     session_duration = models.DurationField(_('most often this is Acct-Session-Time av pair'), blank=True, null=True,
                                             default=None)
-    input_octets = models.PositiveIntegerField(default=0)
-    output_octets = models.PositiveIntegerField(default=0)
-    input_packets = models.PositiveIntegerField(default=0)
-    output_packets = models.PositiveIntegerField(default=0)
+    input_octets = models.BigIntegerField(default=0)
+    output_octets = models.BigIntegerField(default=0)
+    input_packets = models.BigIntegerField(default=0)
+    output_packets = models.BigIntegerField(default=0)
     closed = models.BooleanField(_('Is session finished'), default=False)
 
     objects = UserSessionManager()
