@@ -4,10 +4,10 @@ from radiusapp.models import UserSession
 
 
 class UserSessionModelSerializer(serializers.ModelSerializer):
-    h_input_octets = serializers.IntegerField(read_only=True)
-    h_output_octets = serializers.IntegerField(read_only=True)
-    h_input_packets = serializers.IntegerField(read_only=True)
-    h_output_packets = serializers.IntegerField(read_only=True)
+    h_input_octets = serializers.CharField(read_only=True)
+    h_output_octets = serializers.CharField(read_only=True)
+    h_input_packets = serializers.CharField(read_only=True)
+    h_output_packets = serializers.CharField(read_only=True)
 
     def create(self, validated_data):
         # readonly model
