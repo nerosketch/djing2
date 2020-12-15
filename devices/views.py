@@ -424,8 +424,13 @@ class PortModelViewSet(DjingModelViewSet):
     def toggle_port(self, request, pk=None):
         self.check_permission_code(request, 'devices.can_toggle_ports')
         port_state = request.query_params.get('port_state')
+        port_snmp_num = request.query_params.get('port_snmp_num')
+        port_snmp_num = safe_int(port_snmp_num)
         port = self.get_object()
-        port_num = int(port.num)
+        if port_snmp_num > 0:
+            port_num = port_snmp_num
+        else:
+            port_num = int(port.num)
         manager = port.device.get_manager_object_switch()
         if port_state == 'up':
             manager.port_enable(port_num=port_num)
