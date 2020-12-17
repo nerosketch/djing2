@@ -39,7 +39,7 @@ class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNo
         qs = super().get_queryset()
         return qs.filter(username=self.request.user.username)
 
-    @action(methods=('post',), detail=False)
+    @action(methods=['post'], detail=False)
     @catch_customers_errs
     def buy_service(self, request):
         service_id = safe_int(request.data.get('service_id'))
