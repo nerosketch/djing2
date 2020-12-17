@@ -23,7 +23,7 @@ class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
     ordering_fields = ('network', 'ip_start', 'ip_end', 'gateway')
     filterset_fields = ('groups',)
 
-    @action(detail=True, methods=('post',))
+    @action(detail=True, methods=['post'])
     def group_attach(self, request, pk=None):
         network = self.get_object()
         gr = request.data.getlist('gr')
@@ -103,7 +103,7 @@ class DhcpLever(SecureApiView):
     #
     # Api view for dhcp event
     #
-    http_method_names = ('get',)
+    http_method_names = ['get']
 
     def get(self, request, format=None):
         data = request.query_params.copy()
