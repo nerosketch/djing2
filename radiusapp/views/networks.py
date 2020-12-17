@@ -87,7 +87,7 @@ class RadiusRequestViewSet(DjingAuthorizedViewSet):
             "lease_time": DHCP_DEFAULT_LEASE_TIME
         })
 
-    @action(methods=('post',), detail=False)
+    @action(methods=['post'], detail=False)
     @catch_radius_errs
     def get_access(self, request):
         user_ip = request.data.get('user_ip')
