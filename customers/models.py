@@ -433,7 +433,7 @@ class Customer(BaseAccount):
             customer_service = self.active_service()
             customer_service.delete()
 
-    def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None):
+    def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
         """
         Makes one-time service for accounting services.
         :param request: Django http request.
@@ -465,6 +465,14 @@ class Customer(BaseAccount):
                 comment=comment or _('Buy one-shot service for "%(title)s"') % {'title': shot.name}
             )
         return True
+
+    def make_periodic_pay(self, periodic_pay: PeriodicPay, next_pay: datetime):
+        ppay = PeriodicPayForId.objects.create(
+            periodic_pay=periodic_pay,
+            next_pay=next_pay,
+            account=self
+        )
+        return ppay
 
     def calc_cost_to_return(self):
         """

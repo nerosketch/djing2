@@ -185,6 +185,11 @@ class PeriodicPayForIdModelSerializer(BaseCustomModelSerializer):
         fields = ('id', 'last_pay', 'next_pay', 'periodic_pay')
 
 
+class PeriodicPayForIdRequestSerializer(serializers.Serializer):
+    periodic_pay_id = serializers.IntegerField()
+    next_pay = serializers.DateTimeField()
+
+
 '''class AmountMoneySerializer(serializers.Serializer):
     amount = serializers.FloatField(max_value=5000)
     comment = serializers.CharField(
