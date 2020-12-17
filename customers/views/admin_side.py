@@ -25,7 +25,7 @@ from djing2.lib.mixins import SitesFilterMixin
 
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
-from services.models import Service, OneShotPay
+from services.models import Service, OneShotPay, PeriodicPay
 from services.serializers import ServiceModelSerializer
 
 
@@ -74,7 +74,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             sites=[self.request.site]
         )
 
-    @action(methods=('post',), detail=True)
+    @action(methods=['post'], detail=True)
     @catch_customers_errs
     def pick_service(self, request, pk=None):
         del pk
@@ -105,7 +105,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             return Response(data=str(e), status=status.HTTP_402_PAYMENT_REQUIRED)
         return Response(status=status.HTTP_200_OK)
 
-    @action(methods=('post',), detail=True)
+    @action(methods=['post'], detail=True)
     @catch_customers_errs
     def make_shot(self, request, pk=None):
         customer = self.get_object()
@@ -117,6 +117,26 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         if not r:
             return Response(status=status.HTTP_403_FORBIDDEN)
         return Response(r)
+
+    @action(methods=['get', 'post'], detail=True)
+    @catch_customers_errs
+    def make_periodic_pay(self, request, pk=None):
+        if request.method == 'GET':
+            periodic_pay_request_serializer = serializers.PeriodicPayForIdRequestSerializer()
+            return Response(periodic_pay_request_serializer.data)
+        periodic_pay_request_serializer = serializers.PeriodicPayForIdRequestSerializer(data=request.data)
+        periodic_pay_request_serializer.is_valid(raise_exception=True)
+        periodic_pay_id = periodic_pay_request_serializer.data.get('periodic_pay_id')
+        next_pay_date = periodic_pay_request_serializer.data.get('next_pay')
+        if not all([periodic_pay_id, next_pay_date]):
+            return Response('Invalid data', status=status.HTTP_400_BAD_REQUEST)
+        customer = self.get_object()
+        periodic_pay = get_object_or_404(PeriodicPay, pk=periodic_pay_id)
+        customer.make_periodic_pay(
+            periodic_pay=periodic_pay,
+            next_pay=next_pay_date
+        )
+        return Response('ok')
 
     @action(detail=False)
     @catch_customers_errs
@@ -156,7 +176,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         customer.stop_service(request.user)
         return Response()
 
-    # @action(methods=('post',), detail=False)
+    # @action(methods=['post'], detail=False)
     # @catch_customers_errs
     # def attach_nas(self, request):
     #     gateway_id = request.data.get('gateway')
@@ -236,7 +256,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         }
         return Response(r)
 
-    @action(methods=('post',), detail=True)
+    @action(methods=['post'], detail=True)
     @catch_customers_errs
     def add_balance(self, request, pk=None):
         del pk
@@ -259,7 +279,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         customer.save(update_fields=('balance',))
         return Response()
 
-    @action(methods=('post',), detail=True)
+    @action(methods=['post'], detail=True)
     @catch_customers_errs
     def set_group_accessory(self, request, pk=None):
         # customer = self.get_object()
