@@ -180,9 +180,13 @@ class AdditionalTelephoneModelSerializer(BaseCustomModelSerializer):
 
 
 class PeriodicPayForIdModelSerializer(BaseCustomModelSerializer):
+    service_name = serializers.CharField(source='periodic_pay.name', read_only=True)
+    service_calc_type = serializers.CharField(source='periodic_pay.calc_type_name', read_only=True)
+    service_amount = serializers.FloatField(source='periodic_pay.amount', read_only=True)
+
     class Meta:
         model = models.PeriodicPayForId
-        fields = ('id', 'last_pay', 'next_pay', 'periodic_pay')
+        exclude = ('account',)
 
 
 class PeriodicPayForIdRequestSerializer(serializers.Serializer):
