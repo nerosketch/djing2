@@ -251,9 +251,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAdminUser',
         # 'djing2.permissions.CustomizedDjangoObjectPermissions'
     ],
-    'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',
-    )
+    # 'DEFAULT_RENDERER_CLASSES': (
+    #     'rest_framework.renderers.JSONRenderer',
+    # )
 }
 
 # Guardian options
@@ -270,9 +270,9 @@ if DEBUG:
         'rest_framework.authentication.SessionAuthentication',
     )
     REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
+        'rest_framework.renderers.JSONRenderer',
         'djing2.lib.renderer.BrowsableAPIRendererNoForm',
         'rest_framework.renderers.AdminRenderer',
-        'rest_framework.renderers.JSONRenderer',
     ]
 
 
