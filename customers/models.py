@@ -845,7 +845,7 @@ class PeriodicPayForId(BaseAbstractModel):
         verbose_name=_('Account')
     )
 
-    def payment_for_service(self, author: UserProfile = None, now=None):
+    def payment_for_service(self, author: UserProfile = None, now: Optional[datetime] = None):
         """
         Charge for the service and leave a log about it
         :param now: Current date, if now is None than it calculates in here
