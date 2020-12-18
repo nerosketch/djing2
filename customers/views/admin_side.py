@@ -385,8 +385,9 @@ class AdditionalTelephoneModelViewSet(DjingModelViewSet):
 
 
 class PeriodicPayForIdModelViewSet(DjingModelViewSet):
-    queryset = models.PeriodicPayForId.objects.defer('account')
+    queryset = models.PeriodicPayForId.objects.defer('account').select_related('periodic_pay')
     serializer_class = serializers.PeriodicPayForIdModelSerializer
+    filterset_fields = ('account',)
 
 
 class AttachServicesToGroups(APIView):
