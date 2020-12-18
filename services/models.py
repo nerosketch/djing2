@@ -113,6 +113,11 @@ class PeriodicPay(BaseAbstractModel):
                     raise TypeError
                 return logic_class()
 
+    def calc_type_name(self) -> str:
+        ct = self._get_calc_object()
+        desc = ct.description
+        return str(desc)
+
     def get_next_time_to_pay(self, last_time_payment):
         #
         # last_time_payment may be None if it is a first payment
