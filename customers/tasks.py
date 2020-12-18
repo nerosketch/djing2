@@ -1,7 +1,9 @@
-from uwsgi_tasks import task, TaskExecutor
+from datetime import datetime
+
+from uwsgi_tasks import task, TaskExecutor, cron
 
 from djing2.lib import LogicError
-from customers.models import Customer
+from customers.models import Customer, PeriodicPayForId
 
 
 @task(executor=TaskExecutor.SPOOLER)
@@ -107,3 +109,14 @@ def customer_check_service_for_expiration(customer_id: int):
         pass
     except LogicError as err:
         print(err)
+
+
+@cron(minute=30)
+def manage_periodic_pays():
+    now = datetime.now()
+    ppays = PeriodicPayForId.objects.select_related('account', 'periodic_pay')\
+        .filter(next_pay__lte=now, account__is_active=True)
+    with open('/tmp/manage_periodic_pays.log', 'a') as f:
+        f.write("%s: count=%d\n" % (now, ppays.count()))
+    for pay in ppays.iterator():
+        pay.payment_for_service(now=now)
