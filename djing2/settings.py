@@ -250,10 +250,10 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
         'rest_framework.permissions.IsAdminUser',
         # 'djing2.permissions.CustomizedDjangoObjectPermissions'
-    ]
-    # 'DEFAULT_RENDERER_CLASSES': (
-    #     'rest_framework.renderers.JSONRenderer',
-    # )
+    ],
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    )
 }
 
 # Guardian options
@@ -267,8 +267,13 @@ if DEBUG:
         'http://0.0.0.0:8080',
     )
     REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'].append(
-        'rest_framework.authentication.SessionAuthentication'
+        'rest_framework.authentication.SessionAuthentication',
     )
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
+        'djing2.lib.renderer.BrowsableAPIRendererNoForm',
+        'rest_framework.renderers.AdminRenderer',
+        'rest_framework.renderers.JSONRenderer',
+    ]
 
 
 # Encrypted fields
