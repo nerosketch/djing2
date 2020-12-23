@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'traf_stat',
     'sitesapp.apps.SitesAppConfig',
     'radiusapp',
+    'sorm_export',
 ]
 
 if DEBUG:
