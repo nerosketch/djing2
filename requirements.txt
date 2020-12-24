@@ -9,7 +9,7 @@ django-guardian
 netaddr==0.7.20
 
 # db client for Postgres
-psycopg2==2.8.5
+psycopg2-binary==2.8.6
 
 git+git://github.com/nerosketch/easysnmp.git#egg=easysnmp
 pid==3.0.3
