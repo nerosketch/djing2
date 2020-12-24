@@ -3,7 +3,10 @@ from django.db import models
 
 
 class ExportStampModel(models.Model):
-    when = models.DateTimeField(_('Action time'), auto_now_add=True)
+    first_attempt_time = models.DateTimeField(_('Action time'), auto_now_add=True)
+    last_attempt_time = models.DateTimeField(_('Last attempt time'), auto_now_add=True)
+    attempts_count = models.IntegerField(_('Attempt count'), default=0)
+    export_status = models.BooleanField(_('Export status'), default=False)
 
     class Meta:
         db_table = 'sorm_export_stamp'

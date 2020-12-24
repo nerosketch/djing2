@@ -27,7 +27,8 @@ class CustomerExportFormat(serializers.Serializer):
     )
     customer_login = serializers.CharField(
         label=_('Customer login'),
-        max_length=64
+        max_length=64,
+        allow_blank=True
     )
     contract_number = serializers.CharField(
         label=_('Contract number'),
@@ -46,7 +47,7 @@ class CustomerExportFormat(serializers.Serializer):
     contract_end_date = serializers.DateTimeField(
         label=_('Contract completion date'),
         format=_datetime_format,
-        required=False
+        allow_blank=True
     )  # format DD.mm.YYYYTHH:MM:SS or ''
     customer_type = serializers.ChoiceField(
         label=_('Customer type'),
@@ -58,25 +59,30 @@ class CustomerExportFormat(serializers.Serializer):
     )  # '0' or '1'
     name = serializers.CharField(
         label=_('Name'),
-        max_length=64
+        max_length=64,
+        allow_blank=True
     )
     surname = serializers.CharField(
         label=_('Surname'),
-        max_length=64
+        max_length=64,
+        allow_blank=True
     )
     second_name = serializers.CharField(
         label=_('Second name'),
-        max_length=64
+        max_length=64,
+        allow_blank=True
     )
     not_structured_name = serializers.CharField(
         label=_('Not structured name'),
         max_length=182,
-        help_text=_('Fio from customer model')
+        help_text=_('Fio from customer model'),
+        allow_blank=True
     )
     birthday = serializers.DateField(
         label=_('Birthday'),
         required=True,
-        format=_date_format
+        format=_date_format,
+        allow_blank=True
     )  # format DD.mm.YYYY
     passport_type_structured = serializers.BooleanField(
         label=_('Is structured data'),
@@ -113,5 +119,11 @@ class CustomerExportFormat(serializers.Serializer):
     customer_bank = serializers.CharField(
         label=_('Customer bank'),
         max_length=256,
-        required=False
+        allow_blank=True
     )
+    customer_bank_num = serializers.CharField(
+        label=_('Bank receipt number'),
+        max_length=128,
+        allow_blank=True
+    )
+    # TODO: finish fields
