@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from djing2.lib.renderer import BrowsableAPIRendererNoForm
 from sorm_export.csv_renderer import CSVRenderer
 from sorm_export.models import Choice4BooleanField, CustomerTypeChoices, CustomerDocumentTypeChoices
-from sorm_export.serializers import CustomerExportFormat
+from sorm_export.serializers.individual_entity_plain_serializers import CustomerExportPlainFormat
 
 
 dat = [
@@ -34,7 +34,7 @@ dat = [
 
 
 class ExportAPIView(APIView):
-    serializer_class = CustomerExportFormat
+    serializer_class = CustomerExportPlainFormat
     renderer_classes = [BrowsableAPIRendererNoForm, JSONRenderer, CSVRenderer]
     http_method_names = ['get']
 
