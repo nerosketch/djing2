@@ -1,18 +1,14 @@
+from rest_framework import serializers
 from django.core import validators
 from django.utils.translation import gettext_lazy as _
-from rest_framework import serializers
-
 from sorm_export.models import (
     CommunicationStandardChoices,
     CustomerTypeChoices,
-    CustomerDocumentTypeChoices, Choice4BooleanField
+    CustomerDocumentTypeChoices, Choice4BooleanField, datetime_format, date_format
 )
 
-_date_format = '%d.%m.%Y'
-_datetime_format = '%d.%m.%YT%H:%M:%S'
 
-
-class CustomerExportFormat(serializers.Serializer):
+class CustomerExportPlainFormat(serializers.Serializer):
     # https://wiki.vasexperts.ru/doku.php?id=sorm:sorm3:sorm3_subs_dump:sorm3_subs_plain:start
 
     # def __init__(self, *args, **kwargs):
@@ -25,7 +21,7 @@ class CustomerExportFormat(serializers.Serializer):
         default=0
     )
     customer_id = serializers.CharField(
-        label=_('Contract id'),
+        label=_('Customer id'),
         max_length=128,
         required=True
     )
@@ -48,11 +44,11 @@ class CustomerExportFormat(serializers.Serializer):
     contract_start_date = serializers.DateTimeField(
         label=_('Date of conclusion of the contract'),
         required=True,
-        format=_datetime_format
+        format=datetime_format
     )  # format DD.mm.YYYYTHH:MM:SS
     contract_end_date = serializers.DateTimeField(
         label=_('Contract completion date'),
-        format=_datetime_format,
+        format=datetime_format,
         allow_null=True
     )  # format DD.mm.YYYYTHH:MM:SS or ''
     customer_type = serializers.ChoiceField(
@@ -93,7 +89,7 @@ class CustomerExportFormat(serializers.Serializer):
     birthday = serializers.DateField(
         label=_('Birthday'),
         required=True,
-        format=_date_format
+        format=date_format
     )  # format DD.mm.YYYY
     passport_type_structured = serializers.ChoiceField(
         label=_('Is structured data'),
@@ -114,7 +110,7 @@ class CustomerExportFormat(serializers.Serializer):
     )
     passport_date = serializers.DateField(
         label=_('Passport date'),
-        format=_date_format,
+        format=date_format,
         required=True
     )
     passport_distributor = serializers.CharField(
@@ -137,6 +133,12 @@ class CustomerExportFormat(serializers.Serializer):
     customer_bank_num = serializers.CharField(
         label=_('Bank receipt number'),
         max_length=128,
+        allow_blank=True,
+        required=False
+    )
+    legal_entity_title = serializers.CharField(
+        label=_('Legal entity title'),
+        max_length=256,
         allow_blank=True,
         required=False
     )

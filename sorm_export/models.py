@@ -1,6 +1,9 @@
 from django.utils.translation import gettext as _
 from django.db import models
 
+date_format = '%d.%m.%Y'
+datetime_format = '%d.%m.%YT%H:%M:%S'
+
 
 class ExportStampModel(models.Model):
     first_attempt_time = models.DateTimeField(_('Action time'), auto_now_add=True)
