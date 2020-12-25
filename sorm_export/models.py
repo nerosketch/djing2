@@ -36,3 +36,8 @@ class CustomerDocumentTypeChoices(models.TextChoices):
     PASSPORT_USSR = _('Passport USSR')
     PASSPORT_OTHER_COUNTRY = _('Passport other country')
     MILITARY_TICKET = _('Military ticket')
+
+
+class Choice4BooleanField(models.TextChoices):
+    YES = '1'
+    NO = '0'
