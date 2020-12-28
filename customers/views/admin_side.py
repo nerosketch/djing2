@@ -66,7 +66,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ('username', 'fio', 'telephone', 'description')
     filterset_fields = ('group', 'street', 'device', 'dev_port', 'current_service__service')
-    ordering_fields = ('username', 'fio', 'house', 'balance', 'service_title')
+    ordering_fields = ('username', 'fio', 'house', 'balance', 'current_service__service__title')
 
     def perform_create(self, serializer, *args, **kwargs):
         return super().perform_create(
