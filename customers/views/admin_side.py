@@ -61,7 +61,12 @@ class CustomerLogModelViewSet(DjingModelViewSet):
 
 
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
-    queryset = models.Customer.objects.select_related('current_service', 'current_service__service').annotate(lease_count=Count('customeripleasemodel'))
+    queryset = models.Customer.objects.select_related(
+        'current_service',
+        'current_service__service',
+        'gateway',
+        'street'
+    ).annotate(lease_count=Count('customeripleasemodel'))
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ('username', 'fio', 'telephone', 'description')
