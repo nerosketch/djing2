@@ -54,3 +54,9 @@ FIELD_ENCRYPTION_KEY = 'ZMxB-3nccx78Ifgyr3tRpR4PJFUej4Phegjo7d2WmXY='
 
 # arping command
 ARPING_COMMAND = '/usr/sbin/arping'
+
+DEFAULT_FTP_CREDENTIALS = {
+    'host': 'localhost',
+    'uname': 'user',
+    'password': '******'
+}
