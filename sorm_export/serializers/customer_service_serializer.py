@@ -11,7 +11,7 @@ class CustomerServiceIncrementalFormat(serializers.Serializer):
         max_value=0xffffffff,
         min_value=0
     )
-    customer_id = serializers.CharField(
+    idents = serializers.CharField(
         label=_('Customer id'),
         max_length=128,
         required=True
