@@ -50,3 +50,4 @@ def export_customer_service(cservices: Iterable[CustomerService]):
         data=list(res_data), many=True
     )
     return ser, f'/home/cdr/ISP/abonents/services_{format_fname()}.txt'
+    # return ser, f'services_{format_fname()}.txt'
