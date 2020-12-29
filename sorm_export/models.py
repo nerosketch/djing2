@@ -5,11 +5,22 @@ date_format = '%d.%m.%Y'
 datetime_format = '%d.%m.%YT%H:%M:%S'
 
 
+class ExportStampStatusEnum(models.IntegerChoices):
+    NOT_EXPORTED = 0, _('Not exported')
+    SUCCESSFUL = 1, _('Successful')
+    FAILED = 2, _('Failed')
+    IN_PROGRESS = 3, _('In progress')
+
+
 class ExportStampModel(models.Model):
     first_attempt_time = models.DateTimeField(_('Action time'), auto_now_add=True)
     last_attempt_time = models.DateTimeField(_('Last attempt time'), auto_now_add=True)
     attempts_count = models.IntegerField(_('Attempt count'), default=0)
-    export_status = models.BooleanField(_('Export status'), default=False)
+    export_status = models.PositiveIntegerField(
+        _('Export status'),
+        choices=ExportStampStatusEnum.choices,
+        default=ExportStampStatusEnum.NOT_EXPORTED
+    )
 
     class Meta:
         db_table = 'sorm_export_stamp'
@@ -20,13 +31,13 @@ class CommunicationStandardChoices(models.IntegerChoices):
     GSM = 1, 'GSM'
     CDMA = 2, 'CDMA'
     PSTN = 3, _('PSTN')  # ТФоП сеть
-    FNDT = 4, _('FNDT')  # стационарные сети передачи данных
-    TMS = 5, _('TMS')
+    ETHERNET = 4, _('Ethernet')  # стационарные сети передачи данных
+    TMC = 5, _('TMC')
     MOBILE = 6, _('Mobile')
     WIFI = 7, 'WIFI'
     WiMAX = 8, 'WiMAX'
-    PERSONAL_RADIO_CALL = 9, _('Personal radio call')
-    VOIP = 10, 'VOIP'  # сеть передачи голосовой информации посредством сети передачи данных
+    paging = 9, _('Personal radio call')
+    VOIP = 10, 'VOIP SIP'  # сеть передачи голосовой информации посредством сети передачи данных
 
 
 class CustomerTypeChoices(models.IntegerChoices):
