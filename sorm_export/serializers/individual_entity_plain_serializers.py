@@ -16,7 +16,7 @@ class CustomerExportPlainFormat(serializers.Serializer):
     #     super().__init__(*args, **kwargs)
 
     communication_standard = serializers.ChoiceField(
-        label=_('Communication_standard'),
+        label=_('Communication standard'),
         choices=CommunicationStandardChoices.choices,
         default=0
     )
