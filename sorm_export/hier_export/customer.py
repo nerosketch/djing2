@@ -1,28 +1,7 @@
-from datetime import datetime
-from functools import wraps
-
 from customers.models import Customer
 from sorm_export.models import CommunicationStandardChoices
 from sorm_export.serializers import individual_entity_serializers
-
-_fname_date_format = '%d%m%Y%H%M%S'
-
-
-def _format_fname(fname_timestamp=None) -> str:
-    if fname_timestamp is None:
-        fname_timestamp = datetime.now()
-    return fname_timestamp.strftime(_fname_date_format)
-
-
-def exp_dec(fn):
-    @wraps(fn)
-    def _wrapped(*args, **kwargs):
-        ser, fname = fn(*args, **kwargs)
-        ser.is_valid(raise_exception=True)
-        # with open(fname, 'w') as f:
-        #     f.write(ser.data)
-        return ser.data, fname
-    return _wrapped
+from .base import exp_dec, format_fname
 
 
 @exp_dec
@@ -34,12 +13,12 @@ def export_customer_root(customer: Customer):
     к каскадным ошибкам загрузки связанных данных в других файлах.
     :return: data, filename
     """
-    fname = f'abonents_v1_{_format_fname()}.txt'
+    fname = f'abonents_v1_{format_fname()}.txt'
     dat = [{
         'customer_id': customer.pk,
         'contract_start_date': customer.create_date,
         'customer_login': customer.pk,
-        'communication_standard': CommunicationStandardChoices.FNDT
+        'communication_standard': CommunicationStandardChoices.ETHERNET
     }]
 
     ser = individual_entity_serializers.CustomerIncrementalRootFormat(
@@ -55,7 +34,7 @@ def export_contract(customer: Customer):
     В этом файле выгружаются данные по договорам абонентов.
     :return:
     """
-    fname = f'contracts_{_format_fname()}.txt'
+    fname = f'contracts_{format_fname()}.txt'
     dat = [{
         'contract_id': customer.pk,
         'customer_id': customer.pk,
@@ -77,7 +56,7 @@ def export_address(customer: Customer):
     В этом файле выгружается иерархия адресных объектов, которые фигурируют
     в адресах прописки и точек подключения оборудования.
     """
-    fname = f'regions_{_format_fname()}.txt'
+    fname = f'regions_{format_fname()}.txt'
     # TODO: где брать соответствия кодов фиас, сёлами и пгт.
     dat = [
         {
@@ -120,7 +99,7 @@ def export_access_point_address(customer: Customer):
     В этом файле выгружается информация о точках подключения оборудования - реальном адресе,
     на котором находится оборудование абонента, с помощью которого он пользуется услугами оператора связи.
     """
-    fname = f'ap_region_v1_{_format_fname()}.txt'
+    fname = f'ap_region_v1_{format_fname()}.txt'
     # TODO: что писать в id точки? У нас нет такой сущьности
     dat = [{
         ''
@@ -137,7 +116,7 @@ def export_individual_customer(customer: Customer):
     Файл выгрузки данных о физическом лице, версия 1
     В этом файле выгружается информация об абонентах, у которых контракт заключён с физическим лицом.
     """
-    fname = f'fiz_v1_{_format_fname()}.txt'
+    fname = f'fiz_v1_{format_fname()}.txt'
     # TODO: make fill data
     dat = [{
         ''
@@ -154,7 +133,7 @@ def export_legal_customer(customer: Customer):
     Файл выгрузки данных о юридическом лице версия 4.
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
     """
-    fname = f'jur_v4_{_format_fname()}.txt'
+    fname = f'jur_v4_{format_fname()}.txt'
     dat = [{
         ''
     }]
@@ -171,7 +150,7 @@ def export_contact(customer: Customer):
     В этом файле выгружается контактная информация
     для каждого абонента - ФИО, телефон и факс контактного лица.
     """
-    fname = f'contact_phones_v1_{_format_fname()}.txt'
+    fname = f'contact_phones_v1_{format_fname()}.txt'
     dat = [{
         ''
     }]
