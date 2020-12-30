@@ -9,7 +9,7 @@ from ..serializers.service_serializer import ServiceIncrementalNomenclature
 
 
 @exp_dec
-def export_nomenclature(services: Iterable[Service]):
+def export_nomenclature(services: Iterable[Service], event_time=None):
     """
     Файл выгрузки номенклатуры, версия 1.
     В этом файле выгружаются все услуги, предоставляемые оператором своим абонентам - номенклатура-справочник.
@@ -19,14 +19,15 @@ def export_nomenclature(services: Iterable[Service]):
             'service_id': srv.pk,
             'mnemonic': str(srv.title)[:64],
             'description': str(srv.descr)[:256],
-            'begin_time': '',  # FIXME: это не услуга для абонента, у неё нет начала, это общее описание услуги
-            'operator_type_id': CommunicationStandardChoices.ETHERNET.name
+            'begin_time': srv.create_time.date(),  # дата начала будет датой создания тарифа.
+                                                   # TODO: end_time нужно заполнять.
+            'operator_type_id': CommunicationStandardChoices.ETHERNET
         }
-    res_data = map(gen, services)
+    res_data = map(gen, services.iterator())
     ser = ServiceIncrementalNomenclature(
         data=list(res_data), many=True
     )
-    return ser, f'service_list_v1_{format_fname()}.txt'
+    return ser, f'/home/cdr/ISP/abonents/service_list_v1_{format_fname(event_time)}.txt'
 
 
 @exp_dec
