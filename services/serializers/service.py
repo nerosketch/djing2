@@ -26,7 +26,7 @@ class ServiceModelSerializer(BaseCustomModelSerializer):
             'pk', 'title', 'descr', 'speed_in', 'speed_out',
             'speed_burst', 'cost', 'calc_type', 'is_admin',
             'usercount', 'planned_deadline', 'calc_type_name',
-            'sites'
+            'sites', 'create_time'
         )
 
 
