@@ -10,9 +10,8 @@ from customers.models import (
     PeriodicPayForId
 )
 from services.models import Service
-from sorm_export.hier_export.service import export_nomenclature
-from sorm_export.tasks import service_export_task
-from sorm_export.tasks.customer_service import customer_service_export_task
+from sorm_export.tasks.service import service_export_task
+from sorm_export.tasks.customer import customer_service_export_task
 
 
 @receiver(post_save, sender=Customer)
