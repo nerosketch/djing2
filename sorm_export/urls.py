@@ -1,6 +1,6 @@
-from django.urls import path
+# from django.urls import path
 # from rest_framework.routers import DefaultRouter
-from sorm_export import views
+# from sorm_export import views
 
 app_name = 'sorm_export'
 
@@ -10,6 +10,6 @@ app_name = 'sorm_export'
 
 
 urlpatterns = [
-    path('', views.ExportAPIView.as_view()),
+    # path('', views.ExportAPIView.as_view()),
     # path('', include(router.urls)),
 ]

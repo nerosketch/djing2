@@ -13,10 +13,10 @@ def format_fname(fname_timestamp=None) -> str:
 
 def exp_dec(fn):
     @wraps(fn)
-    def _wrapped(*args, **kwargs):
-        ser, fname = fn(*args, **kwargs)
+    def _wrapped(event_time=None, *args, **kwargs):
+        if event_time is not None and isinstance(event_time, str):
+            event_time = datetime.fromisoformat(event_time)
+        ser, fname = fn(event_time=event_time, *args, **kwargs)
         ser.is_valid(raise_exception=True)
-        # with open(fname, 'w') as f:
-        #     f.write(ser.data)
         return ser.data, fname
     return _wrapped
