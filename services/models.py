@@ -47,6 +47,12 @@ class Service(BaseAbstractModel):
     is_admin = models.BooleanField(_('Tech service'), default=False)
     groups = models.ManyToManyField(Group, blank=True, verbose_name=_('Groups'))
     sites = models.ManyToManyField(Site, blank=True)
+    create_time = models.DateTimeField(
+        _('Create time'),
+        auto_now_add=True,
+        null=True,
+        blank=True
+    )
 
     objects = ServiceManager()
 
