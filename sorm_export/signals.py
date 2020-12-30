@@ -8,31 +8,35 @@ from customers.models import (
     CustomerRawPassword, AdditionalTelephone,
     PeriodicPayForId
 )
+from sorm_export.tasks.customer_service import customer_service_export_task
 
 
 @receiver(post_save, sender=Customer)
-def customer_post_save_signal(sender, instance: Optional[Customer]=None,
+def customer_post_save_signal(sender, instance: Optional[Customer] = None,
                               created=False, **kwargs):
     pass
 
 
 @receiver(post_save, sender=PassportInfo)
-def customer_passport_info_post_save_signal(sender, instance: Optional[PassportInfo]=None,
+def customer_passport_info_post_save_signal(sender, instance: Optional[PassportInfo] = None,
                                             created=False, **kwargs):
     pass
 
 
 @receiver(post_save, sender=CustomerService)
-def customer_service_changed(sender, instance: Optional[CustomerService]=None,
+def customer_service_changed(sender, instance: Optional[CustomerService] = None,
                              created=False, **kwargs):
-    if created:
-        # if created then customer also changed,
-        # and customer change signal is also called
-        return
+    # if created:
+    #     # if created then customer also changed,
+    #     # and customer change signal is also called
+    #     return
+    customer_service_export_task(
+        customer_service_id_list=[instance.pk]
+    )
 
 
 @receiver(post_save, sender=CustomerRawPassword)
-def customer_password_changed(sender, instance: Optional[CustomerRawPassword]=None,
+def customer_password_changed(sender, instance: Optional[CustomerRawPassword] = None,
                               created=False, **kwargs):
     if created:
         return
@@ -40,12 +44,12 @@ def customer_password_changed(sender, instance: Optional[CustomerRawPassword]=No
 
 
 @receiver(post_save, sender=AdditionalTelephone)
-def customer_additional_telephone_post_save_signal(sender, instance: Optional[AdditionalTelephone]=None,
+def customer_additional_telephone_post_save_signal(sender, instance: Optional[AdditionalTelephone] = None,
                                                    created=False, **kwargs):
     pass
 
 
 @receiver(post_save, sender=PeriodicPayForId)
-def customer_periodic_pay_post_save_signal(sender, instance: Optional[PeriodicPayForId]=None,
+def customer_periodic_pay_post_save_signal(sender, instance: Optional[PeriodicPayForId] = None,
                                            created=False, **kwargs):
     pass
