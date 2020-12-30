@@ -424,7 +424,7 @@ class AttachServicesToGroups(APIView):
         del format
         group = safe_int(request.query_params.get('group'))
         group = get_object_or_404(Group, pk=group)
-        selected_service_ids_db = frozenset(t.pk for t in group.service_set.only('pk'))
+        # selected_service_ids_db = frozenset(t.pk for t in group.service_set.only('pk'))
         all_available_service_ids_db = frozenset(srv.pk for srv in Service.objects.only('pk').iterator())
 
         # list of dicts: service<int>, check<bool>
@@ -435,13 +435,13 @@ class AttachServicesToGroups(APIView):
                                          s.get('service') in all_available_service_ids_db)
 
         # add = selected_service_ids - selected_service_ids_db
-        sub = all_available_service_ids_db - (selected_service_ids - selected_service_ids_db)
+        # sub = all_available_service_ids_db - (selected_service_ids - selected_service_ids_db)
 
         group.service_set.set(selected_service_ids)
-        models.Customer.objects.filter(
-            group=group,
-            last_connected_service__in=sub
-        ).update(last_connected_service=None)
+        # models.Customer.objects.filter(
+        #     group=group,
+        #     last_connected_service__in=sub
+        # ).update(last_connected_service=None)
         return Response(status=status.HTTP_200_OK)
 
 
