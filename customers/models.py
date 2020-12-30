@@ -390,17 +390,18 @@ class Customer(BaseAccount):
             self.current_service = CustomerService.objects.create(
                 deadline=deadline, service=service
             )
+            updated_fields = [
+                'balance',
+                'current_service'
+            ]
             if self.last_connected_service != service:
                 self.last_connected_service = service
+                updated_fields.append('last_connected_service')
 
             # charge for the service
             self.balance -= amount
 
-            self.save(update_fields=(
-                'balance',
-                'current_service',
-                'last_connected_service'
-            ))
+            self.save(update_fields=updated_fields)
 
             # make log about it
             CustomerLog.objects.create(
@@ -711,10 +712,10 @@ class Customer(BaseAccount):
         add = wanted_service_ids - existed_service_ids
         group.service_set.remove(*sub)
         group.service_set.add(*add)
-        Customer.objects.filter(
-            group=group,
-            last_connected_service__in=sub
-        ).update(last_connected_service=None)
+        # Customer.objects.filter(
+        #     group=group,
+        #     last_connected_service__in=sub
+        # ).update(last_connected_service=None)
 
     class Meta:
         db_table = 'customers'
