@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from django.db.models.signals import post_save
@@ -8,6 +9,9 @@ from customers.models import (
     CustomerRawPassword, AdditionalTelephone,
     PeriodicPayForId
 )
+from services.models import Service
+from sorm_export.hier_export.service import export_nomenclature
+from sorm_export.tasks import service_export_task
 from sorm_export.tasks.customer_service import customer_service_export_task
 
 
@@ -31,7 +35,8 @@ def customer_service_changed(sender, instance: Optional[CustomerService] = None,
     #     # and customer change signal is also called
     #     return
     customer_service_export_task(
-        customer_service_id_list=[instance.pk]
+        customer_service_id_list=[instance.pk],
+        event_time=str(datetime.now())
     )
 
 
@@ -53,3 +58,11 @@ def customer_additional_telephone_post_save_signal(sender, instance: Optional[Ad
 def customer_periodic_pay_post_save_signal(sender, instance: Optional[PeriodicPayForId] = None,
                                            created=False, **kwargs):
     pass
+
+
+@receiver(post_save, sender=Service)
+def service_post_save_signal(sender, instance: Service, created=False, **kwargs):
+    service_export_task(
+        service_id_list=[instance.pk],
+        event_time=datetime.now()
+    )
