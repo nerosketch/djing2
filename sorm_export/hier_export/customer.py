@@ -1,11 +1,13 @@
-from customers.models import Customer
+from typing import Iterable
+
+from customers.models import Customer, AdditionalTelephone
 from sorm_export.models import CommunicationStandardChoices
 from sorm_export.serializers import individual_entity_serializers
-from .base import exp_dec, format_fname
+from .base import iterable_export_decorator, simple_export_decorator, format_fname
 
 
-@exp_dec
-def export_customer_root(customer: Customer):
+@iterable_export_decorator
+def export_customer_root(customers: Iterable[Customer], event_time=None):
     """
     Файл данных по абонентам v1.
     В этом файле выгружается корневая запись всей иерархии
@@ -13,51 +15,53 @@ def export_customer_root(customer: Customer):
     к каскадным ошибкам загрузки связанных данных в других файлах.
     :return: data, filename
     """
-    fname = f'abonents_v1_{format_fname()}.txt'
-    dat = [{
-        'customer_id': customer.pk,
-        'contract_start_date': customer.create_date,
-        'customer_login': customer.pk,
-        'communication_standard': CommunicationStandardChoices.ETHERNET
-    }]
+    def gen(customer: Customer):
+        return {
+            'customer_id': customer.pk,
+            'contract_start_date': customer.create_date,
+            'customer_login': customer.pk,
+            'communication_standard': CommunicationStandardChoices.ETHERNET
+        }
 
-    ser = individual_entity_serializers.CustomerIncrementalRootFormat(
-        data=dat, many=True
+    return (
+        individual_entity_serializers.CustomerIncrementalRootFormat,
+        gen, customers,
+        f'/home/cdr/ISP/abonents/abonents_v1_{format_fname(event_time)}.txt'
     )
-    return ser, fname
 
 
-@exp_dec
-def export_contract(customer: Customer):
+@iterable_export_decorator
+def export_contract(customers: Iterable[Customer], event_time=None):
     """
     Файл данных по договорам.
     В этом файле выгружаются данные по договорам абонентов.
     :return:
     """
-    fname = f'contracts_{format_fname()}.txt'
-    dat = [{
-        'contract_id': customer.pk,
-        'customer_id': customer.pk,
-        'contract_start_date': customer.create_date,
-        'contract_end_date': '',  # TODO: у нас не логируется когда абонент заканчивает пользоваться услугами
-        'contract_number': customer.username,
-        'contract_title': ''  # TODO: ??????????
-    }]
-    ser = individual_entity_serializers.CustomerIncrementalContractFormat(
-        data=dat, many=True
+    def gen(customer: Customer):
+        return {
+            'contract_id': customer.pk,
+            'customer_id': customer.pk,
+            'contract_start_date': customer.create_date,
+            'contract_end_date': '',  # TODO: у нас не логируется когда абонент заканчивает пользоваться услугами
+            'contract_number': customer.username,
+            'contract_title': ''  # TODO: ??????????
+        }
+
+    return (
+        individual_entity_serializers.CustomerIncrementalContractFormat,
+        gen, customers,
+        f'/home/cdr/ISP/abonents/contracts_{format_fname(event_time)}.txt'
     )
-    return ser, fname
 
 
-@exp_dec
-def export_address(customer: Customer):
+@simple_export_decorator
+def export_address(customer: Customer, event_time=None):
     """
     Файл выгрузки адресных объектов.
     В этом файле выгружается иерархия адресных объектов, которые фигурируют
     в адресах прописки и точек подключения оборудования.
     """
-    fname = f'regions_{format_fname()}.txt'
-    # TODO: где брать соответствия кодов фиас, сёлами и пгт.
+    # TODO: где брать соответствия кодов фиас сёлам и пгт?
     dat = [
         {
             # Страна
@@ -89,72 +93,80 @@ def export_address(customer: Customer):
     ser = individual_entity_serializers.CustomerIncrementalAddressFormat(
         data=dat, many=True
     )
-    return ser, fname
+    return ser, f'/home/cdr/ISP/abonents/regions_{format_fname(event_time)}.txt'
 
 
-@exp_dec
-def export_access_point_address(customer: Customer):
+@iterable_export_decorator
+def export_access_point_address(customers: Iterable[Customer], event_time=None):
     """
     Файл выгрузки адресов точек подключения, версия 1.
     В этом файле выгружается информация о точках подключения оборудования - реальном адресе,
     на котором находится оборудование абонента, с помощью которого он пользуется услугами оператора связи.
     """
-    fname = f'ap_region_v1_{format_fname()}.txt'
-    # TODO: что писать в id точки? У нас нет такой сущьности
-    dat = [{
-        ''
-    }]
-    ser = individual_entity_serializers.CustomerIncrementalAccessPointAddressFormat(
-        data=dat, many=True
+    def gen(customer: Customer):
+        return {
+            ''
+        }
+    return (
+        individual_entity_serializers.CustomerIncrementalAccessPointAddressFormat,
+        gen, customers,
+        f'/home/cdr/ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt'
     )
-    return ser, fname
 
 
-@exp_dec
-def export_individual_customer(customer: Customer):
+@iterable_export_decorator
+def export_individual_customer(customers: Iterable[Customer], event_time=None):
     """
     Файл выгрузки данных о физическом лице, версия 1
     В этом файле выгружается информация об абонентах, у которых контракт заключён с физическим лицом.
     """
-    fname = f'fiz_v1_{format_fname()}.txt'
-    # TODO: make fill data
-    dat = [{
-        ''
-    }]
-    ser = individual_entity_serializers.CustomerIncrementalIndividualFormat(
-        dat=dat, many=True
+    def gen(customer: Customer):
+        return {
+            ''
+        }
+
+    return (
+        individual_entity_serializers.CustomerIncrementalIndividualFormat,
+        gen, customers,
+        f'/home/cdr/ISP/abonents/fiz_v1_{format_fname(event_time)}.txt'
     )
-    return ser, fname
 
 
-@exp_dec
-def export_legal_customer(customer: Customer):
+@iterable_export_decorator
+def export_legal_customer(customers: Iterable[Customer], event_time=None):
     """
     Файл выгрузки данных о юридическом лице версия 4.
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
     """
-    fname = f'jur_v4_{format_fname()}.txt'
-    dat = [{
-        ''
-    }]
-    ser = individual_entity_serializers.CustomerIncrementalLegalFormat(
-        data=dat, many=True
+    def gen(customer: Customer):
+        return {
+            ''
+        }
+    return (
+        individual_entity_serializers.CustomerIncrementalLegalFormat,
+        gen, customers,
+        f'/home/cdr/ISP/abonents/jur_v4_{format_fname(event_time)}.txt'
     )
-    return ser, fname
 
 
-@exp_dec
-def export_contact(customer: Customer):
+@simple_export_decorator
+def export_contact(customers: Iterable[Customer], event_time=None):
     """
     Файл данных по контактной информации.
     В этом файле выгружается контактная информация
     для каждого абонента - ФИО, телефон и факс контактного лица.
     """
-    fname = f'contact_phones_v1_{format_fname()}.txt'
     dat = [{
-        ''
-    }]
+        'customer_id': customer.pk,
+        'contact': '%s %s' % (customer.get_full_name(), customer.telephone)
+    } for customer in customers]
+
+    tels = AdditionalTelephone.objects.filter(customer__in=customers)
+    if tels.exists():
+        for tel in tels:
+            dat.append({})
+
     ser = individual_entity_serializers.CustomerIncrementalContactFormat(
         data=dat, many=True
     )
-    return ser, fname
+    return ser, f'/home/cdr/ISP/abonents/contact_phones_v1_{format_fname(event_time)}.txt'
