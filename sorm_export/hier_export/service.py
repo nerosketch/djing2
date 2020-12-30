@@ -30,7 +30,7 @@ def export_nomenclature(services: Iterable[Service]):
 
 
 @exp_dec
-def export_customer_service(cservices: Iterable[CustomerService]):
+def export_customer_service(cservices: Iterable[CustomerService], event_time=None):
     """
     Файл выгрузки услуг по абонентам.
     В этом файле выгружаются все привязки услуг к абонентам.
@@ -45,9 +45,8 @@ def export_customer_service(cservices: Iterable[CustomerService]):
             'end_time': cs.deadline
         }
 
-    res_data = map(gen, cservices)
+    res_data = map(gen, cservices.iterator())
     ser = CustomerServiceIncrementalFormat(
         data=list(res_data), many=True
     )
-    return ser, f'/home/cdr/ISP/abonents/services_{format_fname()}.txt'
-    # return ser, f'services_{format_fname()}.txt'
+    return ser, f'/home/cdr/ISP/abonents/services_{format_fname(event_time)}.txt'
