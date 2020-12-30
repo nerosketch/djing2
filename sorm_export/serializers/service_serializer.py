@@ -5,6 +5,7 @@ from sorm_export.models import date_format, CommunicationStandardChoices
 
 
 class ServiceIncrementalNomenclature(serializers.Serializer):
+    # https://wiki.vasexperts.ru/doku.php?id=sorm:sorm3:sorm3_subs_dump:sorm3_subs_serv_list:service_list:start
     service_id = serializers.IntegerField(
         label=_('Service id'),
         required=True,
@@ -36,5 +37,6 @@ class ServiceIncrementalNomenclature(serializers.Serializer):
     operator_type_id = serializers.ChoiceField(
         label=_('Operator type id'),
         choices=CommunicationStandardChoices.choices,
+        # FIXME: В описании вроде enum(str), а в остальных местах int
         default=CommunicationStandardChoices.ETHERNET
     )

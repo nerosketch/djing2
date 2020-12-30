@@ -2,13 +2,13 @@ from typing import Iterable
 
 from customers.models import CustomerService
 from services.models import Service
-from .base import exp_dec, format_fname
+from .base import iterable_export_decorator, format_fname
 from ..models import CommunicationStandardChoices
 from ..serializers.customer_service_serializer import CustomerServiceIncrementalFormat
 from ..serializers.service_serializer import ServiceIncrementalNomenclature
 
 
-@exp_dec
+@iterable_export_decorator
 def export_nomenclature(services: Iterable[Service], event_time=None):
     """
     Файл выгрузки номенклатуры, версия 1.
@@ -23,14 +23,14 @@ def export_nomenclature(services: Iterable[Service], event_time=None):
                                                    # TODO: end_time нужно заполнять.
             'operator_type_id': CommunicationStandardChoices.ETHERNET
         }
-    res_data = map(gen, services.iterator())
-    ser = ServiceIncrementalNomenclature(
-        data=list(res_data), many=True
+
+    return (
+        ServiceIncrementalNomenclature, gen, services,
+        f'/home/cdr/ISP/abonents/service_list_v1_{format_fname(event_time)}.txt'
     )
-    return ser, f'/home/cdr/ISP/abonents/service_list_v1_{format_fname(event_time)}.txt'
 
 
-@exp_dec
+@iterable_export_decorator
 def export_customer_service(cservices: Iterable[CustomerService], event_time=None):
     """
     Файл выгрузки услуг по абонентам.
@@ -46,8 +46,7 @@ def export_customer_service(cservices: Iterable[CustomerService], event_time=Non
             'end_time': cs.deadline
         }
 
-    res_data = map(gen, cservices.iterator())
-    ser = CustomerServiceIncrementalFormat(
-        data=list(res_data), many=True
+    return (
+        CustomerServiceIncrementalFormat, gen, cservices,
+        f'/home/cdr/ISP/abonents/services_{format_fname(event_time)}.txt'
     )
-    return ser, f'/home/cdr/ISP/abonents/services_{format_fname(event_time)}.txt'
