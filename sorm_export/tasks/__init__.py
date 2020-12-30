@@ -1,4 +1,4 @@
-from .customer_service import customer_service_export_task
+from .customer import customer_service_export_task
 from .service import service_export_task
 
 
