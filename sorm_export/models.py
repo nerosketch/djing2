@@ -1,9 +1,17 @@
 from django.utils.translation import gettext as _
+from django.contrib.postgres.fields import JSONField
 from django.db import models
-# from encrypted_model_fields.fields import EncryptedCharField
 
 date_format = '%d.%m.%Y'
 datetime_format = '%d.%m.%YT%H:%M:%S'
+
+
+class ExportTypeChoices(models.IntegerChoices):
+    CUSTOMER = 0, _('Customer')
+    NETWORKS = 1, _('Networks')
+    PAYMENT = 2, _('Payment')
+    SERVICE = 3, _('Service')
+    CUSTOMER_SERVICE = 4, _('Customer service')
 
 
 class ExportStampStatusEnum(models.IntegerChoices):
@@ -22,6 +30,10 @@ class ExportStampModel(models.Model):
         choices=ExportStampStatusEnum.choices,
         default=ExportStampStatusEnum.NOT_EXPORTED
     )
+    event_type = models.PositiveSmallIntegerField(
+        choices=ExportTypeChoices.choices
+    )
+    data = JSONField(_('Export event data'))
 
     class Meta:
         db_table = 'sorm_export_stamp'
