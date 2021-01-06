@@ -111,7 +111,7 @@ def customer_check_service_for_expiration(customer_id: int):
         print(err)
 
 
-@cron(minute=-1, executor=TaskExecutor.MULE)
+@cron(minute=-30, executor=TaskExecutor.MULE)
 def manage_periodic_pays(signal_number):
     @process_lock()
     def _manage_periodic_pays_run():
