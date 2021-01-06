@@ -17,7 +17,6 @@ from rest_framework.views import APIView
 
 from customers import models
 from customers import serializers
-from customers.models import Customer
 from customers.views.view_decorators import catch_customers_errs
 from djing2.lib import safe_int, safe_float, ProcessLocked
 from djing2.lib.filters import CustomObjectPermissionsFilter
@@ -295,7 +294,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         wanted_service_ids = request.data.get('services')
         if not wanted_service_ids:
             return Response('services is required', status=status.HTTP_400_BAD_REQUEST)
-        Customer.set_group_accessory(group, wanted_service_ids)
+        models.Customer.set_group_accessory(group, wanted_service_ids)
         return Response()
 
     @action(detail=False)
@@ -305,7 +304,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         port_id = request.query_params.get('port_id')
         if not all([dev_id, port_id]):
             return Response('Required paramemters: [dev_id, port_id]', status=status.HTTP_400_BAD_REQUEST)
-        customers = Customer.objects.filter(device_id=dev_id, dev_port_id=port_id)
+        customers = models.Customer.objects.filter(device_id=dev_id, dev_port_id=port_id)
         return Response(self.get_serializer(customers, many=True).data)
 
     @action(methods=['get', 'put'], detail=True)
