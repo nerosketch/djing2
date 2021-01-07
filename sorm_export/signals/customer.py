@@ -9,8 +9,6 @@ from customers.models import (
     CustomerRawPassword, AdditionalTelephone,
     PeriodicPayForId
 )
-from services.models import Service
-from sorm_export.tasks.service import service_export_task
 from sorm_export.tasks.customer import customer_service_export_task
 
 
@@ -57,11 +55,3 @@ def customer_additional_telephone_post_save_signal(sender, instance: Optional[Ad
 def customer_periodic_pay_post_save_signal(sender, instance: Optional[PeriodicPayForId] = None,
                                            created=False, **kwargs):
     pass
-
-
-@receiver(post_save, sender=Service)
-def service_post_save_signal(sender, instance: Service, created=False, **kwargs):
-    service_export_task(
-        service_id_list=[instance.pk],
-        event_time=datetime.now()
-    )
