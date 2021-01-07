@@ -115,6 +115,8 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         })
         acc = super().create(validated_data)
         raw_password = validated_data.get('password')
+        if raw_password is None:
+            raw_password = generate_random_password()
         update_passw(acc, raw_password=raw_password)
         return acc
 
