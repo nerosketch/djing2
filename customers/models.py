@@ -7,6 +7,8 @@ from bitfield import BitField
 from django.conf import settings
 from django.core import validators
 from django.db import models, transaction, connection
+from django.dispatch import Signal
+from django.forms import model_to_dict
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
@@ -22,6 +24,9 @@ RADIUS_SESSION_TIME = getattr(settings, 'RADIUS_SESSION_TIME', 3600)
 
 class NotEnoughMoney(LogicError):
     pass
+
+
+# continue_service_signal = Signal()
 
 
 class CustomerService(BaseAbstractModel):
@@ -575,21 +580,21 @@ class Customer(BaseAccount):
     #     except LogicError:
     #         pass
 
-    # def enable_service(self, service: Service, deadline=None, time_start=None):
+    # def enable_service(self, service: Service, deadline=None, start_time=None):
     #     """
     #     Makes a services for current user, without money
     #     :param service: Instance of Service
     #     :param deadline: Time when service is expired
-    #     :param time_start: Time when service has started
+    #     :param start_time: Time when service has started
     #     :return: None
     #     """
     #     if deadline is None:
     #         deadline = service.calc_deadline()
-    #     if time_start is None:
-    #         time_start = datetime.now()
+    #     if start_time is None:
+    #         start_time = datetime.now()
     #     self.current_service = CustomerService.objects.create(
     #         deadline=deadline, service=service,
-    #         start_time=time_start
+    #         start_time=start_time
     #     )
     #     self.last_connected_service = service
     #     self.save(update_fields=('current_service', 'last_connected_service'))
@@ -643,23 +648,35 @@ class Customer(BaseAccount):
             return
         expired_service = expired_service.first()
         service = expired_service.service
-        amount = round(service.amount, 2)
-        if self.balance >= amount:
+        cost = round(service.cost, 2)
+        if self.balance >= cost:
             # can continue service
+            # old_instance_data = model_to_dict(
+            #     instance=expired_service,
+            #     fields=[field.name for field in expired_service._meta.fields]
+            # )
+            # old_instance_data['customer'] = expired_service.customer.pk
+            # if expired_service.service:
+            #     old_instance_data['service_descr'] = expired_service.service.descr
             with transaction.atomic():
-                self.balance -= amount
-                expired_service.time_start = now
+                self.balance -= cost
+                expired_service.start_time = now
                 expired_service.deadline = None  # Deadline sets automatically in signal pre_save
-                expired_service.save(update_fields=['time_start', 'deadline'])
+                expired_service.save(update_fields=['start_time', 'deadline'])
                 self.save(update_fields=['balance'])
                 # make log about it
                 CustomerLog.objects.create(
-                    customer=self, cost=-amount,
+                    customer=self, cost=-cost,
                     comment=_("Automatic connect new service %(service_name)s for %(customer_name)s") % {
                         'service_name': service.title,
                         'customer_name': self.get_short_name()
                     }
                 )
+            # continue_service_signal.send(
+            #     sender=CustomerService,
+            #     instance=expired_service,
+            #     old_instance_data=old_instance_data
+            # )
         else:
             # finish service otherwise
             with transaction.atomic():

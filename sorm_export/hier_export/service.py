@@ -56,16 +56,8 @@ def export_customer_service(cservices: Iterable[CustomerService], event_time=Non
 
 
 @simple_export_decorator
-def export_customer_finish_service(customer_service_id: int, customer_id: int, srv_descr: str, srv_begin_time: datetime,
-                                   event_time=None):
-    dat = [{
-        'service_id': customer_service_id,
-        'idents': customer_id,
-        'parameter': srv_descr,
-        'begin_time': srv_begin_time,
-        'end_time': event_time or datetime.now()
-    }]
+def export_manual_data_customer_service(data, event_time=None):
     ser = CustomerServiceIncrementalFormat(
-        data=dat, many=True
+        data=data, many=True
     )
     return ser, f'/home/cdr/ISP/abonents/services_{format_fname(event_time)}.txt'
