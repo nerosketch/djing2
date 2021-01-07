@@ -1,8 +1,9 @@
+from datetime import datetime
 from typing import Iterable
 
 from customers.models import CustomerService
 from services.models import Service
-from .base import iterable_export_decorator, format_fname
+from .base import iterable_export_decorator, format_fname, simple_export_decorator
 from ..models import CommunicationStandardChoices
 from ..serializers.customer_service_serializer import CustomerServiceIncrementalFormat
 from ..serializers.service_serializer import ServiceIncrementalNomenclature
@@ -14,13 +15,14 @@ def export_nomenclature(services: Iterable[Service], event_time=None):
     Файл выгрузки номенклатуры, версия 1.
     В этом файле выгружаются все услуги, предоставляемые оператором своим абонентам - номенклатура-справочник.
     """
+
     def gen(srv: Service):
         return {
             'service_id': srv.pk,
             'mnemonic': str(srv.title)[:64],
             'description': str(srv.descr)[:256],
             'begin_time': srv.create_time.date(),  # дата начала будет датой создания тарифа.
-                                                   # TODO: end_time нужно заполнять.
+            # TODO: end_time нужно заполнять.
             'operator_type_id': CommunicationStandardChoices.ETHERNET
         }
 
@@ -36,6 +38,7 @@ def export_customer_service(cservices: Iterable[CustomerService], event_time=Non
     Файл выгрузки услуг по абонентам.
     В этом файле выгружаются все привязки услуг к абонентам.
     """
+
     def gen(cs: CustomerService):
         srv = cs.service
         return {
@@ -50,3 +53,19 @@ def export_customer_service(cservices: Iterable[CustomerService], event_time=Non
         CustomerServiceIncrementalFormat, gen, cservices,
         f'/home/cdr/ISP/abonents/services_{format_fname(event_time)}.txt'
     )
+
+
+@simple_export_decorator
+def export_customer_finish_service(customer_service_id: int, customer_id: int, srv_descr: str, srv_begin_time: datetime,
+                                   event_time=None):
+    dat = [{
+        'service_id': customer_service_id,
+        'idents': customer_id,
+        'parameter': srv_descr,
+        'begin_time': srv_begin_time,
+        'end_time': event_time or datetime.now()
+    }]
+    ser = CustomerServiceIncrementalFormat(
+        data=dat, many=True
+    )
+    return ser, f'/home/cdr/ISP/abonents/services_{format_fname(event_time)}.txt'
