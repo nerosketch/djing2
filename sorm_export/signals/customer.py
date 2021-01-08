@@ -17,15 +17,13 @@ from sorm_export.tasks.customer import (
 
 
 @receiver(pre_save, sender=Customer)
-def customer_post_save_signal(sender, instance: Optional[Customer] = None,
+def customer_post_save_signal(sender, instance: Customer,
                               update_fields=None, **kwargs):
     if update_fields is None:
         # all fields updated
-        old_inst = Customer.objects.filter(pk=instance.pk).first()
+        old_inst = sender.objects.filter(pk=instance.pk).first()
         if old_inst is not None and old_inst.telephone != instance.telephone:
             # Tel has updated, signal it
-            customer_name = instance.get_full_name()
-            tel = instance.telephone
             now = datetime.now()
             old_start_time = old_inst.last_update_time or datetime.combine(
                 instance.create_date,
@@ -33,12 +31,12 @@ def customer_post_save_signal(sender, instance: Optional[Customer] = None,
             )
             customer_tels = [{
                 'customer_id': instance.pk,
-                'contact': '%s %s' % (customer_name, tel),
+                'contact': '%s %s' % (old_inst.get_full_name(), old_inst.telephone),
                 'actual_start_time': old_start_time,
                 'actual_end_time': now
             }, {
                 'customer_id': instance.pk,
-                'contact': '%s %s' % (customer_name, tel),
+                'contact': '%s %s' % (instance.get_full_name(), instance.telephone),
                 'actual_start_time': now,
                 # 'actual_end_time':
             }]
@@ -111,15 +109,58 @@ def customer_service_deleted(sender, instance: CustomerService, **kwargs):
 @receiver(post_save, sender=CustomerRawPassword)
 def customer_password_changed(sender, instance: Optional[CustomerRawPassword] = None,
                               created=False, **kwargs):
-    if created:
-        return
-    # process only if changed, not created
-
-
-@receiver(post_save, sender=AdditionalTelephone)
-def customer_additional_telephone_post_save_signal(sender, instance: Optional[AdditionalTelephone] = None,
-                                                   created=False, **kwargs):
     pass
+
+
+@receiver(pre_save, sender=AdditionalTelephone)
+def customer_additional_telephone_post_save_signal(sender, instance: AdditionalTelephone,
+                                                   **kwargs):
+    customer = instance.customer
+    customer_name = customer.get_full_name()
+    contact = '%s(%s) %s' % (customer_name, instance.owner_name, instance.telephone)
+    now = datetime.now()
+    old_inst = sender.objects.filter(pk=instance.pk).first()
+    if old_inst is None:
+        # then its created
+        customer_tels = [{
+            'customer_id': customer.pk,
+            'contact': contact,
+            'actual_start_time': now,
+            # 'actual_end_time':
+        }]
+    else:
+        customer_tels = [{
+            'customer_id': customer.pk,
+            'contact': '%s(%s) %s' % (customer_name, old_inst.owner_name, old_inst.telephone),
+            'actual_start_time': old_inst.create_time,
+            'actual_end_time': now
+        }, {
+            'customer_id': customer.pk,
+            'contact': contact,
+            'actual_start_time': now,
+            # 'actual_end_time':
+        }]
+    customer_contact_export_task(
+        customer_tels=customer_tels,
+        event_time=datetime.now()
+    )
+
+
+@receiver(pre_delete, sender=AdditionalTelephone)
+def customer_additional_telephone_post_delete_signal(sender, instance: AdditionalTelephone, **kwargs):
+    customer = instance.customer
+    customer_name = customer.get_full_name()
+    now = datetime.now()
+    customer_tels = [{
+        'customer_id': customer.pk,
+        'contact': '%s(%s) %s' % (customer_name, instance.owner_name, instance.telephone),
+        'actual_start_time': instance.create_time,
+        'actual_end_time': now
+    }]
+    customer_contact_export_task(
+        customer_tels=customer_tels,
+        event_time=now
+    )
 
 
 @receiver(post_save, sender=PeriodicPayForId)
