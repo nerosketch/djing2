@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save, pre_save, pre_delete
 from django.dispatch.dispatcher import receiver
 
 from customers.models import (
@@ -11,16 +11,41 @@ from customers.models import (
 )
 from sorm_export.tasks.customer import (
     customer_service_export_task,
-    customer_service_manual_data_export_task
+    customer_service_manual_data_export_task,
+    customer_contact_export_task
 )
 
 
-@receiver(post_save, sender=Customer)
+@receiver(pre_save, sender=Customer)
 def customer_post_save_signal(sender, instance: Optional[Customer] = None,
-                              created=False, update_fields=None, **kwargs):
+                              update_fields=None, **kwargs):
     if update_fields is None:
         # all fields updated
-        pass
+        old_inst = Customer.objects.filter(pk=instance.pk).first()
+        if old_inst is not None and old_inst.telephone != instance.telephone:
+            # Tel has updated, signal it
+            customer_name = instance.get_full_name()
+            tel = instance.telephone
+            now = datetime.now()
+            old_start_time = old_inst.last_update_time or datetime.combine(
+                instance.create_date,
+                datetime(year=now.year, month=1, minute=0, day=1, second=0, hour=0).time()
+            )
+            customer_tels = [{
+                'customer_id': instance.pk,
+                'contact': '%s %s' % (customer_name, tel),
+                'actual_start_time': old_start_time,
+                'actual_end_time': now
+            }, {
+                'customer_id': instance.pk,
+                'contact': '%s %s' % (customer_name, tel),
+                'actual_start_time': now,
+                # 'actual_end_time':
+            }]
+            customer_contact_export_task(
+                customer_tels=customer_tels,
+                event_time=now
+            )
     elif 'current_service' in update_fields and instance.current_service:
         # start service for customer
         customer_service_export_task(
