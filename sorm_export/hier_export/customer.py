@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from customers.models import Customer, AdditionalTelephone
+from customers.models import Customer
 from sorm_export.models import CommunicationStandardChoices
 from sorm_export.serializers import individual_entity_serializers
 from .base import iterable_export_decorator, simple_export_decorator, format_fname
@@ -150,23 +150,13 @@ def export_legal_customer(customers: Iterable[Customer], event_time=None):
 
 
 @simple_export_decorator
-def export_contact(customers: Iterable[Customer], event_time=None):
+def export_contact(customer_tels, event_time=None):
     """
     Файл данных по контактной информации.
     В этом файле выгружается контактная информация
     для каждого абонента - ФИО, телефон и факс контактного лица.
     """
-    dat = [{
-        'customer_id': customer.pk,
-        'contact': '%s %s' % (customer.get_full_name(), customer.telephone)
-    } for customer in customers]
-
-    tels = AdditionalTelephone.objects.filter(customer__in=customers)
-    if tels.exists():
-        for tel in tels:
-            dat.append({})
-
     ser = individual_entity_serializers.CustomerIncrementalContactFormat(
-        data=dat, many=True
+        data=customer_tels, many=True
     )
     return ser, f'/home/cdr/ISP/abonents/contact_phones_v1_{format_fname(event_time)}.txt'
