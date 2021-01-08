@@ -18,7 +18,10 @@ from sorm_export.tasks.customer import (
 @receiver(post_save, sender=Customer)
 def customer_post_save_signal(sender, instance: Optional[Customer] = None,
                               created=False, update_fields=None, **kwargs):
-    if update_fields is not None and 'current_service' in update_fields and instance.current_service:
+    if update_fields is None:
+        # all fields updated
+        pass
+    elif 'current_service' in update_fields and instance.current_service:
         # start service for customer
         customer_service_export_task(
             customer_service_id_list=[instance.current_service.pk],
