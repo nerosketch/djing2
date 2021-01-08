@@ -6,19 +6,10 @@ date_format = '%d.%m.%Y'
 datetime_format = '%d.%m.%YT%H:%M:%S'
 
 
-class ExportTypeChoices(models.IntegerChoices):
-    CUSTOMER = 0, _('Customer')
-    NETWORKS = 1, _('Networks')
-    PAYMENT = 2, _('Payment')
-    SERVICE = 3, _('Service')
-    CUSTOMER_SERVICE = 4, _('Customer service')
-
-
 class ExportStampStatusEnum(models.IntegerChoices):
     NOT_EXPORTED = 0, _('Not exported')
     SUCCESSFUL = 1, _('Successful')
     FAILED = 2, _('Failed')
-    IN_PROGRESS = 3, _('In progress')
 
 
 class ExportStampModel(models.Model):
@@ -29,9 +20,6 @@ class ExportStampModel(models.Model):
         _('Export status'),
         choices=ExportStampStatusEnum.choices,
         default=ExportStampStatusEnum.NOT_EXPORTED
-    )
-    event_type = models.PositiveSmallIntegerField(
-        choices=ExportTypeChoices.choices
     )
     data = JSONField(_('Export event data'))
 
