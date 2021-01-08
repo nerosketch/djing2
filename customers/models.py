@@ -838,6 +838,7 @@ class AdditionalTelephone(BaseAbstractModel):
         ),)
     )
     owner_name = models.CharField(max_length=127)
+    create_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return "%s - (%s)" % (self.owner_name, self.telephone)
