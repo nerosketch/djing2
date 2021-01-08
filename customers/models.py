@@ -7,8 +7,8 @@ from bitfield import BitField
 from django.conf import settings
 from django.core import validators
 from django.db import models, transaction, connection
-from django.dispatch import Signal
-from django.forms import model_to_dict
+# from django.dispatch import Signal
+# from django.forms import model_to_dict
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
