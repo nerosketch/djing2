@@ -19,4 +19,5 @@ echo '/home/ns/nfcapd.202101081045' | while read fname; do
   done
   echo '\.' >> $tmpfile
   #psql postgresql://postgres:ps@127.0.0.1/djing -c "\i $tmpfile;"
+  rm $tmpfile
 done
