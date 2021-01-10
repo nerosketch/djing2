@@ -5,7 +5,6 @@ from django.db import models, connection, ProgrammingError
 from django.utils.timezone import now
 
 from djing2.models import BaseAbstractModel
-from .fields import UnixDateTimeField
 
 
 def get_dates():
@@ -52,10 +51,10 @@ class StatManager(models.Manager):
                 return
 
 
-class StatElem(BaseAbstractModel):
-    cur_time = UnixDateTimeField(primary_key=True)
+class TrafficArchiveElement(BaseAbstractModel):
     customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE, null=True, default=None, blank=True)
-    ip = models.PositiveIntegerField()
+    cur_time = models.DateTimeField(primary_key=True)
+    ip_addr = models.PositiveIntegerField()
     octets = models.PositiveIntegerField(default=0)
     packets = models.PositiveIntegerField(default=0)
 
@@ -108,15 +107,16 @@ class StatElem(BaseAbstractModel):
 def getModel(want_date=None):
     if want_date is None:
         want_date = now()
-    se = StatElem
-    se.Meta.db_table = 'flowstat_%s' % want_date.strftime("%d%m%Y")
-    se.Meta.abstract = False
-    return se
+    m = TrafficArchiveElement
+    m.Meta.db_table = 'traf_arch_%s' % want_date.strftime("%d%m%Y")
+    m.Meta.abstract = False
+    return m
 
 
-class StatCache(BaseAbstractModel):
-    last_time = UnixDateTimeField()
-    customer = models.OneToOneField('customers.Customer', on_delete=models.CASCADE, primary_key=True)
+class TrafficCache(BaseAbstractModel):
+    customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE)
+    event_time = models.DateTimeField()
+    ip_addr = models.GenericIPAddressField()
     octets = models.PositiveIntegerField(default=0)
     packets = models.PositiveIntegerField(default=0)
 
@@ -143,6 +143,7 @@ class StatCache(BaseAbstractModel):
         return r
 
     class Meta:
-        db_table = 'flowcache'
+        db_table = 'traf_cache'
         # db_tablespace = 'ram'
-        ordering = '-last_time',
+        ordering = '-event_time',
+        unique_together = ['customer', 'ip_addr']

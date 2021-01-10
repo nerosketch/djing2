@@ -2,7 +2,6 @@
 
 from django.db import migrations, models
 import django.db.models.deletion
-import traf_stat.fields
 
 
 class Migration(migrations.Migration):
@@ -17,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='StatCache',
             fields=[
-                ('last_time', traf_stat.fields.UnixDateTimeField()),
+                ('last_time', models.IntegerField()),
                 ('customer', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, serialize=False, to='customers.Customer')),
                 ('octets', models.PositiveIntegerField(default=0)),
                 ('packets', models.PositiveIntegerField(default=0)),
