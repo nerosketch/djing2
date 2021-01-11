@@ -108,7 +108,7 @@ def getModel(want_date=None):
     if want_date is None:
         want_date = now()
     m = TrafficArchiveElement
-    m.Meta.db_table = 'traf_arch_%s' % want_date.strftime("%d%m%Y")
+    m.Meta.db_table = 'traf_archive_%s' % want_date.strftime("%d%m%Y")
     m.Meta.abstract = False
     return m
 
