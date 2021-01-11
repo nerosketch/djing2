@@ -64,13 +64,23 @@ CREATE OR REPLACE FUNCTION create_traf_archive_partition_tbl()
   RETURNS SETOF boolean
 LANGUAGE plpgsql
 AS $$
+DECLARE
+  v_next_week_start timestamptz;
+  v_next_week_end timestamptz;
+  v_parition_name text;
 BEGIN
+
+  v_next_week_start := date_trunc('day', now() + '1 week'::interval);
+  v_next_week_end := v_next_week_start + '1 week'::interval - '1 sec'::interval;
+  v_parition_name := to_char('traf_archive_YYYYMMID', v_next_week_end);
 
   -- TODO: Генерировать имя партиции, и временной промежуток для данных в этой партиции,
   -- чтоб он был валиден этому имени партиции
-  create unlogged table if not exists traf_archive_1(like traf_archive including all);
-  alter table traf_archive_1 inherit traf_archive;
-  alter table traf_archive_1 add constraint partition_check check (event_time > now() and event_time < now() - '7 days'::interval);
+  -- TODO: Проверять сегодняшнюю партицию
+  execute 'create unlogged table if not exists ' || v_parition_name || '(like traf_archive including all)';
+  execute 'alter table ' || v_parition_name || ' inherit traf_archive';
+  execute 'alter table ' || v_parition_name || ' add constraint partition_check check (event_time > $1 and event_time < $2)'
+  using v_next_week_start, v_next_week_end;
 END
 $$;
 
