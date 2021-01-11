@@ -25,35 +25,11 @@ END
 $func$
 LANGUAGE plpgsql;
 
-
 CREATE TRIGGER traffic_prepare_customer_id_by_ip_trigger
   BEFORE INSERT
   ON traf_cache
   FOR EACH ROW
 EXECUTE PROCEDURE traffic_prepare_customer_id_by_ip();
-
-
-CREATE OR REPLACE FUNCTION traffic_traf_cache_insert_fn()
-  RETURNS TRIGGER AS
-$func$
-BEGIN
-  INSERT INTO traf_cache (customer_id, event_time, ip_addr, octets, packets) VALUES
-    (NEW.customer_id, NEW.event_time, NEW.ip_addr, NEW.octets, NEW.packets)
-  ON CONFLICT (customer_id, ip_addr) DO UPDATE SET
-    event_time = NEW.event_time,
-    octets = NEW.octets,
-    packets = NEW.packets;
-END
-$func$
-LANGUAGE plpgsql;
-
-CREATE TRIGGER traffic_traf_cache_insert_trigger
-  INSTEAD OF INSERT
-  ON traf_cache
-  FOR EACH ROW
-  EXECUTE PROCEDURE traffic_traf_cache_insert_fn();
-
-
 
 -- traf_cache changes frequently
 ALTER TABLE traf_cache SET UNLOGGED;
