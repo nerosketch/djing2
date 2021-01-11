@@ -35,3 +35,23 @@ EXECUTE PROCEDURE traffic_prepare_customer_id_by_ip();
 ALTER TABLE traf_cache SET UNLOGGED;
 
 CREATE INDEX traf_cache_ip_addr_index ON traf_cache USING GIST(ip_addr inet_ops);
+
+
+CREATE OR REPLACE FUNCTION traffic_copy_stat2archive()
+RETURNS TRIGGER AS
+    $func$
+    DECLARE
+        t_tbl_name varchar;
+    BEGIN
+        create unlogged table if not exists date_format(now(), 'traf_archive_%d%m%Y') (
+            id bigint NOT NULL
+        )
+    END;
+    $func$
+LANGUAGE plpgsql;
+
+-- CREATE TRIGGER traffic_copy_stat2archive_trigger
+--   AFTER INSERT OR UPDATE
+--   ON traf_cache
+--   FOR EACH ROW
+-- EXECUTE PROCEDURE traffic_copy_stat2archive();

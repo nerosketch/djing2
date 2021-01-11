@@ -11,7 +11,7 @@ longprocdir='./longprocdir'
 parsedump() {
   fname="$1"
   echo 'INSERT INTO traf_cache (event_time, ip_addr, octets, packets) VALUES'
-  nfdump -r $fname -O ipkg -Nq -A srcip -o 'fmt:%tsr;%sa;%byt;%pkt' 'src net 10.0.0.0/8 or src net 193.104.145.0/24' | while read -r line; do
+  nfdump -r $fname -Nq -A srcip -A dstip -o 'fmt:%tsr;%sa;%byt;%pkt' 'src net 10.0.0.0/8' | while read -r line; do
     arrIn=(${line//;/ })
     echo "$c(to_timestamp(${arrIn[0]}),'${arrIn[1]}',${arrIn[2]},${arrIn[3]})"
     c=','
@@ -23,6 +23,4 @@ parsedump() {
 }
 
 #parsedump $1
-psql postgresql://postgres:2ekc3@127.0.0.1/djing2 -c "$(parsedump $1)"
-
-mv $1 longprocdir
+psql postgresql://postgres:password@127.0.0.1/djing2 -c "$(parsedump $1)"
