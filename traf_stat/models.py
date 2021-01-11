@@ -7,12 +7,6 @@ from django.utils.timezone import now
 from djing2.models import BaseAbstractModel
 
 
-def get_dates():
-    tables = connection.introspection.table_names()
-    tables = (t.replace('flowstat_', '') for t in tables if t.startswith('flowstat_'))
-    return tuple(datetime.strptime(t, '%d%m%Y').date() for t in tables)
-
-
 class StatManager(models.Manager):
     def chart(self, user, count_of_parts=12, want_date=date.today()):
         def byte_to_mbit(x):
@@ -88,6 +82,12 @@ class TrafficArchiveModel(BaseAbstractModel):
         d0 = key(N[int(f)]) * (c - k)
         d1 = key(N[int(c)]) * (k - f)
         return d0 + d1
+
+    @staticmethod
+    def create_db_partitions():
+        with connection.cursor() as cur:
+            cur.execute("SELECT create_traf_archive_partition_tbl();")
+            cur.fetchone()
 
     class Meta:
         db_table = 'traf_archive'
