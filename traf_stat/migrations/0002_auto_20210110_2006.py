@@ -27,12 +27,29 @@ class Migration(migrations.Migration):
             options={
                 'db_table': 'traf_cache',
                 'ordering': ('-event_time',),
-                'unique_together': ('customer', 'ip_addr',),
+                'unique_together': {('customer', 'ip_addr')},
             },
             bases=(djing2.models.BaseAbstractModelMixin, models.Model),
         ),
         migrations.DeleteModel(
             name='StatCache',
+        ),
+        migrations.CreateModel(
+            name='TrafficArchiveModel',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('event_time', models.DateTimeField()),
+                ('octets', models.PositiveIntegerField(default=0)),
+                ('packets', models.PositiveIntegerField(default=0)),
+                ('customer',
+                 models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE,
+                                   to='customers.Customer')),
+            ],
+            options={
+                'db_table': 'traf_archive',
+                'unique_together': {('customer', 'event_time')},
+            },
+            bases=(djing2.models.BaseAbstractModelMixin, models.Model),
         ),
         migrations.RunSQL(
             sql=read_all_file('0002_auto_20210110_2006.sql', __file__)

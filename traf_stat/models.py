@@ -51,10 +51,9 @@ class StatManager(models.Manager):
                 return
 
 
-class TrafficArchiveElement(BaseAbstractModel):
+class TrafficArchiveModel(BaseAbstractModel):
     customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE, null=True, default=None, blank=True)
-    cur_time = models.DateTimeField(primary_key=True)
-    ip_addr = models.PositiveIntegerField()
+    event_time = models.DateTimeField()
     octets = models.PositiveIntegerField(default=0)
     packets = models.PositiveIntegerField(default=0)
 
@@ -67,16 +66,6 @@ class TrafficArchiveElement(BaseAbstractModel):
     # ReadOnly
     def delete(self, *args, **kwargs):
         pass
-
-    @property
-    def table_name(self):
-        return self._meta.db_table
-
-    def delete_month(self):
-        cursor = connection.cursor()
-        table_name = self._meta.db_table
-        sql = "DROP TABLE IF EXISTS %s;" % table_name
-        cursor.execute(sql)
 
     @staticmethod
     def percentile(N, percent, key=lambda x: x):
@@ -101,16 +90,8 @@ class TrafficArchiveElement(BaseAbstractModel):
         return d0 + d1
 
     class Meta:
-        abstract = True
-
-
-def getModel(want_date=None):
-    if want_date is None:
-        want_date = now()
-    m = TrafficArchiveElement
-    m.Meta.db_table = 'traf_archive_%s' % want_date.strftime("%d%m%Y")
-    m.Meta.abstract = False
-    return m
+        db_table = 'traf_archive'
+        unique_together = ['customer', 'event_time']
 
 
 class TrafficCache(BaseAbstractModel):
