@@ -5,7 +5,7 @@
 
 CREATE OR REPLACE FUNCTION traffic_prepare_customer_id_by_ip()
   RETURNS TRIGGER AS
-$func$
+$$
 DECLARE
   t_customer_id integer;
 BEGIN
@@ -22,7 +22,7 @@ BEGIN
   NEW."customer_id" := t_customer_id;
   RETURN NEW;
 END
-$func$
+$$
 LANGUAGE plpgsql;
 
 CREATE TRIGGER traffic_prepare_customer_id_by_ip_trigger
@@ -39,14 +39,16 @@ CREATE INDEX traf_cache_ip_addr_index ON traf_cache USING GIST(ip_addr inet_ops)
 
 CREATE OR REPLACE FUNCTION traffic_copy_stat2archive()
   RETURNS TRIGGER AS
-$func$
+$$
+DECLARE
+  v_parition_name text;
 BEGIN
-  -- TODO: Вставлять не в traf_archive, а прямо в партицию с нужным именем
-  insert into traf_archive (customer_id, event_time, octets, packets) values
-    (NEW.customer_id, NEW.event_time, NEW.octets, NEW.packets);
-  return NEW;
+  v_parition_name := to_char('traf_archive_YYYYMMID', NEW.event_time );
+  execute 'INSERT INTO ' || v_parition_name || '(customer_id,event_time,octets,packets) VALUES ($1,$2,$3,$4);'
+  using NEW.customer_id, NEW.event_time, NEW.octets, NEW.packets;
+  return NULL;
 END;
-$func$
+$$
 LANGUAGE plpgsql;
 
 CREATE TRIGGER traffic_copy_stat2archive_trigger
@@ -79,13 +81,12 @@ $$;
 CREATE OR REPLACE FUNCTION traffic_copy_stat2partition_from_traf_archive()
   RETURNS TRIGGER AS
 $$
+DECLARE
+  v_parition_name text;
 BEGIN
-
-  -- TODO: Вставлять не в traf_archive, а прямо в партицию с нужным именем
-  insert into traf_archive (customer_id, event_time, octets, packets) values
-    (NEW.customer_id, NEW.event_time, NEW.octets, NEW.packets);
-  return NEW;
-
+  v_parition_name := to_char('traf_archive_YYYYMMID', NEW.event_time );
+  execute 'INSERT INTO ' || v_parition_name || ' VALUES ( ($1).* )' using NEW;
+  return NULL;
 END;
 $$
 LANGUAGE plpgsql;
