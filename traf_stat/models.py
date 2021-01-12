@@ -86,9 +86,9 @@ class TrafficArchiveModel(BaseAbstractModel):
     @staticmethod
     def create_db_partitions():
         with connection.cursor() as cur:
-            cur.execute("SELECT create_traf_archive_partition_tbl(now());")
+            cur.execute("SELECT create_traf_archive_partition_tbl(now()::timestamp);")
             cur.fetchone()
-            cur.execute("SELECT create_traf_archive_partition_tbl(now() + '1 week'::interval);")
+            cur.execute("SELECT create_traf_archive_partition_tbl(now()::timestamp + '1 week'::interval);")
             cur.fetchone()
 
     class Meta:
