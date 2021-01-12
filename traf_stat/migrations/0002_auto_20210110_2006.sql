@@ -45,7 +45,7 @@ DECLARE
   v_parition_name text;
 BEGIN
   v_parition_name := to_char(NEW.event_time, 'traf_archive_YYYYMMW');
-  execute format('INSERT INTO %I(customer_id,event_time,octets,packets) VALUES ($1,$2,$3,$4);', v_parition_name)
+  execute format('INSERT INTO %I(customer_id,event_time,octets,packets) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING;', v_parition_name)
     using NEW.customer_id, NEW.event_time, NEW.octets, NEW.packets;
   return NULL;
 END
@@ -106,7 +106,7 @@ DECLARE
   v_parition_name text;
 BEGIN
   v_parition_name := to_char(NEW.event_time, 'traf_archive_YYYYMMW');
-  execute 'INSERT INTO ' || v_parition_name || ' VALUES ( ($1).* )' using NEW;
+  execute 'INSERT INTO ' || v_parition_name || ' VALUES ( ($1).* ) ON CONFLICT DO NOTHING' using NEW;
   return NULL;
 END
 $$
