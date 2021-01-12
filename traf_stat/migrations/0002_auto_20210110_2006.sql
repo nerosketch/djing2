@@ -43,7 +43,7 @@ $$
 DECLARE
   v_parition_name text;
 BEGIN
-  v_parition_name := to_char('traf_archive_YYYYMMID', NEW.event_time );
+  v_parition_name := to_char(NEW.event_time, 'traf_archive_YYYYMMW');
   execute 'INSERT INTO ' || v_parition_name || '(customer_id,event_time,octets,packets) VALUES ($1,$2,$3,$4);'
   using NEW.customer_id, NEW.event_time, NEW.octets, NEW.packets;
   return NULL;
@@ -60,8 +60,8 @@ EXECUTE PROCEDURE traffic_copy_stat2archive();
 
 ALTER TABLE traf_archive SET UNLOGGED ;
 
-CREATE OR REPLACE FUNCTION create_traf_archive_partition_tbl()
-  RETURNS SETOF boolean
+CREATE OR REPLACE FUNCTION create_traf_archive_partition_tbl(whentime timestamptz)
+  RETURNS boolean
 LANGUAGE plpgsql
 AS $$
 DECLARE
@@ -70,17 +70,26 @@ DECLARE
   v_parition_name text;
 BEGIN
 
-  v_next_week_start := date_trunc('day', now() + '1 week'::interval);
-  v_next_week_end := v_next_week_start + '1 week'::interval - '1 sec'::interval;
-  v_parition_name := to_char('traf_archive_YYYYMMID', v_next_week_end);
+  v_parition_name := to_char(whentime, 'traf_archive_YYYYMMW');
+  if exists(
+    select from information_schema.tables
+    where table_schema = 'public'
+    and table_name = v_parition_name
+  ) then
+      return false;
+  end if;
 
-  -- TODO: Генерировать имя партиции, и временной промежуток для данных в этой партиции,
-  -- чтоб он был валиден этому имени партиции
-  -- TODO: Проверять сегодняшнюю партицию
+  v_next_week_start := date_trunc('day', whentime);
+  v_next_week_end := v_next_week_start + '1 week'::interval - '1 sec'::interval;
+
   execute 'create unlogged table if not exists ' || v_parition_name || '(like traf_archive including all)';
   execute 'alter table ' || v_parition_name || ' inherit traf_archive';
-  execute 'alter table ' || v_parition_name || ' add constraint partition_check check (event_time > $1 and event_time < $2)'
-  using v_next_week_start, v_next_week_end;
+  execute format('alter table %I add constraint partition_check check (event_time > ''%s'' and event_time < ''%s'')',
+    v_parition_name,
+    v_next_week_start,
+    v_next_week_end);
+
+  return true;
 END
 $$;
 
@@ -94,7 +103,7 @@ $$
 DECLARE
   v_parition_name text;
 BEGIN
-  v_parition_name := to_char('traf_archive_YYYYMMID', NEW.event_time );
+  v_parition_name := to_char(NEW.event_time, 'traf_archive_YYYYMMW');
   execute 'INSERT INTO ' || v_parition_name || ' VALUES ( ($1).* )' using NEW;
   return NULL;
 END;
