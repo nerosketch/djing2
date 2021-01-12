@@ -6,8 +6,6 @@ then
   exit
 fi
 
-longprocdir='./longprocdir'
-
 parsedump() {
   fname="$1"
   echo 'INSERT INTO traf_cache (event_time, ip_addr, octets, packets) VALUES'
@@ -23,4 +21,4 @@ parsedump() {
 }
 
 #parsedump $1
-echo "$(parsedump $1)" | psql postgresql://postgres:ps@127.0.0.1/djing
+echo "$(parsedump $1)" | psql postgresql://postgres:***REMOVED***@127.0.0.1/djing2
