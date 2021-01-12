@@ -32,7 +32,8 @@ CREATE TRIGGER traffic_prepare_customer_id_by_ip_trigger
 EXECUTE PROCEDURE traffic_prepare_customer_id_by_ip();
 
 -- traf_cache changes frequently
-ALTER TABLE traf_cache SET UNLOGGED;
+ALTER TABLE IF EXISTS traf_cache SET UNLOGGED;
+ALTER TABLE IF EXISTS traf_cache ALTER COLUMN event_time TYPE TIMESTAMP WITHOUT TIME ZONE;
 
 CREATE INDEX traf_cache_ip_addr_index ON traf_cache USING GIST(ip_addr inet_ops);
 
@@ -44,12 +45,12 @@ DECLARE
   v_parition_name text;
 BEGIN
   v_parition_name := to_char(NEW.event_time, 'traf_archive_YYYYMMW');
-  execute 'INSERT INTO ' || v_parition_name || '(customer_id,event_time,octets,packets) VALUES ($1,$2,$3,$4);'
-  using NEW.customer_id, NEW.event_time, NEW.octets, NEW.packets;
+  execute format('INSERT INTO %I(customer_id,event_time,octets,packets) VALUES ($1,$2,$3,$4);', v_parition_name)
+    using NEW.customer_id, NEW.event_time, NEW.octets, NEW.packets;
   return NULL;
-END;
+END
 $$
-LANGUAGE plpgsql;
+  LANGUAGE plpgsql;
 
 CREATE TRIGGER traffic_copy_stat2archive_trigger
   AFTER INSERT OR UPDATE
@@ -58,15 +59,16 @@ CREATE TRIGGER traffic_copy_stat2archive_trigger
 EXECUTE PROCEDURE traffic_copy_stat2archive();
 
 
-ALTER TABLE traf_archive SET UNLOGGED ;
+ALTER TABLE IF EXISTS traf_archive SET UNLOGGED ;
+ALTER TABLE IF EXISTS traf_archive ALTER COLUMN event_time TYPE TIMESTAMP WITHOUT TIME ZONE;
 
-CREATE OR REPLACE FUNCTION create_traf_archive_partition_tbl(whentime timestamptz)
+CREATE OR REPLACE FUNCTION create_traf_archive_partition_tbl(whentime timestamp)
   RETURNS boolean
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  v_next_week_start timestamptz;
-  v_next_week_end timestamptz;
+  v_next_week_start timestamp;
+  v_next_week_end timestamp;
   v_parition_name text;
 BEGIN
 
@@ -79,12 +81,12 @@ BEGIN
       return false;
   end if;
 
-  v_next_week_start := date_trunc('day', whentime);
+  v_next_week_start := date_trunc('week', whentime);
   v_next_week_end := v_next_week_start + '1 week'::interval - '1 sec'::interval;
 
   execute 'create unlogged table if not exists ' || v_parition_name || '(like traf_archive including all)';
   execute 'alter table ' || v_parition_name || ' inherit traf_archive';
-  execute format('alter table %I add constraint partition_check check (event_time > ''%s'' and event_time < ''%s'')',
+  execute format('alter table %I add constraint partition_check check (event_time >= ''%s'' and event_time < ''%s'')',
     v_parition_name,
     v_next_week_start,
     v_next_week_end);
@@ -106,7 +108,7 @@ BEGIN
   v_parition_name := to_char(NEW.event_time, 'traf_archive_YYYYMMW');
   execute 'INSERT INTO ' || v_parition_name || ' VALUES ( ($1).* )' using NEW;
   return NULL;
-END;
+END
 $$
 LANGUAGE plpgsql;
 
