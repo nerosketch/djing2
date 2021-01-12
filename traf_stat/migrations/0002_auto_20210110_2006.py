@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('octets', models.PositiveIntegerField(default=0)),
                 ('packets', models.PositiveIntegerField(default=0)),
                 ('customer',
-                 models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE,
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
                                    to='customers.Customer')),
             ],
             options={

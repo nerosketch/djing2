@@ -7,7 +7,7 @@ from django.utils.timezone import now
 from djing2.models import BaseAbstractModel
 
 
-class StatManager(models.Manager):
+class TrafficArchiveManager(models.Manager):
     def chart(self, user, count_of_parts=12, want_date=date.today()):
         def byte_to_mbit(x):
             return ((x / 60) * 8) / 2 ** 20
@@ -46,12 +46,12 @@ class StatManager(models.Manager):
 
 
 class TrafficArchiveModel(BaseAbstractModel):
-    customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE, null=True, default=None, blank=True)
+    customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE)
     event_time = models.DateTimeField()
     octets = models.PositiveIntegerField(default=0)
     packets = models.PositiveIntegerField(default=0)
 
-    objects = StatManager()
+    objects = TrafficArchiveManager()
 
     # ReadOnly
     def save(self, *args, **kwargs):
