@@ -59,7 +59,7 @@ CREATE TRIGGER traffic_copy_stat2archive_trigger
 EXECUTE PROCEDURE traffic_copy_stat2archive();
 
 
-ALTER TABLE IF EXISTS traf_archive SET UNLOGGED ;
+ALTER TABLE IF EXISTS traf_archive SET UNLOGGED;
 ALTER TABLE IF EXISTS traf_archive ALTER COLUMN event_time TYPE TIMESTAMP WITHOUT TIME ZONE;
 
 CREATE OR REPLACE FUNCTION create_traf_archive_partition_tbl(whentime timestamp)
@@ -94,9 +94,6 @@ BEGIN
   return true;
 END
 $$;
-
--- https://habr.com/ru/post/273933/
--- TODO: создавать партиции с подходящими именами
 
 
 CREATE OR REPLACE FUNCTION traffic_copy_stat2partition_from_traf_archive()
