@@ -1,48 +1,24 @@
-from datetime import datetime, timedelta, date, time
 import math
+from datetime import timedelta, date, datetime
 
-from django.db import models, connection, ProgrammingError
+from django.db import models, connection
 from django.utils.timezone import now
 
+from djing2.lib import safe_int
 from djing2.models import BaseAbstractModel
 
 
 class TrafficArchiveManager(models.Manager):
-    def chart(self, user, count_of_parts=12, want_date=date.today()):
-        def byte_to_mbit(x):
-            return ((x / 60) * 8) / 2 ** 20
-
-        def split_list(lst, chunk_count):
-            chunk_size = len(lst) // chunk_count
-            if chunk_size == 0:
-                chunk_size = 1
-            return tuple(lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size))
-
-        def avarage(elements):
-            return sum(elements) / len(elements)
-
-        try:
-            charts_data = self.filter(customer=user)
-            charts_times = tuple(cd.cur_time.timestamp() * 1000 for cd in charts_data)
-            charts_octets = tuple(cd.octets for cd in charts_data)
-            if len(charts_octets) > 0 and len(charts_octets) == len(charts_times):
-                charts_octets = split_list(charts_octets, count_of_parts)
-                charts_octets = (byte_to_mbit(avarage(c)) for c in charts_octets)
-
-                charts_times = split_list(charts_times, count_of_parts)
-                charts_times = tuple(avarage(t) for t in charts_times)
-
-                charts_data = zip(charts_times, charts_octets)
-                charts_data = ["{x: new Date(%d), y: %.2f}" % (cd[0], cd[1]) for cd in charts_data]
-                midnight = datetime.combine(want_date, time.min)
-                charts_data.append("{x:new Date(%d),y:0}" % (int(charts_times[-1:][0]) + 1))
-                charts_data.append("{x:new Date(%d),y:0}" % (int((midnight + timedelta(days=1)).timestamp()) * 1000))
-                return charts_data
-            else:
-                return
-        except ProgrammingError as e:
-            if "flowstat" in str(e):
-                return
+    @staticmethod
+    def get_chart_data(customer_id: int, start_date: datetime, end_date: datetime = None) -> list:
+        customer_id = safe_int(customer_id)
+        if end_date is None:
+            end_date = datetime.now()
+        with connection.cursor() as cur:
+            cur.execute("SELECT traf_fetch_archive4graph(%s::bigint, %s, %s);",
+                        [customer_id, start_date, end_date])
+            res = [tuple(int(i) for i in j[1:-1].split(',')) for r in cur.fetchall() for j in r]
+        return res
 
 
 class TrafficArchiveModel(BaseAbstractModel):
