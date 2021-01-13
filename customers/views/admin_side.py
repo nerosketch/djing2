@@ -64,7 +64,8 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         'current_service',
         'current_service__service',
         'gateway',
-        'street'
+        'street',
+        'traf_cache'
     ).annotate(lease_count=Count('customeripleasemodel'))
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
