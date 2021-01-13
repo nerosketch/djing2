@@ -1,4 +1,4 @@
----
+--
 --- Prepare customer_id field while insert row in cache
 ---
 
@@ -119,20 +119,29 @@ CREATE TRIGGER traffic_copy_stat2partition_from_traf_archive_trigger
   EXECUTE PROCEDURE traffic_copy_stat2partition_from_traf_archive();
 
 
+DROP TYPE if exists TrafFetchArchiveReturnType CASCADE;
+CREATE TYPE TrafFetchArchiveReturnType AS (
+  acttime timestamp,
+  octsum bigint,
+  pctsum bigint
+);
+
 CREATE OR REPLACE FUNCTION traf_fetch_archive4graph(
   v_customer bigint,
   v_start_date timestamp,
   v_end_date timestamp
 )
-  RETURNS SETOF networks_ip_pool AS
+  RETURNS SETOF TrafFetchArchiveReturnType AS
 $$
-select
-  date_trunc('hour', event_time) + date_part('minute', event_time) :: int / 5 * interval '5 min' as trnk,
-  sum(octets) as octsum,
-  sum(packets) as pctsum
-from traf_archive
-  where event_time > v_start_date and event_time < v_end_date and customer_id = v_customer
-group by 1
-order by 1;
+   select date_trunc('hour', event_time) +
+          date_part('minute', event_time) :: int / 5 * interval '5 min' as trnk,
+          sum(octets)                                                   as octsum,
+          sum(packets)                                                  as pctsum
+   from traf_archive
+   where event_time > v_start_date
+     and event_time < v_end_date
+     and customer_id = v_customer
+   group by 1
+   order by 1
 $$
 LANGUAGE sql;
