@@ -107,6 +107,9 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     create_date = serializers.CharField(read_only=True)
     lease_count = serializers.IntegerField(read_only=True)
 
+    traf_octs = serializers.IntegerField(source='traf_cache.octets', read_only=True)
+    traf_time = serializers.DateTimeField(source='traf_cache.event_time', read_only=True)
+
     def create(self, validated_data):
         validated_data.update({
             'is_admin': False,
@@ -140,7 +143,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             'device', 'device_comment', 'dev_port', 'last_connected_service',
             'last_connected_service_title', 'current_service', 'current_service__service__title',
             'service_id', 'is_dynamic_ip', 'full_name', 'password', 'raw_password',
-            'create_date', 'birth_day', 'lease_count', 'sites'
+            'create_date', 'birth_day', 'lease_count', 'sites', 'traf_octs', 'traf_time'
         )
 
 
