@@ -1,6 +1,6 @@
 --
---- Prepare customer_id field while insert row in cache
----
+-- Prepare customer_id field while insert row in cache
+--
 
 
 CREATE OR REPLACE FUNCTION traffic_prepare_customer_id_by_ip()
