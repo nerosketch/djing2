@@ -82,7 +82,7 @@ class TrafficArchiveModel(BaseAbstractModel):
 
 
 class TrafficCache(BaseAbstractModel):
-    customer = models.OneToOneField(
+    customer = models.ForeignKey(
         'customers.Customer',
         on_delete=models.CASCADE,
         related_name='traf_cache'
