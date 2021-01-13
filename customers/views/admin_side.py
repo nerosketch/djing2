@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from django.conf import settings
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
@@ -64,9 +64,8 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         'current_service',
         'current_service__service',
         'gateway',
-        'street',
-        'traf_cache'
-    ).annotate(lease_count=Count('customeripleasemodel'))
+        'street'
+    ).annotate(lease_count=Count('customeripleasemodel'), octsum=Sum('traf_cache'))
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ('username', 'fio', 'telephone', 'description')
