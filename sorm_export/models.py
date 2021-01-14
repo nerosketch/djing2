@@ -1,6 +1,7 @@
 from django.utils.translation import gettext as _
 from django.contrib.postgres.fields import JSONField
 from django.db import models
+from groupapp.models import Group
 
 date_format = '%d.%m.%Y'
 datetime_format = '%d.%m.%YT%H:%M:%S'
@@ -77,3 +78,29 @@ class FtpCredentialsModel(models.Model):
     class Meta:
         db_table = 'sorm_export_ftp_credentials'
 """
+
+
+"""
+class FiasCountries(models.Model):
+    title = models.CharField(_('Country'), max_length=128)
+
+
+class FiasRegions(models.Model):
+    title = models.CharField(_('Country'), max_length=128)
+
+
+class GroupFIASInfo(models.Model):
+    group = models.OneToOneField(Group, on_delete=models.CASCADE, primary_key=True)
+    # TODO: FIAS SOCRBASE привязать
+    ao_type = models.IntegerField(
+        _('ao type'),
+        choices='...',
+        help_text='соответствует полю SOCRBASE.KOD_T_ST'
+    )
+    region_type = models.CharField(
+        _('Region type'),
+        max_length=128,
+        help_text='соответствует полю SOCRBASE.SOCRNAME'
+    )
+"""
+
