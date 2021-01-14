@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Q
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
@@ -65,12 +65,23 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         'current_service__service',
         'gateway',
         'street'
-    ).annotate(lease_count=Count('customeripleasemodel'), octsum=Sum('traf_cache'))
+    )
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ('username', 'fio', 'telephone', 'description')
     filterset_fields = ('group', 'street', 'device', 'dev_port', 'current_service__service')
     ordering_fields = ('username', 'fio', 'house', 'balance', 'current_service__service__title')
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.annotate(
+            lease_count=Count('customeripleasemodel'), octsum=Sum(
+                'traf_cache__octets',
+                filter=Q(
+                    traf_cache__event_time__gt=datetime.now() - timedelta(minutes=5)
+                )
+            )
+        )
 
     def perform_create(self, serializer, *args, **kwargs):
         return super().perform_create(
