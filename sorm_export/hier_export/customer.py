@@ -1,7 +1,7 @@
 from typing import Iterable
 
 from customers.models import Customer
-from sorm_export.models import CommunicationStandardChoices
+from sorm_export.models import CommunicationStandardChoices, CustomerDocumentTypeChoices
 from sorm_export.serializers import individual_entity_serializers
 from .base import iterable_export_decorator, simple_export_decorator, format_fname
 
@@ -121,8 +121,22 @@ def export_individual_customer(customers: Iterable[Customer], event_time=None):
     В этом файле выгружается информация об абонентах, у которых контракт заключён с физическим лицом.
     """
     def gen(customer: Customer):
+        passport = customer.passportinfo
         return {
-            ''
+            'customer_id': customer.pk,
+            'name': customer.fio,
+            'surname': customer.get_full_name(),
+            'birthday': customer.birth_day,
+            'document_type': CustomerDocumentTypeChoices.PASSPORT_RF,
+            'document_serial': passport.series,
+            'document_number': passport.number,
+            'document_distributor': passport.distributor,
+            # 'passport_code': passport.,
+            'passport_date': passport.date_of_acceptance,
+            'house': customer.get_address(),
+            'parent_id_ao': None,  # FIXME: ????
+            'actual_start_time': customer.create_date,
+            # 'actual_end_time':
         }
 
     return (
