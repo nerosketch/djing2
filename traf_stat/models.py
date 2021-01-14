@@ -1,65 +1,42 @@
-from datetime import datetime, timedelta, date, time
 import math
+from datetime import timedelta, date, datetime
 
-from django.db import models, connection, ProgrammingError
+from django.db import models, connection
 from django.utils.timezone import now
 
+from djing2.lib import safe_int
 from djing2.models import BaseAbstractModel
-from .fields import UnixDateTimeField
 
 
-def get_dates():
-    tables = connection.introspection.table_names()
-    tables = (t.replace('flowstat_', '') for t in tables if t.startswith('flowstat_'))
-    return tuple(datetime.strptime(t, '%d%m%Y').date() for t in tables)
+class TrafficArchiveManager(models.Manager):
+    @staticmethod
+    def get_chart_data(customer_id: int, start_date: datetime, end_date: datetime = None) -> list:
+        customer_id = safe_int(customer_id)
+        if end_date is None:
+            end_date = datetime.now()
+
+        def _parse_vals(vals):
+            str_time, octsum, pctsum = vals[1:-1].split(',')
+            return {
+                'time': datetime.strptime(str_time, '"%Y-%m-%d %H:%M:%S"'),
+                'octsum': int(octsum),
+                'pctsum': int(pctsum)
+            }
+
+        with connection.cursor() as cur:
+            cur.execute("SELECT traf_fetch_archive4graph(%s::bigint, %s, %s);",
+                        [customer_id, start_date, end_date])
+            res = [_parse_vals(j) for r in cur.fetchall() for j in r]
+        return res
 
 
-class StatManager(models.Manager):
-    def chart(self, user, count_of_parts=12, want_date=date.today()):
-        def byte_to_mbit(x):
-            return ((x / 60) * 8) / 2 ** 20
-
-        def split_list(lst, chunk_count):
-            chunk_size = len(lst) // chunk_count
-            if chunk_size == 0:
-                chunk_size = 1
-            return tuple(lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size))
-
-        def avarage(elements):
-            return sum(elements) / len(elements)
-
-        try:
-            charts_data = self.filter(customer=user)
-            charts_times = tuple(cd.cur_time.timestamp() * 1000 for cd in charts_data)
-            charts_octets = tuple(cd.octets for cd in charts_data)
-            if len(charts_octets) > 0 and len(charts_octets) == len(charts_times):
-                charts_octets = split_list(charts_octets, count_of_parts)
-                charts_octets = (byte_to_mbit(avarage(c)) for c in charts_octets)
-
-                charts_times = split_list(charts_times, count_of_parts)
-                charts_times = tuple(avarage(t) for t in charts_times)
-
-                charts_data = zip(charts_times, charts_octets)
-                charts_data = ["{x: new Date(%d), y: %.2f}" % (cd[0], cd[1]) for cd in charts_data]
-                midnight = datetime.combine(want_date, time.min)
-                charts_data.append("{x:new Date(%d),y:0}" % (int(charts_times[-1:][0]) + 1))
-                charts_data.append("{x:new Date(%d),y:0}" % (int((midnight + timedelta(days=1)).timestamp()) * 1000))
-                return charts_data
-            else:
-                return
-        except ProgrammingError as e:
-            if "flowstat" in str(e):
-                return
-
-
-class StatElem(BaseAbstractModel):
-    cur_time = UnixDateTimeField(primary_key=True)
-    customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE, null=True, default=None, blank=True)
-    ip = models.PositiveIntegerField()
+class TrafficArchiveModel(BaseAbstractModel):
+    customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE)
+    event_time = models.DateTimeField()
     octets = models.PositiveIntegerField(default=0)
     packets = models.PositiveIntegerField(default=0)
 
-    objects = StatManager()
+    objects = TrafficArchiveManager()
 
     # ReadOnly
     def save(self, *args, **kwargs):
@@ -68,16 +45,6 @@ class StatElem(BaseAbstractModel):
     # ReadOnly
     def delete(self, *args, **kwargs):
         pass
-
-    @property
-    def table_name(self):
-        return self._meta.db_table
-
-    def delete_month(self):
-        cursor = connection.cursor()
-        table_name = self._meta.db_table
-        sql = "DROP TABLE IF EXISTS %s;" % table_name
-        cursor.execute(sql)
 
     @staticmethod
     def percentile(N, percent, key=lambda x: x):
@@ -101,22 +68,27 @@ class StatElem(BaseAbstractModel):
         d1 = key(N[int(c)]) * (k - f)
         return d0 + d1
 
+    @staticmethod
+    def create_db_partitions():
+        with connection.cursor() as cur:
+            cur.execute("SELECT create_traf_archive_partition_tbl(now()::timestamp);")
+            cur.fetchone()
+            cur.execute("SELECT create_traf_archive_partition_tbl(now()::timestamp + '1 week'::interval);")
+            cur.fetchone()
+
     class Meta:
-        abstract = True
+        db_table = 'traf_archive'
+        unique_together = ['customer', 'event_time']
 
 
-def getModel(want_date=None):
-    if want_date is None:
-        want_date = now()
-    se = StatElem
-    se.Meta.db_table = 'flowstat_%s' % want_date.strftime("%d%m%Y")
-    se.Meta.abstract = False
-    return se
-
-
-class StatCache(BaseAbstractModel):
-    last_time = UnixDateTimeField()
-    customer = models.OneToOneField('customers.Customer', on_delete=models.CASCADE, primary_key=True)
+class TrafficCache(BaseAbstractModel):
+    customer = models.ForeignKey(
+        'customers.Customer',
+        on_delete=models.CASCADE,
+        related_name='traf_cache'
+    )
+    event_time = models.DateTimeField()
+    ip_addr = models.GenericIPAddressField()
     octets = models.PositiveIntegerField(default=0)
     packets = models.PositiveIntegerField(default=0)
 
@@ -143,6 +115,7 @@ class StatCache(BaseAbstractModel):
         return r
 
     class Meta:
-        db_table = 'flowcache'
+        db_table = 'traf_cache'
         # db_tablespace = 'ram'
-        ordering = '-last_time',
+        ordering = '-event_time',
+        unique_together = ['customer', 'ip_addr']
