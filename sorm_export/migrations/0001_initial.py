@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -19,7 +18,15 @@ class Migration(migrations.Migration):
                 ('first_attempt_time', models.DateTimeField(auto_now_add=True, verbose_name='Action time')),
                 ('last_attempt_time', models.DateTimeField(auto_now_add=True, verbose_name='Last attempt time')),
                 ('attempts_count', models.IntegerField(default=0, verbose_name='Attempt count')),
-                ('export_status', models.PositiveIntegerField(choices=[(0, 'Not exported'), (1, 'Successful'), (2, 'Failed')], default=0, verbose_name='Export status')),
+                ('export_status',
+                 models.PositiveIntegerField(choices=[(0, 'Not exported'), (1, 'Successful'), (2, 'Failed')], default=0,
+                                             verbose_name='Export status')),
+                ('export_type', models.IntegerField(
+                    choices=[(0, 'Unknown Choice'), (1, 'Customer Root'), (2, 'Customer Contract'),
+                             (3, 'Customer Address'), (4, 'Customer Ap Address'), (5, 'Customer Individual'),
+                             (6, 'Customer Legal'), (7, 'Customer Contact'), (8, 'Network Static Ip'),
+                             (9, 'Payment Unknown'), (10, 'Service Nomenclature'), (11, 'Service Customer'),
+                             (12, 'Service Customer Manual')], default=0, verbose_name='Export type')),
                 ('data', django.contrib.postgres.fields.jsonb.JSONField(verbose_name='Export event data')),
             ],
             options={
