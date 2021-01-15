@@ -19,7 +19,7 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
         return {
             'customer_id': customer.pk,
             'contract_start_date': customer.create_date,
-            'customer_login': customer.pk,
+            'customer_login': customer.username,
             'communication_standard': CommunicationStandardChoices.ETHERNET
         }
 

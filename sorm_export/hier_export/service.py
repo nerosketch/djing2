@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Iterable
 
 from customers.models import CustomerService
