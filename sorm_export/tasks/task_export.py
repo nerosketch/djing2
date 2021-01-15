@@ -3,7 +3,7 @@ from datetime import datetime
 from ftplib import all_errors
 from io import StringIO
 from sorm_export.ftp_worker.func import send_text_file
-from sorm_export.models import ExportStampModel, ExportStampStatusEnum
+from sorm_export.models import ExportStampModel, ExportStampStatusEnum, ExportStampTypeEnum
 
 
 class _Conv2BinStringIO(StringIO):
@@ -16,10 +16,11 @@ class _Conv2BinStringIO(StringIO):
 
 # make export stamp for logging export
 # end send data to ftp
-def task_export(data, filename: str):
+def task_export(data, filename: str, export_type: ExportStampTypeEnum):
     em = ExportStampModel.objects.create(
         data=data,
-        export_status=ExportStampStatusEnum.NOT_EXPORTED
+        export_status=ExportStampStatusEnum.NOT_EXPORTED,
+        export_type=export_type
     )
     try:
         csv_buffer = _Conv2BinStringIO()
