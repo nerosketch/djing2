@@ -4,6 +4,7 @@ from uwsgi_tasks import task
 
 from networks.models import CustomerIpLeaseModel
 from sorm_export.hier_export.networks import export_ip_leases
+from sorm_export.models import ExportStampTypeEnum
 from sorm_export.tasks.task_export import task_export
 
 
@@ -16,4 +17,4 @@ def export_ip_leases_task(customer_lease_id_list: List[int], event_time=None):
         leases=leases,
         event_time=event_time
     )
-    task_export(data, fname)
+    task_export(data, fname, ExportStampTypeEnum.NETWORK_STATIC_IP)

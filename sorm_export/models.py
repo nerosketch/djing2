@@ -7,6 +7,22 @@ date_format = '%d.%m.%Y'
 datetime_format = '%d.%m.%YT%H:%M:%S'
 
 
+class ExportStampTypeEnum(models.IntegerChoices):
+    UNKNOWN_CHOICE = 0
+    CUSTOMER_ROOT = 1
+    CUSTOMER_CONTRACT = 2
+    CUSTOMER_ADDRESS = 3
+    CUSTOMER_AP_ADDRESS = 4
+    CUSTOMER_INDIVIDUAL = 5
+    CUSTOMER_LEGAL = 6
+    CUSTOMER_CONTACT = 7
+    NETWORK_STATIC_IP = 8
+    PAYMENT_UNKNOWN = 9
+    SERVICE_NOMENCLATURE = 10
+    SERVICE_CUSTOMER = 11
+    SERVICE_CUSTOMER_MANUAL = 12
+
+
 class ExportStampStatusEnum(models.IntegerChoices):
     NOT_EXPORTED = 0, _('Not exported')
     SUCCESSFUL = 1, _('Successful')
@@ -21,6 +37,11 @@ class ExportStampModel(models.Model):
         _('Export status'),
         choices=ExportStampStatusEnum.choices,
         default=ExportStampStatusEnum.NOT_EXPORTED
+    )
+    export_type = models.IntegerField(
+        _('Export type'),
+        choices=ExportStampTypeEnum.choices,
+        default=ExportStampTypeEnum.UNKNOWN_CHOICE
     )
     data = JSONField(_('Export event data'))
 
