@@ -44,7 +44,7 @@ $$
 DECLARE
   v_parition_name text;
 BEGIN
-  v_parition_name := to_char(NEW.event_time, 'traf_archive_YYYYMMW');
+  v_parition_name := format('traf_archive_%s', to_char(NEW.event_time, 'YYYYMMIW'));
   execute format('INSERT INTO %I(customer_id,event_time,octets,packets) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING;', v_parition_name)
     using NEW.customer_id, NEW.event_time, NEW.octets, NEW.packets;
   return NULL;
@@ -72,7 +72,8 @@ DECLARE
   v_parition_name text;
 BEGIN
 
-  v_parition_name := to_char(whentime, 'traf_archive_YYYYMMW');
+  v_next_week_start := date_trunc('week', whentime);
+  v_parition_name := format('traf_archive_%s', to_char(v_next_week_start, 'YYYYMMIW'));
   if exists(
     select from information_schema.tables
     where table_schema = 'public'
@@ -81,7 +82,6 @@ BEGIN
       return false;
   end if;
 
-  v_next_week_start := date_trunc('week', whentime);
   v_next_week_end := v_next_week_start + '1 week'::interval - '1 sec'::interval;
 
   execute 'create unlogged table if not exists ' || v_parition_name || '(like traf_archive including all)';
@@ -102,7 +102,7 @@ $$
 DECLARE
   v_parition_name text;
 BEGIN
-  v_parition_name := to_char(NEW.event_time, 'traf_archive_YYYYMMW');
+  v_parition_name := format('traf_archive_%s', to_char(NEW.event_time, 'YYYYMMIW'));
   execute 'INSERT INTO ' || v_parition_name || ' VALUES ( ($1).* ) ON CONFLICT DO NOTHING' using NEW;
   return NULL;
 END
