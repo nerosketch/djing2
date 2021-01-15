@@ -25,7 +25,7 @@ class CustomerIncrementalRootFormat(serializers.Serializer):
         required=True,
         format=date_format
     )  # format dd.mm.YYYY
-    customer_login = serializers.CharField(  # same as id
+    customer_login = serializers.CharField(
         label=_('Customer login'),
         max_length=256,
         required=True
