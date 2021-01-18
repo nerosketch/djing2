@@ -105,26 +105,64 @@ class FtpCredentialsModel(models.Model):
 """
 
 
-"""
-class FiasCountries(models.Model):
+class FIASAddressLevelModel(models.Model):
+    title = models.CharField(_('FIAS address level'), max_length=128)
+    num = models.IntegerField(_('Level num'))
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        db_table = 'sorm_addr_levels'
+
+
+class FIASAddressTypeModel(models.Model):
+    level = models.ForeignKey(FIASAddressLevelModel, on_delete=models.CASCADE)
+    num = models.IntegerField(_('Address type num'))
+    name = models.CharField(max_length=16)
+    full_name = models.CharField(max_length=128)
+
+    def __str__(self):
+        return self.full_name
+
+    class Meta:
+        db_table = 'sorm_addr_types'
+
+
+class FiasCountryModel(models.Model):
     title = models.CharField(_('Country'), max_length=128)
+    ao_type = models.ForeignKey(FIASAddressTypeModel, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        db_table = 'sorm_countries'
 
 
-class FiasRegions(models.Model):
+class FiasRegionModel(models.Model):
     title = models.CharField(_('Country'), max_length=128)
+    ao_type = models.ForeignKey(FIASAddressTypeModel, on_delete=models.CASCADE)
+    country = models.ForeignKey(FiasCountryModel, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        db_table = 'sorm_regions'
 
 
-class GroupFIASInfo(models.Model):
+class GroupFIASInfoModel(models.Model):
     group = models.OneToOneField(Group, on_delete=models.CASCADE, primary_key=True)
     # TODO: FIAS SOCRBASE привязать
-    ao_type = models.IntegerField(
-        _('ao type'),
-        choices='...',
+    ao_type = models.ForeignKey(
+        FIASAddressTypeModel,
+        on_delete=models.CASCADE,
         help_text='соответствует полю SOCRBASE.KOD_T_ST'
     )
-    region_type = models.CharField(
-        _('Region type'),
-        max_length=128,
+    region = models.ForeignKey(
+        FiasRegionModel,
+        on_delete=models.CASCADE,
+        verbose_name=_('Region type'),
         help_text='соответствует полю SOCRBASE.SOCRNAME'
     )
-"""
