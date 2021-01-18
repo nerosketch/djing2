@@ -10,7 +10,7 @@ class GeneralFieldsMixin:
         label=_('Customer id'),
         max_length=64,
         required=True
-    )  # CustomerIncrementalRootFormat.legal_customer_id
+    )  # CustomerRootObjectFormat.legal_customer_id
     customer_code = serializers.CharField(default='', allow_blank=True)  # reserved
     pay_time = serializers.DateTimeField(
         label=_('Payment time'),
