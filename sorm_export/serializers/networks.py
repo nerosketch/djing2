@@ -18,7 +18,7 @@ class CustomerIpLeaseExportFormat(serializers.Serializer):
         label=_('Customer id'),
         max_length=64,
         required=True
-    )  # CustomerIncrementalRootFormat.legal_customer_id
+    )  # CustomerRootObjectFormat.legal_customer_id
     ip_addr = serializers.IPAddressField(
         required=True
     )  # TODO: Проверить выводимый формат
