@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Iterable
 
 from customers.models import CustomerService
@@ -21,7 +22,9 @@ def export_nomenclature(services: Iterable[Service], event_time=None):
             'mnemonic': str(srv.title)[:64],
             'description': str(srv.descr)[:256],
             'begin_time': srv.create_time.date(),  # дата начала будет датой создания тарифа.
-            # TODO: end_time нужно заполнять.
+            # end_time 36525 дней (~100 лет), типо бесконечно. Т.к. для вида услуги нет даты завершения,
+            # как и нет даты окончания действия какого-то имени, например.
+            'end_time': srv.create_time.date() + timedelta(days=36525),
             'operator_type_id': CommunicationStandardChoices.ETHERNET
         }
 

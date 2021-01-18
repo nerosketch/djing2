@@ -9,7 +9,7 @@ from sorm_export.models import (
 )
 
 
-class CustomerIncrementalRootFormat(serializers.Serializer):
+class CustomerRootObjectFormat(serializers.Serializer):
     customer_id = serializers.CharField(
         label=_('Customer id'),
         max_length=64,
@@ -38,7 +38,7 @@ class CustomerIncrementalRootFormat(serializers.Serializer):
     )
 
 
-class CustomerIncrementalContractFormat(serializers.Serializer):
+class CustomerContractObjectFormat(serializers.Serializer):
     contract_id = serializers.CharField(
         label=_('Contract ID'),
         max_length=64,
@@ -55,9 +55,9 @@ class CustomerIncrementalContractFormat(serializers.Serializer):
         required=True,
         format=date_format
     )  # format dd.mm.YYYY
-    contract_end_date = serializers.DateTimeField(
+    contract_end_date = serializers.DateField(
         label=_('Contract completion date'),
-        format=datetime_format,
+        format=date_format,
         allow_null=True,
         required=False
     )  # format DD.mm.YYYYTHH:MM:SS or ''
@@ -73,7 +73,7 @@ class CustomerIncrementalContractFormat(serializers.Serializer):
     )
 
 
-class CustomerIncrementalAddressFormat(serializers.Serializer):
+class CustomerAddressObjectFormat(serializers.Serializer):
     address_id = serializers.CharField(
         label=_('Address id'),
         help_text="это может быть любой идентификатор: GUID, первичный ключ таблицы, код FIAS",
@@ -116,7 +116,7 @@ class CustomerIncrementalAddressFormat(serializers.Serializer):
     )
 
 
-class CustomerIncrementalAccessPointAddressFormat(serializers.Serializer):
+class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
     ap_id = serializers.CharField(
         label=_('Access point id'),
         max_length=128,
@@ -149,7 +149,7 @@ class CustomerIncrementalAccessPointAddressFormat(serializers.Serializer):
         label=_('Parent ao id'),
         max_length=128,
         required=True
-    )  # CustomerIncrementalAddressFormat.address_id
+    )  # CustomerAddressObjectFormat.address_id
     type_id = serializers.CharField(default='', required=False)  # reserved
     type_ao = serializers.CharField(default='', required=False)  # reserved
     title = serializers.CharField(default='', required=False)  # reserved
@@ -191,12 +191,12 @@ class CustomerIncrementalAccessPointAddressFormat(serializers.Serializer):
     )
 
 
-class CustomerIncrementalIndividualFormat(serializers.Serializer):
+class CustomerIndividualObjectFormat(serializers.Serializer):
     customer_id = serializers.CharField(
         label=_('Individual customer id'),
         max_length=64,
         required=True
-    )  # CustomerIncrementalRootFormat.legal_customer_id
+    )  # CustomerRootObjectFormat.legal_customer_id
     name = serializers.CharField(
         label=_('Individual customer name'),
         max_length=64,
@@ -267,7 +267,7 @@ class CustomerIncrementalIndividualFormat(serializers.Serializer):
         label=_('Parent ao id'),
         max_length=128,
         required=True
-    )  # CustomerIncrementalAddressFormat.address_id
+    )  # CustomerAddressObjectFormat.address_id
     ao_type_id = serializers.CharField(default='', required=False)  # reserved
     ao_type = serializers.CharField(default='', required=False)  # reserved
     ao_title = serializers.CharField(default='', required=False)  # reserved
@@ -304,12 +304,12 @@ class CustomerIncrementalIndividualFormat(serializers.Serializer):
     )
 
 
-class CustomerIncrementalLegalFormat(serializers.Serializer):
+class CustomerLegalObjectFormat(serializers.Serializer):
     customer_id = serializers.CharField(
         label=_('Legal customer id'),
         max_length=64,
         required=True
-    )  # CustomerIncrementalRootFormat.legal_customer_id
+    )  # CustomerRootObjectFormat.legal_customer_id
     legal_title = serializers.CharField(
         label=_('Legal title'),
         help_text="название ЮЛ, содержит организационно-правовую форму в "
@@ -340,7 +340,7 @@ class CustomerIncrementalLegalFormat(serializers.Serializer):
         label=_('Parent ao id'),
         max_length=128,
         required=True
-    )  # CustomerIncrementalAddressFormat.address_id
+    )  # CustomerAddressObjectFormat.address_id
     ao_type_id = serializers.CharField(default='', required=False)  # reserved
     ao_type = serializers.CharField(default='', required=False)  # reserved
     ao_title = serializers.CharField(default='', required=False)  # reserved
@@ -403,7 +403,7 @@ class CustomerIncrementalLegalFormat(serializers.Serializer):
         help_text='соответствует полю 1 в «Файле выгрузки адресных объектов»',
         max_length=128,
         required=True
-    )  # CustomerIncrementalAddressFormat.address_id
+    )  # CustomerAddressObjectFormat.address_id
     post_ao_type_id = serializers.CharField(default='', required=False)  # reserved
     post_ao_type = serializers.CharField(default='', required=False)  # reserved
     post_ao_title = serializers.CharField(default='', required=False)  # reserved
@@ -448,7 +448,7 @@ class CustomerIncrementalLegalFormat(serializers.Serializer):
         help_text='соответствует полю 1 в «Файле выгрузки адресных объектов»',
         max_length=128,
         required=True
-    )  # CustomerIncrementalAddressFormat.address_id
+    )  # CustomerAddressObjectFormat.address_id
     office_delivery_address_type_id = serializers.CharField(default='', required=False)  # reserved
     office_delivery_address_ao_type = serializers.CharField(default='', required=False)  # reserved
     office_delivery_address_ao_title = serializers.CharField(default='', required=False)  # reserved
@@ -493,12 +493,12 @@ class CustomerIncrementalLegalFormat(serializers.Serializer):
     )
 
 
-class CustomerIncrementalContactFormat(serializers.Serializer):
+class CustomerContactObjectFormat(serializers.Serializer):
     customer_id = serializers.CharField(
         label=_('Customer id'),
         max_length=64,
         required=True
-    )  # CustomerIncrementalRootFormat.legal_customer_id
+    )  # CustomerRootObjectFormat.legal_customer_id
     contact = serializers.CharField(
         label=_('Contact info'),
         help_text='содержит ФИО, адрес, контактный телефон и факс, '
