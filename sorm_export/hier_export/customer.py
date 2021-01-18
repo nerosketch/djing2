@@ -1,7 +1,11 @@
 from typing import Iterable
 
 from customers.models import Customer
-from sorm_export.models import CommunicationStandardChoices, CustomerDocumentTypeChoices
+from sorm_export.models import (
+    CommunicationStandardChoices,
+    CustomerDocumentTypeChoices,
+    ExportFailedStatus
+)
 from sorm_export.serializers import individual_entity_serializers
 from .base import iterable_export_decorator, simple_export_decorator, format_fname
 
@@ -24,7 +28,7 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
         }
 
     return (
-        individual_entity_serializers.CustomerIncrementalRootFormat,
+        individual_entity_serializers.CustomerRootObjectFormat,
         gen, customers,
         f'/home/cdr/ISP/abonents/abonents_v1_{format_fname(event_time)}.txt'
     )
@@ -42,13 +46,15 @@ def export_contract(customers: Iterable[Customer], event_time=None):
             'contract_id': customer.pk,
             'customer_id': customer.pk,
             'contract_start_date': customer.create_date,
-            'contract_end_date': '',  # TODO: у нас не логируется когда абонент заканчивает пользоваться услугами
+            # TODO: contract_end_date заполняем когда контракт закончился
+            # 'contract_end_date': customer.create_date + timedelta(days=3650),
             'contract_number': customer.username,
-            'contract_title': ''  # TODO: ??????????
+            # TODO: Название контракта а не имя абонента
+            'contract_title': customer.get_full_name()
         }
 
     return (
-        individual_entity_serializers.CustomerIncrementalContractFormat,
+        individual_entity_serializers.CustomerContractObjectFormat,
         gen, customers,
         f'/home/cdr/ISP/abonents/contracts_{format_fname(event_time)}.txt'
     )
@@ -61,7 +67,7 @@ def export_address(customer: Customer, event_time=None):
     В этом файле выгружается иерархия адресных объектов, которые фигурируют
     в адресах прописки и точек подключения оборудования.
     """
-    # TODO: где брать соответствия кодов фиас сёлам и пгт?
+    # TODO: где брать соответствия кодов фиас сёлам и пгт?(спросить в чате).
     dat = [
         {
             # Страна
@@ -90,7 +96,7 @@ def export_address(customer: Customer, event_time=None):
             'full_title': customer.get_address()
         }
     ]
-    ser = individual_entity_serializers.CustomerIncrementalAddressFormat(
+    ser = individual_entity_serializers.CustomerAddressObjectFormat(
         data=dat, many=True
     )
     return ser, f'/home/cdr/ISP/abonents/regions_{format_fname(event_time)}.txt'
@@ -102,13 +108,15 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
     Файл выгрузки адресов точек подключения, версия 1.
     В этом файле выгружается информация о точках подключения оборудования - реальном адресе,
     на котором находится оборудование абонента, с помощью которого он пользуется услугами оператора связи.
+    TODO: Выгружать адреса вбонентов чъё это оборудование.
+    TODO: Записывать адреса к устройствам абонентов. Заполнять при создании устройства.
     """
     def gen(customer: Customer):
         return {
             ''
         }
     return (
-        individual_entity_serializers.CustomerIncrementalAccessPointAddressFormat,
+        individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
         gen, customers,
         f'/home/cdr/ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt'
     )
@@ -119,9 +127,13 @@ def export_individual_customer(customers: Iterable[Customer], event_time=None):
     """
     Файл выгрузки данных о физическом лице, версия 1
     В этом файле выгружается информация об абонентах, у которых контракт заключён с физическим лицом.
+    Выгружаются только абоненты с паспортными данными.
     """
     def gen(customer: Customer):
-        passport = customer.passportinfo
+        try:
+            passport = customer.passportinfo
+        except Customer.RelatedObjectDoesNotExist:
+            raise ExportFailedStatus('Customer has no passport info')
         return {
             'customer_id': customer.pk,
             'name': customer.fio,
@@ -140,7 +152,7 @@ def export_individual_customer(customers: Iterable[Customer], event_time=None):
         }
 
     return (
-        individual_entity_serializers.CustomerIncrementalIndividualFormat,
+        individual_entity_serializers.CustomerIndividualObjectFormat,
         gen, customers,
         f'/home/cdr/ISP/abonents/fiz_v1_{format_fname(event_time)}.txt'
     )
@@ -157,7 +169,7 @@ def export_legal_customer(customers: Iterable[Customer], event_time=None):
             ''
         }
     return (
-        individual_entity_serializers.CustomerIncrementalLegalFormat,
+        individual_entity_serializers.CustomerLegalObjectFormat,
         gen, customers,
         f'/home/cdr/ISP/abonents/jur_v4_{format_fname(event_time)}.txt'
     )
@@ -170,7 +182,7 @@ def export_contact(customer_tels, event_time=None):
     В этом файле выгружается контактная информация
     для каждого абонента - ФИО, телефон и факс контактного лица.
     """
-    ser = individual_entity_serializers.CustomerIncrementalContactFormat(
+    ser = individual_entity_serializers.CustomerContactObjectFormat(
         data=customer_tels, many=True
     )
     return ser, f'/home/cdr/ISP/abonents/contact_phones_v1_{format_fname(event_time)}.txt'

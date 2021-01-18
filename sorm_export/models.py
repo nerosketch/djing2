@@ -7,6 +7,10 @@ date_format = '%d.%m.%Y'
 datetime_format = '%d.%m.%YT%H:%M:%S'
 
 
+class ExportFailedStatus(Exception):
+    pass
+
+
 class ExportStampTypeEnum(models.IntegerChoices):
     UNKNOWN_CHOICE = 0
     CUSTOMER_ROOT = 1
@@ -124,4 +128,3 @@ class GroupFIASInfo(models.Model):
         help_text='соответствует полю SOCRBASE.SOCRNAME'
     )
 """
-

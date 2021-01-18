@@ -14,14 +14,14 @@ from sorm_export.hier_export.networks import export_ip_leases
 from sorm_export.hier_export.service import (
     export_nomenclature, export_customer_service
 )
-from sorm_export.models import ExportStampTypeEnum
+from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
 from sorm_export.tasks.task_export import task_export
 
 from networks.models import CustomerIpLeaseModel
 
 
 def export_all_root_customers():
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(is_active=True)
     data, fname = export_customer_root(
         customers=customers,
         event_time=datetime.now()
@@ -30,7 +30,7 @@ def export_all_root_customers():
 
 
 def export_all_customer_contracts():
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(is_active=True)
     data, fname = export_contract(
         customers=customers,
         event_time=datetime.now()
@@ -39,16 +39,22 @@ def export_all_customer_contracts():
 
 
 def export_all_customer_addresses():
-    customers = Customer.objects.all()
-    data, fname = export_address(
-        customers=customers,
-        event_time=datetime.now()
-    )
-    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ADDRESS)
+    customers = Customer.objects.filter(is_active=True)
+    et = datetime.now()
+    data = []
+    fname = None
+    for customer in customers.iterator():
+        dat, fname = export_address(
+            customer=customer,
+            event_time=et
+        )
+        data.append(dat)
+    if fname is not None and len(data) > 0:
+        task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ADDRESS)
 
 
 def export_all_access_point_addresses():
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(is_active=True)
     data, fname = export_access_point_address(
         customers=customers,
         event_time=datetime.now()
@@ -57,7 +63,7 @@ def export_all_access_point_addresses():
 
 
 def export_all_individual_customers():
-    customers = Customer.objects.all()
+    customers = Customer.objects.select_related('passportinfo').filter(is_active=True)
     data, fname = export_individual_customer(
         customers=customers,
         event_time=datetime.now()
@@ -66,7 +72,7 @@ def export_all_individual_customers():
 
 
 def export_all_legal_customers():
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(is_active=True)
     data, fname = export_legal_customer(
         customers=customers,
         event_time=datetime.now()
@@ -75,7 +81,7 @@ def export_all_legal_customers():
 
 
 def export_all_customer_contacts():
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(is_active=True)
     data, fname = export_contact(
         customers=customers,
         event_time=datetime.now()
@@ -121,23 +127,21 @@ class Command(BaseCommand):
     help = 'Exports all available data to sorm'
 
     def handle(self, *args: Any, **options: Any):
-        export_all_root_customers()
-        self.stdout.write('Customers root export ' + self.style.SUCCESS('OK'))
-        export_all_customer_contracts()
-        self.stdout.write('Customer contracts export ' + self.style.SUCCESS('OK'))
-        export_all_customer_addresses()
-        self.stdout.write('Customer addresses export ' + self.style.SUCCESS('OK'))
-        export_all_access_point_addresses()
-        self.stdout.write('Customer ap export ' + self.style.SUCCESS('OK'))
-        export_all_individual_customers()
-        self.stdout.write('Customer individual export ' + self.style.SUCCESS('OK'))
-        export_all_legal_customers()
-        self.stdout.write('Customer legal export ' + self.style.SUCCESS('OK'))
-        export_all_customer_contacts()
-        self.stdout.write('Customer contacts export ' + self.style.SUCCESS('OK'))
-        export_all_ip_leases()
-        self.stdout.write('Network static leases export ' + self.style.SUCCESS('OK'))
-        export_all_service_nomenclature()
-        self.stdout.write('Services export status ' + self.style.SUCCESS('OK'))
-        export_all_customer_services()
-        self.stdout.write('Customer services export status ' + self.style.SUCCESS('OK'))
+        funcs = (
+            (export_all_root_customers, 'Customers root export'),
+            (export_all_customer_contracts, 'Customer contracts export'),
+            (export_all_customer_addresses, 'Customer addresses export'),
+            (export_all_access_point_addresses, 'Customer ap export'),
+            (export_all_individual_customers, 'Customer individual export'),
+            (export_all_legal_customers, 'Customer legal export'),
+            (export_all_customer_contacts, 'Customer contacts export'),
+            (export_all_ip_leases, 'Network static leases export'),
+            (export_all_service_nomenclature, 'Services export status'),
+            (export_all_customer_services, 'Customer services export status')
+        )
+        for fn, msg in funcs:
+            try:
+                fn()
+                self.stdout.write(msg + ' ' + self.style.SUCCESS('OK'))
+            except ExportFailedStatus as err:
+                self.stdout.write(('%s: %s' % (msg, err)) + self.style.ERROR('FAILED'))
