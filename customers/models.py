@@ -779,6 +779,7 @@ class InvoiceForPayment(BaseAbstractModel):
 
 
 class PassportInfo(BaseAbstractModel):
+    # TODO: Suppress default null value for customer field
     series = models.CharField(
         _('Passport serial'),
         max_length=4,
