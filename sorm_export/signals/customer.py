@@ -12,7 +12,7 @@ from customers.models import (
 from sorm_export.tasks.customer import (
     customer_service_export_task,
     customer_service_manual_data_export_task,
-    customer_contact_export_task
+    customer_contact_export_task, customer_root_export_task
 )
 
 
@@ -22,9 +22,11 @@ def customer_post_save_signal(sender, instance: Customer,
     if update_fields is None:
         # all fields updated
         old_inst = sender.objects.filter(pk=instance.pk).first()
-        if old_inst is not None and old_inst.telephone != instance.telephone:
+        if old_inst is None:
+            return
+        now = datetime.now()
+        if old_inst.telephone != instance.telephone:
             # Tel has updated, signal it
-            now = datetime.now()
             old_start_time = old_inst.last_update_time or datetime.combine(
                 instance.create_date,
                 datetime(year=now.year, month=1, minute=0, day=1, second=0, hour=0).time()
@@ -44,6 +46,15 @@ def customer_post_save_signal(sender, instance: Customer,
                 customer_tels=customer_tels,
                 event_time=now
             )
+
+        # export username if it changed
+        if old_inst.username != instance.username:
+            # username changed
+            customer_root_export_task(
+                customer_id=instance.pk,
+                event_time=now
+            )
+
     elif 'current_service' in update_fields and instance.current_service:
         # start service for customer
         customer_service_export_task(
