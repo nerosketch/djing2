@@ -9,6 +9,7 @@ from customers.models import (
     CustomerRawPassword, AdditionalTelephone,
     PeriodicPayForId
 )
+from sorm_export.hier_export.customer import export_individual_customer
 from sorm_export.tasks.customer import (
     customer_service_export_task,
     customer_service_manual_data_export_task,
@@ -66,7 +67,11 @@ def customer_post_save_signal(sender, instance: Customer,
 @receiver(post_save, sender=PassportInfo)
 def customer_passport_info_post_save_signal(sender, instance: Optional[PassportInfo] = None,
                                             created=False, **kwargs):
-    pass
+    cs = Customer.objects.filter(is_active=True, passportinfo=instance)
+    if cs.exists():
+        export_individual_customer(
+            customers=cs
+        )
 
 
 # Called when customer extends his service
