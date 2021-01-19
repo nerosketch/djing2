@@ -2,7 +2,10 @@ from datetime import datetime
 from typing import Any
 from django.core.management.base import BaseCommand
 
-from customers.models import Customer, CustomerService
+from customers.models import (
+    Customer, CustomerService,
+    AdditionalTelephone
+)
 from services.models import Service
 from sorm_export.hier_export.customer import (
     export_customer_root, export_contract,
@@ -81,11 +84,28 @@ def export_all_legal_customers():
 
 
 def export_all_customer_contacts():
-    customers = Customer.objects.filter(is_active=True)
+    customers = Customer.objects.filter(is_active=True).only('pk', 'telephone', 'username', 'fio')
+    customer_tels = [{
+        'customer_id': c.pk,
+        'contact': '%s %s' % (c.get_full_name(), c.telephone),
+        'actual_start_time': datetime(c.create_date.year, c.create_date.month, c.create_date.day),
+        # 'actual_end_time':
+    } for c in customers.iterator()]
+
+    # export additional tels
+    tels = AdditionalTelephone.objects.select_related('customer')
+    customer_tels.extend({
+        'customer_id': t.customer_id,
+        'contact': '%s %s' % (t.customer.get_full_name(), t.telephone),
+        'actual_start_time': t.create_time,
+        # 'actual_end_time':
+    } for t in tels.iterator())
+
     data, fname = export_contact(
-        customers=customers,
+        customer_tels=customer_tels,
         event_time=datetime.now()
     )
+
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTACT)
 
 
@@ -115,7 +135,7 @@ def export_all_ip_leases():
 
 
 def export_all_customer_services():
-    csrv = CustomerService.objects.all()
+    csrv = CustomerService.objects.select_related('customer')
     data, fname = export_customer_service(
         cservices=csrv,
         event_time=datetime.now()
@@ -130,10 +150,10 @@ class Command(BaseCommand):
         funcs = (
             (export_all_root_customers, 'Customers root export'),
             (export_all_customer_contracts, 'Customer contracts export'),
-            (export_all_customer_addresses, 'Customer addresses export'),
-            (export_all_access_point_addresses, 'Customer ap export'),
+            # DO (export_all_customer_addresses, 'Customer addresses export'),
+            # DO (export_all_access_point_addresses, 'Customer ap export'),
             (export_all_individual_customers, 'Customer individual export'),
-            (export_all_legal_customers, 'Customer legal export'),
+            # DO (export_all_legal_customers, 'Customer legal export'),
             (export_all_customer_contacts, 'Customer contacts export'),
             (export_all_ip_leases, 'Network static leases export'),
             (export_all_service_nomenclature, 'Services export status'),
