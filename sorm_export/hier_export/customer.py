@@ -154,7 +154,7 @@ def export_individual_customer(customers: Iterable[Customer], event_time=None):
 
     return (
         individual_entity_serializers.CustomerIndividualObjectFormat,
-        gen, customers,
+        gen, customers.exlude(passportinfo=None),
         f'/home/cdr/ISP/abonents/fiz_v1_{format_fname(event_time)}.txt'
     )
 
