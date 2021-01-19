@@ -261,12 +261,17 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         help_text="квартира адреса прописки",
         max_length=32,
         required=False,
+        allow_null=True
     )
     ao_id = serializers.CharField(default='', required=False) # reserved
+    # FIXME: In docs field 'parent_id_ao' is required
     parent_id_ao = serializers.CharField(
         label=_('Parent ao id'),
         max_length=128,
-        required=True
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        default=None
     )  # CustomerAddressObjectFormat.address_id
     ao_type_id = serializers.CharField(default='', required=False)  # reserved
     ao_type = serializers.CharField(default='', required=False)  # reserved
