@@ -4,7 +4,7 @@ from typing import Iterable
 from customers.models import Customer
 from sorm_export.models import (
     CommunicationStandardChoices,
-    CustomerDocumentTypeChoices
+    CustomerDocumentTypeChoices, FiasAddrGroupModel
 )
 from sorm_export.serializers import individual_entity_serializers
 from .base import iterable_export_decorator, simple_export_decorator, format_fname
@@ -66,36 +66,30 @@ def export_address(customer: Customer, event_time=None):
     Файл выгрузки адресных объектов.
     В этом файле выгружается иерархия адресных объектов, которые фигурируют
     в адресах прописки и точек подключения оборудования.
+    За один вызов этой процедуры выгружается адресная
+    инфа по одному абоненту. Чтобы выгрузить адресы по пачке абонентов
+    можно вызвать её в цикле.
     """
-    # TODO: где брать соответствия кодов фиас сёлам и пгт?(спросить в чате).
-    dat = [
-        {
-            # Страна
-            'address_id': 1,
-            'type_id': 1,
-            'region_type': 'стр',
-            'title': 'Россия',
-            'full_title': 'стр. Россия'
-        },
-        {
-            # Город
-            'address_id': 624,  # пгт◄═══════════╗
-            'parent_id': 1,  # страна            ║
-            'type_id': 624,  #                   ║
-            'region_type': 'пгт',#               ║
-            'title': "Нижнегорский",#            ║
-            'full_title': 'пгт. Нижнегорский'  # ║
-        },                     #                 ║
-        {                      #                 ║
-            # улица                              ║
-            'address_id': 9129,  #               ║
-            'parent_id': 624,  # ►═══════════════╝
-            'type_id': 9129,
-            'region_type': 'ул',
-            'title': customer.street.name,
-            'full_title': customer.get_address()
-        }
-    ]
+
+    # 1 - находим группу абонента
+    group = customer.group
+    # получаем населённый пункт по группе
+    # TODO: Opimize
+    addr_group = group.fiasaddrgroupmodel.fias_recursive_address
+    # Получаем иерархию адресных объектов абонента
+
+    dat = []
+    while addr_group is not None:
+        dat.append({
+            'address_id': addr_group.pk,
+            'parent_id': addr_group.parent_ao_id,
+            'type_id': addr_group.ao_type,
+            'region_type': addr_group.get_ao_type_display(),
+            'title': addr_group.title,
+            'full_title': "%s %s" % (addr_group.get_ao_type_display(), addr_group.title)
+        })
+        addr_group = addr_group.parent_ao
+
     ser = individual_entity_serializers.CustomerAddressObjectFormat(
         data=dat, many=True
     )
