@@ -218,7 +218,7 @@ class UserProfile(BaseAccount):
         try:
             return self.avatar.url
         except ValueError:
-            return getattr(settings, 'DEFAULT_PICTURE', '/static/img/user_ava.gif')
+            return getattr(settings, 'DEFAULT_PICTURE', '/static/img/user_ava_min.gif')
 
     def calc_access_level_percent(self) -> float:
         assigned_perms = self.get_all_permissions()
