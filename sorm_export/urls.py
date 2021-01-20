@@ -6,11 +6,7 @@ app_name = 'sorm_export'
 
 router = DefaultRouter()
 
-router.register('level', views.FIASAddressLevelModelViewSet)
-router.register('types', views.FIASAddressTypeModelViewSet)
-router.register('coutry', views.FiasCountryModelViewSet)
-router.register('region', views.FiasRegionModelViewSet)
-router.register('group', views.GroupFIASInfoModelViewSet)
+router.register('addr', views.FiasRecursiveAddressModelViewSet)
 
 
 urlpatterns = [
