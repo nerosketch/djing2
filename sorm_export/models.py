@@ -2,6 +2,7 @@ from django.utils.translation import gettext as _
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from groupapp.models import Group
+from sorm_export.fias_socrbase import AddressFIASLevelChoices, AddressFIASInfo
 
 date_format = '%d.%m.%Y'
 datetime_format = '%d.%m.%YT%H:%M:%S'
@@ -105,64 +106,36 @@ class FtpCredentialsModel(models.Model):
 """
 
 
-class FIASAddressLevelModel(models.Model):
-    title = models.CharField(_('FIAS address level'), max_length=128)
-    num = models.IntegerField(_('Level num'))
-
-    def __str__(self):
-        return self.title
+class FiasAddrGroupModel(models.Model):
+    group = models.OneToOneField(Group, on_delete=models.CASCADE)
+    fias_recursive_address = models.ForeignKey('FiasRecursiveAddressModel', on_delete=models.CASCADE)
 
     class Meta:
-        db_table = 'sorm_addr_levels'
+        db_table = 'sorm_fias_addr_group'
 
 
-class FIASAddressTypeModel(models.Model):
-    level = models.ForeignKey(FIASAddressLevelModel, on_delete=models.CASCADE)
-    num = models.IntegerField(_('Address type num'))
-    name = models.CharField(max_length=16)
-    full_name = models.CharField(max_length=128)
-
-    def __str__(self):
-        return self.full_name
-
-    class Meta:
-        db_table = 'sorm_addr_types'
+ao_type_choices = ((num, '%s %s' % name) for lev, inf in AddressFIASInfo.items() for num, name in inf.items())
 
 
-class FiasCountryModel(models.Model):
-    title = models.CharField(_('Country'), max_length=128)
-    ao_type = models.ForeignKey(FIASAddressTypeModel, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.title
-
-    class Meta:
-        db_table = 'sorm_countries'
-
-
-class FiasRegionModel(models.Model):
-    title = models.CharField(_('Country'), max_length=128)
-    ao_type = models.ForeignKey(FIASAddressTypeModel, on_delete=models.CASCADE)
-    country = models.ForeignKey(FiasCountryModel, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.title
-
-    class Meta:
-        db_table = 'sorm_regions'
-
-
-class GroupFIASInfoModel(models.Model):
-    group = models.OneToOneField(Group, on_delete=models.CASCADE, primary_key=True)
-    # TODO: FIAS SOCRBASE привязать
-    ao_type = models.ForeignKey(
-        FIASAddressTypeModel,
-        on_delete=models.CASCADE,
-        help_text='соответствует полю SOCRBASE.KOD_T_ST'
+class FiasRecursiveAddressModel(models.Model):
+    parent_ao = models.ForeignKey(
+        'self', verbose_name=_('Parent AO'),
+        on_delete=models.CASCADE
     )
-    region = models.ForeignKey(
-        FiasRegionModel,
-        on_delete=models.CASCADE,
-        verbose_name=_('Region type'),
-        help_text='соответствует полю SOCRBASE.SOCRNAME'
+    title = models.CharField(_('Title'), max_length=128)
+    ao_level = models.IntegerField(_('AO Level'), choices=AddressFIASLevelChoices)
+    ao_type = models.IntegerField(
+        _('AO Type'),
+        choices=ao_type_choices
     )
+    groups = models.ManyToManyField(
+        Group,
+        through=FiasAddrGroupModel,
+        through_fields=('fias_recursive_address', 'group')
+    )
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        db_table = 'sorm_address'
