@@ -120,7 +120,10 @@ ao_type_choices = ((num, '%s %s' % name) for lev, inf in AddressFIASInfo.items()
 class FiasRecursiveAddressModel(models.Model):
     parent_ao = models.ForeignKey(
         'self', verbose_name=_('Parent AO'),
-        on_delete=models.CASCADE
+        on_delete=models.SET_DEFAULT,
+        null=True,
+        blank=True,
+        default=None
     )
     title = models.CharField(_('Title'), max_length=128)
     ao_level = models.IntegerField(_('AO Level'), choices=AddressFIASLevelChoices)
