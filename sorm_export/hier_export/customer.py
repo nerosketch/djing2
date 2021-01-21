@@ -4,7 +4,8 @@ from typing import Iterable
 from customers.models import Customer
 from sorm_export.models import (
     CommunicationStandardChoices,
-    CustomerDocumentTypeChoices, FiasAddrGroupModel, ExportFailedStatus
+    CustomerDocumentTypeChoices,
+    ExportFailedStatus
 )
 from sorm_export.serializers import individual_entity_serializers
 from .base import iterable_export_decorator, simple_export_decorator, format_fname
@@ -74,7 +75,7 @@ def export_address(customer: Customer, event_time=None):
     # 1 - находим группу абонента
     group = customer.group
     # получаем населённый пункт по группе
-    # TODO: Opimize
+    # TODO: Optimize
     if not hasattr(group, 'fiasaddr'):
         raise ExportFailedStatus('Customer "%s" group has not fias addr' % customer.get_short_name())
     if not hasattr(group.fiasaddr, 'fias_recursive_address'):
@@ -96,7 +97,7 @@ def export_address(customer: Customer, event_time=None):
         addr_group = addr_group.parent_ao
 
     ser = individual_entity_serializers.CustomerAddressObjectFormat(
-        data=dat, many=True
+        data=dat.reverse(), many=True
     )
     return ser, f'/home/cdr/ISP/abonents/regions_{format_fname(event_time)}.txt'
 
@@ -107,16 +108,37 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
     Файл выгрузки адресов точек подключения, версия 1.
     В этом файле выгружается информация о точках подключения оборудования - реальном адресе,
     на котором находится оборудование абонента, с помощью которого он пользуется услугами оператора связи.
-    TODO: Выгружать адреса вбонентов чъё это оборудование.
+    TODO: Выгружать адреса абонентов чъё это оборудование.
     TODO: Записывать адреса к устройствам абонентов. Заполнять при создании устройства.
+    Сейчас у нас оборудование абонента ставится у абонента дома, так что это тот же адрес
+    что и у абонента.
     """
     def gen(customer: Customer):
+        if not hasattr(customer, 'group'):
+            return
+        group = customer.group
+        if not hasattr(group, 'fiasaddr'):
+            return
+        if not hasattr(group.fiasaddr, 'fias_recursive_address'):
+            return
+        addr_group = group.fiasaddr.fias_recursive_address
+        if not addr_group.parent_ao:
+            return
+        parent_id_ao = addr_group.parent_ao_id
         return {
-            ''
+            'ap_id': addr_group.pk,
+            'customer_id': customer.pk,
+            'house': customer.house,
+            'full_address': customer.get_address(),
+            'parent_id_ao': parent_id_ao,
+            'house_num': customer.house,
+            'actual_start_time': customer.create_date,
+            # TODO: указывать дату конца, когда абонент выключается или удаляется
+            # 'actual_end_time':
         }
     return (
         individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
-        gen, customers,
+        gen, customers.select_related('group', 'group__fiasaddr', 'group__fiasaddr__fias_recursive_address'),
         f'/home/cdr/ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt'
     )
 
@@ -132,6 +154,14 @@ def export_individual_customer(customers: Iterable[Customer], event_time=None):
         if not hasattr(customer, 'passportinfo'):
             print('Customer "%s" has no passport info' % customer)
             return
+        if not hasattr(customer, 'group'):
+            return
+        group = customer.group
+        if not hasattr(group, 'fiasaddr') or not hasattr(group.fiasaddr, 'fias_recursive_address'):
+            return
+        addr_group = group.fiasaddr.fias_recursive_address
+        if not addr_group.parent_ao:
+            return
         passport = customer.passportinfo
         create_date = customer.create_date
         return {
@@ -143,17 +173,23 @@ def export_individual_customer(customers: Iterable[Customer], event_time=None):
             'document_serial': passport.series,
             'document_number': passport.number,
             'document_distributor': passport.distributor,
+            # TODO: Код подразделения негде брать
             # 'passport_code': passport.,
             'passport_date': passport.date_of_acceptance,
             'house': customer.house,
-            # 'parent_id_ao': None,  # FIXME: ????
+            'parent_id_ao': addr_group.parent_ao_id,
             'actual_start_time': datetime(create_date.year, create_date.month, create_date.day),
             # 'actual_end_time':
         }
 
     return (
         individual_entity_serializers.CustomerIndividualObjectFormat,
-        gen, customers.exclude(passportinfo=None),
+        gen, customers
+            .exclude(passportinfo=None)
+            .select_related(
+            'group', 'group__fiasaddr',
+            'group__fiasaddr__fias_recursive_address'
+        ),
         f'/home/cdr/ISP/abonents/fiz_v1_{format_fname(event_time)}.txt'
     )
 
@@ -164,15 +200,16 @@ def export_legal_customer(customers: Iterable[Customer], event_time=None):
     Файл выгрузки данных о юридическом лице версия 4.
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
     """
-    def gen(customer: Customer):
-        return {
-            ''
-        }
-    return (
-        individual_entity_serializers.CustomerLegalObjectFormat,
-        gen, customers,
-        f'/home/cdr/ISP/abonents/jur_v4_{format_fname(event_time)}.txt'
-    )
+    raise ExportFailedStatus('Not implemented')
+    # def gen(customer: Customer):
+    #     return {
+    #         ''
+    #     }
+    # return (
+    #     individual_entity_serializers.CustomerLegalObjectFormat,
+    #     gen, customers,
+    #     f'/home/cdr/ISP/abonents/jur_v4_{format_fname(event_time)}.txt'
+    # )
 
 
 @simple_export_decorator
