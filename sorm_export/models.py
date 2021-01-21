@@ -107,7 +107,7 @@ class FtpCredentialsModel(models.Model):
 
 
 class FiasAddrGroupModel(models.Model):
-    group = models.OneToOneField(Group, on_delete=models.CASCADE)
+    group = models.OneToOneField(Group, on_delete=models.CASCADE, related_name='fiasaddr')
     fias_recursive_address = models.ForeignKey('FiasRecursiveAddressModel', on_delete=models.CASCADE)
 
     class Meta:
