@@ -4,7 +4,7 @@ from typing import Iterable
 from customers.models import Customer
 from sorm_export.models import (
     CommunicationStandardChoices,
-    CustomerDocumentTypeChoices, FiasAddrGroupModel
+    CustomerDocumentTypeChoices, FiasAddrGroupModel, ExportFailedStatus
 )
 from sorm_export.serializers import individual_entity_serializers
 from .base import iterable_export_decorator, simple_export_decorator, format_fname
@@ -75,7 +75,12 @@ def export_address(customer: Customer, event_time=None):
     group = customer.group
     # получаем населённый пункт по группе
     # TODO: Opimize
-    addr_group = group.fiasaddrgroupmodel.fias_recursive_address
+    if not hasattr(group, 'fiasaddr'):
+        raise ExportFailedStatus('Customer "%s" group has not fias addr' % customer.get_short_name())
+    if not hasattr(group.fiasaddr, 'fias_recursive_address'):
+        raise ExportFailedStatus('fias addr has not info')
+    addr_group = group.fiasaddr.fias_recursive_address
+
     # Получаем иерархию адресных объектов абонента
 
     dat = []
@@ -148,7 +153,7 @@ def export_individual_customer(customers: Iterable[Customer], event_time=None):
 
     return (
         individual_entity_serializers.CustomerIndividualObjectFormat,
-        gen, customers.exlude(passportinfo=None),
+        gen, customers.exclude(passportinfo=None),
         f'/home/cdr/ISP/abonents/fiz_v1_{format_fname(event_time)}.txt'
     )
 
