@@ -154,9 +154,9 @@ class Command(BaseCommand):
             (export_all_root_customers, 'Customers root export'),
             (export_all_customer_contracts, 'Customer contracts export'),
             (export_all_customer_addresses, 'Customer addresses export'),
-            # DO (export_all_access_point_addresses, 'Customer ap export'),
+            (export_all_access_point_addresses, 'Customer ap export'),
             (export_all_individual_customers, 'Customer individual export'),
-            # DO (export_all_legal_customers, 'Customer legal export'),
+            (export_all_legal_customers, 'Customer legal export'),
             (export_all_customer_contacts, 'Customer contacts export'),
             (export_all_ip_leases, 'Network static leases export'),
             (export_all_service_nomenclature, 'Services export status'),
@@ -167,4 +167,4 @@ class Command(BaseCommand):
                 fn()
                 self.stdout.write(msg + ' ' + self.style.SUCCESS('OK'))
             except ExportFailedStatus as err:
-                self.stdout.write(('%s: %s' % (msg, err)) + self.style.ERROR('FAILED'))
+                self.stdout.write(('%s: %s %s' % (msg, err, self.style.ERROR('FAILED'))))

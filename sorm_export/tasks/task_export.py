@@ -17,6 +17,8 @@ class _Conv2BinStringIO(StringIO):
 # make export stamp for logging export
 # end send data to ftp
 def task_export(data, filename: str, export_type: ExportStampTypeEnum):
+    if not data:
+        return
     em = ExportStampModel.objects.create(
         data=data,
         export_status=ExportStampStatusEnum.NOT_EXPORTED,
