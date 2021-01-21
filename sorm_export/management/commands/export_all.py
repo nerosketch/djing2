@@ -42,16 +42,19 @@ def export_all_customer_contracts():
 
 
 def export_all_customer_addresses():
-    customers = Customer.objects.filter(is_active=True)
+    customers = Customer.objects.filter(is_active=True).exclude(group__fiasaddr=None)
     et = datetime.now()
     data = []
     fname = None
     for customer in customers.iterator():
-        dat, fname = export_address(
-            customer=customer,
-            event_time=et
-        )
-        data.append(dat)
+        try:
+            dat, fname = export_address(
+                customer=customer,
+                event_time=et
+            )
+            data.append(dat)
+        except ExportFailedStatus as err:
+            print('ERROR:', err)
     if fname is not None and len(data) > 0:
         task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ADDRESS)
 
@@ -150,7 +153,7 @@ class Command(BaseCommand):
         funcs = (
             (export_all_root_customers, 'Customers root export'),
             (export_all_customer_contracts, 'Customer contracts export'),
-            # DO (export_all_customer_addresses, 'Customer addresses export'),
+            (export_all_customer_addresses, 'Customer addresses export'),
             # DO (export_all_access_point_addresses, 'Customer ap export'),
             (export_all_individual_customers, 'Customer individual export'),
             # DO (export_all_legal_customers, 'Customer legal export'),
