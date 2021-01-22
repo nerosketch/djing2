@@ -20,4 +20,4 @@ parsedump() {
     packets = EXCLUDED.packets;"
 }
 
-parsedump "$1" | psql postgresql://postgres:2ekc3@127.0.0.1/djing2
+parsedump "$1" | psql postgresql://postgres:password@127.0.0.1/djing2
