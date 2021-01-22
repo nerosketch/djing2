@@ -777,6 +777,13 @@ class PassportInfo(BaseAbstractModel):
         max_length=64
     )
     date_of_acceptance = models.DateField(_('Date of acceptance'))
+    division_code = models.CharField(
+        _('Division code'),
+        max_length=64,
+        null=True,
+        blank=True,
+        default=None
+    )
     customer = models.OneToOneField(
         Customer,
         on_delete=models.CASCADE,
