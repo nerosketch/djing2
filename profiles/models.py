@@ -1,6 +1,5 @@
 import os
 
-from PIL import Image
 from bitfield.models import BitField
 from django.conf import settings
 from django.contrib.auth.models import (
@@ -14,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from djing2.lib.validators import latinValidator, telephoneValidator
 from djing2.models import BaseAbstractModel, BaseAbstractModelMixin
 from groupapp.models import Group
+from profiles.tasks import resize_profile_avatar
 
 
 class MyUserManager(BaseUserManager):
@@ -188,9 +188,7 @@ class UserProfile(BaseAccount):
     def save(self, *args, **kwargs):
         r = super().save(*args, **kwargs)
         if self.avatar and os.path.isfile(self.avatar.path):
-            im = Image.open(self.avatar)
-            im.thumbnail((200, 121), Image.ANTIALIAS)
-            im.save(self.avatar.path)
+            resize_profile_avatar(self.avatar.path)
         return r
 
     def log(self, request_meta: dict, do_type: str, additional_text=None) -> None:
