@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'guardian',
     'django_cleanup.apps.CleanupConfig',
+    'djing2.apps.Djing2Config',
     'groupapp',
     'profiles.apps.ProfilesConfig',
     'services.apps.ServicesConfig',

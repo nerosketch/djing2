@@ -1,10 +1,10 @@
 from typing import Optional, Iterable
-from uwsgi_tasks import task, TaskExecutor
+from uwsgi_tasks import task
 from profiles.models import UserProfile
 from messenger.models.viber import ViberMessenger
 
 
-@task(executor=TaskExecutor.SPOOLER)
+@task()
 def send_viber_message(messenger_id: Optional[int], account_id: int, message_text: str) -> Optional[str]:
     """
     Send text message via viber
@@ -29,7 +29,7 @@ def send_viber_message(messenger_id: Optional[int], account_id: int, message_tex
         return 'ERROR: accounts_app.UserProfile with pk=%d does not exist' % account_id
 
 
-@task(executor=TaskExecutor.SPOOLER)
+@task()
 def multicast_viber_notify(messenger_id: Optional[int], account_id_list: Iterable[int], message_text: str) -> Optional[str]:
     """
     Send multiple message via Viber to several addresses
