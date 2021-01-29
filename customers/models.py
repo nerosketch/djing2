@@ -34,8 +34,8 @@ class CustomerService(BaseAbstractModel):
     deadline = models.DateTimeField(null=True, blank=True, default=None)
 
     def calc_service_cost(self) -> float:
-        amount = self.service.cost
-        return round(amount, 2)
+        cost = self.service.cost
+        return round(cost, 2)
 
     def calc_remaining_time(self) -> timedelta:
         now = datetime.now()
@@ -230,6 +230,98 @@ class CustomerManager(MyUserManager):
             'commercial_customers': commercial_customers
         }
 
+    @staticmethod
+    def finish_services_if_expired(profile: Optional[UserProfile] = None, comment=None, customer=None) -> None:
+        """
+        If customer service has expired, and automatic connect
+         is disabled, then finish that service and log about it
+        :param profile: Instance of profiles.models.UserProfile.
+        :param comment: comment for log
+        :param customer: This is Customer instance, if doing it for him alone
+        :return: nothing
+        """
+        if comment is None:
+            comment = _("Service for customer %(customer_name)s with name '%(service_name)s' has expired")
+        now = datetime.now()
+        expired_service = CustomerService.objects.filter(
+            deadline__lt=now,
+            customer__auto_renewal_service=False
+        )
+        if customer is not None and isinstance(customer, Customer):
+            expired_service = expired_service.filter(
+                customer=customer
+            )
+        if expired_service.exists():
+            # TODO: Replace it logging by trigger from db
+            for exp_srv in expired_service:
+                if not hasattr(exp_srv, 'customer'):
+                    continue
+                exp_srv_customer = exp_srv.customer
+                with transaction.atomic():
+                    CustomerLog.objects.create(
+                        customer=exp_srv_customer,
+                        cost=0,
+                        author=profile if isinstance(profile, UserProfile) else None,
+                        comment=comment % {
+                            'customer_name': exp_srv_customer.get_short_name(),
+                            'service_name': exp_srv.service.title
+                        }
+                    )
+            expired_service.delete()
+
+    @staticmethod
+    def continue_services_if_autoconnect(customer=None) -> None:
+        """
+        If customer service has expired and automatic connect
+        is enabled, then update service start_time, deadline,
+        and flush money from customer balance
+        :param customer: This is Customer instance, if doing it for him alone
+        :return: nothing
+        """
+        now = datetime.now()
+        expired_services = CustomerService.objects.filter(
+            deadline__lt=now,
+            customer__auto_renewal_service=True
+        )
+        if customer is not None and isinstance(customer, Customer):
+            expired_services = expired_services.filter(
+                customer=customer
+            )
+        if not expired_services.exists():
+            return
+        for expired_service in expired_services.iterator():
+            if not hasattr(expired_service, 'customer'):
+                continue
+            expired_service_customer = expired_service.customer
+            service = expired_service.service
+            cost = round(service.cost, 3)
+            if expired_service_customer.balance >= cost:
+                # can continue service
+                with transaction.atomic():
+                    expired_service_customer.balance -= cost
+                    expired_service.start_time = now
+                    expired_service.deadline = None  # Deadline sets automatically in signal pre_save
+                    expired_service.save(update_fields=['start_time', 'deadline'])
+                    expired_service_customer.save(update_fields=['balance'])
+                    # make log about it
+                    CustomerLog.objects.create(
+                        customer=expired_service_customer, cost=-cost,
+                        comment=_("Automatic connect new service %(service_name)s for %(customer_name)s") % {
+                            'service_name': service.title,
+                            'customer_name': expired_service_customer.get_short_name()
+                        }
+                    )
+            else:
+                # finish service otherwise
+                with transaction.atomic():
+                    expired_service.delete()
+                    CustomerLog.objects.create(
+                        customer=expired_service_customer, cost=0,
+                        comment=_("Service '%(service_name)s' has expired") % {
+                            'service_name': service.title
+                        }
+                    )
+
 
 class Customer(BaseAccount):
     current_service = models.OneToOneField(
@@ -360,7 +452,7 @@ class Customer(BaseAccount):
         if not isinstance(service, Service):
             raise TypeError
 
-        amount = round(service.cost, 2)
+        cost = round(service.cost, 2)
 
         if service.is_admin and author is not None:
             if not author.is_staff:
@@ -380,7 +472,7 @@ class Customer(BaseAccount):
             raise LogicError(_('User, who is no staff, can not be buy services on credit'))
 
         # if not enough money
-        if not allow_negative and self.balance < amount:
+        if not allow_negative and self.balance < cost:
             raise NotEnoughMoney(_('%(uname)s not enough money for service %(srv_name)s') % {
                 'uname': self.username,
                 'srv_name': service
@@ -399,13 +491,13 @@ class Customer(BaseAccount):
                 updated_fields.append('last_connected_service')
 
             # charge for the service
-            self.balance -= amount
+            self.balance -= cost
 
             self.save(update_fields=updated_fields)
 
             # make log about it
             CustomerLog.objects.create(
-                customer=self, cost=-amount,
+                customer=self, cost=-cost,
                 author=author,
                 comment=comment or _('Buy service default log')
             )
@@ -494,25 +586,6 @@ class Customer(BaseAccount):
         total_cost = safe_float(service.cost)
         return total_cost - elapsed_cost
 
-    # def attach_ip_addr(self, ip, strict=False):
-    #     """
-    #     Attach ip address to account
-    #     :param ip: Instance of str or ip_address
-    #     :param strict: If strict is True then ip not replaced quietly
-    #     :return: None
-    #     """
-    #     if strict and self.ip_address:
-    #         raise LogicError('Ip address already exists')
-    #     self.ip_address = ip
-    #     self.save(update_fields=('ip_address',))
-
-    # def free_ip_addr(self) -> bool:
-    #     if self.ip_address:
-    #         self.ip_address = None
-    #         self.save(update_fields=('ip_address',))
-    #         return True
-    #     return False
-
     # is customer have access to service,
     # view in services.custom_tariffs.<ServiceBase>.manage_access()
     def is_access(self) -> bool:
@@ -524,152 +597,6 @@ class Customer(BaseAccount):
         trf = customer_service.service
         ct = trf.get_calc_type()(customer_service)
         return ct.manage_access(self)
-
-    # make customer from agent structure
-    # def build_agent_struct(self):
-    #     if not self.ip_address:
-    #         return
-    #     customer_service = self.active_service()
-    #     if customer_service:
-    #         service = customer_service.service
-    #         return SubnetQueue(
-    #             name="uid%d" % self.pk,
-    #             network=self.ip_address,
-    #             max_limit=(service.speed_in, service.speed_out),
-    #             is_access=self.is_access()
-    #         )
-
-    # def gw_sync_self(self):
-    #     """
-    #     Synchronize user with gateway
-    #     :return:
-    #     """
-    #     if self.gateway is None:
-    #         raise LogicError(_('gateway required'))
-    #     try:
-    #         agent_struct = self.build_agent_struct()
-    #         if agent_struct is not None:
-    #             mngr = self.gateway.get_gw_manager()
-    #             mngr.update_user(agent_struct)
-    #     except (GatewayFailedResult, GatewayNetworkError, ConnectionResetError) as e:
-    #         print('ERROR:', e)
-    #         return e
-    #     except LogicError:
-    #         pass
-
-    # def gw_add_self(self):
-    #     """
-    #     Will add this user to network access server
-    #     :return: Nothing
-    #     """
-    #     if self.gateway is None:
-    #         raise LogicError(_('gateway required'))
-    #     try:
-    #         agent_struct = self.build_agent_struct()
-    #         if agent_struct is not None:
-    #             mngr = self.gateway.get_gw_manager()
-    #             mngr.add_user(agent_struct)
-    #     except (GatewayFailedResult, GatewayNetworkError, ConnectionResetError) as e:
-    #         print('ERROR:', e)
-    #         return e
-    #     except LogicError:
-    #         pass
-
-    # def enable_service(self, service: Service, deadline=None, time_start=None):
-    #     """
-    #     Makes a services for current user, without money
-    #     :param service: Instance of Service
-    #     :param deadline: Time when service is expired
-    #     :param time_start: Time when service has started
-    #     :return: None
-    #     """
-    #     if deadline is None:
-    #         deadline = service.calc_deadline()
-    #     if time_start is None:
-    #         time_start = datetime.now()
-    #     self.current_service = CustomerService.objects.create(
-    #         deadline=deadline, service=service,
-    #         start_time=time_start
-    #     )
-    #     self.last_connected_service = service
-    #     self.save(update_fields=('current_service', 'last_connected_service'))
-
-    def finish_service_if_expired(self, profile: UserProfile, comment=None) -> None:
-        """
-        If customer service has expired, and automatic connect
-         is disabled, then finish that service and log about it
-        :param profile: Instance of profiles.models.UserProfile.
-        :param comment: comment for log
-        :return: nothing
-        """
-        if comment is None:
-            comment = _("Service for customer %(customer_name)s with name '%(service_name)s' has expired")
-        now = datetime.now()
-        expired_service = CustomerService.objects.filter(
-            deadline__lt=now,
-            customer=self,
-            customer__auto_renewal_service=False
-        )
-        if expired_service.exists():
-            for exp_srv in expired_service:
-                with transaction.atomic():
-                    CustomerLog.objects.create(
-                        customer=self,
-                        cost=0,
-                        author=profile if isinstance(profile, UserProfile) else None,
-                        comment=comment % {
-                            'customer_name': self.get_short_name(),
-                            'service_name': exp_srv.service.title
-                        }
-                    )
-            expired_service.delete()
-
-    def continue_service_if_autoconnect(self) -> None:
-        """
-        If customer service has expired and automatic connect
-        is enabled, then update service start_time, deadline,
-        and flush money from customer balance
-        :return: nothing
-        """
-        if not self.auto_renewal_service:
-            return
-        now = datetime.now()
-        expired_service = CustomerService.objects.filter(
-            deadline__lt=now,
-            customer=self,
-            customer__auto_renewal_service=True
-        )
-        if not expired_service.exists():
-            return
-        expired_service = expired_service.first()
-        service = expired_service.service
-        amount = round(service.amount, 2)
-        if self.balance >= amount:
-            # can continue service
-            with transaction.atomic():
-                self.balance -= amount
-                expired_service.time_start = now
-                expired_service.deadline = None  # Deadline sets automatically in signal pre_save
-                expired_service.save(update_fields=['time_start', 'deadline'])
-                self.save(update_fields=['balance'])
-                # make log about it
-                CustomerLog.objects.create(
-                    customer=self, cost=-amount,
-                    comment=_("Automatic connect new service %(service_name)s for %(customer_name)s") % {
-                        'service_name': service.title,
-                        'customer_name': self.get_short_name()
-                    }
-                )
-        else:
-            # finish service otherwise
-            with transaction.atomic():
-                expired_service.delete()
-                CustomerLog.objects.create(
-                    customer=self, cost=0,
-                    comment=_("Service '%(service_name)s' has expired") % {
-                        'service_name': service.title
-                    }
-                )
 
     def connect_service_if_autoconnect(self):
         """

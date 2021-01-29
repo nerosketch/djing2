@@ -1,10 +1,10 @@
-from uwsgi_tasks import task, TaskExecutor
+from uwsgi_tasks import task
 
 from devices.models import Device
 from devices.device_config import DEVICE_ONU_TYPES
 
 
-@task(executor=TaskExecutor.SPOOLER)
+@task()
 def unregister_device_async(device_id: int) -> None:
     """
     Remove ONU from OLT or make other post delete device action
