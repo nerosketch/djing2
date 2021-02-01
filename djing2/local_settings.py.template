@@ -54,3 +54,9 @@ FIELD_ENCRYPTION_KEY = 'ZMxB-3nccx78Ifgyr3tRpR4PJFUej4Phegjo7d2WmXY='
 
 # arping command
 ARPING_COMMAND = '/usr/sbin/arping'
+
+WEBPUSH_SETTINGS = {
+    "VAPID_PUBLIC_KEY": "Your VAPID public key",
+    "VAPID_PRIVATE_KEY": "Your VAPID private key",
+    "VAPID_ADMIN_EMAIL": "admin@localhost"
+}
