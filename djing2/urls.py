@@ -1,6 +1,10 @@
 from django.urls import path, include
 from django.conf import settings
-from djing2.views import SearchApiView, can_login_by_location
+from djing2.views import (
+    SearchApiView,
+    can_login_by_location,
+    get_vapid_public_key
+)
 
 
 api_urls = [
@@ -19,12 +23,13 @@ api_urls = [
     path('radius/', include('radiusapp.urls', namespace='radiusapp')),
     path('traf_stat/', include('traf_stat.urls', namespace='traf_stat')),
     path('can_login_by_location/', can_login_by_location),
-    path('search/', SearchApiView.as_view())
+    path('search/', SearchApiView.as_view()),
+    path('webpush/', include('webpush.urls')),
+    path('get_vapid_public_key/', get_vapid_public_key)
 ]
 
 
 urlpatterns = [
-    path('api/webpush/', include('webpush.urls')),
     path('api/', include(api_urls)),
     path('api-auth/', include('rest_framework.urls'))
 ]
