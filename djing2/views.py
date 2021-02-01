@@ -1,6 +1,7 @@
 import re
 from ipaddress import ip_address, AddressValueError
 from django.db.models import Q
+from django.conf import settings
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -118,3 +119,12 @@ def can_login_by_location(request):
     except AddressValueError:
         pass
     return Response(False)
+
+
+@api_view()
+def get_vapid_public_key(request):
+    opts = getattr(settings, 'WEBPUSH_SETTINGS')
+    if opts is None or not isinstance(opts, dict):
+        return Response()
+    vpk = opts.get('VAPID_PUBLIC_KEY')
+    return Response(vpk)
