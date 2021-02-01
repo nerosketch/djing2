@@ -24,6 +24,7 @@ api_urls = [
 
 
 urlpatterns = [
+    path('api/webpush/', include('webpush.urls')),
     path('api/', include(api_urls)),
     path('api-auth/', include('rest_framework.urls'))
 ]
