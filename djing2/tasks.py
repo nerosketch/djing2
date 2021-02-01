@@ -2,6 +2,7 @@ import logging
 from _socket import gaierror
 from smtplib import SMTPException
 from typing import Iterable
+from webpush import send_group_notification
 
 from profiles.models import UserProfile
 from django.conf import settings
@@ -50,3 +51,16 @@ def multicast_email_notify(msg_text: str, account_ids: Iterable):
         logging.error('SMTPException: %s' % e)
     except gaierror as e:
         logging.error('Socket error: %s' % e)
+
+
+@task()
+def send_broadcast_push_notification(title: str, body: str):
+    payload = {
+        "title": title,
+        "body": body
+    }
+    send_group_notification(
+        group_name="group_name",
+        payload=payload,
+        ttl=3600
+    )
