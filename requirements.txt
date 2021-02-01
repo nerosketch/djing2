@@ -44,3 +44,5 @@ djangorestframework-queryfields==1.0.0
 django-debug-toolbar==2.2
 
 djangorestframework-guardian
+
+django-webpush==0.3.3

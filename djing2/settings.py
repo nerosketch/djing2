@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'guardian',
     'django_cleanup.apps.CleanupConfig',
+    'webpush',
     'djing2.apps.Djing2Config',
     'groupapp',
     'profiles.apps.ProfilesConfig',
@@ -306,3 +307,5 @@ WS_ADDR = '127.0.0.1:3211'
 ARPING_COMMAND = getattr(local_settings, 'ARPING_COMMAND', '/usr/sbin/arping')
 
 # SITE_ID = 1
+
+WEBPUSH_SETTINGS = getattr(local_settings, 'WEBPUSH_SETTINGS')
