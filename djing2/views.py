@@ -68,14 +68,14 @@ class SearchApiView(DjingListAPIView):
             if re.match(IP_ADDR_REGEX, s):
                 customers = customers.filter(
                     Q(customeripleasemodel__ip_address__icontains=s) |
-                    Q(ip_address__icontains=s)
+                    Q(ip_address__icontains=s)  # deprecated: marked to removal
                 )
             else:
                 customers = customers.filter(
                     Q(fio__icontains=s) | Q(username__icontains=s) |
                     Q(telephone__icontains=s) |
                     Q(additional_telephones__telephone__icontains=s) |
-                    Q(ip_address__icontains=s)
+                    Q(ip_address__icontains=s)  # deprecated: marked to removal
                 )
             customers = customers.select_related('group')[:limit_count]
 
@@ -106,11 +106,13 @@ def can_login_by_location(request):
     try:
         remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
         if remote_ip.version == 4:
-            ips_count = CustomerIpLeaseModel.objects.filter(
+            ips_exists = CustomerIpLeaseModel.objects.filter(
                 ip_address=str(remote_ip)
-            ).count()
-            if ips_count == 1:
+            ).exists()
+            if ips_exists:
                 return Response(True)
+
+            # deprecated: marked to removal
             has_exist = Customer.objects.filter(
                 ip_address=str(remote_ip),
                 is_active=True
