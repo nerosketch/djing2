@@ -25,6 +25,7 @@ class DjingModelViewSet(ModelViewSet):
             inst = serializer.save(*args, **kwargs)
             if hasattr(inst, 'assign_rights2new_obj'):
                 inst.assign_rights2new_obj(self.request)
+                return inst
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(str(e))
 

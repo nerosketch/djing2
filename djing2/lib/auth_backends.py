@@ -39,6 +39,8 @@ class DjingAuthBackend(ModelBackend):
                 auser = UserProfile.objects.get_by_natural_key(username)
             else:
                 auser = Customer.objects.get_by_natural_key(username)
+            if not request or not request.META:
+                return auser
             auser.auth_log(
                 user_agent=request.META.get('HTTP_USER_AGENT'),
                 remote_ip=request.META.get('REMOTE_ADDR')
