@@ -31,7 +31,7 @@ from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
 from messenger.tasks import multicast_viber_notify
-from profiles.models import UserProfile
+from profiles.models import UserProfile, UserProfileLogActionType
 
 
 def catch_dev_manager_err(fn):
@@ -283,10 +283,29 @@ class DeviceModelViewSet(DjingModelViewSet):
         return qs.filter(group__in=grps)
 
     def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(
+        device_instance = super().perform_create(
             serializer=serializer,
             sites=[self.request.site]
         )
+        if device_instance is not None:
+            self.request.user.log(
+                do_type=UserProfileLogActionType.CREATE_DEVICE,
+                additional_text='ip %s, mac: %s, "%s"' % (
+                    device_instance.ip_address,
+                    device_instance.mac_addr,
+                    device_instance.comment
+                ))
+        return device_instance
+
+    def perform_destroy(self, instance):
+        # log about it
+        self.request.user.log(
+            do_type=UserProfileLogActionType.DELETE_DEVICE,
+            additional_text='ip %s, mac: %s, "%s"' % (
+                instance.ip_address or '-',
+                instance.mac_addr or '-',
+                instance.comment or '-'
+            ))
 
     @action(detail=True)
     @catch_dev_manager_err
