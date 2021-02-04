@@ -11,6 +11,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.authtoken.models import Token
 
 from djing2.lib.mixins import SitesFilterMixin
@@ -18,7 +19,7 @@ from djing2.viewsets import (
     DjingModelViewSet, BaseNonAdminReadOnlyModelViewSet,
     DjingSuperUserModelViewSet
 )
-from profiles.models import UserProfile, UserProfileLog
+from profiles.models import UserProfile, UserProfileLog, ProfileAuthLog
 from profiles.serializers import (
     UserProfileSerializer, UserProfileLogSerializer,
     UserProfilePasswordSerializer,
@@ -26,7 +27,9 @@ from profiles.serializers import (
     GroupObjectPermissionSerializer,
     PermissionModelSerializer,
     ContentTypeModelSerializer,
-    UserGroupModelSerializer, SitesAuthTokenSerializer)
+    UserGroupModelSerializer,
+    SitesAuthTokenSerializer,
+    ProfileAuthLogSerializer)
 
 
 class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
@@ -183,3 +186,10 @@ class UserGroupModelViewSet(DjingSuperUserModelViewSet):
 
 class SitesObtainAuthToken(ObtainAuthToken):
     serializer_class = SitesAuthTokenSerializer
+
+
+class ProfileAuthLogViewSet(ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    queryset = ProfileAuthLog.objects.all()
+    serializer_class = ProfileAuthLogSerializer
+    filterset_fields = ('profile',)

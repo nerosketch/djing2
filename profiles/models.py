@@ -89,6 +89,13 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
     def get_short_name(self):
         return self.username or self.telephone
 
+    def auth_log(self, user_agent: str, remote_ip: str):
+        ProfileAuthLog.objects.create(
+            profile=self,
+            user_agent=user_agent,
+            remote_ip=remote_ip
+        )
+
     # Use UserManager to get the create_user method, etc.
     objects = MyUserManager()
 
@@ -133,6 +140,7 @@ class UserProfileLog(BaseAbstractModel):
         ordering = '-action_date',
         verbose_name = _('User profile log')
         verbose_name_plural = _('User profile logs')
+        db_table = 'profiles_userprofilelog'
 
 
 class UserProfileManager(MyUserManager):
@@ -184,6 +192,7 @@ class UserProfile(BaseAccount):
         verbose_name = _('Staff account profile')
         verbose_name_plural = _('Staff account profiles')
         ordering = 'fio',
+        db_table = 'profiles_userprofile'
 
     def save(self, *args, **kwargs):
         r = super().save(*args, **kwargs)
@@ -227,3 +236,17 @@ class UserProfile(BaseAccount):
         if self.is_superuser:
             return 100.0
         return 0.0
+
+
+class ProfileAuthLog(models.Model):
+    time = models.DateTimeField(_('Auth time'), auto_now_add=True)
+    profile = models.ForeignKey(BaseAccount, on_delete=models.CASCADE, verbose_name=_('Profile'))
+    remote_ip = models.GenericIPAddressField(_('Remote ip'), blank=True, null=True, default=None)
+    user_agent = models.CharField(_('Details'), max_length=256)
+
+    def __str__(self):
+        return self.profile
+
+    class Meta:
+        db_table = 'profiles_auth_log'
+        ordering = '-id',
