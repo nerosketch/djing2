@@ -31,13 +31,19 @@ class DjingAuthBackend(ModelBackend):
             # difference between an existing and a non-existing user (#20760).
             BaseAccount().set_password(password)
         else:
-            if user.check_password(password):
-                if user.is_staff:
-                    auser = UserProfile.objects.get_by_natural_key(username)
-                else:
-                    auser = Customer.objects.get_by_natural_key(username)
-                if self.user_can_authenticate(auser):
-                    return auser
+            if not user.check_password(password):
+                return
+            if not self.user_can_authenticate(user):
+                return
+            if user.is_staff:
+                auser = UserProfile.objects.get_by_natural_key(username)
+            else:
+                auser = Customer.objects.get_by_natural_key(username)
+            auser.auth_log(
+                user_agent=request.META.get('HTTP_USER_AGENT'),
+                remote_ip=request.META.get('REMOTE_ADDR')
+            )
+            return auser
 
     def get_user(self, user_id):
         user = BaseAccount._default_manager.get(pk=user_id)

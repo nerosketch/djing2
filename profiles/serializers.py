@@ -8,7 +8,7 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.exceptions import ValidationError
 
 from djing2.lib.mixins import BaseCustomModelSerializer
-from profiles.models import UserProfile, UserProfileLog
+from profiles.models import UserProfile, UserProfileLog, ProfileAuthLog
 
 
 class UserProfileSerializer(BaseCustomModelSerializer):
@@ -132,3 +132,9 @@ class SitesAuthTokenSerializer(AuthTokenSerializer):
 
         attrs['user'] = user
         return attrs
+
+
+class ProfileAuthLogSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = ProfileAuthLog
+        fields = '__all__'
