@@ -31,7 +31,6 @@ api_urls = [
 
 urlpatterns = [
     path('api/', include(api_urls)),
-    path('api-auth/', include('rest_framework.urls'))
 ]
 
 
@@ -45,3 +44,4 @@ if settings.DEBUG:
     urlpatterns.extend(staticfiles_urlpatterns())
     urlpatterns.append(path('admin/', admin.site.urls))
     urlpatterns.append(path('__debug__/', include(debug_toolbar.urls)))
+    urlpatterns.append(path('api-auth/', include('rest_framework.urls')))
