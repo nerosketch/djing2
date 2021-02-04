@@ -8,6 +8,7 @@ from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet
 from gateways.models import Gateway
 from gateways.serializers import GatewayModelSerializer
+from profiles.models import UserProfileLogActionType
 
 
 class GatewayModelViewSet(DjingModelViewSet):
@@ -42,7 +43,26 @@ class GatewayModelViewSet(DjingModelViewSet):
             return Response(str(msg), status=status.HTTP_403_FORBIDDEN)
 
     def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(
+        gw = super().perform_create(
             serializer=serializer,
             sites=[self.request.site]
         )
+        if gw is not None:
+            # log about creating new Gateway
+            self.request.user.log(
+                do_type=UserProfileLogActionType.CREATE_NAS,
+                additional_text='"%(title)s", %(ip)s, %(type)s' % {
+                    'title': gw.title,
+                    'ip': gw.ip_address,
+                    'type': gw.get_gw_type_display()
+                })
+        return gw
+
+    def perform_destroy(self, instance):
+        self.request.user.log(
+            do_type=UserProfileLogActionType.DELETE_NAS,
+            additional_text='"%(title)s", %(ip)s, %(type)s' % {
+                'title': instance.title,
+                'ip': instance.ip_address,
+                'type': instance.get_gw_type_display()
+            })
