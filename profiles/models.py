@@ -200,23 +200,15 @@ class UserProfile(BaseAccount):
             resize_profile_avatar(self.avatar.path)
         return r
 
-    def log(self, request_meta: dict, do_type: str, additional_text=None) -> None:
+    def log(self, do_type: UserProfileLogActionType, additional_text=None) -> None:
         """
         Make log about administrator actions.
-        :param request_meta: META from django request.
         :param do_type: Choice from UserProfileLog.ACTION_TYPES
         :param additional_text: Additional information for action
         :return: None
         """
-        inf = {
-            'src_ip': request_meta.get('REMOTE_ADDR'),
-            'username': request_meta.get('USER'),
-            'hostname': request_meta.get('HOSTNAME'),
-            'useragent': request_meta.get('HTTP_USER_AGENT')
-        }
         UserProfileLog.objects.create(
             account=self,
-            meta_info=inf,
             do_type=do_type,
             additional_text=additional_text
         )
