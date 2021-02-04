@@ -24,6 +24,7 @@ from djing2.lib.mixins import SitesFilterMixin
 
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
+from profiles.models import UserProfileLogActionType
 from services.models import Service, OneShotPay, PeriodicPay
 from services.serializers import ServiceModelSerializer
 
@@ -51,7 +52,7 @@ class CustomerLogModelViewSet(DjingModelViewSet):
         'customer', 'author'
     )
     serializer_class = serializers.CustomerLogModelSerializer
-    filterset_fields = ('customer', )
+    filterset_fields = ('customer',)
 
     def create(self, request, *args, **kwargs):
         return Response(gettext(
@@ -84,10 +85,32 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         )
 
     def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(
+        customer_instance = super().perform_create(
             serializer=serializer,
             sites=[self.request.site]
         )
+        if customer_instance is not None:
+            # log about creating new customer
+            self.request.user.log(
+                do_type=UserProfileLogActionType.CREATE_USER,
+                additional_text='%s, "%s", %s' % (
+                    customer_instance.username,
+                    customer_instance.fio,
+                    customer_instance.group.title if customer_instance.group else ''
+                ))
+        return customer_instance
+
+    def perform_destroy(self, instance):
+        # log about deleting customer
+        self.request.user.log(
+            do_type=UserProfileLogActionType.DELETE_USER,
+            additional_text=('%(uname)s, "%(fio)s", %(group)s %(street)s %(house)s' % {
+                'uname': instance.username,
+                'fio': instance.fio or '-',
+                'group': instance.group.title if instance.group else '',
+                'street': instance.street.name if instance.street else '',
+                'house': instance.house or ''
+            }).strip())
 
     @action(methods=['post'], detail=True)
     @catch_customers_errs

@@ -5,6 +5,7 @@ from rest_framework.filters import OrderingFilter
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.mixins import SitesGroupFilterMixin, SitesFilterMixin
 from djing2.viewsets import DjingModelViewSet
+from profiles.models import UserProfileLogActionType
 from services.models import Service, PeriodicPay, OneShotPay
 from services.serializers import (
     ServiceModelSerializer,
@@ -21,10 +22,28 @@ class ServiceModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
     ordering_fields = ('title', 'speed_in', 'speed_out', 'cost', 'usercount')
 
     def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(
+        service = super().perform_create(
             serializer=serializer,
             sites=[self.request.site]
         )
+        if service is not None:
+            self.request.user.log(
+                do_type=UserProfileLogActionType.CREATE_SERVICE,
+                additional_text='"%(title)s", "%(descr)s", %(amount).2f' % {
+                    'title': service.title or '-',
+                    'descr': service.descr or '-',
+                    'amount': service.cost or 0.0
+                })
+        return service
+
+    def perform_destroy(self, instance):
+        self.request.user.log(
+            do_type=UserProfileLogActionType.DELETE_SERVICE,
+            additional_text='"%(title)s", "%(descr)s", %(amount).2f' % {
+                'title': instance.title or '-',
+                'descr': instance.descr or '-',
+                'amount': instance.cost or 0.0
+            })
 
 
 class PeriodicPayModelViewSet(SitesFilterMixin, DjingModelViewSet):
