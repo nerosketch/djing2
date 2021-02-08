@@ -394,7 +394,7 @@ class CustomersGroupsListAPIView(DjingListAPIView):
             self.request.user,
             perms='groupapp.view_group',
             klass=Group
-        ).annotate(usercount=Count('customer', filter=Q(customer__sites__in=[self.request.site])))
+        )
         if self.request.user.is_superuser:
             return qs.annotate(usercount=Count('customer'))
         return qs.filter(sites__in=[self.request.site]) \
