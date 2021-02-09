@@ -54,11 +54,15 @@ def multicast_email_notify(msg_text: str, account_ids: Iterable):
 
 
 @task()
-def send_broadcast_push_notification(title: str, body: str):
+def send_broadcast_push_notification(title: str, body: str, url=None, **other_info):
     payload = {
         "title": title,
         "body": body
     }
+    if url:
+        payload['url'] = url
+    if other_info:
+        payload.update(other_info)
     send_group_notification(
         group_name="group_name",
         payload=payload,
