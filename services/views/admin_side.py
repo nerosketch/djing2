@@ -44,6 +44,7 @@ class ServiceModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
                 'descr': instance.descr or '-',
                 'amount': instance.cost or 0.0
             })
+        return super().perform_destroy(instance)
 
 
 class PeriodicPayModelViewSet(SitesFilterMixin, DjingModelViewSet):
