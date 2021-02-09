@@ -20,7 +20,7 @@ def task_post_save(sender, instance: Task, created=False, **kwargs):
             }
         })
         send_broadcast_push_notification(
-            title=_('Change task'),
+            title=_('Reminders of tasks'),
             body=notify_text
         )
         return
