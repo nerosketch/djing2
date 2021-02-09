@@ -66,3 +66,4 @@ class GatewayModelViewSet(DjingModelViewSet):
                 'ip': instance.ip_address,
                 'type': instance.get_gw_type_display()
             })
+        return super().perform_destroy(instance)

@@ -306,6 +306,7 @@ class DeviceModelViewSet(DjingModelViewSet):
                 instance.mac_addr or '-',
                 instance.comment or '-'
             ))
+        return super().perform_destroy(instance)
 
     @action(detail=True)
     @catch_dev_manager_err

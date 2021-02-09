@@ -111,6 +111,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
                 'street': instance.street.name if instance.street else '',
                 'house': instance.house or ''
             }).strip())
+        return super().perform_destroy(instance)
 
     @action(methods=['post'], detail=True)
     @catch_customers_errs
