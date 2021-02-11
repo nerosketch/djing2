@@ -284,7 +284,7 @@ class CustomerIpLeaseModel(models.Model):
 
 class CustomerIpLeaseLog(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
+    ip_address = models.GenericIPAddressField(_('Ip address'))
     lease_time = models.DateTimeField(_('Lease time'), auto_now_add=True)
     last_update = models.DateTimeField(_('Last update'), blank=True, null=True, default=None)
     mac_address = MACAddressField(verbose_name=_('Mac address'), null=True, default=None)
