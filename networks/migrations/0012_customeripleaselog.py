@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             name='CustomerIpLeaseLog',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ip_address', models.GenericIPAddressField(unique=True, verbose_name='Ip address')),
+                ('ip_address', models.GenericIPAddressField(verbose_name='Ip address')),
                 ('lease_time', models.DateTimeField(auto_now_add=True, verbose_name='Lease time')),
                 ('last_update', models.DateTimeField(blank=True, default=None, null=True, verbose_name='Last update')),
                 ('mac_address', netfields.fields.MACAddressField(default=None, null=True, verbose_name='Mac address')),
