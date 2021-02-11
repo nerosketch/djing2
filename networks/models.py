@@ -209,7 +209,7 @@ class CustomerIpLeaseModelQuerySet(models.QuerySet):
         return self.filter(lease_time__lt=expire_time)
 
 
-class CustomerIpLeaseModel(BaseAbstractModel):
+class CustomerIpLeaseModel(models.Model):
     ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
     pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
     lease_time = models.DateTimeField(_('Lease time'), auto_now_add=True)
@@ -280,3 +280,19 @@ class CustomerIpLeaseModel(BaseAbstractModel):
         verbose_name_plural = _('IP leases')
         unique_together = ('ip_address', 'mac_address', 'pool', 'customer')
         ordering = 'id',
+
+
+class CustomerIpLeaseLog(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
+    lease_time = models.DateTimeField(_('Lease time'), auto_now_add=True)
+    last_update = models.DateTimeField(_('Last update'), blank=True, null=True, default=None)
+    mac_address = MACAddressField(verbose_name=_('Mac address'), null=True, default=None)
+    is_dynamic = models.BooleanField(_('Is synamic'), default=False)
+    event_time = models.DateTimeField(_('Event time'), auto_now_add=True)
+
+    def __str__(self):
+        return self.ip_address
+
+    class Meta:
+        db_table = 'networks_ip_lease_log'
