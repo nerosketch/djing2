@@ -1,9 +1,12 @@
-from string import digits, ascii_lowercase
+from string import digits, ascii_lowercase, ascii_uppercase
 from random import choice
 
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from customers import models
 from djing2.lib import safe_int
@@ -33,7 +36,7 @@ def generate_random_username():
 
 
 def generate_random_password():
-    return _generate_random_chars(length=6, chars=digits + ascii_lowercase)
+    return _generate_random_chars(length=8, chars=digits + ascii_lowercase + ascii_uppercase + '!@#$%^&*')
 
 
 class CustomerServiceModelSerializer(BaseCustomModelSerializer):
@@ -125,8 +128,12 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     def update(self, instance, validated_data):
         raw_password = validated_data.get('password')
         if raw_password:
-            update_passw(acc=instance, raw_password=raw_password)
-            validated_data['password'] = make_password(raw_password)
+            try:
+                validate_password(raw_password, instance)
+                update_passw(acc=instance, raw_password=raw_password)
+                validated_data['password'] = make_password(raw_password)
+            except DjangoValidationError as err:
+                raise DRFValidationError(err)
 
         instance = super().update(instance, validated_data)
 
