@@ -11,7 +11,7 @@ LANGUAGE plpgsql;
 
 
 CREATE TRIGGER networks_ip_lease_log_trigger
-  AFTER INSERT OR UPDATE
+  AFTER INSERT
   ON networks_ip_leases
   FOR EACH ROW
 EXECUTE PROCEDURE networks_ip_lease_log_fn();
