@@ -18,6 +18,7 @@ DEVICE_TYPE_HuaweiS2300 = 8
 DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface = 9
 DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface = 10
 DEVICE_TYPE_DlinkDGS_3627GSwitchInterface = 11
+DEVICE_TYPE_HuaweiS5300_10P_LI_AC = 12
 
 DEVICE_TYPES = [
     (DEVICE_TYPE_UNKNOWN, UnknownDevice),
@@ -32,6 +33,7 @@ DEVICE_TYPES = [
     (DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface, DlinkDGS_3120_24SCSwitchInterface),
     (DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface, DlinkDGS_1100_06MESwitchInterface),
     (DEVICE_TYPE_DlinkDGS_3627GSwitchInterface, DlinkDGS_3627GSwitchInterface),
+    (DEVICE_TYPE_HuaweiS5300_10P_LI_AC, HuaweiS5300_10P_LI_AC)
 ]
 
 DEVICE_ONU_TYPES = [
