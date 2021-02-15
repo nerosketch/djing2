@@ -16,7 +16,7 @@ from services.serializers import ServiceModelSerializer
 
 
 def _generate_random_chars(length=6, chars=digits, split=2, delimiter=''):
-    username = ''.join(choice(chars) for i in range(length))
+    username = ''.join(choice(chars) for _ in range(length))
 
     if split:
         username = delimiter.join(
