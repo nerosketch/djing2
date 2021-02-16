@@ -384,6 +384,11 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         is_acc = customer.is_access()
         return Response(is_acc)
 
+    @action(methods=['get'], detail=False)
+    def generate_password(self, request):
+        rp = serializers.generate_random_password()
+        return Response(rp)
+
 
 class CustomersGroupsListAPIView(DjingListAPIView):
     serializer_class = serializers.CustomerGroupSerializer
