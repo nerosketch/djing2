@@ -1,6 +1,8 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -36,6 +38,13 @@ class UserProfileSerializer(BaseCustomModelSerializer):
         )
         # return UserProfile.objects.create(**validated_data)
 
+    def validate_password(self, value):
+        try:
+            validate_password(value)
+            return value
+        except DjangoValidationError as err:
+            raise ValidationError(err)
+
     def is_valid(self, raise_exception: bool = ...):
         forbidden_usernames = ('log', 'api-token-auth', 'api')
         if hasattr(self.initial_data, 'username') and self.initial_data['username'] in forbidden_usernames:
@@ -64,6 +73,16 @@ class UserProfilePasswordSerializer(serializers.Serializer):
 
     # def create(self, validated_data):
     #     print('UserProfilePasswordSerializer.create', validated_data)
+
+    def validate_old_passw(self, value):
+        try:
+            validate_password(value)
+            return value
+        except DjangoValidationError as err:
+            raise ValidationError(err)
+
+    def validate_new_passw(self, value):
+        return self.validate_old_passw(value)
 
 
 class UserObjectPermissionSerializer(BaseCustomModelSerializer):
