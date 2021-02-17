@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Permission, Group
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
@@ -96,6 +97,8 @@ class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
                 return Response(_('Passwords must be same'), status=status.HTTP_400_BAD_REQUEST)
             if not profile.check_password(old_passw):
                 return Response(_('Wrong old password'), status=status.HTTP_400_BAD_REQUEST)
+
+        validate_password(old_passw, profile)
 
         profile.set_password(new_passw)
         profile.save(update_fields=['password'])
