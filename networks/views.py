@@ -17,7 +17,7 @@ from networks.serializers import (NetworkIpPoolModelSerializer,
 
 
 class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
-    queryset = NetworkIpPool.objects.all()
+    queryset = NetworkIpPool.objects.select_related('vlan_if')
     serializer_class = NetworkIpPoolModelSerializer
     filter_backends = (CustomObjectPermissionsFilter, OrderingFilter, DjangoFilterBackend)
     ordering_fields = ('network', 'ip_start', 'ip_end', 'gateway')
