@@ -12,6 +12,8 @@ class NetworkIpPoolModelSerializer(BaseCustomModelSerializer):
     # ToDO: optimize
     usage_count = serializers.IntegerField(source='customeripleasemodel_set.count', read_only=True)
 
+    vid = serializers.IntegerField(source='vlan_if.vid', read_only=True)
+
     @staticmethod
     def validate_network(value):
         if value is None:
