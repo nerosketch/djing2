@@ -10,7 +10,8 @@ from customers.serializers import RadiusCustomerServiceRequestSerializer
 from djing2.lib import LogicError, safe_int
 from djing2.viewsets import DjingAuthorizedViewSet
 from networks.models import CustomerIpLeaseModel
-from radiusapp.models import parse_opt82, UserSession
+from radiusapp.models import UserSession
+from radiusapp.vendors import VendorManager
 
 
 def _get_rad_val(data, v: str):
@@ -40,16 +41,6 @@ def _bad_ret(text):
     return Response({
         'Reply-Message': text
     }, status=status.HTTP_403_FORBIDDEN)
-
-
-def _build_dev_mac_by_opt82(aget_remote_id: str, aget_circuit_id: str):
-    dig = int(aget_remote_id, base=16)
-    aget_remote_id = dig.to_bytes((dig.bit_length() + 7) // 8, 'big')
-    dig = int(aget_circuit_id, base=16)
-    aget_circ_id = dig.to_bytes((dig.bit_length() + 7) // 8, 'big')
-
-    dev_mac, dev_port = parse_opt82(aget_remote_id, aget_circ_id)
-    return dev_mac, dev_port
 
 
 class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
@@ -89,17 +80,21 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
 
     @action(methods=['post'], detail=False)
     def auth(self, request):
-        aget_remote_id = _get_rad_val(request.data, 'Agent-Remote-Id')
-        aget_circ_id = _get_rad_val(request.data, 'Agent-Circuit-Id')
-        # event_time = _get_rad_val(request.data, 'Event-Timestamp')
-        ip = _get_rad_val(request.data, 'Framed-IP-Address')  # possible none
+        # FIXME: Pass name to 'vendor_name' from request
+        vendor_manager = VendorManager(vendor_name='juniper')
 
-        if not all([aget_remote_id, aget_circ_id]):
+        agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(
+            data=request.data
+        )
+
+        # ip = _get_rad_val(request.data, 'Framed-IP-Address')  # possible none
+
+        if not all([agent_remote_id, agent_circuit_id]):
             return _bad_ret('Bad opt82')
 
-        dev_mac, dev_port = _build_dev_mac_by_opt82(
-            aget_remote_id=aget_remote_id,
-            aget_circuit_id=aget_circ_id
+        dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+            agent_remote_id=agent_remote_id,
+            agent_circuit_id=agent_circuit_id
         )
 
         if dev_mac is None:
@@ -157,6 +152,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
 
     @action(methods=['post'], detail=False)
     def acct(self, request):
+        return Response(status=status.HTTP_201_CREATED)
         # print('Acct:', request.data)
         # r_dhcp_op82 = {
         #     'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'],
@@ -215,14 +211,14 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         if ip is None:
             return _bad_ret('Framed-IP-Address required')
 
-        aget_remote_id = _get_acct_rad_val(dat, 'Agent-Remote-Id')
-        aget_circ_id = _get_acct_rad_val(dat, 'Agent-Circuit-Id')
-        if not all([aget_remote_id, aget_circ_id]):
+        agent_remote_id = _get_acct_rad_val(dat, 'Agent-Remote-Id')
+        agent_circuit_id = _get_acct_rad_val(dat, 'Agent-Circuit-Id')
+        if not all([agent_remote_id, agent_circuit_id]):
             return _bad_ret('Bad opt82')
 
         dev_mac, dev_port = _build_dev_mac_by_opt82(
-            aget_remote_id=aget_remote_id,
-            aget_circuit_id=aget_circ_id
+            agent_remote_id=agent_remote_id,
+            agent_circuit_id=agent_circuit_id
         )
 
         # create or update radius session
