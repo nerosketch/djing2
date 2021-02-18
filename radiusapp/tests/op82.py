@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase
 
-from radiusapp.models import parse_opt82
+from radiusapp.vendors import parse_opt82
 
 
 class Option82TestCase(SimpleTestCase):
