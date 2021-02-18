@@ -1,4 +1,4 @@
-from radiusapp.vendors import IVendorSpecific
+from radiusapp.vendor_base import IVendorSpecific
 
 
 class JuniperVendorSpecific(IVendorSpecific):
