@@ -1,14 +1,13 @@
-import base64
-from ipaddress import ip_interface, ip_network, ip_address
+from ipaddress import ip_interface, ip_address
 
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from djing2.viewsets import DjingAuthorizedViewSet
-from networks.models import CustomerIpLeaseModel, DHCP_DEFAULT_LEASE_TIME
+from networks.models import CustomerIpLeaseModel
 from radiusapp.exceptions import DhcpRequestError
-from radiusapp.models import parse_opt82
+# from radiusapp.vendors import parse_opt82
 from radiusapp.serializers.networks import RadiusDHCPRequestSerializer
 
 
@@ -44,48 +43,48 @@ class RadiusRequestViewSet(DjingAuthorizedViewSet):
         serializer.is_valid(raise_exception=True)
         return serializer.data
 
-    @action(methods=('post', 'get'), detail=False)
-    @catch_radius_errs
-    def dhcp_request(self, request, *args, **kwargs):
-        if request.method == 'GET':
-            return self._show_serializer()
-        data = self._check_data(request.data)
-
-        opt82 = data.get('opt82')
-        remote_id = base64.b64decode(opt82.get('remote_id', ''))
-        circuit_id = base64.b64decode(opt82.get('circuit_id', ''))
-        user_mac = data.get('client_mac')
-
-        # try to get switch mac addr
-        if not all([remote_id, circuit_id]):
-            return _bad_response('Bad option82')
-        dev_mac, dev_port = parse_opt82(remote_id, circuit_id)
-        if dev_mac is None:
-            return _bad_response('Failed to parse option82')
-
-        pool_tag = data.get('pool_tag')
-
-        # If customer has an active leases then return latest.
-        # If not found then assign new
-        # ip_lease = CustomerIpLeaseModel.fetch_subscriber_lease(
-        #     customer_mac=user_mac,
-        #     device_mac=dev_mac,
-        #     device_port=dev_port,
-        #     is_dynamic=True,
-        #     pool_tag=pool_tag
-        # )
-
-        if ip_lease is None:
-            return _bad_response("Can't issue a lease")
-        pool_contains_ip = ip_lease.pool
-        net = ip_network(pool_contains_ip.network)
-
-        return Response(data={
-            "ip": _clear_ip(ip_lease.ip_address),
-            "mask": str(net.netmask),
-            "gw": _clear_ip(pool_contains_ip.gateway),
-            "lease_time": DHCP_DEFAULT_LEASE_TIME
-        })
+    # @action(methods=('post', 'get'), detail=False)
+    # @catch_radius_errs
+    # def dhcp_request(self, request, *args, **kwargs):
+    #     if request.method == 'GET':
+    #         return self._show_serializer()
+    #     data = self._check_data(request.data)
+    #
+    #     opt82 = data.get('opt82')
+    #     remote_id = base64.b64decode(opt82.get('remote_id', ''))
+    #     circuit_id = base64.b64decode(opt82.get('circuit_id', ''))
+    #     user_mac = data.get('client_mac')
+    #
+    #     # try to get switch mac addr
+    #     if not all([remote_id, circuit_id]):
+    #         return _bad_response('Bad option82')
+    #     dev_mac, dev_port = parse_opt82(remote_id, circuit_id)
+    #     if dev_mac is None:
+    #         return _bad_response('Failed to parse option82')
+    #
+    #     pool_tag = data.get('pool_tag')
+    #
+    #     # If customer has an active leases then return latest.
+    #     # If not found then assign new
+    #     ip_lease = CustomerIpLeaseModel.fetch_subscriber_lease(
+    #         customer_mac=user_mac,
+    #         device_mac=dev_mac,
+    #         device_port=dev_port,
+    #         is_dynamic=True,
+    #         pool_tag=pool_tag
+    #     )
+    #
+    #     if ip_lease is None:
+    #         return _bad_response("Can't issue a lease")
+    #     pool_contains_ip = ip_lease.pool
+    #     net = ip_network(pool_contains_ip.network)
+    #
+    #     return Response(data={
+    #         "ip": _clear_ip(ip_lease.ip_address),
+    #         "mask": str(net.netmask),
+    #         "gw": _clear_ip(pool_contains_ip.gateway),
+    #         "lease_time": DHCP_DEFAULT_LEASE_TIME
+    #     })
 
     @action(methods=['post'], detail=False)
     @catch_radius_errs
