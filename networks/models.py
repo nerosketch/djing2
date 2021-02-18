@@ -81,6 +81,7 @@ class NetworkIpPool(BaseAbstractModel):
 
     is_dynamic = models.BooleanField(_('Is dynamic'), default=False)
 
+    # deprecated: pool_tag is deprecated, remove it
     pool_tag = models.CharField(
         _('Tag'), max_length=32, null=True, blank=True,
         default=None, validators=[validators.validate_slug]
@@ -167,12 +168,11 @@ class NetworkIpPool(BaseAbstractModel):
         Finds unused ip
         :return:
         """
-        pool_tag = str(self.pool_tag) if self.pool_tag else None
         with connection.cursor() as cur:
-            if pool_tag is None:
-                cur.execute("SELECT find_new_ip_pool_lease(%d, %d::boolean, null)" % (self.pk, 0))
-            else:
-                cur.execute("SELECT find_new_ip_pool_lease(%d, %d::boolean, %s)" % (self.pk, 0, pool_tag))
+            cur.execute("SELECT find_new_ip_pool_lease(%d, %d::boolean, 0::smallint)" % (
+                self.pk,
+                1 if self.is_dynamic else 0
+            ))
             free_ip = cur.fetchone()
         return ip_address(free_ip[0]) if free_ip and free_ip[0] else None
 
