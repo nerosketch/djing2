@@ -1,3 +1,4 @@
+from django.db import DataError, InternalError
 from django.test import TestCase
 
 from networks.models import VlanIf, NetworkIpPool, NetworkIpPoolKind, CustomerIpLeaseModel
@@ -48,6 +49,9 @@ class FetchSubscriberLease(TestCase):
         self.pool_dynamic.groups.add(self.group)
         # self.pool_static.groups.add(self.group)
 
+        NetworkIpPool.objects.filter(pk=self.ippool.pk).delete()
+        del self.ippool
+
     def test_normal_fetch(self):
         res = UserSession.objects.fetch_subscriber_lease(
             customer_mac='aa:bb:cc:dd:ee:ff',
@@ -96,4 +100,69 @@ class FetchSubscriberLease(TestCase):
         ).count()
         self.assertEqual(leases_count, 2)
 
-    
+    def test_bad_data(self):
+        with self.assertRaises(DataError):
+            UserSession.objects.fetch_subscriber_lease(
+                customer_mac='1-2e0-qedq0jdwqwoiked',
+                device_mac='981723981231',
+                device_port=2,
+                is_dynamic=True,
+                vid=12
+            )
+
+    def test_negative_port(self):
+        with self.assertRaises(InternalError):
+            UserSession.objects.fetch_subscriber_lease(
+                customer_mac='1a:b6:4c:cd:e3:fe',
+                device_mac='12:13:14:15:16:17',
+                device_port=-2,
+                is_dynamic=True,
+                vid=12
+            )
+
+    def test_empty_vid(self):
+        res = UserSession.objects.fetch_subscriber_lease(
+            customer_mac='aa:bb:cc:dd:ee:ff',
+            device_mac='12:13:14:15:16:17',
+            device_port=2,
+            is_dynamic=True,
+            vid=None
+        )
+        self.assertIsNotNone(res)
+        self.assertEqual(res['ip_addr'], '192.168.0.2')
+        self.assertEqual(res['pool_id'], self.pool_dynamic.pk)
+        self.assertEqual(res['customer_mac'], 'aa:bb:cc:dd:ee:ff')
+        self.assertEqual(res['customer_id'], self.customer.pk)
+        self.assertTrue(res['is_dynamic'])
+        self.assertTrue(res['is_assigned'])
+
+    def test_multiple_fetch(self):
+        res = UserSession.objects.fetch_subscriber_lease(
+            customer_mac='aa:bb:cc:dd:ee:ff',
+            device_mac='12:13:14:15:16:17',
+            device_port=2,
+            is_dynamic=True,
+            vid=12
+        )
+        self.assertIsNotNone(res)
+        self.assertEqual(res['ip_addr'], '192.168.0.2')
+        self.assertEqual(res['pool_id'], self.pool_dynamic.pk)
+        self.assertEqual(res['customer_mac'], 'aa:bb:cc:dd:ee:ff')
+        self.assertEqual(res['customer_id'], self.customer.pk)
+        self.assertTrue(res['is_dynamic'])
+        self.assertTrue(res['is_assigned'])
+        for n in range(4):
+            res = UserSession.objects.fetch_subscriber_lease(
+                customer_mac='aa:bb:cc:dd:ee:ff',
+                device_mac='12:13:14:15:16:17',
+                device_port=2,
+                is_dynamic=True,
+                vid=12
+            )
+            self.assertIsNotNone(res)
+            self.assertEqual(res['ip_addr'], '192.168.0.2')
+            self.assertEqual(res['pool_id'], self.pool_dynamic.pk)
+            self.assertEqual(res['customer_mac'], 'aa:bb:cc:dd:ee:ff')
+            self.assertEqual(res['customer_id'], self.customer.pk)
+            self.assertTrue(res['is_dynamic'])
+            self.assertFalse(res['is_assigned'])
