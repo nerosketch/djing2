@@ -1,8 +1,8 @@
-import abc
 from typing import Optional, Tuple
 from djing2.lib import macbin2str, safe_int
 
 from radiusapp.vendor_specific import vendor_classes
+from radiusapp.vendor_base import IVendorSpecific
 
 
 def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int]:
@@ -19,25 +19,6 @@ def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int
         if len(remote_id) >= 6:
             mac = macbin2str(remote_id[-6:])
     return mac, port
-
-
-class IVendorSpecific(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def vendor(self):
-        raise NotImplementedError
-
-    @staticmethod
-    def get_rad_val(data, v: str):
-        k = data.get(v)
-        if k:
-            k = k.get('value')
-            if k:
-                return k[0]
-
-    @abc.abstractmethod
-    def parse_option82(self, data) -> Optional[Tuple[str, str]]:
-        raise NotImplementedError
 
 
 class VendorManager(object):
@@ -61,4 +42,3 @@ class VendorManager(object):
 
         dev_mac, dev_port = parse_opt82(agent_remote_id, agent_circuit_id)
         return dev_mac, dev_port
-
