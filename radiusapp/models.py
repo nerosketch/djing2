@@ -56,6 +56,28 @@ class UserSessionManager(models.Manager):
         # print('is_created:', is_created)
         return is_created
 
+    @staticmethod
+    def fetch_subscriber_lease(customer_mac: str, device_mac: str, device_port: int, is_dynamic: bool, vid: int):
+        with connection.cursor() as cur:
+            # v_mac_addr, v_dev_mac, v_dev_port, v_is_dynamic, v_vid
+            cur.execute("select * from fetch_subscriber_lease"
+                        "(%s::macaddr, %s::macaddr, %s::smallint, %s::boolean, %s::smallint)",
+                        [customer_mac, device_mac, device_port, is_dynamic, vid])
+            res = cur.fetchone()
+        lease_id, ip_addr, pool_id, lease_time, customer_mac, customer_id, is_dynamic, is_assigned = res
+        if lease_id is None:
+            return
+        return {
+            'id': lease_id,
+            'ip_addr': ip_addr,
+            'pool_id': pool_id,
+            'lease_time': lease_time,
+            'customer_mac': customer_mac,
+            'customer_id': customer_id,
+            'is_dynamic': is_dynamic,
+            'is_assigned': is_assigned
+        }
+
 
 class UserSession(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)

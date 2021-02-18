@@ -29,8 +29,8 @@ $$
 DECLARE
   t_lease    FetchSubscriberLeaseReturnType;
   t_ip       inet;
-  t_net      networks_ippool_groups;
-  t_customer customers;
+  t_net      record;
+  t_customer record;
 BEGIN
   -- check if lease is exists
   -- if exists then return it
@@ -73,7 +73,6 @@ BEGIN
   for t_net in select nipg.networkippool_id
                from networks_ippool_groups nipg
                where nipg.group_id = t_customer.group_id
-                 for update skip locked
     loop
 
       -- raise notice 'search in pool %', t_net.pool_id;
