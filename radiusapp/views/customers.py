@@ -14,14 +14,6 @@ from radiusapp.models import UserSession
 from radiusapp.vendors import VendorManager
 
 
-def _get_rad_val(data, v: str):
-    k = data.get(v)
-    if k:
-        k = k.get('value')
-        if k:
-            return k[0]
-
-
 def _get_acct_rad_val(data, v) -> Optional[Union[str, int]]:
     attr = data.get(v)
     if isinstance(attr, (list, tuple)):
@@ -87,8 +79,6 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             data=request.data
         )
 
-        # ip = _get_rad_val(request.data, 'Framed-IP-Address')  # possible none
-
         if not all([agent_remote_id, agent_circuit_id]):
             return _bad_ret('Bad opt82')
 
@@ -99,6 +89,10 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
 
         if dev_mac is None:
             return _bad_ret('Failed to parse option82')
+
+        customer_mac = vendor_manager.get_customer_mac(request.data)
+        if customer_mac is None:
+            return _bad_ret('Customer mac is required')
 
         customer_service = CustomerService.find_customer_service_by_device_credentials(
             dev_mac=dev_mac,
@@ -114,28 +108,15 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             })
         service = customer_service.service
 
-        # username as client mac addr
-        # FIXME: get real customer mac
-        # mac = _get_rad_val(request.data, 'User-Name')  # Mikrotik
-        mac = _get_rad_val(request.data, 'ERX-Dhcp-Mac-Addr')  # Juniper
-        if mac is None:
-            return _bad_ret('Mac is required')
-
         sin, sout = int(service.speed_in * 1000000), int(service.speed_out * 1000000)
-        # if sin == sout:
-        #     speed = f'{sin}k'
-        # else:
-        #     speed = f"{sin}k/{sout}k"
-        sess_time = customer_service.calc_session_time()
+        # sess_time = customer_service.calc_session_time()
 
-        vid = safe_int(_get_rad_val(request.data, 'NAS-Port'))
-        if vid == 0:
-            return _bad_ret('NAS-Port is required')
+        vid = vendor_manager.get_vlan_id(request.data)
 
         try:
-            # TODO: make it completely
+            # TODO: UserSession нужно запоминать
             r = UserSession.objects.fetch_subscriber_lease(
-                customer_mac=mac,
+                customer_mac=customer_mac,
                 device_mac=dev_mac,
                 device_port=dev_port,
                 is_dynamic=True,
