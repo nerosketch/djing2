@@ -42,3 +42,11 @@ class VendorManager(object):
 
         dev_mac, dev_port = parse_opt82(agent_remote_id, agent_circuit_id)
         return dev_mac, dev_port
+
+    def get_customer_mac(self, data):
+        if self.vendor_class:
+            return self.vendor_class.get_customer_mac(data)
+
+    def get_vlan_id(self, data):
+        if self.vendor_class:
+            return self.vendor_class.get_vlan_id(data)
