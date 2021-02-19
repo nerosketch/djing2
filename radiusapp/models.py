@@ -83,7 +83,7 @@ class UserSession(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     assign_time = models.DateTimeField(auto_now_add=True, help_text=_('Time when session assigned first time'))
     last_event_time = models.DateTimeField(_('Last update time'))
-    radius_username = models.CharField(_('User-Name av pair from radius'), max_length=32)
+    radius_username = models.CharField(_('User-Name av pair from radius'), max_length=128)
     framed_ip_addr = models.GenericIPAddressField(_('Framed-IP-Address'))
     session_id = models.UUIDField(_('Unique session id'))
     session_duration = models.DurationField(_('most often this is Acct-Session-Time av pair'), blank=True, null=True,
