@@ -9,18 +9,18 @@ from customers.models import CustomerService
 from customers.serializers import RadiusCustomerServiceRequestSerializer
 from djing2.lib import LogicError, safe_int
 from djing2.viewsets import DjingAuthorizedViewSet
-from networks.models import CustomerIpLeaseModel
+# from networks.models import CustomerIpLeaseModel
 from radiusapp.models import UserSession
 from radiusapp.vendors import VendorManager
 
 
-def _get_acct_rad_val(data, v) -> Optional[Union[str, int]]:
+def _get_acct_rad_val(data, v, default=None) -> Optional[Union[str, int]]:
     attr = data.get(v)
     if isinstance(attr, (list, tuple)):
         return attr[0]
     if attr:
         return attr
-    return None
+    return default
 
 
 def _gigaword_imp(num: int, gwords: int) -> int:
@@ -161,7 +161,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
 
     @action(methods=['post'], detail=False)
     def acct(self, request):
-        return Response(status=status.HTTP_201_CREATED)
+        # return Response(status=status.HTTP_201_CREATED)
         # print('Acct:', request.data)
         # r_dhcp_op82 = {
         #     'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'],
@@ -203,6 +203,9 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         # r7 = {'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'], 'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'], 'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'], 'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'], 'Event-Timestamp': ['Dec  2 2020 16:44:45 MSK'], 'Acct-Status-Type': ['Interim-Update'], 'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'], 'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'], 'Acct-Output-Octets': ['114268'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['894'], 'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['1'], 'NAS-IP-Address': ['10.12.2.10'], 'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:44:45 MSK'], 'Tmp-String-9': ['ai:'], 'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']}
         # return Response(status=status.HTTP_204_NO_CONTENT)
 
+        # FIXME: Pass name to 'vendor_name' from request
+        vendor_manager = VendorManager(vendor_name='juniper')
+
         dat = request.data
 
         is_stop_radius_session = False
@@ -212,23 +215,27 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         if act_type == 'Stop':
             is_stop_radius_session = True
 
-        # username as client mac addr
-        mac = _get_acct_rad_val(dat, 'User-Name')
-        if mac is None:
-            return _bad_ret('User-Name is required')
+        # customer_mac = vendor_manager.get_customer_mac(request.data)
+        # if customer_mac is None:
+        #     return _bad_ret('Customer mac is required')
+
         ip = _get_acct_rad_val(dat, 'Framed-IP-Address')
         if ip is None:
             return _bad_ret('Framed-IP-Address required')
 
-        agent_remote_id = _get_acct_rad_val(dat, 'Agent-Remote-Id')
-        agent_circuit_id = _get_acct_rad_val(dat, 'Agent-Circuit-Id')
+        agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(
+            data=request.data
+        )
+
         if not all([agent_remote_id, agent_circuit_id]):
             return _bad_ret('Bad opt82')
 
-        dev_mac, dev_port = _build_dev_mac_by_opt82(
+        dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
             agent_remote_id=agent_remote_id,
             agent_circuit_id=agent_circuit_id
         )
+
+        radius_username = _get_acct_rad_val(dat, 'User-Name')
 
         # create or update radius session
         UserSession.objects.create_or_update_session(
@@ -236,38 +243,39 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             v_ip_addr=ip,
             v_dev_mac=dev_mac,
             v_dev_port=dev_port,
-            v_sess_time=timedelta(seconds=safe_int(_get_acct_rad_val(dat, 'Acct-Session-Time'))),
-            v_uname=mac,
+            v_sess_time=timedelta(seconds=safe_int(_get_acct_rad_val(dat, 'Acct-Session-Time', 0))),
+            v_uname=radius_username,
             v_inp_oct=_gigaword_imp(
-                num=_get_acct_rad_val(dat, 'Acct-Input-Octets'),
-                gwords=_get_acct_rad_val(dat, 'Acct-Input-Gigawords')
+                num=_get_acct_rad_val(dat, 'Acct-Input-Octets', 0),
+                gwords=_get_acct_rad_val(dat, 'Acct-Input-Gigawords', 0)
             ),
             v_out_oct=_gigaword_imp(
-                num=_get_acct_rad_val(dat, 'Acct-Output-Octets'),
-                gwords=_get_acct_rad_val(dat, 'Acct-Output-Gigawords')
+                num=_get_acct_rad_val(dat, 'Acct-Output-Octets', 0),
+                gwords=_get_acct_rad_val(dat, 'Acct-Output-Gigawords', 0)
             ),
-            v_in_pkt=_get_acct_rad_val(dat, 'Acct-Input-Packets'),
-            v_out_pkt=_get_acct_rad_val(dat, 'Acct-Output-Packets'),
+            v_in_pkt=_get_acct_rad_val(dat, 'Acct-Input-Packets', 0),
+            v_out_pkt=_get_acct_rad_val(dat, 'Acct-Output-Packets', 0),
             v_is_stop=is_stop_radius_session
         )
 
         # update ip addr in customer profile
-        try:
-            res_text = CustomerIpLeaseModel.lease_commit_add_update(
-                client_ip=ip,
-                mac_addr=mac,
-                dev_mac=dev_mac,
-                dev_port=dev_port
-            )
-        except LogicError as err:
-            res_text = str(err)
-        if res_text is not None:
-            res_text = {
-                'Reply-Message': res_text
-            }
-        else:
-            res_text = None
-        return Response(res_text, status=status.HTTP_204_NO_CONTENT if res_text is None else status.HTTP_200_OK)
+        # try:
+        #     res_text = CustomerIpLeaseModel.lease_commit_add_update(
+        #         client_ip=ip,
+        #         mac_addr=mac,
+        #         dev_mac=dev_mac,
+        #         dev_port=dev_port
+        #     )
+        # except LogicError as err:
+        #     res_text = str(err)
+        # if res_text is not None:
+        #     res_text = {
+        #         'Reply-Message': res_text
+        #     }
+        # else:
+        #     res_text = None
+        return Response(status=status.HTTP_201_CREATED)
+        # return Response(res_text, status=status.HTTP_204_NO_CONTENT if res_text is None else status.HTTP_200_OK)
         # is_access = CustomerIpLeaseModel.objects.get_service_permit_by_ip()
         # access_status = status.HTTP_200_OK if is_access else status.HTTP_403_FORBIDDEN
         # return Response(status=access_status)
