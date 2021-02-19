@@ -19,3 +19,11 @@ class IVendorSpecific(abc.ABC):
     @abc.abstractmethod
     def parse_option82(self, data) -> Optional[Tuple[str, str]]:
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_customer_mac(self, data):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_vlan_id(self, data):
+        raise NotImplementedError
