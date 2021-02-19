@@ -150,7 +150,8 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             return Response({
                 'Framed-IP-Address': r.get('ip_addr'),
                 # 'Framed-IP-Netmask': '255.255.0.0',
-                'ERX-Service-Activate': f'SERVICE-INET({sin},{sin / 8 * 1.5},{sout},{sout / 8 * 1.5})',
+                'ERX-Service-Activate': f'SERVICE-INET({sin},{int(sin / 8 * 1.5)},{sout},{int(sout / 8 * 1.5)})',
+                # 'ERX-Primary-Dns': '10.12.1.9'
                 # 'Acct-Interim-Interval': sess_time.total_seconds()
             })
         except LogicError as err:
