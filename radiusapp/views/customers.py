@@ -108,23 +108,29 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             # user can't access to service
             # return Response(status=status.HTTP_204_NO_CONTENT)
             return Response({
-                'Framed-IP-Address': '10.255.0.12',
+                'Framed-IP-Address': '10.255.0.11',
                 'Acct-Interim-Interval': 600,
                 'ERX-Service-Activate:1': "SERVICE-INET(100000000,12500000,100000000,12500000)"
             })
+        service = customer_service.service
 
         # username as client mac addr
         # FIXME: get real customer mac
-        mac = _get_rad_val(request.data, 'User-Name')
+        # mac = _get_rad_val(request.data, 'User-Name')  # Mikrotik
+        mac = _get_rad_val(request.data, 'ERX-Dhcp-Mac-Addr')  # Juniper
         if mac is None:
-            return _bad_ret('User-Name is required')
+            return _bad_ret('Mac is required')
 
-        sin, sout = int(customer_service.speed_in * 1024.0), int(customer_service.speed_out * 1024.0)
-        if sin == sout:
-            speed = f'{sin}k'
-        else:
-            speed = f"{sin}k/{sout}k"
+        sin, sout = int(service.speed_in * 1000000), int(service.speed_out * 1000000)
+        # if sin == sout:
+        #     speed = f'{sin}k'
+        # else:
+        #     speed = f"{sin}k/{sout}k"
         sess_time = customer_service.calc_session_time()
+
+        vid = safe_int(_get_rad_val(request.data, 'NAS-Port'))
+        if vid == 0:
+            return _bad_ret('NAS-Port is required')
 
         try:
             # TODO: make it completely
@@ -132,28 +138,29 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
                 customer_mac=mac,
                 device_mac=dev_mac,
                 device_port=dev_port,
-                is_dynamic=True
+                is_dynamic=True,
+                vid=vid
             )
-            if r is not None:
+            if r is None:
                 return Response({
-                    'Framed-IP-Address': '10.255.0.12',
+                    'Framed-IP-Address': '10.255.0.102',
                     'Acct-Interim-Interval': 600,
                     'ERX-Service-Activate:1': "SERVICE-INET(100000000,12500000,100000000,12500000)"
                 })
             return Response({
                 'Framed-IP-Address': r.get('ip_addr'),
-                'Framed-IP-Netmask': '255.255.0.0',
-                'ERX-Service-Activate': f'SERVICE-INET({sin},12500000,{sout},12500000)',
-                'Acct-Interim-Interval': sess_time.total_seconds()
+                # 'Framed-IP-Netmask': '255.255.0.0',
+                'ERX-Service-Activate': f'SERVICE-INET({sin},{sin / 8 * 1.5},{sout},{sout / 8 * 1.5})',
+                # 'Acct-Interim-Interval': sess_time.total_seconds()
             })
-        except LogicError:
-            pass
+        except LogicError as err:
+            return _bad_ret(str(err))
 
-        return Response({
-            'Mikrotik-Rate-Limit': speed,
-            'Mikrotik-Address-List': 'DjingUsersAllowed',
-            'Session-Timeout': sess_time.total_seconds()
-        })
+        # return Response({
+        #     'Mikrotik-Rate-Limit': speed,
+        #     'Mikrotik-Address-List': 'DjingUsersAllowed',
+        #     'Session-Timeout': sess_time.total_seconds()
+        # })
         # r = {
         #     'User-Name': {'type': 'string', 'value': ['F8:75:A4:AA:C9:E0']},
         #     'User-Password': {'type': 'string', 'value': ['']},
