@@ -106,22 +106,18 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         )
         if customer_service is None:
             # user can't access to service
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            # return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({
+                'Framed-IP-Address': '10.255.0.12',
+                'Acct-Interim-Interval': 600,
+                'ERX-Service-Activate:1': "SERVICE-INET(100000000,12500000,100000000,12500000)"
+            })
 
         # username as client mac addr
+        # FIXME: get real customer mac
         mac = _get_rad_val(request.data, 'User-Name')
         if mac is None:
             return _bad_ret('User-Name is required')
-        try:
-            if ip and mac:
-                CustomerIpLeaseModel.lease_commit_add_update(
-                    client_ip=ip,
-                    mac_addr=mac,
-                    dev_mac=dev_mac,
-                    dev_port=dev_port
-                )
-        except LogicError:
-            pass
 
         sin, sout = int(customer_service.speed_in * 1024.0), int(customer_service.speed_out * 1024.0)
         if sin == sout:
@@ -129,6 +125,30 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         else:
             speed = f"{sin}k/{sout}k"
         sess_time = customer_service.calc_session_time()
+
+        try:
+            # TODO: make it completely
+            r = UserSession.objects.fetch_subscriber_lease(
+                customer_mac=mac,
+                device_mac=dev_mac,
+                device_port=dev_port,
+                is_dynamic=True
+            )
+            if r is not None:
+                return Response({
+                    'Framed-IP-Address': '10.255.0.12',
+                    'Acct-Interim-Interval': 600,
+                    'ERX-Service-Activate:1': "SERVICE-INET(100000000,12500000,100000000,12500000)"
+                })
+            return Response({
+                'Framed-IP-Address': r.get('ip_addr'),
+                'Framed-IP-Netmask': '255.255.0.0',
+                'ERX-Service-Activate': f'SERVICE-INET({sin},12500000,{sout},12500000)',
+                'Acct-Interim-Interval': sess_time.total_seconds()
+            })
+        except LogicError:
+            pass
+
         return Response({
             'Mikrotik-Rate-Limit': speed,
             'Mikrotik-Address-List': 'DjingUsersAllowed',
