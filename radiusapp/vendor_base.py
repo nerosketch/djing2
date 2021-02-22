@@ -27,3 +27,9 @@ class IVendorSpecific(abc.ABC):
     @abc.abstractmethod
     def get_vlan_id(self, data):
         raise NotImplementedError
+
+    def get_radius_username(self, data):
+        return self.get_rad_val(data, 'User-Name')
+
+    def get_radius_unique_id(self, data):
+        return self.get_rad_val(data, 'Acct-Unique-Session-Id')

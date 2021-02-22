@@ -14,7 +14,7 @@ router.register('customer', customers.RadiusCustomerServiceRequestViewSet, basen
 # network radius api
 router.register('network', networks.RadiusRequestViewSet, basename='network')
 
-router.register('session', session_views.UserSessionModelViewSet)
+router.register('session', session_views.CustomerRadiusSessionModelViewSet)
 
 urlpatterns = [
     path('', include(router.urls))
