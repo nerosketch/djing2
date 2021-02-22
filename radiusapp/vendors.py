@@ -50,3 +50,11 @@ class VendorManager(object):
     def get_vlan_id(self, data):
         if self.vendor_class:
             return self.vendor_class.get_vlan_id(data)
+
+    def get_radius_username(self, data):
+        if self.vendor_class:
+            return self.vendor_class.get_radius_username(data)
+
+    def get_radius_unique_id(self, data):
+        if self.vendor_class:
+            return self.vendor_class.get_radius_unique_id(data)
