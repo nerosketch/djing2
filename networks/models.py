@@ -169,9 +169,10 @@ class NetworkIpPool(BaseAbstractModel):
         :return:
         """
         with connection.cursor() as cur:
-            cur.execute("SELECT find_new_ip_pool_lease(%d, %d::boolean, 0::smallint)" % (
+            cur.execute("SELECT find_new_ip_pool_lease(%d, %d::boolean, 0::smallint, %s::smallint)" % (
                 self.pk,
-                1 if self.is_dynamic else 0
+                1 if self.is_dynamic else 0,
+                NetworkIpPoolKind.NETWORK_KIND_INTERNET.value
             ))
             free_ip = cur.fetchone()
         return ip_address(free_ip[0]) if free_ip and free_ip[0] else None
@@ -224,20 +225,34 @@ class CustomerIpLeaseModel(models.Model):
         return "%s [%s]" % (self.ip_address, self.mac_address)
 
     @staticmethod
-    def find_customer_by_device_credentials(device_mac: str, device_port: int = 0) -> Optional[tuple]:
+    def find_customer_by_device_credentials(device_mac: str, device_port: int = 0) -> Optional[Customer]:
         with connection.cursor() as cur:
             cur.execute("SELECT * FROM find_customer_by_device_credentials(%s::macaddr, %s::smallint)",
                         (device_mac, device_port))
             res = cur.fetchone()
         if res is None or res[0] is None:
             return None
-        # (
-        #     pk, balance, ip_addr, descr, house, is_dyn_ip, auto_renw_srv,
-        #     markers, curr_srv_id, dev_port_id, dev_id, gw_id, grp_id,
-        #     last_srv_id, street_id, *others
-        # ) = res
-
-        return res
+        (
+            baseaccount_id, balance, ip_addr, descr, house, is_dyn_ip, auto_renw_srv,
+            markers, curr_srv_id, dev_port_id, dev_id, gw_id, grp_id,
+            last_srv_id, street_id, *others
+        ) = res
+        return Customer(
+            pk=baseaccount_id,
+            balance=balance,
+            description=descr,
+            house=house,
+            is_dynamic_ip=is_dyn_ip,
+            auto_renewal_service=auto_renw_srv,
+            markers=markers,
+            current_service_id=curr_srv_id,
+            device_id=dev_id,
+            dev_port_id=dev_port_id,
+            gateway_id=gw_id,
+            group_id=grp_id,
+            last_connected_service_id=last_srv_id,
+            street_id=street_id
+        )
 
     @staticmethod
     def get_service_permit_by_ip(ip_addr: str) -> bool:
