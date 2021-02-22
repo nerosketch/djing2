@@ -2,7 +2,7 @@ from datetime import timedelta
 from uuid import UUID
 
 from customers.tests.get_user_credentials_by_ip import BaseServiceTestCase
-from radiusapp.models import UserSession
+from radiusapp.models import CustomerRadiusSession
 
 
 class CreateOrUpdateRadiusSession(BaseServiceTestCase):
@@ -17,7 +17,7 @@ class CreateOrUpdateRadiusSession(BaseServiceTestCase):
         self.customer.pick_service(self.service, self.customer)
 
     def test_new_session_ok(self):
-        is_created = UserSession.objects.create_or_update_session(
+        is_created = CustomerRadiusSession.objects.create_or_update_session(
             session_id='b51db081c208510befe067ae1507d79f',
             v_ip_addr='192.168.3.50',
             v_dev_mac='12:13:14:15:16:17',
@@ -30,7 +30,7 @@ class CreateOrUpdateRadiusSession(BaseServiceTestCase):
             v_out_pkt=0
         )
         self.assertTrue(is_created)
-        created_sess = UserSession.objects.filter(session_id='b51db081c208510befe067ae1507d79f').first()
+        created_sess = CustomerRadiusSession.objects.filter(session_id='b51db081c208510befe067ae1507d79f').first()
         self.assertIsNotNone(created_sess)
         self.assertEqual(created_sess.framed_ip_addr, '192.168.3.50')
         self.assertEqual(created_sess.radius_username, 'F8:75:A4:AA:C9:E0')
@@ -43,7 +43,7 @@ class CreateOrUpdateRadiusSession(BaseServiceTestCase):
         self.assertFalse(created_sess.closed)
 
     def test_new_session_customer_not_found(self):
-        is_created = UserSession.objects.create_or_update_session(
+        is_created = CustomerRadiusSession.objects.create_or_update_session(
             session_id='b51db081c208510befe067ae1507d79f',
             v_ip_addr='192.168.3.50',
             v_dev_mac='12:13:14:15:16:17',
@@ -59,7 +59,7 @@ class CreateOrUpdateRadiusSession(BaseServiceTestCase):
 
     def test_update_session(self):
         self.test_new_session_ok()
-        is_created = UserSession.objects.create_or_update_session(
+        is_created = CustomerRadiusSession.objects.create_or_update_session(
             session_id='b51db081c208510befe067ae1507d79f',
             v_ip_addr='192.168.3.55',
             v_dev_mac='12:13:14:15:16:17',
@@ -72,7 +72,7 @@ class CreateOrUpdateRadiusSession(BaseServiceTestCase):
             v_out_pkt=21
         )
         self.assertFalse(is_created)
-        created_sess = UserSession.objects.filter(session_id='b51db081c208510befe067ae1507d79f').first()
+        created_sess = CustomerRadiusSession.objects.filter(session_id='b51db081c208510befe067ae1507d79f').first()
         self.assertIsNotNone(created_sess)
         self.assertEqual(created_sess.framed_ip_addr, '192.168.3.55')
         self.assertEqual(created_sess.radius_username, 'F8:71:A4:A3:C9:E2')
@@ -85,7 +85,7 @@ class CreateOrUpdateRadiusSession(BaseServiceTestCase):
 
     def test_close_session(self):
         self.test_new_session_ok()
-        is_created = UserSession.objects.create_or_update_session(
+        is_created = CustomerRadiusSession.objects.create_or_update_session(
             session_id='b51db081c208510befe067ae1507d79f',
             v_ip_addr='192.168.3.50',
             v_dev_mac='12:13:14:15:16:17',
@@ -99,7 +99,7 @@ class CreateOrUpdateRadiusSession(BaseServiceTestCase):
             v_is_stop=True
         )
         self.assertFalse(is_created)
-        created_sess = UserSession.objects.filter(session_id='b51db081c208510befe067ae1507d79f').first()
+        created_sess = CustomerRadiusSession.objects.filter(session_id='b51db081c208510befe067ae1507d79f').first()
         self.assertIsNotNone(created_sess)
         self.assertEqual(created_sess.session_duration, timedelta(seconds=11))
         self.assertEqual(created_sess.input_octets, 12)
@@ -109,7 +109,7 @@ class CreateOrUpdateRadiusSession(BaseServiceTestCase):
         self.assertTrue(created_sess.closed)
 
     def test_new_session_without_session_id(self):
-        is_created = UserSession.objects.create_or_update_session(
+        is_created = CustomerRadiusSession.objects.create_or_update_session(
             session_id=None,
             v_ip_addr='192.168.3.50',
             v_dev_mac='12:13:14:15:16:17',
@@ -124,7 +124,7 @@ class CreateOrUpdateRadiusSession(BaseServiceTestCase):
         self.assertFalse(is_created)
 
     def test_new_session_with_empty_str_session_id(self):
-        is_created = UserSession.objects.create_or_update_session(
+        is_created = CustomerRadiusSession.objects.create_or_update_session(
             session_id='',
             v_ip_addr='192.168.3.50',
             v_dev_mac='12:13:14:15:16:17',
