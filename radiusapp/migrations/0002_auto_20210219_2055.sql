@@ -41,7 +41,7 @@ BEGIN
   SELECT nil.id, nil.ip_address, nil.pool_id, nil.lease_time, nil.mac_address, nil.customer_id, nil.is_dynamic, false
          INTO t_lease
   FROM networks_ip_leases nil
-  where nil.customer_id = v_customer_id
+  where (v_customer_id is null or nil.customer_id = v_customer_id)
     and (not v_is_dynamic or nil.mac_address = v_mac_addr)
     and nil.is_dynamic = v_is_dynamic
   order by nil.id desc
@@ -50,9 +50,11 @@ BEGIN
   if FOUND
   then
     -- Update `last_update` field in customer lease
-    perform update_customer_lease_last_update_time_field(
-        v_customer_id,
-        t_lease.ip_address);
+    if v_customer_id is not null then
+      perform update_customer_lease_last_update_time_field(
+          v_customer_id,
+          t_lease.ip_address);
+    end if;
     -- And returning it
     return t_lease;
   end if;
