@@ -1,4 +1,4 @@
-from django.db import DataError, InternalError
+from django.db import DataError
 from django.test import TestCase
 
 from networks.models import VlanIf, NetworkIpPool, NetworkIpPoolKind, CustomerIpLeaseModel
@@ -58,15 +58,16 @@ class FetchSubscriberLease(TestCase):
             customer_id=self.customer.pk,
             customer_group=self.customer.group_id,
             is_dynamic=True,
-            vid=12
+            vid=12,
+            pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
         )
         self.assertIsNotNone(res)
-        self.assertEqual(res['ip_addr'], '192.168.0.2')
-        self.assertEqual(res['pool_id'], self.pool_dynamic.pk)
-        self.assertEqual(res['customer_mac'], 'aa:bb:cc:dd:ee:ff')
-        self.assertEqual(res['customer_id'], self.customer.pk)
-        self.assertTrue(res['is_dynamic'])
-        self.assertTrue(res['is_assigned'])
+        self.assertEqual(res.ip_addr, '192.168.0.2')
+        self.assertEqual(res.pool_id, self.pool_dynamic.pk)
+        self.assertEqual(res.customer_mac, 'aa:bb:cc:dd:ee:ff')
+        self.assertEqual(res.customer_id, self.customer.pk)
+        self.assertTrue(res.is_dynamic)
+        self.assertTrue(res.is_assigned)
 
     def test_static_normal_fetch(self):
         res = CustomerRadiusSession.objects.fetch_subscriber_lease(
@@ -74,7 +75,8 @@ class FetchSubscriberLease(TestCase):
             customer_id=self.customer.pk,
             customer_group=self.customer.group_id,
             is_dynamic=False,
-            vid=12
+            vid=12,
+            pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
         )
         self.assertIsNone(res)
 
@@ -85,15 +87,16 @@ class FetchSubscriberLease(TestCase):
             customer_id=self.customer.pk,
             customer_group=self.customer.group_id,
             is_dynamic=True,
-            vid=12
+            vid=12,
+            pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
         )
         self.assertIsNotNone(res)
-        self.assertEqual(res['ip_addr'], '192.168.0.3')
-        self.assertEqual(res['pool_id'], self.pool_dynamic.pk)
-        self.assertEqual(res['customer_mac'], '1a:b6:4c:cd:e3:fe')
-        self.assertEqual(res['customer_id'], self.customer.pk)
-        self.assertTrue(res['is_dynamic'])
-        self.assertTrue(res['is_assigned'])
+        self.assertEqual(res.ip_addr, '192.168.0.3')
+        self.assertEqual(res.pool_id, self.pool_dynamic.pk)
+        self.assertEqual(res.customer_mac, '1a:b6:4c:cd:e3:fe')
+        self.assertEqual(res.customer_id, self.customer.pk)
+        self.assertTrue(res.is_dynamic)
+        self.assertTrue(res.is_assigned)
 
         leases_count = CustomerIpLeaseModel.objects.filter(
             customer=self.customer
@@ -107,17 +110,8 @@ class FetchSubscriberLease(TestCase):
                 customer_id=self.customer.pk,
                 customer_group=self.customer.group_id,
                 is_dynamic=True,
-                vid=12
-            )
-
-    def test_negative_port(self):
-        with self.assertRaises(InternalError):
-            CustomerRadiusSession.objects.fetch_subscriber_lease(
-                customer_mac='1a:b6:4c:cd:e3:fe',
-                customer_id=self.customer.pk,
-                customer_group=self.customer.group_id,
-                is_dynamic=True,
-                vid=12
+                vid=12,
+                pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
             )
 
     def test_empty_vid(self):
@@ -126,15 +120,16 @@ class FetchSubscriberLease(TestCase):
             customer_id=self.customer.pk,
             customer_group=self.customer.group_id,
             is_dynamic=True,
-            vid=None
+            vid=None,
+            pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
         )
         self.assertIsNotNone(res)
-        self.assertEqual(res['ip_addr'], '192.168.0.2')
-        self.assertEqual(res['pool_id'], self.pool_dynamic.pk)
-        self.assertEqual(res['customer_mac'], 'aa:bb:cc:dd:ee:ff')
-        self.assertEqual(res['customer_id'], self.customer.pk)
-        self.assertTrue(res['is_dynamic'])
-        self.assertTrue(res['is_assigned'])
+        self.assertEqual(res.ip_addr, '192.168.0.2')
+        self.assertEqual(res.pool_id, self.pool_dynamic.pk)
+        self.assertEqual(res.customer_mac, 'aa:bb:cc:dd:ee:ff')
+        self.assertEqual(res.customer_id, self.customer.pk)
+        self.assertTrue(res.is_dynamic)
+        self.assertTrue(res.is_assigned)
 
     def test_multiple_fetch(self):
         res = CustomerRadiusSession.objects.fetch_subscriber_lease(
@@ -142,27 +137,29 @@ class FetchSubscriberLease(TestCase):
             customer_id=self.customer.pk,
             customer_group=self.customer.group_id,
             is_dynamic=True,
-            vid=12
+            vid=12,
+            pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
         )
         self.assertIsNotNone(res)
-        self.assertEqual(res['ip_addr'], '192.168.0.2')
-        self.assertEqual(res['pool_id'], self.pool_dynamic.pk)
-        self.assertEqual(res['customer_mac'], 'aa:bb:cc:dd:ee:ff')
-        self.assertEqual(res['customer_id'], self.customer.pk)
-        self.assertTrue(res['is_dynamic'])
-        self.assertTrue(res['is_assigned'])
+        self.assertEqual(res.ip_addr, '192.168.0.2')
+        self.assertEqual(res.pool_id, self.pool_dynamic.pk)
+        self.assertEqual(res.customer_mac, 'aa:bb:cc:dd:ee:ff')
+        self.assertEqual(res.customer_id, self.customer.pk)
+        self.assertTrue(res.is_dynamic)
+        self.assertTrue(res.is_assigned)
         for n in range(4):
             res = CustomerRadiusSession.objects.fetch_subscriber_lease(
                 customer_mac='aa:bb:cc:dd:ee:ff',
                 customer_id=self.customer.pk,
                 customer_group=self.customer.group_id,
                 is_dynamic=True,
-                vid=12
+                vid=12,
+                pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
             )
             self.assertIsNotNone(res)
-            self.assertEqual(res['ip_addr'], '192.168.0.2')
-            self.assertEqual(res['pool_id'], self.pool_dynamic.pk)
-            self.assertEqual(res['customer_mac'], 'aa:bb:cc:dd:ee:ff')
-            self.assertEqual(res['customer_id'], self.customer.pk)
-            self.assertTrue(res['is_dynamic'])
-            self.assertFalse(res['is_assigned'])
+            self.assertEqual(res.ip_addr, '192.168.0.2')
+            self.assertEqual(res.pool_id, self.pool_dynamic.pk)
+            self.assertEqual(res.customer_mac, 'aa:bb:cc:dd:ee:ff')
+            self.assertEqual(res.customer_id, self.customer.pk)
+            self.assertTrue(res.is_dynamic)
+            self.assertFalse(res.is_assigned)
