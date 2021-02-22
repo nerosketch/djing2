@@ -10,7 +10,7 @@ from django.db import models, transaction, connection
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
-from djing2.lib import LogicError, safe_float
+from djing2.lib import LogicError, safe_float, safe_int
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
@@ -88,11 +88,13 @@ class CustomerService(BaseAbstractModel):
         )
 
     @staticmethod
-    def find_customer_service_by_device_credentials(dev_mac: str, dev_port: int):
+    def find_customer_service_by_device_credentials(customer_id: int, current_service_id: int):
+        customer_id = safe_int(customer_id)
+        current_service_id = safe_int(current_service_id)
         # TODO: make tests for it
         with connection.cursor() as cur:
-            cur.execute("select * from find_customer_service_by_device_credentials(%s::macaddr, %s::smallint)",
-                        [dev_mac, dev_port])
+            cur.execute("select * from find_customer_service_by_device_credentials(%d, %d)",
+                        [customer_id, current_service_id])
             res = cur.fetchone()
         if res is None or res[0] is None:
             return None
