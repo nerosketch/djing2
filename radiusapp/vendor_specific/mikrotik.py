@@ -14,3 +14,19 @@ class MikrotikVendorSpecific(IVendorSpecific):
 
     def get_vlan_id(self, data):
         return 0
+
+    def get_auth_guest_session_response(self, guest_session, data):
+        return {
+            # TODO: Optimize it, ip_lease.ip_address fetched from db
+            'Framed-IP-Address': guest_session.ip_lease.ip_address,
+            # 'Acct-Interim-Interval': 300,
+        }
+
+    def get_auth_session_response(self, subscriber_lease, customer_service,
+                                  customer, request_data):
+        return {
+            'Framed-IP-Address': subscriber_lease.ip_addr,
+            # 'Acct-Interim-Interval': 300,
+            'Mikrotik-Rate-Limit': "1M/1M",
+            'Mikrotik-Address-List': 'DjingUsersAllowed'
+        }
