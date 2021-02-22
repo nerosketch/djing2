@@ -1,6 +1,9 @@
 import abc
 from typing import Optional, Tuple
 
+from customers.models import CustomerService, Customer
+from radiusapp.models import CustomerRadiusSession, FetchSubscriberLeaseResponse
+
 
 class IVendorSpecific(abc.ABC):
     @property
@@ -33,3 +36,14 @@ class IVendorSpecific(abc.ABC):
 
     def get_radius_unique_id(self, data):
         return self.get_rad_val(data, 'Acct-Unique-Session-Id')
+
+    @abc.abstractmethod
+    def get_auth_guest_session_response(self, guest_session: CustomerRadiusSession, data) -> dict:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_auth_session_response(self, subscriber_lease: FetchSubscriberLeaseResponse,
+                                  customer_service: CustomerService,
+                                  customer: Customer,
+                                  request_data) -> dict:
+        raise NotImplementedError
