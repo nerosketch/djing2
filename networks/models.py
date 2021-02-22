@@ -169,7 +169,7 @@ class NetworkIpPool(BaseAbstractModel):
         :return:
         """
         with connection.cursor() as cur:
-            cur.execute("SELECT find_new_ip_pool_lease(%d, %d::boolean, 0::smallint, %s::smallint)" % (
+            cur.execute("SELECT find_new_ip_pool_lease(%s, %s::boolean, 0::smallint, %s::smallint)" % (
                 self.pk,
                 1 if self.is_dynamic else 0,
                 self.kind
@@ -214,7 +214,7 @@ class CustomerIpLeaseModel(models.Model):
     ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
     pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
     lease_time = models.DateTimeField(_('Lease time'), auto_now_add=True)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
     mac_address = MACAddressField(verbose_name=_('Mac address'), null=True, default=None)
     is_dynamic = models.BooleanField(_('Is synamic'), default=False)
     last_update = models.DateTimeField(_('Last update'), blank=True, null=True, default=None)
