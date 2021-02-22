@@ -12,7 +12,8 @@ DROP FUNCTION IF EXISTS find_new_ip_pool_lease( integer, boolean, character vary
 CREATE OR REPLACE FUNCTION find_new_ip_pool_lease(
   v_pool_id    integer,
   v_is_dynamic boolean,
-  v_vid        smallint
+  v_vid        smallint,
+  v_pool_kind  smallint
 )
   RETURNS inet
 LANGUAGE plpgsql
@@ -38,6 +39,7 @@ BEGIN
     where nip.id = v_pool_id
       and nip.is_dynamic = v_is_dynamic
       and nv.vid = v_vid
+      and nip.kind = v_pool_kind
     limit 1;
   else
     select
@@ -46,8 +48,10 @@ BEGIN
       ip_start,
       ip_end
     into t_net_ippool_tbl
-    from networks_ip_pool
-    where id = v_pool_id and is_dynamic = v_is_dynamic
+    from networks_ip_pool nip
+    where id = v_pool_id
+      and is_dynamic = v_is_dynamic
+      and nip.kind = v_pool_kind
     limit 1;
   end if;
 
