@@ -1,4 +1,3 @@
-from datetime import timedelta
 from typing import Optional, Union
 
 from rest_framework import status
@@ -9,8 +8,8 @@ from customers.models import CustomerService
 from customers.serializers import RadiusCustomerServiceRequestSerializer
 from djing2.lib import LogicError, safe_int
 from djing2.viewsets import DjingAuthorizedViewSet
-# from networks.models import CustomerIpLeaseModel
-from radiusapp.models import UserSession
+from networks.models import NetworkIpPoolKind, CustomerIpLeaseModel
+from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendors import VendorManager
 
 
@@ -37,6 +36,7 @@ def _bad_ret(text):
 
 class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
     serializer_class = RadiusCustomerServiceRequestSerializer
+    vendor_manager = None
 
     def _check_data(self, data):
         serializer = self.get_serializer(data=data)
@@ -70,10 +70,34 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             'speed_out': customer_service.service.speed_out
         })
 
+    def assign_guest_session(self, radius_uname: str, customer_mac: str, session_id: str, data):
+        # customer not found, assign guest lease
+        # TODO: Make guest pool assignment
+        guest_session = CustomerRadiusSession.objects.assign_guest_lease(
+            radius_uname=radius_uname,
+            customer_mac=customer_mac,
+            session_id=session_id,
+            is_dynamic=True,
+            vid=1,
+            pool_kind=NetworkIpPoolKind.NETWORK_KIND_GUEST
+        )
+        if guest_session is None:
+            # Not possible to assign guest ip, it's bad
+            return Response({
+                'Reply-Message': "Not possible to assign guest ip, it's bad"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Creating guest session
+        r = self.vendor_manager.get_auth_guest_session_response(
+            guest_session=guest_session,
+            data=data
+        )
+        return Response(r)
+
     @action(methods=['post'], detail=False)
     def auth(self, request):
         # FIXME: Pass name to 'vendor_name' from request
         vendor_manager = VendorManager(vendor_name='juniper')
+        self.vendor_manager = vendor_manager
 
         agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(
             data=request.data
@@ -94,169 +118,123 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         if customer_mac is None:
             return _bad_ret('Customer mac is required')
 
+        radius_username = vendor_manager.get_radius_username(request.data)
+        radius_unique_id = vendor_manager.get_radius_unique_id(request.data)
+
+        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+            device_mac=dev_mac,
+            device_port=dev_port
+        )
+        if customer is None:
+            return self.assign_guest_session(
+                radius_uname=radius_username,
+                customer_mac=customer_mac,
+                session_id=radius_unique_id,
+                data=request.data
+            )
+
         customer_service = CustomerService.find_customer_service_by_device_credentials(
-            dev_mac=dev_mac,
-            dev_port=dev_port
+            customer_id=customer.pk,
+            current_service_id=customer.current_service_id
         )
         if customer_service is None:
-            # user can't access to service
-            # return Response(status=status.HTTP_204_NO_CONTENT)
-            return Response({
-                'Framed-IP-Address': '10.255.0.11',
-                'Acct-Interim-Interval': 600,
-                'ERX-Service-Activate:1': "SERVICE-INET(100000000,12500000,100000000,12500000)"
-            })
-        service = customer_service.service
+            return self.assign_guest_session(
+                radius_uname=radius_username,
+                customer_mac=customer_mac,
+                session_id=radius_unique_id,
+                data=request.data
+            )
 
-        sin, sout = int(service.speed_in * 1000000), int(service.speed_out * 1000000)
         # sess_time = customer_service.calc_session_time()
 
         vid = vendor_manager.get_vlan_id(request.data)
 
         try:
-            # TODO: UserSession нужно запоминать
-            r = UserSession.objects.fetch_subscriber_lease(
+            # TODO: CustomerRadiusSession нужно запоминать
+            subscriber_lease = CustomerRadiusSession.objects.fetch_subscriber_lease(
                 customer_mac=customer_mac,
-                device_mac=dev_mac,
-                device_port=dev_port,
+                customer_id=customer.pk,
+                customer_group=customer.group_id,
                 is_dynamic=True,
-                vid=vid
+                vid=vid,
+                pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
             )
-            if r is None:
-                return Response({
-                    'Framed-IP-Address': '10.255.0.102',
-                    'Acct-Interim-Interval': 600,
-                    'ERX-Service-Activate:1': "SERVICE-INET(100000000,12500000,100000000,12500000)"
-                })
-            return Response({
-                'Framed-IP-Address': r.get('ip_addr'),
-                # 'Framed-IP-Netmask': '255.255.0.0',
-                'ERX-Service-Activate': f'SERVICE-INET({sin},{int(sin / 8 * 1.5)},{sout},{int(sout / 8 * 1.5)})',
-                # 'ERX-Primary-Dns': '10.12.1.9'
-                # 'Acct-Interim-Interval': sess_time.total_seconds()
-            })
+            if subscriber_lease is None:
+                return self.assign_guest_session(
+                    radius_uname=radius_username,
+                    customer_mac=customer_mac,
+                    session_id=radius_unique_id,
+                    data=request.data
+                )
+
+            response = vendor_manager.get_auth_session_response(
+                subscriber_lease=subscriber_lease,
+                customer_service=customer_service,
+                customer=customer,
+                request_data=request.data
+            )
+            return Response(response)
         except LogicError as err:
             return _bad_ret(str(err))
-
-        # return Response({
-        #     'Mikrotik-Rate-Limit': speed,
-        #     'Mikrotik-Address-List': 'DjingUsersAllowed',
-        #     'Session-Timeout': sess_time.total_seconds()
-        # })
-        # r = {
-        #     'User-Name': {'type': 'string', 'value': ['F8:75:A4:AA:C9:E0']},
-        #     'User-Password': {'type': 'string', 'value': ['']},
-        #     'NAS-IP-Address': {'type': 'ipaddr', 'value': ['10.12.2.10']},
-        #     'NAS-Port': {'type': 'integer', 'value': [2212495516]},
-        #     'Service-Type': {'type': 'integer', 'value': [2]},
-        #     'Framed-IP-Address': {'type': 'ipaddr', 'value': ['192.168.3.50']},
-        #     'Called-Station-Id': {'type': 'string', 'value': ['mypool']},
-        #     'Calling-Station-Id': {'type': 'string', 'value': ['1:f8:75:a4:aa:c9:e0']},
-        #     'NAS-Identifier': {'type': 'string', 'value': ['OfficeTest']},
-        #     'NAS-Port-Type': {'type': 'integer', 'value': [15]},
-        #     'Event-Timestamp': {'type': 'date', 'value': ['Dec  2 2020 16:24:44 MSK']},
-        #     'Agent-Remote-Id': {'type': 'octets', 'value': ['0x0006286ed47b1ca4']},
-        #     'Agent-Circuit-Id': {'type': 'octets', 'value': ['0x000400040017']}
-        # }
 
     @action(methods=['post'], detail=False)
     def acct(self, request):
         # return Response(status=status.HTTP_201_CREATED)
-        # print('Acct:', request.data)
-        # r_dhcp_op82 = {
-        #     'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'],
-        #     'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'],
-        #     'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'],
-        #     'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'],
-        #     'Event-Timestamp': ['Dec  2 2020 16:29:45 MSK'], 'Acct-Status-Type': ['Interim-Update'],
-        #     'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'],
-        #     'Acct-Session-Time': ['0'],
-        #     'Acct-Input-Octets': ['0'],
-        #     'Acct-Input-Gigawords': ['0'],
-        #     'Acct-Input-Packets': ['0'],
-        #     'Acct-Output-Octets': ['71411'],
-        #     'Acct-Output-Gigawords': ['0'],
-        #     'Acct-Output-Packets': ['463'],
-        #     'NAS-Identifier': ['OfficeTest'],
-        #     'Acct-Delay-Time': ['1'],
-        #     'NAS-IP-Address': ['10.12.2.10'],
-        #     'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:29:46 MSK'], 'Tmp-String-9': ['ai:'],
-        #     'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']
-        # }
-        # r2 = {
-        #     'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'],
-        #     'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'],
-        #     'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'],
-        #     'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'],
-        #     'Event-Timestamp': ['Dec  2 2020 16:34:45 MSK'], 'Acct-Status-Type': ['Interim-Update'],
-        #     'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'],
-        #     'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'],
-        #     'Acct-Output-Octets': ['84496'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['660'],
-        #     'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['1'], 'NAS-IP-Address': ['10.12.2.10'],
-        #     'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:34:46 MSK'], 'Tmp-String-9': ['ai:'],
-        #     'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']
-        # }
-
-        # r4 = {'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'], 'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'], 'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'], 'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'], 'Event-Timestamp': ['Dec  2 2020 16:39:45 MSK'], 'Acct-Status-Type': ['Interim-Update'], 'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'], 'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'], 'Acct-Output-Octets': ['93095'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['790'], 'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['0'], 'NAS-IP-Address': ['10.12.2.10'], 'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:39:45 MSK'], 'Tmp-String-9': ['ai:'], 'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']}
-        # r5 = {'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'], 'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'], 'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'], 'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'], 'Event-Timestamp': ['Dec  2 2020 16:39:45 MSK'], 'Acct-Status-Type': ['Interim-Update'], 'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'], 'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'], 'Acct-Output-Octets': ['93095'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['790'], 'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['0'], 'NAS-IP-Address': ['10.12.2.10'], 'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:39:46 MSK'], 'Tmp-String-9': ['ai:'], 'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']}
-        # r6 = {'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'], 'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'], 'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'], 'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'], 'Event-Timestamp': ['Dec  2 2020 16:39:45 MSK'], 'Acct-Status-Type': ['Interim-Update'], 'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'], 'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'], 'Acct-Output-Octets': ['93095'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['790'], 'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['1'], 'NAS-IP-Address': ['10.12.2.10'], 'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:39:45 MSK'], 'Tmp-String-9': ['ai:'], 'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']}
-        # r7 = {'User-Name': ['F8:75:A4:AA:C9:E0'], 'NAS-Port-Type': ['Ethernet'], 'NAS-Port': ['2212495516'], 'Service-Type': ['Framed-User'], 'Calling-Station-Id': ['1:f8:75:a4:aa:c9:e0'], 'Framed-IP-Address': ['192.168.3.50'], 'Called-Station-Id': ['mypool'], 'Agent-Remote-Id': ['0x0006286ed47b1ca4'], 'Agent-Circuit-Id': ['0x000400040017'], 'Event-Timestamp': ['Dec  2 2020 16:44:45 MSK'], 'Acct-Status-Type': ['Interim-Update'], 'Acct-Session-Id': ['9c00e083'], 'Acct-Authentic': ['RADIUS'], 'Acct-Session-Time': ['0'], 'Acct-Input-Octets': ['0'], 'Acct-Input-Gigawords': ['0'], 'Acct-Input-Packets': ['0'], 'Acct-Output-Octets': ['114268'], 'Acct-Output-Gigawords': ['0'], 'Acct-Output-Packets': ['894'], 'NAS-Identifier': ['OfficeTest'], 'Acct-Delay-Time': ['1'], 'NAS-IP-Address': ['10.12.2.10'], 'FreeRADIUS-Acct-Session-Start-Time': ['Dec  2 2020 16:44:45 MSK'], 'Tmp-String-9': ['ai:'], 'Acct-Unique-Session-Id': ['b51db081c208510befe067ae1507d79f']}
-        # return Response(status=status.HTTP_204_NO_CONTENT)
 
         # FIXME: Pass name to 'vendor_name' from request
-        vendor_manager = VendorManager(vendor_name='juniper')
+        # vendor_manager = VendorManager(vendor_name='juniper')
 
-        dat = request.data
+        # dat = request.data
 
-        is_stop_radius_session = False
-        act_type = _get_acct_rad_val(dat, 'Acct-Status-Type')
+        # is_stop_radius_session = False
+        # act_type = _get_acct_rad_val(dat, 'Acct-Status-Type')
         # if act_type not in ['Start', 'Stop', 'Interim-Update', 'Accounting-On']:
         #     return _bad_ret('Bad Acct-Status-Type')
-        if act_type == 'Stop':
-            is_stop_radius_session = True
+        # if act_type == 'Stop':
+        #     is_stop_radius_session = True
 
         # customer_mac = vendor_manager.get_customer_mac(request.data)
         # if customer_mac is None:
         #     return _bad_ret('Customer mac is required')
 
-        ip = _get_acct_rad_val(dat, 'Framed-IP-Address')
-        if ip is None:
-            return _bad_ret('Framed-IP-Address required')
+        # ip = _get_acct_rad_val(dat, 'Framed-IP-Address')
+        # if ip is None:
+        #     return _bad_ret('Framed-IP-Address required')
 
-        agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(
-            data=request.data
-        )
+        # agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(
+        #     data=request.data
+        # )
+        #
+        # if not all([agent_remote_id, agent_circuit_id]):
+        #     return _bad_ret('Bad opt82')
 
-        if not all([agent_remote_id, agent_circuit_id]):
-            return _bad_ret('Bad opt82')
+        # dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+        #     agent_remote_id=agent_remote_id,
+        #     agent_circuit_id=agent_circuit_id
+        # )
 
-        dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
-            agent_remote_id=agent_remote_id,
-            agent_circuit_id=agent_circuit_id
-        )
-
-        radius_username = _get_acct_rad_val(dat, 'User-Name')
+        # radius_username = _get_acct_rad_val(dat, 'User-Name')
 
         # create or update radius session
-        UserSession.objects.create_or_update_session(
-            session_id=_get_acct_rad_val(dat, 'Acct-Unique-Session-Id'),
-            v_ip_addr=ip,
-            v_dev_mac=dev_mac,
-            v_dev_port=dev_port,
-            v_sess_time=timedelta(seconds=safe_int(_get_acct_rad_val(dat, 'Acct-Session-Time', 0))),
-            v_uname=radius_username,
-            v_inp_oct=_gigaword_imp(
-                num=_get_acct_rad_val(dat, 'Acct-Input-Octets', 0),
-                gwords=_get_acct_rad_val(dat, 'Acct-Input-Gigawords', 0)
-            ),
-            v_out_oct=_gigaword_imp(
-                num=_get_acct_rad_val(dat, 'Acct-Output-Octets', 0),
-                gwords=_get_acct_rad_val(dat, 'Acct-Output-Gigawords', 0)
-            ),
-            v_in_pkt=_get_acct_rad_val(dat, 'Acct-Input-Packets', 0),
-            v_out_pkt=_get_acct_rad_val(dat, 'Acct-Output-Packets', 0),
-            v_is_stop=is_stop_radius_session
-        )
+        # CustomerRadiusSession.objects.create_or_update_session(
+        #     session_id=_get_acct_rad_val(dat, 'Acct-Unique-Session-Id'),
+        #     lease_id=,
+        #     v_dev_mac=dev_mac,
+        #     v_dev_port=dev_port,
+        #     v_sess_time=timedelta(seconds=safe_int(_get_acct_rad_val(dat, 'Acct-Session-Time', 0))),
+        #     v_uname=radius_username,
+        #     v_inp_oct=_gigaword_imp(
+        #         num=_get_acct_rad_val(dat, 'Acct-Input-Octets', 0),
+        #         gwords=_get_acct_rad_val(dat, 'Acct-Input-Gigawords', 0)
+        #     ),
+        #     v_out_oct=_gigaword_imp(
+        #         num=_get_acct_rad_val(dat, 'Acct-Output-Octets', 0),
+        #         gwords=_get_acct_rad_val(dat, 'Acct-Output-Gigawords', 0)
+        #     ),
+        #     v_in_pkt=_get_acct_rad_val(dat, 'Acct-Input-Packets', 0),
+        #     v_out_pkt=_get_acct_rad_val(dat, 'Acct-Output-Packets', 0),
+        #     v_is_stop=is_stop_radius_session
+        # )
 
         # update ip addr in customer profile
         # try:
