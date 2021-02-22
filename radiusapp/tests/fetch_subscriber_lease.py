@@ -3,7 +3,7 @@ from django.test import TestCase
 
 from networks.models import VlanIf, NetworkIpPool, NetworkIpPoolKind, CustomerIpLeaseModel
 from networks.tests import LeaseCommitAddUpdateTestCase
-from radiusapp.models import UserSession
+from radiusapp.models import CustomerRadiusSession
 
 
 class FetchSubscriberLease(TestCase):
@@ -53,10 +53,10 @@ class FetchSubscriberLease(TestCase):
         del self.ippool
 
     def test_normal_fetch(self):
-        res = UserSession.objects.fetch_subscriber_lease(
+        res = CustomerRadiusSession.objects.fetch_subscriber_lease(
             customer_mac='aa:bb:cc:dd:ee:ff',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
+            customer_id=self.customer.pk,
+            customer_group=self.customer.group_id,
             is_dynamic=True,
             vid=12
         )
@@ -69,10 +69,10 @@ class FetchSubscriberLease(TestCase):
         self.assertTrue(res['is_assigned'])
 
     def test_static_normal_fetch(self):
-        res = UserSession.objects.fetch_subscriber_lease(
+        res = CustomerRadiusSession.objects.fetch_subscriber_lease(
             customer_mac='aa:bb:cc:dd:ee:ff',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
+            customer_id=self.customer.pk,
+            customer_group=self.customer.group_id,
             is_dynamic=False,
             vid=12
         )
@@ -80,10 +80,10 @@ class FetchSubscriberLease(TestCase):
 
     def test_two_dynamic_fetch(self):
         self.test_normal_fetch()
-        res = UserSession.objects.fetch_subscriber_lease(
+        res = CustomerRadiusSession.objects.fetch_subscriber_lease(
             customer_mac='1a:b6:4c:cd:e3:fe',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
+            customer_id=self.customer.pk,
+            customer_group=self.customer.group_id,
             is_dynamic=True,
             vid=12
         )
@@ -102,29 +102,29 @@ class FetchSubscriberLease(TestCase):
 
     def test_bad_data(self):
         with self.assertRaises(DataError):
-            UserSession.objects.fetch_subscriber_lease(
+            CustomerRadiusSession.objects.fetch_subscriber_lease(
                 customer_mac='1-2e0-qedq0jdwqwoiked',
-                device_mac='981723981231',
-                device_port=2,
+                customer_id=self.customer.pk,
+                customer_group=self.customer.group_id,
                 is_dynamic=True,
                 vid=12
             )
 
     def test_negative_port(self):
         with self.assertRaises(InternalError):
-            UserSession.objects.fetch_subscriber_lease(
+            CustomerRadiusSession.objects.fetch_subscriber_lease(
                 customer_mac='1a:b6:4c:cd:e3:fe',
-                device_mac='12:13:14:15:16:17',
-                device_port=-2,
+                customer_id=self.customer.pk,
+                customer_group=self.customer.group_id,
                 is_dynamic=True,
                 vid=12
             )
 
     def test_empty_vid(self):
-        res = UserSession.objects.fetch_subscriber_lease(
+        res = CustomerRadiusSession.objects.fetch_subscriber_lease(
             customer_mac='aa:bb:cc:dd:ee:ff',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
+            customer_id=self.customer.pk,
+            customer_group=self.customer.group_id,
             is_dynamic=True,
             vid=None
         )
@@ -137,10 +137,10 @@ class FetchSubscriberLease(TestCase):
         self.assertTrue(res['is_assigned'])
 
     def test_multiple_fetch(self):
-        res = UserSession.objects.fetch_subscriber_lease(
+        res = CustomerRadiusSession.objects.fetch_subscriber_lease(
             customer_mac='aa:bb:cc:dd:ee:ff',
-            device_mac='12:13:14:15:16:17',
-            device_port=2,
+            customer_id=self.customer.pk,
+            customer_group=self.customer.group_id,
             is_dynamic=True,
             vid=12
         )
@@ -152,10 +152,10 @@ class FetchSubscriberLease(TestCase):
         self.assertTrue(res['is_dynamic'])
         self.assertTrue(res['is_assigned'])
         for n in range(4):
-            res = UserSession.objects.fetch_subscriber_lease(
+            res = CustomerRadiusSession.objects.fetch_subscriber_lease(
                 customer_mac='aa:bb:cc:dd:ee:ff',
-                device_mac='12:13:14:15:16:17',
-                device_port=2,
+                customer_id=self.customer.pk,
+                customer_group=self.customer.group_id,
                 is_dynamic=True,
                 vid=12
             )
