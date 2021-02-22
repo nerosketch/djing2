@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
-from radiusapp.models import UserSession
+from radiusapp.models import CustomerRadiusSession
 
 
-class UserSessionModelSerializer(serializers.ModelSerializer):
+class CustomerRadiusSessionModelSerializer(serializers.ModelSerializer):
     h_input_octets = serializers.CharField(read_only=True)
     h_output_octets = serializers.CharField(read_only=True)
     h_input_packets = serializers.CharField(read_only=True)
@@ -18,5 +18,5 @@ class UserSessionModelSerializer(serializers.ModelSerializer):
         pass
 
     class Meta:
-        model = UserSession
+        model = CustomerRadiusSession
         exclude = ['customer']
