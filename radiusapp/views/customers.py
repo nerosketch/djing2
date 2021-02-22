@@ -76,10 +76,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         guest_session = CustomerRadiusSession.objects.assign_guest_lease(
             radius_uname=radius_uname,
             customer_mac=customer_mac,
-            session_id=session_id,
-            is_dynamic=True,
-            vid=1,
-            pool_kind=NetworkIpPoolKind.NETWORK_KIND_GUEST
+            session_id=session_id
         )
         if guest_session is None:
             # Not possible to assign guest ip, it's bad
