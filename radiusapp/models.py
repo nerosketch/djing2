@@ -1,3 +1,4 @@
+import subprocess
 from datetime import datetime
 from typing import Optional
 
@@ -144,16 +145,15 @@ class CustomerRadiusSession(models.Model):
 
     objects = CustomerRadiusSessionManager()
 
-    # def finish_session(self) -> bool:
-    #     uname = str(self.radius_username).encode()
-    #     uname = uname.replace(b'"', b'')
-    #     uname = uname.replace(b"'", b'')
-    #     r = subprocess.run(
-    #         ['radclient', '-qx', '127.0.0.1:3799', 'disconnect', 'secretradiuspassword'],
-    #         input=b'User-Name="%s"' % uname)
-    #     return r.returncode == 0
+    def finish_session(self) -> bool:
+        uname = str(self.radius_username).encode()
+        uname = uname.replace(b'"', b'')
+        uname = uname.replace(b"'", b'')
+        r = subprocess.run(
+            ['radclient', '-q', '127.0.0.1:3799', 'disconnect', 'secretradiuspassword'],
+            input=b'User-Name="%s"' % uname)
+        return r.returncode == 0
 
-    @property
     def is_guest_session(self) -> bool:
         return self.customer is None
 

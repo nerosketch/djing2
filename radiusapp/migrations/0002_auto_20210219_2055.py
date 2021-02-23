@@ -5,6 +5,16 @@ from django.db.models.deletion import CASCADE
 from djing2.lib.for_migrations import read_all_file
 
 
+def create_default_vlan(apps, schema_editor):
+    VlanIf = apps.get_model('networks', 'VlanIf')
+    vlan1 = VlanIf.objects.filter(vid=1)
+    if not vlan1.exists():
+        VlanIf.objects.create(
+            title='default',
+            vid=1
+        )
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -40,5 +50,6 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             sql=read_all_file('0002_auto_20210219_2055.sql', __file__)
-        )
+        ),
+        migrations.RunPython(create_default_vlan)
     ]
