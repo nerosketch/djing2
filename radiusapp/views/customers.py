@@ -73,7 +73,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
     def assign_guest_session(self, radius_uname: str, customer_mac: str, session_id: str, data):
         # customer not found, assign guest lease
         # TODO: Make guest pool assignment
-        guest_session = CustomerRadiusSession.objects.assign_guest_lease(
+        guest_session = CustomerRadiusSession.objects.assign_guest_session(
             radius_uname=radius_uname,
             customer_mac=customer_mac,
             session_id=session_id
