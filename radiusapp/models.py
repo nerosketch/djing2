@@ -137,7 +137,7 @@ class CustomerRadiusSession(models.Model):
     assign_time = models.DateTimeField(auto_now_add=True, help_text=_('Time when session assigned first time'))
     last_event_time = models.DateTimeField(_('Last update time'))
     radius_username = models.CharField(_('User-Name av pair from radius'), max_length=128)
-    ip_lease = models.ForeignKey(CustomerIpLeaseModel, verbose_name=_('Ip lease'), on_delete=models.CASCADE)
+    ip_lease = models.OneToOneField(CustomerIpLeaseModel, verbose_name=_('Ip lease'), on_delete=models.CASCADE)
     session_id = models.UUIDField(_('Unique session id'))
     session_duration = models.DurationField(_('most often this is Acct-Session-Time av pair'), blank=True, null=True,
                                             default=None)

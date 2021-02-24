@@ -18,3 +18,8 @@ class CustomerRadiusSessionModelViewSet(DjingModelViewSet):
             CustomerRadiusSession.objects.filter(pk=pk).delete()
             return Response('ok')
         return Response('fail', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(methods=['get'], detail=False)
+    def guest_list(self, request, *args, **kwargs):
+        self.queryset = self.queryset.filter(customer=None)
+        return self.list(request, *args, **kwargs)
