@@ -38,6 +38,7 @@ class CustomAPITestCase(APITestCase):
             telephone='+79782345678',
             username='custo1',
             password='passw',
+            is_dynamic_ip=True,
             group=self.group
         )
         custo1.refresh_from_db()
