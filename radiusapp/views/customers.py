@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, Union
 
 from rest_framework import status
@@ -71,8 +72,6 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         })
 
     def assign_guest_session(self, radius_uname: str, customer_mac: str, session_id: str, data):
-        # customer not found, assign guest lease
-        # TODO: Make guest pool assignment
         guest_session = CustomerRadiusSession.objects.assign_guest_session(
             radius_uname=radius_uname,
             customer_mac=customer_mac,
@@ -146,7 +145,6 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         vid = vendor_manager.get_vlan_id(request.data)
 
         try:
-            # TODO: CustomerRadiusSession нужно запоминать
             subscriber_lease = CustomerRadiusSession.objects.fetch_subscriber_lease(
                 customer_mac=customer_mac,
                 customer_id=customer.pk,
@@ -162,6 +160,15 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
                     session_id=radius_unique_id,
                     data=request.data
                 )
+
+            # create authorized session for customer
+            CustomerRadiusSession.objects.create(
+                customer_id=customer.pk,
+                last_event_time=datetime.now(),
+                radius_username=radius_username,
+                ip_lease_id=subscriber_lease.lease_id,
+                session_id=radius_unique_id
+            )
 
             response = vendor_manager.get_auth_session_response(
                 subscriber_lease=subscriber_lease,

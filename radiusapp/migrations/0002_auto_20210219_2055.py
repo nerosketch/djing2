@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
                 ('output_packets', models.BigIntegerField(default=0)),
                 ('closed', models.BooleanField(default=False, verbose_name='Is session finished')),
                 ('customer', models.ForeignKey(default=None, null=True, on_delete=CASCADE, to='customers.Customer')),
-                ('ip_lease', models.ForeignKey(on_delete=CASCADE, to='networks.CustomerIpLeaseModel', verbose_name='Ip lease')),
+                ('ip_lease', models.OneToOneField(on_delete=CASCADE, to='networks.CustomerIpLeaseModel', verbose_name='Ip lease')),
             ],
             options={
                 'db_table': 'radius_customer_session',
