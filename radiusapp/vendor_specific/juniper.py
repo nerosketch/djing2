@@ -34,7 +34,7 @@ class JuniperVendorSpecific(IVendorSpecific):
         return {
             'Framed-IP-Address': subscriber_lease.ip_addr,
             # 'Framed-IP-Netmask': '255.255.0.0',
-            'ERX-Service-Activate': f'SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})',
+            'ERX-Service-Activate:1': f'SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})',
             # 'ERX-Primary-Dns': '10.12.1.9'
             # 'Acct-Interim-Interval': sess_time.total_seconds()
         }
