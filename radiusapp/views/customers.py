@@ -90,10 +90,9 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         )
         return Response(r)
 
-    @action(methods=['post'], detail=False)
-    def auth(self, request):
-        # FIXME: Pass name to 'vendor_name' from request
-        vendor_manager = VendorManager(vendor_name='juniper')
+    @action(methods=['post'], detail=False, url_path='auth/(?P<vendor_name>\w{1,32})')
+    def auth(self, request, vendor_name=None):
+        vendor_manager = VendorManager(vendor_name=vendor_name)
         self.vendor_manager = vendor_manager
 
         agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(
