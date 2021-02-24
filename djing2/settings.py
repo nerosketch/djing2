@@ -309,3 +309,5 @@ ARPING_COMMAND = getattr(local_settings, 'ARPING_COMMAND', '/usr/sbin/arping')
 # SITE_ID = 1
 
 WEBPUSH_SETTINGS = getattr(local_settings, 'WEBPUSH_SETTINGS')
+
+RADIUS_FINISH_SESSION_CMD_LIST = getattr(local_settings, 'RADIUS_FINISH_SESSION_CMD_LIST')
