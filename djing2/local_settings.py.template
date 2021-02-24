@@ -60,3 +60,5 @@ WEBPUSH_SETTINGS = {
     "VAPID_PRIVATE_KEY": "Your VAPID private key",
     "VAPID_ADMIN_EMAIL": "admin@localhost"
 }
+
+RADIUS_FINISH_SESSION_CMD_LIST = ['radclient', '-q', '127.0.0.1:3799', 'disconnect', 'secretradiuspassword']
