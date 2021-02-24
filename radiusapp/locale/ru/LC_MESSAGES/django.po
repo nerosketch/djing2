@@ -60,3 +60,6 @@ msgstr "mac адрес клиента"
 #: serializers/networks.py:14
 msgid "Location pool tag"
 msgstr ""
+
+msgid "Failed to stop session"
+msgstr "Ошибка остановки сессии"
