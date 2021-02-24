@@ -2,6 +2,7 @@ import subprocess
 from datetime import datetime
 from typing import Optional
 
+from django.conf import settings
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 
@@ -146,11 +147,16 @@ class CustomerRadiusSession(models.Model):
     objects = CustomerRadiusSessionManager()
 
     def finish_session(self) -> bool:
+        if not self.radius_username:
+            return False
         uname = str(self.radius_username).encode()
         uname = uname.replace(b'"', b'')
         uname = uname.replace(b"'", b'')
+        fin_cmd_list = getattr(settings, 'RADIUS_FINISH_SESSION_CMD_LIST')
+        if not fin_cmd_list:
+            return False
         r = subprocess.run(
-            ['radclient', '-q', '127.0.0.1:3799', 'disconnect', 'secretradiuspassword'],
+            fin_cmd_list,
             input=b'User-Name="%s"' % uname)
         return r.returncode == 0
 

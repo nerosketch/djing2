@@ -59,7 +59,7 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         self.customer.pick_service(self.service, self.customer)
 
     def _send_request(self, vlan_id: int, cid: str, arid: str, existing_ip='10.152.164.2', mac='18c0.4d51.dee2'):
-        return self.post('/api/radius/customer/auth/', {
+        return self.post('/api/radius/customer/auth/juniper/', {
             "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
             "Framed-IP-Address": {"value": [existing_ip]},
             "NAS-Port": {"value": [vlan_id]},
