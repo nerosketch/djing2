@@ -106,7 +106,7 @@ class CustomerRadiusSessionManager(models.Manager):
             is_assigned=is_assigned
         )
 
-    def assign_guest_lease(self, radius_uname: str, customer_mac: str,  session_id: str):
+    def assign_guest_session(self, radius_uname: str, customer_mac: str,  session_id: str):
         # Тут создаём сессию и сразу выделяем гостевой ip для этой сессии.
         # Гостевой ip можно сделать из обычного, если нет пользователя.
         r = self.fetch_subscriber_lease(
@@ -119,14 +119,17 @@ class CustomerRadiusSessionManager(models.Manager):
         )
         if not r:
             return None
-        new_lease = self.create(
+        sess = self.filter(ip_lease__mac_address=customer_mac)
+        if sess.exists():
+            return sess.first()
+        sess = self.create(
             customer=None,
             last_event_time=datetime.now(),
             radius_username=radius_uname,
             ip_lease_id=r.lease_id,
             session_id=session_id
         )
-        return new_lease
+        return sess
 
 
 class CustomerRadiusSession(models.Model):
