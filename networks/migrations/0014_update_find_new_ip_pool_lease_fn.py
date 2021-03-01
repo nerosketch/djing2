@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('customers', '0008_change_find_customer_service_by_device_credentials_fn'),
-        ('networks', '0012_customeripleaselog'),
+        ('networks', '0013_update_find_new_ip_pool_lease_fn'),
     ]
 
     operations = [
