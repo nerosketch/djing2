@@ -178,12 +178,11 @@ class CustomerRadiusSession(models.Model):
     def h_output_packets(self):
         return _human_readable_int(self.output_packets)
 
-    def delete(self, using=None, keep_parents=False):
+    def delete(self, *args, **kwargs):
         # TODO: Move it to db trigger
-        lease = self.ip_lease
-        if lease:
-            CustomerIpLeaseModel.objects.filter(pk=lease.pk).delete()
-        return super().delete(using=using, keep_parents=keep_parents)
+        lease_id = self.ip_lease_id
+        CustomerIpLeaseModel.objects.filter(pk=lease_id).delete()
+        return super().delete(*args, **kwargs)
 
     class Meta:
         db_table = 'radius_customer_session'
