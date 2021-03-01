@@ -162,12 +162,14 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
                 )
 
             # create authorized session for customer
-            CustomerRadiusSession.objects.create(
-                customer_id=customer.pk,
-                last_event_time=datetime.now(),
-                radius_username=radius_username,
+            CustomerRadiusSession.objects.get_or_create(
                 ip_lease_id=subscriber_lease.lease_id,
-                session_id=radius_unique_id
+                customer_id=customer.pk,
+                defaults={
+                    'last_event_time': datetime.now(),
+                    'radius_username': radius_username,
+                    'session_id': radius_unique_id
+                }
             )
 
             response = vendor_manager.get_auth_session_response(
