@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('customers', '0008_change_find_customer_service_by_device_credentials_fn'),
-        ('networks', '0013_update_find_new_ip_pool_lease_fn'),
+        ('networks', '0013_update_dhcp_commit_lease_add_update_fn'),
     ]
 
     operations = [
@@ -18,5 +18,5 @@ class Migration(migrations.Migration):
             name='customer',
             field=models.ForeignKey(null=True, on_delete=CASCADE, to='customers.Customer'),
         ),
-        migrations.RunSQL(sql=read_all_file('0013_update_find_new_ip_pool_lease_fn.sql', __file__))
+        migrations.RunSQL(sql=read_all_file('0014_update_find_new_ip_pool_lease_fn.sql', __file__))
     ]

@@ -18,7 +18,7 @@ def create_default_vlan(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('networks', '0013_update_find_new_ip_pool_lease_fn'),
+        ('networks', '0014_update_find_new_ip_pool_lease_fn'),
         ('customers', '0007_passportinfo_division_code'),
         ('radiusapp', '0001_initial'),
     ]
