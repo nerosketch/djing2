@@ -2,7 +2,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from djing2.viewsets import DjingModelViewSet
-from networks.models import CustomerIpLeaseModel
 from radiusapp.models import CustomerRadiusSession
 from radiusapp.serializers.user_session import CustomerRadiusSessionModelSerializer
 
@@ -16,10 +15,7 @@ class CustomerRadiusSessionModelViewSet(DjingModelViewSet):
     def destroy_session(self, request, pk=None):
         session = self.get_object()
         if session.finish_session():
-            # TODO: Move it to db trigger
-            ses = CustomerRadiusSession.objects.filter(pk=pk)
-            CustomerIpLeaseModel.objects.filter(pk=ses.first().ip_lease_id).delete()
-            ses.delete()
+            session.delete()
             return Response('ok')
         return Response('fail', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
