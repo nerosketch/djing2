@@ -73,7 +73,7 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         r = self._send_request(vlan_id=14, cid='0004008b000c', arid='0006286ED47B1CA4')
         self.assertDictEqual(r.data, {
             "Framed-IP-Address": "10.255.0.2",
-            "ERX-Service-Activate:1": "SERVICE-INET(10000000,1875000,10000000,1875000)"
+            "User-Password": "SERVICE-GUEST"
         })
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
@@ -81,7 +81,7 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         r = self._send_request(vlan_id=12, cid='0004008B0002', arid='0006121314151617')
         self.assertDictEqual(r.data, {
             "Framed-IP-Address": "10.152.64.2",
-            "ERX-Service-Activate:1": "SERVICE-INET(11000000,2062500,11000000,2062500)"
+            "User-Password": "SERVICE-INET(11000000,2062500,11000000,2062500)"
         })
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
@@ -94,7 +94,7 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         self.assertEqual(r1.status_code, status.HTTP_200_OK)
         self.assertDictEqual(r1.data, {
             "Framed-IP-Address": "10.152.64.2",
-            "ERX-Service-Activate:1": "SERVICE-INET(11000000,2062500,11000000,2062500)"
+            "User-Password": "SERVICE-INET(11000000,2062500,11000000,2062500)"
         })
         r2 = self._send_request(
             vlan_id=12, cid='0004008B0002',
@@ -105,5 +105,5 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         self.assertEqual(r2.status_code, status.HTTP_200_OK)
         self.assertDictEqual(r2.data, {
             "Framed-IP-Address": "10.152.64.3",
-            "ERX-Service-Activate:1": "SERVICE-INET(11000000,2062500,11000000,2062500)"
+            "User-Password": "SERVICE-INET(11000000,2062500,11000000,2062500)"
         })
