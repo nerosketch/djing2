@@ -20,7 +20,7 @@ class JuniperVendorSpecific(IVendorSpecific):
             # TODO: Optimize it, ip_lease.ip_address fetched from db
             'Framed-IP-Address': guest_session.ip_lease.ip_address,
             # 'Acct-Interim-Interval': 300,
-            'ERX-Service-Activate:1': "SERVICE-INET(10000000,1875000,10000000,1875000)"  # 10 MBit/s
+            'User-Password': 'SERVICE-GUEST'
         }
 
     def get_auth_session_response(self, subscriber_lease, customer_service,
@@ -34,7 +34,7 @@ class JuniperVendorSpecific(IVendorSpecific):
         return {
             'Framed-IP-Address': subscriber_lease.ip_addr,
             # 'Framed-IP-Netmask': '255.255.0.0',
-            'ERX-Service-Activate:1': f'SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})',
+            'User-Password': f'SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})'
             # 'ERX-Primary-Dns': '10.12.1.9'
             # 'Acct-Interim-Interval': sess_time.total_seconds()
         }
