@@ -320,16 +320,14 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
     @action(methods=['post'], detail=True)
     @catch_customers_errs
-    def set_group_accessory(self, request, pk=None):
+    def set_service_group_accessory(self, request, pk=None):
         # customer = self.get_object()
         group_id = request.data.get('group_id')
         if not group_id:
             return Response('group_id is required', status=status.HTTP_400_BAD_REQUEST)
         group = get_object_or_404(Group, pk=int(group_id))
         wanted_service_ids = request.data.get('services')
-        if not wanted_service_ids:
-            return Response('services is required', status=status.HTTP_400_BAD_REQUEST)
-        models.Customer.set_group_accessory(group, wanted_service_ids)
+        models.Customer.set_service_group_accessory(group, wanted_service_ids, request)
         return Response()
 
     @action(detail=False)
