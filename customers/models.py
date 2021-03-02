@@ -634,8 +634,12 @@ class Customer(BaseAccount):
         }
 
     @staticmethod
-    def set_group_accessory(group, wanted_service_ids: list):
-        existed_service_ids = frozenset(t.id for t in group.service_set.all())
+    def set_service_group_accessory(group, wanted_service_ids: list, request):
+        if request.user.is_superuser:
+            existed_service_ids = frozenset(t.id for t in group.service_set.all())
+        else:
+            existed_services = group.service_set.filter(sites__in=[request.site])
+            existed_service_ids = frozenset(t.id for t in existed_services)
         wanted_service_ids = frozenset(map(int, wanted_service_ids))
         sub = existed_service_ids - wanted_service_ids
         add = wanted_service_ids - existed_service_ids
