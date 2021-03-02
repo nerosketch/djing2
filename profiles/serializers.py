@@ -74,15 +74,12 @@ class UserProfilePasswordSerializer(serializers.Serializer):
     # def create(self, validated_data):
     #     print('UserProfilePasswordSerializer.create', validated_data)
 
-    def validate_old_passw(self, value):
+    def validate_new_passw(self, value):
         try:
             validate_password(value)
             return value
         except DjangoValidationError as err:
             raise ValidationError(err)
-
-    def validate_new_passw(self, value):
-        return self.validate_old_passw(value)
 
 
 class UserObjectPermissionSerializer(BaseCustomModelSerializer):
