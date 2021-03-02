@@ -97,8 +97,7 @@ class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
                 return Response(_('Passwords must be same'), status=status.HTTP_400_BAD_REQUEST)
             if not profile.check_password(old_passw):
                 return Response(_('Wrong old password'), status=status.HTTP_400_BAD_REQUEST)
-
-        validate_password(old_passw, profile)
+        # validate_password(old_passw, profile)
 
         profile.set_password(new_passw)
         profile.save(update_fields=['password'])
