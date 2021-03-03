@@ -188,7 +188,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         )
         if not request.user.is_superuser:
             qs = qs.filter(sites__in=[self.request.site])
-        qs = qs.select_related('group').values(
+        qs = qs.values(
             'pk', 'group_id', 'username', 'fio'
         )
         return Response(qs)
