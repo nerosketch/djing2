@@ -184,7 +184,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         if service_id == 0:
             return Response('service_id is required', status=status.HTTP_403_FORBIDDEN)
         qs = models.Customer.objects.filter(
-            current_service__service__id=service_id
+            current_service__service_id=service_id
         ).select_related('group').values(
             'pk', 'group_id', 'username', 'fio'
         )
