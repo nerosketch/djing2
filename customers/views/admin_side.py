@@ -185,7 +185,10 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             return Response('service_id is required', status=status.HTTP_403_FORBIDDEN)
         qs = models.Customer.objects.filter(
             current_service__service_id=service_id
-        ).select_related('group').values(
+        )
+        if not request.user.is_superuser:
+            qs = qs.filter(sites__in=[self.request.site])
+        qs = qs.select_related('group').values(
             'pk', 'group_id', 'username', 'fio'
         )
         return Response(qs)
