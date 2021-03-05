@@ -73,7 +73,7 @@ class DevicePONViewSet(DjingModelViewSet):
             user=self.request.user,
             perms='groupapp.view_group',
             klass=Group
-        )
+        ).order_by('title')
         return qs.filter(group__in=grps)
 
     @action(detail=True)
@@ -279,7 +279,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             user=self.request.user,
             perms='groupapp.view_group',
             klass=Group
-        )
+        ).order_by('title')
         return qs.filter(group__in=grps)
 
     def perform_create(self, serializer, *args, **kwargs):
@@ -430,7 +430,7 @@ class DeviceWithoutGroupListAPIView(DjingListAPIView):
             self.request.user,
             perms='devices.view_device',
             klass=Device
-        )
+        ).order_by('id')
         return qs.filter(group=None)
 
 
@@ -517,5 +517,5 @@ class DeviceGroupsList(DjingListAPIView):
             self.request.user,
             perms='groupapp.view_group',
             klass=Group
-        )
+        ).order_by('title')
         return qs.annotate(device_count=Count('device'))
