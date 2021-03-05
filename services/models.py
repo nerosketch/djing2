@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from django.contrib.postgres.fields import JSONField
 from django.contrib.sites.models import Site
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -103,7 +102,7 @@ class PeriodicPay(BaseAbstractModel):
         default=PERIODIC_PAY_CALC_DEFAULT, choices=PERIODIC_PAY_CHOICES
     )
     amount = models.FloatField(_('Total amount'))
-    extra_info = JSONField(_('Extra info'), null=True, blank=True)
+    extra_info = models.JSONField(_('Extra info'), null=True, blank=True)
     sites = models.ManyToManyField(Site, blank=True)
 
     def _get_calc_object(self):
