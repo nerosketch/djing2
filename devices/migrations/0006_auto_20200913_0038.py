@@ -21,6 +21,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='device',
             name='code',
-            field=models.CharField(blank=True, choices=[('zte_f660_bridge', 'Zte ONU F660 Static Bridge'), ('zte_f601_bridge', 'Zte F601 bridge'), ('zte_f660_router', 'Zte ONU F660 Router')], default=None, max_length=64, null=True, verbose_name='Code'),
+            field=models.CharField(blank=True, choices=[('zte_f660_bridge', 'Zte ONU F660 Static Bridge'), ('zte_f601_bridge', 'Zte F601 dhcp'), ('zte_f660_router', 'Zte ONU F660 Router')], default=None, max_length=64, null=True, verbose_name='Code'),
         ),
     ]
