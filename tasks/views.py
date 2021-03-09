@@ -231,7 +231,7 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
     serializer_class = serializers.ExtraCommentModelSerializer
     filterset_fields = ('task', 'author')
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer, *args, **kwargs):
         serializer.save(author=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
@@ -256,5 +256,5 @@ class TaskDocumentAttachmentViewSet(DjingModelViewSet):
     serializer_class = serializers.TaskDocumentAttachmentSerializer
     filterset_fields = ('task',)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer, *args, **kwargs):
         serializer.save(author=self.request.user)
