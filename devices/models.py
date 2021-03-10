@@ -1,6 +1,5 @@
 from typing import Optional, Tuple, Iterator
 
-from django.contrib.postgres.fields import JSONField
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -56,7 +55,7 @@ class Device(BaseAbstractModel):
         _('SNMP extra info'), max_length=256,
         null=True, blank=True
     )
-    extra_data = JSONField(
+    extra_data = models.JSONField(
         verbose_name=_('Extra data'),
         help_text=_('Extra data in JSON format. You may use it for your custom data'),
         blank=True, null=True

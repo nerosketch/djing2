@@ -124,6 +124,8 @@ def can_login_by_location(request):
 
 
 @api_view()
+@authentication_classes([])
+@permission_classes([])
 def get_vapid_public_key(request):
     opts = getattr(settings, 'WEBPUSH_SETTINGS')
     if opts is None or not isinstance(opts, dict):
