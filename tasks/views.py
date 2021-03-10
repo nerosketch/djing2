@@ -166,7 +166,7 @@ class AllTasksList(DjingListAPIView):
             user=self.request.user,
             perms='tasks.view_task',
             klass=models.Task
-        )
+        ).order_by('-id')
         return qs.select_related(
             'customer', 'customer__street',
             'customer__group', 'author'
@@ -187,7 +187,8 @@ class NewTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
-            recipients=self.request.user, task_state=models.Task.TASK_STATE_NEW
+            recipients=self.request.user,
+            task_state=models.Task.TASK_STATE_NEW
         )
 
 
@@ -195,7 +196,8 @@ class FailedTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
-            recipients=self.request.user, task_state=models.Task.TASK_STATE_CONFUSED
+            recipients=self.request.user,
+            task_state=models.Task.TASK_STATE_CONFUSED
         )
 
 
@@ -203,7 +205,8 @@ class FinishedTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
-            recipients=self.request.user, task_state=models.Task.TASK_STATE_COMPLETED
+            recipients=self.request.user,
+            task_state=models.Task.TASK_STATE_COMPLETED
         )
 
 
@@ -228,7 +231,7 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
     serializer_class = serializers.ExtraCommentModelSerializer
     filterset_fields = ('task', 'author')
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer, *args, **kwargs):
         serializer.save(author=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
@@ -253,5 +256,5 @@ class TaskDocumentAttachmentViewSet(DjingModelViewSet):
     serializer_class = serializers.TaskDocumentAttachmentSerializer
     filterset_fields = ('task',)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer, *args, **kwargs):
         serializer.save(author=self.request.user)

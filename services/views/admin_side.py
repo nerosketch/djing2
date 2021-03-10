@@ -3,7 +3,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 
 from djing2.lib.filters import CustomObjectPermissionsFilter
-from djing2.lib.mixins import SitesGroupFilterMixin, SitesFilterMixin
+from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import DjingModelViewSet
 from profiles.models import UserProfileLogActionType
 from services.models import Service, PeriodicPay, OneShotPay
@@ -14,8 +14,8 @@ from services.serializers import (
 )
 
 
-class ServiceModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
-    queryset = Service.objects.annotate(usercount=Count('link_to_service__customer'))
+class ServiceModelViewSet(SitesFilterMixin, DjingModelViewSet):
+    queryset = Service.objects.annotate(usercount=Count('link_to_service'))
     serializer_class = ServiceModelSerializer
     filterset_fields = ('groups',)
     filter_backends = (CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter,)

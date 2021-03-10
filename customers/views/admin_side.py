@@ -184,8 +184,11 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         if service_id == 0:
             return Response('service_id is required', status=status.HTTP_403_FORBIDDEN)
         qs = models.Customer.objects.filter(
-            current_service__service__id=service_id
-        ).select_related('group').values(
+            current_service__service_id=service_id
+        )
+        if not request.user.is_superuser:
+            qs = qs.filter(sites__in=[self.request.site])
+        qs = qs.values(
             'pk', 'group_id', 'username', 'fio'
         )
         return Response(qs)
@@ -398,7 +401,7 @@ class CustomersGroupsListAPIView(DjingListAPIView):
             self.request.user,
             perms='groupapp.view_group',
             klass=Group
-        )
+        ).order_by('title')
         if self.request.user.is_superuser:
             return qs.annotate(usercount=Count('customer'))
         return qs.filter(sites__in=[self.request.site]) \
