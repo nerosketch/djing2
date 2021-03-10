@@ -85,7 +85,7 @@ class GroupsFilterMixin:
             user=self.request.user,
             perms='groupapp.view_group',
             klass=Group
-        )
+        ).order_by('title')
         return qs.filter(groups__in=grps)
 
 
