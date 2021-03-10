@@ -162,7 +162,7 @@ class Task(BaseAbstractModel):
 
     def finish(self, current_user):
         self.task_state = self.TASK_STATE_COMPLETED  # Completed. Task done
-        self.out_date = datetime.now()  # End time
+        self.out_date = datetime.now().date()  # End time
         ChangeLog.objects.create(
             task=self,
             act_type=ChangeLog.ACT_TYPE_COMPLETE_TASK,  # Completing tasks
