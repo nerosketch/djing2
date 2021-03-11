@@ -130,7 +130,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
 
         customer_service = CustomerService.find_customer_service_by_device_credentials(
             customer_id=customer.pk,
-            current_service_id=customer.current_service_id
+            current_service_id=int(customer.current_service_id)
         )
         if customer_service is None:
             return self.assign_guest_session(
