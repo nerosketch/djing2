@@ -125,11 +125,24 @@ $$;
 CREATE OR REPLACE FUNCTION networks_ip_lease_log_fn()
   RETURNS TRIGGER AS
 $$
+DECLARE
+  now_time timestamptz;
 BEGIN
-  if NEW.customer_id is not null then
-    insert into networks_ip_lease_log(customer_id, ip_address, lease_time, last_update, mac_address, is_dynamic, event_time)
-    values (NEW.customer_id, NEW.ip_address, NEW.lease_time, NEW.last_update, NEW.mac_address, NEW.is_dynamic, now());
+  if NEW.customer_id is null then
+    RETURN NEW;
   end if;
+
+  now_time := now();
+
+  update networks_ip_lease_log set end_use_time = now_time
+  where ip_address = NEW.ip_address and (
+      OLD is null or customer_id = OLD.customer_id);
+
+  insert into networks_ip_lease_log(customer_id, ip_address, lease_time,
+                                    last_update, mac_address, is_dynamic, event_time)
+  values (NEW.customer_id, NEW.ip_address, NEW.lease_time,
+          NEW.last_update, NEW.mac_address, NEW.is_dynamic, now_time);
+
   RETURN NEW;
 END
 $$

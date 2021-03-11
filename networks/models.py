@@ -305,6 +305,8 @@ class CustomerIpLeaseLog(models.Model):
     mac_address = MACAddressField(verbose_name=_('Mac address'), null=True, default=None)
     is_dynamic = models.BooleanField(_('Is synamic'), default=False)
     event_time = models.DateTimeField(_('Event time'), auto_now_add=True)
+    end_use_time = models.DateTimeField(_('Lease end use time'), null=True, blank=True,
+                                        default=None)
 
     def __str__(self):
         return self.ip_address
