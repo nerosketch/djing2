@@ -18,5 +18,10 @@ class Migration(migrations.Migration):
             name='customer',
             field=models.ForeignKey(null=True, on_delete=CASCADE, to='customers.Customer'),
         ),
+        migrations.AddField(
+            model_name='customeripleaselog',
+            name='end_use_time',
+            field=models.DateTimeField(blank=True, default=None, null=True, verbose_name='Lease end use time'),
+        ),
         migrations.RunSQL(sql=read_all_file('0014_update_find_new_ip_pool_lease_fn.sql', __file__))
     ]
