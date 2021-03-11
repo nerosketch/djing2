@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Union
+# from typing import Optional, Union
 
 from rest_framework import status
 from rest_framework.decorators import action
@@ -7,26 +7,26 @@ from rest_framework.response import Response
 
 from customers.models import CustomerService
 from customers.serializers import RadiusCustomerServiceRequestSerializer
-from djing2.lib import LogicError, safe_int
+from djing2.lib import LogicError
 from djing2.viewsets import DjingAuthorizedViewSet
 from networks.models import NetworkIpPoolKind, CustomerIpLeaseModel
 from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendors import VendorManager
 
 
-def _get_acct_rad_val(data, v, default=None) -> Optional[Union[str, int]]:
-    attr = data.get(v)
-    if isinstance(attr, (list, tuple)):
-        return attr[0]
-    if attr:
-        return attr
-    return default
+# def _get_acct_rad_val(data, v, default=None) -> Optional[Union[str, int]]:
+#     attr = data.get(v)
+#     if isinstance(attr, (list, tuple)):
+#         return attr[0]
+#     if attr:
+#         return attr
+#     return default
 
 
-def _gigaword_imp(num: int, gwords: int) -> int:
-    num = safe_int(num)
-    gwords = safe_int(gwords)
-    return num + gwords * (10 ** 9)
+# def _gigaword_imp(num: int, gwords: int) -> int:
+#     num = safe_int(num)
+#     gwords = safe_int(gwords)
+#     return num + gwords * (10 ** 9)
 
 
 def _bad_ret(text):
