@@ -38,14 +38,28 @@ BEGIN
   --   and return it
 
   -- Find leases by customer and mac
-  SELECT nil.id, nil.ip_address, nil.pool_id, nil.lease_time, nil.mac_address, nil.customer_id, nil.is_dynamic, false
-         INTO t_lease
-  FROM networks_ip_leases nil
-  where (v_customer_id is null or nil.customer_id = v_customer_id)
-    and (not v_is_dynamic or nil.mac_address = v_mac_addr)
-    and nil.is_dynamic = v_is_dynamic
-  order by nil.id desc
-  limit 1;
+  if v_vid is null then
+    SELECT nil.id, nil.ip_address, nil.pool_id, nil.lease_time, nil.mac_address, nil.customer_id, nil.is_dynamic, false
+        INTO t_lease
+    FROM networks_ip_leases nil
+    where (v_customer_id is null or nil.customer_id = v_customer_id)
+      and (not v_is_dynamic or nil.mac_address = v_mac_addr)
+      and nil.is_dynamic = v_is_dynamic
+    order by nil.id desc
+    limit 1;
+  else
+    SELECT nil.id, nil.ip_address, nil.pool_id, nil.lease_time, nil.mac_address, nil.customer_id, nil.is_dynamic, false
+        INTO t_lease
+    FROM networks_ip_leases nil
+      left join networks_ip_pool n on nil.pool_id = n.id
+      left join networks_vlan nv on n.vlan_if_id = nv.id
+    where (v_customer_id is null or nil.customer_id = v_customer_id)
+      and (not v_is_dynamic or nil.mac_address = v_mac_addr)
+      and nil.is_dynamic = v_is_dynamic
+      and nv.vid = v_vid
+    order by nil.id desc
+    limit 1;
+  end if;
 
   if FOUND
   then
