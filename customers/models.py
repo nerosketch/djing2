@@ -450,7 +450,7 @@ class Customer(BaseAccount):
         :return: Nothing
         """
         if not isinstance(service, Service):
-            raise TypeError
+            raise TypeError('service must be instance of services.models.Service')
 
         cost = round(service.cost, 2)
 
