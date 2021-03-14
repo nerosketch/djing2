@@ -3,9 +3,11 @@ from json import dumps
 from django.conf import settings
 
 
-def send_data(dat: dict, host: str = getattr(settings, 'WS_ADDR', '127.0.0.1:3211')) -> None:
+def send_data(dat: dict, host: str = getattr(settings, 'WS_ADDR', '127.0.0.1:3211'), **kwargs) -> None:
     assert isinstance(dat, dict)
     assert bool(dat.get('eventType'))
+    if kwargs:
+        dat.update(kwargs)
     dat = dumps(dat)
     try:
         with socket.socket() as s:
