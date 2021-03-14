@@ -62,7 +62,7 @@ INSTALLED_APPS = [
     'devices.apps.DevicesConfig',
     'networks',
     'customers.apps.CustomersConfig',
-    'messenger',
+    'messenger.apps.MessengerConfig',
     'tasks.apps.TasksConfig',
     'fin_app',
     'dials',
