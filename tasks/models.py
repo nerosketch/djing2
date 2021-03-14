@@ -5,7 +5,12 @@ from django.contrib.sites.models import Site
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 
-from customers.models import Customer
+try:
+    from customers.models import Customer
+except ImportError:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('"tasks" application depends on "customers" application. Check if it installed')
+
 from djing2.lib import safe_float, safe_int
 from djing2.models import BaseAbstractModel
 from profiles.models import UserProfile

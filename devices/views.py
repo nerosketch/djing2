@@ -16,7 +16,6 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
 from devices import serializers as dev_serializers
-from devices.custom_signals import device_monitoring_event_signal
 from devices.models import Device, Port, PortVlanMemberModel
 from devices.device_config import (
     DeviceImplementationError,
@@ -28,6 +27,7 @@ from djing2.lib import (
     ProcessLocked, safe_int, ws_connector,
     RuTimedelta, JSONBytesEncoder
 )
+from djing2.lib.custom_signals import notification_signal
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
@@ -394,7 +394,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             'recipients': user_ids,
             'text': text
         })
-        device_monitoring_event_signal.send(
+        notification_signal.send(
             sender=device.__class__,
             instance=device,
             recipients=user_ids,
