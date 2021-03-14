@@ -16,6 +16,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
 from devices import serializers as dev_serializers
+from devices.custom_signals import device_monitoring_event_signal
 from devices.models import Device, Port, PortVlanMemberModel
 from devices.device_config import (
     DeviceImplementationError,
@@ -30,7 +31,6 @@ from djing2.lib import (
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
-from messenger.tasks import multicast_viber_notify
 from profiles.models import UserProfile, UserProfileLogActionType
 
 
@@ -326,9 +326,9 @@ class DeviceModelViewSet(DjingModelViewSet):
         manager.reboot(save_before_reboot=False)
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['put'])
+    @action(detail=False, methods=['put'])
     @catch_dev_manager_err
-    def monitoring_event(self, request, pk=None):
+    def monitoring_event(self, request):
         dev_ip = request.query_params.get('dev_ip')
         dev_status = request.query_params.get('status')
         if dev_status not in ('UP', 'UNREACHABLE', 'DOWN'):
@@ -338,12 +338,12 @@ class DeviceModelViewSet(DjingModelViewSet):
         if not re.match(IP_ADDR_REGEX, dev_ip):
             return Response({'text': 'ip address %s is not valid' % dev_ip})
 
-        device_down = self.get_queryset().filter(
+        device = self.get_queryset().filter(
             ip_address=dev_ip
         ).defer(
             'extra_data'
         ).first()
-        if device_down is None:
+        if device is None:
             return Response({
                 'text': 'Devices with ip %s does not exist' % dev_ip
             })
@@ -358,23 +358,23 @@ class DeviceModelViewSet(DjingModelViewSet):
             'UNREACHABLE': 'Device %(device_name)s is unreachable',
             'DOWN': 'Device %(device_name)s is down'
         }
-        device_down.status = status_map.get(dev_status, Device.NETWORK_STATE_UNDEFINED)
+        device.status = status_map.get(dev_status, Device.NETWORK_STATE_UNDEFINED)
 
-        device_down.save(update_fields=('status',))
+        device.save(update_fields=('status',))
 
-        if not device_down.is_noticeable:
+        if not device.is_noticeable:
             return {
                 'text': 'Notification for %s is unnecessary' %
-                        device_down.ip_address or device_down.comment
+                        device.ip_address or device.comment
             }
 
-        if not device_down.group:
+        if not device.group:
             return Response({
                 'text': 'Device has not have a group'
             })
 
         recipients = UserProfile.objects.get_profiles_by_group(
-            group_id=device_down.group.pk
+            group_id=device.group.pk
         ).filter(flags=UserProfile.flags.notify_mon)
         user_ids = tuple(recipient.pk for recipient in recipients.only('pk').iterator())
 
@@ -384,21 +384,22 @@ class DeviceModelViewSet(DjingModelViewSet):
         )
         text = gettext(notify_text) % {
             'device_name': "%s(%s) %s" % (
-                device_down.ip_address or '',
-                device_down.mac_addr,
-                device_down.comment
+                device.ip_address or '',
+                device.mac_addr,
+                device.comment
             )
         }
-        multicast_viber_notify(
-            messenger_id=None,
-            account_id_list=user_ids,
-            message_text=text
-        )
         ws_connector.send_data({
             'type': 'monitoring_event',
             'recipients': user_ids,
             'text': text
         })
+        device_monitoring_event_signal.send(
+            sender=device.__class__,
+            instance=device,
+            recipients=user_ids,
+            text=text
+        )
         return Response({'text': 'notification successfully sent'})
 
     @action(detail=True)
