@@ -133,14 +133,18 @@ class CustomerRadiusSessionManager(models.Manager):
 
 
 class CustomerRadiusSession(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, default=None, null=True)
-    assign_time = models.DateTimeField(auto_now_add=True, help_text=_('Time when session assigned first time'))
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE,
+                                 default=None, null=True)
+    assign_time = models.DateTimeField(help_text=_('Time when session assigned first time'),
+                                       auto_now_add=True)
     last_event_time = models.DateTimeField(_('Last update time'))
-    radius_username = models.CharField(_('User-Name av pair from radius'), max_length=128)
-    ip_lease = models.OneToOneField(CustomerIpLeaseModel, verbose_name=_('Ip lease'), on_delete=models.CASCADE)
+    radius_username = models.CharField(_('User-Name av pair from radius'),
+                                       max_length=128)
+    ip_lease = models.OneToOneField(CustomerIpLeaseModel, verbose_name=_('Ip lease'),
+                                    on_delete=models.CASCADE)
     session_id = models.UUIDField(_('Unique session id'))
-    session_duration = models.DurationField(_('most often this is Acct-Session-Time av pair'), blank=True, null=True,
-                                            default=None)
+    session_duration = models.DurationField(_('most often this is Acct-Session-Time av pair'),
+                                            blank=True, null=True, default=None)
     input_octets = models.BigIntegerField(default=0)
     output_octets = models.BigIntegerField(default=0)
     input_packets = models.BigIntegerField(default=0)
