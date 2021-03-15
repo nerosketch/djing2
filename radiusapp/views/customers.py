@@ -1,5 +1,4 @@
 from datetime import datetime
-# from typing import Optional, Union
 
 from rest_framework import status
 from rest_framework.decorators import action
@@ -7,32 +6,24 @@ from rest_framework.response import Response
 
 from customers.models import CustomerService
 from customers.serializers import RadiusCustomerServiceRequestSerializer
-from djing2.lib import LogicError
+from djing2.lib import LogicError, safe_int
 from djing2.viewsets import DjingAuthorizedViewSet
 from networks.models import NetworkIpPoolKind, CustomerIpLeaseModel
 from radiusapp.models import CustomerRadiusSession
+from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
 
 
-# def _get_acct_rad_val(data, v, default=None) -> Optional[Union[str, int]]:
-#     attr = data.get(v)
-#     if isinstance(attr, (list, tuple)):
-#         return attr[0]
-#     if attr:
-#         return attr
-#     return default
-
-
-# def _gigaword_imp(num: int, gwords: int) -> int:
-#     num = safe_int(num)
-#     gwords = safe_int(gwords)
-#     return num + gwords * (10 ** 9)
+def _gigaword_imp(num: int, gwords: int) -> int:
+    num = safe_int(num)
+    gwords = safe_int(gwords)
+    return num + gwords * (10 ** 9)
 
 
 def _bad_ret(text):
     return Response({
         'Reply-Message': text
-    }, status=status.HTTP_403_FORBIDDEN)
+    }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
@@ -182,88 +173,73 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         except LogicError as err:
             return _bad_ret(str(err))
 
-    @action(methods=['post'], detail=False)
-    def acct(self, request):
-        # return Response(status=status.HTTP_201_CREATED)
+    @action(methods=['post'], detail=False, url_path='acct/(?P<vendor_name>\w{1,32})')
+    def acct(self, request, vendor_name=None):
+        vendor_manager = VendorManager(vendor_name=vendor_name)
+        self.vendor_manager = vendor_manager
 
-        # FIXME: Pass name to 'vendor_name' from request
-        # vendor_manager = VendorManager(vendor_name='juniper')
+        request_type = vendor_manager.get_acct_status_type(request)
+        acct_status_type_map = {
+            AcctStatusType.START.value: self._acct_start,
+            AcctStatusType.STOP.value: self._acct_stop,
+            AcctStatusType.UPDATE.value: self._acct_update
+        }
+        request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
+        return request_type_fn(request)
 
-        # dat = request.data
+    def _update_counters(self, session, data: dict, **update_kwargs):
+        vcls = self.vendor_manager.vendor_class
+        v_inp_oct = _gigaword_imp(
+            num=vcls.get_acct_rad_val(data, 'Acct-Input-Octets', 0),
+            gwords=vcls.get_acct_rad_val(data, 'Acct-Input-Gigawords', 0)
+        )
+        v_out_oct = _gigaword_imp(
+            num=vcls.get_acct_rad_val(data, 'Acct-Output-Octets', 0),
+            gwords=vcls.get_acct_rad_val(data, 'Acct-Output-Gigawords', 0)
+        )
+        v_in_pkt = vcls.get_acct_rad_val(data, 'Acct-Input-Packets', 0)
+        v_out_pkt = vcls.get_acct_rad_val(data, 'Acct-Output-Packets', 0)
+        return session.update(
+            last_event_time=datetime.now(),
+            input_octets=v_inp_oct,
+            output_octets=v_out_oct,
+            input_packets=v_in_pkt,
+            output_packets=v_out_pkt,
+            **update_kwargs
+        )
 
-        # is_stop_radius_session = False
-        # act_type = _get_acct_rad_val(dat, 'Acct-Status-Type')
-        # if act_type not in ['Start', 'Stop', 'Interim-Update', 'Accounting-On']:
-        #     return _bad_ret('Bad Acct-Status-Type')
-        # if act_type == 'Stop':
-        #     is_stop_radius_session = True
-
-        # customer_mac = vendor_manager.get_customer_mac(request.data)
-        # if customer_mac is None:
-        #     return _bad_ret('Customer mac is required')
-
-        # ip = _get_acct_rad_val(dat, 'Framed-IP-Address')
-        # if ip is None:
-        #     return _bad_ret('Framed-IP-Address required')
-
-        # agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(
-        #     data=request.data
-        # )
-        #
-        # if not all([agent_remote_id, agent_circuit_id]):
-        #     return _bad_ret('Bad opt82')
-
-        # dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
-        #     agent_remote_id=agent_remote_id,
-        #     agent_circuit_id=agent_circuit_id
-        # )
-
-        # radius_username = _get_acct_rad_val(dat, 'User-Name')
-
-        # create or update radius session
-        # CustomerRadiusSession.objects.create_or_update_session(
-        #     session_id=_get_acct_rad_val(dat, 'Acct-Unique-Session-Id'),
-        #     lease_id=,
-        #     v_dev_mac=dev_mac,
-        #     v_dev_port=dev_port,
-        #     v_sess_time=timedelta(seconds=safe_int(_get_acct_rad_val(dat, 'Acct-Session-Time', 0))),
-        #     v_uname=radius_username,
-        #     v_inp_oct=_gigaword_imp(
-        #         num=_get_acct_rad_val(dat, 'Acct-Input-Octets', 0),
-        #         gwords=_get_acct_rad_val(dat, 'Acct-Input-Gigawords', 0)
-        #     ),
-        #     v_out_oct=_gigaword_imp(
-        #         num=_get_acct_rad_val(dat, 'Acct-Output-Octets', 0),
-        #         gwords=_get_acct_rad_val(dat, 'Acct-Output-Gigawords', 0)
-        #     ),
-        #     v_in_pkt=_get_acct_rad_val(dat, 'Acct-Input-Packets', 0),
-        #     v_out_pkt=_get_acct_rad_val(dat, 'Acct-Output-Packets', 0),
-        #     v_is_stop=is_stop_radius_session
-        # )
-
-        # update ip addr in customer profile
-        # try:
-        #     res_text = CustomerIpLeaseModel.lease_commit_add_update(
-        #         client_ip=ip,
-        #         mac_addr=mac,
-        #         dev_mac=dev_mac,
-        #         dev_port=dev_port
-        #     )
-        # except LogicError as err:
-        #     res_text = str(err)
-        # if res_text is not None:
-        #     res_text = {
-        #         'Reply-Message': res_text
-        #     }
-        # else:
-        #     res_text = None
+    # TODO: Сделать создание сессии в acct, а в auth только предлагать ip для абонента
+    def _acct_start(self, request):
         return Response(status=status.HTTP_201_CREATED)
-        # return Response(res_text, status=status.HTTP_204_NO_CONTENT if res_text is None else status.HTTP_200_OK)
-        # is_access = CustomerIpLeaseModel.objects.get_service_permit_by_ip()
-        # access_status = status.HTTP_200_OK if is_access else status.HTTP_403_FORBIDDEN
-        # return Response(status=access_status)
-        # return Response({
-        #     'Acct-Interim-Interval': 300,
-        #     # 'Mikrotik-Address-List': 'DjingUsersAllowed',
-        #     'Mikrotik-Rate-Limit': '50M/43M'
-        # })
+
+    def _acct_stop(self, request):
+        dat = request.data
+        vendor_manager = self.vendor_manager
+        username = vendor_manager.get_radius_username(dat)
+        vcls = vendor_manager.vendor_class
+        ip = vcls.get_acct_rad_val(dat, 'Framed-IP-Address')
+        session = CustomerRadiusSession.objects.filter(
+            radius_username=username,
+            ip_lease__ip_address=ip,
+            closed=False
+        )
+        if session.exists():
+            self._update_counters(session, dat, closed=True)
+
+    def _acct_update(self, request):
+        dat = request.data
+        vendor_manager = self.vendor_manager
+        vcls = vendor_manager.vendor_class
+        username = vendor_manager.get_radius_username(dat)
+        ip = vcls.get_acct_rad_val(dat, 'Framed-IP-Address')
+        session = CustomerRadiusSession.objects.filter(
+            radius_username=username,
+            ip_lease__ip_address=ip,
+            closed=False
+        )
+        if session.exists():
+            self._update_counters(session, dat)
+
+    @staticmethod
+    def _acct_unknown(_):
+        return _bad_ret('Bad Acct-Status-Type')
