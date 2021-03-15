@@ -2,7 +2,12 @@ from ipaddress import ip_address
 
 from django.core.management.base import BaseCommand, CommandError, no_translations
 
-from devices.models import Device
+try:
+    from devices.models import Device
+except ImportError:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('"networks" application depends on "devices" application. Check if it installed')
+
 from networks.models import VlanIf
 
 
