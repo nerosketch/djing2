@@ -1,6 +1,6 @@
 import abc
 import enum
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 from customers.models import CustomerService, Customer
 from radiusapp.models import CustomerRadiusSession, FetchSubscriberLeaseResponse
@@ -19,20 +19,14 @@ class IVendorSpecific(abc.ABC):
         raise NotImplementedError
 
     @staticmethod
-    def get_rad_val(data, v: str):
+    def get_rad_val(data, v: str, default=None):
         k = data.get(v)
         if k:
+            if isinstance(k, (str, int)):
+                return k
             k = k.get('value')
             if k:
                 return k[0]
-
-    @staticmethod
-    def get_acct_rad_val(data, v, default=None) -> Optional[Union[str, int]]:
-        attr = data.get(v)
-        if isinstance(attr, (list, tuple)):
-            return attr[0]
-        if attr:
-            return attr
         return default
 
     @abc.abstractmethod
@@ -66,10 +60,17 @@ class IVendorSpecific(abc.ABC):
 
     def get_acct_status_type(self, request) -> AcctStatusType:
         dat = request.data
-        r_map = {
-            'Start': AcctStatusType.START,
-            'Stop': AcctStatusType.STOP,
-            'Interim-Update': AcctStatusType.UPDATE
-        }
-        act_type = self.get_acct_rad_val(dat, 'Acct-Status-Type')
+        act_type = self.get_rad_val(dat, 'Acct-Status-Type')
+        if isinstance(act_type, int):
+            r_map = {
+                1: AcctStatusType.START,
+                2: AcctStatusType.STOP,
+                3: AcctStatusType.UPDATE
+            }
+        else:
+            r_map = {
+                'Start': AcctStatusType.START,
+                'Stop': AcctStatusType.STOP,
+                'Interim-Update': AcctStatusType.UPDATE
+            }
         return r_map.get(act_type)
