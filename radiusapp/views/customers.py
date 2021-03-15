@@ -111,7 +111,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             device_mac=dev_mac,
             device_port=dev_port
         )
-        if customer is None:
+        if customer is None or customer.current_service_id is None:
             return self.assign_guest_session(
                 radius_uname=radius_username,
                 customer_mac=customer_mac,
@@ -190,15 +190,15 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
     def _update_counters(self, session, data: dict, **update_kwargs):
         vcls = self.vendor_manager.vendor_class
         v_inp_oct = _gigaword_imp(
-            num=vcls.get_acct_rad_val(data, 'Acct-Input-Octets', 0),
-            gwords=vcls.get_acct_rad_val(data, 'Acct-Input-Gigawords', 0)
+            num=vcls.get_rad_val(data, 'Acct-Input-Octets', 0),
+            gwords=vcls.get_rad_val(data, 'Acct-Input-Gigawords', 0)
         )
         v_out_oct = _gigaword_imp(
-            num=vcls.get_acct_rad_val(data, 'Acct-Output-Octets', 0),
-            gwords=vcls.get_acct_rad_val(data, 'Acct-Output-Gigawords', 0)
+            num=vcls.get_rad_val(data, 'Acct-Output-Octets', 0),
+            gwords=vcls.get_rad_val(data, 'Acct-Output-Gigawords', 0)
         )
-        v_in_pkt = vcls.get_acct_rad_val(data, 'Acct-Input-Packets', 0)
-        v_out_pkt = vcls.get_acct_rad_val(data, 'Acct-Output-Packets', 0)
+        v_in_pkt = vcls.get_rad_val(data, 'Acct-Input-Packets', 0)
+        v_out_pkt = vcls.get_rad_val(data, 'Acct-Output-Packets', 0)
         return session.update(
             last_event_time=datetime.now(),
             input_octets=v_inp_oct,
@@ -209,36 +209,53 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         )
 
     # TODO: Сделать создание сессии в acct, а в auth только предлагать ip для абонента
-    def _acct_start(self, request):
-        return Response(status=status.HTTP_201_CREATED)
+    @staticmethod
+    def _acct_start(_):
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_stop(self, request):
         dat = request.data
         vendor_manager = self.vendor_manager
         username = vendor_manager.get_radius_username(dat)
         vcls = vendor_manager.vendor_class
-        ip = vcls.get_acct_rad_val(dat, 'Framed-IP-Address')
+        ip = vcls.get_rad_val(dat, 'Framed-IP-Address')
         session = CustomerRadiusSession.objects.filter(
             radius_username=username,
             ip_lease__ip_address=ip,
             closed=False
         )
-        if session.exists():
-            self._update_counters(session, dat, closed=True)
+        if not session.exists():
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        self._update_counters(session, dat, closed=True)
+        session = session.first()
+        if session is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        customer = session.customer
+        if customer.is_access():
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        # if not access to service
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_update(self, request):
         dat = request.data
         vendor_manager = self.vendor_manager
         vcls = vendor_manager.vendor_class
         username = vendor_manager.get_radius_username(dat)
-        ip = vcls.get_acct_rad_val(dat, 'Framed-IP-Address')
+        ip = vcls.get_rad_val(dat, 'Framed-IP-Address')
         session = CustomerRadiusSession.objects.filter(
             radius_username=username,
             ip_lease__ip_address=ip,
-            closed=False
+            # closed=False
         )
         if session.exists():
             self._update_counters(session, dat)
+        session = session.first()
+        if session is None:
+            return _bad_ret('No session found')
+
+        # if not access to service
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @staticmethod
     def _acct_unknown(_):
