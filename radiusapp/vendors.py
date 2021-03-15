@@ -77,3 +77,7 @@ class VendorManager(object):
                 customer=customer,
                 request_data=request_data
             )
+
+    def get_acct_status_type(self, request):
+        if self.vendor_class:
+            return self.vendor_class.get_acct_status_type(request)
