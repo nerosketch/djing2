@@ -16,12 +16,53 @@ from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.custom_logic import SERVICE_CHOICES
 from services.models import Service, OneShotPay, PeriodicPay
+from . import custom_signals
 
 RADIUS_SESSION_TIME = getattr(settings, 'RADIUS_SESSION_TIME', 3600)
 
 
 class NotEnoughMoney(LogicError):
     pass
+
+
+class CustomerServiceModelManager(models.QuerySet):
+    def _filter_raw_manage_customer_service(self, balance_equal_operator: str, customer_id=None):
+        """
+        Фильтруем истёкшие абонентские услуги, которые закончились
+        или которые можно автоматически продлить.
+        :param balance_equal_operator: Как сравниваем баланс абонента и стоимость услуги.
+        :param customer_id: Если передано то фильтруем ещё и по абоненту.
+        :return: RawQuerySet
+        """
+        # TODO: test it
+        query = [
+            "select cs.* from customer_service cs",
+            "left join customers c on cs.id = c.current_service_id",
+            "left join services s on cs.service_id = s.id",
+            "where",
+            "cs.deadline < now() and",
+            "c.auto_renewal_service and",
+            "c.balance %s s.cost" % balance_equal_operator
+        ]
+        customer_id = safe_int(customer_id)
+        params = None
+        if customer_id > 0:
+            query.append("and c.baseaccount_ptr_id = %s")
+            params = [customer_id]
+        query = ' '.join(query)
+        return self.raw(raw_query=query, params=params)
+
+    def filter_auto_continue_raw(self, customer_id=None):
+        return self._filter_raw_manage_customer_service(
+            customer_id=customer_id,
+            balance_equal_operator='>='
+        )
+
+    def filter_expired_raw(self, customer_id=None):
+        return self._filter_raw_manage_customer_service(
+            customer_id=customer_id,
+            balance_equal_operator='<'
+        )
 
 
 class CustomerService(BaseAbstractModel):
@@ -122,6 +163,8 @@ class CustomerService(BaseAbstractModel):
 
     def __str__(self):
         return self.service.title
+
+    objects = CustomerServiceModelManager.as_manager()
 
     class Meta:
         db_table = 'customer_service'
@@ -234,6 +277,7 @@ class CustomerManager(MyUserManager):
 
     @staticmethod
     def finish_services_if_expired(profile: Optional[UserProfile] = None, comment=None, customer=None) -> None:
+        # TODO: test it
         """
         If customer service has expired, and automatic connect
          is disabled, then finish that service and log about it
@@ -254,8 +298,9 @@ class CustomerManager(MyUserManager):
                 customer=customer
             )
         if expired_service.exists():
+            expired_service = expired_service.select_related('customer', 'service')
             # TODO: Replace it logging by trigger from db
-            for exp_srv in expired_service:
+            for exp_srv in expired_service.iterator():
                 if not hasattr(exp_srv, 'customer'):
                     continue
                 exp_srv_customer = exp_srv.customer
@@ -269,10 +314,19 @@ class CustomerManager(MyUserManager):
                             'service_name': exp_srv.service.title
                         }
                     )
+            custom_signals.customer_service_batch_pre_stop.send(
+                sender=CustomerService,
+                expired_services=expired_service
+            )
             expired_service.delete()
+            custom_signals.customer_service_batch_post_stop.send(
+                sender=CustomerService,
+                expired_services=expired_service
+            )
 
     @staticmethod
     def continue_services_if_autoconnect(customer=None) -> None:
+        # TODO: test it
         """
         If customer service has expired and automatic connect
         is enabled, then update service start_time, deadline,
@@ -316,12 +370,20 @@ class CustomerManager(MyUserManager):
             else:
                 # finish service otherwise
                 with transaction.atomic():
+                    custom_signals.customer_service_pre_stop.send(
+                        sender=CustomerService,
+                        expired_service=expired_service
+                    )
                     expired_service.delete()
                     CustomerLog.objects.create(
                         customer=expired_service_customer, cost=0,
                         comment=_("Service '%(service_name)s' has expired") % {
                             'service_name': service.title
                         }
+                    )
+                    custom_signals.customer_service_post_stop.send(
+                        sender=CustomerService,
+                        expired_service=expired_service
                     )
 
 
@@ -480,6 +542,11 @@ class Customer(BaseAccount):
                 'srv_name': service
             })
 
+        custom_signals.customer_service_pre_pick.send(
+            sender=Customer,
+            customer=self,
+            service=service
+        )
         with transaction.atomic():
             self.current_service = CustomerService.objects.create(
                 deadline=deadline, service=service
@@ -498,11 +565,17 @@ class Customer(BaseAccount):
             self.save(update_fields=updated_fields)
 
             # make log about it
+            # TODO: move it to db trigger
             CustomerLog.objects.create(
                 customer=self, cost=-cost,
                 author=author,
                 comment=comment or _('Buy service default log')
             )
+        custom_signals.customer_service_post_pick.send(
+            sender=Customer,
+            customer=self,
+            service=service
+        )
 
     def stop_service(self, profile: UserProfile) -> None:
         """
@@ -510,6 +583,11 @@ class Customer(BaseAccount):
         :param profile: Instance of profiles.models.UserProfile.
         :return: nothing
         """
+        customer_service = self.active_service()
+        custom_signals.customer_service_pre_stop.send(
+            sender=CustomerService,
+            expired_service=customer_service
+        )
         with transaction.atomic():
             cost_to_return = self.calc_cost_to_return()
             if cost_to_return > 0.1:
@@ -525,8 +603,11 @@ class Customer(BaseAccount):
                     cost=0,
                     comment=_('End of service')
                 )
-            customer_service = self.active_service()
             customer_service.delete()
+        custom_signals.customer_service_post_stop.send(
+            sender=CustomerService,
+            expired_service=customer_service
+        )
 
     def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
         """
