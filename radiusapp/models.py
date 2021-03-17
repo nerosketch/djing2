@@ -154,6 +154,9 @@ class CustomerRadiusSession(models.Model):
     objects = CustomerRadiusSessionManager()
 
     def finish_session(self) -> bool:
+        """
+        Sends radius disconnect packet to BRAS
+        """
         if not self.radius_username:
             return False
         uname = str(self.radius_username).encode()
