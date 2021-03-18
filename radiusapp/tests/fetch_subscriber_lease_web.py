@@ -1,3 +1,4 @@
+"""Tests for fetching ip lease for customer."""
 from rest_framework import status
 from customers.tests.customer import CustomAPITestCase
 from devices.tests import DeviceTestCase
@@ -7,7 +8,10 @@ from services.models import Service
 
 
 class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
+    """Main test case class."""
+
     def setUp(self):
+        """Set up data for this tests."""
         super().setUp()
         default_vlan = VlanIf.objects.filter(vid=1).first()
         guest_pool = NetworkIpPool.objects.create(
@@ -58,19 +62,25 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
 
         self.customer.pick_service(self.service, self.customer)
 
-    def _send_request(self, vlan_id: int, cid: str, arid: str, existing_ip='10.152.164.2', mac='18c0.4d51.dee2'):
+    def _send_request(self, vlan_id: int, cid: str, arid: str,
+                      existing_ip='10.152.164.2', mac='18c0.4d51.dee2'):
+        """Help method 4 send request to endpoint."""
         return self.post('/api/radius/customer/auth/juniper/', {
-            "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
+            "User-Name": {
+                "value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
             "Framed-IP-Address": {"value": [existing_ip]},
             "NAS-Port": {"value": [vlan_id]},
             "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
             "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
             "ERX-Dhcp-Mac-Addr": {"value": [mac]},
-            "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]}
+            "Acct-Unique-Session-Id": {
+                "value": ["2ea5a1843334573bd11dc15417426f36"]}
         })
 
     def test_guest_radius_session(self):
-        r = self._send_request(vlan_id=14, cid='0004008b000c', arid='0006286ED47B1CA4')
+        """Just send simple request to not existed customer."""
+        r = self._send_request(vlan_id=14, cid='0004008b000c',
+                               arid='0006286ED47B1CA4')
         self.assertDictEqual(r.data, {
             "Framed-IP-Address": "10.255.0.2",
             "User-Password": "SERVICE-GUEST"
@@ -78,7 +88,9 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_auth_radius_session(self):
-        r = self._send_request(vlan_id=12, cid='0004008B0002', arid='0006121314151617')
+        """Just send simple request to existed customer."""
+        r = self._send_request(vlan_id=12, cid='0004008B0002',
+                               arid='0006121314151617')
         self.assertDictEqual(r.data, {
             "Framed-IP-Address": "10.152.64.2",
             "User-Password": "SERVICE-INET(11000000,2062500,11000000,2062500)"
@@ -86,6 +98,7 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_two_identical_fetch(self):
+        """Repeat identical requests for same customer."""
         r1 = self._send_request(
             vlan_id=12, cid='0004008B0002',
             arid='0006121314151617',
@@ -107,3 +120,34 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
             "Framed-IP-Address": "10.152.64.3",
             "User-Password": "SERVICE-INET(11000000,2062500,11000000,2062500)"
         })
+
+    def test_guest_and_inet_subnet(self):
+        """Проверка гостевой и инетной аренды ip.
+
+        Проверяем что при включённой и выключенной услуге будет
+        выдавать интернетный и гостевой ip соответственно, при условии что
+        интернетный ip на мак уже выдан.
+        """
+        self.test_auth_radius_session()
+        self.customer.stop_service(self.admin)
+        r = self._send_request(vlan_id=12, cid='0004008B0002',
+                               arid='0006121314151617')
+        self.assertDictEqual(r.data, {
+            "Framed-IP-Address": "10.255.0.2",
+            "User-Password": "SERVICE-GUEST"
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+    # def test_subnet_vid(self):
+    #     """Проверяем чтоб ip выдавались в соответствии в переданным
+    #        vid. Или с первого доступного пула для группы, если vid
+    #        не передан.
+    #     """
+    #     res = CustomerRadiusSession.objects.fetch_subscriber_lease(
+    #         customer_mac='aa:bb:cc:dd:ee:f1',
+    #         customer_id=self.customer.pk,
+    #         customer_group=self.customer.group_id,
+    #         is_dynamic=True,
+    #         vid=12,
+    #         pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
+    #     )
