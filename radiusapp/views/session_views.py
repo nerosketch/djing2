@@ -11,5 +11,6 @@ class CustomerRadiusSessionModelViewSet(DjingModelViewSet):
 
     @action(methods=['get'], detail=False)
     def guest_list(self, request, *args, **kwargs):
-        self.queryset = self.queryset.filter(customer=None)
+        self.queryset = self.queryset.filter(
+            customer=None)
         return self.list(request, *args, **kwargs)
