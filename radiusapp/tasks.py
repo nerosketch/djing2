@@ -1,3 +1,4 @@
+"""Async tasks for radiusapp."""
 from time import sleep
 from typing import Tuple
 import logging
@@ -10,6 +11,13 @@ from radiusapp.models import CustomerRadiusSession
 @task()
 def radius_batch_stop_customer_services_task(customer_ids: Tuple[int],
                                              delay_interval=100):
+    """
+    Async resetting RADIUS sessions for customers.
+
+    :param customer_ids: customers.models.Customer ids
+    :param delay_interval: time to sleep after reset in ms.
+    :return: nothing
+    """
     # TODO: Можно перепроверять сменилась ли услуга у абона,
     # чтоб понять есть-ли всё ещё смысл его переавторизовывать,
     # а то к моменту когда до него дойдёт очередь переавторизовываться
@@ -28,6 +36,13 @@ def radius_batch_stop_customer_services_task(customer_ids: Tuple[int],
 
 @task()
 def radius_stop_customer_session_task(customer_id: int, delay_interval=100):
+    """
+    Async resetting RADIUS session 4 single customer.
+
+    :param customer_id: customers.models.Customer id
+    :param delay_interval: time to sleep after reset in ms.
+    :return: nothing
+    """
     customer_id = safe_int(customer_id)
     session = CustomerRadiusSession.objects.filter(
         customer_id=customer_id
@@ -35,6 +50,7 @@ def radius_stop_customer_session_task(customer_id: int, delay_interval=100):
     if session is None:
         logging.exception(
             'session with customer_id="%d" not found' % customer_id)
+        return
     if session.finish_session():
         logging.info('Session "%s" finished' % session)
     else:
