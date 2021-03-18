@@ -46,3 +46,7 @@ django-debug-toolbar==3.2
 djangorestframework-guardian
 
 django-webpush==0.3.3
+
+# linter, and pre commit hook
+flake8==3.9.0
+pre-commit==2.11.1
