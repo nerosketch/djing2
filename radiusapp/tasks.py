@@ -8,7 +8,8 @@ from radiusapp.models import CustomerRadiusSession
 
 
 @task()
-def radius_batch_stop_customer_services_task(customer_ids: Tuple[int], delay_interval=100):
+def radius_batch_stop_customer_services_task(customer_ids: Tuple[int],
+                                             delay_interval=100):
     # TODO: Можно перепроверять сменилась ли услуга у абона,
     # чтоб понять есть-ли всё ещё смысл его переавторизовывать,
     # а то к моменту когда до него дойдёт очередь переавторизовываться
@@ -32,7 +33,8 @@ def radius_stop_customer_session_task(customer_id: int, delay_interval=100):
         customer_id=customer_id
     ).first()
     if session is None:
-        logging.exception('session with customer_id="%d" not found' % customer_id)
+        logging.exception(
+            'session with customer_id="%d" not found' % customer_id)
     if session.finish_session():
         logging.info('Session "%s" finished' % session)
     else:
