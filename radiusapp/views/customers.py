@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import datetime
 
 from rest_framework import status
@@ -62,25 +63,51 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             'speed_out': customer_service.service.speed_out
         })
 
-    def assign_guest_session(self, radius_uname: str, customer_mac: str, session_id: str, data):
-        guest_session = CustomerRadiusSession.objects.assign_guest_session(
-            radius_uname=radius_uname,
-            customer_mac=customer_mac,
-            session_id=session_id
-        )
-        if guest_session is None:
+    def assign_guest_session(self, radius_uname: str,
+                             customer_mac: str, session_id: str,
+                             data: dict,
+                             customer_id: Optional[int] = None):
+        """
+        Assign no service session.
+
+        :param radius_uname: User-Name av value from RADIUS.
+        :param customer_mac: Customer device MAC address.
+        :param session_id: RADIUS unique id.
+        :param data: Other data from RADIUS server.
+        :param customer_id: customers.models.Customer model id.
+        :return: rest_framework Response.
+        """
+        if customer_id is None:
+            session = CustomerRadiusSession.objects.assign_guest_session(
+                radius_uname=radius_uname,
+                customer_mac=customer_mac,
+                session_id=session_id
+            )
+        else:
+            customer_id = safe_int(customer_id)
+            if customer_id == 0:
+                return _bad_ret('Bad "customer_id" arg.')
+            session = CustomerRadiusSession.objects.\
+                assign_guest_customer_session(
+                    radius_uname=radius_uname,
+                    customer_id=customer_id,
+                    customer_mac=customer_mac,
+                    session_id=session_id
+                )
+        if session is None:
             # Not possible to assign guest ip, it's bad
             return Response({
                 'Reply-Message': "Not possible to assign guest ip, it's bad"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         # Creating guest session
         r = self.vendor_manager.get_auth_guest_session_response(
-            guest_session=guest_session,
+            guest_session=session,
             data=data
         )
         return Response(r)
 
-    @action(methods=['post'], detail=False, url_path='auth/(?P<vendor_name>\w{1,32})')
+    @action(methods=['post'], detail=False,
+            url_path=r'auth/(?P<vendor_name>\w{1,32})')
     def auth(self, request, vendor_name=None):
         vendor_manager = VendorManager(vendor_name=vendor_name)
         self.vendor_manager = vendor_manager
@@ -111,7 +138,8 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             device_mac=dev_mac,
             device_port=dev_port
         )
-        if customer is None or customer.current_service_id is None:
+        if customer is None:
+            # If customer not found then assign guest session
             return self.assign_guest_session(
                 radius_uname=radius_username,
                 customer_mac=customer_mac,
@@ -119,16 +147,31 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
                 data=request.data
             )
 
-        customer_service = CustomerService.find_customer_service_by_device_credentials(
-            customer_id=customer.pk,
-            current_service_id=int(customer.current_service_id)
-        )
-        if customer_service is None:
+        if customer.current_service_id is None:
+            # if customer has not service then assign guest
+            #  session with attached customer.
             return self.assign_guest_session(
                 radius_uname=radius_username,
                 customer_mac=customer_mac,
                 session_id=radius_unique_id,
-                data=request.data
+                data=request.data,
+                customer_id=customer.pk
+            )
+
+        customer_service = CustomerService.\
+            find_customer_service_by_device_credentials(
+                customer_id=customer.pk,
+                current_service_id=int(customer.current_service_id)
+            )
+        if customer_service is None:
+            # if customer has not service then assign guest
+            #  session with attached customer.
+            return self.assign_guest_session(
+                radius_uname=radius_username,
+                customer_mac=customer_mac,
+                session_id=radius_unique_id,
+                data=request.data,
+                customer_id=customer.pk
             )
 
         # sess_time = customer_service.calc_session_time()
@@ -136,20 +179,22 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         vid = vendor_manager.get_vlan_id(request.data)
 
         try:
-            subscriber_lease = CustomerRadiusSession.objects.fetch_subscriber_lease(
-                customer_mac=customer_mac,
-                customer_id=customer.pk,
-                customer_group=customer.group_id,
-                is_dynamic=True,
-                vid=vid,
-                pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
-            )
+            subscriber_lease = CustomerRadiusSession.objects.\
+                fetch_subscriber_lease(
+                    customer_mac=customer_mac,
+                    customer_id=customer.pk,
+                    customer_group=customer.group_id,
+                    is_dynamic=True,
+                    vid=vid,
+                    pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
+                )
             if subscriber_lease is None:
                 return self.assign_guest_session(
                     radius_uname=radius_username,
                     customer_mac=customer_mac,
                     session_id=radius_unique_id,
-                    data=request.data
+                    data=request.data,
+                    customer_id=customer.pk
                 )
 
             # create authorized session for customer
@@ -173,7 +218,8 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         except LogicError as err:
             return _bad_ret(str(err))
 
-    @action(methods=['post'], detail=False, url_path='acct/(?P<vendor_name>\w{1,32})')
+    @action(methods=['post'], detail=False,
+            url_path=r'acct/(?P<vendor_name>\w{1,32})')
     def acct(self, request, vendor_name=None):
         vendor_manager = VendorManager(vendor_name=vendor_name)
         self.vendor_manager = vendor_manager
@@ -184,7 +230,8 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             AcctStatusType.STOP.value: self._acct_stop,
             AcctStatusType.UPDATE.value: self._acct_update
         }
-        request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
+        request_type_fn = acct_status_type_map.get(request_type.value,
+                                                   self._acct_unknown)
         return request_type_fn(request)
 
     def _update_counters(self, session, data: dict, **update_kwargs):
@@ -208,7 +255,8 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             **update_kwargs
         )
 
-    # TODO: Сделать создание сессии в acct, а в auth только предлагать ip для абонента
+    # TODO: Сделать создание сессии в acct, а в
+    #  auth только предлагать ip для абонента
     @staticmethod
     def _acct_start(_):
         return Response(status=status.HTTP_204_NO_CONTENT)
