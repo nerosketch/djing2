@@ -174,6 +174,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
                 customer_id=customer.pk
             )
 
+        # TODO: return time to end session.
         # sess_time = customer_service.calc_session_time()
 
         vid = vendor_manager.get_vlan_id(request.data)
