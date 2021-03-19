@@ -26,8 +26,7 @@ def radius_batch_stop_customer_services_task(customer_ids: Tuple[int],
         customer_id__in=customer_ids
     ).only('pk', 'radius_username').iterator()
     for session in sessions:
-        r = session.finish_session()
-        if r:
+        if session.finish_session():
             logging.info('Session "%s" finished' % session)
         else:
             logging.info('Session "%s" not finished' % session)
@@ -39,20 +38,19 @@ def radius_stop_customer_session_task(customer_id: int, delay_interval=100):
     """
     Async resetting RADIUS session 4 single customer.
 
-    :param customer_id: customers.models.Customer id
-    :param delay_interval: time to sleep after reset in ms.
+    :param customer_id: customers.models.Customer id.
+    :param delay_interval: time to sleep after reset each session in ms.
     :return: nothing
     """
     customer_id = safe_int(customer_id)
-    session = CustomerRadiusSession.objects.filter(
+    sessions = CustomerRadiusSession.objects.filter(
         customer_id=customer_id
-    ).first()
-    if session is None:
-        logging.exception(
-            'session with customer_id="%d" not found' % customer_id)
-        return
-    if session.finish_session():
-        logging.info('Session "%s" finished' % session)
-    else:
-        logging.info('Session "%s" not finished' % session)
-    sleep(delay_interval / 1000)
+    ).iterator()
+    for session in sessions:
+        if session.finish_session():
+            logging.info('Session "%s", 4 customer_id="%d" finished.' % (
+                session, customer_id))
+        else:
+            logging.info('Session "%s", 4 customer_id="%d" not finished.' % (
+                session, customer_id))
+        sleep(delay_interval / 1000)
