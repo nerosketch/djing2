@@ -1,7 +1,7 @@
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 from djing2.lib.custom_signals import notification_signal
-from djing2.lib.ws_connector import send_data
+from djing2.lib.ws_connector import send_data2ws
 
 
 class TaskException(Exception):
@@ -30,7 +30,7 @@ def handle(task, author, recipients):
         'task_status': task_status
     })
 
-    send_data({
+    send_data2ws({
         'type': 'task_event',
         'customer_uname': task.abon.username,
         'status': task_status,
