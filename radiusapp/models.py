@@ -110,14 +110,14 @@ class CustomerRadiusSessionManager(models.Manager):
             is_assigned=is_assigned
         )
 
-    def assign_guest_session(self, radius_uname: str, customer_mac: str,
-                             session_id: str):
-        """Fetch guest lease 4 customer."""
+    def _assign_guest_session(self, radius_uname: str,
+                              customer_mac: str, session_id: str,
+                              customer_id: Optional[int] = None):
+        """Fetch guest lease."""
         # Тут создаём сессию и сразу выделяем гостевой ip для этой сессии.
-        # Гостевой ip можно сделать из обычного, если нет пользователя.
         r = self.fetch_subscriber_lease(
             customer_mac=customer_mac,
-            customer_id=None,
+            customer_id=customer_id,
             customer_group=None,
             is_dynamic=True,
             vid=None,
@@ -140,6 +140,34 @@ class CustomerRadiusSessionManager(models.Manager):
             session_id=session_id
         )
         return sess
+
+    def assign_guest_session(self, radius_uname: str,
+                             customer_mac: str, session_id: str):
+        """Fetch guest lease 4 unknown customer."""
+        return self._assign_guest_session(radius_uname, customer_mac,
+                                          session_id)
+
+    def assign_guest_customer_session(self, radius_uname: str,
+                                      customer_id: int,
+                                      customer_mac: str,
+                                      session_id: str):
+        """
+        Fetch guest lease for known customer, but who hasn't access to service.
+
+        :param radius_uname: User-Name av from RADIUS.
+        :param customer_id: customers.models.Customer model id.
+        :param customer_mac: Customer device MAC address.
+        :param session_id: unique session id.
+        :return: CustomerRadiusSession instance
+        """
+        # Тут создаём сессию и сразу выделяем гостевой ip для этой сессии,
+        #  с привязкой абонента.
+        return self._assign_guest_session(
+            radius_uname=radius_uname,
+            customer_mac=customer_mac,
+            session_id=session_id,
+            customer_id=customer_id
+        )
 
 
 class CustomerRadiusSession(models.Model):
@@ -165,6 +193,7 @@ class CustomerRadiusSession(models.Model):
     input_packets = models.BigIntegerField(default=0)
     output_packets = models.BigIntegerField(default=0)
     closed = models.BooleanField(_('Is session finished'), default=False)
+    # is_guest = models.BooleanField(_('Is guest session'), default=True)
 
     objects = CustomerRadiusSessionManager()
 
@@ -183,9 +212,9 @@ class CustomerRadiusSession(models.Model):
             input=b'User-Name="%s"' % uname)
         return r.returncode == 0
 
-    def is_guest_session(self) -> bool:
-        """Is current session guest."""
-        return self.customer is None
+    # def is_guest_session(self) -> bool:
+    #     """Is current session guest."""
+    #     return self.customer is None
 
     def h_input_octets(self):
         """Human readable input octets."""
