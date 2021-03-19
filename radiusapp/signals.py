@@ -37,9 +37,9 @@ def on_pre_stop_cust_srv_signal(sender, expired_service, **kwargs):
     :param kwargs:
     :return: nothing
     """
-    print('#' * 80)
-    print('on_pre_stop_cust_srv')
-    print('#' * 80)
+    # print('#' * 80)
+    # print('on_pre_stop_cust_srv')
+    # print('#' * 80)
     tasks.radius_stop_customer_session_task(
         customer_id=expired_service.customer.pk
     )
@@ -57,9 +57,9 @@ def on_pre_pick_cust_srv_signal(sender, customer, service, **kwargs):
     :param kwargs:
     :return: nothing
     """
-    print('#' * 80)
-    print('on_pre_pick_cust_srv', customer, service)
-    print('#' * 80)
+    # print('#' * 80)
+    # print('on_pre_pick_cust_srv', customer, service)
+    # print('#' * 80)
     tasks.radius_stop_customer_session_task(
         customer_id=customer.pk
     )
@@ -77,9 +77,9 @@ def on_pre_batch_stop_customer_services_signal(sender, expired_services,
     :param kwargs:
     :return: nothing
     """
-    print('#' * 80)
-    print('on_pre_batch_stop_customer_services_signal', expired_services)
-    print('#' * 80)
+    # print('#' * 80)
+    # print('on_pre_batch_stop_customer_services_signal', expired_services)
+    # print('#' * 80)
     customer_ids = (safe_int(es.customer.pk) for es in
                     expired_services.iterator())
     customer_ids = tuple(i for i in customer_ids if i > 0)
