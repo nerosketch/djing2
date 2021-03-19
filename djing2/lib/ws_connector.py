@@ -1,9 +1,18 @@
+from enum import Enum
 import socket
 from json import dumps
 from django.conf import settings
 
 
-def send_data(dat: dict, host: str = getattr(settings, 'WS_ADDR', '127.0.0.1:3211'), **kwargs) -> None:
+class WsEventTypeEnum(Enum):
+    UPDATE_TASK = 'updatetask',
+    UPDATEPERMS = 'updateperms',
+    UPDATE_CUSTOMER_LEASES = 'ucls'
+
+
+def send_data2ws(dat: dict,
+                 host: str = getattr(settings, 'WS_ADDR', '127.0.0.1:3211'),
+                 **kwargs) -> None:
     assert isinstance(dat, dict)
     assert bool(dat.get('eventType'))
     if kwargs:
@@ -16,6 +25,3 @@ def send_data(dat: dict, host: str = getattr(settings, 'WS_ADDR', '127.0.0.1:321
             s.sendall(dat.encode())
     except ConnectionRefusedError:
         pass
-
-
-__all__ = ['send_data']

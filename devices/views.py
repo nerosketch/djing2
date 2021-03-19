@@ -44,12 +44,15 @@ def catch_dev_manager_err(fn):
                 'status': 2
             })
         except (ConnectionResetError, ConnectionRefusedError, OSError,
-                DeviceConnectionError, EasySNMPConnectionError, EasySNMPError) as err:
-            return Response(str(err), status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                DeviceConnectionError, EasySNMPConnectionError,
+                EasySNMPError) as err:
+            return Response(str(err),
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except EasySNMPTimeoutError as err:
             return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
         except (SystemError, DeviceConsoleError) as err:
-            return Response(str(err), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(str(err),
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # Hack for decorator @action
     wrapper.__name__ = fn.__name__
@@ -60,7 +63,8 @@ class DevicePONViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related('parent_dev')
     serializer_class = dev_serializers.DevicePONModelSerializer
     filterset_fields = ('group', 'dev_type', 'status', 'is_noticeable')
-    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend]
+    filter_backends = [CustomObjectPermissionsFilter, SearchFilter,
+                       DjangoFilterBackend]
     search_fields = ('comment', 'ip_address', 'mac_addr')
     ordering_fields = ('ip_address', 'mac_addr', 'comment', 'dev_type')
 
@@ -84,10 +88,12 @@ class DevicePONViewSet(DjingModelViewSet):
         if hasattr(manager, 'get_fibers'):
             unregistered = []
             for fb in manager.get_fibers():
-                for unr in manager.get_units_unregistered(int(fb.get('fb_id'))):
+                for unr in manager.get_units_unregistered(
+                        int(fb.get('fb_id'))):
                     unregistered.append(unr)
             return Response(unregistered)
-        return DeviceImplementationError('Manager has not get_fibers attribute')
+        return DeviceImplementationError(
+            'Manager has not get_fibers attribute')
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -95,10 +101,12 @@ class DevicePONViewSet(DjingModelViewSet):
         device = self.get_object()
         manager = device.get_manager_object_olt()
         if not issubclass(manager.__class__, BasePONInterface):
-            raise DeviceImplementationError('Expected BasePONInterface subclass')
+            raise DeviceImplementationError(
+                'Expected BasePONInterface subclass')
 
         def chunk_cook(chunk: dict) -> bytes:
-            chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONBytesEncoder)
+            chunk_json = json_dumps(chunk, ensure_ascii=False,
+                                    cls=JSONBytesEncoder)
             chunk_json = '%s\n' % chunk_json
             format_string = '{:%ds}' % chunk_max_len
             dat = format_string.format(chunk_json)
@@ -114,7 +122,8 @@ class DevicePONViewSet(DjingModelViewSet):
                 'status': p.status,
                 'mac_addr': p.mac,
                 'signal': p.signal,
-                'uptime': str(RuTimedelta(seconds=p.uptime / 100)) if p.uptime else None,
+                'uptime': str(
+                    RuTimedelta(seconds=p.uptime / 100)) if p.uptime else None,
                 'fiberid': p.fiberid
             }) for p in onu_list))
             r['Content-Length'] = item_size * chunk_max_len
@@ -138,20 +147,23 @@ class DevicePONViewSet(DjingModelViewSet):
                 'text': 'Manager has not get_fibers attribute'
             }})
 
-    @action(detail=True, url_path='scan_onu_on_fiber/(?P<fiber_num>\d{8,12})')
+    @action(detail=True, url_path=r'scan_onu_on_fiber/(?P<fiber_num>\d{8,12})')
     @catch_dev_manager_err
     def scan_onu_on_fiber(self, request, fiber_num=0, pk=None):
         if not str(fiber_num).isdigit() or safe_int(fiber_num) < 1:
-            return Response('"fiber_num" number param required', status=status.HTTP_400_BAD_REQUEST)
+            return Response('"fiber_num" number param required',
+                            status=status.HTTP_400_BAD_REQUEST)
         fiber_num = safe_int(fiber_num)
         device = self.get_object()
         manager = device.get_manager_object_olt()
         if hasattr(manager, 'get_ports_on_fiber'):
             try:
-                onu_list = tuple(manager.get_ports_on_fiber(fiber_num=fiber_num))
+                onu_list = tuple(
+                    manager.get_ports_on_fiber(fiber_num=fiber_num))
                 return Response(onu_list)
             except ProcessLocked:
-                return Response(_('Process locked by another process'), status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                return Response(_('Process locked by another process'),
+                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
         else:
             return Response({'Error': {
                 'text': 'Manager has not "get_ports_on_fiber" attribute'
@@ -177,7 +189,8 @@ class DevicePONViewSet(DjingModelViewSet):
         device = self.get_object()
         mng = device.get_manager_object_onu()
         if not issubclass(mng.__class__, BasePON_ONU_Interface):
-            return Response('device must be PON ONU type', status=status.HTTP_400_BAD_REQUEST)
+            return Response('device must be PON ONU type',
+                            status=status.HTTP_400_BAD_REQUEST)
 
         # TODO: Describe this as TypedDict from python3.8
         # apply config
@@ -200,14 +213,16 @@ class DevicePONViewSet(DjingModelViewSet):
         #         }
         #     ]
         # }
-        device_config_serializer = dev_serializers.DeviceOnuConfigTemplate(data=request.data)
+        device_config_serializer = dev_serializers.DeviceOnuConfigTemplate(
+            data=request.data)
         device_config_serializer.is_valid(raise_exception=True)
 
         try:
             res = device.apply_onu_config(config=device_config_serializer.data)
             return Response(res)
         except DeviceConsoleError as err:
-            return Response(str(err), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(str(err),
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -266,7 +281,10 @@ class DeviceModelViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related('parent_dev')
     serializer_class = dev_serializers.DeviceModelSerializer
     filterset_fields = ('group', 'dev_type', 'status', 'is_noticeable')
-    filter_backends = (CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend)
+    filter_backends = (
+        CustomObjectPermissionsFilter,
+        SearchFilter, DjangoFilterBackend
+    )
     search_fields = ('comment', 'ip_address', 'mac_addr')
     ordering_fields = ('ip_address', 'mac_addr', 'comment', 'dev_type')
 
@@ -314,7 +332,8 @@ class DeviceModelViewSet(DjingModelViewSet):
         device = self.get_object()
         manager = device.get_manager_object_switch()
         if not issubclass(manager.__class__, BaseSwitchInterface):
-            raise DeviceImplementationError('Expected BaseSwitchInterface subclass')
+            raise DeviceImplementationError(
+                'Expected BaseSwitchInterface subclass')
         ports = manager.get_ports()
         return Response(data=tuple(p.to_dict() for p in ports))
 
@@ -332,7 +351,8 @@ class DeviceModelViewSet(DjingModelViewSet):
         dev_ip = request.query_params.get('dev_ip')
         dev_status = request.query_params.get('status')
         if dev_status not in ('UP', 'UNREACHABLE', 'DOWN'):
-            return Response('bad "status" parameter', status=status.HTTP_400_BAD_REQUEST)
+            return Response('bad "status" parameter',
+                            status=status.HTTP_400_BAD_REQUEST)
         if not dev_ip:
             return Response({'text': 'ip does not passed'})
         if not re.match(IP_ADDR_REGEX, dev_ip):
@@ -358,7 +378,8 @@ class DeviceModelViewSet(DjingModelViewSet):
             'UNREACHABLE': 'Device %(device_name)s is unreachable',
             'DOWN': 'Device %(device_name)s is down'
         }
-        device.status = status_map.get(dev_status, Device.NETWORK_STATE_UNDEFINED)
+        device.status = status_map.get(dev_status,
+                                       Device.NETWORK_STATE_UNDEFINED)
 
         device.save(update_fields=('status',))
 
@@ -376,7 +397,8 @@ class DeviceModelViewSet(DjingModelViewSet):
         recipients = UserProfile.objects.get_profiles_by_group(
             group_id=device.group.pk
         ).filter(flags=UserProfile.flags.notify_mon)
-        user_ids = tuple(recipient.pk for recipient in recipients.only('pk').iterator())
+        user_ids = tuple(
+            recipient.pk for recipient in recipients.only('pk').iterator())
 
         notify_text = status_text_map.get(
             dev_status,
@@ -389,7 +411,7 @@ class DeviceModelViewSet(DjingModelViewSet):
                 device.comment
             )
         }
-        ws_connector.send_data({
+        ws_connector.send_data2ws({
             'type': 'monitoring_event',
             'recipients': user_ids,
             'text': text
@@ -408,7 +430,8 @@ class DeviceModelViewSet(DjingModelViewSet):
         dev = self.get_object()
         vid = safe_int(request.query_params.get('vid'))
         if vid == 0:
-            return Response('Valid vid required', status=status.HTTP_400_BAD_REQUEST)
+            return Response('Valid vid required',
+                            status=status.HTTP_400_BAD_REQUEST)
         macs = dev.dev_read_mac_address_vlan(
             vid=vid
         )
@@ -458,7 +481,8 @@ class PortModelViewSet(DjingModelViewSet):
         elif port_state == 'down':
             manager.port_disable(port_num=port_num)
         else:
-            return Response(_('Parameter port_state is bad'), status=status.HTTP_400_BAD_REQUEST)
+            return Response(_('Parameter port_state is bad'),
+                            status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
 
     # @action(detail=True)
@@ -496,7 +520,8 @@ class PortModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def vlan_config_apply(self, request, pk=None):
         port = self.get_object()
-        serializer = dev_serializers.PortVlanConfigSerializer(data=request.data)
+        serializer = dev_serializers.PortVlanConfigSerializer(
+            data=request.data)
         serializer.is_valid(raise_exception=True)
         port.apply_vlan_config(serializer=serializer)
         return Response(status=status.HTTP_204_NO_CONTENT)
