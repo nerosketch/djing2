@@ -193,7 +193,6 @@ class CustomerRadiusSession(models.Model):
     input_packets = models.BigIntegerField(default=0)
     output_packets = models.BigIntegerField(default=0)
     closed = models.BooleanField(_('Is session finished'), default=False)
-    # is_guest = models.BooleanField(_('Is guest session'), default=True)
 
     objects = CustomerRadiusSessionManager()
 
@@ -238,6 +237,19 @@ class CustomerRadiusSession(models.Model):
         lease_id = self.ip_lease_id
         CustomerIpLeaseModel.objects.filter(pk=lease_id).delete()
         return super().delete(*args, **kwargs)
+
+    def __str__(self):
+        return "%s: (%s) %s" % (
+            self.customer,
+            self.radius_username,
+            self.ip_lease
+        )
+
+    def __repr__(self):
+        return "<%s>: %s" % (
+            self.__class__.__name__,
+            self.__str__()
+        )
 
     class Meta:
         """Declare database table name in metaclass."""
