@@ -26,11 +26,13 @@ class NotEnoughMoney(LogicError):
 
 
 class CustomerServiceModelManager(models.QuerySet):
-    def _filter_raw_manage_customer_service(self, balance_equal_operator: str, customer_id=None):
+    def _filter_raw_manage_customer_service(self, balance_equal_operator: str,
+                                            customer_id=None):
         """
         Фильтруем истёкшие абонентские услуги, которые закончились
         или которые можно автоматически продлить.
-        :param balance_equal_operator: Как сравниваем баланс абонента и стоимость услуги.
+        :param balance_equal_operator: Как сравниваем баланс абонента
+                и стоимость услуги.
         :param customer_id: Если передано то фильтруем ещё и по абоненту.
         :return: RawQuerySet
         """
@@ -108,7 +110,8 @@ class CustomerService(BaseAbstractModel):
             res = cur.fetchone()
         if res is None:
             return None
-        f_id, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst, f_start_time, f_deadline = res
+        (f_id, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin,
+         f_speed_burst, f_start_time, f_deadline) = res
         if f_id is None:
             return None
         srv = Service(
@@ -129,13 +132,17 @@ class CustomerService(BaseAbstractModel):
         )
 
     @staticmethod
-    def find_customer_service_by_device_credentials(customer_id: int, current_service_id: int):
+    def find_customer_service_by_device_credentials(customer_id: int,
+                                                    current_service_id: int):
         customer_id = safe_int(customer_id)
         current_service_id = safe_int(current_service_id)
         # TODO: make tests for it
         with connection.cursor() as cur:
-            cur.execute("select * from find_customer_service_by_device_credentials(%s, %s)",
-                        [customer_id, current_service_id])
+            query = ("SELECT * FROM "
+                     "find_customer_service_by_device_credentials(%s, %s)")
+            cur.execute(
+                query,
+                [customer_id, current_service_id])
             res = cur.fetchone()
         if res is None or res[0] is None:
             return None
@@ -207,11 +214,13 @@ class CustomerLog(BaseAbstractModel):
 
 class CustomerManager(MyUserManager):
     def get_queryset(self):
-        return super(CustomerManager, self).get_queryset().filter(is_admin=False)
+        return super(CustomerManager, self).get_queryset().filter(
+            is_admin=False)
 
     def create_user(self, telephone, username, password=None, *args, **kwargs):
         """
-        Creates and saves a User with the given telephone, username and password.
+        Creates and saves a User with the given telephone,
+        username and password.
         """
         if not telephone:
             raise ValueError(_('Users must have an telephone number'))
@@ -228,13 +237,16 @@ class CustomerManager(MyUserManager):
         return user
 
     def customer_service_type_report(self):
-        qs = super().get_queryset().filter(is_active=True).exclude(current_service=None)
+        qs = super().get_queryset().filter(is_active=True).exclude(
+            current_service=None)
         all_count = qs.count()
-        admin_count = qs.filter(current_service__service__is_admin=True).count()
+        admin_count = qs.filter(
+            current_service__service__is_admin=True).count()
         zero_cost = qs.filter(current_service__service__cost=0).count()
 
         calc_type_counts = [{
-            'calc_type_count': qs.filter(current_service__service__calc_type=sc_num).count(),
+            'calc_type_count': qs.filter(
+                current_service__service__calc_type=sc_num).count(),
             'service_descr': str(sc_class.description)
         } for sc_num, sc_class in SERVICE_CHOICES]
 
@@ -249,7 +261,8 @@ class CustomerManager(MyUserManager):
         qs = super().get_queryset()
         all_count = qs.count()
         enabled_count = qs.filter(is_active=True).count()
-        with_services_count = qs.filter(is_active=True).exclude(current_service=None).count()
+        with_services_count = qs.filter(is_active=True).exclude(
+            current_service=None).count()
 
         active_count = qs.annotate(
             ips=models.Count('customeripleasemodel')
@@ -276,7 +289,8 @@ class CustomerManager(MyUserManager):
         }
 
     @staticmethod
-    def finish_services_if_expired(profile: Optional[UserProfile] = None, comment=None, customer=None) -> None:
+    def finish_services_if_expired(profile: Optional[UserProfile] = None,
+                                   comment=None, customer=None) -> None:
         # TODO: test it
         """
         If customer service has expired, and automatic connect
@@ -287,7 +301,8 @@ class CustomerManager(MyUserManager):
         :return: nothing
         """
         if comment is None:
-            comment = _("Service for customer %(customer_name)s with name '%(service_name)s' has expired")
+            comment = _("Service for customer %(customer_name)s "
+                        "with name '%(service_name)s' has expired")
         now = datetime.now()
         expired_service = CustomerService.objects.filter(
             deadline__lt=now,
@@ -298,7 +313,8 @@ class CustomerManager(MyUserManager):
                 customer=customer
             )
         if expired_service.exists():
-            expired_service = expired_service.select_related('customer', 'service')
+            expired_service = expired_service.select_related('customer',
+                                                             'service')
             # TODO: Replace it logging by trigger from db
             for exp_srv in expired_service.iterator():
                 if not hasattr(exp_srv, 'customer'):
@@ -308,7 +324,8 @@ class CustomerManager(MyUserManager):
                     CustomerLog.objects.create(
                         customer=exp_srv_customer,
                         cost=0,
-                        author=profile if isinstance(profile, UserProfile) else None,
+                        author=profile if isinstance(profile,
+                                                     UserProfile) else None,
                         comment=comment % {
                             'customer_name': exp_srv_customer.get_short_name(),
                             'service_name': exp_srv.service.title
@@ -356,16 +373,21 @@ class CustomerManager(MyUserManager):
                 with transaction.atomic():
                     expired_service_customer.balance -= cost
                     expired_service.start_time = now
-                    expired_service.deadline = None  # Deadline sets automatically in signal pre_save
-                    expired_service.save(update_fields=['start_time', 'deadline'])
+                    # Deadline sets automatically in signal pre_save
+                    expired_service.deadline = None
+                    expired_service.save(
+                        update_fields=['start_time', 'deadline'])
                     expired_service_customer.save(update_fields=['balance'])
                     # make log about it
+                    uname = expired_service_customer.get_short_name()
                     CustomerLog.objects.create(
                         customer=expired_service_customer, cost=-cost,
-                        comment=_("Automatic connect new service %(service_name)s for %(customer_name)s") % {
-                            'service_name': service.title,
-                            'customer_name': expired_service_customer.get_short_name()
-                        }
+                        comment=_(
+                            "Automatic connect new service "
+                            "%(service_name)s for %(customer_name)s") % {
+                                'service_name': service.title,
+                                'customer_name': uname
+                            }
                     )
             else:
                 # finish service otherwise
@@ -491,7 +513,8 @@ class Customer(BaseAccount):
     def active_service(self):
         return self.current_service
 
-    def add_balance(self, profile: UserProfile, cost: float, comment: str) -> None:
+    def add_balance(self, profile: UserProfile, cost: float,
+                    comment: str) -> None:
         CustomerLog.objects.create(
             customer=self,
             cost=cost,
@@ -500,7 +523,8 @@ class Customer(BaseAccount):
         )
         self.balance += cost
 
-    def pick_service(self, service, author: Optional[UserProfile], comment=None, deadline=None,
+    def pick_service(self, service, author: Optional[UserProfile],
+                     comment=None, deadline=None,
                      allow_negative=False) -> None:
         """
         Trying to buy a service if enough money.
@@ -514,7 +538,8 @@ class Customer(BaseAccount):
         :return: Nothing
         """
         if not isinstance(service, Service):
-            raise TypeError('service must be instance of services.models.Service')
+            raise TypeError(
+                'service must be instance of services.models.Service')
 
         cost = round(service.cost, 2)
 
@@ -533,14 +558,16 @@ class Customer(BaseAccount):
                 raise LogicError(_('Service already activated'))
 
         if allow_negative and not author.is_staff:
-            raise LogicError(_('User, who is no staff, can not be buy services on credit'))
+            raise LogicError(
+                _('User, who is no staff, can not be buy services on credit'))
 
         # if not enough money
         if not allow_negative and self.balance < cost:
-            raise NotEnoughMoney(_('%(uname)s not enough money for service %(srv_name)s') % {
-                'uname': self.username,
-                'srv_name': service
-            })
+            raise NotEnoughMoney(
+                _('%(uname)s not enough money for service %(srv_name)s') % {
+                    'uname': self.username,
+                    'srv_name': service
+                })
 
         custom_signals.customer_service_pre_pick.send(
             sender=Customer,
@@ -609,7 +636,8 @@ class Customer(BaseAccount):
             expired_service=customer_service
         )
 
-    def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
+    def make_shot(self, request, shot: OneShotPay, allow_negative=False,
+                  comment=None) -> bool:
         """
         Makes one-time service for accounting services.
         :param request: Django http request.
@@ -625,10 +653,11 @@ class Customer(BaseAccount):
 
         # if not enough money
         if not allow_negative and self.balance < cost:
-            raise NotEnoughMoney(_('%(uname)s not enough money for service %(srv_name)s') % {
-                'uname': self.username,
-                'srv_name': shot.name
-            })
+            raise NotEnoughMoney(
+                _('%(uname)s not enough money for service %(srv_name)s') % {
+                    'uname': self.username,
+                    'srv_name': shot.name
+                })
         with transaction.atomic():
             # charge for the service
             self.balance -= cost
@@ -638,7 +667,9 @@ class Customer(BaseAccount):
             CustomerLog.objects.create(
                 customer=self, cost=-cost,
                 author=request.user,
-                comment=comment or _('Buy one-shot service for "%(title)s"') % {'title': shot.name}
+                comment=comment or _(
+                    'Buy one-shot service for "%(title)s"') % {
+                            'title': shot.name}
             )
         return True
 
@@ -717,9 +748,11 @@ class Customer(BaseAccount):
     @staticmethod
     def set_service_group_accessory(group, wanted_service_ids: list, request):
         if request.user.is_superuser:
-            existed_service_ids = frozenset(t.id for t in group.service_set.all())
+            existed_service_ids = frozenset(
+                t.id for t in group.service_set.all())
         else:
-            existed_services = group.service_set.filter(sites__in=[request.site])
+            existed_services = group.service_set.filter(
+                sites__in=[request.site])
             existed_service_ids = frozenset(t.id for t in existed_services)
         wanted_service_ids = frozenset(map(int, wanted_service_ids))
         sub = existed_service_ids - wanted_service_ids
@@ -860,7 +893,8 @@ class PeriodicPayForId(BaseAbstractModel):
         on_delete=models.CASCADE,
         verbose_name=_('Periodic pay')
     )
-    last_pay = models.DateTimeField(_('Last pay time'), blank=True, null=True, default=None)
+    last_pay = models.DateTimeField(_('Last pay time'), blank=True, null=True,
+                                    default=None)
     next_pay = models.DateTimeField(_('Next time to pay'))
     account = models.ForeignKey(
         Customer,
@@ -868,7 +902,8 @@ class PeriodicPayForId(BaseAbstractModel):
         verbose_name=_('Account')
     )
 
-    def payment_for_service(self, author: UserProfile = None, now: Optional[datetime] = None):
+    def payment_for_service(self, author: UserProfile = None,
+                            now: Optional[datetime] = None):
         """
         Charge for the service and leave a log about it
         :param now: Current date, if now is None than it calculates in here
@@ -901,7 +936,8 @@ class PeriodicPayForId(BaseAbstractModel):
 
 class CustomerAttachment(BaseAbstractModel):
     title = models.CharField(max_length=64)
-    doc_file = models.FileField(upload_to='customer_attachments/%Y/%m/', max_length=128)
+    doc_file = models.FileField(upload_to='customer_attachments/%Y/%m/',
+                                max_length=128)
     create_time = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
