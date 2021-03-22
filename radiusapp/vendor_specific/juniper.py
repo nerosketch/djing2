@@ -1,3 +1,4 @@
+from djing2.lib import safe_int
 from radiusapp.vendor_base import IVendorSpecific
 
 
@@ -31,10 +32,19 @@ class JuniperVendorSpecific(IVendorSpecific):
         speed_out = int(service.speed_out * 1000000)
         speed_in_burst = int(speed_in / 8 * 1.5)
         speed_out_burst = int(speed_out / 8 * 1.5)
-        return {
+        res = {
             'Framed-IP-Address': subscriber_lease.ip_addr,
             # 'Framed-IP-Netmask': '255.255.0.0',
-            'User-Password': f'SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})'
-            # 'ERX-Primary-Dns': '10.12.1.9'
-            # 'Acct-Interim-Interval': sess_time.total_seconds()
+            'User-Password': f'SERVICE-INET({speed_in},'
+                             f'{speed_in_burst},'
+                             f'{speed_out},'
+                             f'{speed_out_burst})'
         }
+        session_remaining_time = safe_int(customer_service
+                                          .calc_session_time()
+                                          .total_seconds())
+        if session_remaining_time > 0:
+            res.update({
+                'Session-Timeout': session_remaining_time,
+            })
+        return res
