@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from djing2.lib import safe_int
 from radiusapp.vendor_base import IVendorSpecific
 
@@ -40,11 +42,15 @@ class JuniperVendorSpecific(IVendorSpecific):
                              f'{speed_out},'
                              f'{speed_out_burst})'
         }
-        session_remaining_time = safe_int(customer_service
-                                          .calc_session_time()
-                                          .total_seconds())
+        session_remaining_time = customer_service.calc_session_time()
+        # + 10 минут потому что в момент, когда закончится сессия,
+        # улуга еще будет на учётке. А вот через несколько мин. услуга
+        # уже должна перерасчитаться.
+        session_remaining_time += timedelta(minutes=10)
+        session_remaining_time = safe_int(
+            session_remaining_time.total_seconds())
         if session_remaining_time > 0:
             res.update({
-                'Session-Timeout': session_remaining_time,
+                'Session-Timeout': session_remaining_time
             })
         return res
