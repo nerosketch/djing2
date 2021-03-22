@@ -43,10 +43,10 @@ class JuniperVendorSpecific(IVendorSpecific):
                              f'{speed_out_burst})'
         }
         session_remaining_time = customer_service.calc_session_time()
-        # + 10 минут потому что в момент, когда закончится сессия,
+        # + 5 минут потому что в момент, когда закончится сессия,
         # улуга еще будет на учётке. А вот через несколько мин. услуга
         # уже должна перерасчитаться.
-        session_remaining_time += timedelta(minutes=10)
+        session_remaining_time += timedelta(minutes=5)
         session_remaining_time = safe_int(
             session_remaining_time.total_seconds())
         if session_remaining_time > 0:
