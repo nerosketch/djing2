@@ -1,20 +1,17 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from networks.views import generic, radius
+from networks import views
 
 app_name = 'networks'
 
 router = DefaultRouter()
 
-# Radius api
-router.register('radius', radius.RadiusRequestViewSet, basename='radius')
-
-router.register('lease', generic.CustomerIpLeaseModelViewSet)
-router.register('pool', generic.NetworkIpPoolModelViewSet)
-router.register('vlan', generic.VlanIfModelViewSet)
+router.register('lease', views.CustomerIpLeaseModelViewSet)
+router.register('pool', views.NetworkIpPoolModelViewSet)
+router.register('vlan', views.VlanIfModelViewSet)
 
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('dhcp_lever/', generic.DhcpLever.as_view()),
+    path('dhcp_lever/', views.DhcpLever.as_view()),
 ]

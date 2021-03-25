@@ -1,12 +1,10 @@
-import json
-from string import digits, ascii_lowercase
 from random import choice
+from string import digits
 
-from bitfield import BitHandler, BitField, Bit
 from django.contrib.auth.hashers import make_password
+from django.core import validators
 from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
 from customers import models
 from djing2.lib import safe_int
@@ -16,7 +14,7 @@ from services.serializers import ServiceModelSerializer
 
 
 def _generate_random_chars(length=6, chars=digits, split=2, delimiter=''):
-    username = ''.join(choice(chars) for i in range(length))
+    username = ''.join(choice(chars) for _ in range(length))
 
     if split:
         username = delimiter.join(
@@ -36,7 +34,7 @@ def generate_random_username():
 
 
 def generate_random_password():
-    return _generate_random_chars(length=6, chars=digits + ascii_lowercase)
+    return _generate_random_chars(length=8, chars=digits)
 
 
 class CustomerServiceModelSerializer(BaseCustomModelSerializer):
@@ -60,8 +58,14 @@ class CustomerStreetModelSerializer(BaseCustomModelSerializer):
 
 
 class CustomerLogModelSerializer(BaseCustomModelSerializer):
-    author_name = serializers.CharField(source='author.get_short_name', read_only=True)
-    # customer_name = serializers.CharField(source='customer.get_short_name')
+    author_name = serializers.CharField(
+        source='author.get_short_name',
+        read_only=True
+    )
+    cost = serializers.DecimalField(
+        max_digits=12, decimal_places=2,
+        coerce_to_string=False, required=False
+    )
 
     class Meta:
         model = models.CustomerLog
@@ -73,7 +77,11 @@ class CustomerLogModelSerializer(BaseCustomModelSerializer):
 
 def update_passw(acc, raw_password):
     if raw_password:
-        updated_count = models.CustomerRawPassword.objects.filter(customer=acc).update(passw_text=raw_password)
+        updated_count = models.CustomerRawPassword.objects.filter(
+            customer=acc
+        ).update(
+            passw_text=raw_password
+        )
         if updated_count == 0:
             models.CustomerRawPassword.objects.create(
                 customer=acc,
@@ -81,97 +89,64 @@ def update_passw(acc, raw_password):
             )
 
 
-class SerializerBitField(serializers.IntegerField):
-
-    def to_representation(self, value):
-        print('to_representation', value, type(value))
-        return value
-
-    def to_internal_value(self, data):
-        print('to_internal_value', data, type(data))
-        try:
-            if isinstance(data, str):
-                r = json.loads(data)
-            else:
-                r = data
-            print('R', r, type(r))
-            # ---
-            # models.Customer.markers.flags
-            # bf = BitField(flags=r)
-            # print('BF', bf)
-
-            flags = models.Customer.markers.items()
-            flags_flat = [f[0] for f in flags]
-            print('flags', flags)
-            new_value = 0
-            for flag in r:
-                print('r flag', flag)
-                f_ind = flags_flat.index(flag)
-                print('index', f_ind)
-                new_value |= flags[f_ind][1]
-                print('Add num', flags[f_ind][1])
-                print('new val', new_value)
-            return new_value
-
-            # print('to_python', bf.to_python(r))
-            # print('get_prep_value', bf.get_prep_value(r))
-            # return bf
-        except json.JSONDecodeError as e:
-            raise ValidationError(detail=e, code='invalid')
-
-
 class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
-    username = serializers.CharField(initial=generate_random_username)
-    is_active = serializers.BooleanField(initial=True)
-    full_name = serializers.CharField(source='get_full_name', read_only=True)
-    group_title = serializers.CharField(source='group.title', read_only=True)
-    street_name = serializers.CharField(source='street.name', read_only=True)
-    gateway_title = serializers.CharField(source='gateway.title', read_only=True)
-    device_comment = serializers.CharField(source='device.comment', read_only=True)
-    last_connected_service_title = serializers.CharField(source='last_connected_service.title', read_only=True)
-    service_title = serializers.CharField(
+    username = serializers.CharField(
+        initial=generate_random_username
+    )
+    is_active = serializers.BooleanField(
+        initial=True
+    )
+    full_name = serializers.CharField(
+        source='get_full_name',
+        read_only=True
+    )
+    group_title = serializers.CharField(
+        source='group.title',
+        read_only=True
+    )
+    street_name = serializers.CharField(
+        source='street.name',
+        read_only=True
+    )
+    gateway_title = serializers.CharField(
+        source='gateway.title',
+        read_only=True
+    )
+    device_comment = serializers.CharField(
+        source='device.comment',
+        read_only=True
+    )
+    last_connected_service_title = serializers.CharField(
+        source='last_connected_service.title',
+        read_only=True
+    )
+    current_service__service__title = serializers.CharField(
         source='current_service.service.title', read_only=True
     )
     service_id = serializers.IntegerField(
         source='current_service.service.id', read_only=True
     )
-    # device = serializers.PrimaryKeyRelatedField(queryset=Device.objects.exclude(group=None)[:12])
-    password = serializers.CharField(write_only=True, required=False, initial=generate_random_password)
+    password = serializers.CharField(
+        write_only=True, required=False,
+        initial=generate_random_password,
+        validators=[validators.integer_validator]
+    )
     raw_password = serializers.CharField(
         source='customerrawpassword.passw_text', read_only=True
     )
     balance = serializers.DecimalField(
-        max_digits=12, decimal_places=2, coerce_to_string=False, required=False
+        max_digits=12, decimal_places=2,
+        coerce_to_string=False, required=False
     )
     create_date = serializers.CharField(read_only=True)
     lease_count = serializers.IntegerField(read_only=True)
 
-    # marker_icons = serializers.ListField(
-    #     source='get_flag_icons',
-    #     child=serializers.CharField(),
-    #     read_only=True
-    # )
+    traf_octs = serializers.IntegerField(
+        source='octsum',
+        read_only=True
+    )
 
-    markers = SerializerBitField(source='get_flag_icons')
-
-    # group = serializers.PrimaryKeyRelatedField(
-    #     queryset=Group.objects.all()[:10]
-    # )
-    # street = serializers.PrimaryKeyRelatedField(
-    #     queryset=models.CustomerStreet.objects.all()[:10]
-    # )
-    # device = serializers.PrimaryKeyRelatedField(
-    #     queryset=Device.objects.all()[:10]
-    # )
-    # dev_port = serializers.PrimaryKeyRelatedField(
-    #     queryset=Port.objects.all()[:10]
-    # )
-    # last_connected_service = serializers.PrimaryKeyRelatedField(
-    #     queryset=models.Service.objects.all()[:10]
-    # )
-    # current_service = serializers.PrimaryKeyRelatedField(
-    #     queryset=models.CustomerService.objects.all()[:10]
-    # )
+    # markers = SerializerBitField(source='get_flag_icons')
 
     def create(self, validated_data):
         validated_data.update({
@@ -181,13 +156,20 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         })
         acc = super().create(validated_data)
         raw_password = validated_data.get('password')
+        if raw_password is None:
+            raw_password = generate_random_password()
         update_passw(acc, raw_password=raw_password)
         return acc
 
     def update(self, instance, validated_data):
         raw_password = validated_data.get('password')
-        update_passw(acc=instance, raw_password=raw_password)
-        validated_data['password'] = make_password(raw_password)
+        if raw_password:
+            # try:
+            # validate_password(raw_password, instance)
+            update_passw(acc=instance, raw_password=raw_password)
+            validated_data['password'] = make_password(raw_password)
+            # except DjangoValidationError as err:
+            #     raise DRFValidationError(err)
 
         instance = super().update(instance, validated_data)
 
@@ -198,17 +180,23 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         # depth = 1
         fields = (
             'pk', 'username', 'telephone', 'fio',
-            'group', 'group_title', 'balance', 'description', 'street', 'street_name',
-            'house', 'is_active', 'gateway', 'gateway_title', 'auto_renewal_service',
-            'device', 'device_comment', 'dev_port', 'last_connected_service',
-            'last_connected_service_title', 'current_service', 'service_title',
-            'service_id', 'is_dynamic_ip', 'full_name', 'password', 'raw_password',
-            'create_date', 'birth_day', 'lease_count', 'markers'
+            'group', 'group_title', 'balance', 'description',
+            'street', 'street_name', 'house', 'is_active',
+            'gateway', 'gateway_title', 'auto_renewal_service',
+            'device', 'device_comment', 'dev_port',
+            'last_connected_service', 'last_connected_service_title',
+            'current_service', 'current_service__service__title',
+            'service_id', 'is_dynamic_ip',
+            'full_name', 'password', 'raw_password',
+            'create_date', 'birth_day', 'lease_count',
+            'sites', 'traf_octs', 'markers'
         )
 
 
 class CustomerGroupSerializer(GroupsSerializer):
-    usercount = serializers.IntegerField(read_only=True)
+    usercount = serializers.IntegerField(
+        read_only=True
+    )
 
     class Meta(GroupsSerializer.Meta):
         fields = ('pk', 'title', 'code', 'usercount')
@@ -221,8 +209,18 @@ class PassportInfoModelSerializer(BaseCustomModelSerializer):
 
 
 class InvoiceForPaymentModelSerializer(BaseCustomModelSerializer):
-    author_name = serializers.CharField(source='author.get_full_name', read_only=True)
-    author_uname = serializers.CharField(source='author.username', read_only=True)
+    author_name = serializers.CharField(
+        source='author.get_full_name',
+        read_only=True
+    )
+    author_uname = serializers.CharField(
+        source='author.username',
+        read_only=True
+    )
+    cost = serializers.DecimalField(
+        max_digits=12, decimal_places=2,
+        coerce_to_string=False, required=False
+    )
 
     class Meta:
         model = models.InvoiceForPayment
@@ -242,9 +240,27 @@ class AdditionalTelephoneModelSerializer(BaseCustomModelSerializer):
 
 
 class PeriodicPayForIdModelSerializer(BaseCustomModelSerializer):
+    service_name = serializers.CharField(
+        source='periodic_pay.name',
+        read_only=True
+    )
+    service_calc_type = serializers.CharField(
+        source='periodic_pay.calc_type_name',
+        read_only=True
+    )
+    service_amount = serializers.FloatField(
+        source='periodic_pay.amount',
+        read_only=True
+    )
+
     class Meta:
         model = models.PeriodicPayForId
-        fields = ('id', 'last_pay', 'next_pay', 'periodic_pay')
+        exclude = ('account',)
+
+
+class PeriodicPayForIdRequestSerializer(serializers.Serializer):
+    periodic_pay_id = serializers.IntegerField()
+    next_pay = serializers.DateTimeField()
 
 
 '''class AmountMoneySerializer(serializers.Serializer):
@@ -272,10 +288,20 @@ class RadiusCustomerServiceRequestSerializer(serializers.Serializer):
 
 
 class CustomerAttachmentSerializer(BaseCustomModelSerializer):
-    author = serializers.PrimaryKeyRelatedField(read_only=True)
-    author_name = serializers.CharField(source='author.get_full_name', read_only=True)
-    create_time = serializers.DateTimeField(read_only=True)
-    customer_name = serializers.CharField(source='customer.get_full_name', read_only=True)
+    author = serializers.PrimaryKeyRelatedField(
+        read_only=True
+    )
+    author_name = serializers.CharField(
+        source='author.get_full_name',
+        read_only=True
+    )
+    create_time = serializers.DateTimeField(
+        read_only=True
+    )
+    customer_name = serializers.CharField(
+        source='customer.get_full_name',
+        read_only=True
+    )
 
     class Meta:
         model = models.CustomerAttachment

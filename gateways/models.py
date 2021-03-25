@@ -1,12 +1,14 @@
+from django.contrib.sites.models import Site
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedCharField
 
 from djing2.lib import MyChoicesAdapter
+from djing2.models import BaseAbstractModel
 from .gw_facade import GATEWAY_TYPES, GatewayFacade, GatewayNetworkError
 
 
-class Gateway(models.Model):
+class Gateway(BaseAbstractModel):
     title = models.CharField(_('Title'), max_length=127, unique=True)
     ip_address = models.GenericIPAddressField(_('Ip address'), unique=True)
     ip_port = models.PositiveSmallIntegerField(_('Port'))
@@ -17,6 +19,7 @@ class Gateway(models.Model):
                                                default=0)
     is_default = models.BooleanField(_('Is default'), default=False)
     enabled = models.BooleanField(_('Enabled'), default=True)
+    sites = models.ManyToManyField(Site, blank=True)
 
     def get_gw_manager(self) -> GatewayFacade:
         try:
@@ -34,17 +37,20 @@ class Gateway(models.Model):
             raise GatewayNetworkError('ConnectionResetError')
 
     @staticmethod
-    def get_user_credentials_by_ip(gw_id: int):
+    def get_user_credentials_by_gw(gw_id: int):
         with connection.cursor() as cur:
             cur.execute(
-                "SELECT ip_address, speed_in, speed_out FROM"
-                " fetch_customers_srvnet_credentials_by_gw(%s::integer)",
+                "SELECT * FROM "
+                "fetch_customers_srvnet_credentials_by_gw(%s::integer)",
                 (str(gw_id),))
             while True:
-                ip_address, speed_in, speed_out = cur.fetchone()
-                if ip_address is None:
+                # (customer_id, lease_id, lease_time, lease_mac, ip_address,
+                #  speed_in, speed_out, speed_burst, service_start_time,
+                #  service_deadline)
+                customer_id, *other = cur.fetchone()
+                if customer_id is None:
                     break
-                yield ip_address, speed_in, speed_out
+                yield [customer_id] + other
 
     def __str__(self):
         return self.title

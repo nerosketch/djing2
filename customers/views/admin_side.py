@@ -1,8 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
-from django.db.models import Count
-from django.db.utils import IntegrityError
+from django.db.models import Count, Sum, Q
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
@@ -13,18 +12,20 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 
 from customers import models
 from customers import serializers
-from customers.models import Customer
 from customers.views.view_decorators import catch_customers_errs
-from djing2.exceptions import UniqueConstraintIntegrityError
 from djing2.lib import safe_int, safe_float, ProcessLocked
+from djing2.lib.filters import CustomObjectPermissionsFilter
+from djing2.lib.mixins import SitesFilterMixin
 
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
-from services.models import Service, OneShotPay
+from profiles.models import UserProfileLogActionType
+from services.models import Service, OneShotPay, PeriodicPay
 from services.serializers import ServiceModelSerializer
 
 
@@ -51,7 +52,7 @@ class CustomerLogModelViewSet(DjingModelViewSet):
         'customer', 'author'
     )
     serializer_class = serializers.CustomerLogModelSerializer
-    filterset_fields = ('customer', )
+    filterset_fields = ('customer',)
 
     def create(self, request, *args, **kwargs):
         return Response(gettext(
@@ -59,29 +60,72 @@ class CustomerLogModelViewSet(DjingModelViewSet):
         ), status=status.HTTP_403_FORBIDDEN)
 
 
-class CustomerModelViewSet(DjingModelViewSet):
+class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = models.Customer.objects.select_related(
-        'group', 'street', 'gateway', 'device', 'dev_port',
-        'current_service', 'last_connected_service',
-        'current_service__service', 'customerrawpassword'
-    ).annotate(lease_count=Count('customeripleasemodel'))
+        'current_service',
+        'current_service__service',
+        'gateway',
+        'street'
+    )
     serializer_class = serializers.CustomerModelSerializer
-    filter_backends = (SearchFilter, DjangoFilterBackend, OrderingFilter)
+    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ('username', 'fio', 'telephone', 'description')
-    filterset_fields = ('group', 'street', 'device', 'dev_port')
+    filterset_fields = ('group', 'street', 'device', 'dev_port', 'current_service__service')
     ordering_fields = ('username', 'fio', 'house', 'balance', 'current_service__service__title')
 
-    @action(methods=('post',), detail=True)
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.annotate(
+            lease_count=Count('customeripleasemodel'), octsum=Sum(
+                'traf_cache__octets',
+                filter=Q(
+                    traf_cache__event_time__gt=datetime.now() - timedelta(minutes=5)
+                )
+            )
+        )
+
+    def perform_create(self, serializer, *args, **kwargs):
+        customer_instance = super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
+        if customer_instance is not None:
+            # log about creating new customer
+            self.request.user.log(
+                do_type=UserProfileLogActionType.CREATE_USER,
+                additional_text='%s, "%s", %s' % (
+                    customer_instance.username,
+                    customer_instance.fio,
+                    customer_instance.group.title if customer_instance.group else ''
+                ))
+        return customer_instance
+
+    def perform_destroy(self, instance):
+        # log about deleting customer
+        self.request.user.log(
+            do_type=UserProfileLogActionType.DELETE_USER,
+            additional_text=('%(uname)s, "%(fio)s", %(group)s %(street)s %(house)s' % {
+                'uname': instance.username,
+                'fio': instance.fio or '-',
+                'group': instance.group.title if instance.group else '',
+                'street': instance.street.name if instance.street else '',
+                'house': instance.house or ''
+            }).strip())
+        return super().perform_destroy(instance)
+
+    @action(methods=['post'], detail=True)
     @catch_customers_errs
     def pick_service(self, request, pk=None):
         del pk
+        self.check_permission_code(request, 'customers.can_buy_service')
         service_id = safe_int(request.data.get('service_id'))
         deadline = request.data.get('deadline')
         srv = get_object_or_404(Service, pk=service_id)
         customer = self.get_object()
         log_comment = None
         if deadline:
-            deadline = datetime.strptime(deadline, '%Y-%m-%dT%H:%M')
+            datetime_fmt = getattr(api_settings, 'DATETIME_FORMAT', '%Y-%m-%d %H:%M')
+            deadline = datetime.strptime(deadline, datetime_fmt)
             log_comment = _(
                 "Service '%(service_name)s' "
                 "has connected via admin until %(deadline)s") % {
@@ -96,32 +140,11 @@ class CustomerModelViewSet(DjingModelViewSet):
                 deadline=deadline,
                 allow_negative=True
             )
-            # customer_gw_command.delay(customer.pk, 'sync')
         except models.NotEnoughMoney as e:
             return Response(data=str(e), status=status.HTTP_402_PAYMENT_REQUIRED)
         return Response(status=status.HTTP_200_OK)
 
-    # def perform_update(self, serializer):
-    #     customer = serializer.save()
-    #     customer_gw_command.delay(customer.pk, 'sync')
-
-    def perform_create(self, serializer):
-        try:
-            serializer.save()
-            # if customer.is_access():
-            #     customer_gw_command.delay(customer.pk, 'add')
-        except IntegrityError as e:
-            raise UniqueConstraintIntegrityError(str(e))
-
-    # def perform_destroy(self, instance):
-    #     customer_gw_remove.delay(
-    #         customer_uid=instance.pk, ip_addr=instance.ip_address,
-    #         speed=(0, 0),
-    #         is_access=instance.is_access(), gw_pk=instance.gateway_id
-    #     )
-    #     super().perform_destroy(instance)
-
-    @action(methods=('post',), detail=True)
+    @action(methods=['post'], detail=True)
     @catch_customers_errs
     def make_shot(self, request, pk=None):
         customer = self.get_object()
@@ -134,23 +157,47 @@ class CustomerModelViewSet(DjingModelViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
         return Response(r)
 
-    @action(methods=('get',), detail=False)
+    @action(methods=['get', 'post'], detail=True)
+    @catch_customers_errs
+    def make_periodic_pay(self, request, pk=None):
+        if request.method == 'GET':
+            periodic_pay_request_serializer = serializers.PeriodicPayForIdRequestSerializer()
+            return Response(periodic_pay_request_serializer.data)
+        periodic_pay_request_serializer = serializers.PeriodicPayForIdRequestSerializer(data=request.data)
+        periodic_pay_request_serializer.is_valid(raise_exception=True)
+        periodic_pay_id = periodic_pay_request_serializer.data.get('periodic_pay_id')
+        next_pay_date = periodic_pay_request_serializer.data.get('next_pay')
+        if not all([periodic_pay_id, next_pay_date]):
+            return Response('Invalid data', status=status.HTTP_400_BAD_REQUEST)
+        customer = self.get_object()
+        periodic_pay = get_object_or_404(PeriodicPay, pk=periodic_pay_id)
+        customer.make_periodic_pay(
+            periodic_pay=periodic_pay,
+            next_pay=next_pay_date
+        )
+        return Response('ok')
+
+    @action(detail=False)
     @catch_customers_errs
     def service_users(self, request):
         service_id = safe_int(request.query_params.get('service_id'))
         if service_id == 0:
             return Response('service_id is required', status=status.HTTP_403_FORBIDDEN)
         qs = models.Customer.objects.filter(
-            current_service__service__id=service_id
-        ).select_related('group').values(
+            current_service__service_id=service_id
+        )
+        if not request.user.is_superuser:
+            qs = qs.filter(sites__in=[self.request.site])
+        qs = qs.values(
             'pk', 'group_id', 'username', 'fio'
         )
         return Response(qs)
 
-    @action(methods=('get',), detail=True)
+    @action(detail=True)
     @catch_customers_errs
     def stop_service(self, request, pk=None):
         del pk
+        self.check_permission_code(request, 'customers.can_complete_service')
         customer = self.get_object()
         cust_srv = customer.active_service()
         if cust_srv is None:
@@ -171,7 +218,7 @@ class CustomerModelViewSet(DjingModelViewSet):
         customer.stop_service(request.user)
         return Response()
 
-    # @action(methods=('post',), detail=False)
+    # @action(methods=['post'], detail=False)
     # @catch_customers_errs
     # def attach_nas(self, request):
     #     gateway_id = request.data.get('gateway')
@@ -194,9 +241,10 @@ class CustomerModelViewSet(DjingModelViewSet):
     #     else:
     #         return Response(_('Users not found'))
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True)
     @catch_customers_errs
     def ping_all_ips(self, request, pk=None):
+        self.check_permission_code(request, 'customers.can_ping')
         del request, pk
         customer = self.get_object()
 
@@ -250,10 +298,11 @@ class CustomerModelViewSet(DjingModelViewSet):
         }
         return Response(r)
 
-    @action(methods=('post',), detail=True)
+    @action(methods=['post'], detail=True)
     @catch_customers_errs
     def add_balance(self, request, pk=None):
         del pk
+        self.check_permission_code(request, 'customers.can_add_balance')
         customer = self.get_object()
 
         cost = safe_float(request.data.get('cost'))
@@ -272,28 +321,26 @@ class CustomerModelViewSet(DjingModelViewSet):
         customer.save(update_fields=('balance',))
         return Response()
 
-    @action(methods=('post',), detail=True)
+    @action(methods=['post'], detail=True)
     @catch_customers_errs
-    def set_group_accessory(self, request, pk=None):
+    def set_service_group_accessory(self, request, pk=None):
         # customer = self.get_object()
         group_id = request.data.get('group_id')
         if not group_id:
             return Response('group_id is required', status=status.HTTP_400_BAD_REQUEST)
         group = get_object_or_404(Group, pk=int(group_id))
         wanted_service_ids = request.data.get('services')
-        if not wanted_service_ids:
-            return Response('services is required', status=status.HTTP_400_BAD_REQUEST)
-        Customer.set_group_accessory(group, wanted_service_ids)
+        models.Customer.set_service_group_accessory(group, wanted_service_ids, request)
         return Response()
 
-    @action(methods=('get',), detail=False)
+    @action(detail=False)
     @catch_customers_errs
     def filter_device_port(self, request):
         dev_id = request.query_params.get('device_id')
         port_id = request.query_params.get('port_id')
         if not all([dev_id, port_id]):
             return Response('Required paramemters: [dev_id, port_id]', status=status.HTTP_400_BAD_REQUEST)
-        customers = Customer.objects.filter(device_id=dev_id, dev_port_id=port_id)
+        customers = models.Customer.objects.filter(device_id=dev_id, dev_port_id=port_id)
         return Response(self.get_serializer(customers, many=True).data)
 
     @action(methods=['get', 'put'], detail=True)
@@ -322,19 +369,43 @@ class CustomerModelViewSet(DjingModelViewSet):
 
         return Response(serializer.validated_data, status=res_stat)
 
+    @action(detail=False)
+    def service_type_report(self, request):
+        r = models.Customer.objects.customer_service_type_report()
+        return Response(r)
+
+    @action(detail=False)
+    def activity_report(self, request):
+        r = models.Customer.objects.activity_report()
+        return Response(r)
+
+    @action(methods=['get'], detail=True)
+    def is_access(self, request, pk=None):
+        customer = self.get_object()
+        is_acc = customer.is_access()
+        return Response(is_acc)
+
+    @action(methods=['get'], detail=False)
+    def generate_password(self, request):
+        rp = serializers.generate_random_password()
+        return Response(rp)
+
 
 class CustomersGroupsListAPIView(DjingListAPIView):
     serializer_class = serializers.CustomerGroupSerializer
-    #filter_backends = (OrderingFilter,)
-    #ordering_fields = ('title', 'usercount')
+    # filter_backends = (OrderingFilter,)
+    # ordering_fields = ('title', 'usercount')
 
     def get_queryset(self):
-        return get_objects_for_user(
+        qs = get_objects_for_user(
             self.request.user,
-            'groupapp.view_group', klass=Group,
-            use_groups=False,
-            accept_global_perms=False
-        ).annotate(usercount=Count('customer'))
+            perms='groupapp.view_group',
+            klass=Group
+        ).order_by('title')
+        if self.request.user.is_superuser:
+            return qs.annotate(usercount=Count('customer'))
+        return qs.filter(sites__in=[self.request.site]) \
+            .annotate(usercount=Count('customer', filter=Q(customer__sites__in=[self.request.site])))
 
 
 class InvoiceForPaymentModelViewSet(DjingModelViewSet):
@@ -360,8 +431,9 @@ class AdditionalTelephoneModelViewSet(DjingModelViewSet):
 
 
 class PeriodicPayForIdModelViewSet(DjingModelViewSet):
-    queryset = models.PeriodicPayForId.objects.defer('account')
+    queryset = models.PeriodicPayForId.objects.defer('account').select_related('periodic_pay')
     serializer_class = serializers.PeriodicPayForIdModelSerializer
+    filterset_fields = ('account',)
 
 
 class AttachServicesToGroups(APIView):
@@ -393,7 +465,7 @@ class AttachServicesToGroups(APIView):
         del format
         group = safe_int(request.query_params.get('group'))
         group = get_object_or_404(Group, pk=group)
-        selected_service_ids_db = frozenset(t.pk for t in group.service_set.only('pk'))
+        # selected_service_ids_db = frozenset(t.pk for t in group.service_set.only('pk'))
         all_available_service_ids_db = frozenset(srv.pk for srv in Service.objects.only('pk').iterator())
 
         # list of dicts: service<int>, check<bool>
@@ -404,13 +476,13 @@ class AttachServicesToGroups(APIView):
                                          s.get('service') in all_available_service_ids_db)
 
         # add = selected_service_ids - selected_service_ids_db
-        sub = all_available_service_ids_db - (selected_service_ids - selected_service_ids_db)
+        # sub = all_available_service_ids_db - (selected_service_ids - selected_service_ids_db)
 
         group.service_set.set(selected_service_ids)
-        models.Customer.objects.filter(
-            group=group,
-            last_connected_service__in=sub
-        ).update(last_connected_service=None)
+        # models.Customer.objects.filter(
+        #     group=group,
+        #     last_connected_service__in=sub
+        # ).update(last_connected_service=None)
         return Response(status=status.HTTP_200_OK)
 
 
@@ -419,5 +491,5 @@ class CustomerAttachmentViewSet(DjingModelViewSet):
     serializer_class = serializers.CustomerAttachmentSerializer
     filterset_fields = ('customer',)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer, *args, **kwargs) -> None:
         serializer.save(author=self.request.user)

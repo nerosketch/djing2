@@ -1,11 +1,12 @@
 import re
-from typing import List, Optional
+from typing import List
 
 from django.utils.translation import gettext_lazy as _
 
 from devices.device_config import expect_util
 from devices.device_config.base import DeviceConfigType, OptionalScriptCallResult, DeviceConfigurationError
 from devices.device_config.expect_util import ExpectValidationError
+from devices.device_config.pon.utils import get_all_vlans_from_config
 from djing2.lib import process_lock
 from .. import zte_utils
 
@@ -92,44 +93,6 @@ def _get_onu_mng_template(vlans: VlanList, config: dict):
     ]
 
 
-def _get_all_vlans_from_config(config: dict) -> Optional[VlanList]:
-    # config = {
-    #     'configTypeCode': 'zte_f660_bridge',
-    #     'vlanConfig': [
-    #         {
-    #             'port': 1,
-    #             'vids': [
-    #                 {'vid': 151, 'native': True}
-    #             ]
-    #         },
-    #         {
-    #             'port': 2,
-    #             'vids': [
-    #                 {'vid': 263, 'native': False},
-    #                 {'vid': 264, 'native': False},
-    #                 {'vid': 265, 'native': False},
-    #             ]
-    #         }
-    #     ]
-    # }
-    vlan_config = config.get('vlanConfig')
-    if not vlan_config:
-        return None
-    all_vlan_ports = (v.get('vids') for v in vlan_config)
-    # all_vlan_ports = [
-    #     [
-    #         {'vid': 151, 'native': True}
-    #     ],
-    #     [
-    #         {'vid': 263, 'native': False},
-    #         {'vid': 264, 'native': False},
-    #         {'vid': 265, 'native': False}
-    #     ]
-    # ]
-    all_vids = set(x.get('vid') for b in all_vlan_ports if b for x in b)
-    return [v for v in all_vids if v]
-
-
 @process_lock(lock_name='zte_olt')
 def _zte_onu_bridge_config_apply(serial: str, zte_ip_addr: str, telnet_login: str,
                                  telnet_passw: str, telnet_prompt: str, config: dict,
@@ -143,7 +106,7 @@ def _zte_onu_bridge_config_apply(serial: str, zte_ip_addr: str, telnet_login: st
     if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
         raise ExpectValidationError('ip address for zte not valid')
 
-    all_vids = _get_all_vlans_from_config(config=config)
+    all_vids = get_all_vlans_from_config(config=config)
     if not all_vids:
         raise zte_utils.OnuZteRegisterError(f'not passed vlan list')
 
@@ -189,7 +152,7 @@ def _zte_onu_bridge_config_apply(serial: str, zte_ip_addr: str, telnet_login: st
         )
         if free_onu_number > 127:
             ch.close()
-            raise zte_utils.ZTEFiberIsFull(f'olt fiber {fiber_num} is full')
+            raise zte_utils.ZTEFiberIsFull(_('olt fiber %d is full') % fiber_num)
 
         # enter to config
         ch.do_cmd('conf t', f'{telnet_prompt}(config)#')
@@ -237,6 +200,7 @@ def _zte_onu_bridge_config_apply(serial: str, zte_ip_addr: str, telnet_login: st
         # Exit
         ch.do_cmd('exit', f'{telnet_prompt}(config)#')
         ch.do_cmd('exit', f'{telnet_prompt}#')
+        ch.sendline('exit')
         ch.close()
         return zte_utils.zte_onu_conv_to_num(
             rack_num=rack_num,
