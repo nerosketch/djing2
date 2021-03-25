@@ -15,7 +15,7 @@ def task_post_save(sender, instance: Task, created=False, **kwargs):
         else:
             notify_text = _('High priority task was updated')
         send_data2ws({
-            'eventType': WsEventTypeEnum.UPDATE_TASK,
+            'eventType': WsEventTypeEnum.UPDATE_TASK.value,
             'text': notify_text,
             'data': {
                 'recipients': [instance.recipients.only(
@@ -29,5 +29,5 @@ def task_post_save(sender, instance: Task, created=False, **kwargs):
         )
         return
     send_data2ws({
-        'eventType': WsEventTypeEnum.UPDATE_TASK
+        'eventType': WsEventTypeEnum.UPDATE_TASK.value
     })
