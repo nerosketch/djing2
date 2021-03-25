@@ -1,5 +1,6 @@
 """Tests for fetching ip lease for customer."""
 from rest_framework import status
+
 from customers.tests.customer import CustomAPITestCase
 from devices.tests import DeviceTestCase
 from networks.models import NetworkIpPool, NetworkIpPoolKind, VlanIf
@@ -81,21 +82,20 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         """Just send simple request to not existed customer."""
         r = self._send_request(vlan_id=14, cid='0004008b000c',
                                arid='0006286ED47B1CA4')
-        self.assertDictEqual(r.data, {
-            "Framed-IP-Address": "10.255.0.2",
-            "User-Password": "SERVICE-GUEST"
-        })
         self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data['Framed-IP-Address'], "10.255.0.2")
+        self.assertEqual(r.data['User-Password'], 'SERVICE-GUEST')
 
     def test_auth_radius_session(self):
         """Just send simple request to existed customer."""
         r = self._send_request(vlan_id=12, cid='0004008B0002',
                                arid='0006121314151617')
-        self.assertDictEqual(r.data, {
-            "Framed-IP-Address": "10.152.64.2",
-            "User-Password": "SERVICE-INET(11000000,2062500,11000000,2062500)"
-        })
         self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data['Framed-IP-Address'], "10.152.64.2")
+        self.assertEqual(
+            r.data['User-Password'],
+            'SERVICE-INET(11000000,2062500,11000000,2062500)'
+        )
 
     def test_two_identical_fetch(self):
         """Repeat identical requests for same customer."""
@@ -105,10 +105,11 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
             mac='18c0.4d51.dee3'
         )
         self.assertEqual(r1.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(r1.data, {
-            "Framed-IP-Address": "10.152.64.2",
-            "User-Password": "SERVICE-INET(11000000,2062500,11000000,2062500)"
-        })
+        self.assertEqual(r1.data['Framed-IP-Address'], "10.152.64.2")
+        self.assertEqual(
+            r1.data['User-Password'],
+            'SERVICE-INET(11000000,2062500,11000000,2062500)'
+        )
         r2 = self._send_request(
             vlan_id=12, cid='0004008B0002',
             arid='0006121314151617',
@@ -116,10 +117,11 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
             existing_ip='10.152.16473'
         )
         self.assertEqual(r2.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(r2.data, {
-            "Framed-IP-Address": "10.152.64.3",
-            "User-Password": "SERVICE-INET(11000000,2062500,11000000,2062500)"
-        })
+        self.assertEqual(r2.data['Framed-IP-Address'], "10.152.64.3")
+        self.assertEqual(
+            r2.data['User-Password'],
+            'SERVICE-INET(11000000,2062500,11000000,2062500)'
+        )
 
     def test_guest_and_inet_subnet(self):
         """Проверка гостевой и инетной аренды ip.
@@ -132,11 +134,9 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         self.customer.stop_service(self.admin)
         r = self._send_request(vlan_id=12, cid='0004008B0002',
                                arid='0006121314151617')
-        self.assertDictEqual(r.data, {
-            "Framed-IP-Address": "10.255.0.2",
-            "User-Password": "SERVICE-GUEST"
-        })
         self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data['Framed-IP-Address'], "10.255.0.2")
+        self.assertEqual(r.data['User-Password'], 'SERVICE-GUEST')
 
     # def test_subnet_vid(self):
     #     """Проверяем чтоб ip выдавались в соответствии в переданным
