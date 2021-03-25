@@ -1,6 +1,7 @@
 from hashlib import md5
 
 # from django.test.utils import override_settings
+from django.contrib.sites.models import Site
 from django.utils import timezone
 from django.utils.html import escape
 from rest_framework.test import APITestCase
@@ -20,10 +21,10 @@ def _make_sign(act: int, pay_account: str, serv_id: str, pay_id, secret: str):
 # @override_settings(DEFAULT_TABLESPACE='ram')
 class CustomAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
-        return self.client.get(*args, **kwargs)
+        return self.client.get(SERVER_NAME='example.com', *args, **kwargs)
 
     def post(self, *args, **kwargs):
-        return self.client.post(*args, **kwargs)
+        return self.client.post(SERVER_NAME='example.com', *args, **kwargs)
 
     def setUp(self):
         self.admin = UserProfile.objects.create_superuser(
@@ -50,16 +51,21 @@ class CustomAPITestCase(APITestCase):
             service_id='service_id',
             slug='pay_gw_slug'
         )
+        example_site = Site.objects.first()
+        pay_system.sites.add(example_site)
+        custo1.sites.add(example_site)
         pay_system.refresh_from_db()
         self.pay_system = pay_system
 
 
+time_format = '%d.%m.%Y %H:%M'
+
+
 class AllPayTestCase(CustomAPITestCase):
-    time_format = '%d.%m.%Y %H:%M'
     url = '/api/fin/pay_gw_slug/pay/'
 
     def test_user_pay_view_info(self):
-        current_date = timezone.now().strftime(self.time_format)
+        current_date = timezone.now().strftime(time_format)
         service_id = self.pay_system.service_id
         r = self.get(self.url, {
                 'ACT': 1,
@@ -73,16 +79,17 @@ class AllPayTestCase(CustomAPITestCase):
                 "<account>custo1</account>",
                 "<service_id>%s</service_id>" % escape(service_id),
                 "<min_amount>10.0</min_amount>",
-                "<max_amount>5000</max_amount>",
+                "<max_amount>15000</max_amount>",
                 "<status_code>21</status_code>",
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
             "</pay-response>"
         ))
+        self.maxDiff = None
         self.assertXMLEqual(r.content.decode('utf8'), o)
         self.assertEqual(r.status_code, 200)
 
     def test_user_pay_pay(self):
-        current_date = timezone.now().strftime(self.time_format)
+        current_date = timezone.now().strftime(time_format)
         service_id = self.pay_system.service_id
         r = self.get(self.url, {
             'ACT': 4,
@@ -111,7 +118,7 @@ class AllPayTestCase(CustomAPITestCase):
         self.user_pay_check(current_date)
 
     def user_pay_check(self, test_pay_time):
-        current_date = timezone.now().strftime(self.time_format)
+        current_date = timezone.now().strftime(time_format)
         service_id = self.pay_system.service_id
         r = self.get(self.url, {
             'ACT': 7,
@@ -134,4 +141,36 @@ class AllPayTestCase(CustomAPITestCase):
             "</pay-response>"
         ))
         self.assertXMLEqual(r.content.decode(), xml)
+        self.assertEqual(r.status_code, 200)
+
+
+class SitesAllPayTestCase(CustomAPITestCase):
+    url = '/api/fin/pay_gw_slug/pay/'
+
+    def setUp(self):
+        super().setUp()
+        another_site = Site.objects.create(
+            domain='another.ru',
+            name='another'
+        )
+        pay_system = self.pay_system
+        pay_system.sites.set([another_site])
+        pay_system.refresh_from_db()
+
+    def test_another_site(self):
+        current_date = timezone.now().strftime(time_format)
+        r = self.get(self.url, {
+            'ACT': 1,
+            'PAY_ACCOUNT': 'custo1',
+            'SIGN': _make_sign(1, 'custo1', '', '', self.pay_system.secret)
+        })
+        o = ''.join((
+            "<pay-response>",
+                "<status_code>-40</status_code>",
+                "<time_stamp>%s</time_stamp>" % escape(current_date),
+                "<description>Pay gateway does not exist</description>"
+            "</pay-response>"
+        ))
+        self.maxDiff = None
+        self.assertXMLEqual(r.content.decode('utf8'), o)
         self.assertEqual(r.status_code, 200)

@@ -1,12 +1,23 @@
 from datetime import timedelta, datetime
+from typing import Tuple
+
+from django.contrib.sites.models import Site
+from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
-from django.db import models
-from customers.models import Customer
+
+try:
+    from customers.models import Customer
+except ImportError:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('"tasks" application depends on "customers" application. Check if it installed')
+
+from djing2.lib import safe_float, safe_int
+from djing2.models import BaseAbstractModel
 from profiles.models import UserProfile
 from tasks.handle import handle as task_handle
 
 
-class ChangeLog(models.Model):
+class ChangeLog(BaseAbstractModel):
     task = models.ForeignKey('Task', on_delete=models.CASCADE)
     ACT_TYPE_CHANGE_TASK = 1
     ACT_TYPE_CREATE_TASK = 2
@@ -34,14 +45,39 @@ class ChangeLog(models.Model):
         db_table = 'task_change_log'
         verbose_name = _('Change log')
         verbose_name_plural = _('Change logs')
-        ordering = ('-when',)
+        ordering = '-when',
 
 
 def delta_add_days():
     return datetime.now() + timedelta(days=3)
 
 
-class Task(models.Model):
+class TaskQuerySet(models.QuerySet):
+    def task_mode_report(self):
+        """
+        Returns queryset with annotate how many
+        tasks with each task mode was
+        """
+        return self.values('mode').annotate(task_count=models.Count('pk')).order_by('mode')
+
+    @staticmethod
+    def task_state_percent(task_state: int) -> Tuple[int, float]:
+        """
+        Returns percent of specified task state
+        :param task_state: int of task state
+        :return: tuple(state_count: int, state_percent: float)
+        """
+        with connection.cursor() as c:
+            c.execute("SELECT count(id) as cnt, "
+                      "round(count(id) * 100.0 / (SELECT count(id) FROM task), 6) AS prc "
+                      "FROM task WHERE task_state=%s::int",
+                      [int(task_state)])
+            r = c.fetchone()
+        state_count, state_percent = r
+        return safe_int(state_count), safe_float(state_percent)
+
+
+class Task(BaseAbstractModel):
     descr = models.CharField(
         _('Description'), max_length=128,
         null=True, blank=True
@@ -122,10 +158,16 @@ class Task(models.Model):
         Customer, on_delete=models.CASCADE,
         verbose_name=_('Customer')
     )
+    site = models.ForeignKey(
+        Site, blank=True, null=True, default=None,
+        on_delete=models.CASCADE
+    )
+
+    objects = TaskQuerySet.as_manager()
 
     def finish(self, current_user):
         self.task_state = self.TASK_STATE_COMPLETED  # Completed. Task done
-        self.out_date = datetime.now()  # End time
+        self.out_date = datetime.now().date()  # End time
         ChangeLog.objects.create(
             task=self,
             act_type=ChangeLog.ACT_TYPE_COMPLETE_TASK,  # Completing tasks
@@ -144,8 +186,8 @@ class Task(models.Model):
 
     def send_notification(self):
         task_handle(
-           self, self.author,
-           self.recipients.filter(is_active=True)
+            self, self.author,
+            self.recipients.filter(is_active=True)
         )
 
     def is_expired(self):
@@ -167,14 +209,13 @@ class Task(models.Model):
 
     class Meta:
         db_table = 'task'
-        ordering = ('-id',)
-        permissions = (
-            ('can_viewall', _('Access to all tasks')),
+        ordering = '-id',
+        permissions = [
             ('can_remind', _('Reminders of tasks'))
-        )
+        ]
 
 
-class ExtraComment(models.Model):
+class ExtraComment(BaseAbstractModel):
     text = models.TextField(_('Text of comment'))
     task = models.ForeignKey(
         Task, verbose_name=_('Task'),
@@ -193,10 +234,10 @@ class ExtraComment(models.Model):
         db_table = 'task_extra_comments'
         verbose_name = _('Extra comment')
         verbose_name_plural = _('Extra comments')
-        ordering = ('-date_create',)
+        ordering = '-date_create',
 
 
-class TaskDocumentAttachment(models.Model):
+class TaskDocumentAttachment(BaseAbstractModel):
     title = models.CharField(max_length=64)
     doc_file = models.FileField(upload_to='task_attachments/%Y/%m/', max_length=128)
     create_time = models.DateTimeField(auto_now_add=True)

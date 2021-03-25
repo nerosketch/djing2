@@ -6,13 +6,14 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.db import models
 from djing2.lib import safe_int
+from djing2.models import BaseAbstractModel
 from profiles.models import UserProfile
 
 DIAL_RECORDS_PATH = getattr(settings, 'DIAL_RECORDS_PATH')
 DIAL_RECORDS_EXTENSION = getattr(settings, 'DIAL_RECORDS_EXTENSION')
 
 
-class ATSDeviceModel(models.Model):
+class ATSDeviceModel(BaseAbstractModel):
     name = models.CharField(_('ATS device name'), max_length=32)
 
     def __str__(self):
@@ -20,7 +21,7 @@ class ATSDeviceModel(models.Model):
 
     class Meta:
         db_table = 'ats_devices'
-        ordering = ('-id',)
+        ordering = '-id',
 
 
 class DialAccount(UserProfile):
@@ -61,7 +62,7 @@ class DialAccount(UserProfile):
 #         return self.create(**call)
 
 
-class DialLog(models.Model):
+class DialLog(BaseAbstractModel):
     uid = models.CharField(
         _('Unique identifier'), unique=True, max_length=32
     )
@@ -135,10 +136,10 @@ class DialLog(models.Model):
 
     class Meta:
         db_table = 'dial_log'
-        ordering = ('-id',)
+        ordering = '-id',
 
 
-class SMSModel(models.Model):
+class SMSModel(BaseAbstractModel):
     make_time = models.DateTimeField(_('Create time'), auto_now_add=True)
     sender = models.CharField(_('Sender'), max_length=80)
     receiver = models.CharField(_('Receiver'), max_length=80)
@@ -149,4 +150,4 @@ class SMSModel(models.Model):
 
     class Meta:
         db_table = 'dial_sms'
-        ordering = ('-id',)
+        ordering = '-id',

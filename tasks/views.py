@@ -1,14 +1,16 @@
 from django.db.models import Count
 from django.utils.translation import gettext
+from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
 from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
+from profiles.models import UserProfile
 from tasks import models
 from tasks import serializers
-from profiles.models import UserProfile
 
 
 class ChangeLogModelViewSet(DjingModelViewSet):
@@ -55,12 +57,14 @@ class TaskModelViewSet(DjingModelViewSet):
                 )
         return super().create(request, *args, **kwargs)
 
-    def perform_create(self, serializer):
-        serializer.save(
-            author=self.request.user
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(
+            serializer=serializer,
+            author=self.request.user,
+            site=self.request.site
         )
 
-    @action(detail=False)
+    @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
     def active_task_count(self, request):
         tasks_count = 0
         if isinstance(request.user, UserProfile):
@@ -84,6 +88,7 @@ class TaskModelViewSet(DjingModelViewSet):
 
     @action(detail=True)
     def remind(self, request, pk=None):
+        self.check_permission_code(request, 'tasks.can_remind')
         task = self.get_object()
         task.send_notification()
         return Response(status=status.HTTP_200_OK)
@@ -107,20 +112,65 @@ class TaskModelViewSet(DjingModelViewSet):
 
         group_id = safe_int(group_id)
         if group_id > 0:
-            recipients = UserProfile.objects.get_profiles_by_group(group_id=group_id).only('pk').values_list('pk', flat=True)
+            recipients = UserProfile.objects.get_profiles_by_group(
+                group_id=group_id
+            ).only('pk').values_list(
+                'pk', flat=True
+            )
             return Response({
                 'status': 1,
                 'recipients': recipients
             })
         return Response('"group_id" parameter is required', status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False)
+    def state_percent_report(self, request):
+        def _build_format(num: int, name: str):
+            state_count, state_percent = models.Task.objects.task_state_percent(
+                task_state=int(num)
+            )
+            return {
+                'num': num,
+                'name': name,
+                'count': state_count,
+                'percent': state_percent
+            }
+        r = [_build_format(task_state_num, task_state_name) for task_state_num, task_state_name in models.Task.TASK_STATES]
+
+        return Response(r)
+
+    @action(detail=False)
+    def task_mode_report(self, request):
+        report = models.Task.objects.task_mode_report()
+
+        def _get_display(val: int) -> str:
+            r = (str(ttext) for tval, ttext in models.Task.TASK_TYPES if tval == val)
+            try:
+                return next(r)
+            except StopIteration:
+                return ''
+        res = [{
+            'mode': _get_display(vals.get('mode')),
+            'task_count': vals.get('task_count')
+        } for vals in report.values('mode', 'task_count')]
+        return Response({
+            'annotation': res
+        })
+
 
 class AllTasksList(DjingListAPIView):
-    queryset = models.Task.objects.all().select_related(
-        'customer', 'customer__street',
-        'customer__group', 'author'
-    ).annotate(comment_count=Count('extracomment'))
     serializer_class = serializers.TaskModelSerializer
+
+    def get_queryset(self):
+        qs = get_objects_for_user(
+            user=self.request.user,
+            perms='tasks.view_task',
+            klass=models.Task
+        ).order_by('-id')
+        return qs.select_related(
+            'customer', 'customer__street',
+            'customer__group', 'author'
+        ).annotate(comment_count=Count('extracomment'))
 
 
 class AllNewTasksList(AllTasksList):
@@ -133,10 +183,12 @@ class NewTasksList(AllTasksList):
     """
     Returns tasks that new for current user
     """
+
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
-            recipients=self.request.user, task_state=models.Task.TASK_STATE_NEW
+            recipients=self.request.user,
+            task_state=models.Task.TASK_STATE_NEW
         )
 
 
@@ -144,7 +196,8 @@ class FailedTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
-            recipients=self.request.user, task_state=models.Task.TASK_STATE_CONFUSED
+            recipients=self.request.user,
+            task_state=models.Task.TASK_STATE_CONFUSED
         )
 
 
@@ -152,7 +205,8 @@ class FinishedTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(
-            recipients=self.request.user, task_state=models.Task.TASK_STATE_COMPLETED
+            recipients=self.request.user,
+            task_state=models.Task.TASK_STATE_COMPLETED
         )
 
 
@@ -177,7 +231,7 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
     serializer_class = serializers.ExtraCommentModelSerializer
     filterset_fields = ('task', 'author')
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer, *args, **kwargs):
         serializer.save(author=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
@@ -202,5 +256,5 @@ class TaskDocumentAttachmentViewSet(DjingModelViewSet):
     serializer_class = serializers.TaskDocumentAttachmentSerializer
     filterset_fields = ('task',)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer, *args, **kwargs):
         serializer.save(author=self.request.user)
