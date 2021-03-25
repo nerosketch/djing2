@@ -1,5 +1,5 @@
-import importlib
-import os
+# import importlib
+# import os
 from devices.device_config.pon import *
 from devices.device_config.switch import *
 from .base import *
@@ -18,6 +18,7 @@ DEVICE_TYPE_HuaweiS2300 = 8
 DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface = 9
 DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface = 10
 DEVICE_TYPE_DlinkDGS_3627GSwitchInterface = 11
+DEVICE_TYPE_HuaweiS5300_10P_LI_AC = 12
 
 DEVICE_TYPES = [
     (DEVICE_TYPE_UNKNOWN, UnknownDevice),
@@ -32,6 +33,7 @@ DEVICE_TYPES = [
     (DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface, DlinkDGS_3120_24SCSwitchInterface),
     (DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface, DlinkDGS_1100_06MESwitchInterface),
     (DEVICE_TYPE_DlinkDGS_3627GSwitchInterface, DlinkDGS_3627GSwitchInterface),
+    (DEVICE_TYPE_HuaweiS5300_10P_LI_AC, HuaweiS5300_10P_LI_AC)
 ]
 
 DEVICE_ONU_TYPES = [
@@ -40,33 +42,33 @@ DEVICE_ONU_TYPES = [
     DEVICE_TYPE_OnuZTE_F601
 ]
 
-port_templates_modules = {}
-#
-# Import port template modules from 'port_templates' subdirectory of each
-# switch config module
-#
-base_dir = os.path.dirname(os.path.abspath(__file__))
-all_directories = filter(lambda fl: not fl.startswith('_') and os.path.isdir(
-    os.path.join(base_dir, fl)
-), os.listdir(path=base_dir))
-func_num = 0
-for dirc in all_directories:
-    try:
-        port_template_module_files = filter(lambda fl: not fl.startswith('_'), os.listdir(
-            path=os.path.join(base_dir, dirc, 'port_templates')
-        ))
-        for port_template_module_file in port_template_module_files:
-            port_template_module_file = port_template_module_file.split('.')[0]
-            port_template_mod = importlib.import_module(
-                'devices.device_config.%s.port_templates.%s' % (dirc, port_template_module_file))
-            func_names = filter(lambda fn: not fn.startswith('_'), dir(port_template_mod))
-            for func_name in func_names:
-                func = getattr(port_template_mod, func_name)
-                if hasattr(func, 'is_port_template') and func.is_port_template:
-                    port_templates_modules[func_num] = func
-                    func_num += 1
-    except (ModuleNotFoundError, FileNotFoundError):
-        continue
+# port_templates_modules = {}
+# #
+# # Import port template modules from 'port_templates' subdirectory of each
+# # switch config module
+# #
+# base_dir = os.path.dirname(os.path.abspath(__file__))
+# all_directories = filter(lambda fl: not fl.startswith('_') and os.path.isdir(
+#     os.path.join(base_dir, fl)
+# ), os.listdir(path=base_dir))
+# func_num = 0
+# for dirc in all_directories:
+#     try:
+#         port_template_module_files = filter(lambda fl: not fl.startswith('_'), os.listdir(
+#             path=os.path.join(base_dir, dirc, 'port_templates')
+#         ))
+#         for port_template_module_file in port_template_module_files:
+#             port_template_module_file = port_template_module_file.split('.')[0]
+#             port_template_mod = importlib.import_module(
+#                 'devices.device_config.%s.port_templates.%s' % (dirc, port_template_module_file))
+#             func_names = filter(lambda fn: not fn.startswith('_'), dir(port_template_mod))
+#             for func_name in func_names:
+#                 func = getattr(port_template_mod, func_name)
+#                 if hasattr(func, 'is_port_template') and func.is_port_template:
+#                     port_templates_modules[func_num] = func
+#                     func_num += 1
+#     except (ModuleNotFoundError, FileNotFoundError):
+#         continue
 
 
 # Check type for device config classes

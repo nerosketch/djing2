@@ -1,6 +1,10 @@
 from django.urls import path, include
 from django.conf import settings
-from djing2.views import SearchApiView, can_login_by_location
+from djing2.views import (
+    SearchApiView,
+    can_login_by_location,
+    get_vapid_public_key
+)
 
 
 api_urls = [
@@ -15,14 +19,18 @@ api_urls = [
     path('networks/', include('networks.urls', namespace='networks')),
     path('fin/', include('fin_app.urls', namespace='fin_app')),
     path('dial/', include('dials.urls', namespace='dials')),
+    path('sites/', include('sitesapp.urls', namespace='sitesapp')),
+    path('radius/', include('radiusapp.urls', namespace='radiusapp')),
+    path('traf_stat/', include('traf_stat.urls', namespace='traf_stat')),
     path('can_login_by_location/', can_login_by_location),
-    path('search/', SearchApiView.as_view())
+    path('search/', SearchApiView.as_view()),
+    path('webpush/', include('webpush.urls')),
+    path('get_vapid_public_key/', get_vapid_public_key)
 ]
 
 
 urlpatterns = [
     path('api/', include(api_urls)),
-    path('api-auth/', include('rest_framework.urls'))
 ]
 
 
@@ -36,3 +44,4 @@ if settings.DEBUG:
     urlpatterns.extend(staticfiles_urlpatterns())
     urlpatterns.append(path('admin/', admin.site.urls))
     urlpatterns.append(path('__debug__/', include(debug_toolbar.urls)))
+    urlpatterns.append(path('api-auth/', include('rest_framework.urls')))

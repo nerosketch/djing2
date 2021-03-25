@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-09-03 15:23+0300\n"
+"POT-Creation-Date: 2020-11-16 10:42+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -51,15 +51,10 @@ msgstr ""
 "Необходим ip адрес. Или родительское устройство с назначенным ip адресом "
 "необходимо."
 
-#: device_config/pon/epon/epon_bdcom_fora.py:74
-#: device_config/pon/gpon/onu_zte_f660.py:52
+#: device_config/pon/epon/epon_bdcom_fora.py:75
+#: device_config/pon/gpon/onu_zte_f660.py:53
 msgid "name"
 msgstr "имя"
-
-#: device_config/pon/epon/epon_bdcom_fora.py:75
-#: device_config/pon/gpon/onu_zte_f660.py:53 models.py:32
-msgid "Mac address"
-msgstr "Мак адрес"
 
 #: device_config/pon/epon/epon_bdcom_fora.py:77
 msgid "mtu"
@@ -117,58 +112,67 @@ msgstr "ONU не в сети"
 msgid "Onu snmp field must be en integer"
 msgstr "Поле для snmp информации об ONU должно быть числом"
 
-#: device_config/pon/gpon/onu_config/zte_f601_bridge_config.py:64
-#: device_config/pon/gpon/onu_config/zte_f601_bridge_config.py:73
+#: device_config/pon/gpon/onu_config/zte_f601_bridge_config.py:67
+#: device_config/pon/gpon/onu_config/zte_f601_bridge_config.py:76
 #: device_config/pon/gpon/onu_config/zte_f660_router_config.py:52
 #: device_config/pon/gpon/onu_config/zte_f660_router_config.py:61
-#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:169
-#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:178
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:132
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:141
 #: device_config/pon/gpon/zte_utils.py:61
 #, python-format
 msgid "unregistered onu not found, sn=%s"
 msgstr "Незарегистрированная onu с серийным номером '%s' не найдена"
 
-#: device_config/pon/gpon/onu_config/zte_f660_router_config.py:133
-#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:257
-#: models.py:147
+#: device_config/pon/gpon/onu_config/zte_f601_bridge_config.py:94
+#: device_config/pon/gpon/onu_config/zte_f660_router_config.py:74
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:155
+#, python-format
+msgid "olt fiber %d is full"
+msgstr "OLT глаз № %d заполнен"
+
+#: device_config/pon/gpon/onu_config/zte_f601_bridge_config.py:238
+#: device_config/pon/gpon/onu_config/zte_f660_router_config.py:134
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:221
+#: models.py:156
 msgid "You should config parent OLT device for ONU"
 msgstr "Вы должны указать родительское устройство OLT для ONU"
 
-#: device_config/pon/gpon/onu_config/zte_f660_router_config.py:135
-#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:259
+#: device_config/pon/gpon/onu_config/zte_f601_bridge_config.py:240
+#: device_config/pon/gpon/onu_config/zte_f660_router_config.py:136
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:223
 #: device_config/pon/gpon/zte_utils.py:30
-#: device_config/switch/dlink/dgs_1100_10me.py:37 models.py:149
+#: device_config/switch/dlink/dgs_1100_10me.py:37 models.py:158
 msgid "You have not info in extra_data field, please fill it in JSON"
 msgstr ""
 "Не заполнено поле 'Техническая информация', обратитесь к администратору"
 
-#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:51
+#: device_config/pon/gpon/onu_config/zte_f660_static_bridge_config.py:52
 msgid "Multiple native vid is not allowed on one port"
 msgstr "Несколько untagged vid не может быть на одном порту"
 
-#: device_config/pon/gpon/onu_zte_f660.py:57
+#: device_config/pon/gpon/onu_zte_f660.py:56
 msgid "vlans"
 msgstr "вланы"
 
-#: device_config/pon/gpon/onu_zte_f660.py:58
+#: device_config/pon/gpon/onu_zte_f660.py:57
 msgid "serial"
 msgstr "серийник"
 
-#: device_config/pon/gpon/onu_zte_f660.py:59
+#: device_config/pon/gpon/onu_zte_f660.py:58
 msgid "onu_type"
 msgstr "тип onu"
 
-#: device_config/pon/gpon/onu_zte_f660.py:142
+#: device_config/pon/gpon/onu_zte_f660.py:141
 msgid "Zte onu snmp field must be two dot separated integers"
 msgstr ""
 "Поле snmp информации для ZTE ONU должно быть двумя целыми числами, "
 "разделенными точкой"
 
-#: device_config/pon/gpon/onu_zte_f660.py:190
+#: device_config/pon/gpon/onu_zte_f660.py:189
 msgid "Mac of device not equal mac by snmp"
 msgstr "Мак устройства не совпадает с маком, полученным по snmp"
 
-#: device_config/pon/gpon/onu_zte_f660.py:200
+#: device_config/pon/gpon/onu_zte_f660.py:199
 msgid "Could not fetch serial for onu"
 msgstr "Не получается получить серийный номер для onu"
 
@@ -177,7 +181,7 @@ msgstr "Не получается получить серийный номер �
 msgid "File %(filename)s is not exists or not executable"
 msgstr "Файл '%(filename)s' не существует или не исполняем"
 
-#: device_config/switch/eltex/general.py:18
+#: device_config/switch/eltex/general.py:21
 msgid "Eltex switch"
 msgstr "Элтекс свич"
 
@@ -185,170 +189,190 @@ msgstr "Элтекс свич"
 msgid "Huawei switch"
 msgstr "Huawei свич"
 
-#: models.py:28
+#: models.py:30
 msgid "Ip address"
 msgstr "Ip адрес"
 
-#: models.py:35
+#: models.py:34
+msgid "Mac address"
+msgstr "Мак адрес"
+
+#: models.py:37
 msgid "Comment"
 msgstr "Комментарий"
 
-#: models.py:37
+#: models.py:39
 msgid "Device type"
 msgstr "Тип устройства"
 
-#: models.py:41
+#: models.py:43
 msgid "SNMP password"
 msgstr "Пароль SNMP"
 
-#: models.py:46
+#: models.py:48
 msgid "Device group"
 msgstr "Группа устройства"
 
-#: models.py:49
+#: models.py:51
 msgid "Parent device"
 msgstr "Родительское устройство"
 
-#: models.py:54
+#: models.py:56
 msgid "SNMP extra info"
 msgstr "Доп. инфо для snmp"
 
-#: models.py:58
+#: models.py:60
 msgid "Extra data"
 msgstr "Дополнительные данные"
 
-#: models.py:59
+#: models.py:61
 msgid "Extra data in JSON format. You may use it for your custom data"
 msgstr ""
 "Дополнительные данные в формате JSON. Вы можете хранить там собственные "
 "данные"
 
-#: models.py:63
+#: models.py:65
 msgid "Available vlans"
 msgstr "Доступные vlan'ы"
 
-#: models.py:72
+#: models.py:74
 msgid "Undefined"
 msgstr "Не определено"
 
-#: models.py:73
+#: models.py:75
 msgid "Up"
 msgstr "В сети"
 
-#: models.py:74
+#: models.py:76
 msgid "Unreachable"
 msgstr "Не доступно"
 
-#: models.py:75
+#: models.py:77
 msgid "Down"
 msgstr "Не в сети"
 
-#: models.py:78
+#: models.py:80
 msgid "Status"
 msgstr "Состояние"
 
-#: models.py:83
+#: models.py:85
 msgid "Send notify when monitoring state changed"
 msgstr "Отправлять уведомления при событиях мониторинга"
 
-#: models.py:87
+#: models.py:89
 msgid "Code"
 msgstr "Код"
 
-#: models.py:93 models.py:288
+#: models.py:97 models.py:300
 msgid "Device"
 msgstr "Устройство"
 
-#: models.py:94
+#: models.py:98
 msgid "Devices"
 msgstr "Устройства"
 
-#: models.py:169
+#: models.py:101
+msgid "Can remove from OLT"
+msgstr "Может удалять с OLT"
+
+#: models.py:102
+msgid "Can fix onu"
+msgstr "Может исправлять onu"
+
+#: models.py:103
+msgid "Can apply onu config"
+msgstr "Может применять конфиг к onu"
+
+#: models.py:178
 #, python-format
 msgid "Onu with mac \"%(onu_mac)s\" not found on OLT"
 msgstr "Onu с мак адресом \"%(onu_mac)s\" не найдено на OLT"
 
-#: models.py:172
+#: models.py:181
 msgid "Parent device not found"
 msgstr "Вышестоящее устройство не найдено"
 
-#: models.py:261 models.py:278
+#: models.py:188
+msgid "Fixed"
+msgstr "Исправлено"
+
+#: models.py:270 models.py:290
 msgid "Not chosen"
 msgstr "Не выбрано"
 
-#: models.py:262
+#: models.py:271
 msgid "Default"
 msgstr "По умолчанию"
 
-#: models.py:263
+#: models.py:272
 msgid "Untagged"
 msgstr "Не тегирован"
 
-#: models.py:264
+#: models.py:273
 msgid "Tagged"
 msgstr "Тегирован"
 
-#: models.py:265 models.py:281
+#: models.py:274 models.py:293
 msgid "Hybrid"
 msgstr "Гибрид"
 
-#: models.py:272 models.py:293
+#: models.py:281 models.py:305
 msgid "Operating mode"
 msgstr "Режим"
 
-#: models.py:279
+#: models.py:291
 msgid "Access"
 msgstr "Доступ"
 
-#: models.py:280
+#: models.py:292
 msgid "Trunk"
 msgstr "Транк"
 
-#: models.py:282
+#: models.py:294
 msgid "General"
 msgstr ""
 
-#: models.py:290
+#: models.py:302
 msgid "Number"
 msgstr "Номер"
 
-#: models.py:291
+#: models.py:303
 msgid "Description"
 msgstr "Описание"
 
-#: models.py:298
+#: models.py:310
 msgid "VLan list"
 msgstr "Список VLAN'ов"
 
-#: models.py:333
+#: models.py:345
 msgid "Can toggle ports"
 msgstr "Может переключать порты"
 
-#: models.py:335
+#: models.py:347
 msgid "Port"
 msgstr "Порт"
 
-#: models.py:336
+#: models.py:348
 msgid "Ports"
 msgstr "Порты"
 
-#: serializers.py:103
+#: serializers.py:104
 msgid "Config code"
 msgstr "Код конфига"
 
-#: views.py:141
+#: views.py:154
 msgid "Process locked by another process"
 msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
 
-#: views.py:201
+#: views.py:219
 msgid "Deleted"
 msgstr "Удалено"
 
-#: views.py:205
+#: views.py:223
 msgid "Failed"
 msgstr "Не получилось"
 
-#: views.py:390
+#: views.py:435
 msgid "Parameter port_state is bad"
 msgstr "Параметр port_state плох"
 
