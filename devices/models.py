@@ -1,6 +1,6 @@
 from typing import Optional, Tuple, Iterator
 
-from django.contrib.postgres.fields import JSONField
+from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
@@ -13,6 +13,7 @@ from devices.device_config import (
     OptionalScriptCallResult)
 from devices.device_config.device_config_util import get_all_device_config_types
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
+from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from networks.models import VlanIf
 
@@ -21,7 +22,7 @@ def _make_device_code_config_choices():
     return tuple(set((dtype.short_code, dtype.title) for dtype in get_all_device_config_types()))
 
 
-class Device(models.Model):
+class Device(BaseAbstractModel):
     _cached_manager = None
 
     ip_address = models.GenericIPAddressField(
@@ -54,7 +55,7 @@ class Device(models.Model):
         _('SNMP extra info'), max_length=256,
         null=True, blank=True
     )
-    extra_data = JSONField(
+    extra_data = models.JSONField(
         verbose_name=_('Extra data'),
         help_text=_('Extra data in JSON format. You may use it for your custom data'),
         blank=True, null=True
@@ -88,11 +89,18 @@ class Device(models.Model):
                             null=True, default=None,
                             choices=_make_device_code_config_choices())
 
+    sites = models.ManyToManyField(Site, blank=True)
+
     class Meta:
         db_table = 'device'
         verbose_name = _('Device')
         verbose_name_plural = _('Devices')
-        ordering = ('id',)
+        ordering = 'id',
+        permissions = [
+            ('can_remove_from_olt', _('Can remove from OLT')),
+            ('can_fix_onu', _('Can fix onu')),
+            ('can_apply_onu_config', _('Can apply onu config')),
+        ]
 
     def get_manager_klass(self):
         try:
@@ -265,13 +273,16 @@ class PortVlanMemberMode(models.IntegerChoices):
     HYBRID = 4, _('Hybrid')
 
 
-class PortVlanMemberModel(models.Model):
+class PortVlanMemberModel(BaseAbstractModel):
     vlanif = models.ForeignKey(VlanIf, on_delete=models.CASCADE)
     port = models.ForeignKey('Port', on_delete=models.CASCADE)
     mode = models.PositiveSmallIntegerField(
         _('Operating mode'), default=PortVlanMemberMode.NOT_CHOSEN,
         choices=PortVlanMemberMode.choices
     )
+
+    class Meta:
+        abstract = False
 
 
 class PortOperatingMode(models.IntegerChoices):
@@ -282,7 +293,7 @@ class PortOperatingMode(models.IntegerChoices):
     GENERAL = 4, _('General')
 
 
-class Port(models.Model):
+class Port(BaseAbstractModel):
     device = models.ForeignKey(
         Device, on_delete=models.CASCADE,
         verbose_name=_('Device')
@@ -329,9 +340,9 @@ class Port(models.Model):
     class Meta:
         db_table = 'device_port'
         unique_together = ('device', 'num')
-        permissions = (
+        permissions = [
             ('can_toggle_ports', _('Can toggle ports')),
-        )
+        ]
         verbose_name = _('Port')
         verbose_name_plural = _('Ports')
-        ordering = ('num',)
+        ordering = 'num',

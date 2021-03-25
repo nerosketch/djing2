@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'rest_framework',
     'rest_framework.authtoken',
     'encrypted_model_fields',
@@ -52,6 +53,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'guardian',
     'django_cleanup.apps.CleanupConfig',
+    'webpush',
+    'djing2.apps.Djing2Config',
     'groupapp',
     'profiles.apps.ProfilesConfig',
     'services.apps.ServicesConfig',
@@ -59,12 +62,14 @@ INSTALLED_APPS = [
     'devices.apps.DevicesConfig',
     'networks',
     'customers.apps.CustomersConfig',
-    'messenger',
+    'messenger.apps.MessengerConfig',
     'tasks.apps.TasksConfig',
     'fin_app',
     'dials',
     'msg_app',
     'traf_stat',
+    'sitesapp.apps.SitesAppConfig',
+    'radiusapp.apps.RadiusAppConfig',
 ]
 
 if DEBUG:
@@ -76,10 +81,11 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'djing2.lib.mixins.CustomCurrentSiteMiddleware'
 ]
 
 if DEBUG:
@@ -105,8 +111,8 @@ TEMPLATES = [
 
 AUTHENTICATION_BACKENDS = (
     'djing2.lib.auth_backends.DjingAuthBackend',
-    'guardian.backends.ObjectPermissionBackend'
-    # 'djing2.lib.auth_backends.LocationAuthBackend',
+    'guardian.backends.ObjectPermissionBackend',
+    'djing2.lib.auth_backends.LocationAuthBackend',
 )
 
 WSGI_APPLICATION = 'djing2.wsgi.application'
@@ -202,13 +208,14 @@ if DEBUG:
 
 # STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-# Example output: 16 september 2018
-DATE_FORMAT = 'd E Y'
+# Example output: 2018-09-16
+DATE_FORMAT = 'Y-b-d'
+DATETIME_FORMAT = 'Y-b-d H:i'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-DEFAULT_PICTURE = '/static/img/user_ava.gif'
+DEFAULT_PICTURE = '/static/img/user_ava_min.gif'
 AUTH_USER_MODEL = 'profiles.BaseAccount'
 
 # LOGIN_URL = reverse_lazy('acc_app:login')
@@ -228,18 +235,32 @@ COMPANY_NAME = getattr(local_settings, 'COMPANY_NAME', 'Company Name')
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'djing2.lib.paginator.QueryPageNumberPagination',
-    'PAGE_SIZE': 180,
+    # 'PAGE_SIZE': 180,
     'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'djing2.lib.authenticators.CustomTokenAuthentication'
     ],
-    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
-    'DATETIME_FORMAT': '%d %B %H:%M',
+    'DEFAULT_FILTER_BACKENDS': [
+        'djing2.lib.filters.CustomObjectPermissionsFilter',
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ],
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M',
+    'DATE_FORMAT': '%Y-%m-%d',
+    'DATETIME_INPUT_FORMATS': ['%Y-%m-%d %H:%M', '%Y-%m-%dT%H:%M', '%Y-%m-%d'],
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.IsAdminUser',
+        # 'djing2.permissions.CustomizedDjangoObjectPermissions'
+    ],
     # 'DEFAULT_RENDERER_CLASSES': (
     #     'rest_framework.renderers.JSONRenderer',
     # )
 }
+
+# Guardian options
+GUARDIAN_RAISE_403 = True
+# GUARDIAN_AUTO_PREFETCH = True
 
 if DEBUG:
     CORS_ORIGIN_ALLOW_ALL = True
@@ -248,8 +269,13 @@ if DEBUG:
         'http://0.0.0.0:8080',
     )
     REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'].append(
-        'rest_framework.authentication.SessionAuthentication'
+        'rest_framework.authentication.SessionAuthentication',
     )
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
+        'rest_framework.renderers.JSONRenderer',
+        'djing2.lib.renderer.BrowsableAPIRendererNoForm',
+        'rest_framework.renderers.AdminRenderer',
+    ]
 
 
 # Encrypted fields
@@ -272,10 +298,16 @@ if DEBUG:
 DHCP_DEFAULT_LEASE_TIME = 86400
 
 # Default radius session time
-RADIUS_SESSION_TIME = 3600
+RADIUS_SESSION_TIME = getattr(local_settings, 'RADIUS_SESSION_TIME', 3600)
 
 # Address to websocket transmitter
 WS_ADDR = '127.0.0.1:3211'
 
 # absolute path to arping command
 ARPING_COMMAND = getattr(local_settings, 'ARPING_COMMAND', '/usr/sbin/arping')
+
+# SITE_ID = 1
+
+WEBPUSH_SETTINGS = getattr(local_settings, 'WEBPUSH_SETTINGS')
+
+RADIUS_FINISH_SESSION_CMD_LIST = getattr(local_settings, 'RADIUS_FINISH_SESSION_CMD_LIST')

@@ -31,7 +31,8 @@ class DeviceModelSerializer(BaseCustomModelSerializer):
             'dev_type', 'dev_type_str', 'man_passw', 'group',
             'parent_dev', 'parent_dev_name', 'parent_dev_group',
             'snmp_extra', 'attached_users', 'iface_name',
-            'extra_data', 'status', 'is_noticeable', 'code'
+            'extra_data', 'status', 'is_noticeable', 'code',
+            'sites'
         )
         extra_kwargs = {'ip_address': {'required': False}}
 
@@ -47,7 +48,7 @@ class DeviceWithoutGroupModelSerializer(BaseCustomModelSerializer):
         fields = (
             'pk', 'ip_address', 'mac_addr', 'comment',
             'dev_type', 'man_passw', 'parent_dev', 'snmp_extra',
-            'status', 'is_noticeable'
+            'status', 'is_noticeable', 'sites'
         )
 
 
