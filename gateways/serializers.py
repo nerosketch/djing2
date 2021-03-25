@@ -14,4 +14,4 @@ class GatewayModelSerializer(BaseCustomModelSerializer):
         fields = ('id', 'title', 'ip_address', 'ip_port', 'auth_login',
                   'auth_passw', 'gw_type', 'is_default', 'enabled',
                   'gw_type_str', 'customer_count', 'customer_count_active',
-                  'customer_count_w_service')
+                  'customer_count_w_service', 'sites')

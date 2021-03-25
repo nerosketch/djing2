@@ -11,7 +11,7 @@ from django.conf import settings
 
 def safe_float(fl: Any) -> float:
     try:
-        return 0.0 if not fl else float(fl)
+        return 0.0 if not fl else float(fl or 0)
     except (ValueError, OverflowError):
         return 0.0
 

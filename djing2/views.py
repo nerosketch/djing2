@@ -1,7 +1,9 @@
 import re
 from ipaddress import ip_address, AddressValueError
 from django.db.models import Q
-from rest_framework.decorators import api_view
+from django.conf import settings
+from guardian.shortcuts import get_objects_for_user
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 
 from djing2 import MAC_ADDR_REGEX, IP_ADDR_REGEX
@@ -9,6 +11,7 @@ from djing2.serializers import SearchSerializer
 from djing2.viewsets import DjingListAPIView
 from customers.models import Customer
 from devices.models import Device
+from networks.models import CustomerIpLeaseModel
 
 
 def accs_format(acc: Customer) -> dict:
@@ -58,24 +61,32 @@ class SearchApiView(DjingListAPIView):
         limit_count = 100
 
         if s:
+            customers = get_objects_for_user(
+                request.user,
+                'customers.view_customer', klass=Customer
+            )
             if re.match(IP_ADDR_REGEX, s):
-                customers = Customer.objects.filter(
+                customers = customers.filter(
                     Q(customeripleasemodel__ip_address__icontains=s) |
-                    Q(ip_address__icontains=s)
+                    Q(ip_address__icontains=s)  # deprecated: marked to removal
                 )
             else:
-                customers = Customer.objects.filter(
+                customers = customers.filter(
                     Q(fio__icontains=s) | Q(username__icontains=s) |
                     Q(telephone__icontains=s) |
                     Q(additional_telephones__telephone__icontains=s) |
-                    Q(ip_address__icontains=s)
+                    Q(ip_address__icontains=s)  # deprecated: marked to removal
                 )
             customers = customers.select_related('group')[:limit_count]
 
+            devices = get_objects_for_user(
+                request.user,
+                'devices.view_device', klass=Device
+            )
             if re.match(MAC_ADDR_REGEX, s):
-                devices = Device.objects.filter(mac_addr=s)[:limit_count]
+                devices = devices.filter(mac_addr=s)[:limit_count]
             else:
-                devices = Device.objects.filter(
+                devices = devices.filter(
                     Q(comment__icontains=s) | Q(ip_address__icontains=s)
                 )[:limit_count]
         else:
@@ -88,11 +99,20 @@ class SearchApiView(DjingListAPIView):
         })
 
 
-@api_view(http_method_names=['get'])
+@api_view()
+@authentication_classes([])
+@permission_classes([])
 def can_login_by_location(request):
     try:
         remote_ip = ip_address(request.META.get('REMOTE_ADDR'))
         if remote_ip.version == 4:
+            ips_exists = CustomerIpLeaseModel.objects.filter(
+                ip_address=str(remote_ip)
+            ).exists()
+            if ips_exists:
+                return Response(True)
+
+            # deprecated: marked to removal
             has_exist = Customer.objects.filter(
                 ip_address=str(remote_ip),
                 is_active=True
@@ -101,3 +121,14 @@ def can_login_by_location(request):
     except AddressValueError:
         pass
     return Response(False)
+
+
+@api_view()
+@authentication_classes([])
+@permission_classes([])
+def get_vapid_public_key(request):
+    opts = getattr(settings, 'WEBPUSH_SETTINGS')
+    if opts is None or not isinstance(opts, dict):
+        return Response()
+    vpk = opts.get('VAPID_PUBLIC_KEY')
+    return Response(vpk)
