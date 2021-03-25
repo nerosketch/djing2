@@ -2,6 +2,8 @@ from django.shortcuts import resolve_url
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+from djing2.models import BaseAbstractModel
 from profiles.models import UserProfile
 from djing2.tasks import send_email_notify
 
@@ -10,7 +12,7 @@ class MessageError(Exception):
     pass
 
 
-class MessageStatus(models.Model):
+class MessageStatus(BaseAbstractModel):
     msg = models.ForeignKey(
         'Message', on_delete=models.CASCADE,
         related_name='msg_statuses'
@@ -44,7 +46,7 @@ class MessageStatus(models.Model):
         verbose_name_plural = _('Messages statuses')
 
 
-class Message(models.Model):
+class Message(BaseAbstractModel):
     text = models.TextField(_("Body"))
     sent_at = models.DateTimeField(_("sent at"), auto_now_add=True)
     author = models.ForeignKey(
@@ -87,12 +89,12 @@ class Message(models.Model):
 
     class Meta:
         db_table = 'messages'
-        ordering = ('-id',)
+        ordering = '-id',
         verbose_name = _("Message")
         verbose_name_plural = _("Messages")
 
 
-class ConversationMembership(models.Model):
+class ConversationMembership(BaseAbstractModel):
     account = models.ForeignKey(
         UserProfile, on_delete=models.CASCADE,
         related_name='memberships'
@@ -171,7 +173,7 @@ class ConversationManager(models.Manager):
         return conversations
 
 
-class Conversation(models.Model):
+class Conversation(BaseAbstractModel):
     title = models.CharField(_('Title'), max_length=32)
     participants = models.ManyToManyField(
         UserProfile, related_name='conversations',
@@ -296,4 +298,4 @@ class Conversation(models.Model):
         db_table = 'conversations'
         verbose_name = _("Conversation")
         verbose_name_plural = _("Conversations")
-        ordering = ('title',)
+        ordering = 'title',

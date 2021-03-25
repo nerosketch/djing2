@@ -91,3 +91,7 @@ class HuaweiS2300(EltexSwitch):
                 continue
             name = self._get_vid_name(vid)
             yield Vlan(vid=vid, title=name)
+
+
+class HuaweiS5300_10P_LI_AC(HuaweiS2300):
+    ports_len = 10
