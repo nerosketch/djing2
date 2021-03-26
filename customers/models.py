@@ -1,12 +1,12 @@
 import re
 from datetime import datetime, timedelta
-from ipaddress import IPv4Address, AddressValueError
+from ipaddress import AddressValueError, IPv4Address
 from typing import Optional
 
 from bitfield import BitField
 from django.conf import settings
 from django.core import validators
-from django.db import models, transaction, connection
+from django.db import connection, models, transaction
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
@@ -15,10 +15,11 @@ from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.custom_logic import SERVICE_CHOICES
-from services.models import Service, OneShotPay, PeriodicPay
+from services.models import OneShotPay, PeriodicPay, Service
+
 from . import custom_signals
 
-RADIUS_SESSION_TIME = getattr(settings, 'RADIUS_SESSION_TIME', 3600)
+RADIUS_SESSION_TIME = getattr(settings, "RADIUS_SESSION_TIME", 3600)
 
 
 class NotEnoughMoney(LogicError):
@@ -26,8 +27,7 @@ class NotEnoughMoney(LogicError):
 
 
 class CustomerServiceModelManager(models.QuerySet):
-    def _filter_raw_manage_customer_service(self, balance_equal_operator: str,
-                                            customer_id=None):
+    def _filter_raw_manage_customer_service(self, balance_equal_operator: str, customer_id=None):
         """
         Фильтруем истёкшие абонентские услуги, которые закончились
         или которые можно автоматически продлить.
@@ -44,35 +44,25 @@ class CustomerServiceModelManager(models.QuerySet):
             "where",
             "cs.deadline < now() and",
             "c.auto_renewal_service and",
-            "c.balance %s s.cost" % balance_equal_operator
+            "c.balance %s s.cost" % balance_equal_operator,
         ]
         customer_id = safe_int(customer_id)
         params = None
         if customer_id > 0:
             query.append("and c.baseaccount_ptr_id = %s")
             params = [customer_id]
-        query = ' '.join(query)
+        query = " ".join(query)
         return self.raw(raw_query=query, params=params)
 
     def filter_auto_continue_raw(self, customer_id=None):
-        return self._filter_raw_manage_customer_service(
-            customer_id=customer_id,
-            balance_equal_operator='>='
-        )
+        return self._filter_raw_manage_customer_service(customer_id=customer_id, balance_equal_operator=">=")
 
     def filter_expired_raw(self, customer_id=None):
-        return self._filter_raw_manage_customer_service(
-            customer_id=customer_id,
-            balance_equal_operator='<'
-        )
+        return self._filter_raw_manage_customer_service(customer_id=customer_id, balance_equal_operator="<")
 
 
 class CustomerService(BaseAbstractModel):
-    service = models.ForeignKey(
-        Service,
-        on_delete=models.CASCADE,
-        related_name='link_to_service'
-    )
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="link_to_service")
     start_time = models.DateTimeField(null=True, blank=True, default=None)
     deadline = models.DateTimeField(null=True, blank=True, default=None)
 
@@ -108,13 +98,11 @@ class CustomerService(BaseAbstractModel):
         except AddressValueError:
             return None
         with connection.cursor() as cur:
-            cur.execute("SELECT * FROM find_customer_service_by_ip(%s::inet)",
-                        (str(ip_addr),))
+            cur.execute("SELECT * FROM find_customer_service_by_ip(%s::inet)", (str(ip_addr),))
             res = cur.fetchone()
         if res is None:
             return None
-        (f_id, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin,
-         f_speed_burst, f_start_time, f_deadline) = res
+        f_id, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst, f_start_time, f_deadline = res
         if f_id is None:
             return None
         srv = Service(
@@ -128,46 +116,45 @@ class CustomerService(BaseAbstractModel):
             calc_type=f_calc_type,
             is_admin=f_is_admin,
         )
-        return CustomerService(
-            service=srv,
-            start_time=f_start_time,
-            deadline=f_deadline
-        )
+        return CustomerService(service=srv, start_time=f_start_time, deadline=f_deadline)
 
     @staticmethod
-    def find_customer_service_by_device_credentials(customer_id: int,
-                                                    current_service_id: int):
+    def find_customer_service_by_device_credentials(customer_id: int, current_service_id: int):
         customer_id = safe_int(customer_id)
         current_service_id = safe_int(current_service_id)
         # TODO: make tests for it
         with connection.cursor() as cur:
-            query = ("SELECT * FROM "
-                     "find_customer_service_by_device_credentials(%s, %s)")
-            cur.execute(
-                query,
-                [customer_id, current_service_id])
+            query = "SELECT * FROM " "find_customer_service_by_device_credentials(%s, %s)"
+            cur.execute(query, [customer_id, current_service_id])
             res = cur.fetchone()
         if res is None or res[0] is None:
             return None
-        (customer_service_id, service_id, speed_in, speed_out, cost, calc_type,
-         is_admin, speed_burst, start_time, deadline) = res
+        (
+            customer_service_id,
+            service_id,
+            speed_in,
+            speed_out,
+            cost,
+            calc_type,
+            is_admin,
+            speed_burst,
+            start_time,
+            deadline,
+        ) = res
 
         srv = Service(
             pk=service_id,
-            title='',
-            descr='',
+            title="",
+            descr="",
             speed_in=float(speed_in),
             speed_out=float(speed_out),
             cost=float(cost),
             calc_type=calc_type,
             is_admin=is_admin,
-            speed_burst=speed_burst
+            speed_burst=speed_burst,
         )
         customer_service = CustomerService(
-            pk=customer_service_id,
-            service=srv,
-            start_time=start_time,
-            deadline=deadline
+            pk=customer_service_id, service=srv, start_time=start_time, deadline=deadline
         )
         return customer_service
 
@@ -177,10 +164,10 @@ class CustomerService(BaseAbstractModel):
     objects = CustomerServiceModelManager.as_manager()
 
     class Meta:
-        db_table = 'customer_service'
-        verbose_name = _('Customer service')
-        verbose_name_plural = _('Customer services')
-        ordering = 'start_time',
+        db_table = "customer_service"
+        verbose_name = _("Customer service")
+        verbose_name_plural = _("Customer services")
+        ordering = ("start_time",)
 
 
 class CustomerStreet(BaseAbstractModel):
@@ -191,25 +178,22 @@ class CustomerStreet(BaseAbstractModel):
         return self.name
 
     class Meta:
-        db_table = 'customer_street'
-        verbose_name = _('Street')
-        verbose_name_plural = _('Streets')
-        ordering = 'name',
+        db_table = "customer_street"
+        verbose_name = _("Street")
+        verbose_name_plural = _("Streets")
+        ordering = ("name",)
 
 
 class CustomerLog(BaseAbstractModel):
-    customer = models.ForeignKey('Customer', on_delete=models.CASCADE)
+    customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
-    author = models.ForeignKey(
-        BaseAccount, on_delete=models.SET_NULL,
-        related_name='+', blank=True, null=True
-    )
+    author = models.ForeignKey(BaseAccount, on_delete=models.SET_NULL, related_name="+", blank=True, null=True)
     comment = models.CharField(max_length=128)
     date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'customer_log'
-        ordering = '-date',
+        db_table = "customer_log"
+        ordering = ("-date",)
 
     def __str__(self):
         return self.comment
@@ -217,8 +201,7 @@ class CustomerLog(BaseAbstractModel):
 
 class CustomerManager(MyUserManager):
     def get_queryset(self):
-        return super(CustomerManager, self).get_queryset().filter(
-            is_admin=False)
+        return super().get_queryset().filter(is_admin=False)
 
     def create_user(self, telephone, username, password=None, *args, **kwargs):
         """
@@ -226,13 +209,9 @@ class CustomerManager(MyUserManager):
         username and password.
         """
         if not telephone:
-            raise ValueError(_('Users must have an telephone number'))
+            raise ValueError(_("Users must have an telephone number"))
 
-        user = self.model(
-            telephone=telephone,
-            username=username,
-            *args, **kwargs
-        )
+        user = self.model(telephone=telephone, username=username, *args, **kwargs)
         user.is_admin = False
 
         user.set_password(password)
@@ -240,60 +219,55 @@ class CustomerManager(MyUserManager):
         return user
 
     def customer_service_type_report(self):
-        qs = super().get_queryset().filter(is_active=True).exclude(
-            current_service=None)
+        qs = super().get_queryset().filter(is_active=True).exclude(current_service=None)
         all_count = qs.count()
-        admin_count = qs.filter(
-            current_service__service__is_admin=True).count()
+        admin_count = qs.filter(current_service__service__is_admin=True).count()
         zero_cost = qs.filter(current_service__service__cost=0).count()
 
-        calc_type_counts = [{
-            'calc_type_count': qs.filter(
-                current_service__service__calc_type=sc_num).count(),
-            'service_descr': str(sc_class.description)
-        } for sc_num, sc_class in SERVICE_CHOICES]
+        calc_type_counts = [
+            {
+                "calc_type_count": qs.filter(current_service__service__calc_type=sc_num).count(),
+                "service_descr": str(sc_class.description),
+            }
+            for sc_num, sc_class in SERVICE_CHOICES
+        ]
 
         return {
-            'all_count': all_count,
-            'admin_count': admin_count,
-            'zero_cost_count': zero_cost,
-            'calc_type_counts': calc_type_counts
+            "all_count": all_count,
+            "admin_count": admin_count,
+            "zero_cost_count": zero_cost,
+            "calc_type_counts": calc_type_counts,
         }
 
     def activity_report(self):
         qs = super().get_queryset()
         all_count = qs.count()
         enabled_count = qs.filter(is_active=True).count()
-        with_services_count = qs.filter(is_active=True).exclude(
-            current_service=None).count()
+        with_services_count = qs.filter(is_active=True).exclude(current_service=None).count()
 
-        active_count = qs.annotate(
-            ips=models.Count('customeripleasemodel')
-        ).filter(
-            is_active=True, ips__gt=0
-        ).exclude(
-            current_service=None
-        ).count()
+        active_count = (
+            qs.annotate(ips=models.Count("customeripleasemodel"))
+            .filter(is_active=True, ips__gt=0)
+            .exclude(current_service=None)
+            .count()
+        )
 
-        commercial_customers = qs.filter(
-            is_active=True,
-            current_service__service__is_admin=False,
-            current_service__service__cost__gt=0
-        ).exclude(
-            current_service=None
-        ).count()
+        commercial_customers = (
+            qs.filter(is_active=True, current_service__service__is_admin=False, current_service__service__cost__gt=0)
+            .exclude(current_service=None)
+            .count()
+        )
 
         return {
-            'all_count': all_count,
-            'enabled_count': enabled_count,
-            'with_services_count': with_services_count,
-            'active_count': active_count,
-            'commercial_customers': commercial_customers
+            "all_count": all_count,
+            "enabled_count": enabled_count,
+            "with_services_count": with_services_count,
+            "active_count": active_count,
+            "commercial_customers": commercial_customers,
         }
 
     @staticmethod
-    def finish_services_if_expired(profile: Optional[UserProfile] = None,
-                                   comment=None, customer=None) -> None:
+    def finish_services_if_expired(profile: Optional[UserProfile] = None, comment=None, customer=None) -> None:
         # TODO: test it
         """
         If customer service has expired, and automatic connect
@@ -304,44 +278,32 @@ class CustomerManager(MyUserManager):
         :return: nothing
         """
         if comment is None:
-            comment = _("Service for customer %(customer_name)s "
-                        "with name '%(service_name)s' has expired")
+            comment = _("Service for customer %(customer_name)s " "with name '%(service_name)s' has expired")
         now = datetime.now()
-        expired_service = CustomerService.objects.filter(
-            deadline__lt=now,
-            customer__auto_renewal_service=False
-        )
+        expired_service = CustomerService.objects.filter(deadline__lt=now, customer__auto_renewal_service=False)
         if customer is not None and isinstance(customer, Customer):
-            expired_service = expired_service.filter(
-                customer=customer
-            )
+            expired_service = expired_service.filter(customer=customer)
         if expired_service.exists():
-            expired_service = expired_service.select_related('customer',
-                                                             'service')
+            expired_service = expired_service.select_related("customer", "service")
             # TODO: Replace it logging by trigger from db
             for exp_srv in expired_service.iterator():
-                if not hasattr(exp_srv, 'customer'):
+                if not hasattr(exp_srv, "customer"):
                     continue
                 exp_srv_customer = exp_srv.customer
                 with transaction.atomic():
                     CustomerLog.objects.create(
                         customer=exp_srv_customer,
                         cost=0,
-                        author=profile if isinstance(profile,
-                                                     UserProfile) else None,
-                        comment=comment % {
-                            'customer_name': exp_srv_customer.get_short_name(),
-                            'service_name': exp_srv.service.title
-                        }
+                        author=profile if isinstance(profile, UserProfile) else None,
+                        comment=comment
+                        % {"customer_name": exp_srv_customer.get_short_name(), "service_name": exp_srv.service.title},
                     )
             custom_signals.customer_service_batch_pre_stop.send(
-                sender=CustomerService,
-                expired_services=expired_service
+                sender=CustomerService, expired_services=expired_service
             )
             expired_service.delete()
             custom_signals.customer_service_batch_post_stop.send(
-                sender=CustomerService,
-                expired_services=expired_service
+                sender=CustomerService, expired_services=expired_service
             )
 
     @staticmethod
@@ -355,18 +317,13 @@ class CustomerManager(MyUserManager):
         :return: nothing
         """
         now = datetime.now()
-        expired_services = CustomerService.objects.filter(
-            deadline__lt=now,
-            customer__auto_renewal_service=True
-        )
+        expired_services = CustomerService.objects.filter(deadline__lt=now, customer__auto_renewal_service=True)
         if customer is not None and isinstance(customer, Customer):
-            expired_services = expired_services.filter(
-                customer=customer
-            )
+            expired_services = expired_services.filter(customer=customer)
         if not expired_services.exists():
             return
         for expired_service in expired_services.iterator():
-            if not hasattr(expired_service, 'customer'):
+            if not hasattr(expired_service, "customer"):
                 continue
             expired_service_customer = expired_service.customer
             service = expired_service.service
@@ -378,129 +335,80 @@ class CustomerManager(MyUserManager):
                     expired_service.start_time = now
                     # Deadline sets automatically in signal pre_save
                     expired_service.deadline = None
-                    expired_service.save(
-                        update_fields=['start_time', 'deadline'])
-                    expired_service_customer.save(update_fields=['balance'])
+                    expired_service.save(update_fields=["start_time", "deadline"])
+                    expired_service_customer.save(update_fields=["balance"])
                     # make log about it
                     uname = expired_service_customer.get_short_name()
                     CustomerLog.objects.create(
-                        customer=expired_service_customer, cost=-cost,
-                        comment=_(
-                            "Automatic connect new service "
-                            "%(service_name)s for %(customer_name)s") % {
-                                'service_name': service.title,
-                                'customer_name': uname
-                            }
+                        customer=expired_service_customer,
+                        cost=-cost,
+                        comment=_("Automatic connect new service " "%(service_name)s for %(customer_name)s")
+                        % {"service_name": service.title, "customer_name": uname},
                     )
             else:
                 # finish service otherwise
                 with transaction.atomic():
                     custom_signals.customer_service_pre_stop.send(
-                        sender=CustomerService,
-                        expired_service=expired_service
+                        sender=CustomerService, expired_service=expired_service
                     )
                     expired_service.delete()
                     CustomerLog.objects.create(
-                        customer=expired_service_customer, cost=0,
-                        comment=_("Service '%(service_name)s' has expired") % {
-                            'service_name': service.title
-                        }
+                        customer=expired_service_customer,
+                        cost=0,
+                        comment=_("Service '%(service_name)s' has expired") % {"service_name": service.title},
                     )
                     custom_signals.customer_service_post_stop.send(
-                        sender=CustomerService,
-                        expired_service=expired_service
+                        sender=CustomerService, expired_service=expired_service
                     )
 
 
 class Customer(BaseAccount):
     current_service = models.OneToOneField(
-        CustomerService,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        default=None
+        CustomerService, null=True, blank=True, on_delete=models.SET_NULL, default=None
     )
     group = models.ForeignKey(
-        Group,
-        on_delete=models.SET_NULL,
-        blank=True, null=True, default=None,
-        verbose_name=_('Customer group')
+        Group, on_delete=models.SET_NULL, blank=True, null=True, default=None, verbose_name=_("Customer group")
     )
     balance = models.FloatField(default=0.0)
 
     # ip_address deprecated, marked for remove
-    ip_address = models.GenericIPAddressField(
-        verbose_name=_('Ip address'),
-        null=True,
-        blank=True,
-        default=None
-    )
-    description = models.TextField(
-        _('Comment'),
-        null=True,
-        blank=True,
-        default=None
-    )
+    ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
+    description = models.TextField(_("Comment"), null=True, blank=True, default=None)
     street = models.ForeignKey(
-        CustomerStreet,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        default=None,
-        verbose_name=_('Street')
+        CustomerStreet, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
     )
-    house = models.CharField(
-        _('House'),
-        max_length=12,
-        null=True,
-        blank=True,
-        default=None
-    )
-    device = models.ForeignKey(
-        'devices.Device',
-        null=True,
-        blank=True,
-        default=None,
-        on_delete=models.SET_NULL
-    )
-    dev_port = models.ForeignKey(
-        'devices.Port',
-        null=True,
-        blank=True,
-        default=None,
-        on_delete=models.SET_NULL
-    )
-    is_dynamic_ip = models.BooleanField(
-        _('Is dynamic ip'),
-        default=False
-    )
+    house = models.CharField(_("House"), max_length=12, null=True, blank=True, default=None)
+    device = models.ForeignKey("devices.Device", null=True, blank=True, default=None, on_delete=models.SET_NULL)
+    dev_port = models.ForeignKey("devices.Port", null=True, blank=True, default=None, on_delete=models.SET_NULL)
+    is_dynamic_ip = models.BooleanField(_("Is dynamic ip"), default=False)
     gateway = models.ForeignKey(
-        'gateways.Gateway',
+        "gateways.Gateway",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        verbose_name=_('Gateway'),
-        help_text=_('Network access server'),
-        default=None
+        verbose_name=_("Gateway"),
+        help_text=_("Network access server"),
+        default=None,
     )
-    auto_renewal_service = models.BooleanField(
-        _('Automatically connect next service'),
-        default=False
-    )
+    auto_renewal_service = models.BooleanField(_("Automatically connect next service"), default=False)
     last_connected_service = models.ForeignKey(
-        Service, verbose_name=_('Last connected service'),
-        on_delete=models.SET_NULL, null=True, blank=True, default=None
+        Service,
+        verbose_name=_("Last connected service"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        default=None,
     )
     MARKER_FLAGS = (
-        ('icon_donkey', _('Donkey')),
-        ('icon_fire', _('Fire')),
-        ('icon_ok', _('Ok')),
-        ('icon_king', _('King')),
-        ('icon_tv', _('TV')),
-        ('icon_smile', _('Smile')),
-        ('icon_dollar', _('Dollar')),
-        ('icon_service', _('Service')),
-        ('icon_mrk', _('Marker'))
+        ("icon_donkey", _("Donkey")),
+        ("icon_fire", _("Fire")),
+        ("icon_ok", _("Ok")),
+        ("icon_king", _("King")),
+        ("icon_tv", _("TV")),
+        ("icon_smile", _("Smile")),
+        ("icon_dollar", _("Dollar")),
+        ("icon_service", _("Service")),
+        ("icon_mrk", _("Marker")),
     )
     markers = BitField(flags=MARKER_FLAGS, default=0)
 
@@ -516,19 +424,18 @@ class Customer(BaseAccount):
     def active_service(self):
         return self.current_service
 
-    def add_balance(self, profile: UserProfile, cost: float,
-                    comment: str) -> None:
+    def add_balance(self, profile: UserProfile, cost: float, comment: str) -> None:
         CustomerLog.objects.create(
             customer=self,
             cost=cost,
             author=profile if isinstance(profile, UserProfile) else None,
-            comment=re.sub(r'\W{1,128}', ' ', comment)
+            comment=re.sub(r"\W{1,128}", " ", comment),
         )
         self.balance += cost
 
-    def pick_service(self, service, author: Optional[UserProfile],
-                     comment=None, deadline=None,
-                     allow_negative=False) -> None:
+    def pick_service(
+        self, service, author: Optional[UserProfile], comment=None, deadline=None, allow_negative=False
+    ) -> None:
         """
         Trying to buy a service if enough money.
         :param allow_negative: Allows negative balance
@@ -541,53 +448,39 @@ class Customer(BaseAccount):
         :return: Nothing
         """
         if not isinstance(service, Service):
-            raise TypeError(
-                'service must be instance of services.models.Service')
+            raise TypeError("service must be instance of services.models.Service")
 
         cost = round(service.cost, 2)
 
         if service.is_admin and author is not None:
             if not author.is_staff:
-                raise LogicError(
-                    _('User who is no staff can not buy admin services')
-                )
+                raise LogicError(_("User who is no staff can not buy admin services"))
 
         if self.current_service is not None:
             if self.current_service.service == service:
                 # if service already connected
-                raise LogicError(_('That service already activated'))
+                raise LogicError(_("That service already activated"))
             else:
                 # if service is present then speak about it
-                raise LogicError(_('Service already activated'))
+                raise LogicError(_("Service already activated"))
 
         if allow_negative and not author.is_staff:
-            raise LogicError(
-                _('User, who is no staff, can not be buy services on credit'))
+            raise LogicError(_("User, who is no staff, can not be buy services on credit"))
 
         # if not enough money
         if not allow_negative and self.balance < cost:
             raise NotEnoughMoney(
-                _('%(uname)s not enough money for service %(srv_name)s') % {
-                    'uname': self.username,
-                    'srv_name': service
-                })
-
-        custom_signals.customer_service_pre_pick.send(
-            sender=Customer,
-            customer=self,
-            service=service
-        )
-        with transaction.atomic():
-            self.current_service = CustomerService.objects.create(
-                deadline=deadline, service=service
+                _("%(uname)s not enough money for service %(srv_name)s")
+                % {"uname": self.username, "srv_name": service}
             )
-            updated_fields = [
-                'balance',
-                'current_service'
-            ]
+
+        custom_signals.customer_service_pre_pick.send(sender=Customer, customer=self, service=service)
+        with transaction.atomic():
+            self.current_service = CustomerService.objects.create(deadline=deadline, service=service)
+            updated_fields = ["balance", "current_service"]
             if self.last_connected_service != service:
                 self.last_connected_service = service
-                updated_fields.append('last_connected_service')
+                updated_fields.append("last_connected_service")
 
             # charge for the service
             self.balance -= cost
@@ -597,15 +490,9 @@ class Customer(BaseAccount):
             # make log about it
             # TODO: move it to db trigger
             CustomerLog.objects.create(
-                customer=self, cost=-cost,
-                author=author,
-                comment=comment or _('Buy service default log')
+                customer=self, cost=-cost, author=author, comment=comment or _("Buy service default log")
             )
-        custom_signals.customer_service_post_pick.send(
-            sender=Customer,
-            customer=self,
-            service=service
-        )
+        custom_signals.customer_service_post_pick.send(sender=Customer, customer=self, service=service)
 
     def stop_service(self, profile: UserProfile) -> None:
         """
@@ -614,33 +501,18 @@ class Customer(BaseAccount):
         :return: nothing
         """
         customer_service = self.active_service()
-        custom_signals.customer_service_pre_stop.send(
-            sender=CustomerService,
-            expired_service=customer_service
-        )
+        custom_signals.customer_service_pre_stop.send(sender=CustomerService, expired_service=customer_service)
         with transaction.atomic():
             cost_to_return = self.calc_cost_to_return()
             if cost_to_return > 0.1:
-                self.add_balance(
-                    profile,
-                    cost=cost_to_return,
-                    comment=_('End of service, refund of balance')
-                )
-                self.save(update_fields=('balance',))
+                self.add_balance(profile, cost=cost_to_return, comment=_("End of service, refund of balance"))
+                self.save(update_fields=("balance",))
             else:
-                self.add_balance(
-                    profile,
-                    cost=0,
-                    comment=_('End of service')
-                )
+                self.add_balance(profile, cost=0, comment=_("End of service"))
             customer_service.delete()
-        custom_signals.customer_service_post_stop.send(
-            sender=CustomerService,
-            expired_service=customer_service
-        )
+        custom_signals.customer_service_post_stop.send(sender=CustomerService, expired_service=customer_service)
 
-    def make_shot(self, request, shot: OneShotPay, allow_negative=False,
-                  comment=None) -> bool:
+    def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
         """
         Makes one-time service for accounting services.
         :param request: Django http request.
@@ -657,31 +529,25 @@ class Customer(BaseAccount):
         # if not enough money
         if not allow_negative and self.balance < cost:
             raise NotEnoughMoney(
-                _('%(uname)s not enough money for service %(srv_name)s') % {
-                    'uname': self.username,
-                    'srv_name': shot.name
-                })
+                _("%(uname)s not enough money for service %(srv_name)s")
+                % {"uname": self.username, "srv_name": shot.name}
+            )
         with transaction.atomic():
             # charge for the service
             self.balance -= cost
-            self.save(update_fields=['balance'])
+            self.save(update_fields=["balance"])
 
             # make log about it
             CustomerLog.objects.create(
-                customer=self, cost=-cost,
+                customer=self,
+                cost=-cost,
                 author=request.user,
-                comment=comment or _(
-                    'Buy one-shot service for "%(title)s"') % {
-                            'title': shot.name}
+                comment=comment or _('Buy one-shot service for "%(title)s"') % {"title": shot.name},
             )
         return True
 
     def make_periodic_pay(self, periodic_pay: PeriodicPay, next_pay: datetime):
-        ppay = PeriodicPayForId.objects.create(
-            periodic_pay=periodic_pay,
-            next_pay=next_pay,
-            account=self
-        )
+        ppay = PeriodicPayForId.objects.create(periodic_pay=periodic_pay, next_pay=next_pay, account=self)
         return ppay
 
     def calc_cost_to_return(self):
@@ -696,9 +562,7 @@ class Customer(BaseAccount):
         service = customer_service.service
         if not service:
             return
-        calc = service.get_calc_type()(
-            customer_service=customer_service
-        )
+        calc = service.get_calc_type()(customer_service=customer_service)
         elapsed_cost = calc.calc_cost()
         total_cost = safe_float(service.cost)
         return total_cost - elapsed_cost
@@ -735,27 +599,20 @@ class Customer(BaseAccount):
         if not srv or srv.is_admin:
             return
         self.pick_service(
-            service=srv, author=None,
-            comment=_("Automatic connect service '%(service_name)s'") % {
-                'service_name': srv.title
-            }
+            service=srv,
+            author=None,
+            comment=_("Automatic connect service '%(service_name)s'") % {"service_name": srv.title},
         )
 
     def get_address(self):
-        return "%(group)s. %(street)s %(house)s" % {
-            'group': self.group,
-            'street': self.street,
-            'house': self.house
-        }
+        return f"{self.group}. {self.street} {self.house}"
 
     @staticmethod
     def set_service_group_accessory(group, wanted_service_ids: list, request):
         if request.user.is_superuser:
-            existed_service_ids = frozenset(
-                t.id for t in group.service_set.all())
+            existed_service_ids = frozenset(t.id for t in group.service_set.all())
         else:
-            existed_services = group.service_set.filter(
-                sites__in=[request.site])
+            existed_services = group.service_set.filter(sites__in=[request.site])
             existed_service_ids = frozenset(t.id for t in existed_services)
         wanted_service_ids = frozenset(map(int, wanted_service_ids))
         sub = existed_service_ids - wanted_service_ids
@@ -768,17 +625,17 @@ class Customer(BaseAccount):
         # ).update(last_connected_service=None)
 
     class Meta:
-        db_table = 'customers'
+        db_table = "customers"
         permissions = [
-            ('can_buy_service', _('Buy service perm')),
-            ('can_add_balance', _('fill account')),
-            ('can_ping', _('Can ping')),
-            ('can_complete_service', _('Can complete service')),
+            ("can_buy_service", _("Buy service perm")),
+            ("can_add_balance", _("fill account")),
+            ("can_ping", _("Can ping")),
+            ("can_complete_service", _("Can complete service")),
         ]
-        verbose_name = _('Customer')
-        verbose_name_plural = _('Customers')
-        ordering = 'fio',
-        unique_together = ('ip_address', 'gateway')
+        verbose_name = _("Customer")
+        verbose_name_plural = _("Customers")
+        ordering = ("fio",)
+        unique_together = ("ip_address", "gateway")
 
 
 class InvoiceForPayment(BaseAbstractModel):
@@ -789,67 +646,39 @@ class InvoiceForPayment(BaseAbstractModel):
     date_create = models.DateTimeField(auto_now_add=True)
     date_pay = models.DateTimeField(blank=True, null=True)
     author = models.ForeignKey(
-        UserProfile,
-        related_name='+',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        default=None
+        UserProfile, related_name="+", on_delete=models.SET_NULL, blank=True, null=True, default=None
     )
 
     def __str__(self):
-        return "%s -> %.2f" % (self.customer.username, self.cost)
+        return f"{self.customer.username} -> {self.cost:.2f}"
 
     def set_ok(self):
         self.status = True
         self.date_pay = datetime.now()
 
     class Meta:
-        ordering = 'id',
-        db_table = 'customer_inv_pay'
-        verbose_name = _('Debt')
-        verbose_name_plural = _('Debts')
+        ordering = ("id",)
+        db_table = "customer_inv_pay"
+        verbose_name = _("Debt")
+        verbose_name_plural = _("Debts")
 
 
 class PassportInfo(BaseAbstractModel):
-    series = models.CharField(
-        _('Passport serial'),
-        max_length=4,
-        validators=(validators.integer_validator,)
-    )
-    number = models.CharField(
-        _('Passport number'),
-        max_length=6,
-        validators=(validators.integer_validator,)
-    )
-    distributor = models.CharField(
-        _('Distributor'),
-        max_length=64
-    )
-    date_of_acceptance = models.DateField(_('Date of acceptance'))
-    division_code = models.CharField(
-        _('Division code'),
-        max_length=64,
-        null=True,
-        blank=True,
-        default=None
-    )
-    customer = models.OneToOneField(
-        Customer,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-        default=None
-    )
+    series = models.CharField(_("Passport serial"), max_length=4, validators=(validators.integer_validator,))
+    number = models.CharField(_("Passport number"), max_length=6, validators=(validators.integer_validator,))
+    distributor = models.CharField(_("Distributor"), max_length=64)
+    date_of_acceptance = models.DateField(_("Date of acceptance"))
+    division_code = models.CharField(_("Division code"), max_length=64, null=True, blank=True, default=None)
+    customer = models.OneToOneField(Customer, on_delete=models.CASCADE, blank=True, null=True, default=None)
 
     class Meta:
-        db_table = 'passport_info'
-        verbose_name = _('Passport Info')
-        verbose_name_plural = _('Passport Info')
-        ordering = 'id',
+        db_table = "passport_info"
+        verbose_name = _("Passport Info")
+        verbose_name_plural = _("Passport Info")
+        ordering = ("id",)
 
     def __str__(self):
-        return "%s %s" % (self.series, self.number)
+        return f"{self.series} {self.number}"
 
 
 class CustomerRawPassword(BaseAbstractModel):
@@ -857,56 +686,40 @@ class CustomerRawPassword(BaseAbstractModel):
     passw_text = EncryptedCharField(max_length=64)
 
     def __str__(self):
-        return "%s - %s" % (self.customer, self.passw_text)
+        return f"{self.customer} - {self.passw_text}"
 
     class Meta:
-        db_table = 'customer_raw_password'
+        db_table = "customer_raw_password"
 
 
 class AdditionalTelephone(BaseAbstractModel):
-    customer = models.ForeignKey(
-        Customer,
-        on_delete=models.CASCADE,
-        related_name='additional_telephones'
-    )
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="additional_telephones")
     telephone = models.CharField(
         max_length=16,
-        verbose_name=_('Telephone'),
+        verbose_name=_("Telephone"),
         # unique=True,
-        validators=(validators.RegexValidator(
-            getattr(settings, 'TELEPHONE_REGEXP', r'^(\+[7893]\d{10,11})?$')
-        ),)
+        validators=(validators.RegexValidator(getattr(settings, "TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")),),
     )
     owner_name = models.CharField(max_length=127)
     create_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return "%s - (%s)" % (self.owner_name, self.telephone)
+        return f"{self.owner_name} - ({self.telephone})"
 
     class Meta:
-        db_table = 'additional_telephones'
-        ordering = 'id',
-        verbose_name = _('Additional telephone')
-        verbose_name_plural = _('Additional telephones')
+        db_table = "additional_telephones"
+        ordering = ("id",)
+        verbose_name = _("Additional telephone")
+        verbose_name_plural = _("Additional telephones")
 
 
 class PeriodicPayForId(BaseAbstractModel):
-    periodic_pay = models.ForeignKey(
-        PeriodicPay,
-        on_delete=models.CASCADE,
-        verbose_name=_('Periodic pay')
-    )
-    last_pay = models.DateTimeField(_('Last pay time'), blank=True, null=True,
-                                    default=None)
-    next_pay = models.DateTimeField(_('Next time to pay'))
-    account = models.ForeignKey(
-        Customer,
-        on_delete=models.CASCADE,
-        verbose_name=_('Account')
-    )
+    periodic_pay = models.ForeignKey(PeriodicPay, on_delete=models.CASCADE, verbose_name=_("Periodic pay"))
+    last_pay = models.DateTimeField(_("Last pay time"), blank=True, null=True, default=None)
+    next_pay = models.DateTimeField(_("Next time to pay"))
+    account = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name=_("Account"))
 
-    def payment_for_service(self, author: UserProfile = None,
-                            now: Optional[datetime] = None):
+    def payment_for_service(self, author: UserProfile = None, now: Optional[datetime] = None):
         """
         Charge for the service and leave a log about it
         :param now: Current date, if now is None than it calculates in here
@@ -920,27 +733,25 @@ class PeriodicPayForId(BaseAbstractModel):
             next_pay_date = pp.get_next_time_to_pay(self.last_pay)
             account = self.account
             with transaction.atomic():
-                account.add_balance(author, -amount, comment=_(
-                    'Charge for "%(service)s"') % {
-                        'service': self.periodic_pay
-                    })
-                account.save(update_fields=('balance',))
+                account.add_balance(
+                    author, -amount, comment=_('Charge for "%(service)s"') % {"service": self.periodic_pay}
+                )
+                account.save(update_fields=("balance",))
                 self.last_pay = now
                 self.next_pay = next_pay_date
-                self.save(update_fields=('last_pay', 'next_pay'))
+                self.save(update_fields=("last_pay", "next_pay"))
 
     def __str__(self):
-        return "%s %s" % (self.periodic_pay, self.next_pay)
+        return f"{self.periodic_pay} {self.next_pay}"
 
     class Meta:
-        db_table = 'periodic_pay_for_id'
-        ordering = 'last_pay',
+        db_table = "periodic_pay_for_id"
+        ordering = ("last_pay",)
 
 
 class CustomerAttachment(BaseAbstractModel):
     title = models.CharField(max_length=64)
-    doc_file = models.FileField(upload_to='customer_attachments/%Y/%m/',
-                                max_length=128)
+    doc_file = models.FileField(upload_to="customer_attachments/%Y/%m/", max_length=128)
     create_time = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
@@ -949,5 +760,5 @@ class CustomerAttachment(BaseAbstractModel):
         return self.title
 
     class Meta:
-        db_table = 'customer_attachments'
-        ordering = 'id',
+        db_table = "customer_attachments"
+        ordering = ("id",)
