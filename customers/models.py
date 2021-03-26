@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from ipaddress import AddressValueError, IPv4Address
-from typing import Optional
+from typing import Optional, List
 
 from bitfield import BitField
 from django.conf import settings
@@ -419,7 +419,19 @@ class Customer(BaseAccount):
         Return icon list of set flags from self.markers
         :return: ['m-icon-donkey', 'm-icon-tv', ...]
         """
-        return tuple("m-%s" % name for name, state in self.markers if state)
+        return tuple(name for name, state in self.markers if state)
+
+    def set_markers(self, flag_names: List[str]):
+        flags = None
+        for flag_name in flag_names:
+            flag = getattr(Customer.markers, flag_name)
+            if flag:
+                if flags:
+                    flags |= flag
+                else:
+                    flags = flag
+        self.markers = flags
+        self.save(update_fields=["markers"])
 
     def active_service(self):
         return self.current_service
