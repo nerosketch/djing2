@@ -344,6 +344,20 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         rp = serializers.generate_random_password()
         return Response(rp)
 
+    @action(methods=["post"], detail=True)
+    def set_markers(self, request, pk=None):
+        customer = self.get_object()
+        flag_names = list(request.data)
+        mflags = tuple(f for f, n in models.Customer.MARKER_FLAGS)
+        for flag_name in flag_names:
+            if flag_name not in mflags:
+                return Response(
+                    'Bad "flags". Must be an array of flag names. Such as %s' % mflags,
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        customer.set_markers(flag_names=flag_names)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class CustomersGroupsListAPIView(DjingListAPIView):
     serializer_class = serializers.CustomerGroupSerializer
