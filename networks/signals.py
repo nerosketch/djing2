@@ -8,7 +8,7 @@ from networks.models import CustomerIpLeaseModel
 @receiver(pre_delete, sender=CustomerIpLeaseModel)
 def on_remove_ip_lease_signal(sender, instance, **kwargs):
     send_data2ws({
-        'eventType': WsEventTypeEnum.UPDATE_CUSTOMER_LEASES,
+        'eventType': WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value,
         'data': {
             'customer_id': instance.customer_id
         }
@@ -18,7 +18,7 @@ def on_remove_ip_lease_signal(sender, instance, **kwargs):
 @receiver(post_init, sender=CustomerIpLeaseModel)
 def on_init_ip_lease_signal(sender, instance, **kwargs):
     send_data2ws({
-        'eventType': WsEventTypeEnum.UPDATE_CUSTOMER_LEASES,
+        'eventType': WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value,
         'data': {
             'customer_id': instance.customer_id
         }
