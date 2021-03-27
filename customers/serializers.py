@@ -91,7 +91,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     traf_octs = serializers.IntegerField(source="octsum", read_only=True)
 
-    markers = serializers.ListField(source="get_flag_icons", child=serializers.CharField(), read_only=True)
+    marker_isons = serializers.ListField(source="get_flag_icons", child=serializers.CharField(), read_only=True)
 
     def create(self, validated_data):
         validated_data.update(
@@ -158,7 +158,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             "lease_count",
             "sites",
             "traf_octs",
-            "markers",
+            "marker_icons",
         )
 
 
