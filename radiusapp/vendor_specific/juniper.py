@@ -16,9 +16,9 @@ class JuniperVendorSpecific(IVendorSpecific):
         return self.get_rad_val(data, "ERX-Dhcp-Mac-Addr")
 
     def get_vlan_id(self, data):
-        param = self.get_rad_val(data, "NAS-Port")
-        if ":" in param:
-            return param.split(":")[1].split("-")[1]
+        param = self.get_rad_val(data, "NAS-Port-Id")
+        if isinstance(param, str) and ":" in param:
+            return int(param.split(":")[1].split("-")[1])
         return param
 
     def get_auth_guest_session_response(self, guest_session, data):
