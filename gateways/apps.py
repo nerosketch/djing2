@@ -2,7 +2,9 @@ from django.apps import AppConfig
 
 
 class GatewaysConfig(AppConfig):
-    name = 'gateways'
+    name = "gateways"
 
     def ready(self):
         from gateways import signals
+
+        print("Imported signals", signals)
