@@ -19,9 +19,13 @@ def task_post_save(sender, instance: Task, created=False, **kwargs):
             {
                 "eventType": WsEventTypeEnum.UPDATE_TASK.value,
                 "text": notify_text,
-                "data": {"recipients": list(recipients), "author": instance.author_id if instance.author else None},
+                "data": {
+                    "recipients": list(recipients),
+                    "author": instance.author_id if instance.author else None,
+                    "task_id": instance.pk,
+                },
             }
         )
         send_broadcast_push_notification(title=_("Reminders of tasks"), body=notify_text)
         return
-    send_data2ws({"eventType": WsEventTypeEnum.UPDATE_TASK.value})
+    send_data2ws({"eventType": WsEventTypeEnum.UPDATE_TASK.value, "data": {"task_id": instance.pk}})
