@@ -417,7 +417,7 @@ class Customer(BaseAccount):
     def get_flag_icons(self) -> tuple:
         """
         Return icon list of set flags from self.markers
-        :return: ['m-icon-donkey', 'm-icon-tv', ...]
+        :return: ['icon-donkey', 'icon-tv', ...]
         """
         return tuple(name for name, state in self.markers if state)
 
