@@ -53,7 +53,7 @@ def _manage_post_connect_services():
             pass
 
 
-@cron(minute=-33)
+@cron(minute=-10)
 def manage_services(signal_number):
     Customer.objects.continue_services_if_autoconnect()
     Customer.objects.finish_services_if_expired()
