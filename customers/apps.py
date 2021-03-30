@@ -2,8 +2,11 @@ from django.apps import AppConfig
 
 
 class CustomersConfig(AppConfig):
-    name = 'customers'
+    name = "customers"
 
     def ready(self):
         from customers import signals
         from customers import tasks
+
+        print("Imported signals", signals)
+        print("Imported tasks", tasks)
