@@ -32,7 +32,8 @@ def customer_check_service_for_expiration(customer_id: int):
 def _manage_periodic_pays_run():
     now = datetime.now()
     ppays = PeriodicPayForId.objects.select_related("account", "periodic_pay").filter(
-        next_pay__lte=now, account__is_active=True
+        next_pay__lte=now,
+        # account__is_active=True
     )
     for pay in ppays.iterator():
         pay.payment_for_service(now=now)
@@ -54,19 +55,11 @@ def _manage_post_connect_services():
 
 @cron(minute=-33)
 def manage_services(signal_number):
-    now = datetime.now()
-    with open("/tmp/manage_services.log", "a") as f:
-        f.write("%s: signal_number=%d\n" % (now, signal_number))
+    Customer.objects.continue_services_if_autoconnect()
+    Customer.objects.finish_services_if_expired()
 
-        Customer.objects.continue_services_if_autoconnect()
-        Customer.objects.finish_services_if_expired()
+    # Post connect service
+    # connect service when autoconnect is True, and user have enough money
+    _manage_post_connect_services()
 
-        # Post connect service
-        # connect service when autoconnect is True, and user have enough money
-        _manage_post_connect_services()
-
-        _manage_periodic_pays_run()
-
-        f.write("{}: time delta={}\n".format(datetime.now(), datetime.now() - now))
-        f.write("#" * 20)
-        f.write("\n")
+    _manage_periodic_pays_run()
