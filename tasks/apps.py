@@ -2,7 +2,9 @@ from django.apps import AppConfig
 
 
 class TasksConfig(AppConfig):
-    name = 'tasks'
+    name = "tasks"
 
     def ready(self):
         from tasks import signals
+
+        print("Imported signals", signals)
