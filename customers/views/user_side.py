@@ -9,7 +9,6 @@ from rest_framework.response import Response
 from customers import models, serializers
 from customers.views.view_decorators import catch_customers_errs
 
-# from customers.tasks import customer_gw_command
 from djing2.lib import LogicError, safe_int
 from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet
@@ -25,30 +24,7 @@ class SingleListObjMixin:
 
 
 class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
-    queryset = models.Customer.objects.select_related("group", "street", "gateway", "device", "current_service").only(
-        "pk",
-        "username",
-        "telephone",
-        "fio",
-        "group",
-        "group__title",
-        "balance",
-        "ip_address",
-        "description",
-        "street_id",
-        "street__name",
-        "house",
-        "is_active",
-        "gateway",
-        "gateway__title",
-        "auto_renewal_service",
-        "device_id",
-        "device__comment",
-        "dev_port",
-        "last_connected_service_id",
-        "current_service_id",
-        "is_dynamic_ip",
-    )
+    queryset = models.Customer.objects.select_related("group", "street", "gateway", "device", "current_service")
     serializer_class = serializers.CustomerModelSerializer
 
     def get_queryset(self):
