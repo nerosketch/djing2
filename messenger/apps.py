@@ -5,6 +5,4 @@ class MessengerConfig(AppConfig):
     name = "messenger"
 
     def ready(self):
-        from messenger import signals
-
-        print("Imported signals", signals)
+        from messenger import signals  # noqa
