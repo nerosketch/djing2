@@ -125,14 +125,17 @@ class DhcpLever(SecureApiView):
             if client_ip is None:
                 return '"client_ip" parameter is missing'
             if data_action == "commit":
-                # TODO: send ws signal about new customer ip
-                # _update_lease_send_ws_signal()
-                return CustomerIpLeaseModel.lease_commit_add_update(
+                res = CustomerIpLeaseModel.lease_commit_add_update(
                     client_ip=client_ip,
                     mac_addr=data.get("client_mac"),
                     dev_mac=data.get("switch_mac"),
                     dev_port=data.get("switch_port"),
                 )
+                # lease_id, ip_addr, pool_id, lease_time, mac_addr, customer_id, is_dynamic, last_update = res
+                ip_addr = res[1]
+                customer_id = res[5]
+                _update_lease_send_ws_signal(customer_id)
+                return "Assigned %s" % (ip_addr or "null")
             elif data_action in ["expiry", "release"]:
                 leases = CustomerIpLeaseModel.objects.filter(ip_address=client_ip)
 
