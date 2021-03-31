@@ -5,8 +5,5 @@ class CustomersConfig(AppConfig):
     name = "customers"
 
     def ready(self):
-        from customers import signals
-        from customers import tasks
-
-        print("Imported signals", signals)
-        print("Imported tasks", tasks)
+        from customers import signals  # noqa
+        from customers import tasks  # noqa

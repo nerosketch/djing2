@@ -5,6 +5,4 @@ class ServicesConfig(AppConfig):
     name = "services"
 
     def ready(self):
-        from services import signals
-
-        print("Imported signals", signals)
+        from services import signals  # noqa
