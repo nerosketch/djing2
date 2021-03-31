@@ -5,6 +5,4 @@ class TasksConfig(AppConfig):
     name = "tasks"
 
     def ready(self):
-        from tasks import signals
-
-        print("Imported signals", signals)
+        from tasks import signals  # noqa
