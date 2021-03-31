@@ -5,6 +5,4 @@ class NetworksConfig(AppConfig):
     name = "networks"
 
     def ready(self):
-        from networks import signals
-
-        print("Imported signals", signals)
+        from networks import signals  # noqa
