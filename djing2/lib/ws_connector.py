@@ -11,16 +11,44 @@ class WsEventTypeEnum(Enum):
     UPDATE_CUSTOMER = "update_customer"
 
 
-def send_data2ws(dat: dict, host: str = getattr(settings, "WS_ADDR", "127.0.0.1:3211"), **kwargs) -> None:
-    assert isinstance(dat, dict)
-    assert bool(dat.get("eventType"))
-    if kwargs:
-        dat.update(kwargs)
-    dat = dumps(dat)
-    try:
-        with socket.socket() as s:
-            ipaddr, hport = host.split(":")
-            s.connect((ipaddr, int(hport)))
-            s.sendall(dat.encode())
-    except ConnectionRefusedError:
-        pass
+class WebSocketSender:
+    _sock = None
+
+    def __init__(self, host=None):
+        if host is None:
+            host = getattr(settings, "WS_ADDR", "127.0.0.1:3211")
+        ipaddr, hport = host.split(":")
+        self._ipaddr, self._hport = ipaddr, int(hport)
+
+    def __call__(self, dat: dict, host=None, **kwargs):
+        assert isinstance(dat, dict)
+        assert bool(dat.get("eventType"))
+
+        if kwargs:
+            dat.update(kwargs)
+        dat = dumps(dat).encode()
+        try:
+            if self._sock is None:
+                with socket.socket() as s:
+                    s.connect((self._ipaddr, self._hport))
+                    s.sendall(dat)
+            else:
+                self._sock.sendall(dat)
+        except ConnectionRefusedError:
+            pass
+
+    def __enter__(self):
+        try:
+            self._sock = socket.socket()
+            self._sock.connect((self._ipaddr, self._hport))
+        except ConnectionRefusedError:
+            self._sock.close()
+            self._sock = None
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._sock:
+            self._sock.close()
+
+
+send_data2ws = WebSocketSender()
