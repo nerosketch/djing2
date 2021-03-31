@@ -6,34 +6,34 @@ from devices.device_config.base import DeviceImplementationError, Vlan, Vlans, M
 
 
 class HuaweiS2300(EltexSwitch):
-    description = _('Huawei switch')
+    description = _("Huawei switch")
     is_use_device_port = True
     has_attachable_to_customer = True
-    tech_code = 'huawei_s2300'
+    tech_code = "huawei_s2300"
     ports_len = 26
 
     def get_ports(self) -> tuple:
         # interfaces count
         # yield safe_int(self.get_item('.1.3.6.1.2.1.17.1.2.0'))
 
-        interfaces_ids = self.get_list('.1.3.6.1.2.1.17.1.4.1.2')
+        interfaces_ids = self.get_list(".1.3.6.1.2.1.17.1.4.1.2")
         if interfaces_ids is None:
-            raise DeviceImplementationError('Switch returned null')
+            raise DeviceImplementationError("Switch returned null")
         interfaces_ids = tuple(next(interfaces_ids) for _ in range(self.ports_len))
 
         def build_port(i: int, n: int):
-            speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % n)
-            oper_status = safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.7.%d' % n)) == 1
-            link_status = safe_int(self.get_item('.1.3.6.1.2.1.2.2.1.8.%d' % n)) == 1
+            speed = self.get_item(".1.3.6.1.2.1.2.2.1.5.%d" % n)
+            oper_status = safe_int(self.get_item(".1.3.6.1.2.1.2.2.1.7.%d" % n)) == 1
+            link_status = safe_int(self.get_item(".1.3.6.1.2.1.2.2.1.8.%d" % n)) == 1
             ep = EltexPort(
                 dev_interface=self,
                 num=i + 1,
                 snmp_num=n,
-                name=self.get_item('.1.3.6.1.2.1.2.2.1.2.%d' % n),  # name
+                name=self.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % n),  # name
                 status=oper_status,  # status
-                mac=b'',  # self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % n),    # mac
+                mac=b"",  # self.get_item('.1.3.6.1.2.1.2.2.1.6.%d' % n),    # mac
                 speed=0 if not link_status else safe_int(speed),  # speed
-                uptime=self.get_item('.1.3.6.1.2.1.2.2.1.9.%d' % n)  # UpTime
+                uptime=self.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % n),  # UpTime
             )
             return ep
 
@@ -42,7 +42,7 @@ class HuaweiS2300(EltexSwitch):
     def read_all_vlan_info(self) -> Vlans:
         vid = 1
         while True:
-            res = self.get_next('.1.3.6.1.2.1.17.7.1.4.3.1.1.%d' % vid)
+            res = self.get_next(".1.3.6.1.2.1.17.7.1.4.3.1.1.%d" % vid)
             vid = safe_int(res.value[5:])
             if vid == 1:
                 continue
@@ -51,7 +51,7 @@ class HuaweiS2300(EltexSwitch):
             yield Vlan(vid=vid, title=res.value)
 
     def read_mac_address_port(self, port_num: int) -> Macs:
-        yield MacItem(vid=None, name='', mac='0:0:0:0:0:0', port=0)
+        yield MacItem(vid=None, name="", mac="0:0:0:0:0:0", port=0)
         # first_port_index = safe_int(self.get_next('.1.3.6.1.2.1.17.1.4.1.2').value)
         # if first_port_index == 0:
         #     return
@@ -76,13 +76,13 @@ class HuaweiS2300(EltexSwitch):
 
     def read_port_vlan_info(self, port: int) -> Vlans:
         if port > self.ports_len or port < 1:
-            raise ValueError('Port must be in range 1-%d' % self.ports_len)
-        vids = self.get_list_keyval('.1.3.6.1.2.1.17.7.1.4.3.1.1')
+            raise ValueError("Port must be in range 1-%d" % self.ports_len)
+        vids = self.get_list_keyval(".1.3.6.1.2.1.17.7.1.4.3.1.1")
         for vid_name, vid in vids:
             vid = safe_int(vid)
             if vid in (0, 1):
                 continue
-            member_ports = self.get_item('.1.3.6.1.2.1.17.7.1.4.3.1.2.%d' % vid)
+            member_ports = self.get_item(".1.3.6.1.2.1.17.7.1.4.3.1.2.%d" % vid)
             if not member_ports:
                 return
             member_ports = self._make_ports_map(member_ports[:4])
@@ -95,3 +95,7 @@ class HuaweiS2300(EltexSwitch):
 
 class HuaweiS5300_10P_LI_AC(HuaweiS2300):
     ports_len = 10
+    tech_code = "huawei_s5300"
+    description = _("Huawei switch S5300")
+    is_use_device_port = True
+    has_attachable_to_customer = True
