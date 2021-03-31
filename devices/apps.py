@@ -5,6 +5,4 @@ class DevicesConfig(AppConfig):
     name = "devices"
 
     def ready(self):
-        from devices import signals
-
-        print("Imported signals", signals)
+        from devices import signals  # noqa

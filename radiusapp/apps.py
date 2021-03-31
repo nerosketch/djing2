@@ -5,6 +5,4 @@ class RadiusAppConfig(AppConfig):
     name = "radiusapp"
 
     def ready(self):
-        from radiusapp import signals
-
-        print("Imported signals", signals)
+        from radiusapp import signals  # noqa
