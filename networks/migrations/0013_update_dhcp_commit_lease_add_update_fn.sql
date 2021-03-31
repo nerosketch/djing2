@@ -23,7 +23,6 @@ BEGIN
   if not FOUND
   then
     raise exception 'Customer with device mac=% not found', v_dev_mac;
-    return null;
   end if;
 
   -- Find customer leases
@@ -49,7 +48,6 @@ BEGIN
   select id into t_pool from networks_ip_pool where v_client_ip << network limit 1;
   if not FOUND then
     raise exception 'client_ip in unknown subnet';
-    return null;
   end if;
 
   -- Try update ip lease
