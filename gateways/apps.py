@@ -5,6 +5,4 @@ class GatewaysConfig(AppConfig):
     name = "gateways"
 
     def ready(self):
-        from gateways import signals
-
-        print("Imported signals", signals)
+        from gateways import signals  # noqa
