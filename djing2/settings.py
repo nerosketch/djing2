@@ -74,7 +74,6 @@ INSTALLED_APPS = [
 
 if DEBUG:
     INSTALLED_APPS.insert(0, "django.contrib.admin")
-    INSTALLED_APPS.append("debug_toolbar")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -88,9 +87,6 @@ MIDDLEWARE = [
     "djing2.lib.mixins.CustomCurrentSiteMiddleware",
 ]
 
-if DEBUG:
-    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
-
 ROOT_URLCONF = "djing2.urls"
 
 TEMPLATES = [
@@ -100,7 +96,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                "django.template.context_processors.debug",
+                # "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
