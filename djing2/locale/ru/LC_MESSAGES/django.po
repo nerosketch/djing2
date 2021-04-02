@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-18 00:39+0300\n"
+"POT-Creation-Date: 2021-04-02 14:02+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,14 +17,32 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: djing2/lib/authenticators.py:14
+#: lib/authenticators.py:14
 msgid "Invalid token."
 msgstr "Не правильный токен"
 
-#: djing2/lib/authenticators.py:17
+#: lib/authenticators.py:17
 msgid "User inactive or deleted."
 msgstr "Пользователь не активен или удалён"
 
-#: djing2/settings.py:161
+#: settings.py:178
 msgid "Russian"
 msgstr "Русский"
+
+#: views.py:55
+msgid ""
+"Search customers and devices globally entire all system. Customer search "
+"provides by username, fio, and telephone. Devices search provides by ip "
+"address, mac address, and comment."
+msgstr ""
+"Ищет пользователей и устройства по всей системе. Пользователь ищется по "
+"логину, фио, и номеру телефона. Устройства ищутся по ip адресу, мак адресу, "
+"и его названию."
+
+#: views.py:109
+msgid "Can account login by his ip address."
+msgstr "Может-ли учётная запись входить по ip адресу"
+
+#: views.py:134
+msgid "Get VAPID public key for push."
+msgstr "Получить публичный ключ VAPID для push оповещений."
