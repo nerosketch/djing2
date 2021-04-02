@@ -91,7 +91,7 @@ class SearchApiView(DjingListAPIView):
 @authentication_classes([])
 @permission_classes([])
 def can_login_by_location(request):
-    _("Can account login by his ip address.")
+    """Can account login by his ip address."""
     try:
         remote_ip = ip_address(request.META.get("REMOTE_ADDR"))
         if remote_ip.version == 4:
@@ -111,7 +111,7 @@ def can_login_by_location(request):
 @authentication_classes([])
 @permission_classes([])
 def get_vapid_public_key(request):
-    _("Get VAPID public key for push.")
+    """Get VAPID public key for push."""
     opts = getattr(settings, "WEBPUSH_SETTINGS")
     if opts is None or not isinstance(opts, dict):
         return Response()
