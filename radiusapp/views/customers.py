@@ -42,9 +42,6 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
 
     @action(methods=["get", "post"], detail=False)
     def get_service(self, request):
-        if request.method == "GET":
-            serializer = self.get_serializer()
-            return Response(serializer.data)
         data = self._check_data(request.data)
 
         customer_ip = data.get("customer_ip")
@@ -63,6 +60,11 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
                 "speed_out": customer_service.service.speed_out,
             }
         )
+
+    @get_service.mapping.get
+    def get_service_get(self, request, **kwargs):
+        serializer = self.get_serializer()
+        return Response(serializer.data)
 
     def assign_guest_session(
         self, radius_uname: str, customer_mac: str, session_id: str, data: dict, customer_id: Optional[int] = None
