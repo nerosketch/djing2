@@ -146,9 +146,6 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     @action(methods=["get", "post"], detail=True)
     @catch_customers_errs
     def make_periodic_pay(self, request, pk=None):
-        if request.method == "GET":
-            periodic_pay_request_serializer = serializers.PeriodicPayForIdRequestSerializer()
-            return Response(periodic_pay_request_serializer.data)
         periodic_pay_request_serializer = serializers.PeriodicPayForIdRequestSerializer(data=request.data)
         periodic_pay_request_serializer.is_valid(raise_exception=True)
         periodic_pay_id = periodic_pay_request_serializer.data.get("periodic_pay_id")
@@ -159,6 +156,11 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         periodic_pay = get_object_or_404(PeriodicPay, pk=periodic_pay_id)
         customer.make_periodic_pay(periodic_pay=periodic_pay, next_pay=next_pay_date)
         return Response("ok")
+
+    @make_periodic_pay.mapping.get
+    def make_periodic_pay_get(self, request, **kwargs):
+        periodic_pay_request_serializer = serializers.PeriodicPayForIdRequestSerializer()
+        return Response(periodic_pay_request_serializer.data)
 
     @action(detail=False)
     @catch_customers_errs
