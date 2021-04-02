@@ -37,18 +37,18 @@ class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
     serializer_class = UserProfileSerializer
     lookup_field = "username"
 
-    @action(detail=False, url_path=r"get_profiles_by_group/(?P<group_id>\d{1,9})")
+    @action(detail=False, methods=["get"], url_path=r"get_profiles_by_group/(?P<group_id>\d{1,9})")
     def get_profiles_by_group(self, request, group_id: str):
         profile_ids = UserProfile.objects.get_profiles_by_group(group_id).values_list("pk", flat=True)
         return Response(data=profile_ids)
 
-    @action(detail=True)
+    @action(detail=True, methods=["get"])
     def get_responsibility_groups(self, request, username=None):
         profile = self.get_object()
         group_ids = profile.responsibility_groups.values_list("pk", flat=True)
         return Response(data=group_ids)
 
-    @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated, IsAdminUser])
     def get_active_profiles(self, request):
         queryset = self.filter_queryset(self.get_queryset().filter(is_active=True))
 
@@ -77,9 +77,6 @@ class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
 
     @action(detail=True, methods=("put", "get"))
     def change_password(self, request, username=None):
-        if request.method == "GET":
-            ser = UserProfilePasswordSerializer()
-            return Response(ser.data)
         data = self._check_passw_data(request.data)
 
         old_passw = data.get("old_passw")
@@ -97,6 +94,11 @@ class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
         profile.set_password(new_passw)
         profile.save(update_fields=["password"])
         return Response("ok", status=status.HTTP_200_OK)
+
+    @change_password.mapping.get
+    def change_password_get(self, request, **kwargs):
+        ser = UserProfilePasswordSerializer()
+        return Response(ser.data)
 
     @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
     def get_current_auth_permissions(self, request):
