@@ -16,7 +16,6 @@ from devices import serializers as dev_serializers
 from devices.models import Device, Port, PortVlanMemberModel
 from devices.device_config import (
     DeviceImplementationError,
-    ExpectValidationError,
     DeviceConnectionError,
     BaseSwitchInterface,
     BasePONInterface,
@@ -24,6 +23,7 @@ from devices.device_config import (
     UnsupportedReadingVlan,
     DeviceConsoleError,
 )
+from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
 from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, JSONBytesEncoder
 from djing2.lib.custom_signals import notification_signal
