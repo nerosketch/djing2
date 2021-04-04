@@ -13,7 +13,7 @@
    :numbered:
    :caption: Содержание:
 
-   user_instructions/ui.md
+   user_instructions/index.rst
    administrator_instructions/adm.md
    developer_instructions/index.rst
    principles
