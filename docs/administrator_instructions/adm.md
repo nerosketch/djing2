@@ -12,77 +12,86 @@
 А ниже подробная инструкция по установке вручную, контролируя все этапы установки.
 
 ### Подготовка системы
-Установка происходит в debian версии 9.5.
+Установка происходит в debian версии 10.
 
 Для начала подготовим систему, очистим и обновим пакеты. Процесс обновления долгий, так что можно пойти заварить себе чай :)
+Для Fedora(redhat, centos, и.т.д.)
 ```bash
 # dnf clean all
 # dnf -y update
 ```
 
-Затем установим зависимости, в Debian9.5 пакеты называются так:
+Для Debin-based
 ```bash
-# apt install mariadb-server libmariadb-dev libmariadbclient-dev \
-    mariadb-client python3-dev python3-pip python3-pil python3-venv uwsgi \
+# apt -y update
+# apt -y upgrade
+```
+
+Затем установим зависимости, в Debian пакеты называются так:
+```bash
+# apt install libmemcached-dev python3-psycopg2 postgresql-server-dev-12 \
+    python3-dev python3-pip python3-pil python3-venv uwsgi \
     nginx uwsgi-plugin-python3 libsnmp-dev git gettext libcurl4-openssl-dev \
-    libssl-dev expect redis-server
+    libssl-dev expect
 ```
 Пакеты *libsnmp-dev* и *expect* нужны для управления и мониторинга оборудования, redis-server для
 сервера очередей *Celery*.
 
-Условимся, что путь к папке с проектом находится по пути: */var/www/djing*.
+Условимся, что путь к папке с проектом находится по пути: */var/www/djing2*.
 Дальше создадим каталок для web, затем создаём virtualenv, обновляем pip и ставим проект через pip:
 ```bash
 # mkdir /var/www
 # cd /var/www
-# git clone --depth=1 https://github.com/nerosketch/djing.git
+# git clone --depth=1 https://github.com/nerosketch/djing2.git
 # python3 -m venv venv
 # cd djing
 # source ./venv/bin/activate
+# pip3 install wheel
 # pip3 install --upgrade pip
 # export PYCURL_SSL_LIBRARY=openssl
-# pip3 install -r djing/requirements.txt
-# chown -R www-data:www-data /var/www/djing
+# pip3 install -r djing2/requirements.txt
+# chown -R www-data. /var/www/djing2
 # deactivate
 ```
 
 Или, вместо этих комманд выполните инстальник из *install/install_debian.sh* если у вас *debian*,
-или по аналогии для других дистрибутивов.
+или по аналогии адаптируйте для других дистрибутивов.
 
-Теперь давайте перейдём в баш от имени пользователя www-data, так у нас будет хватать прав на все
-директории и файлы
+Теперь давайте перейдём в баш от имени пользователя www-data.
 ```bash
-sudo -u www-data -g www-data bash && cd /
+sudo -u www-data -g www-data bash && cd /var/www/djing2
 ```
 
 Скопируем конфиг из примера в реальный:
 ```bash
-$ cd /var/www/djing
-$ cp djing/local_settings.py.example djing/local_settings.py
+$ cd /var/www/djing2
+$ cp djing2/local_settings.py.example djing2/local_settings.py
 ```
 
 Затем отредактируйте конфиг для своих нужд.
 
-В Debian использую пользователя www-data, остаётся только назначить владельца на папки:
+В Debian использую пользователя www-data, остаётся только назначить владельца на папки ещё раз на всякий случай:
 ```bash
-# chown -R www-data:www-data /var/www/djing
+# chown -R www-data. /var/www/djing2
 ```
 
 
 ### Настройка WEB Сервера
-Конфиг Nginx в папке *sites-available* на моём рабочем сервере выглядит примерно так как указано
+Конфиг Nginx в папке *sites-available* в самом простом случае может выглядеть примерно так как указано
 ниже, не забудьте указать в нужных местах ваш домен.
 ```nginx
 upstream djing{
     server unix:///run/uwsgi/app/djing/socket;
 }
 
-# Для обращений в web серверу на localhost из скриптов
+Тонкие настройки для всех разные, так что это на ваше усмотрение.
+
+# Для обращений к web серверу на localhost из скриптов
 server {
     listen 80;
     server_name localhost 127.0.0.1;
     location / {
-        uwsgi_pass djing;
+        uwsgi_pass djing2;
         include uwsgi_params;
     }
     access_log /dev/null;
@@ -100,31 +109,31 @@ server{
 server {
     listen 80 default_server;
     server_name <ваш домен>;
-    root /var/www/djing/;
+    root /var/www/djing2/;
     charset utf-8;
 
-    location = /favicon.ico { alias /var/www/djing/static/img/favicon_m.ico; }
-    location = /robots.txt { alias /var/www/djing/robots.txt; }
+    location = /favicon.ico { alias /var/www/djing2/static/img/favicon_m.ico; }
+    location = /robots.txt { alias /var/www/djing2/robots.txt; }
 
     location /media  {
-        alias /var/www/djing/media;
+        alias /var/www/djing2/media;
         expires 7d;
     }
 
     location /static {
-        alias /var/www/djing/static;
+        alias /var/www/djing2/static;
         expires 1d;
     }
 
     location / {
-        uwsgi_pass djing;
+        uwsgi_pass djing2;
         include uwsgi_params;
     }
 }
 
 # Обработка https запросов
 server {
-    listen 443 ssl;
+    listen 443 ssl http2;
     ssl on;
     server_name <ваш домен> www.<ваш домен>;
 
@@ -135,51 +144,51 @@ server {
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
 
-    location = /favicon.ico { alias /var/www/djing/static/img/favicon_m.ico; }
-    location = /robots.txt { alias /var/www/djing/robots.txt; }
+    location = /favicon.ico { alias /var/www/djing2/static/img/favicon_m.ico; }
+    location = /robots.txt { alias /var/www/djing2/robots.txt; }
 
     location /media  {
-        alias /var/www/djing/media;
+        alias /var/www/djing2/media;
         expires 7d;
     }
 
     location /static {
-        alias /var/www/djing/static;
+        alias /var/www/djing2/static;
         expires 1d;
     }
 
     location / {
-        uwsgi_pass djing;
+        uwsgi_pass djing2;
         include uwsgi_params;
     }
 }
 ```
 
-Это минимальный конфиг Nginx для работы. Проверте файл /run/uwsgi/djing.sock на доступность пользователю www-data для чтения.
+Это минимальный конфиг Nginx для работы. Проверте файл /run/uwsgi/djing2.sock на доступность пользователю www-data для чтения.
 
-Далее настраиваем uWSGI. Мой конфиг для uWSGI в debian:
-> /etc/uwsgi/apps-available/djing.ini
+Далее настраиваем uWSGI. Простой пример для uWSGI в debian:
+> /etc/uwsgi/apps-available/djing2.ini
 ```ini
 [uwsgi]
-chdir=/var/www/djing
-module=djing.wsgi
+chdir=/var/www/djing2
+module=djing2.wsgi
 master=True
 processes=8
-socket=/run/uwsgi/app/djing/socket
+socket=/run/uwsgi/app/djing2/socket
 ;http-socket=:8000
 chmod-socket=644
 ;pidfile=/run/uwsgi/django-master.pid
 vacuum=True
 plugin=python3
 ;disable-logging=True
-venv=/var/www/djing/venv
+venv=/var/www/djing2/venv
 ```
 
 А теперь попробуем запустить биллинг в полной связке Python - Uwsgi - Nginx.
 Перейдём в папку биллинга, если вы вышли куда-то ещё, зайдём в баш из под пользователя www-data.
 ```bash
 sudo -u www-data -g www-data bash
-cd /var/www/djing
+cd /var/www/djing2
 source ./venv/bin/activate
 ```
 
@@ -187,17 +196,17 @@ source ./venv/bin/activate
 > \$ ./manage.py compilemessages -l ru
 
 
-Попробуем запустить *uwsgi* и *djing* без *Nginx*, на порт 8000:
-Раскомментируйте строку *http-socket=:8000* в файле *djing.ini*, и закомментируйте
-*socket=/run/uwsgi/app/djing/socket* и *chmod-socket=644*, теперь можно попробовать запустить
-> \# uwsgi --gid www-data --uid www-data /etc/uwsgi/apps-available/djing.ini
+Попробуем запустить *uwsgi* и *djing2* без *Nginx*, на порт 8000:
+Раскомментируйте строку *http-socket=:8000* в файле *djing2.ini*, и закомментируйте
+*socket=/run/uwsgi/app/djing2/socket* и *chmod-socket=644*, теперь можно попробовать запустить
+> \# uwsgi --gid www-data --uid www-data /etc/uwsgi/apps-available/djing2.ini
 
 пробуем зайти в биллинг с браузера на <адрес сервера>:8000. Вам должен показаться диалог входа в систему:
 ![Login screenshot](./img/login.png)
 
-Теперь, если всё прошло успешно, поменяйте в конфиге */etc/uwsgi.d/djing.ini* сокет с http-socket на unix socket:
+Теперь, если всё прошло успешно, поменяйте в конфиге */etc/uwsgi.d/djing2.ini* сокет с http-socket на unix socket:
 Раскомментируйте это:
-> socket=/run/uwsgi/app/djing/socket
+> socket=/run/uwsgi/app/djing2/socket
 
 И закомментируйте эту строку:
 > http-socket=:8000
@@ -212,17 +221,17 @@ source ./venv/bin/activate
 
 
 ### Настраиваем биллинг
-Все настройки биллинга находятся в файле *djing/settings.py*. Большинство опций вы можете найти в документации
-[Django settings](https://docs.djangoproject.com/en/2.1/ref/settings).
-Те опции, которые были добавлены мной в рамках проекта *djing*, описаны ниже в этом разделе документации по установке.
+Все настройки биллинга находятся в файле *djing2/settings.py*. Большинство опций вы можете найти в документации
+[Django settings](https://docs.djangoproject.com/en/3.1/ref/settings).
+Те опции, которые были добавлены мной в рамках проекта *djing2*, описаны ниже в этом разделе документации по установке.
 
 #### djing/settings.py
 **USE_TZ** &mdash; Это опция *Django*, но если вы не работаете в разных часовых диапазонах то я не рекомендую включать
 эту опцию чтоб небыло путаницы со временем. Это связано с тем что я ещё не тестировал поведение работы со временем при
 включённой опции *USE_TZ*.
 
-**ALLOWED_HOSTS** &mdash; Тоже опция *Django*, но важная для безопасности, укажите в списке возможные имена вашего сервера.
-Подробнее в документации [Django settings](https://docs.djangoproject.com/en/2.1/ref/settings/#allowed-hosts).
+**ALLOWED_HOSTS** &mdash; Тоже опция *Django*, важная для безопасности, укажите в списке возможные домены вашего сервера.
+Подробнее в документации [Django settings](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts).
 
 **DEFAULT_PICTURE** &mdash; Это путь к изображению по умолчанию, оно используется когда нужное изображение не найдено.
 
@@ -253,27 +262,26 @@ __sha256__. Секретное слово должен знать биллинг
 
 #### Создание БД
 Подразумевается что сервер баз данных у вас уже есть, или вы его можете установить сами.
-В конфиге настроить БД можно по инструкции [Django databases](https://docs.djangoproject.com/en/2.1/ref/settings/#databases).
+В конфиге настроить БД можно по инструкции [Django databases](https://docs.djangoproject.com/en/3.1/ref/settings/#databases).
 
-Убедитесть что вы в папке с проектом, комманда **pwd** должна выдать */var/www/djing*.
-Чтоб создать бд, как описано в документации [Django admin \& migrate](https://docs.djangoproject.com/en/2.1/ref/django-admin/#migrate),
+Убедитесть что вы в папке с проектом, комманда **pwd** должна выдать */var/www/djing2*.
+Чтоб создать бд, как описано в документации [Django admin \& migrate](https://docs.djangoproject.com/en/3.1/ref/django-admin/#migrate),
 нужно запустить **./manage.py migrate** чтоб создать структуру БД. Вывод будет примерно таким:
 ```bash
 $ ./manage.py migrate
 Operations to perform:
-  Apply all migrations: mapapp, contenttypes, msg_app, taskapp, accounts_app, devapp, statistics, tariff_app, admin, sessions, chatbot, auth, abonapp
+  Apply all migrations: admin, auth, authtoken, contenttypes, customers, devices, dials, fin_app, gateways, groupapp, guardian, messenger, msg_app
 Running migrations:
   Rendering model states... DONE
-  Applying mapapp.0001_initial... OK
-  Applying devapp.0001_initial... OK
-  Applying devapp.0002_auto_20160909_1018... OK
-  Applying devapp.0003_device_map_dot... OK
+  Applying devices.0001_initial... OK
+  Applying devices.0002_auto_20160909_1018... OK
+  Applying devices.0003_device_map_dot... OK
   Applying contenttypes.0001_initial... OK
 ...
-  Applying taskapp.0012_auto_20170407_0124... OK
-  Applying taskapp.0013_auto_20170413_1944... OK
-  Applying taskapp.0014_auto_20170416_1029... OK
-  Applying taskapp.0015_auto_20170816_1109... OK
+  Applying customers.0012_auto_20170407_0124... OK
+  Applying customers.0013_auto_20170413_1944... OK
+  Applying customers.0014_auto_20170416_1029... OK
+  Applying customers.0015_auto_20170816_1109... OK
 ```
 
 После этого вам стоит создать супер пользователя чтоб зайти в систему.
@@ -289,8 +297,8 @@ Password:
 Password (again):
 Superuser created successfully.
 ```
-Обратите внимание на то что номер телефона это обязательное поле для заполнения.
-Если у вас не выходит указать номер телефона, то проверте чтоб ваш телефон соответствовал регулярному выражению **^(\+[7,8,9,3]\d{10,11})?$**.
+Обратите внимание на то, что номер телефона это обязательное поле для заполнения.
+Если у вас не выходит указать номер телефона, то проверте чтоб ваш телефон соответствовал регулярному выражению **^(\+[7893]\d{10,11})?$**.
 Если регулярное выражение вам не подхожит, то вы можете изенить его в настройках, см. опции в настройках выше.
 После изменения настроек они не сразу вступят в силу, нужно перезагрузить код django, для этого перезапустите **uwsgi**:
 > \# systemctl restart uwsgi
