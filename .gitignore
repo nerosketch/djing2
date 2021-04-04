@@ -5,7 +5,7 @@
 !TODO.txt
 media/
 .idea/
-djing2/local_settings.py
+apps/djing2/local_settings.py
 *.json
 *.bak
 *.mo
@@ -13,5 +13,5 @@ db.sqlite3
 venv/
 static/
 __pycache__/
-devices/device_config/custom/*.py
-!devices/device_config/custom/__init__.py
+apps/devices/device_config/custom/*.py
+!apps/devices/device_config/custom/__init__.py
