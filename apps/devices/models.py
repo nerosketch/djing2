@@ -5,8 +5,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField
 
-from devices.device_config import (
-    DEVICE_TYPES,
+from devices.device_config import DEVICE_TYPES, DEVICE_TYPE_UNKNOWN
+from devices.device_config.base import (
     Vlans,
     Macs,
     BaseSwitchInterface,
@@ -16,7 +16,6 @@ from devices.device_config import (
     DeviceConfigurationError,
     DeviceImplementationError,
     Vlan,
-    DEVICE_TYPE_UNKNOWN,
     OptionalScriptCallResult,
 )
 from devices.device_config.device_config_util import get_all_device_config_types
