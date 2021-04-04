@@ -13,10 +13,10 @@
    :numbered:
    :caption: Содержание:
 
-   user_instructions
+   user_instructions/ui.md
    administrator_instructions/adm.md
-   developer_instructions
-   modules
+   developer_instructions/index.rst
+   principles
 
 
 Indices and tables

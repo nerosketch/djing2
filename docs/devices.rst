@@ -5,7 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
    devices.device_config
    devices.migrations
@@ -13,21 +13,21 @@ Subpackages
 Submodules
 ----------
 
-devices.admin module
---------------------
+.. devices.admin module
+.. --------------------
 
-.. automodule:: devices.admin
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. .. automodule:: devices.admin
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:
 
-devices.apps module
--------------------
+.. devices.apps module
+.. -------------------
 
-.. automodule:: devices.apps
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. .. automodule:: devices.apps
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:
 
 devices.models module
 ---------------------

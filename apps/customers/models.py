@@ -705,6 +705,12 @@ class CustomerRawPassword(BaseAbstractModel):
 
 
 class AdditionalTelephone(BaseAbstractModel):
+    """Model for storing additional telephones
+
+    Args:
+        DjingModelViewSet ([type]): [description]
+    """
+
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="additional_telephones")
     telephone = models.CharField(
         max_length=16,
