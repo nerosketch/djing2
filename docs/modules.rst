@@ -2,7 +2,7 @@ djing2
 ======
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 3
 
    customers
    devices
@@ -11,14 +11,11 @@ djing2
    fin_app
    gateways
    groupapp
-   ipt_linux_agent
-   manage
    messenger
    msg_app
    networks
    profiles
    radiusapp
-   req
    services
    sitesapp
    tasks

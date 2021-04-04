@@ -3,15 +3,20 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Djing2's documentation!
-==================================
+Добро пожаловать в документацию по Djing2!
+==========================================
+
+.. include:: introduction.rst
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+   :numbered:
+   :caption: Содержание:
 
-   modules/all-about-me.rst
-   modules.rst
+   user_instructions
+   administrator_instructions/adm.md
+   developer_instructions
+   modules
 
 
 Indices and tables
