@@ -7,3 +7,4 @@
 
     ui.md
     profiles
+    customers
