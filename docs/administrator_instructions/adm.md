@@ -201,7 +201,8 @@ source ./venv/bin/activate
 > \# uwsgi --gid www-data --uid www-data /etc/uwsgi/apps-available/djing2.ini
 
 пробуем зайти в биллинг с браузера на <адрес сервера>:8000. Вам должен показаться диалог входа в систему:
-![Login screenshot](./img/login.png)
+
+![Login screenshot](../assets/login.png)
 
 Теперь, если всё прошло успешно, поменяйте в конфиге */etc/uwsgi.d/djing2.ini* сокет с http-socket на unix socket:
 Раскомментируйте это:

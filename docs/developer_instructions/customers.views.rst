@@ -1,16 +1,11 @@
-customers.views package
+пакет customers.views
 =======================
 
-Submodules
-----------
-
-customers.views.admin\_side module
+модуль customers.views.admin\_side
 ----------------------------------
 
 .. automodule:: customers.views.admin_side
    :members:
-   :undoc-members:
-   :show-inheritance:
 
 customers.views.user\_side module
 ---------------------------------
