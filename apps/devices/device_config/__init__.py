@@ -1,8 +1,8 @@
 import re
 from devices.device_config import pon
 from devices.device_config import switch
-from . import base
-from .unknown_device import UnknownDevice
+from devices.device_config import base
+from devices.device_config.unknown_device import UnknownDevice
 
 DEVICE_TYPE_UNKNOWN = 0
 DEVICE_TYPE_DlinkDGS1100_10ME = 1
