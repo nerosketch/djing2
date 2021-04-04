@@ -15,3 +15,7 @@ static/
 __pycache__/
 devices/device_config/custom/*.py
 !devices/device_config/custom/__init__.py
+
+docs/_build/
+docs/_static/
+docs/_templates/
