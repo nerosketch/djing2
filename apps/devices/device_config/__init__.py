@@ -1,7 +1,7 @@
 import re
-from devices.device_config import pon
-from devices.device_config import switch
-from devices.device_config import base
+from devices.device_config.pon import *
+from devices.device_config.switch import *
+from devices.device_config.base import *
 from devices.device_config.unknown_device import UnknownDevice
 
 DEVICE_TYPE_UNKNOWN = 0
@@ -20,18 +20,18 @@ DEVICE_TYPE_HuaweiS5300_10P_LI_AC = 12
 
 DEVICE_TYPES = [
     (DEVICE_TYPE_UNKNOWN, UnknownDevice),
-    (DEVICE_TYPE_DlinkDGS1100_10ME, switch.DlinkDGS1100_10ME),
-    (DEVICE_TYPE_BDCOM_P3310C, pon.BDCOM_P3310C),
-    (DEVICE_TYPE_EPON_BDCOM_FORA, pon.EPON_BDCOM_FORA),
-    (DEVICE_TYPE_EltexSwitch, switch.EltexSwitch),
-    (DEVICE_TYPE_ZTE_C320, pon.ZTE_C320),
-    (DEVICE_TYPE_OnuZTE_F660, pon.OnuZTE_F660),
-    (DEVICE_TYPE_OnuZTE_F601, pon.OnuZTE_F601),
-    (DEVICE_TYPE_HuaweiS2300, switch.HuaweiS2300),
-    (DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface, switch.DlinkDGS_3120_24SCSwitchInterface),
-    (DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface, switch.DlinkDGS_1100_06MESwitchInterface),
-    (DEVICE_TYPE_DlinkDGS_3627GSwitchInterface, switch.DlinkDGS_3627GSwitchInterface),
-    (DEVICE_TYPE_HuaweiS5300_10P_LI_AC, switch.HuaweiS5300_10P_LI_AC),
+    (DEVICE_TYPE_DlinkDGS1100_10ME, DlinkDGS1100_10ME),
+    (DEVICE_TYPE_BDCOM_P3310C, BDCOM_P3310C),
+    (DEVICE_TYPE_EPON_BDCOM_FORA, EPON_BDCOM_FORA),
+    (DEVICE_TYPE_EltexSwitch, EltexSwitch),
+    (DEVICE_TYPE_ZTE_C320, ZTE_C320),
+    (DEVICE_TYPE_OnuZTE_F660, OnuZTE_F660),
+    (DEVICE_TYPE_OnuZTE_F601, OnuZTE_F601),
+    (DEVICE_TYPE_HuaweiS2300, HuaweiS2300),
+    (DEVICE_TYPE_DlinkDGS_3120_24SCSwitchInterface, DlinkDGS_3120_24SCSwitchInterface),
+    (DEVICE_TYPE_DlinkDGS_1100_06MESwitchInterface, DlinkDGS_1100_06MESwitchInterface),
+    (DEVICE_TYPE_DlinkDGS_3627GSwitchInterface, DlinkDGS_3627GSwitchInterface),
+    (DEVICE_TYPE_HuaweiS5300_10P_LI_AC, HuaweiS5300_10P_LI_AC),
 ]
 
 DEVICE_ONU_TYPES = [DEVICE_TYPE_EPON_BDCOM_FORA, DEVICE_TYPE_OnuZTE_F660, DEVICE_TYPE_OnuZTE_F601]
@@ -71,17 +71,17 @@ def _check_device_config_types():
     all_dtypes = (
         klass.get_config_types()
         for code, klass in DEVICE_TYPES
-        if issubclass(klass, (base.BasePON_ONU_Interface, base.BasePortInterface))
+        if issubclass(klass, (BasePON_ONU_Interface, BasePortInterface))
     )
     all_dtypes = (a for b in all_dtypes if b for a in b)
     for dtype in all_dtypes:
-        if not issubclass(dtype, base.DeviceConfigType):
-            raise base.DeviceImplementationError(
+        if not issubclass(dtype, DeviceConfigType):
+            raise DeviceImplementationError(
                 'device config type "%s" must be subclass of DeviceConfigType' % repr(dtype)
             )
         device_config_short_code = str(dtype.short_code)
         if not allowed_symbols_pattern.match(device_config_short_code):
-            raise base.DeviceImplementationError(
+            raise DeviceImplementationError(
                 r'device config "%s" short_code must be equal regexp "^\w{1,64}$"' % repr(dtype)
             )
 
