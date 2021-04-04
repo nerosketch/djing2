@@ -110,13 +110,15 @@ class DhcpLever(SecureApiView):
     @staticmethod
     def on_dhcp_event(data: dict) -> str:
         """
-        :param data = {
-            'client_ip': ip_address('127.0.0.1'),
-            'client_mac': 'aa:bb:cc:dd:ee:ff',
-            'switch_mac': 'aa:bb:cc:dd:ee:ff',
-            'switch_port': 3,
-            'cmd': 'commit'
-        }"""
+        Data variable can take this form.
+        >>> data = {
+        ...    'client_ip': ip_address('127.0.0.1'),
+        ...    'client_mac': 'aa:bb:cc:dd:ee:ff',
+        ...    'switch_mac': 'aa:bb:cc:dd:ee:ff',
+        ...    'switch_port': 3,
+        ...    'cmd': 'commit'
+        ... }
+        """
         try:
             data_action = data.get("cmd")
             if data_action is None:

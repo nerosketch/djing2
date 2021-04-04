@@ -75,7 +75,7 @@ class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
         serializer.is_valid(raise_exception=True)
         return serializer.data
 
-    @action(detail=True, methods=("put", "get"))
+    @action(detail=True, methods=("put",))
     def change_password(self, request, username=None):
         data = self._check_passw_data(request.data)
 
