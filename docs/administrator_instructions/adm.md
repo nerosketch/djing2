@@ -34,8 +34,7 @@
     nginx uwsgi-plugin-python3 libsnmp-dev git gettext libcurl4-openssl-dev \
     libssl-dev expect
 ```
-Пакеты *libsnmp-dev* и *expect* нужны для управления и мониторинга оборудования, redis-server для
-сервера очередей *Celery*.
+Пакеты *libsnmp-dev* и *expect* нужны для управления и мониторинга оборудования.
 
 Условимся, что путь к папке с проектом находится по пути: */var/www/djing2*.
 Дальше создадим каталок для web, затем создаём virtualenv, обновляем pip и ставим проект через pip:
