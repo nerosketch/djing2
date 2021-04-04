@@ -34,7 +34,7 @@ class UserProfileSerializer(BaseCustomModelSerializer):
             fio=validated_data.get('fio'),
             email=validated_data.get('email'),
             is_active=validated_data.get('is_active'),
-            birth_day=validated_data.get('birth_day'),
+            birth_day=validated_data.get('birth_day')
         )
         # return UserProfile.objects.create(**validated_data)
 
