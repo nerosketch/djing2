@@ -40,7 +40,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         self.serializer = serializer
         return serializer.data
 
-    @action(methods=["get", "post"], detail=False)
+    @action(methods=["post"], detail=False)
     def get_service(self, request):
         data = self._check_data(request.data)
 
