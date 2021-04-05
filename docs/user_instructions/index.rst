@@ -5,10 +5,12 @@
     :maxdepth: 2
     :caption: Содержание
 
-    ui.md
+    tables
     profiles
     customers
     tasks/index
     groups
     services
     networks
+    devices/index
+    ui.md
