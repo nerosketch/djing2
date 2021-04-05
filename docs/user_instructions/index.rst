@@ -8,3 +8,4 @@
     ui.md
     profiles
     customers
+    tasks/index
