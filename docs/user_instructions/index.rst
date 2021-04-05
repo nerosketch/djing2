@@ -11,3 +11,4 @@
     tasks/index
     groups
     services
+    networks
