@@ -46,7 +46,7 @@
 
 
 Кнопка **Сайты** управляет доступностью профиля на разных
-:doc:`сайтах <../sites/index>`.
+:doc:`сайтах <./sites/index>`.
 
 .. figure:: ../assets/profile_edit_buttons_sites_btn.png
     :align: center
