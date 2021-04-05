@@ -9,3 +9,5 @@
     profiles
     customers
     tasks/index
+    groups
+    services
