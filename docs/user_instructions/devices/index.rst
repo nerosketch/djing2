@@ -7,6 +7,10 @@
     создать в разделе *Группы*. В :doc:`принципах <../../principles>`
     описан этот момент.
 
+
+Добавление нового устройства.
+------------------------------
+
 Открыв список оборудования в какой нибудь группе, можно увидеть список
 созданных устройств, или создать новое.
 Форма создания нового устройства выглядит примерно так, как на скрине
@@ -45,3 +49,45 @@
 ** Оповещать при событиях мониторинга**. Если эта галка установлена, то при
 событиях из системы мониторинга об этом будет оповещение всем ответственным
 за это оборудование сотруникам.
+
+
+Типы оборудования
+--------------------
+Все устройства в системе поделены на 2 больших семейства, это коммутаторы
+с маршрутизаторами, и `PON <https://ru.wikipedia.org/wiki/PON>`_.
+
+Если попробовать открыть устройство, то система попробует опросить
+его по snmp на предмет текущего состояния, и отобразит страницу с устройством
+в видом, зависящим от типа устройства. Например, если открыть коммутатор,
+то мы увидим примерно такую картину:
+
+.. figure:: ../../assets/device_switch.png
+    :align: center
+    :alt: device_switch.png
+
+А если это будет PON ONU(ONT) то картина будет такой:
+
+.. figure:: ../../assets/device_onu.png
+    :align: center
+    :alt: device_onu.png
+
+Страница с PON GPON OLT, на примере ZTE C320, будет выглядеть примерно так:
+
+.. figure:: ../../assets/device_olt_ztec320.png
+    :align: left
+    :alt: device_olt_ztec320.png
+
+Поддерживаемые типы оборудования:
+---------------------------------
+* `Dlink DGS-1100-10/ME <https://dlink.ru/ru/products/1/1976.html>`_
+* `Dlink DGS-3120-24SC <https://dlink.ru/ru/products/1/1365.html>`_
+* `Dlink DGS-1100-06/ME <https://dlink.ru/ru/products/1/2048.html>`_
+* `Dlink DGS-3627G <https://dlink.ru/ru/products/1/658.html>`_
+* `Eltex MES <https://eltex-co.ru/catalog/aggregation/>`_
+* `Huawei S2300 series <https://support.huawei.com/enterprise/en/switches/s2300-pid-16561>`_
+* `Huawei S5300 LI AC <http://huawei-russia.ru/huawei-switches/huawei-switch-s5300-series/ls-s5306tp-li-ac-huawei-quidway-s5300-switch>`_
+* :download:`BDCOM P3310C <../../assets/bdcom_p3310c.png>`
+* :download:`EPON ONU Fora <../../assets/onu-fora-na-1001d.jpg>`
+* :download:`OLT ZTE C320 <../../assets/zte_c320.jpeg>`
+* :download:`GPON ONU ZTE F660 <../../assets/zte_f660.jpg>`
+* :download:`GPON ONU ZTE F601 <../../assets/zte-f601-gpon-onu.jpg>`
