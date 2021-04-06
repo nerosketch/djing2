@@ -211,7 +211,7 @@ DATE_FORMAT = "Y-b-d"
 DATETIME_FORMAT = "Y-b-d H:i"
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_ROOT = os.path.join(BASE_DIR, "..", "media")
 
 DEFAULT_PICTURE = "/static/img/user_ava_min.gif"
 AUTH_USER_MODEL = "profiles.BaseAccount"
