@@ -9,8 +9,9 @@ class OnuZTE_F601(OnuZTE_F660):
     @staticmethod
     def get_config_types() -> ListDeviceConfigType:
         from .onu_config.zte_f601_bridge_config import ZteF601BridgeScriptModule
+        from .onu_config.zte_f601_static import ZteF601StaticScriptModule
 
-        return [ZteF601BridgeScriptModule]
+        return [ZteF601BridgeScriptModule, ZteF601StaticScriptModule]
 
     def default_vlan_info(self):
         default_vid = 1
