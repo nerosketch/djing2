@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 
 # from telnetlib import Telnet
-from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List
+from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Type
 from easysnmp import Session, EasySNMPConnectionError
 from transliterate import translit
 
@@ -350,7 +350,7 @@ class DeviceConfigType:
         return {"title": cls.title, "code": cls.short_code, "accept_vlan": cls.accept_vlan}
 
 
-ListDeviceConfigType = List[DeviceConfigType]
+ListDeviceConfigType = List[Type[DeviceConfigType]]
 
 
 class BasePortInterface(ABC):
