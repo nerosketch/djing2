@@ -12,6 +12,7 @@ def login_into_olt(hostname: str, login: str, password: str, prompt: str):
     choice = ch.do_cmd(password, ["bad password.", "%s#" % prompt])
     if choice == 0:
         raise zte_utils.ZteOltLoginFailed
+    return ch
 
 
 def onu_register_template(
@@ -51,7 +52,17 @@ def onu_register_template(
         # go to olt interface
         ch.do_cmd("interface gpon-olt_%s" % int_addr, "%s(config-if)#" % prompt)
 
-        return register_fn(int_addr=int_addr, *args, **kwargs)
+        return register_fn(
+            int_addr=int_addr,
+            ch=ch,
+            free_onu_number=free_onu_number,
+            serial=serial,
+            prompt=prompt,
+            rack_num=rack_num,
+            fiber_num=fiber_num,
+            *args,
+            **kwargs,
+        )
 
     else:
         ch.close()
