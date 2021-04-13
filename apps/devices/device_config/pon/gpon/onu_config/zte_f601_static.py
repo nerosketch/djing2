@@ -23,7 +23,7 @@ def get_onu_template(vlan_id: int):
         # "port-location sub-option remote-id name %s vport 1" % mac_addr,
         # "dhcp-option82 enable vport 1",
         # "dhcp-option82 trust true replace vport 1",
-        "ip dhcp snooping enable vport 1",
+        # "ip dhcp snooping enable vport 1",
         # 'ip-service ip-source-guard enable sport 1'
     )
     return template
