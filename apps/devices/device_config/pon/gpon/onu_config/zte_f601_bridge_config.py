@@ -31,7 +31,9 @@ def get_onu_template(vlan_id: int, mac_addr: str):
     return template
 
 
-def _register_f601_bridge_onu(ch, free_onu_number, serial, prompt, rack_num, fiber_num, user_vid, onu_mac, int_addr):
+def _register_f601_bridge_onu(
+    ch, free_onu_number, serial, prompt, rack_num, fiber_num, user_vid, onu_mac, int_addr, *args, **kwargs
+):
     onu_type = "ZTE-F601"
     serial = serial.upper()
 
@@ -126,6 +128,8 @@ def _register_onu(
         user_vid=user_vid,
         serial=serial,
         onu_mac=onu_mac,
+        *args,
+        **kwargs,
     )
 
 
