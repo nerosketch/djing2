@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
@@ -13,7 +14,7 @@ from tasks import models
 from tasks import serializers
 
 
-class ChangeLogModelViewSet(DjingModelViewSet):
+class ChangeLogModelViewSet(ReadOnlyModelViewSet):
     queryset = models.ChangeLog.objects.select_related("who", "task").only(
         "id", "who", "who__username", "who__fio", "act_type", "when", "task", "task__descr"
     )
