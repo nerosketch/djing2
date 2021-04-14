@@ -41,14 +41,12 @@ class JuniperVendorSpecific(IVendorSpecific):
             # 'Framed-IP-Netmask': '255.255.0.0',
             "User-Password": f"SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})",
         }
-        session_remaining_time = customer_service.calc_session_time()
+        session_remaining_time = customer_service.calc_session_time(splice=True)
         # + 5 минут потому что в момент, когда закончится сессия,
         # улуга еще будет на учётке. А вот через несколько мин. услуга
         # уже должна перерасчитаться.
         session_remaining_time += timedelta(minutes=5)
-        session_remaining_time = safe_int(session_remaining_time.total_seconds())
-        if session_remaining_time > 0:
-            if session_remaining_time > 700:
-                session_remaining_time = 700
-            res.update({"Session-Timeout": session_remaining_time})
+        session_remaining_time_secs = safe_int(session_remaining_time.total_seconds())
+        if session_remaining_time_secs > 0:
+            res.update({"Session-Timeout": session_remaining_time_secs})
         return res
