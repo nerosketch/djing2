@@ -38,10 +38,12 @@ class VendorManager:
 
     @staticmethod
     def build_dev_mac_by_opt82(agent_remote_id: str, agent_circuit_id: str):
-        dig = int(agent_remote_id, base=16)
-        agent_remote_id = dig.to_bytes((dig.bit_length() + 7) // 8, "big")
-        dig = int(agent_circuit_id, base=16)
-        agent_circuit_id = dig.to_bytes((dig.bit_length() + 7) // 8, "big")
+        # TODO: test it!
+        def _cnv(v):
+            return bytes.fromhex(v[2:]) if v.startswith("0x") else v
+
+        agent_remote_id = _cnv(agent_remote_id)
+        agent_circuit_id = _cnv(agent_circuit_id)
 
         dev_mac, dev_port = parse_opt82(agent_remote_id, agent_circuit_id)
         return dev_mac, dev_port
