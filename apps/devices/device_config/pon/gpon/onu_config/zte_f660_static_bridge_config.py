@@ -165,7 +165,7 @@ def _zte_onu_bridge_config_apply(
     if not all_vids:
         raise zte_utils.OnuZteRegisterError("not passed vlan list")
 
-    onu_register_template(
+    return onu_register_template(
         register_fn=_register_f660_static_bridge_onu,
         hostname=zte_ip_addr,
         login=telnet_login,
