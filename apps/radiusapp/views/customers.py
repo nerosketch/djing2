@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import datetime
 
+from django.db.utils import IntegrityError
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -185,17 +186,6 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
                 _update_lease_send_ws_signal(customer.pk)
                 return r
 
-            # create authorized session for customer
-            CustomerRadiusSession.objects.get_or_create(
-                ip_lease_id=subscriber_lease.lease_id,
-                customer_id=customer.pk,
-                defaults={
-                    "last_event_time": datetime.now(),
-                    "radius_username": radius_username,
-                    "session_id": radius_unique_id,
-                },
-            )
-
             response = vendor_manager.get_auth_session_response(
                 subscriber_lease=subscriber_lease,
                 customer_service=customer_service,
@@ -242,10 +232,44 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             **update_kwargs,
         )
 
-    # TODO: Сделать создание сессии в acct, а в
-    #  auth только предлагать ip для абонента
-    @staticmethod
-    def _acct_start(_):
+    def _acct_start(self, request):
+        """Accounting start handler."""
+        dat = request.data
+        vendor_manager = self.vendor_manager
+
+        ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
+        if not ip:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        leases = CustomerIpLeaseModel.objects.filter(ip_address=ip).only("pk", "ip_address", "pool_id", "customer_id")
+        if not leases.exists():
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        radius_username = vendor_manager.get_radius_username(dat)
+        if not radius_username:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        lease = leases.first()
+        if lease is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        radius_unique_id = vendor_manager.get_radius_unique_id(dat)
+
+        sessions = CustomerRadiusSession.objects.filter(ip_lease=lease)
+        if sessions.exists():
+            sessions.update(customer=lease.customer, radius_username=radius_username, session_id=radius_unique_id)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        try:
+            CustomerRadiusSession.objects.create(
+                customer=lease.customer,
+                ip_lease=lease,
+                last_event_time=datetime.now(),
+                radius_username=radius_username,
+                session_id=radius_unique_id,
+            )
+        except IntegrityError:
+            pass
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_stop(self, request):
@@ -254,18 +278,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         username = vendor_manager.get_radius_username(dat)
         vcls = vendor_manager.vendor_class
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
-        session = CustomerRadiusSession.objects.filter(radius_username=username, ip_lease__ip_address=ip, closed=False)
-        if not session.exists():
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        self._update_counters(session, dat, closed=True)
-        session = session.first()
-        if session is None:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        customer = session.customer
-        if customer.is_access():
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        # if not access to service
+        CustomerRadiusSession.objects.filter(radius_username=username, ip_lease__ip_address=ip).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_update(self, request):
@@ -281,8 +294,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         )
         if session.exists():
             self._update_counters(session, dat)
-        session = session.first()
-        if session is None:
+        else:
             return _bad_ret("No session found")
 
         # if not access to service
