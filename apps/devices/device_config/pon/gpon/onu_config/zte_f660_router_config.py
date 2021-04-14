@@ -21,7 +21,7 @@ def _get_onu_template(vlan_id: int, mac_addr: str) -> tuple:
     )
 
 
-def _register_onu(ch, free_onu_number, serial, prompt, rack_num, fiber_num, user_vid, onu_mac):
+def _register_onu(ch, free_onu_number, serial, prompt, rack_num, fiber_num, user_vid, onu_mac, *args, **kwargs):
     # register onu on olt interface
     ch.do_cmd(f"onu {free_onu_number} type ZTE-F660 sn {serial}", prompt)
     # register onu profile on olt interface
@@ -62,7 +62,7 @@ def _zte_onu_router_config_apply(
     if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
         raise expect_util.ExpectValidationError("ip address for zte not valid")
 
-    onu_register_template(
+    return onu_register_template(
         register_fn=_register_onu,
         hostname=zte_ip_addr,
         login=telnet_login,
