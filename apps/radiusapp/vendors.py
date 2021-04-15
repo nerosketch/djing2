@@ -11,7 +11,11 @@ from radiusapp.vendor_base import IVendorSpecific
 def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int]:
     # 'remote_id': '0x000600ad24d0c544', 'circuit_id': '0x000400020002'
     mac, port = None, 0
-    remote_id, circuit_id = bytes(remote_id), bytes(circuit_id)
+    if not isinstance(remote_id, bytes):
+        remote_id = bytes(remote_id)
+    if not isinstance(circuit_id, bytes):
+        circuit_id = bytes(circuit_id)
+
     if circuit_id.startswith(b"ZTE"):
         mac = remote_id.decode()
     else:
