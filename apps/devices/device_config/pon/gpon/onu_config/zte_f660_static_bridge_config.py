@@ -102,7 +102,9 @@ def _get_onu_mng_template(vlans: VlanList, config: dict):
     )
 
 
-def _register_f660_static_bridge_onu(ch, free_onu_number, serial, prompt, rack_num, fiber_num, all_vids, config):
+def _register_f660_static_bridge_onu(
+    ch, free_onu_number, serial, prompt, rack_num, fiber_num, all_vids, config, *args, **kwargs
+):
     config_if_prompt = "%s(config-if)#" % prompt
 
     # register onu on olt interface
