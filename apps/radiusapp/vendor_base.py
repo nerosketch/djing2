@@ -3,7 +3,7 @@ import enum
 from typing import Optional, Tuple
 
 from customers.models import CustomerService, Customer
-from radiusapp.models import CustomerRadiusSession, FetchSubscriberLeaseResponse
+from radiusapp.models import FetchSubscriberLeaseResponse
 
 
 class AcctStatusType(enum.IntEnum):
@@ -48,7 +48,7 @@ class IVendorSpecific(abc.ABC):
         return self.get_rad_val(data, "Acct-Unique-Session-Id")
 
     @abc.abstractmethod
-    def get_auth_guest_session_response(self, guest_session: CustomerRadiusSession, data) -> dict:
+    def get_auth_guest_session_response(self, guest_lease: FetchSubscriberLeaseResponse, data) -> dict:
         raise NotImplementedError
 
     @abc.abstractmethod
