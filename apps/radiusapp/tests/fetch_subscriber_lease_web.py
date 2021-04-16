@@ -30,7 +30,7 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         pool = NetworkIpPool.objects.create(
             network="10.152.64.0/24",
             kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
-            description="Test guest pool",
+            description="Test inet pool",
             ip_start="10.152.64.2",
             ip_end="10.152.64.254",
             vlan_if=vlan12,
@@ -44,6 +44,7 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         self.service = Service.objects.create(
             title="test", descr="test", speed_in=11.0, speed_out=11.0, cost=10.0, calc_type=SERVICE_CHOICE_DEFAULT
         )
+        self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
 
         # Initialize devices instances
         DeviceTestCase.setUp(self)
@@ -62,7 +63,7 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
             {
                 "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
                 "Framed-IP-Address": {"value": [existing_ip]},
-                "NAS-Port": {"value": [vlan_id]},
+                "NAS-Port-Id": {"value": [vlan_id]},
                 "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
                 "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
                 "ERX-Dhcp-Mac-Addr": {"value": [mac]},
@@ -82,20 +83,20 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         r = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual(r.data["Framed-IP-Address"], "10.152.64.2")
-        self.assertEqual(r.data["User-Password"], "SERVICE-INET(11000000,2062500,11000000,2062500)")
+        self.assertEqual(r.data["User-Password"], self.service_inet_str)
 
     def test_two_identical_fetch(self):
         """Repeat identical requests for same customer."""
         r1 = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617", mac="18c0.4d51.dee3")
         self.assertEqual(r1.status_code, status.HTTP_200_OK)
         self.assertEqual(r1.data["Framed-IP-Address"], "10.152.64.2")
-        self.assertEqual(r1.data["User-Password"], "SERVICE-INET(11000000,2062500,11000000,2062500)")
+        self.assertEqual(r1.data["User-Password"], self.service_inet_str)
         r2 = self._send_request(
             vlan_id=12, cid="0004008B0002", arid="0006121314151617", mac="18c0.4d51.dee4", existing_ip="10.152.16473"
         )
         self.assertEqual(r2.status_code, status.HTTP_200_OK)
         self.assertEqual(r2.data["Framed-IP-Address"], "10.152.64.3")
-        self.assertEqual(r2.data["User-Password"], "SERVICE-INET(11000000,2062500,11000000,2062500)")
+        self.assertEqual(r2.data["User-Password"], self.service_inet_str)
 
     def test_guest_and_inet_subnet(self):
         """Проверка гостевой и инетной аренды ip.
@@ -111,16 +112,24 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         self.assertEqual(r.data["Framed-IP-Address"], "10.255.0.2")
         self.assertEqual(r.data["User-Password"], "SERVICE-GUEST")
 
-    # def test_subnet_vid(self):
-    #     """Проверяем чтоб ip выдавались в соответствии в переданным
-    #        vid. Или с первого доступного пула для группы, если vid
-    #        не передан.
-    #     """
-    #     res = CustomerRadiusSession.objects.fetch_subscriber_lease(
-    #         customer_mac='aa:bb:cc:dd:ee:f1',
-    #         customer_id=self.customer.pk,
-    #         customer_group=self.customer.group_id,
-    #         is_dynamic=True,
-    #         vid=12,
-    #         pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET
-    #     )
+    def test_subnet_vid(self):
+        """Проверяем чтоб ip выдавались в соответствии в переданным vid."""
+        self.test_auth_radius_session()
+
+        vlan15 = VlanIf.objects.create(title="Vlan for customer tests", vid=15)
+        pool = NetworkIpPool.objects.create(
+            network="10.152.164.0/24",
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
+            description="Test guest pool",
+            ip_start="10.152.164.2",
+            ip_end="10.152.164.254",
+            vlan_if=vlan15,
+            gateway="10.152.164.1",
+            is_dynamic=True,
+        )
+        pool.groups.add(self.group)
+
+        r = self._send_request(vlan_id=15, cid="0004008B0002", arid="0006121314151617")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["Framed-IP-Address"], "10.152.164.2")
+        self.assertEqual(r.data["User-Password"], self.service_inet_str)
