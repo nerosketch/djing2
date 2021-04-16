@@ -67,38 +67,32 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         serializer = self.get_serializer()
         return Response(serializer.data)
 
-    def assign_guest_session(
-        self, radius_uname: str, customer_mac: str, session_id: str, data: dict, customer_id: Optional[int] = None
-    ):
+    def assign_guest(self, customer_mac: str, data: dict, customer_id: Optional[int] = None):
         """
         Assign no service session.
 
-        :param radius_uname: User-Name av value from RADIUS.
         :param customer_mac: Customer device MAC address.
-        :param session_id: RADIUS unique id.
         :param data: Other data from RADIUS server.
         :param customer_id: customers.models.Customer model id.
         :return: rest_framework Response.
         """
         if customer_id is None:
-            session = CustomerRadiusSession.objects.assign_guest_session(
-                radius_uname=radius_uname, customer_mac=customer_mac, session_id=session_id
-            )
+            lease = CustomerRadiusSession.objects.assign_guest_session(customer_mac=customer_mac)
         else:
             customer_id = safe_int(customer_id)
             if customer_id == 0:
                 return _bad_ret('Bad "customer_id" arg.')
-            session = CustomerRadiusSession.objects.assign_guest_customer_session(
-                radius_uname=radius_uname, customer_id=customer_id, customer_mac=customer_mac, session_id=session_id
+            lease = CustomerRadiusSession.objects.assign_guest_customer_session(
+                customer_id=customer_id, customer_mac=customer_mac
             )
-        if session is None:
+        if lease is None:
             # Not possible to assign guest ip, it's bad
             return Response(
                 {"Reply-Message": "Not possible to assign guest ip, it's bad"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=status.HTTP_404_NOT_FOUND,
             )
         # Creating guest session
-        r = self.vendor_manager.get_auth_guest_session_response(guest_session=session, data=data)
+        r = self.vendor_manager.get_auth_guest_session_response(guest_lease=lease, data=data)
         return Response(r)
 
     @action(methods=["post"], detail=False, url_path=r"auth/(?P<vendor_name>\w{1,32})")
@@ -122,23 +116,19 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         if customer_mac is None:
             return _bad_ret("Customer mac is required")
 
-        radius_username = vendor_manager.get_radius_username(request.data)
-        radius_unique_id = vendor_manager.get_radius_unique_id(request.data)
+        # radius_username = vendor_manager.get_radius_username(request.data)
+        # radius_unique_id = vendor_manager.get_radius_unique_id(request.data)
 
         customer = CustomerIpLeaseModel.find_customer_by_device_credentials(device_mac=dev_mac, device_port=dev_port)
         if customer is None:
             # If customer not found then assign guest session
-            return self.assign_guest_session(
-                radius_uname=radius_username, customer_mac=customer_mac, session_id=radius_unique_id, data=request.data
-            )
+            return self.assign_guest(customer_mac=customer_mac, data=request.data)
 
         if customer.current_service_id is None:
             # if customer has not service then assign guest
             #  session with attached customer.
-            r = self.assign_guest_session(
-                radius_uname=radius_username,
+            r = self.assign_guest(
                 customer_mac=customer_mac,
-                session_id=radius_unique_id,
                 data=request.data,
                 customer_id=customer.pk,
             )
@@ -151,18 +141,13 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         if customer_service is None:
             # if customer has not service then assign guest
             #  session with attached customer.
-            r = self.assign_guest_session(
-                radius_uname=radius_username,
+            r = self.assign_guest(
                 customer_mac=customer_mac,
-                session_id=radius_unique_id,
                 data=request.data,
                 customer_id=customer.pk,
             )
             _update_lease_send_ws_signal(customer.pk)
             return r
-
-        # TODO: return time to end session.
-        # sess_time = customer_service.calc_session_time()
 
         vid = vendor_manager.get_vlan_id(request.data)
 
@@ -176,10 +161,8 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
                 pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
             )
             if subscriber_lease is None:
-                r = self.assign_guest_session(
-                    radius_uname=radius_username,
+                r = self.assign_guest(
                     customer_mac=customer_mac,
-                    session_id=radius_unique_id,
                     data=request.data,
                     customer_id=customer.pk,
                 )
@@ -241,12 +224,12 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         if not ip:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        leases = CustomerIpLeaseModel.objects.filter(ip_address=ip).only("pk", "ip_address", "pool_id", "customer_id")
-        if not leases.exists():
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
         radius_username = vendor_manager.get_radius_username(dat)
         if not radius_username:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        leases = CustomerIpLeaseModel.objects.filter(ip_address=ip).only("pk", "ip_address", "pool_id", "customer_id")
+        if not leases.exists():
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         lease = leases.first()
@@ -297,7 +280,6 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         else:
             return _bad_ret("No session found")
 
-        # if not access to service
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @staticmethod
