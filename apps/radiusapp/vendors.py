@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 from customers.models import CustomerService, Customer
 from djing2.lib import macbin2str, safe_int
-from radiusapp.models import CustomerRadiusSession, FetchSubscriberLeaseResponse
+from radiusapp.models import FetchSubscriberLeaseResponse
 
 from radiusapp.vendor_specific import vendor_classes
 from radiusapp.vendor_base import IVendorSpecific
@@ -68,9 +68,9 @@ class VendorManager:
         if self.vendor_class:
             return self.vendor_class.get_radius_unique_id(data)
 
-    def get_auth_guest_session_response(self, guest_session: CustomerRadiusSession, data) -> dict:
+    def get_auth_guest_session_response(self, guest_lease: FetchSubscriberLeaseResponse, data) -> dict:
         if self.vendor_class:
-            return self.vendor_class.get_auth_guest_session_response(guest_session, data)
+            return self.vendor_class.get_auth_guest_session_response(guest_lease, data)
 
     def get_auth_session_response(
         self,
