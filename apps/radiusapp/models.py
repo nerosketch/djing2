@@ -1,6 +1,5 @@
 """radiusapp models file."""
 import subprocess
-from datetime import datetime
 from typing import Optional
 
 from django.conf import settings
@@ -11,7 +10,13 @@ from customers.models import Customer
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
 
 
-def _human_readable_int(num: int) -> str:
+def _human_readable_int(num: int, u="b") -> str:
+    """
+    Translates 'num' into decimal prefixes with 'u' prefix name.
+
+    :prop num: Integer count number.
+    :prop u: Unit name.
+    """
     decs = (
         (10 ** 12, "T"),
         (10 ** 9, "G"),
@@ -21,7 +26,7 @@ def _human_readable_int(num: int) -> str:
     for dec, pref in decs:
         if num >= dec:
             num = round(num / dec, 2)
-            return f"{num} {pref}b"
+            return f"{num} {pref}{u}"
     return str(num)
 
 
@@ -122,11 +127,11 @@ class CustomerRadiusSessionManager(models.Manager):
         )
 
     def _assign_guest_session(
-        self, radius_uname: str, customer_mac: str, session_id: str, customer_id: Optional[int] = None
-    ):
+        self, customer_mac: str, customer_id: Optional[int] = None
+    ) -> Optional[FetchSubscriberLeaseResponse]:
         """Fetch guest lease."""
-        # Тут создаём сессию и сразу выделяем гостевой ip для этой сессии.
-        r = self.fetch_subscriber_lease(
+        # Тут выделяем гостевой ip для этой сессии.
+        return self.fetch_subscriber_lease(
             customer_mac=customer_mac,
             customer_id=customer_id,
             customer_group=None,
@@ -134,41 +139,27 @@ class CustomerRadiusSessionManager(models.Manager):
             vid=None,
             pool_kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
         )
-        if not r:
-            return None
-        sess = self.filter(ip_lease_id=r.lease_id)
-        if sess.exists():
-            return sess.first()
-        # TODO: Move session creating into
-        #  'fetch_subscriber_lease' sql procedure
-        sess = self.create(
-            customer=None,
-            last_event_time=datetime.now(),
-            radius_username=radius_uname,
-            ip_lease_id=r.lease_id,
-            session_id=session_id,
-        )
-        return sess
 
-    def assign_guest_session(self, radius_uname: str, customer_mac: str, session_id: str):
+    def assign_guest_session(
+        self,
+        customer_mac: str,
+    ) -> Optional[FetchSubscriberLeaseResponse]:
         """Fetch guest lease 4 unknown customer."""
-        return self._assign_guest_session(radius_uname, customer_mac, session_id)
+        return self._assign_guest_session(customer_mac=customer_mac)
 
-    def assign_guest_customer_session(self, radius_uname: str, customer_id: int, customer_mac: str, session_id: str):
+    def assign_guest_customer_session(
+        self, customer_id: int, customer_mac: str
+    ) -> Optional[FetchSubscriberLeaseResponse]:
         """
         Fetch guest lease for known customer, but who hasn't access to service.
 
-        :param radius_uname: User-Name av from RADIUS.
         :param customer_id: customers.models.Customer model id.
         :param customer_mac: Customer device MAC address.
-        :param session_id: unique session id.
         :return: CustomerRadiusSession instance
         """
         # Тут создаём сессию и сразу выделяем гостевой ip для этой сессии,
         #  с привязкой абонента.
-        return self._assign_guest_session(
-            radius_uname=radius_uname, customer_mac=customer_mac, session_id=session_id, customer_id=customer_id
-        )
+        return self._assign_guest_session(customer_mac=customer_mac, customer_id=customer_id)
 
 
 class CustomerRadiusSession(models.Model):
@@ -210,19 +201,19 @@ class CustomerRadiusSession(models.Model):
 
     def h_input_octets(self):
         """Human readable input octets."""
-        return _human_readable_int(self.input_octets)
+        return _human_readable_int(num=self.input_octets)
 
     def h_output_octets(self):
         """Human readable output octets."""
-        return _human_readable_int(self.output_octets)
+        return _human_readable_int(num=self.output_octets)
 
     def h_input_packets(self):
         """Human readable input packets."""
-        return _human_readable_int(self.input_packets)
+        return _human_readable_int(num=self.input_packets, u="p")
 
     def h_output_packets(self):
         """Human readable output packets."""
-        return _human_readable_int(self.output_packets)
+        return _human_readable_int(num=self.output_packets, u="p")
 
     def delete(self, *args, **kwargs):
         """Remove current instance. And also remove ip lease."""
