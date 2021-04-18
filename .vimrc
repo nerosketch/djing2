@@ -58,8 +58,8 @@ call vundle#begin()
     Plugin 'fisadev/FixedTaskList.vim'          " Pending tasks list
     Plugin 'yuttie/comfortable-motion.vim'      " Smooth scrolling
     Plugin 'MattesGroeger/vim-bookmarks'        " Bookmarks
-    " Plugin 'thaerkh/vim-indentguides'           " Visual representation of indents
-    Plugin 'w0rp/ale'                           " Async Lint Engine
+    Plugin 'thaerkh/vim-indentguides'           " Visual representation of indents
+    Plugin 'dense-analysis/ale'                 " Async Lint Engine
     Plugin 'Valloric/YouCompleteMe'             " Code Completion
 
     "-------------------=== Other ===-------------------------------
@@ -70,6 +70,8 @@ call vundle#begin()
     Plugin 'kien/rainbow_parentheses.vim'       " Rainbow Parentheses
     Plugin 'ryanoasis/vim-devicons'             " Dev Icons
     Plugin 'mhinz/vim-startify'                 " Vim Start Page
+    Plugin 'editorconfig/editorconfig-vim'	" Editorconfig support
+
     "-------------------=== Snippets support ===--------------------
     Plugin 'garbas/vim-snipmate'                " Snippets manager
     Plugin 'MarcWeber/vim-addon-mw-utils'       " dependencies #1
@@ -82,7 +84,7 @@ call vundle#begin()
 
     "-------------------=== Python  ===-----------------------------
     Plugin 'python-mode/python-mode'                   " Python mode (docs, refactor, lints...)
-    " Plugin 'hynek/vim-python-pep8-indent'
+    Plugin 'hynek/vim-python-pep8-indent'
     Plugin 'mitsuhiko/vim-python-combined'
     Plugin 'mitsuhiko/vim-jinja'
     Plugin 'jmcantrell/vim-virtualenv'
@@ -91,7 +93,7 @@ call vundle#begin()
 call vundle#end()                           " required
 filetype on
 filetype plugin on
-filetype plugin indent off
+filetype plugin indent on
 
 "=====================================================
 "" General settings
@@ -118,7 +120,7 @@ set tabstop=4                               " 4 whitespaces for tabs visual pres
 set shiftwidth=4                            " shift lines by 4 spaces
 set smarttab                                " set tabs for a shifttabs logic
 set expandtab                               " expand tabs into spaces
-" set autoindent                              " indent when moving to the next line while writing code
+set autoindent                              " indent when moving to the next line while writing code
 
 set cursorline                              " shows line under the cursor's line
 set showmatch                               " shows matching part of bracket pairs (), [], {}
@@ -310,8 +312,9 @@ let g:pymode = 1
 let g:pymode_paths = ['./apps']
 let g:pymode_trim_whitespaces = 1
 setlocal textwidth=119
-setlocal commentstring=#\ %s
-let g:pymode_options_max_line_length = 119
+setlocal commentstring=#\%s
+let g:pymode_options_max_line_length=119
+let g:syntastic_python_pylint_post_args="--max-line-length=120"
 
 " Autocompletition, and no auto insert first item
 set completeopt=menuone,noinsert
@@ -361,7 +364,7 @@ let g:pymode_syntax_highlight_async_await=g:pymode_syntax_all
 let g:pymode_syntax_highlight_equal_operator=g:pymode_syntax_all
 let g:pymode_syntax_highlight_stars_operator=g:pymode_syntax_all
 let g:pymode_syntax_highlight_self=g:pymode_syntax_all
-let g:pymode_syntax_indent_errors=g:pymode_syntax_all
+" let g:pymode_syntax_indent_errors=g:pymode_syntax_all
 let g:pymode_syntax_string_formatting=g:pymode_syntax_all
 let g:pymode_syntax_space_errors=g:pymode_syntax_all
 let g:pymode_syntax_string_format=g:pymode_syntax_all
@@ -385,7 +388,7 @@ augroup END
 let g:pymode_folding=0
 
 " pep8 indents
-let g:pymode_indent=0
+let g:pymode_indent=1
 
 " code running
 let g:pymode_run=1
@@ -398,6 +401,10 @@ let g:pymode_rope_lookup_project = 0
 let g:airline#extensions#tabline#enabled = 1
 
 imap <F5> <Esc>:w<CR>:!clear;python %<CR>
+
+" Editorconfig
+au FileType gitcommit let b:EditorConfig_disable = 1  " disable for git commits
+
 
 " no <down> <Nop>
 " no <left> <Nop>
@@ -418,3 +425,8 @@ imap <F5> <Esc>:w<CR>:!clear;python %<CR>
 autocmd StdinReadPre * let g:isReadingFromStdin = 1
 autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | Startify | endif
 autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | NERDTree | endif
+
+" Exit Vim if NERDTree is the only window left.
+autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() |
+    \ quit | endif
+
