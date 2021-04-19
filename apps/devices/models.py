@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Iterator
+from typing import Optional, Tuple
 
 from django.contrib.sites.models import Site
 from django.db import models
@@ -12,7 +12,7 @@ from devices.device_config.base import (
     BaseSwitchInterface,
     BasePONInterface,
     BasePON_ONU_Interface,
-    DeviceConfigType,
+    ListDeviceConfigType,
     DeviceConfigurationError,
     DeviceImplementationError,
     Vlan,
@@ -165,7 +165,7 @@ class Device(BaseAbstractModel):
             return mng.get_fiber_str()
         return r"¯ \ _ (ツ) _ / ¯"
 
-    def get_config_types(self) -> Iterator[DeviceConfigType]:
+    def get_config_types(self) -> ListDeviceConfigType:
         mng_klass = self.get_manager_klass()
         return mng_klass.get_config_types()
 
@@ -173,10 +173,12 @@ class Device(BaseAbstractModel):
         self.code = config.get("configTypeCode")
         self.save(update_fields=["code"])
         all_device_types = self.get_config_types()
-        dtypes = (dtype for dtype in all_device_types if dtype.short_code == str(self.code))
+        self_device_type_code = str(self.code)
+        dtypes = (dtype for dtype in all_device_types if dtype.short_code == self_device_type_code)
         dtype_for_run = next(dtypes, None)
         if dtype_for_run is not None:
-            return dtype_for_run.entry_point(config=config, device=self)
+            device_manager = dtype_for_run(title=dtype_for_run.title, code=dtype_for_run.short_code)
+            return device_manager.entry_point(config=config, device=self)
 
     #############################
     #  Remote access(i.e. snmp)

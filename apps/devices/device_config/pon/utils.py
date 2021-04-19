@@ -1,7 +1,10 @@
 from typing import List, Optional
 
+VlanList = List[int]
+OptVlanList = Optional[VlanList]
 
-def get_all_vlans_from_config(config: dict) -> Optional[List[int]]:
+
+def get_all_vlans_from_config(config: dict) -> OptVlanList:
     # config = {
     #     'configTypeCode': 'zte_f660_bridge',
     #     'vlanConfig': [
