@@ -14,7 +14,7 @@ from rest_framework.response import Response
 
 from devices import serializers as dev_serializers
 from devices.models import Device, Port, PortVlanMemberModel
-from devices.device_config import (
+from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
     BaseSwitchInterface,
