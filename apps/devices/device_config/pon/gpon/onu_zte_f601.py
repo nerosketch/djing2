@@ -1,4 +1,3 @@
-from devices.device_config.base import ListDeviceConfigType
 from .onu_zte_f660 import OnuZTE_F660
 
 
@@ -7,7 +6,7 @@ class OnuZTE_F601(OnuZTE_F660):
     ports_len = 1
 
     @staticmethod
-    def get_config_types() -> ListDeviceConfigType:
+    def get_config_types():
         from .onu_config.zte_f601_bridge_config import ZteF601BridgeScriptModule
         from .onu_config.zte_f601_static import ZteF601StaticScriptModule
 
@@ -24,6 +23,6 @@ class OnuZTE_F601(OnuZTE_F660):
         try:
             return [next(r)]
         except TypeError:
-            return r[:1]
+            return list(r)[:1]
         except StopIteration:
             return ()

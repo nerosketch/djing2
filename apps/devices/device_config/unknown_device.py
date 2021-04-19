@@ -1,6 +1,6 @@
 from typing import Optional
 
-from .base import BaseDeviceInterface, ListDeviceConfigType
+from .base import BaseDeviceInterface
 
 
 class UnknownDevice(BaseDeviceInterface):
@@ -22,5 +22,5 @@ class UnknownDevice(BaseDeviceInterface):
         return ""
 
     @staticmethod
-    def get_config_types() -> ListDeviceConfigType:
+    def get_config_types():
         return []
