@@ -1,9 +1,7 @@
 import re
-from typing import Dict
-from pexpect import TIMEOUT
 
-from django.utils.translation import gettext, gettext_lazy as _
-from devices.device_config.base import DeviceConfigurationError, DeviceConsoleError
+from django.utils.translation import gettext
+from devices.device_config.base import DeviceConsoleError
 
 
 class ZteOltConsoleError(DeviceConsoleError):
@@ -23,43 +21,6 @@ class ZTEFiberIsFull(ZteOltConsoleError):
 class ZteOltLoginFailed(ZteOltConsoleError):
     def __init__(self, message=None):
         self.message = message or gettext("Wrong login or password for telnet access")
-
-
-def reg_dev_zte(device, extra_data: Dict, config: dict, reg_func):
-    if not extra_data:
-        raise DeviceConfigurationError(_("You have not info in extra_data " "field, please fill it in JSON"))
-    ip = None
-    if device.ip_address:
-        ip = device.ip_address
-    elif device.parent_dev:
-        ip = device.parent_dev.ip_address
-    if not ip:
-        raise DeviceConfigurationError("not have ip")
-    mac = str(device.mac_addr) if device.mac_addr else None
-
-    # Format serial number from mac address
-    # because saved mac address was make from serial number
-    sn = "ZTEG%s" % "".join("%.2X" % int(x, base=16) for x in mac.split(":")[-4:])
-    telnet = extra_data.get("telnet")
-    try:
-        onu_snmp = reg_func(
-            onu_mac=mac,
-            serial=sn,
-            zte_ip_addr=str(ip),
-            telnet_login=telnet.get("login"),
-            telnet_passw=telnet.get("password"),
-            telnet_prompt=telnet.get("prompt"),
-            config=config,
-            snmp_info=str(device.snmp_extra),
-            user_vid=extra_data.get("default_vid"),
-        )
-        if onu_snmp is not None:
-            device.snmp_extra = onu_snmp
-            device.save(update_fields=("snmp_extra",))
-        else:
-            raise DeviceConfigurationError(_("unregistered onu not found, sn=%s") % sn)
-    except TIMEOUT as e:
-        raise OnuZteRegisterError(e)
 
 
 def parse_onu_name(onu_name: str, name_regexp=re.compile("[/:_]")):
