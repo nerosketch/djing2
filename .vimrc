@@ -50,7 +50,7 @@ call vundle#begin()
     "-------------------=== Code/Project navigation ===-------------
     Plugin 'scrooloose/nerdtree'                " Project and file navigation
     Plugin 'Xuyuanp/nerdtree-git-plugin'        " NerdTree git functionality
-    Plugin 'majutsushi/tagbar'                  " Class/module browser
+    " Plugin 'majutsushi/tagbar'                  " Class/module browser
     Plugin 'vim-ctrlspace/vim-ctrlspace'        " Tabs/Buffers/Fuzzy/Workspaces/Bookmarks
     Plugin 'mileszs/ack.vim'                    " Ag/Grep
     Plugin 'vim-airline/vim-airline'            " Lean & mean status/tabline for vim
@@ -70,7 +70,7 @@ call vundle#begin()
     Plugin 'kien/rainbow_parentheses.vim'       " Rainbow Parentheses
     Plugin 'ryanoasis/vim-devicons'             " Dev Icons
     Plugin 'mhinz/vim-startify'                 " Vim Start Page
-    Plugin 'editorconfig/editorconfig-vim'	" Editorconfig support
+    Plugin 'editorconfig/editorconfig-vim'	    " Editorconfig support
 
     "-------------------=== Snippets support ===--------------------
     Plugin 'garbas/vim-snipmate'                " Snippets manager
@@ -83,7 +83,7 @@ call vundle#begin()
     Plugin 'mitsuhiko/vim-sparkup'              " Sparkup(XML/jinja/htlm-django/etc.) support
 
     "-------------------=== Python  ===-----------------------------
-    Plugin 'python-mode/python-mode'                   " Python mode (docs, refactor, lints...)
+    Plugin 'python-mode/python-mode'            " Python mode (docs, refactor, lints...)
     Plugin 'hynek/vim-python-pep8-indent'
     Plugin 'mitsuhiko/vim-python-combined'
     Plugin 'mitsuhiko/vim-jinja'
@@ -146,8 +146,8 @@ set secure                                  " prohibit .vimrc files to execute s
 tab sball
 set switchbuf=useopen
 set laststatus=2
-nmap <F9> :bprev<CR>
-nmap <F10> :bnext<CR>
+nmap <F8> :bprev<CR>
+nmap <F9> :bnext<CR>
 nmap <silent> <leader>q :SyntasticCheck # <CR> :bp <BAR> bd #<CR>
 
 "=====================================================
@@ -202,10 +202,10 @@ let g:airline_powerline_fonts=1
 "=====================================================
 "" TagBar settings
 "=====================================================
-let g:tagbar_autofocus=0
-let g:tagbar_width=42
-autocmd BufEnter *.py :call tagbar#autoopen(0)
-autocmd BufWinLeave *.py :TagbarClose
+"let g:tagbar_autofocus=0
+"let g:tagbar_width=42
+"autocmd BufEnter *.py :call tagbar#autoopen(0)
+"autocmd BufWinLeave *.py :TagbarClose
 
 "=====================================================
 "" NERDTree settings
