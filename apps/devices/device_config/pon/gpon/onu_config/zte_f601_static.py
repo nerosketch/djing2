@@ -1,138 +1,107 @@
-import re
-from typing import Optional
+from django.utils.translation import gettext_lazy as _
 
 from devices.device_config import expect_util
-from devices.device_config.pon.utils import get_all_vlans_from_config
-from djing2.lib import process_lock, safe_int
-from .zte_f601_bridge_config import ZteF601BridgeScriptModule, remove_from_olt
-from ..zte_utils import zte_onu_conv_to_num, sn_to_mac, OnuZteRegisterError
-from .zte_onu import onu_register_template
+from . import zte_onu
+from ...utils import VlanList
 
 
-def get_onu_template(vlan_id: int):
+def _get_onu_template(all_vids: VlanList, *args, **kwargs) -> tuple:
+    vids = ",".join(map(str, all_vids))
     template = (
         "sn-bind enable sn",
         "tcont 1 profile HSI_100",
         "gemport 1 unicast tcont 1 dir both",
         "security storm-control broadcast rate 64 direction ingress vport 1",
         "security storm-control broadcast rate 64 direction egress vport 1",
-        "switchport mode hybrid vport 1",
-        "service-port 1 vport 1 user-vlan %(vid)d vlan %(vid)d" % {"vid": vlan_id},
-        # "port-location format flexible-syntax vport 1",
-        # "port-location sub-option remote-id enable vport 1",
-        # "port-location sub-option remote-id name %s vport 1" % mac_addr,
-        # "dhcp-option82 enable vport 1",
-        # "dhcp-option82 trust true replace vport 1",
-        # "ip dhcp snooping enable vport 1",
-        # 'ip-service ip-source-guard enable sport 1'
+        "switchport mode trunk vport 1",
+        f"switchport vlan {vids} tag vport 1",
     )
     return template
 
 
-def get_pon_mng_template(vlan_id: int):
-    template = (
-        "service HSI type internet gemport 1 vlan %d" % vlan_id,
-        "loop-detect ethuni eth_0/1 enable",
-        "vlan port eth_0/1 mode tag vlan %d" % vlan_id,
-        "dhcp-ip ethuni eth_0/1 forbidden",
-    )
-    return template
+def _get_pon_mng_template(all_vids: VlanList, config: dict, *args, **kwargs) -> list:
+    all_vids = ",".join(map(str, set(all_vids)))
+    vlan_config = config.get("vlanConfig")
+    vids = vlan_config[0].get("vids")
+    native_vids = (vid.get("vid") for vid in vids if vid.get("native", False))
+    native_vids = list(set(native_vids))
+    trunk_vids = (vid.get("vid") for vid in vids if not vid.get("native", False))
+    trunk_vids = list(set(trunk_vids))
 
+    native_vids_len = len(native_vids)
+    trunk_vids_len = len(trunk_vids)
 
-def _register_f601_bridge_onu(
-    ch, free_onu_number, serial, prompt, rack_num, fiber_num, user_vid, int_addr, *args, **kwargs
-):
-    onu_type = "ZTE-F601"
-    serial = serial.upper()
+    if native_vids_len > 1:
+        raise expect_util.ExpectValidationError(_("Multiple native vid is not allowed on one port"))
 
-    # register onu on olt interface
-    ch.do_cmd("onu %d type %s sn %s" % (free_onu_number, onu_type, serial), "%s(config-if)#" % prompt)
+    ports_config = []
 
-    # Exit from int olt
-    ch.do_cmd("exit", "%s(config)#" % prompt)
+    if native_vids_len == 1:
+        if trunk_vids_len > 0:
+            # Trunk with access port, Hybrid
+            ports_config.extend(
+                [
+                    "vlan port eth_0/1 mode hybrid def-vlan %d" % native_vids[0],
+                    "vlan port eth_0/1 vlan %s" % ",".join(map(str, trunk_vids)),
+                ]
+            )
+        elif trunk_vids_len == 0:
+            # Only Access port
+            ports_config.append("vlan port eth_0/1 mode tag vlan %d" % native_vids[0])
+    elif native_vids_len == 0:
+        if trunk_vids_len > 0:
+            # Only trunk port
+            ports_config.extend(
+                [
+                    "vlan port eth_0/1 mode trunk",
+                    "vlan port eth_0/1 vlan %s" % ",".join(map(str, trunk_vids)),
+                ]
+            )
+        elif trunk_vids_len == 0:
+            # Without vlan config, type default vlan
+            ports_config.append("vlan port eth_0/1 mode tag vlan 1")
 
-    # Enter to int onu
-    ch.do_cmd(
-        "int gpon-onu_%(int_addr)s:%(onu_num)d" % {"int_addr": int_addr, "onu_num": free_onu_number},
-        "%s(config-if)#" % prompt,
-    )
-
-    # Apply int onu config
-    template = get_onu_template(user_vid)
-    for line in template:
-        ch.do_cmd(line, "%s(config-if)#" % prompt)
-
-    # Exit
-    ch.do_cmd("exit", "%s(config)#" % prompt)
-
-    # Enter to pon-onu-mng
-    ch.do_cmd(
-        "pon-onu-mng gpon-onu_%(int_addr)s:%(onu_num)d" % {"int_addr": int_addr, "onu_num": free_onu_number},
-        "%s(gpon-onu-mng)#" % prompt,
-    )
-
-    # Apply config to pon-onu-mng
-    for line in get_pon_mng_template(user_vid):
-        ch.do_cmd(line, "%s(gpon-onu-mng)#" % prompt)
-
-    # Exit
-    ch.do_cmd("exit", "%s(config)#" % prompt)
-    ch.do_cmd("exit", "%s#" % prompt)
-    ch.sendline("exit")
-
-    ch.close()
-    return zte_onu_conv_to_num(rack_num=rack_num, fiber_num=fiber_num, port_num=free_onu_number)
-
-
-# Main Entry point
-@process_lock(lock_name="zte_olt")
-def _register_onu(
-    onu_mac: Optional[str],
-    serial: str,
-    zte_ip_addr: str,
-    telnet_login: str,
-    telnet_passw: str,
-    telnet_prompt: str,
-    config: dict,
-    user_vid: int,
-    *args,
-    **kwargs,
-):
-    serial = serial.upper()
-
-    if not re.match(r"^ZTEG[0-9A-F]{8}$", serial):
-        raise expect_util.ExpectValidationError("Serial not valid, match: ^ZTEG[0-9A-F]{8}$")
-
-    all_vids = get_all_vlans_from_config(config=config)
-    if not all_vids:
-        raise OnuZteRegisterError("not passed vlan list")
-
-    onu_vlan = safe_int(all_vids[0])
-    if onu_vlan == 0:
-        raise OnuZteRegisterError("Bad vlan passed in config")
-
-    if onu_mac is None:
-        onu_mac = sn_to_mac(serial)
-
-    if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
-        raise expect_util.ExpectValidationError("ip address for zte not valid")
-
-    return onu_register_template(
-        register_fn=_register_f601_bridge_onu,
-        hostname=zte_ip_addr,
-        login=telnet_login,
-        password=telnet_passw,
-        prompt=telnet_prompt,
-        user_vid=user_vid,
-        serial=serial,
-        onu_mac=onu_mac,
+    return (
+        [
+            f"service HSI type internet gemport 1 vlan {all_vids}",
+            "loop-detect ethuni eth_0/1 enable",
+        ]
+        + ports_config
+        + ["dhcp-ip ethuni eth_0/1 forbidden"]
     )
 
 
-remove_from_olt = remove_from_olt
-
-
-class ZteF601StaticScriptModule(ZteF601BridgeScriptModule):
+class ZteF601StaticScriptModule(zte_onu.ZteOnuDeviceConfigType):
     title = "Zte F601 static"
     short_code = "zte_f601_static"
-    reg_func = _register_onu
+    accept_vlan = True
+    zte_type = "ZTE-F601"
+
+    def apply_zte_top_conf(self, prompt: str, free_onu_number: int, int_addr: str, *args, **kwargs) -> None:
+        # Enter to int onu
+        self.ch.do_cmd(
+            "int gpon-onu_%(int_addr)s:%(onu_num)d" % {"int_addr": int_addr, "onu_num": free_onu_number},
+            "%s(config-if)#" % prompt,
+        )
+
+        # Apply int onu config
+        template = _get_onu_template(*args, **kwargs)
+        for line in template:
+            self.ch.do_cmd(line, "%s(config-if)#" % prompt)
+
+        # Exit
+        self.ch.do_cmd("exit", "%s(config)#" % prompt)
+
+    def apply_zte_bot_conf(self, prompt: str, int_addr: str, free_onu_number: int, *args, **kwargs) -> None:
+        # Enter to pon-onu-mng
+        self.ch.do_cmd(
+            "pon-onu-mng gpon-onu_%(int_addr)s:%(onu_num)d" % {"int_addr": int_addr, "onu_num": free_onu_number},
+            "%s(gpon-onu-mng)#" % prompt,
+        )
+
+        # Apply config to pon-onu-mng
+        for line in _get_pon_mng_template(*args, **kwargs):
+            self.ch.do_cmd(line, "%s(gpon-onu-mng)#" % prompt)
+
+        # Exit
+        self.ch.do_cmd("exit", "%s(config)#" % prompt)

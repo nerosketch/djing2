@@ -11,14 +11,13 @@ from devices.device_config.base import (
     MacItem,
     Macs,
     DeviceImplementationError,
-    ListDeviceConfigType,
 )
 from devices.device_config.utils import plain_ip_device_mon_template
 from ..dlink import DlinkDGS1100_10ME
 
 
 class EltexPort(BasePortInterface):
-    def get_config_types(self) -> ListDeviceConfigType:
+    def get_config_types(self):
         return []
 
 

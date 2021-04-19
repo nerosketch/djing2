@@ -1,15 +1,46 @@
+import re
 from typing import Optional, Dict
 
 from django.utils.translation import gettext_lazy as _
 from transliterate import translit
 
-from djing2.lib import safe_int
-from devices.device_config.base import DeviceConsoleError, ListDeviceConfigType
+from djing2.lib import safe_int, process_lock
+from devices.device_config.base import DeviceConsoleError
 from devices.device_config.utils import norm_name
-from devices.device_config.expect_util import ExpectValidationError
-from .onu_config.zte_f601_bridge_config import remove_from_olt
-from .zte_utils import sn_to_mac, conv_zte_signal
+from devices.device_config import expect_util
+from .onu_config.zte_onu import ZteOnuDeviceConfigType
+from . import zte_utils
 from ..epon import EPON_BDCOM_FORA
+
+
+@process_lock(lock_name="zte_olt")
+def _remove_zte_onu_from_olt(
+    zte_ip_addr: str, telnet_login: str, telnet_passw: str, telnet_prompt: str, snmp_info: str, *args, **kwargs
+):
+    if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
+        raise expect_util.ExpectValidationError("ip address for zte not valid")
+
+    rack_num, fiber_num, onu_num = zte_utils.zte_onu_conv_from_onu(snmp_info)
+    int_addr = "1/%d/%d" % (rack_num, fiber_num)
+
+    # Входим
+    ch = ZteOnuDeviceConfigType.login_into_olt(zte_ip_addr, telnet_login, telnet_passw, telnet_prompt)
+
+    # enter to config
+    ch.do_cmd("conf t", "%s(config)#" % telnet_prompt)
+
+    # go to olt interface
+    ch.do_cmd("interface gpon-olt_%s" % int_addr, "%s(config-if)#" % telnet_prompt)
+
+    # remove onu register from olt fiber
+    ch.do_cmd("no onu %d" % onu_num, "%s(config-if)#" % telnet_prompt)
+
+    # Exit
+    ch.do_cmd("exit", "%s(config)#" % telnet_prompt)
+    ch.do_cmd("exit", "%s#" % telnet_prompt)
+    ch.sendline("exit")
+    ch.close()
+    return True
 
 
 class OnuZTE_F660(EPON_BDCOM_FORA):
@@ -43,8 +74,8 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             "status": status_map.get(
                 safe_int(self.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1" % fiber_addr)), "unknown"
             ),
-            "signal": conv_zte_signal(signal),
-            "mac": sn_to_mac(sn),
+            "signal": zte_utils.conv_zte_signal(signal),
+            "mac": zte_utils.sn_to_mac(sn),
             "info": (
                 (_("name"), self.get_item(".1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s" % fiber_addr)),
                 # 'distance': safe_float(distance) / 10,
@@ -89,8 +120,20 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 ".1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%(fiber_num)d.%(onu_num)d.1.%(port_num)d"
                 % {"port_num": port_num, "fiber_num": fiber_num, "onu_num": onu_num}
             )
-            trunk_vlans = list(map(int, trunk_vlans.split(b","))) if trunk_vlans else []
-            return [{"vid": v, "native": False} for v in trunk_vlans]
+
+            def _rng(r):
+                if not r:
+                    return
+                if b"-" in r:
+                    a1, a2 = r.split(b"-")
+                    return range(int(a1), int(a2))
+                else:
+                    return int(r)
+
+            vids = (
+                tuple(t) if isinstance(t, range) else (t,) for t in map(_rng, filter(bool, trunk_vlans.split(b",")))
+            )
+            return [{"vid": v, "native": False} for i in vids for v in i]
 
         # Result example
         # [
@@ -118,7 +161,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             fiber_num, onu_port = v.split(".")
             int(fiber_num), int(onu_port)
         except ValueError:
-            raise ExpectValidationError(_("Zte onu snmp field must be two dot separated integers"))
+            raise expect_util.ExpectValidationError(_("Zte onu snmp field must be two dot separated integers"))
 
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
         device = self.dev_instance
@@ -163,10 +206,10 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 sn = "ZTEG%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
             else:
                 sn = "ZTEG%s" % "".join("%.2X" % x for x in sn[-4:])
-            sn_mac = sn_to_mac(sn)
+            sn_mac = zte_utils.sn_to_mac(sn)
             if str(dev.mac_addr) != sn_mac:
-                raise ExpectValidationError(_("Mac of device not equal mac by snmp"))
-            return remove_from_olt(
+                raise expect_util.ExpectValidationError(_("Mac of device not equal mac by snmp"))
+            return _remove_zte_onu_from_olt(
                 zte_ip_addr=str(dev.parent_dev.ip_address),
                 telnet_login=telnet.get("login"),
                 telnet_passw=telnet.get("password"),
@@ -190,7 +233,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         return super().get_fiber_str()
 
     @staticmethod
-    def get_config_types() -> ListDeviceConfigType:
+    def get_config_types():
         from .onu_config.zte_f660_router_config import ZteF660RouterScriptModule
         from .onu_config.zte_f660_static_bridge_config import ZteF660BridgeStaticScriptModule
 

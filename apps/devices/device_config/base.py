@@ -2,7 +2,6 @@ import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
 
-# from telnetlib import Telnet
 from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Type
 from easysnmp import Session, EasySNMPConnectionError
 from transliterate import translit
@@ -317,13 +316,15 @@ class DeviceConfigType:
     short_code: str
     accept_vlan: bool
 
-    def __init__(self, title: str, code: str):
-        if not isinstance(title, str):
+    def __init__(self, title: Optional[str] = None, code: Optional[str] = None):
+        if title:
+            self.title = title
+        if code:
+            self.short_code = code
+        if not isinstance(self.title, str):
             raise TypeError
-        if not isinstance(code, str):
+        if not isinstance(self.short_code, str):
             raise TypeError
-        self.title = title
-        self.short_code = code
 
     @classmethod
     @abstractmethod
