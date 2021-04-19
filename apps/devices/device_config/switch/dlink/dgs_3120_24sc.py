@@ -11,13 +11,12 @@ from devices.device_config.base import (
     BaseSwitchInterface,
     BasePortInterface,
     DeviceImplementationError,
-    ListDeviceConfigType,
 )
 from devices.device_config.utils import plain_ip_device_mon_template
 
 
 class DLinkPort(BasePortInterface):
-    def get_config_types(self) -> ListDeviceConfigType:
+    def get_config_types(self):
         return []
 
 
