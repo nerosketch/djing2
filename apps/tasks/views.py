@@ -1,25 +1,17 @@
 from django.db.models import Count
 from django.utils.translation import gettext
+from django.forms.models import model_to_dict
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
-from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
 from profiles.models import UserProfile
 from tasks import models
 from tasks import serializers
-
-
-class ChangeLogModelViewSet(ReadOnlyModelViewSet):
-    queryset = models.ChangeLog.objects.select_related("who", "task").only(
-        "id", "who", "who__username", "who__fio", "act_type", "when", "task", "task__descr"
-    )
-    serializer_class = serializers.ChangeLogModelSerializer
-    filterset_fields = ("act_type", "who", "task")
 
 
 class TaskModelViewSet(DjingModelViewSet):
@@ -50,6 +42,16 @@ class TaskModelViewSet(DjingModelViewSet):
 
     def perform_create(self, serializer, *args, **kwargs):
         return super().perform_create(serializer=serializer, author=self.request.user, site=self.request.site)
+
+    def perform_update(self, serializer, *args, **kwargs) -> None:
+        new_data = dict(serializer.validated_data)
+        old_data = model_to_dict(serializer.instance, exclude=["site", "customer"])
+        instance = super().perform_update(serializer=serializer, *args, **kwargs)
+
+        # Makes task change log.
+        models.TaskStateChangeLogModel.objects.create_state_migration(
+            task=instance, author=self.request.user, new_data=new_data, old_data=old_data
+        )
 
     @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
     def active_task_count(self, request):
@@ -198,6 +200,30 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
             self.perform_destroy(comment)
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_403_FORBIDDEN)
+
+    @action(detail=False)
+    def combine_with_logs(self, request, *args, **kwargs):
+        task_id = safe_int(request.query_params.get("task"))
+        if task_id == 0:
+            return Response('"task" param is required', status=status.HTTP_400_BAD_REQUEST)
+
+        comments_list = list(
+            self.filter_queryset(self.get_queryset()).defer("task").values("id", "text", "author_id", "date_create")
+        )
+        for comment in comments_list:
+            comment.update({"type": "comment"})
+
+        logs_list = list(
+            models.TaskStateChangeLogModel.objects.filter(task_id=task_id)
+            .defer("task")
+            .values("state_data", "when", "who")
+        )
+        for log in logs_list:
+            log.update({"type": "log"})
+
+        one_list = sorted(comments_list + logs_list, key=lambda i: i.get("when") or i.get("date_create"), reverse=True)
+
+        return Response(one_list)
 
 
 class UserTaskHistory(BaseNonAdminReadOnlyModelViewSet):

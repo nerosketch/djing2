@@ -18,32 +18,33 @@ from profiles.models import UserProfile
 from tasks.handle import handle as task_handle
 
 
-class ChangeLog(BaseAbstractModel):
+class TaskStateChangeLogModelManager(models.Manager):
+    def create_state_migration(self, task, author, old_data: dict, new_data: dict):
+        changed_fields = [k for k, v in new_data.items() if old_data.get(k) is not None and v != old_data.get(k)]
+
+        new_data = {k: v for k, v in new_data.items() if k in changed_fields}
+        old_data = {k: v for k, v in old_data.items() if k in changed_fields}
+
+        state_data = {k: {"from": v, "to": new_data.get(k)} for k, v in old_data.items()}
+        return self.create(task=task, state_data=state_data, who=author)
+
+
+class TaskStateChangeLogModel(BaseAbstractModel):
     task = models.ForeignKey("Task", on_delete=models.CASCADE)
-    ACT_TYPE_CHANGE_TASK = 1
-    ACT_TYPE_CREATE_TASK = 2
-    ACT_TYPE_DELETE_TASK = 3
-    ACT_TYPE_COMPLETE_TASK = 4
-    ACT_TYPE_FAILED_TASK = 5
-    ACT_CHOICES = (
-        (ACT_TYPE_CHANGE_TASK, _("Change task")),
-        (ACT_TYPE_CREATE_TASK, _("Create task")),
-        (ACT_TYPE_DELETE_TASK, _("Delete task")),
-        (ACT_TYPE_COMPLETE_TASK, _("Completing tasks")),
-        (ACT_TYPE_FAILED_TASK, _("The task failed")),
-    )
-    act_type = models.PositiveSmallIntegerField(choices=ACT_CHOICES)
+    state_data = models.JSONField(_("State change data"))
     when = models.DateTimeField(auto_now_add=True)
     who = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="+")
+
+    objects = TaskStateChangeLogModelManager()
 
     def __str__(self):
         return self.get_act_type_display()
 
     class Meta:
-        db_table = "task_change_log"
+        db_table = "task_state_change_log"
         verbose_name = _("Change log")
         verbose_name_plural = _("Change logs")
-        ordering = ("-when",)
+        ordering = ("-id",)
 
 
 def delta_add_days():
@@ -140,19 +141,27 @@ class Task(BaseAbstractModel):
     objects = TaskQuerySet.as_manager()
 
     def finish(self, current_user):
-        self.task_state = self.TASK_STATE_COMPLETED  # Completed. Task done
-        self.out_date = datetime.now().date()  # End time
-        ChangeLog.objects.create(
-            task=self, act_type=ChangeLog.ACT_TYPE_COMPLETE_TASK, who=current_user  # Completing tasks
-        )
-        self.save(update_fields=("task_state", "out_date"))
+        if self.task_state != self.TASK_STATE_COMPLETED:
+            models.TaskStateChangeLogModel.objects.create_state_migration(
+                task=self,
+                author=self.request.user,
+                new_data={"task_state": self.TASK_STATE_COMPLETED, "out_date": self.out_date},
+                old_data={"task_state": int(self.task_state), "out_date": self.out_date},
+            )
+            self.task_state = self.TASK_STATE_COMPLETED  # Completed. Task done
+            self.out_date = datetime.now().date()  # End time
+            self.save(update_fields=("task_state", "out_date"))
 
     def do_fail(self, current_user):
-        self.task_state = self.TASK_STATE_CONFUSED  # Confused(crashed)
-        ChangeLog.objects.create(
-            task=self, act_type=ChangeLog.ACT_TYPE_FAILED_TASK, who=current_user  # The task failed
-        )
-        self.save(update_fields=("task_state",))
+        if self.task_state != self.TASK_STATE_CONFUSED:
+            models.TaskStateChangeLogModel.objects.create_state_migration(
+                task=self,
+                author=self.request.user,
+                new_data={"task_state": self.TASK_STATE_CONFUSED},
+                old_data={"task_state": int(self.task_state)},
+            )
+            self.task_state = self.TASK_STATE_CONFUSED  # Confused(crashed)
+            self.save(update_fields=("task_state",))
 
     def send_notification(self):
         task_handle(self, self.author, self.recipients.filter(is_active=True))
