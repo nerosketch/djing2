@@ -175,6 +175,11 @@ nnoremap <F4> :set relativenumber!<CR>
 set incsearch	                            " incremental search
 set hlsearch	                            " highlight search results
 
+
+" Mouse Cusrsor enable
+set mouse=a
+
+
 "=====================================================
 "" Comfortable Motion Settings
 "=====================================================
