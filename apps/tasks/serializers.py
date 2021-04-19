@@ -5,16 +5,6 @@ from tasks import models
 from profiles.models import UserProfile
 
 
-class ChangeLogModelSerializer(BaseCustomModelSerializer):
-    who_name = serializers.CharField(source="who.get_full_name", read_only=True)
-    act_text = serializers.CharField(source="get_act_type_display", read_only=True)
-    task_descr = serializers.CharField(source="task.descr", read_only=True)
-
-    class Meta:
-        model = models.ChangeLog
-        fields = "__all__"
-
-
 class TaskModelSerializer(BaseCustomModelSerializer):
     author_full_name = serializers.CharField(source="author.get_full_name", read_only=True)
     author_uname = serializers.CharField(source="author.username", read_only=True)
