@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-18 00:39+0300\n"
+"POT-Creation-Date: 2021-04-20 15:17+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,196 +17,221 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: tasks/handle.py:23 tasks/models.py:160
+#: apps/tasks/handle.py:21 apps/tasks/models.py:254
 msgid "Task"
 msgstr "Задача"
 
-#: tasks/handle.py:27
+#: apps/tasks/handle.py:25
 msgid "Task completed"
 msgstr "Задача завершена"
 
-#: tasks/models.py:12
-msgid "Low"
-msgstr "Низкий"
+#: apps/tasks/models.py:34
+msgid "State change data"
+msgstr "Состояние изменения задачи"
 
-#: tasks/models.py:13
-msgid "Average"
-msgstr "Средний"
+#: apps/tasks/models.py:41
+msgid "Task change."
+msgstr "Изменение задачи."
 
-#: tasks/models.py:14
-msgid "Higher"
-msgstr "Высший"
+#: apps/tasks/models.py:42
+#, python-format
+msgid "\"%(field_name)s\" from \"%(from)s\" -> \"%(to)s\""
+msgstr "\"%(field_name)s\" с \"%(from)s\" -> \"%(to)s\""
 
-#: tasks/models.py:18
-msgid "New"
-msgstr "Новая"
-
-#: tasks/models.py:19
-msgid "Confused"
-msgstr "Провалена"
-
-#: tasks/models.py:20
-msgid "Completed"
-msgstr "Выполнена"
-
-#: tasks/models.py:24
-msgid "not chosen"
-msgstr "не выбрано"
-
-#: tasks/models.py:25
-msgid "ip conflict"
-msgstr "Ip конфликт"
-
-#: tasks/models.py:26
-msgid "yellow triangle"
-msgstr "жёлтый треугольник"
-
-#: tasks/models.py:27
-msgid "red cross"
-msgstr "красный крестик"
-
-#: tasks/models.py:28
-msgid "weak speed"
-msgstr "слабая скорость"
-
-#: tasks/models.py:29
-msgid "cable break"
-msgstr "обрыв кабеля"
-
-#: tasks/models.py:30
-msgid "connection"
-msgstr "подключение"
-
-#: tasks/models.py:31
-msgid "periodic disappearance"
-msgstr "переодическое пропадание"
-
-#: tasks/models.py:32
-msgid "router setup"
-msgstr "настройка роутера"
-
-#: tasks/models.py:33
-msgid "configure onu"
-msgstr "настроить onu"
-
-#: tasks/models.py:34
-msgid "crimp cable"
-msgstr "обжать кабель"
-
-#: tasks/models.py:35
-msgid "Internet crash"
-msgstr "Нет интернета"
-
-#: tasks/models.py:36
-msgid "other"
-msgstr "другое"
-
-#: tasks/models.py:43
-msgid "Change task"
-msgstr "Изменение задачи"
-
-#: tasks/models.py:44
-msgid "Create task"
-msgstr "Создание задачи"
-
-#: tasks/models.py:45
-msgid "Delete task"
-msgstr "Удаление задачи"
-
-#: tasks/models.py:46
+#: apps/tasks/models.py:72
 msgid "Completing tasks"
 msgstr "Завершение задачи"
 
-#: tasks/models.py:47
-msgid "The task failed"
-msgstr "Задача провалена"
+#: apps/tasks/models.py:74
+msgid "Failing task"
+msgstr "Изменение задачи"
 
-#: tasks/models.py:61
+#: apps/tasks/models.py:77
+msgid "Restore state from confused to new"
+msgstr "Восстановление состояния с провеленного в новое"
+
+#: apps/tasks/models.py:79
+msgid "Change state from confused to completed"
+msgstr "Изменение состояния с проваленного в завершённое"
+
+#: apps/tasks/models.py:82
+msgid "Restore state from completed to new"
+msgstr "Восстановление состояния с завершённого в новое"
+
+#: apps/tasks/models.py:84
+msgid "Change state from completed to confused"
+msgstr "Изменение состояния с завершённого в проваленное"
+
+#: apps/tasks/models.py:85
+msgid "Unknown change action"
+msgstr "Не определённое действие"
+
+#: apps/tasks/models.py:107
 msgid "Change log"
 msgstr "Лог задач"
 
-#: tasks/models.py:62
+#: apps/tasks/models.py:108
 msgid "Change logs"
 msgstr "Логи задач"
 
-#: tasks/models.py:72
+#: apps/tasks/models.py:144
 msgid "Description"
 msgstr "Описание"
 
-#: tasks/models.py:76
+#: apps/tasks/models.py:145
 msgid "Recipients"
 msgstr "Исполнители"
 
-#: tasks/models.py:82
+#: apps/tasks/models.py:147
 msgid "Task author"
 msgstr "Автор задачи"
 
-#: tasks/models.py:85
+#: apps/tasks/models.py:153
+msgid "Low"
+msgstr "Низкий"
+
+#: apps/tasks/models.py:154
+msgid "Average"
+msgstr "Средний"
+
+#: apps/tasks/models.py:155
+msgid "Higher"
+msgstr "Высший"
+
+#: apps/tasks/models.py:157
 msgid "A priority"
 msgstr "Приоритет"
 
-#: tasks/models.py:89
+#: apps/tasks/models.py:158
 msgid "Reality"
 msgstr "Актуальность (дата, до которой нужно завершить задачу)"
 
-#: tasks/models.py:93
+#: apps/tasks/models.py:159
 msgid "Date of create"
 msgstr "Дата создания"
 
-#: tasks/models.py:96
+#: apps/tasks/models.py:164
+msgid "New"
+msgstr "Новая"
+
+#: apps/tasks/models.py:165
+msgid "Confused"
+msgstr "Провалена"
+
+#: apps/tasks/models.py:166
+msgid "Completed"
+msgstr "Выполнена"
+
+#: apps/tasks/models.py:168
 msgid "Condition"
 msgstr "Состояние"
 
-#: tasks/models.py:100
+#: apps/tasks/models.py:183
+msgid "not chosen"
+msgstr "не выбрано"
+
+#: apps/tasks/models.py:184
+msgid "ip conflict"
+msgstr "Ip конфликт"
+
+#: apps/tasks/models.py:185
+msgid "yellow triangle"
+msgstr "жёлтый треугольник"
+
+#: apps/tasks/models.py:186
+msgid "red cross"
+msgstr "красный крестик"
+
+#: apps/tasks/models.py:187
+msgid "weak speed"
+msgstr "слабая скорость"
+
+#: apps/tasks/models.py:188
+msgid "cable break"
+msgstr "обрыв кабеля"
+
+#: apps/tasks/models.py:189
+msgid "connection"
+msgstr "подключение"
+
+#: apps/tasks/models.py:190
+msgid "periodic disappearance"
+msgstr "переодическое пропадание"
+
+#: apps/tasks/models.py:191
+msgid "router setup"
+msgstr "настройка роутера"
+
+#: apps/tasks/models.py:192
+msgid "configure onu"
+msgstr "настроить onu"
+
+#: apps/tasks/models.py:193
+msgid "crimp cable"
+msgstr "обжать кабель"
+
+#: apps/tasks/models.py:194
+msgid "Internet crash"
+msgstr "Нет интернета"
+
+#: apps/tasks/models.py:195
+msgid "other"
+msgstr "другое"
+
+#: apps/tasks/models.py:198
 msgid "The nature of the damage"
 msgstr "Характер поломки"
 
-#: tasks/models.py:105
+#: apps/tasks/models.py:200
 msgid "Customer"
 msgstr "Абонент"
 
-#: tasks/models.py:139
+#: apps/tasks/models.py:239
 msgid "Out date not specified"
 msgstr "Дата окончания не указана"
 
-#: tasks/models.py:141
+#: apps/tasks/models.py:241
 msgid "time left"
 msgstr "осталось"
 
-#: tasks/models.py:143
+#: apps/tasks/models.py:243
 #, python-format
 msgid "Expired timeout -%(time_left)s"
 msgstr "Время вышло -%(time_left)s"
 
-#: tasks/models.py:152
-msgid "Access to all tasks"
-msgstr "Доступ ко всем задачам"
-
-#: tasks/models.py:153
+#: apps/tasks/models.py:249 apps/tasks/signals.py:29
 msgid "Reminders of tasks"
 msgstr "Напоминания о задачах"
 
-#: tasks/models.py:158
+#: apps/tasks/models.py:253
 msgid "Text of comment"
 msgstr "Текст комментария"
 
-#: tasks/models.py:164
+#: apps/tasks/models.py:255
 msgid "Author"
 msgstr "Автор"
 
-#: tasks/models.py:167
+#: apps/tasks/models.py:256
 msgid "Time of create"
 msgstr "Дата создания"
 
-#: tasks/models.py:174
+#: apps/tasks/models.py:263
 msgid "Extra comment"
 msgstr "Комментарий"
 
-#: tasks/models.py:175
+#: apps/tasks/models.py:264
 msgid "Extra comments"
 msgstr "Комментарии"
 
-#: tasks/templates/notification.html:2
+#: apps/tasks/signals.py:14
+msgid "High priority task was created"
+msgstr "Создана высокоприоритетная задача"
+
+#: apps/tasks/signals.py:16
+msgid "High priority task was updated"
+msgstr "Высокоприоритетная задача обновлена"
+
+#: apps/tasks/templates/notification.html:2
 #, python-format
 msgid ""
 "\n"
@@ -231,19 +256,25 @@ msgstr ""
 "\n"
 "%(task_detail)s\n"
 
-#: tasks/views.py:43
+#: apps/tasks/views.py:30
 msgid "You cannot delete task that assigned to you"
 msgstr "Вы не можете удалять назначенные на вас задачи"
 
-#: tasks/views.py:54
+#: apps/tasks/views.py:39 apps/tasks/views.py:95
 msgid "New task with this customer already exists."
 msgstr "Заявка для этого абонента уже создана."
 
+#~ msgid "Create task"
+#~ msgstr "Создание задачи"
+
+#~ msgid "Delete task"
+#~ msgstr "Удаление задачи"
+
+#~ msgid "The task failed"
+#~ msgstr "Задача провалена"
+
+#~ msgid "Access to all tasks"
+#~ msgstr "Доступ ко всем задачам"
+
 #~ msgid "Attached image"
 #~ msgstr "Прикреплённое изображение"
-
-msgid "High priority task was created"
-msgstr "Создана высокоприоритетная задача"
-
-msgid "High priority task was updated"
-msgstr "Высокоприоритетная задача обновлена"
