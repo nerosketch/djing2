@@ -45,6 +45,15 @@ class ExtraCommentModelSerializer(BaseCustomModelSerializer):
         exclude = ("author",)
 
 
+class TaskStateChangeLogModelSerializer(BaseCustomModelSerializer):
+    who_name = serializers.CharField(source="who.get_full_name", read_only=True)
+    human_representation = serializers.CharField(source="human_log_text", read_only=True)
+
+    class Meta:
+        model = models.TaskStateChangeLogModel
+        exclude = ["task", "state_data"]
+
+
 class TaskDocumentAttachmentSerializer(BaseCustomModelSerializer):
     author = serializers.PrimaryKeyRelatedField(read_only=True)
 

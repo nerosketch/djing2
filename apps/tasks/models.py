@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime
-from typing import Tuple
+from typing import Tuple, Optional
 
 from django.contrib.sites.models import Site
 from django.db import models, connection
@@ -36,6 +36,64 @@ class TaskStateChangeLogModel(BaseAbstractModel):
     who = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="+")
 
     objects = TaskStateChangeLogModelManager()
+
+    def _human_log_text_general(self):
+        text_tmpl = _("Task change.")
+        text_item_tmpl = _('"%(field_name)s" from "%(from)s" -> "%(to)s"')
+
+        def _format_item_text(field_name, field_value):
+            field = self.task._meta.get_field(field_name)
+            field_title = field.verbose_name
+            field_from_val = field_value.get("from")
+            field_to_val = field_value.get("to")
+            if hasattr(field, "choices"):
+                setattr(self.task, field_name, field_from_val)
+                field_from_val = self.task._get_FIELD_display(field)
+                setattr(self.task, field_name, field_to_val)
+                field_to_val = self.task._get_FIELD_display(field)
+            return text_item_tmpl % {"field_name": field_title, "from": field_from_val, "to": field_to_val}
+
+        item_texts = (_format_item_text(*state_data_item) for state_data_item in self.state_data.items())
+
+        return "{} {}".format(text_tmpl, "|".join(item_texts))
+
+    def _human_log_text_state_change(self):
+        task_state = self.state_data.get("task_state")
+        state1 = task_state.get("from")
+        state2 = task_state.get("to")
+        if state1 == state2:
+            return self._human_log_text_general()
+        if state1 == Task.TASK_STATE_NEW:
+            if state2 == Task.TASK_STATE_COMPLETED:
+                return _("Completing task")
+            elif state2 == Task.TASK_STATE_CONFUSED:
+                return _("Failing task")
+        elif state1 == Task.TASK_STATE_CONFUSED:
+            if state2 == Task.TASK_STATE_NEW:
+                return _("Restore state from confused to new")
+            elif state2 == Task.TASK_STATE_COMPLETED:
+                return _("Change state from confused to completed")
+        elif state1 == Task.TASK_STATE_COMPLETED:
+            if state2 == Task.TASK_STATE_NEW:
+                return _("Restore state from completed to new")
+            elif state2 == Task.TASK_STATE_CONFUSED:
+                return _("Change state from completed to confused")
+        return _("Unknown change action")
+
+    def human_log_text(self) -> Optional[str]:
+        """Human readable log representation."""
+        dat = self.state_data
+        if not dat:
+            return None
+
+        if len(dat.items()) > 1:
+            return self._human_log_text_general()
+
+        task_state = dat.get("task_state")
+        if task_state is None:
+            return self._human_log_text_general()
+
+        return self._human_log_text_state_change()
 
     def __str__(self):
         return self.get_act_type_display()
@@ -142,9 +200,9 @@ class Task(BaseAbstractModel):
 
     def finish(self, current_user):
         if self.task_state != self.TASK_STATE_COMPLETED:
-            models.TaskStateChangeLogModel.objects.create_state_migration(
+            TaskStateChangeLogModel.objects.create_state_migration(
                 task=self,
-                author=self.request.user,
+                author=current_user,
                 new_data={"task_state": self.TASK_STATE_COMPLETED, "out_date": self.out_date},
                 old_data={"task_state": int(self.task_state), "out_date": self.out_date},
             )
@@ -154,9 +212,9 @@ class Task(BaseAbstractModel):
 
     def do_fail(self, current_user):
         if self.task_state != self.TASK_STATE_CONFUSED:
-            models.TaskStateChangeLogModel.objects.create_state_migration(
+            TaskStateChangeLogModel.objects.create_state_migration(
                 task=self,
-                author=self.request.user,
+                author=current_user,
                 new_data={"task_state": self.TASK_STATE_CONFUSED},
                 old_data={"task_state": int(self.task_state)},
             )
