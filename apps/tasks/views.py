@@ -207,17 +207,13 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
         if task_id == 0:
             return Response('"task" param is required', status=status.HTTP_400_BAD_REQUEST)
 
-        comments_list = list(
-            self.filter_queryset(self.get_queryset()).defer("task").values("id", "text", "author_id", "date_create")
-        )
+        comments_list = self.get_serializer(self.get_queryset().filter(task_id=task_id).defer("task"), many=True).data
         for comment in comments_list:
             comment.update({"type": "comment"})
 
-        logs_list = list(
-            models.TaskStateChangeLogModel.objects.filter(task_id=task_id)
-            .defer("task")
-            .values("state_data", "when", "who")
-        )
+        logs_list = serializers.TaskStateChangeLogModelSerializer(
+            models.TaskStateChangeLogModel.objects.filter(task_id=task_id).defer("task"), many=True
+        ).data
         for log in logs_list:
             log.update({"type": "log"})
 
