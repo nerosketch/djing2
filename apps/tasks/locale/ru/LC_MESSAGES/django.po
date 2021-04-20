@@ -39,7 +39,7 @@ msgid "\"%(field_name)s\" from \"%(from)s\" -> \"%(to)s\""
 msgstr "\"%(field_name)s\" с \"%(from)s\" -> \"%(to)s\""
 
 #: apps/tasks/models.py:72
-msgid "Completing tasks"
+msgid "Completing task"
 msgstr "Завершение задачи"
 
 #: apps/tasks/models.py:74
