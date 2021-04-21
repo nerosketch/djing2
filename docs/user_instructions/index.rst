@@ -13,4 +13,4 @@
     services
     networks
     devices/index
-    ui.md
+    fin
