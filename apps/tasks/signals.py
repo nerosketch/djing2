@@ -26,6 +26,7 @@ def task_post_save(sender, instance: Task, created=False, **kwargs):
                 },
             }
         )
-        send_broadcast_push_notification(title=_("Reminders of tasks"), body=notify_text)
+        # FIXME: hardcode url
+        send_broadcast_push_notification(title=_("Reminders of tasks"), body=notify_text, url=f"/tasks/t{instance.pk}")
         return
     send_data2ws({"eventType": WsEventTypeEnum.UPDATE_TASK.value, "data": {"task_id": instance.pk}})
