@@ -3,6 +3,7 @@
 !requirements.txt
 !debian_apt_requirements.txt
 !TODO.txt
+!robots.txt
 media/
 .idea/
 apps/djing2/local_settings.py

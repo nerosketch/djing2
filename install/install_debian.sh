@@ -60,10 +60,7 @@ apt -y update
 apt -y upgrade
 
 sleep 1
-apt -y install mariadb-server libmariadb-dev libmariadbclient-dev \
-    mariadb-client python3-dev python3-pip python3-pil python3-venv uwsgi \
-    nginx uwsgi-plugin-python3 libsnmp-dev git gettext libcurl4-openssl-dev \
-    libssl-dev expect redis-server
+apt -y install $(cat debian_apt_requirements.txt)
 
 sleep 3
 
@@ -75,26 +72,32 @@ mysql -u root -e "create user 'djinguser'@'localhost' identified by '${dbpassw}'
 mysql -u root -e "grant all privileges on djing_db.* to 'djinguser'@'localhost';"
 mysql -u root -e "flush privileges;"
 
-git clone --depth=1 https://github.com/nerosketch/djing.git
-cd djing
+git clone --depth=1 https://github.com/nerosketch/djing2.git
+cd djing2
 python3 -m venv venv
 source ./venv/bin/activate
-pip3 install --upgrade pip
+pip install --upgrade pip
+pip install wheel
 export PYCURL_SSL_LIBRARY=openssl
-pip3 install -r requirements.txt
-cp djing/local_settings.py.example djing/local_settings.py
-sed -i "s/'PASSWORD': 'password',/'PASSWORD': '${dbpassw}',/" djing/local_settings.py
+pip install -r requirements.txt
+cp -v apps/djing2/local_settings.py.example apps/djing2/local_settings.py
+sed -i "s/'PASSWORD': 'password',/'PASSWORD': '${dbpassw}',/" djing2/local_settings.py
 chmod +x ./manage.py
 ./manage.py migrate
 ./manage.py compilemessages -l ru
 secret_key=`./manage.py shell -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key().replace(\"&\", \"@\"))"`
-sed -i -r "s/^SECRET_KEY = '.+'$/SECRET_KEY = '${secret_key}'/" djing/local_settings.py
+sed -i -r "s/^SECRET_KEY = '.+'$/SECRET_KEY = '${secret_key}'/" djing2/local_settings.py
 ./manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('+79781234567', 'admin', 'admin')"
 deactivate
 
-cp install/robots.txt robots.txt
-cp install/djing.ini /etc/uwsgi/apps-available/djing.ini
-ln -s /etc/uwsgi/apps-available/djing.ini /etc/uwsgi/apps-enabled/djing.ini
+touch touch-reload
+mkdir spooler
+mkdir media
+mkdir static
+
+#cp install/robots.txt robots.txt
+cp djing2.ini /etc/uwsgi/apps-available/djing2.ini
+ln -s /etc/uwsgi/apps-available/djing2.ini /etc/uwsgi/apps-enabled/djing2.ini
 cp install/nginx_server.conf /etc/nginx/sites-available/djing.conf
 ln -s /etc/nginx/sites-available/djing.conf /etc/nginx/sites-enabled/djing.conf
 
