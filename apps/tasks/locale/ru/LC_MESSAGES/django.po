@@ -1,0 +1,280 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-04-20 15:17+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: apps/tasks/handle.py:21 apps/tasks/models.py:254
+msgid "Task"
+msgstr "Задача"
+
+#: apps/tasks/handle.py:25
+msgid "Task completed"
+msgstr "Задача завершена"
+
+#: apps/tasks/models.py:34
+msgid "State change data"
+msgstr "Состояние изменения задачи"
+
+#: apps/tasks/models.py:41
+msgid "Task change."
+msgstr "Изменение задачи."
+
+#: apps/tasks/models.py:42
+#, python-format
+msgid "\"%(field_name)s\" from \"%(from)s\" -> \"%(to)s\""
+msgstr "\"%(field_name)s\" с \"%(from)s\" -> \"%(to)s\""
+
+#: apps/tasks/models.py:72
+msgid "Completing task"
+msgstr "Завершение задачи"
+
+#: apps/tasks/models.py:74
+msgid "Failing task"
+msgstr "Изменение задачи"
+
+#: apps/tasks/models.py:77
+msgid "Restore state from confused to new"
+msgstr "Восстановление состояния с провеленного в новое"
+
+#: apps/tasks/models.py:79
+msgid "Change state from confused to completed"
+msgstr "Изменение состояния с проваленного в завершённое"
+
+#: apps/tasks/models.py:82
+msgid "Restore state from completed to new"
+msgstr "Восстановление состояния с завершённого в новое"
+
+#: apps/tasks/models.py:84
+msgid "Change state from completed to confused"
+msgstr "Изменение состояния с завершённого в проваленное"
+
+#: apps/tasks/models.py:85
+msgid "Unknown change action"
+msgstr "Не определённое действие"
+
+#: apps/tasks/models.py:107
+msgid "Change log"
+msgstr "Лог задач"
+
+#: apps/tasks/models.py:108
+msgid "Change logs"
+msgstr "Логи задач"
+
+#: apps/tasks/models.py:144
+msgid "Description"
+msgstr "Описание"
+
+#: apps/tasks/models.py:145
+msgid "Recipients"
+msgstr "Исполнители"
+
+#: apps/tasks/models.py:147
+msgid "Task author"
+msgstr "Автор задачи"
+
+#: apps/tasks/models.py:153
+msgid "Low"
+msgstr "Низкий"
+
+#: apps/tasks/models.py:154
+msgid "Average"
+msgstr "Средний"
+
+#: apps/tasks/models.py:155
+msgid "Higher"
+msgstr "Высший"
+
+#: apps/tasks/models.py:157
+msgid "A priority"
+msgstr "Приоритет"
+
+#: apps/tasks/models.py:158
+msgid "Reality"
+msgstr "Актуальность (дата, до которой нужно завершить задачу)"
+
+#: apps/tasks/models.py:159
+msgid "Date of create"
+msgstr "Дата создания"
+
+#: apps/tasks/models.py:164
+msgid "New"
+msgstr "Новая"
+
+#: apps/tasks/models.py:165
+msgid "Confused"
+msgstr "Провалена"
+
+#: apps/tasks/models.py:166
+msgid "Completed"
+msgstr "Выполнена"
+
+#: apps/tasks/models.py:168
+msgid "Condition"
+msgstr "Состояние"
+
+#: apps/tasks/models.py:183
+msgid "not chosen"
+msgstr "не выбрано"
+
+#: apps/tasks/models.py:184
+msgid "ip conflict"
+msgstr "Ip конфликт"
+
+#: apps/tasks/models.py:185
+msgid "yellow triangle"
+msgstr "жёлтый треугольник"
+
+#: apps/tasks/models.py:186
+msgid "red cross"
+msgstr "красный крестик"
+
+#: apps/tasks/models.py:187
+msgid "weak speed"
+msgstr "слабая скорость"
+
+#: apps/tasks/models.py:188
+msgid "cable break"
+msgstr "обрыв кабеля"
+
+#: apps/tasks/models.py:189
+msgid "connection"
+msgstr "подключение"
+
+#: apps/tasks/models.py:190
+msgid "periodic disappearance"
+msgstr "переодическое пропадание"
+
+#: apps/tasks/models.py:191
+msgid "router setup"
+msgstr "настройка роутера"
+
+#: apps/tasks/models.py:192
+msgid "configure onu"
+msgstr "настроить onu"
+
+#: apps/tasks/models.py:193
+msgid "crimp cable"
+msgstr "обжать кабель"
+
+#: apps/tasks/models.py:194
+msgid "Internet crash"
+msgstr "Нет интернета"
+
+#: apps/tasks/models.py:195
+msgid "other"
+msgstr "другое"
+
+#: apps/tasks/models.py:198
+msgid "The nature of the damage"
+msgstr "Характер поломки"
+
+#: apps/tasks/models.py:200
+msgid "Customer"
+msgstr "Абонент"
+
+#: apps/tasks/models.py:239
+msgid "Out date not specified"
+msgstr "Дата окончания не указана"
+
+#: apps/tasks/models.py:241
+msgid "time left"
+msgstr "осталось"
+
+#: apps/tasks/models.py:243
+#, python-format
+msgid "Expired timeout -%(time_left)s"
+msgstr "Время вышло -%(time_left)s"
+
+#: apps/tasks/models.py:249 apps/tasks/signals.py:29
+msgid "Reminders of tasks"
+msgstr "Напоминания о задачах"
+
+#: apps/tasks/models.py:253
+msgid "Text of comment"
+msgstr "Текст комментария"
+
+#: apps/tasks/models.py:255
+msgid "Author"
+msgstr "Автор"
+
+#: apps/tasks/models.py:256
+msgid "Time of create"
+msgstr "Дата создания"
+
+#: apps/tasks/models.py:263
+msgid "Extra comment"
+msgstr "Комментарий"
+
+#: apps/tasks/models.py:264
+msgid "Extra comments"
+msgstr "Комментарии"
+
+#: apps/tasks/signals.py:14
+msgid "High priority task was created"
+msgstr "Создана высокоприоритетная задача"
+
+#: apps/tasks/signals.py:16
+msgid "High priority task was updated"
+msgstr "Высокоприоритетная задача обновлена"
+
+#: apps/tasks/templates/notification.html:2
+#, python-format
+msgid ""
+"\n"
+"%(task_status)s\n"
+"%(customer)s\n"
+"In group: %(group)s\n"
+"Street: %(street)s\n"
+"House: %(house)s\n"
+"Tel: %(telephone)s\n"
+"Task type: %(task_type)s\n"
+"\n"
+"%(task_detail)s\n"
+msgstr ""
+"\n"
+"%(task_status)s\n"
+"%(customer)s\n"
+"Группа: %(group)s\n"
+"Улица: %(street)s\n"
+"Дом: %(house)s\n"
+"Телефон: %(telephone)s\n"
+"Тип задачи: %(task_type)s\n"
+"\n"
+"%(task_detail)s\n"
+
+#: apps/tasks/views.py:30
+msgid "You cannot delete task that assigned to you"
+msgstr "Вы не можете удалять назначенные на вас задачи"
+
+#: apps/tasks/views.py:39 apps/tasks/views.py:95
+msgid "New task with this customer already exists."
+msgstr "Заявка для этого абонента уже создана."
+
+#~ msgid "Create task"
+#~ msgstr "Создание задачи"
+
+#~ msgid "Delete task"
+#~ msgstr "Удаление задачи"
+
+#~ msgid "The task failed"
+#~ msgstr "Задача провалена"
+
+#~ msgid "Access to all tasks"
+#~ msgstr "Доступ ко всем задачам"
+
+#~ msgid "Attached image"
+#~ msgstr "Прикреплённое изображение"
