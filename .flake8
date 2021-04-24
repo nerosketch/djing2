@@ -1,0 +1,4 @@
+[flake8]
+max-line-length=119
+extend-ignore=E203
+exclude=.git,.idea,.vscode,__pycache__,docs/source/conf.py,media,static
