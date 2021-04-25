@@ -39,7 +39,7 @@ django-netfields==1.2.2
 git+git://github.com/pexpect/pexpect.git#egg=pexpect
 
 django-filter==2.4.0
-pylibmc==1.6.1
+#pylibmc==1.6.1
 djangorestframework-queryfields==1.0.0
 
 djangorestframework-guardian
