@@ -102,27 +102,36 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
 
         agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=request.data)
 
-        if not all([agent_remote_id, agent_circuit_id]):
-            return _bad_ret("Bad opt82")
-
-        dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
-            agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
-        )
-
-        if dev_mac is None:
-            return _bad_ret("Failed to parse option82")
-
         customer_mac = vendor_manager.get_customer_mac(request.data)
         if customer_mac is None:
             return _bad_ret("Customer mac is required")
 
-        # radius_username = vendor_manager.get_radius_username(request.data)
-        # radius_unique_id = vendor_manager.get_radius_unique_id(request.data)
+        customer = None
 
-        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(device_mac=dev_mac, device_port=dev_port)
+        if all([agent_remote_id, agent_circuit_id]):
+            dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+                agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
+            )
+            if dev_mac is None:
+                return _bad_ret("Failed to parse option82")
+
+            customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                device_mac=dev_mac, device_port=dev_port
+            )
+        else:
+            # return _bad_ret("Bad opt82")
+            leases = CustomerIpLeaseModel.objects.filter(mac_address=customer_mac)
+            if leases.exists():
+                lease = leases.first()
+                customer = lease.customer if lease else None
+            del leases
+
         if customer is None:
             # If customer not found then assign guest session
             return self.assign_guest(customer_mac=customer_mac, data=request.data)
+
+        # radius_username = vendor_manager.get_radius_username(request.data)
+        # radius_unique_id = vendor_manager.get_radius_unique_id(request.data)
 
         if customer.current_service_id is None:
             # if customer has not service then assign guest
