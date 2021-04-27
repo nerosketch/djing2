@@ -1,8 +1,8 @@
-from random import choice
 from string import digits
 
 from django.contrib.auth.hashers import make_password
 from django.core import validators
+from django.utils.crypto import get_random_string
 from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
 
@@ -13,16 +13,8 @@ from groupapp.serializers import GroupsSerializer
 from services.serializers import ServiceModelSerializer
 
 
-def _generate_random_chars(length=6, chars=digits, split=2, delimiter=""):
-    username = "".join(choice(chars) for _ in range(length))
-
-    if split:
-        username = delimiter.join(username[start : start + split] for start in range(0, len(username), split))
-    return username
-
-
 def generate_random_username():
-    username = _generate_random_chars()
+    username = get_random_string(length=6, allowed_chars=digits)
     try:
         models.Customer.objects.get(username=username)
         return generate_random_username()
@@ -31,7 +23,7 @@ def generate_random_username():
 
 
 def generate_random_password():
-    return _generate_random_chars(length=8, chars=digits)
+    return get_random_string(length=8, chars=digits)
 
 
 class CustomerServiceModelSerializer(BaseCustomModelSerializer):
