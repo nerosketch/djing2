@@ -4,15 +4,6 @@ from django.db import migrations, models
 from django.db.models.deletion import CASCADE
 
 
-def assign_default_site2tasks(apps, schema_editor):
-    Site = apps.get_model("sites", "Site")
-    Task = apps.get_model("tasks", "Task")
-    site = Site.objects.all().first()
-    if site is None:
-        site = Site.objects.create(domain="example.com", name="example.com")
-    Task.objects.all().update(site=site)
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ("sites", "0002_alter_domain_unique"),
@@ -29,5 +20,4 @@ class Migration(migrations.Migration):
             name="site",
             field=models.ForeignKey(blank=True, default=None, null=True, on_delete=CASCADE, to="sites.Site"),
         ),
-        migrations.RunPython(assign_default_site2tasks),
     ]
