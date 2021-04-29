@@ -1,0 +1,34 @@
+FROM python:3
+
+LABEL maintainer="nerosketch@gmail.com"
+
+ENV PYTHONUNBUFFERED 1
+ENV PYTHONOPTIMIZE 1
+
+EXPOSE 3031
+
+WORKDIR /var/www/djing2
+
+RUN apt-get update && apt-get install -y git python3-psycopg2 libsnmp-dev arping gcc gettext --no-install-recommends
+
+RUN git clone --depth=1 git://github.com/nerosketch/djing2.git -b master /var/www/djing2 \
+    && mkdir ./spooler && touch ./touch_reload
+
+RUN pip install --no-cache-dir uWSGI \
+    && pip install --no-cache-dir -r requirements.txt
+
+RUN apt-get purge --auto-remove git gcc
+
+COPY uwsgi_djing2.ini ./
+COPY create_initial_user.py ./
+COPY local_settings.py ./apps/djing2
+
+RUN chown -R www-data. /var/www/djing2
+
+USER www-data
+GROUP www-data
+
+CMD ./manage.py migrate \
+    && ./manage.py compilemessages \
+    && ./manage.py shell -c "from create_initial_user import *; make_initial_user()" \
+    && exec uwsgi --ini uwsgi_djing2.ini
