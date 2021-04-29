@@ -1,0 +1,115 @@
+version: '3.5'
+services:
+  nginx:
+    container_name: djing2_web
+    hostname: djing2_web
+    build:
+      context: djing2_nginx/
+      dockerfile: Dockerfile_release
+    depends_on:
+      - app
+    ports:
+      - 80:80
+    environment:
+      - NGINX_SERVER_NAME=localhost
+    volumes:
+      - media-data:/media
+      - nginx_logs:/var/log/nginx
+      - /etc/localtime:/etc/localtime
+    #networks: app_net_frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1/"]
+      interval: 120s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  postgres:
+    container_name: postgres
+    hostname: postgres
+    image: postgres:alpine
+    secrets:
+      - POSTGRES_PASSWORD
+      - DJANGO_SECRET_KEY
+    stop_grace_period: 1m
+    ports:
+      - 5432:5432
+    restart: always
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime
+    env_file:
+      - .env_db_credentials
+    #networks: app_net_backend
+  app:
+    build:
+      context: djing2_app/
+      dockerfile: Dockerfile_release
+    depends_on:
+      - postgres
+    restart: always
+    ports:
+      - 3031:3031
+    secrets:
+      - POSTGRES_PASSWORD
+      - DJANGO_SECRET_KEY
+      - VAPID_PUBLIC_KEY
+      - VAPID_PRIVATE_KEY
+      - FIELD_ENCRYPTION_KEY
+      - API_AUTH_SECRET
+    env_file:
+      - .env_djing2_app
+      - .env_db_credentials
+    volumes:
+      - media-data:/var/www/djing2/media
+      - /etc/localtime:/etc/localtime
+    #networks: app_net_backend
+#  djing2freeradius:
+#    image: djing2freeradius
+#    build:
+#      context: djing2freeradius
+#    depends_on:
+#      - nginx
+#    container_name: djing2freeradius
+#    hostname: djing2freeradius
+#    ports:
+#      - 1812:1812
+#      - 1813:1813
+#      - 67:67
+volumes:
+  postgresql-data:
+  media-data:
+  nginx_logs:
+
+secrets:
+  POSTGRES_PASSWORD:
+    file: ./secrets/POSTGRES_PASSWORD
+  DJANGO_SECRET_KEY:
+    file: ./secrets/DJANGO_SECRET_KEY
+  API_AUTH_SECRET:
+    file: ./secrets/API_AUTH_SECRET
+  FIELD_ENCRYPTION_KEY:
+    file: ./secrets/FIELD_ENCRYPTION_KEY
+  VAPID_PUBLIC_KEY:
+    file: ./secrets/VAPID_PUBLIC_KEY
+  VAPID_PRIVATE_KEY:
+    file: ./secrets/VAPID_PRIVATE_KEY
+
+
+#networks:
+#  app_net_frontend:
+#    driver: bridge
+#    driver_opts:
+#      com.docker.network.enable_ipv6: "false"
+#    ipam:
+#      driver: default
+#      config:
+#      - subnet: 172.16.238.0/24
+#  app_net_backend:
+#    driver: bridge
+#    driver_opts:
+#      com.docker.network.enable_ipv6: "false"
+#    internal: true
+#    ipam:
+#      driver: default
+#      config:
+#      - subnet: 172.16.239.0/24
