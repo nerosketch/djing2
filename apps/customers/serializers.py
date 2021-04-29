@@ -23,7 +23,7 @@ def generate_random_username():
 
 
 def generate_random_password():
-    return get_random_string(length=8, chars=digits)
+    return get_random_string(length=8, allowed_chars=digits)
 
 
 class CustomerServiceModelSerializer(BaseCustomModelSerializer):
