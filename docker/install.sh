@@ -60,4 +60,3 @@ elif [[ $opt == 'prod' ]]; then
   ln -s docker-compose-release.yml docker-compose.yml
   $dc build
 fi
-unlink docker-compose.yml
