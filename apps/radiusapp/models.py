@@ -162,6 +162,20 @@ class CustomerRadiusSessionManager(models.Manager):
         return self._assign_guest_session(customer_mac=customer_mac, customer_id=customer_id)
 
 
+def finish_session(radius_uname: str) -> bool:
+    """Send radius disconnect packet to BRAS."""
+    if not radius_uname:
+        return False
+    uname = str(radius_uname).encode()
+    uname = uname.replace(b'"', b"")
+    uname = uname.replace(b"'", b"")
+    fin_cmd_list = getattr(settings, "RADIUS_FINISH_SESSION_CMD_LIST")
+    if not fin_cmd_list:
+        return False
+    r = subprocess.run(fin_cmd_list, input=b'User-Name="%s"' % uname)
+    return r.returncode == 0
+
+
 class CustomerRadiusSession(models.Model):
     """Model helper 4 RADIUS authentication."""
 
@@ -186,18 +200,14 @@ class CustomerRadiusSession(models.Model):
         """Send radius disconnect packet to BRAS."""
         if not self.radius_username:
             return False
-        uname = str(self.radius_username).encode()
-        uname = uname.replace(b'"', b"")
-        uname = uname.replace(b"'", b"")
-        fin_cmd_list = getattr(settings, "RADIUS_FINISH_SESSION_CMD_LIST")
-        if not fin_cmd_list:
-            return False
-        r = subprocess.run(fin_cmd_list, input=b'User-Name="%s"' % uname)
-        return r.returncode == 0
+        return finish_session(self.radius_username)
 
     # def is_guest_session(self) -> bool:
     #     """Is current session guest."""
     #     return self.customer is None
+
+    def is_inet_session(self) -> bool:
+        return self.ip_lease.pool.kind == NetworkIpPoolKind.NETWORK_KIND_INTERNET
 
     def h_input_octets(self):
         """Human readable input octets."""
