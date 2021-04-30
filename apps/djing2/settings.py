@@ -33,7 +33,7 @@ SECRET_KEY = local_settings.SECRET_KEY
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = getattr(local_settings, "DEBUG", False)
 
-ALLOWED_HOSTS = getattr(local_settings, "ALLOWED_HOSTS", "*")
+ALLOWED_HOSTS = getattr(local_settings, "ALLOWED_HOSTS", ["*"])
 
 ADMINS = getattr(local_settings, "ADMINS", ())
 
