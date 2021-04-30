@@ -21,6 +21,10 @@ fi
 #############################################
 # Generate secrets, if it not generated yet
 #############################################
+if [ ! -d ./secrets ]; then
+  mkdir secrets
+fi
+
 cd ./secrets
 
 gen_random_str(){
