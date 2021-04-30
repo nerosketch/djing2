@@ -40,6 +40,10 @@ services:
     env_file:
       - .env_db_credentials
     #networks: app_net_backend
+  ws:
+    build: ws/
+    ports:
+      - 3211:3211
   app:
     build:
       context: djing2_app/
