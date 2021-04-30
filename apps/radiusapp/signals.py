@@ -3,26 +3,24 @@ from django.dispatch.dispatcher import receiver
 from django.db.models.signals import pre_delete
 
 from djing2.lib import safe_int
-from networks.models import CustomerIpLeaseModel
 from radiusapp.models import CustomerRadiusSession
 from radiusapp import tasks
 from customers import custom_signals as customer_custom_signals
 from customers.models import Customer, CustomerService
+from radiusapp.tasks import async_finish_session_task
 
 
-@receiver(pre_delete, sender=CustomerIpLeaseModel)
+@receiver(pre_delete, sender=CustomerRadiusSession)
 def try_stop_session_too_signal(sender, instance, **kwargs):
     """
-    When ip lease removed then trying to stop session too.
+    Try to stop session while removing it.
 
-    :param sender: CustomerIpLeaseModel class
-    :param instance: CustomerIpLeaseModel instance
+    :param sender: CustomerRadiusSession class
+    :param instance: CustomerRadiusSession instance
     :param kwargs:
     :return: nothing
     """
-    sess = CustomerRadiusSession.objects.filter(ip_lease=instance).first()
-    if sess:
-        sess.finish_session()
+    async_finish_session_task(instance.radius_username)
 
 
 @receiver(

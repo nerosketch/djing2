@@ -13,6 +13,7 @@ from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from djing2.viewsets import DjingAuthorizedViewSet
 from networks.models import NetworkIpPoolKind, CustomerIpLeaseModel
 from radiusapp.models import CustomerRadiusSession
+from radiusapp.tasks import async_finish_session_task
 from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
 
@@ -203,7 +204,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
         return request_type_fn(request)
 
-    def _update_counters(self, session, data: dict, **update_kwargs):
+    def _update_counters(self, sessions, data: dict, **update_kwargs):
         vcls = self.vendor_manager.vendor_class
         v_inp_oct = _gigaword_imp(
             num=vcls.get_rad_val(data, "Acct-Input-Octets", 0),
@@ -215,7 +216,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         )
         v_in_pkt = vcls.get_rad_val(data, "Acct-Input-Packets", 0)
         v_out_pkt = vcls.get_rad_val(data, "Acct-Output-Packets", 0)
-        return session.update(
+        return sessions.update(
             last_event_time=datetime.now(),
             input_octets=v_inp_oct,
             output_octets=v_out_oct,
@@ -267,25 +268,29 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
     def _acct_stop(self, request):
         dat = request.data
         vendor_manager = self.vendor_manager
-        username = vendor_manager.get_radius_username(dat)
         vcls = vendor_manager.vendor_class
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
-        CustomerRadiusSession.objects.filter(radius_username=username, ip_lease__ip_address=ip).delete()
+        CustomerIpLeaseModel.objects.filter(ip_address=ip).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_update(self, request):
         dat = request.data
         vendor_manager = self.vendor_manager
         vcls = vendor_manager.vendor_class
-        username = vendor_manager.get_radius_username(dat)
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
-        session = CustomerRadiusSession.objects.filter(
-            radius_username=username,
+        sessions = CustomerRadiusSession.objects.filter(
             ip_lease__ip_address=ip,
-            # closed=False
         )
-        if session.exists():
-            self._update_counters(session, dat)
+        if sessions.exists():
+            self._update_counters(sessions=sessions, data=dat)
+
+            for single_session in sessions.iterator():
+                single_customer = single_session.customer
+
+                # If customer access state and session type not equal
+                if single_session.is_inet_session() != single_customer.is_access():
+                    # then send disconnect
+                    async_finish_session_task(radius_uname=single_session.radius_username)
         else:
             return _bad_ret("No session found")
 
