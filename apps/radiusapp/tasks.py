@@ -5,7 +5,7 @@ import logging
 from uwsgi_tasks import task
 
 from djing2.lib import safe_int
-from radiusapp.models import CustomerRadiusSession
+from radiusapp.models import CustomerRadiusSession, finish_session
 
 
 @task()
@@ -49,3 +49,8 @@ def radius_stop_customer_session_task(customer_id: int, delay_interval=100):
         else:
             logging.info('Session "%s", 4 customer_id="%d" not finished.' % (session, customer_id))
         sleep(delay_interval / 1000)
+
+
+@task()
+def async_finish_session_task(radius_uname: str):
+    finish_session(radius_uname)
