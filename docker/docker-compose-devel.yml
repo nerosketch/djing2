@@ -53,6 +53,10 @@ services:
       #- /home/ns/Projects/djing2-elui:/home/node/app
       - /tmp:/tmp
       - /etc/localtime:/etc/localtime
+  ws:
+    build: ws/
+    ports:
+      - 3211:3211
 #  djing2freeradius:
 #    image: djing2freeradius
 #    build:
