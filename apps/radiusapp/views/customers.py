@@ -284,13 +284,29 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         if sessions.exists():
             self._update_counters(sessions=sessions, data=dat)
 
+            radius_username = vendor_manager.get_radius_username(dat)
+
             for single_session in sessions.iterator():
                 single_customer = single_session.customer
+
+                # If session and customer not same then free session
+                agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=dat)
+                if all([agent_remote_id, agent_circuit_id]):
+                    dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+                        agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
+                    )
+                    if dev_mac is not None:
+                        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                            device_mac=dev_mac, device_port=dev_port
+                        )
+                        if customer.pk != single_session.customer_id:
+                            async_finish_session_task(radius_uname=radius_username)
+                            return
 
                 # If customer access state and session type not equal
                 if single_session.is_inet_session() != single_customer.is_access():
                     # then send disconnect
-                    async_finish_session_task(radius_uname=single_session.radius_username)
+                    async_finish_session_task(radius_uname=radius_username)
         else:
             return _bad_ret("No session found")
 
