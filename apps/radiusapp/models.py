@@ -1,7 +1,7 @@
 """radiusapp models file."""
 import subprocess
 from typing import Optional
-
+from netaddr import EUI
 from django.conf import settings
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
@@ -37,7 +37,7 @@ class FetchSubscriberLeaseResponse:
     ip_addr = ""
     pool_id = 0
     lease_time = 0
-    customer_mac = ""
+    customer_mac = None
     customer_id = 0
     is_dynamic = None
     is_assigned = None
@@ -48,7 +48,7 @@ class FetchSubscriberLeaseResponse:
         ip_addr="",
         pool_id=0,
         lease_time=0,
-        customer_mac="",
+        customer_mac=None,
         customer_id=0,
         is_dynamic=None,
         is_assigned=None,
@@ -94,7 +94,7 @@ class CustomerRadiusSessionManager(models.Manager):
 
     @staticmethod
     def fetch_subscriber_lease(
-        customer_mac: str,
+        customer_mac: EUI,
         customer_id: Optional[int],
         customer_group: Optional[int],
         is_dynamic: bool,
@@ -109,7 +109,7 @@ class CustomerRadiusSessionManager(models.Manager):
                 "select * from fetch_subscriber_lease"
                 "(%s::macaddr, %s, %s, %s::boolean,"
                 "%s::smallint, %s::smallint)",
-                [customer_mac, customer_id, customer_group, is_dynamic, vid, pool_kind.value],
+                [str(customer_mac), customer_id, customer_group, is_dynamic, vid, pool_kind.value],
             )
             res = cur.fetchone()
         (lease_id, ip_addr, pool_id, lease_time, customer_mac, customer_id, is_dynamic, is_assigned) = res
@@ -120,14 +120,14 @@ class CustomerRadiusSessionManager(models.Manager):
             ip_addr=ip_addr,
             pool_id=pool_id,
             lease_time=lease_time,
-            customer_mac=customer_mac,
+            customer_mac=EUI(customer_mac),
             customer_id=customer_id,
             is_dynamic=is_dynamic,
             is_assigned=is_assigned,
         )
 
     def _assign_guest_session(
-        self, customer_mac: str, customer_id: Optional[int] = None
+        self, customer_mac: EUI, customer_id: Optional[int] = None
     ) -> Optional[FetchSubscriberLeaseResponse]:
         """Fetch guest lease."""
         # Тут выделяем гостевой ip для этой сессии.
@@ -142,13 +142,13 @@ class CustomerRadiusSessionManager(models.Manager):
 
     def assign_guest_session(
         self,
-        customer_mac: str,
+        customer_mac: EUI,
     ) -> Optional[FetchSubscriberLeaseResponse]:
         """Fetch guest lease 4 unknown customer."""
         return self._assign_guest_session(customer_mac=customer_mac)
 
     def assign_guest_customer_session(
-        self, customer_id: int, customer_mac: str
+        self, customer_id: int, customer_mac: EUI
     ) -> Optional[FetchSubscriberLeaseResponse]:
         """
         Fetch guest lease for known customer, but who hasn't access to service.
