@@ -1,5 +1,5 @@
 from datetime import timedelta
-
+from netaddr import EUI
 from djing2.lib import safe_int
 from radiusapp.vendor_base import IVendorSpecific
 
@@ -13,7 +13,9 @@ class JuniperVendorSpecific(IVendorSpecific):
         return aget_remote_id, aget_circ_id
 
     def get_customer_mac(self, data):
-        return self.get_rad_val(data, "ERX-Dhcp-Mac-Addr")
+        str_mac = self.get_rad_val(data, "ERX-Dhcp-Mac-Addr")
+        if str_mac:
+            return EUI(str_mac)
 
     def get_vlan_id(self, data):
         param = self.get_rad_val(data, "NAS-Port-Id")

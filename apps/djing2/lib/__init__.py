@@ -139,6 +139,7 @@ def process_lock(lock_name=None):
     return process_lock_wrap
 
 
+# TODO: Replace it by netaddr.EUI
 def macbin2str(bin_mac: bytes) -> str:
     if isinstance(bin_mac, (bytes, bytearray)):
         return ":".join("%.2x" % i for i in bin_mac) if bin_mac else None
