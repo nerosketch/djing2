@@ -1,5 +1,5 @@
 from typing import Optional, Tuple
-
+from netaddr import EUI
 from customers.models import CustomerService, Customer
 from djing2.lib import macbin2str, safe_int
 from radiusapp.models import FetchSubscriberLeaseResponse
@@ -8,7 +8,7 @@ from radiusapp.vendor_specific import vendor_classes
 from radiusapp.vendor_base import IVendorSpecific
 
 
-def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int]:
+def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[EUI], int]:
     # 'remote_id': '0x000600ad24d0c544', 'circuit_id': '0x000400020002'
     mac, port = None, 0
     if not isinstance(remote_id, bytes):
@@ -25,7 +25,7 @@ def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[str], int
             port = 0
         if len(remote_id) >= 6:
             mac = macbin2str(remote_id[-6:])
-    return mac, port
+    return None if mac is None else EUI(mac), port
 
 
 class VendorManager:
@@ -41,7 +41,7 @@ class VendorManager:
             return self.vendor_class.parse_option82(data=data)
 
     @staticmethod
-    def build_dev_mac_by_opt82(agent_remote_id: str, agent_circuit_id: str):
+    def build_dev_mac_by_opt82(agent_remote_id: str, agent_circuit_id: str) -> Tuple[Optional[EUI], int]:
         # TODO: test it!
         def _cnv(v):
             return bytes.fromhex(v[2:]) if v.startswith("0x") else v
@@ -52,7 +52,7 @@ class VendorManager:
         dev_mac, dev_port = parse_opt82(agent_remote_id, agent_circuit_id)
         return dev_mac, dev_port
 
-    def get_customer_mac(self, data):
+    def get_customer_mac(self, data) -> Optional[EUI]:
         if self.vendor_class:
             return self.vendor_class.get_customer_mac(data)
 

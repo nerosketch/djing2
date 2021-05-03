@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-
+from netaddr import EUI
 from django.db.utils import IntegrityError
 from rest_framework import status
 from rest_framework.decorators import action
@@ -68,7 +68,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         serializer = self.get_serializer()
         return Response(serializer.data)
 
-    def assign_guest(self, customer_mac: str, data: dict, customer_id: Optional[int] = None):
+    def assign_guest(self, customer_mac: EUI, data: dict, customer_id: Optional[int] = None):
         """
         Assign no service session.
 
@@ -104,7 +104,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=request.data)
 
         customer_mac = vendor_manager.get_customer_mac(request.data)
-        if customer_mac is None:
+        if not customer_mac:
             return _bad_ret("Customer mac is required")
 
         customer = None
@@ -113,7 +113,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
                 agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
             )
-            if dev_mac is None:
+            if not dev_mac:
                 return _bad_ret("Failed to parse option82")
 
             customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
@@ -121,7 +121,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             )
         else:
             # return _bad_ret("Bad opt82")
-            leases = CustomerIpLeaseModel.objects.filter(mac_address=customer_mac)
+            leases = CustomerIpLeaseModel.objects.filter(mac_address=str(customer_mac))
             if leases.exists():
                 lease = leases.first()
                 customer = lease.customer if lease else None
