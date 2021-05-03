@@ -186,7 +186,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         srv = cust_srv.service
         if srv is None:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         # if customer.gateway:
         #     customer_gw_remove.delay(
