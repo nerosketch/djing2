@@ -25,7 +25,7 @@ def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[EUI], int
             port = 0
         if len(remote_id) >= 6:
             mac = macbin2str(remote_id[-6:])
-    return None if mac is None else EUI(mac), port
+    return None if not mac else EUI(mac), port
 
 
 class VendorManager:
@@ -42,7 +42,6 @@ class VendorManager:
 
     @staticmethod
     def build_dev_mac_by_opt82(agent_remote_id: str, agent_circuit_id: str) -> Tuple[Optional[EUI], int]:
-        # TODO: test it!
         def _cnv(v):
             return bytes.fromhex(v[2:]) if v.startswith("0x") else v
 
