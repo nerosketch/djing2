@@ -299,7 +299,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
                         )
                         if customer.pk is not None and customer.pk != single_session.customer_id:
                             async_finish_session_task(radius_uname=single_session.radius_username)
-                            return
+                            return Response(status=status.HTTP_204_NO_CONTENT)
 
                 # If customer access state and session type not equal
                 if single_session.is_inet_session() != single_customer.is_access():
