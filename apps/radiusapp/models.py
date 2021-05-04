@@ -68,7 +68,7 @@ class FetchSubscriberLeaseResponse:
         self.ip_addr = ip_addr
         self.pool_id = pool_id
         self.lease_time = lease_time
-        self.customer_mac = customer_mac
+        self.customer_mac = EUI(customer_mac) if customer_mac else None
         self.customer_id = customer_id
         self.is_dynamic = is_dynamic
         self.is_assigned = is_assigned
