@@ -112,7 +112,7 @@ class CustomerRadiusSessionManager(models.Manager):
                 [str(customer_mac), customer_id, customer_group, is_dynamic, vid, pool_kind.value],
             )
             res = cur.fetchone()
-        (lease_id, ip_addr, pool_id, lease_time, customer_mac, customer_id, is_dynamic, is_assigned) = res
+        (lease_id, ip_addr, pool_id, lease_time, lease_mac, customer_id, is_dynamic, is_assigned) = res
         if lease_id is None:
             return
         return FetchSubscriberLeaseResponse(
@@ -120,7 +120,7 @@ class CustomerRadiusSessionManager(models.Manager):
             ip_addr=ip_addr,
             pool_id=pool_id,
             lease_time=lease_time,
-            customer_mac=customer_mac,
+            customer_mac=lease_mac,
             customer_id=customer_id,
             is_dynamic=is_dynamic,
             is_assigned=is_assigned,
