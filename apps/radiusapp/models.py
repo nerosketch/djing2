@@ -120,7 +120,7 @@ class CustomerRadiusSessionManager(models.Manager):
             ip_addr=ip_addr,
             pool_id=pool_id,
             lease_time=lease_time,
-            customer_mac=EUI(customer_mac),
+            customer_mac=customer_mac,
             customer_id=customer_id,
             is_dynamic=is_dynamic,
             is_assigned=is_assigned,
