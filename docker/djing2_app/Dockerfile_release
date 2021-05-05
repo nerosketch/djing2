@@ -9,7 +9,7 @@ EXPOSE 3031
 
 WORKDIR /var/www/djing2
 
-RUN apt-get update && apt-get install -y git python3-psycopg2 libsnmp-dev arping gcc gettext --no-install-recommends
+RUN apt-get update && apt-get install -y git python3-psycopg2 libsnmp-dev arping gcc gettext telnet --no-install-recommends
 
 RUN git clone --depth=1 git://github.com/nerosketch/djing2.git -b master /var/www/djing2 \
     && mkdir ./spooler && touch ./touch_reload
