@@ -84,10 +84,10 @@ def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
         ]
         + ports_config
         + [
-            "dhcp-ip ethuni eth_0/1 forbidden",
-            "dhcp-ip ethuni eth_0/2 forbidden",
-            "dhcp-ip ethuni eth_0/3 forbidden",
-            "dhcp-ip ethuni eth_0/4 forbidden",
+            "dhcp-ip ethuni eth_0/1 from-internet",
+            "dhcp-ip ethuni eth_0/2 from-internet",
+            "dhcp-ip ethuni eth_0/3 from-internet",
+            "dhcp-ip ethuni eth_0/4 from-internet",
         ]
     )
 
