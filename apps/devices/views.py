@@ -47,11 +47,11 @@ def catch_dev_manager_err(fn):
             EasySNMPConnectionError,
             EasySNMPError,
         ) as err:
-            return Response(str(err), status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response(str(err), status=452)
         except EasySNMPTimeoutError as err:
             return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
         except (SystemError, DeviceConsoleError) as err:
-            return Response(str(err), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(str(err), status=453)
 
     # Hack for decorator @action
     wrapper.__name__ = fn.__name__
@@ -154,7 +154,7 @@ class DevicePONViewSet(DjingModelViewSet):
                 onu_list = tuple(manager.get_ports_on_fiber(fiber_num=fiber_num))
                 return Response(onu_list)
             except ProcessLocked:
-                return Response(_("Process locked by another process"), status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                return Response(_("Process locked by another process"), status=452)
         else:
             return Response({"Error": {"text": 'Manager has not "get_ports_on_fiber" attribute'}})
 
@@ -204,7 +204,7 @@ class DevicePONViewSet(DjingModelViewSet):
             res = device.apply_onu_config(config=device_config_serializer.data)
             return Response(res)
         except DeviceConsoleError as err:
-            return Response(str(err), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(str(err), status=453)
 
     @action(detail=True)
     @catch_dev_manager_err
