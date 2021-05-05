@@ -8,7 +8,7 @@ ENV APP_DEBUG y
 EXPOSE 8000
 
 RUN apt-get update
-RUN apt-get install -y git python3-psycopg2 libsnmp-dev arping gcc gettext --no-install-recommends
+RUN apt-get install -y git python3-psycopg2 libsnmp-dev arping gcc gettext telnet --no-install-recommends
 RUN mkdir ./spooler && touch ./touch_reload && mkdir -p /usr/src/app/conf/apps/djing2
 
 RUN git clone --depth=1 git://github.com/nerosketch/djing2.git -b devel /var/www/djing2
