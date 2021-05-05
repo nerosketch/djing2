@@ -120,6 +120,8 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 ".1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%(fiber_num)d.%(onu_num)d.1.%(port_num)d"
                 % {"port_num": port_num, "fiber_num": fiber_num, "onu_num": onu_num}
             )
+            if not trunk_vlans:
+                return []
 
             def _rng(r):
                 if not r:
@@ -236,5 +238,6 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
     def get_config_types():
         from .onu_config.zte_f660_router_config import ZteF660RouterScriptModule
         from .onu_config.zte_f660_static_bridge_config import ZteF660BridgeStaticScriptModule
+        from .onu_config.zte_f660_dynamic_bridge_config import ZteF660BridgeDynamicScriptModule
 
-        return [ZteF660RouterScriptModule, ZteF660BridgeStaticScriptModule]
+        return [ZteF660RouterScriptModule, ZteF660BridgeStaticScriptModule, ZteF660BridgeDynamicScriptModule]
