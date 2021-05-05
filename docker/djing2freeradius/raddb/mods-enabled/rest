@@ -35,7 +35,7 @@ rest {
 #		check_cert_cn = yes
 	}
 
-	connect_uri = "http://127.0.0.1:8000"
+	connect_uri = "http://app:8000"
 
 #	connect_timeout = 4.0
 
@@ -58,16 +58,16 @@ rest {
 	#  xxx    -             no            invalid
 	authorize {
 		#uri = "${..connect_uri}/user/%{User-Name}/mac/%{Called-Station-ID}?action=authorize"
-		uri = "${..connect_uri}/api/radius/customer/auth/juniper/"
+		uri = "${..connect_uri}/api/radius/customer/auth/juniper/?ip=%{Framed-IP-Address}&uname=%{User-Name}"
 		method = 'post'
-        body = 'json'
+		body = 'json'
 		tls = ${..tls}
 	}
 	authenticate {
 		#uri = "${..connect_uri}/user/%{User-Name}/mac/%{Called-Station-ID}?action=authenticate"
 		uri = "${..connect_uri}/api/radius/customer/auth/juniper/"
 		method = 'get'
-        body = 'json'
+		body = 'json'
 		tls = ${..tls}
 	}
 
@@ -78,19 +78,19 @@ rest {
 	#  2xx    successful    yes           ok/updated
 	#  5xx    server error  no            fail
 	#  xxx    -             no            invalid
-    preacct {
-            #uri = "${..connect_uri}/user/%{User-Name}/sessions/%{Acct-Unique-Session-ID}?action=preacct"
-            uri = "${..connect_uri}/api/radius/customer/preacct/"
-            method = 'post'
-            body = 'json'
-            tls = ${..tls}
-    }
+	preacct {
+		#uri = "${..connect_uri}/user/%{User-Name}/sessions/%{Acct-Unique-Session-ID}?action=preacct"
+		uri = "${..connect_uri}/api/radius/customer/preacct/"
+		method = 'post'
+		body = 'json'
+		tls = ${..tls}
+	}
 	accounting {
 		#uri = "${..connect_uri}/user/%{User-Name}/sessions/%{Acct-Unique-Session-ID}?action=accounting"
-		uri = "${..connect_uri}/api/radius/customer/acct/"
+		uri = "${..connect_uri}/api/radius/customer/acct/juniper/?ip=%{Framed-IP-Address}&uname=%{User-Name}"
 		method = 'post'
-        body = 'post'
-        #data = 'User-Name: %{User-Name}, csid: %{Called-Station-ID}, NAS-IP-Address: %{NAS-IP-Address}, NAS-Port: {%NAS-Port}, Framed-IP-Address: %{Framed-IP-Address}, NAS-Identifier: %{NAS-Identifier}, Acct-Status-Type: %{Acct-Status-Type}, Acct-Session-Id: %{Acct-Session-Id}, Event-Timestamp: %{Event-Timestamp}, WISPr-Location-ID: %{WISPr-Location-ID}, WISPr-Location-Name: %{WISPr-Location-Name}, Acct-Unique-Session-Id: %{Acct-Unique-Session-Id}'
+		body = 'json'
+		#data = 'User-Name: %{User-Name}, csid: %{Called-Station-ID}, NAS-IP-Address: %{NAS-IP-Address}, NAS-Port: {%NAS-Port}, Framed-IP-Address: %{Framed-IP-Address}, NAS-Identifier: %{NAS-Identifier}, Acct-Status-Type: %{Acct-Status-Type}, Acct-Session-Id: %{Acct-Session-Id}, Event-Timestamp: %{Event-Timestamp}, WISPr-Location-ID: %{WISPr-Location-ID}, WISPr-Location-Name: %{WISPr-Location-Name}, Acct-Unique-Session-Id: %{Acct-Unique-Session-Id}'
 		#tls = ${..tls}
 	}
 	post-auth {

@@ -4,23 +4,26 @@ from django.conf import settings
 from django.contrib.sites.middleware import CurrentSiteMiddleware
 from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.decorators import method_decorator
-from django.views.generic.base import View
 from django.http import JsonResponse
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
-from rest_framework.views import APIView
 from drf_queryfields import QueryFieldsMixin
+from djing2.lib import check_sign
 
 from groupapp.models import Group
-from .decorators import hash_auth_view
 
 
-@method_decorator(hash_auth_view, name="dispatch")
-class HashAuthView(APIView):
+class JsonResponseForbidden(JsonResponse):
+    status_code = status.HTTP_400_BAD_REQUEST
+
+    def __init__(self, data, **kwargs):
+        new_dat = {"error": data}
+        super().__init__(data=new_dat, **kwargs)
+
+
+class HashAuthViewMixin:
     def __init__(self, *args, **kwargs):
         api_auth_secret = getattr(settings, "API_AUTH_SECRET")
         if api_auth_secret is None or api_auth_secret == "your api secret":
@@ -28,16 +31,17 @@ class HashAuthView(APIView):
         else:
             super().__init__(*args, **kwargs)
 
-
-class AuthenticatedOrHashAuthView(HashAuthView):
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.is_admin:
-                return View.dispatch(self, request, *args, **kwargs)
-            else:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+        sign = request.headers.get("Api-Auth-Sign")
+        if not sign:
+            sign = request.META.get("Api-Auth-Sign")
+        if not sign:
+            return JsonResponseForbidden("Access Denied!")
+        get_values = request.GET.copy()
+        if check_sign(get_values, sign):
+            return super().dispatch(request, *args, **kwargs)
         else:
-            return HashAuthView.dispatch(self, request, *args, **kwargs)
+            return JsonResponseForbidden("Access Denied")
 
 
 class AllowedSubnetMixin:
@@ -51,17 +55,18 @@ class AllowedSubnetMixin:
         if isinstance(api_auth_subnet, str):
             if ip in ip_network(api_auth_subnet):
                 return super().dispatch(request, *args, **kwargs)
-        try:
-            for subnet in api_auth_subnet:
-                if ip in ip_network(subnet, strict=False):
+        else:
+            try:
+                for subnet in api_auth_subnet:
+                    if ip in ip_network(subnet, strict=False):
+                        return super().dispatch(request, *args, **kwargs)
+            except TypeError:
+                if ip in ip_network(str(api_auth_subnet)):
                     return super().dispatch(request, *args, **kwargs)
-        except TypeError:
-            if ip in ip_network(str(api_auth_subnet)):
-                return super().dispatch(request, *args, **kwargs)
-        return Response(status=status.HTTP_403_FORBIDDEN)
+        return JsonResponseForbidden("Bad Subnet")
 
 
-class SecureApiView(AllowedSubnetMixin, HashAuthView):
+class SecureApiViewMixin(AllowedSubnetMixin, HashAuthViewMixin):
     permission_classes = [AllowAny]
 
 
@@ -110,4 +115,4 @@ class CustomCurrentSiteMiddleware(CurrentSiteMiddleware):
         try:
             return super().process_request(request=request)
         except Site.DoesNotExist:
-            return JsonResponse({"error": "Bad Request (400). Unknown site."}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponseForbidden("Bad Request (400). Unknown site.")
