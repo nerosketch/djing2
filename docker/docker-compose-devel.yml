@@ -58,17 +58,16 @@ services:
     build: ws/
     ports:
       - 3211:3211
-#  djing2freeradius:
-#    image: djing2freeradius
-#    build:
-#      context: djing2freeradius
-#    depends_on:
-#      - nginx
-#    container_name: djing2freeradius
-#    hostname: djing2freeradius
-#    ports:
-#      - 1812:1812
-#      - 1813:1813
+  djing2freeradius:
+    build:
+      context: djing2freeradius
+    depends_on:
+      - app
+    container_name: djing2freeradius
+    hostname: djing2freeradius
+    ports:
+      - 1812:1812
+      - 1813:1813
 #      - 67:67
 volumes:
   media-data:
