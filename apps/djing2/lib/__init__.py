@@ -108,7 +108,7 @@ def calc_hash(get_values: dict) -> str:
     return sha256(result_data).hexdigest()
 
 
-def check_sign(get_values: dict, external_sign) -> bool:
+def check_sign(get_values: dict, external_sign: str) -> bool:
     my_sign = calc_hash(get_values)
     return external_sign == my_sign
 

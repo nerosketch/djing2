@@ -1,5 +1,7 @@
 server default {
 
+api_auth_secret = "............"
+
 listen {
 	#  Type of packets to listen for.
 	#  Allowed values are:
@@ -33,6 +35,26 @@ listen {
 	}
 }
 
+listen {
+	type = auth
+
+	# ipv4addr = *
+	# ipv6addr = *
+	ipaddr = *
+	port = 0
+	interface = lo
+#	clients = per_socket_clients
+	limit {
+	      max_connections = 16
+	      lifetime = 0
+	      idle_timeout = 30
+	}
+}
+
+
+
+
+
 #
 #  This second "listen" section is for listening on the accounting
 #  port, too.
@@ -54,34 +76,18 @@ listen {
 	}
 }
 
-# IPv6 versions of the above - read their full config to understand options
 listen {
-	type = auth
-	ipv6addr = ::	# any.  ::1 == localhost
-	port = 0
-	interface = lo
-#	clients = per_socket_clients
-	limit {
-	      max_connections = 16
-	      lifetime = 0
-	      idle_timeout = 30
-	}
-}
-
-listen {
-	ipv6addr = ::
+	ipaddr = *
 	port = 0
 	type = acct
 	interface = lo
 #	clients = per_socket_clients
-
 	limit {
-#		max_pps = 0
-#		idle_timeout = 0
-#		lifetime = 0
-#		max_connections = 0
 	}
 }
+
+
+
 
 authorize {
 
@@ -155,7 +161,8 @@ authorize {
     update control {
     #    &Auth-Type := "Accept"
     #    &REST-HTTP-Header := "${...api_token_header}"
-        &REST-HTTP-Header += "Authorization: Token [REAL TOKEN]"
+    #    &REST-HTTP-Header += "Authorization: Token ***REMOVED***"
+        &REST-HTTP-Header := "Api-Auth-Sign: %{sha256:%{Framed-IP-Address}_%{User-Name}_${...api_auth_secret}}"
         &REST-HTTP-Header += "Content-Type: application/json"
     }
     rest
@@ -170,15 +177,25 @@ authorize {
         }
         update reply {
             #&Mikrotik-Address-List := "DjingUsersAllowed"
-            &Acct-Interim-Interval := 60
+            &Acct-Interim-Interval := 19200
+            #&Service-Interim-Acct-Interval := 3600
             #&Mikrotik-Rate-Limit := "50M/43M"
-            &Session-Timeout := 300
+            #&Session-Timeout := 700 # - Not supported for dhcp, from juniper docs
             #&Port-Limit := 1
-            &ERX-Primary-Dns := 192.168.0.1
+            #&ERX-Primary-Dns := 10.12.1.9
+            &ERX-Primary-DNS := 10.12.1.9
+            &ERX-Secondary-DNS = 77.88.8.8
             &ERX-Service-Activate:1 += "%{reply:User-Password}"
 
             User-Password !* ANY
         }
+
+        if (!&reply:Session-Timeout) {
+            update reply {
+                Session-Timeout := 7200
+            }
+        }
+
     } else {
         reject
     }
@@ -347,16 +364,10 @@ accounting {
 #
 #	}
 
-
-	#update reply {
-    #    &Acct-Interim-Interval := 300
-    #    Mikrotik-Address-List := "crb_auth_list"
-    #    Mikrotik-Rate-Limit := "50M/43M"
-	#}
-
     update control {
         #&Auth-Type := "Accept"
-        &REST-HTTP-Header := "Authorization: Token [REAL TOKEN]"
+        #&REST-HTTP-Header := "Authorization: Token ***REMOVED***"
+        &REST-HTTP-Header := "Api-Auth-Sign: %{sha256:%{Framed-IP-Address}_%{User-Name}_${...api_auth_secret}}"
         &REST-HTTP-Header += "Content-Type: application/json"
     }
     #redis
