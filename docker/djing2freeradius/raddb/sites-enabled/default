@@ -1,7 +1,5 @@
 server default {
 
-api_auth_secret = "............"
-
 listen {
 	#  Type of packets to listen for.
 	#  Allowed values are:
@@ -161,8 +159,7 @@ authorize {
     update control {
     #    &Auth-Type := "Accept"
     #    &REST-HTTP-Header := "${...api_token_header}"
-        &REST-HTTP-Header := "Api-Auth-Sign: %{sha256:%{Framed-IP-Address}_%{User-Name}_${...api_auth_secret}}"
-        &REST-HTTP-Header += "Content-Type: application/json"
+        &REST-HTTP-Header := "Content-Type: application/json"
     }
     rest
 
@@ -365,8 +362,7 @@ accounting {
 
     update control {
         #&Auth-Type := "Accept"
-        &REST-HTTP-Header := "Api-Auth-Sign: %{sha256:%{Framed-IP-Address}_%{User-Name}_${...api_auth_secret}}"
-        &REST-HTTP-Header += "Content-Type: application/json"
+        &REST-HTTP-Header := "Content-Type: application/json"
     }
     #redis
     rest
