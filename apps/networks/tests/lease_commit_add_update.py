@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from django.test.utils import override_settings
+from django.test import override_settings
 
 from customers.models import Customer
 from customers.tests.customer import CustomAPITestCase
@@ -9,6 +9,7 @@ from networks.models import NetworkIpPool, NetworkIpPoolKind, CustomerIpLeaseLog
 from customers.tests.get_user_credentials_by_ip import BaseServiceTestCase
 
 
+@override_settings(API_AUTH_SUBNET="127.0.0.0/8")
 class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
     def setUp(self):
         # Initialize customers instances
@@ -40,6 +41,8 @@ class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
         )
         self.ippool.groups.add(self.group)
 
+        self.client.logout()
+
     def _make_event_request(
         self, client_ip: str, client_mac: str, switch_mac: str, switch_port: int, cmd: str, status_code: int = 200
     ):
@@ -52,9 +55,11 @@ class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
                 "cmd": cmd,
             }
         )
-        hdrs = {"Api-Auth-Sign": calc_hash(request_data), "content_type": "application/json"}
-        r = self.client.get("/api/networks/dhcp_lever/", data=request_data, SERVER_NAME="example.com", **hdrs)
-        self.assertEqual(r.status_code, status_code)
+        hdrs = {"Api-Auth-Sign": calc_hash(request_data)}
+        r = self.client.get(
+            "/api/networks/dhcp_lever/", data=request_data, SERVER_NAME="example.com", format="json", **hdrs
+        )
+        self.assertEqual(r.status_code, status_code, msg=r.content)
         return r.data
 
     # @staticmethod
