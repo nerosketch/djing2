@@ -58,8 +58,9 @@ rest {
 	#  xxx    -             no            invalid
 	authorize {
 		#uri = "${..connect_uri}/user/%{User-Name}/mac/%{Called-Station-ID}?action=authorize"
-		uri = "${..connect_uri}/api/radius/customer/auth/juniper/?ip=%{Framed-IP-Address}&uname=%{User-Name}"
+		uri = "${..connect_uri}/api/radius/customer/auth/juniper/"
 		method = 'post'
+		# data = '{"User-Name": "%{User-Name}", "ERX-Dhcp-Mac-Addr": "%{ERX-Dhcp-Mac-Addr}", "ADSL-Agent-Remote-Id": "%{ADSL-Agent-Remote-Id}", "ADSL-Agent-Circuit-Id": "%{ADSL-Agent-Circuit-Id}", "NAS-Port-Id": "%{NAS-Port-Id}"}'
 		body = 'json'
 		tls = ${..tls}
 	}
@@ -87,10 +88,10 @@ rest {
 	}
 	accounting {
 		#uri = "${..connect_uri}/user/%{User-Name}/sessions/%{Acct-Unique-Session-ID}?action=accounting"
-		uri = "${..connect_uri}/api/radius/customer/acct/juniper/?ip=%{Framed-IP-Address}&uname=%{User-Name}"
+		uri = "${..connect_uri}/api/radius/customer/acct/juniper/"
 		method = 'post'
 		body = 'json'
-		#data = 'User-Name: %{User-Name}, csid: %{Called-Station-ID}, NAS-IP-Address: %{NAS-IP-Address}, NAS-Port: {%NAS-Port}, Framed-IP-Address: %{Framed-IP-Address}, NAS-Identifier: %{NAS-Identifier}, Acct-Status-Type: %{Acct-Status-Type}, Acct-Session-Id: %{Acct-Session-Id}, Event-Timestamp: %{Event-Timestamp}, WISPr-Location-ID: %{WISPr-Location-ID}, WISPr-Location-Name: %{WISPr-Location-Name}, Acct-Unique-Session-Id: %{Acct-Unique-Session-Id}'
+		# data = '{"User-Name": "%{User-Name}", "Framed-IP-Address": "%{Framed-IP-Address}", "Acct-Unique-Session-Id": "%{Acct-Unique-Session-Id}", "Acct-Input-Octets": %{Acct-Input-Octets}, "Acct-Input-Gigawords": %{Acct-Input-Gigawords}, "Acct-Output-Octets": %{Acct-Output-Octets}, "Acct-Output-Gigawords": %{Acct-Output-Gigawords}, "Acct-Input-Packets": %{Acct-Input-Packets}, "Acct-Output-Packets": %{Acct-Output-Packets}, "ADSL-Agent-Remote-Id": "%{ADSL-Agent-Remote-Id}", "ADSL-Agent-Circuit-Id": "%{ADSL-Agent-Circuit-Id}"}'
 		#tls = ${..tls}
 	}
 	post-auth {
