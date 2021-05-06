@@ -34,6 +34,7 @@ def _update_lease_send_ws_signal(customer_id: int):
     send_data2ws({"eventType": WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value, "data": {"customer_id": customer_id}})
 
 
+# TODO: Also protect requests by hash
 class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
     serializer_class = RadiusCustomerServiceRequestSerializer
     authentication_classes = []
