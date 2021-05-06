@@ -161,7 +161,6 @@ authorize {
     update control {
     #    &Auth-Type := "Accept"
     #    &REST-HTTP-Header := "${...api_token_header}"
-    #    &REST-HTTP-Header += "Authorization: Token 0974353daba2b3a9df508ad4d47bfbf212c31dbc"
         &REST-HTTP-Header := "Api-Auth-Sign: %{sha256:%{Framed-IP-Address}_%{User-Name}_${...api_auth_secret}}"
         &REST-HTTP-Header += "Content-Type: application/json"
     }
@@ -366,7 +365,6 @@ accounting {
 
     update control {
         #&Auth-Type := "Accept"
-        #&REST-HTTP-Header := "Authorization: Token 0974353daba2b3a9df508ad4d47bfbf212c31dbc"
         &REST-HTTP-Header := "Api-Auth-Sign: %{sha256:%{Framed-IP-Address}_%{User-Name}_${...api_auth_secret}}"
         &REST-HTTP-Header += "Content-Type: application/json"
     }
