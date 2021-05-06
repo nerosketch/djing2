@@ -39,6 +39,8 @@ def catch_dev_manager_err(fn):
             return fn(self, *args, **kwargs)
         except (DeviceImplementationError, ExpectValidationError) as err:
             return Response({"text": str(err), "status": 2})
+        except EasySNMPTimeoutError as err:
+            return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
         except (
             ConnectionResetError,
             ConnectionRefusedError,
@@ -48,8 +50,6 @@ def catch_dev_manager_err(fn):
             EasySNMPError,
         ) as err:
             return Response(str(err), status=452)
-        except EasySNMPTimeoutError as err:
-            return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
         except (SystemError, DeviceConsoleError) as err:
             return Response(str(err), status=453)
 
@@ -244,7 +244,7 @@ class DevicePONViewSet(DjingModelViewSet):
         try:
             dev = self.get_object()
             if dev.is_onu_registered():
-                vlans = dev.read_onu_vlan_info()
+                vlans = tuple(dev.read_onu_vlan_info())
             else:
                 vlans = dev.default_vlan_info()
             return Response(vlans)
