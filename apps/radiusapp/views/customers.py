@@ -6,12 +6,13 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.permissions import AllowAny
 
 from customers.models import CustomerService
 from customers.serializers import RadiusCustomerServiceRequestSerializer
 from djing2.lib import LogicError, safe_int
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
-from djing2.lib.mixins import SecureApiViewMixin
+from djing2.lib.mixins import AllowedSubnetMixin
 from networks.models import NetworkIpPoolKind, CustomerIpLeaseModel
 from radiusapp.models import CustomerRadiusSession
 from radiusapp.tasks import async_finish_session_task
@@ -33,10 +34,10 @@ def _update_lease_send_ws_signal(customer_id: int):
     send_data2ws({"eventType": WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value, "data": {"customer_id": customer_id}})
 
 
-class RadiusCustomerServiceRequestViewSet(SecureApiViewMixin, GenericViewSet):
+class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
     serializer_class = RadiusCustomerServiceRequestSerializer
     authentication_classes = []
-    permission_classes = []
+    permission_classes = [AllowAny]
     vendor_manager = None
 
     def _check_data(self, data):
