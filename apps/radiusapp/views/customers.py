@@ -302,7 +302,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                         customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
                             device_mac=dev_mac, device_port=dev_port
                         )
-                        if customer.pk is not None and customer.pk != single_session.customer_id:
+                        if customer is not None and customer.pk != single_session.customer_id:
                             async_finish_session_task(radius_uname=single_session.radius_username)
                             return Response(status=status.HTTP_204_NO_CONTENT)
 
