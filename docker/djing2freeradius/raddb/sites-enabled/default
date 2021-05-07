@@ -172,13 +172,10 @@ authorize {
             Auth-Type := Accept
         }
         update reply {
-            #&Mikrotik-Address-List := "DjingUsersAllowed"
             &Acct-Interim-Interval := 19200
             #&Service-Interim-Acct-Interval := 3600
-            #&Mikrotik-Rate-Limit := "50M/43M"
             #&Session-Timeout := 700 # - Not supported for dhcp, from juniper docs
             #&Port-Limit := 1
-            #&ERX-Primary-Dns := 10.12.1.9
             &ERX-Primary-DNS := 10.12.1.9
             &ERX-Secondary-DNS = 77.88.8.8
             &ERX-Service-Activate:1 += "%{reply:User-Password}"
