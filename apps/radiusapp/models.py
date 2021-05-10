@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from customers.models import Customer
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
 
-from .radius_commands import finish_session
+from .radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
 
 
 def _human_readable_int(num: int, u="b") -> str:
@@ -187,6 +187,24 @@ class CustomerRadiusSession(models.Model):
         if not self.radius_username:
             return False
         return finish_session(self.radius_username)
+
+    def radius_coa_inet2guest(self) -> bool:
+        if not self.radius_username:
+            return False
+        return change_session_inet2guest(self.radius_username)
+
+    def radius_coa_guest2inet(self) -> bool:
+        if not self.radius_username:
+            return False
+        if not self.customer:
+            return False
+        customer_service = self.customer.current_service
+        if not customer_service:
+            return False
+        service = customer_service.service
+        if not service:
+            return False
+        return change_session_guest2inet(radius_uname=self.radius_username, service=service)
 
     # def is_guest_session(self) -> bool:
     #     """Is current session guest."""
