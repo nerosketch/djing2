@@ -5,7 +5,8 @@ import logging
 from uwsgi_tasks import task
 
 from djing2.lib import safe_int
-from radiusapp.models import CustomerRadiusSession, finish_session
+from radiusapp.models import CustomerRadiusSession
+from .radius_commands import finish_session
 
 
 @task()
