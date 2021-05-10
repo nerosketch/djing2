@@ -8,7 +8,7 @@ if [[ $opt == 'dev' ]]; then
 elif [[ $opt == 'prod' ]]; then
   echo 'Install production'
 else
-  echo 'Usage: ./install.sh <devel|prod>. Run it from "docker" sub directory'
+  echo 'Usage: ./install.sh <dev|prod>. Run it from "docker" sub directory'
   exit 1
 fi
 

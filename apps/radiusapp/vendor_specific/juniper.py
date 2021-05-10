@@ -35,8 +35,8 @@ class JuniperVendorSpecific(IVendorSpecific):
 
         speed_in = int(service.speed_in * 1000000)
         speed_out = int(service.speed_out * 1000000)
-        speed_in_burst = int(speed_in / 8 * 1.5)
-        speed_out_burst = int(speed_out / 8 * 1.5)
+        speed_in_burst, speed_out_burst = service.calc_burst()
+
         res = {
             "Framed-IP-Address": subscriber_lease.ip_addr,
             # 'Framed-IP-Netmask': '255.255.0.0',

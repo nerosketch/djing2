@@ -1,13 +1,13 @@
 """radiusapp models file."""
-import subprocess
 from typing import Optional
 from netaddr import EUI
-from django.conf import settings
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
+
+from .radius_commands import finish_session
 
 
 def _human_readable_int(num: int, u="b") -> str:
@@ -162,20 +162,6 @@ class CustomerRadiusSessionManager(models.Manager):
         return self._assign_guest_session(customer_mac=customer_mac, customer_id=customer_id)
 
 
-def finish_session(radius_uname: str) -> bool:
-    """Send radius disconnect packet to BRAS."""
-    if not radius_uname:
-        return False
-    uname = str(radius_uname).encode()
-    uname = uname.replace(b'"', b"")
-    uname = uname.replace(b"'", b"")
-    fin_cmd_list = getattr(settings, "RADIUS_FINISH_SESSION_CMD_LIST")
-    if not fin_cmd_list:
-        return False
-    r = subprocess.run(fin_cmd_list, input=b'User-Name="%s"' % uname)
-    return r.returncode == 0
-
-
 class CustomerRadiusSession(models.Model):
     """Model helper 4 RADIUS authentication."""
 
@@ -228,6 +214,7 @@ class CustomerRadiusSession(models.Model):
     def delete(self, *args, **kwargs):
         """Remove current instance. And also remove ip lease."""
         # TODO: Move it to db trigger
+        #  Может убрать это, надо подумать.
         lease_id = self.ip_lease_id
         CustomerIpLeaseModel.objects.filter(pk=lease_id).delete()
         return super().delete(*args, **kwargs)
