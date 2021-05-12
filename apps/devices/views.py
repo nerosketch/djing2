@@ -295,7 +295,10 @@ class DeviceModelViewSet(DjingModelViewSet):
         manager = device.get_manager_object_switch()
         if not issubclass(manager.__class__, BaseSwitchInterface):
             raise DeviceImplementationError("Expected BaseSwitchInterface subclass")
-        ports = manager.get_ports()
+        try:
+            ports = manager.get_ports()
+        except StopIteration:
+            return Response({"text": _("Device port count error"), "status": 2})
         return Response(data=tuple(p.to_dict() for p in ports))
 
     @action(detail=True, methods=["put"])
