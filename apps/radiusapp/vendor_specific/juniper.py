@@ -29,15 +29,20 @@ class JuniperVendorSpecific(IVendorSpecific):
         }
 
     def get_auth_session_response(self, subscriber_lease, customer_service, customer, request_data):
-        service = customer_service.service
+        if not customer_service or not customer_service.service:
+            service_option = "SERVICE-GUEST"
+        else:
+            service = customer_service.service
 
-        speed_in = int(service.speed_in * 1000000)
-        speed_out = int(service.speed_out * 1000000)
-        speed_in_burst, speed_out_burst = service.calc_burst()
+            speed_in = int(service.speed_in * 1000000)
+            speed_out = int(service.speed_out * 1000000)
+            speed_in_burst, speed_out_burst = service.calc_burst()
+            service_option = f"SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})"
 
         res = {
             "Framed-IP-Address": subscriber_lease.ip_addr,
             # 'Framed-IP-Netmask': '255.255.0.0',
-            "User-Password": f"SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})",
+            # User-Password - it is a crutch, for config in freeradius
+            "User-Password": service_option,
         }
         return res
