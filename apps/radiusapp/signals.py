@@ -1,4 +1,5 @@
 """Radius application signals file."""
+import logging
 from django.dispatch.dispatcher import receiver
 from django.db.models.signals import pre_delete
 
@@ -28,21 +29,24 @@ def try_stop_session_too_signal(sender, instance, **kwargs):
 )
 def on_pre_stop_cust_srv_signal(sender, expired_service, **kwargs):
     """
-    When customer service has stopped then try to async stop his session too.
+    When customer service has stopped then try to
+    change his session from inet to guest.
 
     :param sender: CustomerService class
     :param expired_service: CustomerService instance
     :param kwargs:
     :return: nothing
     """
-    # print('#' * 80)
-    # print('on_pre_stop_cust_srv')
-    # print('#' * 80)
-    tasks.radius_stop_customer_session_task(customer_id=expired_service.customer.pk)
+    sessions = CustomerRadiusSession.objects.filter(customer_id=expired_service.customer.pk).iterator()
+    for session in sessions:
+        if tasks.async_change_session_inet2guest(radius_uname=session.radius_username):
+            logging.info('Session "%s" changed inet -> guest' % session)
+        else:
+            logging.error('Session "%s" not changed inet -> guest' % session)
 
 
-@receiver(customer_custom_signals.customer_service_pre_pick, sender=Customer, dispatch_uid="on_pre_pick_cust_srv*$@0")
-def on_pre_pick_cust_srv_signal(sender, customer, service, **kwargs):
+@receiver(customer_custom_signals.customer_service_post_pick, sender=Customer, dispatch_uid="on_pre_pick_cust_srv*$@0")
+def on_post_pick_cust_srv_signal(sender, customer, service, **kwargs):
     """
     When customer picked service then reset his session.
 
@@ -52,10 +56,31 @@ def on_pre_pick_cust_srv_signal(sender, customer, service, **kwargs):
     :param kwargs:
     :return: nothing
     """
-    # print('#' * 80)
-    # print('on_pre_pick_cust_srv', customer, service)
-    # print('#' * 80)
-    tasks.radius_stop_customer_session_task(customer_id=customer.pk)
+
+    speed_in = speed_out = speed_in_burst = speed_out_burst = None
+    is_customer_has_service = bool(customer.active_service())
+    if is_customer_has_service:
+        speed_in = (int(service.speed_in * 1000000),)
+        speed_out = (int(service.speed_out * 1000000),)
+        speed_in_burst, speed_out_burst = service.calc_burst()
+
+    sessions = CustomerRadiusSession.objects.filter(customer_id=customer.pk).only("radius_username").iterator()
+    for session in sessions:
+        if is_customer_has_service:
+            # change radius session guest->inet
+
+            tasks.async_change_session_guest2inet(
+                radius_uname=session.radius_username,
+                speed_in=speed_in,
+                speed_out=speed_out,
+                speed_in_burst=speed_in_burst,
+                speed_out_burst=speed_out_burst,
+            )
+        else:
+            # change radius session inet->guest
+            tasks.async_change_session_inet2guest(
+                radius_uname=session.radius_username,
+            )
 
 
 @receiver(
@@ -71,9 +96,6 @@ def on_pre_batch_stop_customer_services_signal(sender, expired_services, **kwarg
     :param kwargs:
     :return: nothing
     """
-    # print('#' * 80)
-    # print('on_pre_batch_stop_customer_services_signal', expired_services)
-    # print('#' * 80)
     customer_ids = (safe_int(es.customer.pk) for es in expired_services.iterator())
     customer_ids = tuple(i for i in customer_ids if i > 0)
     tasks.radius_batch_stop_customer_services_task(customer_ids=customer_ids)
