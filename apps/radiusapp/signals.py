@@ -8,20 +8,21 @@ from radiusapp.models import CustomerRadiusSession
 from radiusapp import tasks
 from customers import custom_signals as customer_custom_signals
 from customers.models import Customer, CustomerService
-from radiusapp.tasks import async_finish_session_task
+from networks.models import CustomerIpLeaseModel
 
 
-@receiver(pre_delete, sender=CustomerRadiusSession)
-def try_stop_session_too_signal(sender, instance, **kwargs):
+@receiver(pre_delete, sender=CustomerIpLeaseModel)
+def send_finish_session_when_removed_it_ip(sender, instance, **kwargs):
     """
-    Try to stop session while removing it.
-
-    :param sender: CustomerRadiusSession class
-    :param instance: CustomerRadiusSession instance
+    Try to stop session when removing customer ip lease.
+    :param sender: CustomerIpLeaseModel class
+    :param instance: CustomerIpLeaseModel instance
     :param kwargs:
     :return: nothing
     """
-    async_finish_session_task(instance.radius_username)
+    sessions = CustomerRadiusSession.objects.filter(ip_lease=instance).only("radius_username")
+    for session in sessions:
+        tasks.async_finish_session_task(session.radius_username)
 
 
 @receiver(
