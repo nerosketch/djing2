@@ -278,7 +278,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         vendor_manager = self.vendor_manager
         vcls = vendor_manager.vendor_class
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
-        CustomerRadiusSession.objects.filter(customeripleasemodel__ip_address=ip).delete()
+        CustomerRadiusSession.objects.filter(ip_lease__ip_address=ip).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_update(self, request):
