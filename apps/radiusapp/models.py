@@ -204,7 +204,15 @@ class CustomerRadiusSession(models.Model):
         service = customer_service.service
         if not service:
             return False
-        return change_session_guest2inet(radius_uname=self.radius_username, service=service)
+
+        speed_in_burst, speed_out_burst = service.calc_burst()
+        return change_session_guest2inet(
+            radius_uname=self.radius_username,
+            speed_in=int(service.speed_in * 1000000),
+            speed_out=int(service.speed_out * 1000000),
+            speed_in_burst=speed_in_burst,
+            speed_out_burst=speed_out_burst,
+        )
 
     # def is_guest_session(self) -> bool:
     #     """Is current session guest."""
