@@ -5,6 +5,7 @@ from djing2.viewsets import DjingModelViewSet
 from djing2.lib import safe_int
 from radiusapp.models import CustomerRadiusSession
 from radiusapp.serializers.user_session import CustomerRadiusSessionModelSerializer
+from radiusapp import tasks
 
 
 class CustomerRadiusSessionModelViewSet(DjingModelViewSet):
@@ -27,3 +28,8 @@ class CustomerRadiusSessionModelViewSet(DjingModelViewSet):
             serializer = self.get_serializer(instance=sessions.first())
             return Response(serializer.data)
         return Response()
+
+    def destroy(self, request, *args, **kwargs):
+        session = self.get_object()
+        tasks.async_finish_session_task(radius_uname=session.radius.username)
+        return super().destroy(request, *args, **kwargs)
