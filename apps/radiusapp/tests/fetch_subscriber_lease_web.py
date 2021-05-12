@@ -1,12 +1,9 @@
 """Tests for fetching ip lease for customer."""
-from urllib.parse import urlencode
-
 from django.test import override_settings
 from rest_framework import status
 
 from customers.tests.customer import CustomAPITestCase
 from devices.tests import DeviceTestCase
-from djing2.lib import calc_hash
 from networks.models import NetworkIpPool, NetworkIpPoolKind, VlanIf
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from services.models import Service
@@ -65,14 +62,10 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
 
     def _send_request(self, vlan_id: int, cid: str, arid: str, existing_ip="10.152.164.2", mac="18c0.4d51.dee2"):
         """Help method 4 send request to endpoint."""
-        uname = f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"
-        get_opts = {"ip": existing_ip, "uname": uname}
-        get_url = urlencode(get_opts, doseq=True)
-        hdrs = {"Api-Auth-Sign": calc_hash(get_opts)}
         return self.post(
-            f"/api/radius/customer/auth/juniper/?{get_url}",
+            "/api/radius/customer/auth/juniper/",
             {
-                "User-Name": {"value": [uname]},
+                "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
                 "Framed-IP-Address": {"value": [existing_ip]},
                 "NAS-Port-Id": {"value": [vlan_id]},
                 "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
@@ -80,7 +73,6 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
                 "ERX-Dhcp-Mac-Addr": {"value": [mac]},
                 "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]},
             },
-            **hdrs,
         )
 
     def test_guest_radius_session(self):
@@ -111,17 +103,17 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         self.assertEqual(r2.data["User-Password"], self.service_inet_str)
 
     def test_guest_and_inet_subnet(self):
-        """Проверка гостевой и инетной аренды ip.
+        """Проверка гостевой и инетной сессии.
 
         Проверяем что при включённой и выключенной услуге будет
-        выдавать интернетный и гостевой ip соответственно, при условии что
+        выдавать интернетную и гостевую сессию соответственно. При условии, что
         интернетный ip на мак уже выдан.
         """
         self.test_auth_radius_session()
         self.customer.stop_service(self.admin)
         r = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data["Framed-IP-Address"], "10.255.0.2")
+        self.assertEqual(r.data["Framed-IP-Address"], "10.152.64.2")
         self.assertEqual(r.data["User-Password"], "SERVICE-GUEST")
 
     def test_subnet_vid(self):
