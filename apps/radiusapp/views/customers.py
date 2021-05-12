@@ -136,34 +136,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             # If customer not found then assign guest session
             return self.assign_guest(customer_mac=customer_mac, data=request.data)
 
-        # radius_username = vendor_manager.get_radius_username(request.data)
-        # radius_unique_id = vendor_manager.get_radius_unique_id(request.data)
-
-        if customer.current_service_id is None:
-            # if customer has not service then assign guest
-            #  session with attached customer.
-            r = self.assign_guest(
-                customer_mac=customer_mac,
-                data=request.data,
-                customer_id=customer.pk,
-            )
-            _update_lease_send_ws_signal(customer.pk)
-            return r
-
-        customer_service = CustomerService.find_customer_service_by_device_credentials(
-            customer_id=customer.pk, current_service_id=int(customer.current_service_id)
-        )
-        if customer_service is None:
-            # if customer has not service then assign guest
-            #  session with attached customer.
-            r = self.assign_guest(
-                customer_mac=customer_mac,
-                data=request.data,
-                customer_id=customer.pk,
-            )
-            _update_lease_send_ws_signal(customer.pk)
-            return r
-
         vid = vendor_manager.get_vlan_id(request.data)
 
         try:
@@ -186,7 +158,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
             response = vendor_manager.get_auth_session_response(
                 subscriber_lease=subscriber_lease,
-                customer_service=customer_service,
+                # TODO: customer.active_service() - hit to db
+                customer_service=customer.active_service(),
                 customer=customer,
                 request_data=request.data,
             )
@@ -255,7 +228,12 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
         sessions = CustomerRadiusSession.objects.filter(ip_lease=lease)
         if sessions.exists():
-            sessions.update(customer=lease.customer, radius_username=radius_username, session_id=radius_unique_id)
+            sessions.update(
+                customer=lease.customer,
+                radius_username=radius_username,
+                session_id=radius_unique_id,
+                last_event_time=datetime.now(),
+            )
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         try:
