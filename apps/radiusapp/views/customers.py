@@ -15,9 +15,9 @@ from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from djing2.lib.mixins import AllowedSubnetMixin
 from networks.models import NetworkIpPoolKind, CustomerIpLeaseModel
 from radiusapp.models import CustomerRadiusSession
-from radiusapp.tasks import async_finish_session_task
 from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
+from radiusapp import tasks
 
 
 def _gigaword_imp(num: int, gwords: int) -> int:
@@ -26,8 +26,8 @@ def _gigaword_imp(num: int, gwords: int) -> int:
     return num + gwords * (10 ** 9)
 
 
-def _bad_ret(text):
-    return Response({"Reply-Message": text}, status=status.HTTP_400_BAD_REQUEST)
+def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST):
+    return Response({"Reply-Message": text}, status=custom_status)
 
 
 def _update_lease_send_ws_signal(customer_id: int):
@@ -274,11 +274,11 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         # TODO: Удалять только сессию, без ip, только при Accounting-Stop.
         #  Получается что когда сессия останавливается из radius, то и из билинга она пропадает.
         #  Но только сессия, ip удалять не надо.
-        # dat = request.data
-        # vendor_manager = self.vendor_manager
-        # vcls = vendor_manager.vendor_class
-        # ip = vcls.get_rad_val(dat, "Framed-IP-Address")
-        # CustomerRadiusSession.objects.filter(customeripleasemodel__ip_address=ip).delete()
+        dat = request.data
+        vendor_manager = self.vendor_manager
+        vcls = vendor_manager.vendor_class
+        ip = vcls.get_rad_val(dat, "Framed-IP-Address")
+        CustomerRadiusSession.objects.filter(customeripleasemodel__ip_address=ip).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_update(self, request):
@@ -293,7 +293,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             self._update_counters(sessions=sessions, data=dat)
 
             for single_session in sessions.iterator():
-                single_customer = single_session.customer
+                # single_customer = single_session.customer
 
                 # If session and customer not same then free session
                 agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=dat)
@@ -305,17 +305,16 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                         customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
                             device_mac=dev_mac, device_port=dev_port
                         )
-                        if customer is not None and customer.pk != single_session.customer_id:
-                            async_finish_session_task(radius_uname=single_session.radius_username)
+                        if customer is not None and int(customer.pk) != int(single_session.customer_id):
+                            tasks.async_finish_session_task(radius_uname=single_session.radius_username)
+                            single_session.delete()
                             return Response(status=status.HTTP_204_NO_CONTENT)
 
-                # If customer access state and session type not equal
-                if single_session.is_inet_session() != single_customer.is_access():
-                    # then send disconnect
-                    radius_username = vendor_manager.get_radius_username(dat)
-                    async_finish_session_task(radius_uname=radius_username)
         else:
-            return _bad_ret("No session found")
+            radius_username = vendor_manager.get_radius_username(dat)
+            if radius_username:
+                tasks.async_finish_session_task(radius_uname=radius_username)
+            return _bad_ret("No session found", custom_status=status.HTTP_200_OK)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
