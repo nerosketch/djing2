@@ -3,10 +3,10 @@ import subprocess
 from typing import Optional
 
 
-def _filter_uname(uname: str) -> bytes:
-    _uname = str(uname).encode()
-    _uname = _uname.replace(b'"', b"")
-    _uname = _uname.replace(b"'", b"")
+def _filter_uname(uname: str) -> str:
+    _uname = str(uname)
+    _uname = _uname.replace('"', "")
+    _uname = _uname.replace("'", "")
     return _uname
 
 
@@ -22,6 +22,7 @@ def _exec_radclient(script_name: str, params_list: list, stdin_data: Optional[by
     file_dir = os.path.dirname(__file__)
     exec_path = os.path.join(file_dir, "radclient", script_name)
     exec_params = [exec_path] + params_list
+    exec_params = [str(i) for i in exec_params]
     r = subprocess.run(exec_params, input=stdin_data)
     return r.returncode == 0
 
