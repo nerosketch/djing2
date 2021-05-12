@@ -23,7 +23,6 @@ class CustomerRadiusSessionModelViewSet(DjingModelViewSet):
         if lease_id <= 0:
             return Response(status=status.HTTP_404_NOT_FOUND)
         sessions = CustomerRadiusSession.objects.filter(ip_lease_id=lease_id)
-        print("sessions", sessions)
         if sessions.exists():
             serializer = self.get_serializer(instance=sessions.first())
             return Response(serializer.data)
