@@ -74,7 +74,7 @@ class VendorManager:
     def get_auth_session_response(
         self,
         subscriber_lease: FetchSubscriberLeaseResponse,
-        customer_service: CustomerService,
+        customer_service: Optional[CustomerService],
         customer: Customer,
         request_data,
     ) -> dict:
