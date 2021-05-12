@@ -61,8 +61,8 @@ def on_post_pick_cust_srv_signal(sender, customer, service, **kwargs):
     speed_in = speed_out = speed_in_burst = speed_out_burst = None
     is_customer_has_service = bool(customer.active_service())
     if is_customer_has_service:
-        speed_in = (int(service.speed_in * 1000000),)
-        speed_out = (int(service.speed_out * 1000000),)
+        speed_in = int(service.speed_in * 1000000)
+        speed_out = int(service.speed_out * 1000000)
         speed_in_burst, speed_out_burst = service.calc_burst()
 
     sessions = CustomerRadiusSession.objects.filter(customer_id=customer.pk).only("radius_username").iterator()
