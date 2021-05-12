@@ -1,6 +1,4 @@
-from datetime import timedelta
 from netaddr import EUI
-from djing2.lib import safe_int
 from radiusapp.vendor_base import IVendorSpecific
 
 
@@ -42,12 +40,4 @@ class JuniperVendorSpecific(IVendorSpecific):
             # 'Framed-IP-Netmask': '255.255.0.0',
             "User-Password": f"SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})",
         }
-        session_remaining_time = customer_service.calc_session_time(splice=True)
-        # + 5 минут потому что в момент, когда закончится сессия,
-        # улуга еще будет на учётке. А вот через несколько мин. услуга
-        # уже должна перерасчитаться.
-        session_remaining_time += timedelta(minutes=5)
-        session_remaining_time_secs = safe_int(session_remaining_time.total_seconds())
-        if session_remaining_time_secs > 0:
-            res.update({"Session-Timeout": session_remaining_time_secs})
         return res
