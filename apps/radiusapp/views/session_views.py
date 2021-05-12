@@ -31,5 +31,5 @@ class CustomerRadiusSessionModelViewSet(DjingModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         session = self.get_object()
-        tasks.async_finish_session_task(radius_uname=session.radius.username)
+        tasks.async_finish_session_task(radius_uname=session.radius_username)
         return super().destroy(request, *args, **kwargs)
