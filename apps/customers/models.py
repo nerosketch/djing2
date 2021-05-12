@@ -347,10 +347,8 @@ class CustomerManager(MyUserManager):
                     )
             else:
                 # finish service otherwise
+                custom_signals.customer_service_pre_stop.send(sender=CustomerService, expired_service=expired_service)
                 with transaction.atomic():
-                    custom_signals.customer_service_pre_stop.send(
-                        sender=CustomerService, expired_service=expired_service
-                    )
                     expired_service.delete()
                     CustomerLog.objects.create(
                         customer=expired_service_customer,

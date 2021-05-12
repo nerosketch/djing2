@@ -218,9 +218,6 @@ class CustomerRadiusSession(models.Model):
     #     """Is current session guest."""
     #     return self.customer is None
 
-    def is_inet_session(self) -> bool:
-        return self.ip_lease.pool.kind == NetworkIpPoolKind.NETWORK_KIND_INTERNET
-
     def h_input_octets(self):
         """Human readable input octets."""
         return _human_readable_int(num=self.input_octets)
@@ -236,14 +233,6 @@ class CustomerRadiusSession(models.Model):
     def h_output_packets(self):
         """Human readable output packets."""
         return _human_readable_int(num=self.output_packets, u="p")
-
-    def delete(self, *args, **kwargs):
-        """Remove current instance. And also remove ip lease."""
-        # TODO: Move it to db trigger
-        #  Может убрать это, надо подумать.
-        lease_id = self.ip_lease_id
-        CustomerIpLeaseModel.objects.filter(pk=lease_id).delete()
-        return super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"{self.customer}: ({self.radius_username}) {self.ip_lease}"
