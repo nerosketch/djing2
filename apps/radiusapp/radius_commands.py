@@ -42,19 +42,24 @@ def change_session_inet2guest(radius_uname: str) -> bool:
     return _exec_radclient("radclient-coa-inet2guest.sh", params_list=[uname])
 
 
-def change_session_guest2inet(radius_uname: str, service) -> bool:
+def change_session_guest2inet(
+    radius_uname: str, speed_in: int, speed_out: int, speed_in_burst: int, speed_out_burst: int
+) -> bool:
     """
     Send COA via radclient, change guest service type to inet service type.
     :param radius_uname: User-Name from radius
-    :param service: instance of services.Service model
+    :param speed_in: Customer service input speed in bits/s
+    :param speed_out: Customer service output speed in bits/s
+    :param speed_in_burst: Customer service input speed burst
+    :param speed_out_burst: Customer service output speed burst
     :return: boolean, is return code of script is equal 0
     """
     if not radius_uname:
         return False
     uname = _filter_uname(radius_uname)
-    speed_in = int(service.speed_in * 1000000)
-    speed_out = int(service.speed_out * 1000000)
-    speed_in_burst, speed_out_burst = service.calc_burst()
+    speed_in = int(speed_in)
+    speed_out = int(speed_out)
+    speed_in_burst, speed_out_burst = int(speed_in_burst), int(speed_out_burst)
 
     # COA guest -> inet
     return _exec_radclient(
