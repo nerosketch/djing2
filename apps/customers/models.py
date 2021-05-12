@@ -431,7 +431,7 @@ class Customer(BaseAccount):
         self.markers = flags
         self.save(update_fields=["markers"])
 
-    def active_service(self):
+    def active_service(self) -> CustomerService:
         return self.current_service
 
     def add_balance(self, profile: UserProfile, cost: float, comment: str) -> None:
