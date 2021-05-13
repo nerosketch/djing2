@@ -48,9 +48,9 @@ call vundle#begin()
 
     " Add all your plugins here (note older versions of Vundle used Bundle instead of Plugin)
     "-------------------=== Code/Project navigation ===-------------
-    Plugin 'scrooloose/nerdtree'                " Project and file navigation
+    Plugin 'preservim/nerdtree'                " Project and file navigation
     Plugin 'Xuyuanp/nerdtree-git-plugin'        " NerdTree git functionality
-    " Plugin 'majutsushi/tagbar'                  " Class/module browser
+    Plugin 'majutsushi/tagbar'                  " Class/module browser
     Plugin 'vim-ctrlspace/vim-ctrlspace'        " Tabs/Buffers/Fuzzy/Workspaces/Bookmarks
     Plugin 'mileszs/ack.vim'                    " Ag/Grep
     Plugin 'vim-airline/vim-airline'            " Lean & mean status/tabline for vim
@@ -79,7 +79,7 @@ call vundle#begin()
     Plugin 'honza/vim-snippets'                 " snippets repo
 
     "-------------------=== Languages support ===-------------------
-    Plugin 'scrooloose/nerdcommenter'           " Easy code documentation
+    Plugin 'preservim/nerdcommenter'           " Easy code documentation
     Plugin 'mitsuhiko/vim-sparkup'              " Sparkup(XML/jinja/htlm-django/etc.) support
 
     "-------------------=== Python  ===-----------------------------
@@ -104,7 +104,6 @@ endif
 set encoding=utf-8
 set t_Co=256                                " 256 colors
 set guifont=mononoki\ Nerd\ Font\ 18
-" set guifont=mononoki\-Regular\ Nerd\ Font\ Complete\ Mono 18
 colorscheme wombat256mod                    " set vim colorscheme
 let g:airline_theme='wombat'                " set airline theme
 syntax enable                               " enable syntax highlighting
@@ -230,7 +229,7 @@ let g:NERDDefaultAlign = 'left'
 let g:NERDAltDelims_java = 1
 
 " Add your own custom formats or override the defaults
-let g:NERDCustomDelimiters = { 'c': { 'left': '/**','right': '*/' } }
+let g:NERDCustomDelimiters = { 'c': { 'left': '/**', 'right': '*/' } }
 
 " Allow commenting and inverting empty lines (useful when commenting a region)
 let g:NERDCommentEmptyLines = 1
