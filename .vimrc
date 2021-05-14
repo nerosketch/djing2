@@ -426,6 +426,11 @@ au FileType gitcommit let b:EditorConfig_disable = 1  " disable for git commits
 " vno <up> <Nop>
 
 
+" My Key Bindings
+
+nnoremap <F2> :!git pull<cr>
+
+
 autocmd StdinReadPre * let g:isReadingFromStdin = 1
 autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | Startify | endif
 autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | NERDTree | endif

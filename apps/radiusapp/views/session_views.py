@@ -33,3 +33,9 @@ class CustomerRadiusSessionModelViewSet(DjingModelViewSet):
         session = self.get_object()
         tasks.async_finish_session_task(radius_uname=session.radius_username)
         return super().destroy(request, *args, **kwargs)
+
+    @action(methods=["post"], detail=True)
+    def free_session_request(self, request, *arsg, **kwargs):
+        session = self.get_object()
+        r = session.finish_session()
+        return Response(r)
