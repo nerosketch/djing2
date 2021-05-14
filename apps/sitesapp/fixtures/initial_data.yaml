@@ -1,0 +1,8 @@
+- model: sites.site
+  fields:
+    domain: example.com
+    name: example.com
+- model: sites.site
+  fields:
+    domain: localhost
+    name: localhost
