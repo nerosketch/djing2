@@ -1,0 +1,105 @@
+version: '3.5'
+services:
+  postgres:
+    container_name: postgres
+    hostname: postgres
+    image: postgres:alpine
+    secrets:
+      - POSTGRES_PASSWORD
+      - DJANGO_SECRET_KEY
+    stop_grace_period: 1m
+    ports:
+      - 5432:5432
+    restart: on-failure
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+      - /tmp:/tmp
+      - /etc/localtime:/etc/localtime
+    env_file:
+      - .env_db_credentials
+    #networks: app_net_backend
+  app:
+    build:
+      context: djing2_app/
+      dockerfile: Dockerfile_dev
+    hostname: app
+    depends_on:
+      - postgres
+    ports:
+      - 8000:8000
+    secrets:
+      - POSTGRES_PASSWORD
+      - DJANGO_SECRET_KEY
+      - VAPID_PUBLIC_KEY
+      - VAPID_PRIVATE_KEY
+      - FIELD_ENCRYPTION_KEY
+      - API_AUTH_SECRET
+    env_file:
+      - .env_djing2_app
+      - .env_db_credentials
+    volumes:
+      - media-data:/var/www/djing2/media
+      - ../:/var/www/djing2
+      - /tmp:/tmp
+      - /etc/localtime:/etc/localtime
+      - ~/.gitconfig:/root/.gitconfig
+    #networks: app_net_backend
+  ui:
+    build: djing2-ui/
+    stop_grace_period: 1m
+    user: node
+    ports:
+      - 8080:8080
+    volumes:
+      - /home/ns/Projects/djing2-elui:/home/node/app
+      - /tmp:/tmp
+      - /etc/localtime:/etc/localtime
+  ws:
+    build: ws/
+    ports:
+      - 3211:3211
+  djing2freeradius:
+    build: djing2freeradius/
+    depends_on:
+      - app
+    ports:
+      - 1812:1812
+      - 1813:1813
+#      - 67:67
+volumes:
+  media-data:
+  postgresql-data:
+
+secrets:
+  POSTGRES_PASSWORD:
+    file: ./secrets/POSTGRES_PASSWORD
+  DJANGO_SECRET_KEY:
+    file: ./secrets/DJANGO_SECRET_KEY
+  API_AUTH_SECRET:
+    file: ./secrets/API_AUTH_SECRET
+  FIELD_ENCRYPTION_KEY:
+    file: ./secrets/FIELD_ENCRYPTION_KEY
+  VAPID_PUBLIC_KEY:
+    file: ./secrets/VAPID_PUBLIC_KEY
+  VAPID_PRIVATE_KEY:
+    file: ./secrets/VAPID_PRIVATE_KEY
+
+
+#networks:
+#  app_net_frontend:
+#    driver: bridge
+#    driver_opts:
+#      com.docker.network.enable_ipv6: "false"
+#    ipam:
+#      driver: default
+#      config:
+#      - subnet: 172.16.238.0/24
+#  app_net_backend:
+#    driver: bridge
+#    driver_opts:
+#      com.docker.network.enable_ipv6: "false"
+#    internal: true
+#    ipam:
+#      driver: default
+#      config:
+#      - subnet: 172.16.239.0/24
