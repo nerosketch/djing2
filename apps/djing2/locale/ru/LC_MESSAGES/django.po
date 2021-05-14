@@ -1,0 +1,40 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-04-02 14:02+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: lib/authenticators.py:14
+msgid "Invalid token."
+msgstr "Не правильный токен"
+
+#: lib/authenticators.py:17
+msgid "User inactive or deleted."
+msgstr "Пользователь не активен или удалён"
+
+#: settings.py:178
+msgid "Russian"
+msgstr "Русский"
+
+#: views.py:55
+msgid ""
+"Search customers and devices globally entire all system. Customer search "
+"provides by username, fio, and telephone. Devices search provides by ip "
+"address, mac address, and comment."
+msgstr ""
+"Ищет пользователей и устройства по всей системе. Пользователь ищется по "
+"логину, фио, и номеру телефона. Устройства ищутся по ip адресу, мак адресу, "
+"и его названию."
