@@ -52,16 +52,12 @@ class AllowedSubnetMixin:
         """
         ip = ip_address(request.META.get("REMOTE_ADDR"))
         api_auth_subnet = getattr(settings, "API_AUTH_SUBNET")
-        if isinstance(api_auth_subnet, str):
+        if isinstance(api_auth_subnet, (str, bytes)):
             if ip in ip_network(api_auth_subnet):
                 return super().dispatch(request, *args, **kwargs)
-        else:
-            try:
-                for subnet in api_auth_subnet:
-                    if ip in ip_network(subnet, strict=False):
-                        return super().dispatch(request, *args, **kwargs)
-            except TypeError:
-                if ip in ip_network(str(api_auth_subnet)):
+        elif isinstance(api_auth_subnet, (list, tuple)):
+            for subnet in api_auth_subnet:
+                if ip in ip_network(subnet, strict=False):
                     return super().dispatch(request, *args, **kwargs)
         return JsonResponseForbidden("Bad Subnet")
 
