@@ -129,7 +129,7 @@ def export_all_service_nomenclature():
 def export_all_ip_leases():
     leases = CustomerIpLeaseModel.objects.filter(
         is_dynamic=False
-    )
+    ).exclude(customer=None)
     data, fname = export_ip_leases(
         leases=leases,
         event_time=datetime.now()
