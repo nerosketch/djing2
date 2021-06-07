@@ -69,9 +69,9 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             "/api/customers/%d/pick_service/" % self.customer.pk,
             {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
         )
-        self.customer.refresh_from_db()
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertFalse(r.content)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.customer.refresh_from_db()
         self.assertEqual(self.customer.balance, -2)
         self.assertEqual(self.customer.current_service.service, self.service)
 
