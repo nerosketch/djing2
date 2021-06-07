@@ -4,12 +4,14 @@ from typing import Optional
 from django.db.models.signals import post_save, pre_save, pre_delete
 from django.dispatch.dispatcher import receiver
 
+from customers.custom_signals import customer_service_post_pick
 from customers.models import (
     Customer, PassportInfo, CustomerService,
     CustomerRawPassword, AdditionalTelephone,
     PeriodicPayForId
 )
 from sorm_export.hier_export.customer import export_individual_customer
+from sorm_export.models import ExportFailedStatus
 from sorm_export.tasks.customer import (
     customer_service_export_task,
     customer_service_manual_data_export_task,
@@ -18,8 +20,8 @@ from sorm_export.tasks.customer import (
 
 
 @receiver(pre_save, sender=Customer)
-def customer_post_save_signal(sender, instance: Customer,
-                              update_fields=None, **kwargs):
+def customer_pre_save_signal(sender, instance: Customer,
+                             update_fields=None, **kwargs):
     if update_fields is None:
         # all fields updated
         old_inst = sender.objects.filter(pk=instance.pk).first()
@@ -56,17 +58,22 @@ def customer_post_save_signal(sender, instance: Customer,
                 event_time=now
             )
 
-    elif 'current_service' in update_fields and instance.current_service:
-        # start service for customer
-        customer_service_export_task(
-            customer_service_id_list=[instance.current_service.pk],
-            event_time=str(datetime.now())
-        )
+
+@receiver(customer_service_post_pick, sender=Customer)
+def customer_post_pick_service_signal_handler(sender, customer: Customer, service, **kwargs):
+    if not customer.current_service_id:
+        raise ExportFailedStatus('Customer has not current_service')
+
+    # start service for customer
+    customer_service_export_task(
+        customer_service_id_list=[int(customer.current_service_id)],
+        event_time=str(datetime.now())
+    )
 
 
 @receiver(post_save, sender=PassportInfo)
 def customer_passport_info_post_save_signal(sender, instance: Optional[PassportInfo] = None,
-                                            created=False, **kwargs):
+                                            **kwargs):
     cs = Customer.objects.filter(passportinfo=instance)
     if cs.exists():
         export_individual_customer(
@@ -108,11 +115,12 @@ def customer_passport_info_post_save_signal(sender, instance: Optional[PassportI
 @receiver(pre_delete, sender=CustomerService)
 def customer_service_deleted(sender, instance: CustomerService, **kwargs):
     # customer service end of life
+    srv = instance.service
     if instance.customer:
         dat = [{
-            'service_id': instance.service.pk,
+            'service_id': srv.pk,
             'idents': instance.customer.pk,
-            'parameter': instance.service.descr,
+            'parameter': srv.descr or str(srv),
             'begin_time': instance.start_time,
             'end_time': datetime.now()
         }]
