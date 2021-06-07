@@ -93,6 +93,8 @@ class CustomerService(BaseAbstractModel):
 
     @staticmethod
     def get_user_credentials_by_ip(ip_addr: str):
+        if not ip_addr:
+            return None
         try:
             ip_addr = IPv4Address(ip_addr)
         except AddressValueError:

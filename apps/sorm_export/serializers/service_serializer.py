@@ -37,6 +37,5 @@ class ServiceIncrementalNomenclature(serializers.Serializer):
     operator_type_id = serializers.ChoiceField(
         label=_('Operator type id'),
         choices=CommunicationStandardChoices.choices,
-        # FIXME: В описании вроде enum(str), а в остальных местах int
-        default=CommunicationStandardChoices.ETHERNET
+        default=CommunicationStandardChoices.ETHERNET.label
     )
