@@ -25,7 +25,7 @@ def export_nomenclature(services: Iterable[Service], event_time=None):
             # end_time 36525 дней (~100 лет), типо бесконечно. Т.к. для вида услуги нет даты завершения,
             # как и нет даты окончания действия какого-то имени, например.
             'end_time': srv.create_time.date() + timedelta(days=36525),
-            'operator_type_id': CommunicationStandardChoices.ETHERNET
+            'operator_type_id': CommunicationStandardChoices.ETHERNET.label
         }
 
     return (
