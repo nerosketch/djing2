@@ -54,18 +54,18 @@ class ExportStampModel(models.Model):
         db_table = 'sorm_export_stamp'
 
 
-class CommunicationStandardChoices(models.IntegerChoices):
-    NOT_CONCRETE = 0, _('Not concrete')
-    GSM = 1, 'GSM'
-    CDMA = 2, 'CDMA'
-    PSTN = 3, _('PSTN')  # ТФоП сеть
-    ETHERNET = 4, _('Ethernet')  # стационарные сети передачи данных
-    TMC = 5, _('TMC')
-    MOBILE = 6, _('Mobile')
-    WIFI = 7, 'WIFI'
-    WiMAX = 8, 'WiMAX'
-    paging = 9, _('Personal radio call')
-    VOIP = 10, 'VOIP SIP'  # сеть передачи голосовой информации посредством сети передачи данных
+class CommunicationStandardChoices(models.TextChoices):
+    NOT_CONCRETE = 'unknown', _('Not concrete')
+    GSM = 'GSM', 'GSM'
+    CDMA = 'CDMA', 'CDMA'
+    PSTN = 'PSTN', _('PSTN')  # ТФоП сеть
+    ETHERNET = 'Ethernet', _('Ethernet')  # стационарные сети передачи данных
+    TMC = 'TMC', _('TMC')
+    MOBILE = 'mobile', _('Mobile')
+    WIFI = 'WIFI', 'WIFI'
+    WiMAX = 'WIMAX', 'WiMAX'
+    paging = 'paging', _('Personal radio call')
+    VOIP = 'VOIP', 'VOIP SIP'  # сеть передачи голосовой информации посредством сети передачи данных
 
 
 class CustomerTypeChoices(models.IntegerChoices):
