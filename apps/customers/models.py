@@ -124,7 +124,7 @@ class CustomerService(BaseAbstractModel):
         current_service_id = safe_int(current_service_id)
         # TODO: make tests for it
         with connection.cursor() as cur:
-            query = "SELECT * FROM " "find_customer_service_by_device_credentials(%s, %s)"
+            query = "SELECT * FROM find_customer_service_by_device_credentials(%s, %s)"
             cur.execute(query, [customer_id, current_service_id])
             res = cur.fetchone()
         if res is None or res[0] is None:
