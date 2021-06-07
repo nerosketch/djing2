@@ -46,7 +46,7 @@ def export_customer_service(cservices: Iterable[CustomerService], event_time=Non
         return {
             'service_id': srv.pk,
             'idents': cs.customer.pk,
-            'parameter': srv.descr,
+            'parameter': srv.descr or str(srv),
             'begin_time': cs.start_time,
             'end_time': cs.deadline
         }
