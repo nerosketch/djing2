@@ -24,4 +24,4 @@ def export_ip_leases(leases: Iterable[CustomerIpLeaseModel], event_time=None):
     ser = networks.CustomerIpLeaseExportFormat(
         data=dat, many=True
     )
-    return ser, f'/home/cdr/ISP/abonents/ip_nets_v1_{format_fname(event_time)}.txt'
+    return ser, f'ISP/abonents/ip_nets_v1_{format_fname(event_time)}.txt'
