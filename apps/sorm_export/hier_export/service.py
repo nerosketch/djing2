@@ -30,7 +30,7 @@ def export_nomenclature(services: Iterable[Service], event_time=None):
 
     return (
         ServiceIncrementalNomenclature, gen, services,
-        f'/home/cdr/ISP/abonents/service_list_v1_{format_fname(event_time)}.txt'
+        f'ISP/abonents/service_list_v1_{format_fname(event_time)}.txt'
     )
 
 
@@ -53,7 +53,7 @@ def export_customer_service(cservices: Iterable[CustomerService], event_time=Non
 
     return (
         CustomerServiceIncrementalFormat, gen, cservices,
-        f'/home/cdr/ISP/abonents/services_{format_fname(event_time)}.txt'
+        f'ISP/abonents/services_{format_fname(event_time)}.txt'
     )
 
 
@@ -62,4 +62,4 @@ def export_manual_data_customer_service(data, event_time=None):
     ser = CustomerServiceIncrementalFormat(
         data=data, many=True
     )
-    return ser, f'/home/cdr/ISP/abonents/services_{format_fname(event_time)}.txt'
+    return ser, f'ISP/abonents/services_{format_fname(event_time)}.txt'

@@ -24,7 +24,7 @@ from networks.models import CustomerIpLeaseModel
 
 
 def export_all_root_customers():
-    customers = Customer.objects.filter(is_active=True)
+    customers = Customer.objects.filter()
     data, fname = export_customer_root(
         customers=customers,
         event_time=datetime.now()
@@ -33,7 +33,7 @@ def export_all_root_customers():
 
 
 def export_all_customer_contracts():
-    customers = Customer.objects.filter(is_active=True)
+    customers = Customer.objects.filter()
     data, fname = export_contract(
         customers=customers,
         event_time=datetime.now()
@@ -42,7 +42,7 @@ def export_all_customer_contracts():
 
 
 def export_all_customer_addresses():
-    customers = Customer.objects.filter(is_active=True).exclude(group__fiasaddr=None)
+    customers = Customer.objects.exclude(group__fiasaddr=None)
     et = datetime.now()
     data = []
     fname = None
@@ -60,7 +60,7 @@ def export_all_customer_addresses():
 
 
 def export_all_access_point_addresses():
-    customers = Customer.objects.filter(is_active=True)
+    customers = Customer.objects.all()
     data, fname = export_access_point_address(
         customers=customers,
         event_time=datetime.now()
@@ -69,7 +69,7 @@ def export_all_access_point_addresses():
 
 
 def export_all_individual_customers():
-    customers = Customer.objects.select_related('passportinfo').filter(is_active=True)
+    customers = Customer.objects.select_related('passportinfo')
     data, fname = export_individual_customer(
         customers=customers,
         event_time=datetime.now()
@@ -78,7 +78,7 @@ def export_all_individual_customers():
 
 
 def export_all_legal_customers():
-    customers = Customer.objects.filter(is_active=True)
+    customers = Customer.objects.all()
     data, fname = export_legal_customer(
         customers=customers,
         event_time=datetime.now()
@@ -87,7 +87,7 @@ def export_all_legal_customers():
 
 
 def export_all_customer_contacts():
-    customers = Customer.objects.filter(is_active=True).only('pk', 'telephone', 'username', 'fio')
+    customers = Customer.objects.all().only('pk', 'telephone', 'username', 'fio')
     customer_tels = [{
         'customer_id': c.pk,
         'contact': '%s %s' % (c.get_full_name(), c.telephone),
@@ -156,11 +156,11 @@ class Command(BaseCommand):
             (export_all_customer_addresses, 'Customer addresses export'),
             (export_all_access_point_addresses, 'Customer ap export'),
             (export_all_individual_customers, 'Customer individual export'),
-            (export_all_legal_customers, 'Customer legal export'),
+            #(export_all_legal_customers, 'Customer legal export'),
             (export_all_customer_contacts, 'Customer contacts export'),
             (export_all_ip_leases, 'Network static leases export'),
             (export_all_service_nomenclature, 'Services export status'),
-            (export_all_customer_services, 'Customer services export status')
+            #(export_all_customer_services, 'Customer services export status')
         )
         for fn, msg in funcs:
             try:
