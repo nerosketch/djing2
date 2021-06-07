@@ -34,8 +34,7 @@ class ServiceIncrementalNomenclature(serializers.Serializer):
         required=False,
         allow_null=True
     )
-    operator_type_id = serializers.ChoiceField(
+    operator_type_id = serializers.CharField(
         label=_('Operator type id'),
-        choices=CommunicationStandardChoices.choices,
         default=CommunicationStandardChoices.ETHERNET.label
     )
