@@ -472,9 +472,9 @@ class Customer(BaseAccount):
             if self.current_service.service == service:
                 # if service already connected
                 raise LogicError(_("That service already activated"))
-            else:
-                # if service is present then speak about it
-                raise LogicError(_("Service already activated"))
+
+            # if service is present then speak about it
+            raise LogicError(_("Service already activated"))
 
         if allow_negative and not author.is_staff:
             raise LogicError(_("User, who is no staff, can not be buy services on credit"))
