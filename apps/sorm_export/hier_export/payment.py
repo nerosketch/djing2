@@ -26,4 +26,4 @@ def export_customer_unknown_payment(pays: Iterable[AllTimePayLog], event_time=No
     ser = UnknownPaymentExportFormat(
         data=dat, many=True
     )
-    return ser, f'/home/cdr/ISP/abonents/payments_v1_{format_fname(event_time)}.txt'
+    return ser, f'ISP/abonents/payments_v1_{format_fname(event_time)}.txt'
