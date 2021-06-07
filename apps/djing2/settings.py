@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     "traf_stat.apps.TrafStatConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
+    "sorm_export.apps.SormExportConfig",
 ]
 
 if DEBUG:
@@ -299,3 +300,7 @@ ARPING_COMMAND = getattr(local_settings, "ARPING_COMMAND", "/usr/sbin/arping")
 # SITE_ID = 1
 
 WEBPUSH_SETTINGS = getattr(local_settings, "WEBPUSH_SETTINGS")
+
+DEFAULT_FTP_CREDENTIALS = getattr(
+    local_settings, "DEFAULT_FTP_CREDENTIALS", {"host": "localhost", "uname": "user", "password": "******"}
+)
