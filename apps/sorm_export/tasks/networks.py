@@ -12,7 +12,7 @@ from sorm_export.tasks.task_export import task_export
 def export_ip_leases_task(customer_lease_id_list: List[int], event_time=None):
     leases = CustomerIpLeaseModel.objects.filter(
         pk__in=customer_lease_id_list
-    )
+    ).exclude(customer=None)
     try:
         data, fname = export_ip_leases(
             leases=leases,
