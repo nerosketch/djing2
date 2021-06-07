@@ -46,7 +46,7 @@ def on_pre_stop_cust_srv_signal(sender, expired_service, **kwargs):
             logging.error('Session "%s" not changed inet -> guest' % session)
 
 
-@receiver(customer_custom_signals.customer_service_post_pick, sender=Customer, dispatch_uid="on_pre_pick_cust_srv*$@0")
+@receiver(customer_custom_signals.customer_service_post_pick, sender=Customer, dispatch_uid="on_post_pick_cust_srv*$@0")
 def on_post_pick_cust_srv_signal(sender, customer, service, **kwargs):
     """
     When customer picked service then reset his session.

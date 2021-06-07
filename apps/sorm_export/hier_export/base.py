@@ -31,7 +31,7 @@ def iterable_export_decorator(fn):
         serializer_class, gen_fn, qs, fname = fn(event_time=event_time, *args, **kwargs)
 
         res_data = map(gen_fn, qs.iterator())
-        res_data = list(r for r in res_data if r)
+        res_data = [r for r in res_data if r]
         ser = serializer_class(
             data=res_data, many=True
         )
