@@ -67,7 +67,7 @@ def customer_post_save_signal(sender, instance: Customer,
 @receiver(post_save, sender=PassportInfo)
 def customer_passport_info_post_save_signal(sender, instance: Optional[PassportInfo] = None,
                                             created=False, **kwargs):
-    cs = Customer.objects.filter(is_active=True, passportinfo=instance)
+    cs = Customer.objects.filter(passportinfo=instance)
     if cs.exists():
         export_individual_customer(
             customers=cs

@@ -26,7 +26,7 @@ def task_export(data, filename: str, export_type: ExportStampTypeEnum):
     )
     try:
         csv_buffer = _Conv2BinStringIO()
-        csv_writer = csv.writer(csv_buffer, dialect='unix')
+        csv_writer = csv.writer(csv_buffer, dialect='unix', delimiter=';')
         for row_data in data:
             row = (eld for elt, eld in row_data.items())
             csv_writer.writerow(row)

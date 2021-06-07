@@ -23,6 +23,7 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
     def gen(customer: Customer):
         return {
             'customer_id': customer.pk,
+            'legal_customer_id': customer.pk,
             'contract_start_date': customer.create_date,
             'customer_login': customer.username,
             'communication_standard': CommunicationStandardChoices.ETHERNET
@@ -31,7 +32,7 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
     return (
         individual_entity_serializers.CustomerRootObjectFormat,
         gen, customers,
-        f'/home/cdr/ISP/abonents/abonents_v1_{format_fname(event_time)}.txt'
+        f'ISP/abonents/abonents_v1_{format_fname(event_time)}.txt'
     )
 
 
@@ -57,7 +58,7 @@ def export_contract(customers: Iterable[Customer], event_time=None):
     return (
         individual_entity_serializers.CustomerContractObjectFormat,
         gen, customers,
-        f'/home/cdr/ISP/abonents/contracts_{format_fname(event_time)}.txt'
+        f'ISP/abonents/contracts_{format_fname(event_time)}.txt'
     )
 
 
@@ -99,7 +100,7 @@ def export_address(customer: Customer, event_time=None):
     ser = individual_entity_serializers.CustomerAddressObjectFormat(
         data=dat.reverse(), many=True
     )
-    return ser, f'/home/cdr/ISP/abonents/regions_{format_fname(event_time)}.txt'
+    return ser, f'ISP/abonents/regions_{format_fname(event_time)}.txt'
 
 
 @iterable_export_decorator
@@ -139,7 +140,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
     return (
         individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
         gen, customers.select_related('group', 'group__fiasaddr', 'group__fiasaddr__fias_recursive_address'),
-        f'/home/cdr/ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt'
+        f'ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt'
     )
 
 
@@ -190,7 +191,7 @@ def export_individual_customer(customers: Iterable[Customer], event_time=None):
             'group', 'group__fiasaddr',
             'group__fiasaddr__fias_recursive_address'
         ),
-        f'/home/cdr/ISP/abonents/fiz_v1_{format_fname(event_time)}.txt'
+        f'ISP/abonents/fiz_v1_{format_fname(event_time)}.txt'
     )
 
 
@@ -208,7 +209,7 @@ def export_legal_customer(customers: Iterable[Customer], event_time=None):
     # return (
     #     individual_entity_serializers.CustomerLegalObjectFormat,
     #     gen, customers,
-    #     f'/home/cdr/ISP/abonents/jur_v4_{format_fname(event_time)}.txt'
+    #     f'ISP/abonents/jur_v4_{format_fname(event_time)}.txt'
     # )
 
 
@@ -222,4 +223,4 @@ def export_contact(customer_tels, event_time=None):
     ser = individual_entity_serializers.CustomerContactObjectFormat(
         data=customer_tels, many=True
     )
-    return ser, f'/home/cdr/ISP/abonents/contact_phones_v1_{format_fname(event_time)}.txt'
+    return ser, f'ISP/abonents/contact_phones_v1_{format_fname(event_time)}.txt'
