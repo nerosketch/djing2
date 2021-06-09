@@ -106,15 +106,7 @@ class FtpCredentialsModel(models.Model):
 """
 
 
-class FiasAddrGroupModel(models.Model):
-    group = models.OneToOneField(Group, on_delete=models.CASCADE, related_name='fiasaddr')
-    fias_recursive_address = models.ForeignKey('FiasRecursiveAddressModel', on_delete=models.CASCADE)
-
-    class Meta:
-        db_table = 'sorm_fias_addr_group'
-
-
-ao_type_choices = ((num, '%s %s' % name) for lev, inf in AddressFIASInfo.items() for num, name in inf.items())
+ao_type_choices = ((num, '%s (%s)' % name) for lev, inf in AddressFIASInfo.items() for num, name in inf.items())
 
 
 class FiasRecursiveAddressModel(models.Model):
@@ -131,11 +123,7 @@ class FiasRecursiveAddressModel(models.Model):
         _('AO Type'),
         choices=ao_type_choices
     )
-    groups = models.ManyToManyField(
-        Group,
-        through=FiasAddrGroupModel,
-        through_fields=('fias_recursive_address', 'group')
-    )
+    groups = models.ManyToManyField(Group)
 
     def __str__(self):
         return self.title
