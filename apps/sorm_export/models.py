@@ -123,7 +123,7 @@ class FiasRecursiveAddressModel(models.Model):
         _('AO Type'),
         choices=ao_type_choices
     )
-    groups = models.ManyToManyField(Group)
+    groups = models.ManyToManyField(Group, blank=True)
 
     def __str__(self):
         return self.title
