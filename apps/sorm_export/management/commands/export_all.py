@@ -9,7 +9,7 @@ from customers.models import (
 from services.models import Service
 from sorm_export.hier_export.customer import (
     export_customer_root, export_contract,
-    export_address, export_access_point_address,
+    export_address_object, export_access_point_address,
     export_individual_customer, export_legal_customer,
     export_contact
 )
@@ -17,7 +17,7 @@ from sorm_export.hier_export.networks import export_ip_leases
 from sorm_export.hier_export.service import (
     export_nomenclature, export_customer_service
 )
-from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
+from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus, FiasRecursiveAddressModel
 from sorm_export.tasks.task_export import task_export
 
 from networks.models import CustomerIpLeaseModel
@@ -41,18 +41,20 @@ def export_all_customer_contracts():
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTRACT)
 
 
-def export_all_customer_addresses():
-    customers = Customer.objects.exclude(group__fiasaddr=None)
+def export_all_address_objects():
+    # TODO: filter recursive
+    addr_objects = FiasRecursiveAddressModel.objects.order_by('ao_level')
     et = datetime.now()
     data = []
     fname = None
-    for customer in customers.iterator():
+    for addr_object in addr_objects.iterator():
         try:
-            dat, fname = export_address(
-                customer=customer,
+            dat, fname = export_address_object(
+                addr_obj=addr_object,
                 event_time=et
             )
-            data.append(dat)
+
+            data.extend(dat)
         except ExportFailedStatus as err:
             print('ERROR:', err)
     if fname is not None and len(data) > 0:
@@ -151,15 +153,15 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any):
         funcs = (
-            (export_all_root_customers, 'Customers root export'),
-            (export_all_customer_contracts, 'Customer contracts export'),
-            (export_all_customer_addresses, 'Customer addresses export'),
-            (export_all_access_point_addresses, 'Customer ap export'),
-            (export_all_individual_customers, 'Customer individual export'),
+            (export_all_address_objects, 'Address objects export'),
+            # (export_all_root_customers, 'Customers root export'),
+            # (export_all_customer_contracts, 'Customer contracts export'),
+            # (export_all_access_point_addresses, 'Customer ap export'),
+            # (export_all_individual_customers, 'Customer individual export'),
             #(export_all_legal_customers, 'Customer legal export'),
-            (export_all_customer_contacts, 'Customer contacts export'),
-            (export_all_ip_leases, 'Network static leases export'),
-            (export_all_service_nomenclature, 'Services export status'),
+            # (export_all_customer_contacts, 'Customer contacts export'),
+            # (export_all_ip_leases, 'Network static leases export'),
+            # (export_all_service_nomenclature, 'Services export status'),
             #(export_all_customer_services, 'Customer services export status')
         )
         for fn, msg in funcs:
