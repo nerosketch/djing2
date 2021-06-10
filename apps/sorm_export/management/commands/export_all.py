@@ -42,7 +42,6 @@ def export_all_customer_contracts():
 
 
 def export_all_address_objects():
-    # TODO: filter recursive
     addr_objects = FiasRecursiveAddressModel.objects.order_by('ao_level')
     et = datetime.now()
     data = []
@@ -50,11 +49,11 @@ def export_all_address_objects():
     for addr_object in addr_objects.iterator():
         try:
             dat, fname = export_address_object(
-                addr_obj=addr_object,
+                fias_addr=addr_object,
                 event_time=et
             )
 
-            data.extend(dat)
+            data.append(dat)
         except ExportFailedStatus as err:
             print('ERROR:', err)
     if fname is not None and len(data) > 0:
