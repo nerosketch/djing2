@@ -23,4 +23,9 @@ class Migration(migrations.Migration):
         migrations.DeleteModel(
             name='FiasAddrGroupModel',
         ),
+        migrations.RunSQL(
+            sql="create unique index if not exists sorm_address_groups_groupid_uniq "
+                "on sorm_address_groups (group_id);",
+            reverse_sql="drop index if exists sorm_address_groups_groupid_uniq;"
+        )
     ]
