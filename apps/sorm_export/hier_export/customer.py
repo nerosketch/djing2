@@ -133,7 +133,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
 @iterable_export_decorator
 def export_individual_customer(customers_queryset, event_time=None):
     """
-    Файл выгрузки данных о физическом лице, версия 1
+    Файл выгрузки данных о физическом лице, версия 2
     В этом файле выгружается информация об абонентах, у которых контракт заключён с физическим лицом.
     Выгружаются только абоненты с паспортными данными.
     """
