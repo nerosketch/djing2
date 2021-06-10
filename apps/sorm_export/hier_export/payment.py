@@ -13,13 +13,12 @@ def export_customer_unknown_payment(pays: Iterable[AllTimePayLog], event_time=No
     совершённых абонентами. Выгрузка является потоковой,
     т.е. необходимо выгружать только новые события платежей
     за время, прошедшее с последней выгрузки.
-    TODO: Узнать можно-ли вообще выгружать инфу по платежам
     """
     dat = [{
         'customer_id': pay.customer_id,
         'pay_time': pay.date_add,
         'amount': pay.sum,
-        'pay_description': '',  # TODO: Можно-ли указывать какой это платёж
+        'pay_description': 'Безналичный',  # TODO: Можно-ли указывать какой это платёж
         # 'pay_params': lease.mac_address
     } for pay in pays]
 
