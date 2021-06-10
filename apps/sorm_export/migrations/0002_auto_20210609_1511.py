@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='fiasrecursiveaddressmodel',
             name='groups',
-            field=models.ManyToManyField(to='groupapp.Group')
+            field=models.ManyToManyField(to='groupapp.Group', blank=True)
         ),
         migrations.DeleteModel(
             name='FiasAddrGroupModel',
