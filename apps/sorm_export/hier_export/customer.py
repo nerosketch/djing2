@@ -5,7 +5,8 @@ from customers.models import Customer
 from sorm_export.models import (
     CommunicationStandardChoices,
     CustomerDocumentTypeChoices,
-    ExportFailedStatus
+    ExportFailedStatus,
+    FiasRecursiveAddressModel
 )
 from sorm_export.serializers import individual_entity_serializers
 from .base import iterable_export_decorator, simple_export_decorator, format_fname
@@ -63,42 +64,34 @@ def export_contract(customers: Iterable[Customer], event_time=None):
 
 
 @simple_export_decorator
-def export_address(customer: Customer, event_time=None):
+def export_address_object(addr_obj: FiasRecursiveAddressModel, event_time=None):
     """
     Файл выгрузки адресных объектов.
     В этом файле выгружается иерархия адресных объектов, которые фигурируют
     в адресах прописки и точек подключения оборудования.
     За один вызов этой процедуры выгружается адресная
-    инфа по одному абоненту. Чтобы выгрузить адресы по пачке абонентов
+    инфа по одному адресному аобъекту. Чтобы выгрузить несколько адресных объектов -
     можно вызвать её в цикле.
     """
 
-    # 1 - находим группу абонента
-    group = customer.group
-    # получаем населённый пункт по группе
-    # TODO: Optimize
-    if not hasattr(group, 'fiasaddr'):
-        raise ExportFailedStatus('Customer "%s" group has not fias addr' % customer.get_short_name())
-    if not hasattr(group.fiasaddr, 'fias_recursive_address'):
-        raise ExportFailedStatus('fias addr has not info')
-    addr_group = group.fiasaddr.fias_recursive_address
-
-    # Получаем иерархию адресных объектов абонента
+    fias_addr = addr_obj
 
     dat = []
-    while addr_group is not None:
+    while fias_addr is not None:
         dat.append({
-            'address_id': addr_group.pk,
-            'parent_id': addr_group.parent_ao_id,
-            'type_id': addr_group.ao_type,
-            'region_type': addr_group.get_ao_type_display(),
-            'title': addr_group.title,
-            'full_title': "%s %s" % (addr_group.get_ao_type_display(), addr_group.title)
+            'address_id': str(fias_addr.pk),
+            'parent_id': str(fias_addr.parent_ao_id) if fias_addr.parent_ao_id is not None else '',
+            'type_id': fias_addr.ao_type,
+            'region_type': fias_addr.get_ao_type_display(),
+            'title': fias_addr.title,
+            'full_title': "%s %s" % (fias_addr.get_ao_type_display(), fias_addr.title)
         })
-        addr_group = addr_group.parent_ao
+        fias_addr = fias_addr.parent_ao
 
-    ser = individual_entity_serializers.CustomerAddressObjectFormat(
-        data=dat.reverse(), many=True
+    dat.reverse()
+
+    ser = individual_entity_serializers.AddressObjectFormat(
+        data=dat, many=True
     )
     return ser, f'ISP/abonents/regions_{format_fname(event_time)}.txt'
 
@@ -118,11 +111,11 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
         if not hasattr(customer, 'group'):
             return
         group = customer.group
-        if not hasattr(group, 'fiasaddr'):
+        if not hasattr(group, 'fiasrecursiveaddressmodel'):
             return
-        if not hasattr(group.fiasaddr, 'fias_recursive_address'):
+        if not hasattr(group.fiasrecursiveaddressmodel, 'fias_recursive_address'):
             return
-        addr_group = group.fiasaddr.fias_recursive_address
+        addr_group = group.fiasrecursiveaddressmodel.fias_recursive_address
         if not addr_group.parent_ao:
             return
         parent_id_ao = addr_group.parent_ao_id
@@ -139,7 +132,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
         }
     return (
         individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
-        gen, customers.select_related('group', 'group__fiasaddr', 'group__fiasaddr__fias_recursive_address'),
+        gen, customers.select_related('group', 'group__fiasrecursiveaddressmodel', 'group__fiasrecursiveaddressmodel__fias_recursive_address'),
         f'ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt'
     )
 
@@ -158,9 +151,9 @@ def export_individual_customer(customers: Iterable[Customer], event_time=None):
         if not hasattr(customer, 'group'):
             return
         group = customer.group
-        if not hasattr(group, 'fiasaddr') or not hasattr(group.fiasaddr, 'fias_recursive_address'):
+        if not hasattr(group, 'fiasrecursiveaddressmodel') or not hasattr(group.fiasrecursiveaddressmodel, 'fias_recursive_address'):
             return
-        addr_group = group.fiasaddr.fias_recursive_address
+        addr_group = group.fiasrecursiveaddressmodel.fias_recursive_address
         if not addr_group.parent_ao:
             return
         passport = customer.passportinfo
@@ -188,8 +181,8 @@ def export_individual_customer(customers: Iterable[Customer], event_time=None):
         gen, customers
             .exclude(passportinfo=None)
             .select_related(
-            'group', 'group__fiasaddr',
-            'group__fiasaddr__fias_recursive_address'
+            'group', 'group__fiasrecursiveaddressmodel',
+            'group__fiasrecursiveaddressmodel__fias_recursive_address'
         ),
         f'ISP/abonents/fiz_v1_{format_fname(event_time)}.txt'
     )
