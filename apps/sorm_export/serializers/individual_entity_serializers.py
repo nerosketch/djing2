@@ -73,7 +73,7 @@ class CustomerContractObjectFormat(serializers.Serializer):
     )
 
 
-class CustomerAddressObjectFormat(serializers.Serializer):
+class AddressObjectFormat(serializers.Serializer):
     address_id = serializers.CharField(
         label=_('Address id'),
         help_text="это может быть любой идентификатор: GUID, первичный ключ таблицы, код FIAS",
@@ -84,7 +84,8 @@ class CustomerAddressObjectFormat(serializers.Serializer):
         label=_('Parent address id'),
         help_text="для корневого а/о (страна) - пустое поле",
         max_length=128,
-        required=True
+        allow_blank=True,
+        default=''
     )
     type_id = serializers.IntegerField(
         label=_('Address type id'),
@@ -149,7 +150,7 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
         label=_('Parent ao id'),
         max_length=128,
         required=True
-    )  # CustomerAddressObjectFormat.address_id
+    )  # AddressObjectFormat.address_id
     type_id = serializers.CharField(default='', required=False)  # reserved
     type_ao = serializers.CharField(default='', required=False)  # reserved
     title = serializers.CharField(default='', required=False)  # reserved
@@ -272,7 +273,7 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         allow_null=True,
         allow_blank=True,
         default=None
-    )  # CustomerAddressObjectFormat.address_id
+    )  # AddressObjectFormat.address_id
     ao_type_id = serializers.CharField(default='', required=False)  # reserved
     ao_type = serializers.CharField(default='', required=False)  # reserved
     ao_title = serializers.CharField(default='', required=False)  # reserved
@@ -345,7 +346,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         label=_('Parent ao id'),
         max_length=128,
         required=True
-    )  # CustomerAddressObjectFormat.address_id
+    )  # AddressObjectFormat.address_id
     ao_type_id = serializers.CharField(default='', required=False)  # reserved
     ao_type = serializers.CharField(default='', required=False)  # reserved
     ao_title = serializers.CharField(default='', required=False)  # reserved
@@ -408,7 +409,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text='соответствует полю 1 в «Файле выгрузки адресных объектов»',
         max_length=128,
         required=True
-    )  # CustomerAddressObjectFormat.address_id
+    )  # AddressObjectFormat.address_id
     post_ao_type_id = serializers.CharField(default='', required=False)  # reserved
     post_ao_type = serializers.CharField(default='', required=False)  # reserved
     post_ao_title = serializers.CharField(default='', required=False)  # reserved
@@ -453,7 +454,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text='соответствует полю 1 в «Файле выгрузки адресных объектов»',
         max_length=128,
         required=True
-    )  # CustomerAddressObjectFormat.address_id
+    )  # AddressObjectFormat.address_id
     office_delivery_address_type_id = serializers.CharField(default='', required=False)  # reserved
     office_delivery_address_ao_type = serializers.CharField(default='', required=False)  # reserved
     office_delivery_address_ao_title = serializers.CharField(default='', required=False)  # reserved
