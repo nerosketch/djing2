@@ -64,7 +64,7 @@ def export_contract(customers: Iterable[Customer], event_time=None):
 
 
 @simple_export_decorator
-def export_address_object(addr_obj: FiasRecursiveAddressModel, event_time=None):
+def export_address_object(fias_addr: FiasRecursiveAddressModel, event_time=None):
     """
     Файл выгрузки адресных объектов.
     В этом файле выгружается иерархия адресных объектов, которые фигурируют
@@ -74,24 +74,17 @@ def export_address_object(addr_obj: FiasRecursiveAddressModel, event_time=None):
     можно вызвать её в цикле.
     """
 
-    fias_addr = addr_obj
-
-    dat = []
-    while fias_addr is not None:
-        dat.append({
-            'address_id': str(fias_addr.pk),
-            'parent_id': str(fias_addr.parent_ao_id) if fias_addr.parent_ao_id is not None else '',
-            'type_id': fias_addr.ao_type,
-            'region_type': fias_addr.get_ao_type_display(),
-            'title': fias_addr.title,
-            'full_title': "%s %s" % (fias_addr.get_ao_type_display(), fias_addr.title)
-        })
-        fias_addr = fias_addr.parent_ao
-
-    dat.reverse()
+    dat = {
+        'address_id': str(fias_addr.pk),
+        'parent_id': str(fias_addr.parent_ao_id) if fias_addr.parent_ao_id is not None else '',
+        'type_id': fias_addr.ao_type,
+        'region_type': fias_addr.get_ao_type_display(),
+        'title': fias_addr.title,
+        'full_title': "%s %s" % (fias_addr.get_ao_type_display(), fias_addr.title)
+    }
 
     ser = individual_entity_serializers.AddressObjectFormat(
-        data=dat, many=True
+        data=dat
     )
     return ser, f'ISP/abonents/regions_{format_fname(event_time)}.txt'
 
