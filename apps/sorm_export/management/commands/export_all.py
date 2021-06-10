@@ -113,11 +113,6 @@ def export_all_customer_contacts():
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTACT)
 
 
-# FIXME: ??? Можно-ли выгружать
-def export_all_customer_unknown_payments():
-    pass
-
-
 def export_all_service_nomenclature():
     services = Service.objects.all()
     data, fname = export_nomenclature(
