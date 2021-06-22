@@ -43,13 +43,16 @@ def export_customer_service(cservices: Iterable[CustomerService], event_time=Non
 
     def gen(cs: CustomerService):
         srv = cs.service
-        return {
-            'service_id': srv.pk,
-            'idents': cs.customer.pk,
-            'parameter': srv.descr or str(srv),
-            'begin_time': cs.start_time,
-            'end_time': cs.deadline
-        }
+        if cs.customer:
+            return {
+                'service_id': srv.pk,
+                'idents': cs.customer.pk,
+                'parameter': srv.descr or str(srv),
+                'begin_time': cs.start_time,
+                'end_time': cs.deadline
+            }
+        else:
+            return None
 
     return (
         CustomerServiceIncrementalFormat, gen, cservices,
