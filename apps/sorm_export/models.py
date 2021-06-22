@@ -1,5 +1,5 @@
 from django.utils.translation import gettext as _
-from django.contrib.postgres.fields import JSONField
+from django.db.models import JSONField
 from django.db import models
 from groupapp.models import Group
 from sorm_export.fias_socrbase import AddressFIASLevelChoices, AddressFIASInfo
