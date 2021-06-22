@@ -2,7 +2,7 @@ from django.apps import AppConfig
 
 
 class SormExportConfig(AppConfig):
-    name = 'sorm_export'
+    name = "sorm_export"
 
     def ready(self):
-        from sorm_export import signals
+        from sorm_export import signals  # noqa
