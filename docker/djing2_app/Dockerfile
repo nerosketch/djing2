@@ -20,7 +20,7 @@ COPY local_settings.py /usr/src/app/conf/apps/djing2
 
 WORKDIR /var/www/djing2
 
-CMD cp -Rv /usr/src/app/conf/* ./ \
+CMD cp -Rvu /usr/src/app/conf/* ./ \
     && ./manage.py migrate \
     && ./manage.py loaddata initial_data \
     #&& ./manage.py compilemessages -l ru \
