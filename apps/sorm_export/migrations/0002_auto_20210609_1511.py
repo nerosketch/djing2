@@ -23,6 +23,11 @@ class Migration(migrations.Migration):
         migrations.DeleteModel(
             name='FiasAddrGroupModel',
         ),
+        migrations.AlterField(
+            model_name='exportstampmodel',
+            name='data',
+            field=models.JSONField(verbose_name='Export event data'),
+        ),
         migrations.RunSQL(
             sql="create unique index if not exists sorm_address_groups_groupid_uniq "
                 "on sorm_address_groups (group_id);",
