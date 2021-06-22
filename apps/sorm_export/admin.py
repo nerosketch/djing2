@@ -1,3 +1,7 @@
 from django.contrib import admin
 
-# Register your models here.
+from sorm_export.models import ExportStampModel, FiasRecursiveAddressModel
+
+
+admin.site.register(ExportStampModel)
+admin.site.register(FiasRecursiveAddressModel)
