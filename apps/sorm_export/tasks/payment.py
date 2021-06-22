@@ -8,13 +8,8 @@ from sorm_export.models import ExportStampTypeEnum
 from sorm_export.tasks.task_export import task_export
 
 
-@task
+@task()
 def export_customer_payment_task(pay_log_id_list: List[int], event_time=None):
-    pay_logs = AllTimePayLog.objects.filter(
-        pk__in=pay_log_id_list
-    )
-    data, fname = export_customer_unknown_payment(
-        pays=pay_logs,
-        event_time=event_time
-    )
+    pay_logs = AllTimePayLog.objects.filter(pk__in=pay_log_id_list)
+    data, fname = export_customer_unknown_payment(pays=pay_logs, event_time=event_time)
     task_export(data, fname, ExportStampTypeEnum.PAYMENT_UNKNOWN)
