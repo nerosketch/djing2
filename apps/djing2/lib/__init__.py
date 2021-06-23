@@ -7,6 +7,8 @@ from json import JSONEncoder
 from typing import Any, Union
 
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ParseError, APIException
 
 
 def safe_float(fl: Any) -> float:
@@ -24,12 +26,14 @@ def safe_int(i: Any) -> int:
 
 
 # Exceptions
-class LogicError(Exception):
-    pass
+class LogicError(ParseError):
+    default_detail = _("Internal logic error")
 
 
-class DuplicateEntry(Exception):
+class DuplicateEntry(APIException):
     """Raises when raised IntegrityError in db"""
+
+    default_detail = _("Duplicate entry error")
 
 
 # Предназначен для Django CHOICES чтоб можно было передавать
