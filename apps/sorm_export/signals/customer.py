@@ -7,8 +7,7 @@ from django.dispatch.dispatcher import receiver
 from customers.custom_signals import customer_service_post_pick
 from customers.models import (
     Customer, PassportInfo, CustomerService,
-    CustomerRawPassword, AdditionalTelephone,
-    PeriodicPayForId
+    AdditionalTelephone
 )
 from sorm_export.hier_export.customer import export_individual_customer
 from sorm_export.models import ExportFailedStatus
@@ -22,8 +21,8 @@ from sorm_export.tasks.customer import (
 @receiver(pre_save, sender=Customer)
 def customer_pre_save_signal(sender, instance: Customer,
                              update_fields=None, **kwargs):
-    if update_fields is None:
-        # all fields updated
+    if update_fields is None or bool({'telephone', 'fio', 'username'}.intersection(update_fields)):
+        # all fields updated, or one of used fields is updated
         old_inst = sender.objects.filter(pk=instance.pk).first()
         if old_inst is None:
             return
@@ -130,10 +129,10 @@ def customer_service_deleted(sender, instance: CustomerService, **kwargs):
         )
 
 
-@receiver(post_save, sender=CustomerRawPassword)
-def customer_password_changed(sender, instance: Optional[CustomerRawPassword] = None,
-                              created=False, **kwargs):
-    pass
+# @receiver(post_save, sender=CustomerRawPassword)
+# def customer_password_changed(sender, instance: Optional[CustomerRawPassword] = None,
+#                              created=False, **kwargs):
+#    pass
 
 
 @receiver(pre_save, sender=AdditionalTelephone)
@@ -187,7 +186,7 @@ def customer_additional_telephone_post_delete_signal(sender, instance: Additiona
     )
 
 
-@receiver(post_save, sender=PeriodicPayForId)
-def customer_periodic_pay_post_save_signal(sender, instance: Optional[PeriodicPayForId] = None,
-                                           created=False, **kwargs):
-    pass
+# @receiver(post_save, sender=PeriodicPayForId)
+# def customer_periodic_pay_post_save_signal(sender, instance: Optional[PeriodicPayForId] = None,
+#                                           created=False, **kwargs):
+#    pass
