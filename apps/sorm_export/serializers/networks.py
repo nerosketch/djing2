@@ -9,7 +9,7 @@ from sorm_export.models import datetime_format
 class IpLeaseAddrTypeChoice(models.IntegerChoices):
     GRAY = 0, _('Gray addr')
     WHITE = 1, _('White addr')
-    VPN = 3, _('White addr')
+    VPN = 3, _('VPN addr')
 
 
 class CustomerIpLeaseExportFormat(serializers.Serializer):
