@@ -28,7 +28,7 @@ def export_all_root_customers():
 
 
 def export_all_customer_contracts():
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(is_active=True)
     data, fname = export_contract(customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTRACT)
 
@@ -50,25 +50,25 @@ def export_all_address_objects():
 
 
 def export_all_access_point_addresses():
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(is_active=True)
     data, fname = export_access_point_address(customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_AP_ADDRESS)
 
 
 def export_all_individual_customers():
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(is_active=True)
     data, fname = export_individual_customer(customers_queryset=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_INDIVIDUAL)
 
 
 def export_all_legal_customers():
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(is_active=True)
     data, fname = export_legal_customer(customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_LEGAL)
 
 
 def export_all_customer_contacts():
-    customers = Customer.objects.all().only("pk", "telephone", "username", "fio")
+    customers = Customer.objects.filter(is_active=True).only("pk", "telephone", "username", "fio")
     customer_tels = [
         {
             "customer_id": c.pk,
@@ -80,7 +80,7 @@ def export_all_customer_contacts():
     ]
 
     # export additional tels
-    tels = AdditionalTelephone.objects.select_related("customer")
+    tels = AdditionalTelephone.objects.filter(customer__is_active=True).select_related("customer")
     customer_tels.extend(
         {
             "customer_id": t.customer_id,
@@ -103,13 +103,13 @@ def export_all_service_nomenclature():
 
 
 def export_all_ip_leases():
-    leases = CustomerIpLeaseModel.objects.filter(is_dynamic=False).exclude(customer=None)
+    leases = CustomerIpLeaseModel.objects.exclude(customer=None).filter(customer__is_active=True, is_dynamic=False)
     data, fname = export_ip_leases(leases=leases, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.NETWORK_STATIC_IP)
 
 
 def export_all_customer_services():
-    csrv = CustomerService.objects.select_related("customer")
+    csrv = CustomerService.objects.select_related("customer").exclude(customer=None).filter(customer_is_active=True)
     data, fname = export_customer_service(cservices=csrv, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.SERVICE_CUSTOMER)
 
