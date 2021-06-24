@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
             field=models.JSONField(verbose_name='Export event data'),
         ),
         migrations.RunSQL(
-            sql=read_all_file("0002_auto_20210609_1511.py.sql", __file__),
+            sql=read_all_file("0002_auto_20210609_1511.sql", __file__),
             reverse_sql="ALTER TABLE sorm_address_groups drop CONSTRAINT "
                         "sorm_address_groups_groupsid_uniq;"
                         "DROP VIEW get_streets_as_addr_objects;"
