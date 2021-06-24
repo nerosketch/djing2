@@ -89,26 +89,27 @@ def export_address_object(fias_addr: FiasRecursiveAddressModel, event_time=None)
     return ser, f'ISP/abonents/regions_{format_fname(event_time)}.txt'
 
 
-def make_address_street_object(street: CustomerStreet, event_time=None):
+def make_address_street_objects():
     """
     Тут формируется формат выгрузки улицы в дополение в выгрузкам адресных объектов.
-    :param street: customers.CustomerStreet model instance.
-    :param event_time:
-    :return:
     """
-    # FIXME: расчитывать код улицы.
-    dat = {
-        'address_id': str(street.pk),
-        'parent_id': str(street.group_id),
-        'type_id': 6576,
-        'region_type': 'ул.',
-        'title': street.name,
-        'full_title': "ул. %s" % street.name
-    }
-    ser = individual_entity_serializers.AddressObjectFormat(
-        data=dat
-    )
-    return ser
+    streets = FiasRecursiveAddressModel.objects.get_streets_as_addr_objects()
+    for street in streets:
+        # FIXME: расчитывать код улицы.
+        street_id, parent_ao_id, parent_ao_type, street_name = street
+        dat = {
+            'address_id': str(street_id),
+            'parent_id': str(parent_ao_id),
+            'type_id': 6576,
+            'region_type': 'ул.',
+            'title': street_name,
+            'full_title': "ул. %s" % street_name
+        }
+        ser = individual_entity_serializers.AddressObjectFormat(
+            data=dat
+        )
+        ser.is_valid(raise_exception=True)
+        yield ser.data
 
 
 @iterable_export_decorator

@@ -8,7 +8,7 @@ from sorm_export.hier_export.customer import (
     export_customer_root,
     export_contract,
     export_address_object,
-    make_address_street_object,
+    make_address_street_objects,
     export_access_point_address,
     export_individual_customer,
     export_legal_customer,
@@ -34,17 +34,6 @@ def export_all_customer_contracts():
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTRACT)
 
 
-def export_all_address_streets() -> map:
-    streets = CustomerStreet.objects.all().iterator()
-    now = datetime.now()
-    def _make_street_obj(street):
-        ser = make_address_street_object(street, now)
-        ser.is_valid(raise_exception=True)
-        return ser.data
-
-    return map(_make_street_obj, streets)
-
-
 def export_all_address_objects():
     addr_objects = FiasRecursiveAddressModel.objects.order_by("ao_level")
     et = datetime.now()
@@ -57,7 +46,7 @@ def export_all_address_objects():
             data.append(dat)
         except ExportFailedStatus as err:
             print("ERROR:", err)
-    streets_data = export_all_address_streets()
+    streets_data = make_address_street_objects()
     data.extend(streets_data)
     if fname is not None and len(data) > 0:
         task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ADDRESS)
