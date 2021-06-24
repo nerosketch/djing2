@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Iterable
 
-from customers.models import Customer
+from customers.models import Customer, CustomerStreet
 from sorm_export.models import (
     CommunicationStandardChoices,
     CustomerDocumentTypeChoices,
@@ -70,7 +70,7 @@ def export_address_object(fias_addr: FiasRecursiveAddressModel, event_time=None)
     В этом файле выгружается иерархия адресных объектов, которые фигурируют
     в адресах прописки и точек подключения оборудования.
     За один вызов этой процедуры выгружается адресная
-    инфа по одному адресному аобъекту. Чтобы выгрузить несколько адресных объектов -
+    инфа по одному адресному объекту. Чтобы выгрузить несколько адресных объектов -
     можно вызвать её в цикле.
     """
 
@@ -87,6 +87,28 @@ def export_address_object(fias_addr: FiasRecursiveAddressModel, event_time=None)
         data=dat
     )
     return ser, f'ISP/abonents/regions_{format_fname(event_time)}.txt'
+
+
+def make_address_street_object(street: CustomerStreet, event_time=None):
+    """
+    Тут формируется формат выгрузки улицы в дополение в выгрузкам адресных объектов.
+    :param street: customers.CustomerStreet model instance.
+    :param event_time:
+    :return:
+    """
+    # FIXME: расчитывать код улицы.
+    dat = {
+        'address_id': str(street.pk),
+        'parent_id': str(street.group_id),
+        'type_id': 6576,
+        'region_type': 'ул.',
+        'title': street.name,
+        'full_title': "ул. %s" % street.name
+    }
+    ser = individual_entity_serializers.AddressObjectFormat(
+        data=dat
+    )
+    return ser
 
 
 @iterable_export_decorator
@@ -125,7 +147,11 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
         }
     return (
         individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
-        gen, customers.select_related('group', 'group__fiasrecursiveaddressmodel', 'group__fiasrecursiveaddressmodel__fias_recursive_address'),
+        gen, customers.select_related(
+            'group',
+            'group__fiasrecursiveaddressmodel',
+            'group__fiasrecursiveaddressmodel__fias_recursive_address'
+        ),
         f'ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt'
     )
 
