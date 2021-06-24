@@ -123,7 +123,7 @@ def export_all_ip_leases():
 
 
 def export_all_customer_services():
-    csrv = CustomerService.objects.select_related("customer").exclude(customer=None).filter(customer_is_active=True)
+    csrv = CustomerService.objects.select_related("customer").exclude(customer=None).filter(customer__is_active=True)
     data, fname = export_customer_service(cservices=csrv, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.SERVICE_CUSTOMER)
 
