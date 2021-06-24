@@ -1,6 +1,6 @@
 from django.utils.translation import gettext as _
 from django.db.models import JSONField
-from django.db import models
+from django.db import models, connection
 from groupapp.models import Group
 from sorm_export.fias_socrbase import AddressFIASLevelChoices, AddressFIASInfo
 
@@ -109,6 +109,17 @@ class FtpCredentialsModel(models.Model):
 ao_type_choices = ((num, '%s (%s)' % name) for lev, inf in AddressFIASInfo.items() for num, name in inf.items())
 
 
+class FiasRecursiveAddressModelManager(models.Manager):
+    def get_streets_as_addr_objects(self):
+        with connection.cursor() as cur:
+            cur.execute("SELECT * FROM get_streets_as_addr_objects;")
+            res = cur.fetchone()
+            while res is not None:
+                # res: street_id, parent_ao_id, parent_ao_type, street_name
+                yield res
+                res = cur.fetchone()
+
+
 class FiasRecursiveAddressModel(models.Model):
     parent_ao = models.ForeignKey(
         'self', verbose_name=_('Parent AO'),
@@ -124,6 +135,8 @@ class FiasRecursiveAddressModel(models.Model):
         choices=ao_type_choices
     )
     groups = models.ManyToManyField(Group, blank=True)
+
+    objects = FiasRecursiveAddressModelManager()
 
     def __str__(self):
         return self.title
