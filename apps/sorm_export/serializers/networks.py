@@ -21,7 +21,7 @@ class CustomerIpLeaseExportFormat(serializers.Serializer):
     )  # CustomerRootObjectFormat.legal_customer_id
     ip_addr = serializers.IPAddressField(
         required=True
-    )  # TODO: Проверить выводимый формат
+    )
     ip_addr_type = serializers.ChoiceField(
         choices=IpLeaseAddrTypeChoice.choices,
         required=True

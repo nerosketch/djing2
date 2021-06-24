@@ -67,10 +67,12 @@ call vundle#begin()
     Plugin 'flazz/vim-colorschemes'             " Colorschemes
     Plugin 'vimwiki/vimwiki'                    " Personal Wiki
     Plugin 'jreybert/vimagit'                   " Git Operations
+    Plugin 'airblade/vim-gitgutter'             " Plugin which shows a git diff in the sign column
     Plugin 'kien/rainbow_parentheses.vim'       " Rainbow Parentheses
     Plugin 'ryanoasis/vim-devicons'             " Dev Icons
     Plugin 'mhinz/vim-startify'                 " Vim Start Page
     Plugin 'editorconfig/editorconfig-vim'	    " Editorconfig support
+    Plugin 'Asheq/close-buffers.vim'            " Close buffers
 
     "-------------------=== Snippets support ===--------------------
     Plugin 'garbas/vim-snipmate'                " Snippets manager
@@ -137,7 +139,7 @@ set scrolloff=20                            " let 10 lines before/after cursor d
 set clipboard=unnamed                       " use system clipboard
 
 " set exrc                                    " enable usage of additional .vimrc files from working directory
-set secure                                  " prohibit .vimrc files to execute shell, create files, etc...
+" set secure                                  " prohibit .vimrc files to execute shell, create files, etc...
 
 "=====================================================
 "" Tabs / Buffers settings
@@ -145,9 +147,13 @@ set secure                                  " prohibit .vimrc files to execute s
 tab sball
 set switchbuf=useopen
 set laststatus=2
+" switch buffers
 nmap <F8> :bprev<CR>
 nmap <F9> :bnext<CR>
+" close buffers
 nmap <silent> <leader>q :SyntasticCheck # <CR> :bp <BAR> bd #<CR>
+nnoremap <silent> Q     :Bdelete menu<CR>
+
 
 "=====================================================
 "" YouCompleteMe Settings
@@ -173,6 +179,7 @@ nnoremap <F4> :set relativenumber!<CR>
 "=====================================================
 set incsearch	                            " incremental search
 set hlsearch	                            " highlight search results
+map <F3> :execute "vimgrep /" . expand("<cword>") . "/j **" <Bar> cw<CR>
 
 
 " Mouse Cusrsor enable
@@ -409,6 +416,11 @@ imap <F5> <Esc>:w<CR>:!clear;python %<CR>
 " Editorconfig
 au FileType gitcommit let b:EditorConfig_disable = 1  " disable for git commits
 
+" Git gutter, diff highlights
+highlight GitGutterAdd    guifg=#009900 ctermfg=2
+highlight GitGutterChange guifg=#bbbb00 ctermfg=3
+highlight GitGutterDelete guifg=#ff2222 ctermfg=1
+
 
 " no <down> <Nop>
 " no <left> <Nop>
@@ -436,6 +448,6 @@ autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | Starti
 autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | NERDTree | endif
 
 " Exit Vim if NERDTree is the only window left.
-autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() |
-    \ quit | endif
+" autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() |
+"   \ execute :new | endif
 
