@@ -9,13 +9,16 @@ from transliterate import translit
 from django.utils.translation import gettext_lazy as _, gettext
 from django.conf import settings
 from djing2.lib import RuTimedelta, macbin2str
+from rest_framework import status
+from rest_framework.exceptions import APIException
 
 
 OptionalScriptCallResult = Optional[Dict[int, str]]
 
 
-class DeviceImplementationError(NotImplementedError):
-    pass
+class DeviceImplementationError(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = _("Device implementaion error")
 
 
 class DeviceConfigurationError(DeviceImplementationError):
