@@ -296,6 +296,7 @@ WS_ADDR = "127.0.0.1:3211"
 
 # absolute path to arping command
 ARPING_COMMAND = getattr(local_settings, "ARPING_COMMAND", "/usr/sbin/arping")
+ARPING_ENABLED = getattr(local_settings, "ARPING_ENABLED", False)
 
 # SITE_ID = 1
 
