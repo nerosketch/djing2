@@ -106,7 +106,7 @@ class FtpCredentialsModel(models.Model):
 """
 
 
-ao_type_choices = ((num, '%s (%s)' % name) for lev, inf in AddressFIASInfo.items() for num, name in inf.items())
+ao_type_choices = ((num, '%s' % name[0]) for lev, inf in AddressFIASInfo.items() for num, name in inf.items())
 
 
 class FiasRecursiveAddressModelManager(models.Manager):
