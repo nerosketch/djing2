@@ -40,7 +40,7 @@ class Gateway(BaseAbstractModel):
     @staticmethod
     def get_user_credentials_by_gw(gw_id: int):
         with connection.cursor() as cur:
-            cur.execute("SELECT * FROM " "fetch_customers_srvnet_credentials_by_gw(%s::integer)", (str(gw_id),))
+            cur.execute("SELECT * FROM fetch_customers_srvnet_credentials_by_gw(%s::integer)", (str(gw_id),))
             while True:
                 # (customer_id, lease_id, lease_time, lease_mac, ip_address,
                 #  speed_in, speed_out, speed_burst, service_start_time,
