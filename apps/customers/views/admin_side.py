@@ -118,7 +118,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         if deadline:
             datetime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
             deadline = datetime.strptime(deadline, datetime_fmt)
-            log_comment = _("Service '%(service_name)s' " "has connected via admin until %(deadline)s") % {
+            log_comment = _("Service '%(service_name)s' has connected via admin until %(deadline)s") % {
                 "service_name": srv.title,
                 "deadline": deadline,
             }

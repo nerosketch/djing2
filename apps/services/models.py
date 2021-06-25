@@ -41,7 +41,7 @@ class Service(BaseAbstractModel):
     )
     speed_burst = models.FloatField(
         _("Speed burst"),
-        help_text=_("Result burst = speed * speed_burst," " speed_burst must be >= 1.0"),
+        help_text=_("Result burst = speed * speed_burst, speed_burst must be >= 1.0"),
         default=1.0,
         validators=[
             MinValueValidator(limit_value=1.0),

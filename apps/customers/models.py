@@ -280,7 +280,7 @@ class CustomerManager(MyUserManager):
         :return: nothing
         """
         if comment is None:
-            comment = _("Service for customer %(customer_name)s " "with name '%(service_name)s' has expired")
+            comment = _("Service for customer %(customer_name)s with name '%(service_name)s' has expired")
         now = datetime.now()
         expired_service = CustomerService.objects.filter(deadline__lt=now, customer__auto_renewal_service=False)
         if customer is not None and isinstance(customer, Customer):
@@ -344,7 +344,7 @@ class CustomerManager(MyUserManager):
                     CustomerLog.objects.create(
                         customer=expired_service_customer,
                         cost=-cost,
-                        comment=_("Automatic connect new service " "%(service_name)s for %(customer_name)s")
+                        comment=_("Automatic connect new service %(service_name)s for %(customer_name)s")
                         % {"service_name": service.title, "customer_name": uname},
                     )
             else:
