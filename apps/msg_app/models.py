@@ -180,7 +180,7 @@ class Conversation(BaseAbstractModel):
             cm = ConversationMembership.objects.filter(account=user, conversation=self)
         else:
             if not isinstance(cm, ConversationMembership):
-                raise TypeError("cm must be instance of " "msg_app.ConversationMembership")
+                raise TypeError("cm must be instance of msg_app.ConversationMembership")
         cm.update(status=status)
         return cm
 
