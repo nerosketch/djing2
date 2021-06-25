@@ -73,11 +73,11 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         if not pdev:
             raise DeviceConfigurationError(_("You should config parent OLT device for ONU"))
         if not pdev.extra_data:
-            raise DeviceConfigurationError(_("You have not info in extra_data " "field, please fill it in JSON"))
+            raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
 
         extra_data = dict(pdev.extra_data)
         if not extra_data:
-            raise DeviceConfigurationError(_("You have not info in extra_data " "field, please fill it in JSON"))
+            raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
         return extra_data
 
     @staticmethod
