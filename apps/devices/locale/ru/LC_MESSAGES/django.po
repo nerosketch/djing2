@@ -378,3 +378,6 @@ msgstr "Параметр port_state плох"
 
 #~ msgid "Subscribers on port does not exist"
 #~ msgstr "Абоненты на порту не найдены"
+
+msgid "Device implementation error"
+msgstr "Ошибка реализации устройства"
