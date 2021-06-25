@@ -1,7 +1,7 @@
 """Async tasks for radiusapp."""
 from typing import Tuple
 import logging
-from uwsgi_tasks import task, TaskExecutor, SPOOL_OK, SPOOL_RETRY
+from uwsgi_tasks import task, TaskExecutor, SPOOL_OK
 
 from radiusapp.models import CustomerRadiusSession
 from .radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
@@ -27,22 +27,14 @@ def radius_batch_stop_customer_services_task(customer_ids: Tuple[int]):
 
 @task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_count=3, retry_timeout=5)
 def async_finish_session_task(radius_uname: str):
-    try:
-        if finish_session(radius_uname):
-            return SPOOL_OK
-    except Exception:
-        pass
-    return SPOOL_RETRY
+    finish_session(radius_uname)
+    return SPOOL_OK
 
 
 @task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_count=2, retry_timeout=5)
 def async_change_session_inet2guest(radius_uname: str):
-    try:
-        if change_session_inet2guest(radius_uname):
-            return SPOOL_OK
-    except Exception:
-        pass
-    return SPOOL_RETRY
+    change_session_inet2guest(radius_uname)
+    return SPOOL_OK
 
 
 #
@@ -57,9 +49,5 @@ def async_change_session_inet2guest(radius_uname: str):
 #
 @task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_count=2, retry_timeout=5)
 def async_change_session_guest2inet(*args, **kwargs):
-    try:
-        if change_session_guest2inet(*args, **kwargs):
-            return SPOOL_OK
-    except Exception:
-        pass
-    return SPOOL_RETRY
+    change_session_guest2inet(*args, **kwargs)
+    return SPOOL_OK
