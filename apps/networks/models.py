@@ -57,7 +57,7 @@ class NetworkIpPoolKind(models.IntegerChoices):
 class NetworkIpPool(BaseAbstractModel):
     network = CidrAddressField(
         verbose_name=_("Ip network address"),
-        help_text=_("Ip address of network. For example: " "192.168.1.0 or fde8:6789:1234:1::"),
+        help_text=_("Ip address of network. For example: 192.168.1.0 or fde8:6789:1234:1::"),
         unique=True,
     )
     kind = models.PositiveSmallIntegerField(
@@ -268,7 +268,7 @@ class CustomerIpLeaseModel(models.Model):
         try:
             with connection.cursor() as cur:
                 cur.execute(
-                    "SELECT * FROM lease_commit_add_update" "(%s::inet, %s::macaddr, %s::macaddr, %s::smallint)",
+                    "SELECT * FROM lease_commit_add_update(%s::inet, %s::macaddr, %s::macaddr, %s::smallint)",
                     (client_ip, mac_addr, dev_mac, dev_port),
                 )
                 res = cur.fetchone()
