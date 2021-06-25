@@ -10,7 +10,7 @@ from django.db import connection, models, transaction
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
-from djing2.lib import LogicError, safe_float, safe_int
+from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
@@ -635,6 +635,24 @@ class Customer(BaseAccount):
         #     group=group,
         #     last_connected_service__in=sub
         # ).update(last_connected_service=None)
+
+    def ping_all_leases(self):
+        leases = self.customeripleasemodel_set.all()
+        if leases.count() < 1:
+            return _("Customer has not ips"), False
+        try:
+            for lease in leases:
+                if lease.ping_icmp():
+                    return _("Ping ok"), True
+                else:
+                    arping_enabled = getattr(settings, "ARPING_ENABLED", False)
+                    if arping_enabled and lease.ping_icmp(arp=True):
+                        return _("arp ping ok"), True
+            return _("no ping"), False
+        except ProcessLocked:
+            return _("Process locked by another process"), False
+        except ValueError as err:
+            return str(err), False
 
     class Meta:
         db_table = "customers"
