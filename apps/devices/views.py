@@ -386,7 +386,7 @@ class DeviceWithoutGroupListAPIView(DjingListAPIView):
 
 
 class PortModelViewSet(DjingModelViewSet):
-    queryset = Port.objects.annotate(user_count=Count("customer"))
+    queryset = Port.objects.annotate(user_count=Count("customer")).order_by("num")
     serializer_class = dev_serializers.PortModelSerializer
     filterset_fields = ("device", "num")
 
