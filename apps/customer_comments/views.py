@@ -1,14 +1,15 @@
-from djing2.viewsets import DjingModelViewSet
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.response import Response
+from djing2.viewsets import DjingModelViewSet
 from customer_comments.serializers import CustomerCommentModelSerializer
 from customer_comments.models import CustomerCommentModel
 
 
 class CustomerCommentModelViewSet(DjingModelViewSet):
-    queryset = CustomerCommentModel.objects.select_related('customer', 'author').order_by('-id')
+    queryset = CustomerCommentModel.objects.select_related("customer", "author").order_by("-id")
     serializer_class = CustomerCommentModelSerializer
-    filterset_fields = ['customer']
+    filterset_fields = ["customer"]
 
     def create(self, request, *args, **kwargs):
         return super().create(request, author=self.request.user.pk, *args, **kwargs)
