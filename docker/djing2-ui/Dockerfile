@@ -12,12 +12,8 @@ RUN apt-get -y update && apt-get -y install --no-install-recommends git
 
 USER node
 
-RUN git clone --depth=1 git://github.com/nerosketch/djing2-elui.git ${APP_DIR}
+RUN git clone --depth=1 git://github.com/nerosketch/djing2-elui.git -b devel ${APP_DIR}
 
 WORKDIR ${APP_DIR}
 
-RUN npm install
-
-COPY . .
-
-CMD [ "npm", "run", "--silent", "serve" ]
+CMD npm install && npm run --silent serve
