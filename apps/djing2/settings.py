@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
     "sorm_export.apps.SormExportConfig",
+    "customer_comments.apps.CustomerCommentsConfig",
 ]
 
 if DEBUG:
