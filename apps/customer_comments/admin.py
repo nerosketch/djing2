@@ -1,3 +1,4 @@
 from django.contrib import admin
+from customer_comments.models import CustomerCommentModel
 
-# Register your models here.
+admin.site.register(CustomerCommentModel)
