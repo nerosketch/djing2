@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from django.test import override_settings
+# from django.test import override_settings
 from rest_framework.settings import api_settings
 from rest_framework.test import APITestCase
 from rest_framework import status
@@ -10,7 +10,7 @@ from services.models import Service
 from profiles.models import UserProfile
 
 
-@override_settings(DEFAULT_TABLESPACE="ram")
+# @override_settings(DEFAULT_TABLESPACE="ram")
 class CustomAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
         return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
@@ -69,9 +69,9 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             "/api/customers/%d/pick_service/" % self.customer.pk,
             {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
         )
-        self.customer.refresh_from_db()
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertFalse(r.content)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.customer.refresh_from_db()
         self.assertEqual(self.customer.balance, -2)
         self.assertEqual(self.customer.current_service.service, self.service)
 

@@ -5,11 +5,12 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws, WebSocketSender
 from djing2.viewsets import DjingModelViewSet
-from djing2.lib.mixins import SecureApiView, SitesGroupFilterMixin, SitesFilterMixin
+from djing2.lib.mixins import SecureApiViewMixin, SitesGroupFilterMixin, SitesFilterMixin
 from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
 from networks.serializers import NetworkIpPoolModelSerializer, VlanIfModelSerializer, CustomerIpLeaseModelSerializer
@@ -89,7 +90,7 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
         return Response({"text": text, "status": is_pinged})
 
 
-class DhcpLever(SecureApiView):
+class DhcpLever(SecureApiViewMixin, APIView):
     #
     # Api view for dhcp event
     #

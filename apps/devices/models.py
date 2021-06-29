@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Iterator
+from typing import Optional, Tuple
 
 from django.contrib.sites.models import Site
 from django.db import models
@@ -12,7 +12,7 @@ from devices.device_config.base import (
     BaseSwitchInterface,
     BasePONInterface,
     BasePON_ONU_Interface,
-    DeviceConfigType,
+    ListDeviceConfigType,
     DeviceConfigurationError,
     DeviceImplementationError,
     Vlan,
@@ -129,12 +129,11 @@ class Device(BaseAbstractModel):
         if not pdev:
             raise DeviceConfigurationError(_("You should config parent OLT device for ONU"))
         if not pdev.extra_data:
-            raise DeviceConfigurationError(_("You have not info in extra_data " "field, please fill it in JSON"))
+            raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
         mng = self.get_manager_object_olt()
         r = mng.remove_from_olt(dict(pdev.extra_data))
         if r:
-            self.snmp_extra = None
-            self.save(update_fields=["snmp_extra"])
+            Device.objects.filter(pk=self.pk).update(snmp_extra=None)
         return r
 
     def onu_find_sn_by_mac(self) -> Tuple[Optional[int], Optional[str]]:
@@ -154,8 +153,7 @@ class Device(BaseAbstractModel):
     def fix_onu(self):
         onu_sn, err_text = self.onu_find_sn_by_mac()
         if onu_sn is not None:
-            self.snmp_extra = str(onu_sn)
-            self.save(update_fields=("snmp_extra",))
+            Device.objects.filter(pk=self.pk).update(snmp_extra=str(onu_sn))
             return True, _("Fixed")
         return False, err_text
 
@@ -165,7 +163,7 @@ class Device(BaseAbstractModel):
             return mng.get_fiber_str()
         return r"¯ \ _ (ツ) _ / ¯"
 
-    def get_config_types(self) -> Iterator[DeviceConfigType]:
+    def get_config_types(self) -> ListDeviceConfigType:
         mng_klass = self.get_manager_klass()
         return mng_klass.get_config_types()
 
@@ -173,10 +171,12 @@ class Device(BaseAbstractModel):
         self.code = config.get("configTypeCode")
         self.save(update_fields=["code"])
         all_device_types = self.get_config_types()
-        dtypes = (dtype for dtype in all_device_types if dtype.short_code == str(self.code))
+        self_device_type_code = str(self.code)
+        dtypes = (dtype for dtype in all_device_types if dtype.short_code == self_device_type_code)
         dtype_for_run = next(dtypes, None)
         if dtype_for_run is not None:
-            return dtype_for_run.entry_point(config=config, device=self)
+            device_manager = dtype_for_run(title=dtype_for_run.title, code=dtype_for_run.short_code)
+            return device_manager.entry_point(config=config, device=self)
 
     #############################
     #  Remote access(i.e. snmp)

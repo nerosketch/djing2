@@ -33,7 +33,7 @@ SECRET_KEY = local_settings.SECRET_KEY
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = getattr(local_settings, "DEBUG", False)
 
-ALLOWED_HOSTS = getattr(local_settings, "ALLOWED_HOSTS", "*")
+ALLOWED_HOSTS = getattr(local_settings, "ALLOWED_HOSTS", ["*"])
 
 ADMINS = getattr(local_settings, "ADMINS", ())
 
@@ -70,6 +70,8 @@ INSTALLED_APPS = [
     "traf_stat.apps.TrafStatConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
+    "sorm_export.apps.SormExportConfig",
+    "customer_comments.apps.CustomerCommentsConfig",
 ]
 
 if DEBUG:
@@ -211,7 +213,7 @@ DATE_FORMAT = "Y-b-d"
 DATETIME_FORMAT = "Y-b-d H:i"
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_ROOT = os.path.join(BASE_DIR, "..", "media")
 
 DEFAULT_PICTURE = "/static/img/user_ava_min.gif"
 AUTH_USER_MODEL = "profiles.BaseAccount"
@@ -295,9 +297,12 @@ WS_ADDR = "127.0.0.1:3211"
 
 # absolute path to arping command
 ARPING_COMMAND = getattr(local_settings, "ARPING_COMMAND", "/usr/sbin/arping")
+ARPING_ENABLED = getattr(local_settings, "ARPING_ENABLED", False)
 
 # SITE_ID = 1
 
 WEBPUSH_SETTINGS = getattr(local_settings, "WEBPUSH_SETTINGS")
 
-RADIUS_FINISH_SESSION_CMD_LIST = getattr(local_settings, "RADIUS_FINISH_SESSION_CMD_LIST")
+DEFAULT_FTP_CREDENTIALS = getattr(
+    local_settings, "DEFAULT_FTP_CREDENTIALS", {"host": "localhost", "uname": "user", "password": "******"}
+)

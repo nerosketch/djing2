@@ -1,51 +1,53 @@
 """Async tasks for radiusapp."""
-from time import sleep
 from typing import Tuple
 import logging
-from uwsgi_tasks import task
+from uwsgi_tasks import task, TaskExecutor, SPOOL_OK
 
-from djing2.lib import safe_int
 from radiusapp.models import CustomerRadiusSession
+from .radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
 
 
 @task()
-def radius_batch_stop_customer_services_task(customer_ids: Tuple[int], delay_interval=100):
+def radius_batch_stop_customer_services_task(customer_ids: Tuple[int]):
     """
-    Async resetting RADIUS sessions for customers.
+    Async COA RADIUS sessions inet->guest.
 
     :param customer_ids: customers.models.Customer ids
-    :param delay_interval: time to sleep after reset in ms.
     :return: nothing
     """
-    # TODO: Можно перепроверять сменилась ли услуга у абона,
-    # чтоб понять есть-ли всё ещё смысл его переавторизовывать,
-    # а то к моменту когда до него дойдёт очередь переавторизовываться
-    # он мог уже подключить себе ту же услугу
     sessions = (
         CustomerRadiusSession.objects.filter(customer_id__in=customer_ids).only("pk", "radius_username").iterator()
     )
     for session in sessions:
-        if session.finish_session():
-            logging.info('Session "%s" finished' % session)
+        if session.radius_coa_inet2guest():
+            logging.info('Session "%s" changed inet -> guest' % session)
         else:
-            logging.info('Session "%s" not finished' % session)
-        sleep(delay_interval / 1000)
+            logging.info('Session "%s" not changed inet -> guest' % session)
 
 
-@task()
-def radius_stop_customer_session_task(customer_id: int, delay_interval=100):
-    """
-    Async resetting RADIUS session 4 single customer.
+@task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_count=3, retry_timeout=5)
+def async_finish_session_task(radius_uname: str):
+    finish_session(radius_uname)
+    return SPOOL_OK
 
-    :param customer_id: customers.models.Customer id.
-    :param delay_interval: time to sleep after reset each session in ms.
-    :return: nothing
-    """
-    customer_id = safe_int(customer_id)
-    sessions = CustomerRadiusSession.objects.filter(customer_id=customer_id).iterator()
-    for session in sessions:
-        if session.finish_session():
-            logging.info('Session "%s", 4 customer_id="%d" finished.' % (session, customer_id))
-        else:
-            logging.info('Session "%s", 4 customer_id="%d" not finished.' % (session, customer_id))
-        sleep(delay_interval / 1000)
+
+@task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_count=2, retry_timeout=5)
+def async_change_session_inet2guest(radius_uname: str):
+    change_session_inet2guest(radius_uname)
+    return SPOOL_OK
+
+
+#
+# Call like this:
+# async_change_session_guest2inet(
+#     radius_uname: str,
+#     speed_in: int,
+#     speed_out: int,
+#     speed_in_burst: int,
+#     speed_out_burst: int
+# )
+#
+@task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_count=2, retry_timeout=5)
+def async_change_session_guest2inet(*args, **kwargs):
+    change_session_guest2inet(*args, **kwargs)
+    return SPOOL_OK

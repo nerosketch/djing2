@@ -1,9 +1,10 @@
 import abc
 import enum
 from typing import Optional, Tuple
+from netaddr import EUI
 
 from customers.models import CustomerService, Customer
-from radiusapp.models import CustomerRadiusSession, FetchSubscriberLeaseResponse
+from radiusapp.models import FetchSubscriberLeaseResponse
 
 
 class AcctStatusType(enum.IntEnum):
@@ -34,7 +35,7 @@ class IVendorSpecific(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_customer_mac(self, data):
+    def get_customer_mac(self, data) -> Optional[EUI]:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -48,14 +49,14 @@ class IVendorSpecific(abc.ABC):
         return self.get_rad_val(data, "Acct-Unique-Session-Id")
 
     @abc.abstractmethod
-    def get_auth_guest_session_response(self, guest_session: CustomerRadiusSession, data) -> dict:
+    def get_auth_guest_session_response(self, guest_lease: FetchSubscriberLeaseResponse, data) -> dict:
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_auth_session_response(
         self,
         subscriber_lease: FetchSubscriberLeaseResponse,
-        customer_service: CustomerService,
+        customer_service: Optional[CustomerService],
         customer: Customer,
         request_data,
     ) -> dict:

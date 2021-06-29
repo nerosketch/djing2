@@ -2,21 +2,23 @@ import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
 
-# from telnetlib import Telnet
-from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List
+from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Type
 from easysnmp import Session, EasySNMPConnectionError
 from transliterate import translit
 
 from django.utils.translation import gettext_lazy as _, gettext
 from django.conf import settings
 from djing2.lib import RuTimedelta, macbin2str
+from rest_framework import status
+from rest_framework.exceptions import APIException
 
 
 OptionalScriptCallResult = Optional[Dict[int, str]]
 
 
-class DeviceImplementationError(NotImplementedError):
-    pass
+class DeviceImplementationError(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = _("Device implementaion error")
 
 
 class DeviceConfigurationError(DeviceImplementationError):
@@ -317,13 +319,15 @@ class DeviceConfigType:
     short_code: str
     accept_vlan: bool
 
-    def __init__(self, title: str, code: str):
-        if not isinstance(title, str):
+    def __init__(self, title: Optional[str] = None, code: Optional[str] = None):
+        if title:
+            self.title = title
+        if code:
+            self.short_code = code
+        if not isinstance(self.title, str):
             raise TypeError
-        if not isinstance(code, str):
+        if not isinstance(self.short_code, str):
             raise TypeError
-        self.title = title
-        self.short_code = code
 
     @classmethod
     @abstractmethod
@@ -350,7 +354,7 @@ class DeviceConfigType:
         return {"title": cls.title, "code": cls.short_code, "accept_vlan": cls.accept_vlan}
 
 
-ListDeviceConfigType = List[DeviceConfigType]
+ListDeviceConfigType = List[Type[DeviceConfigType]]
 
 
 class BasePortInterface(ABC):
