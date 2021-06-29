@@ -1,21 +1,16 @@
-import re
 from typing import List
 
 from django.utils.translation import gettext_lazy as _
 
 from devices.device_config import expect_util
-from devices.device_config.base import DeviceConfigType, OptionalScriptCallResult, DeviceConfigurationError
-from devices.device_config.expect_util import ExpectValidationError
-from devices.device_config.pon.utils import get_all_vlans_from_config
-from djing2.lib import process_lock
-from .. import zte_utils
+from .zte_f601_bridge_config import ZteF601BridgeScriptModule
 
 
 VlanList = List[int]
 
 
-def _get_onu_template(vlans: VlanList) -> tuple:
-    vids = ",".join(map(str, vlans))
+def _get_onu_template(all_vids: VlanList, *args, **kwargs) -> tuple:
+    vids = ",".join(map(str, all_vids))
     return (
         "sn-bind enable sn",
         "tcont 1 profile HSI_100",
@@ -27,8 +22,8 @@ def _get_onu_template(vlans: VlanList) -> tuple:
     )
 
 
-def _get_onu_mng_template(vlans: VlanList, config: dict):
-    all_vids = ",".join(map(str, set(vlans)))
+def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
+    all_vids = ",".join(map(str, set(all_vids)))
     vlan_config = config.get("vlanConfig")
 
     ports_config = []
@@ -40,10 +35,10 @@ def _get_onu_mng_template(vlans: VlanList, config: dict):
         if not vids:
             continue
 
-        native_vids = (vid.get("vid") for vid in vids if vid.get("native", False))
-        native_vids = list(set(native_vids))
-        trunk_vids = (vid.get("vid") for vid in vids if not vid.get("native", False))
-        trunk_vids = list(set(trunk_vids))
+        native_vids = {vid.get("vid") for vid in vids if vid.get("native", False)}
+        native_vids = list(native_vids)
+        trunk_vids = {vid.get("vid") for vid in vids if not vid.get("native", False)}
+        trunk_vids = list(trunk_vids)
 
         native_vids_len = len(native_vids)
         trunk_vids_len = len(trunk_vids)
@@ -89,10 +84,6 @@ def _get_onu_mng_template(vlans: VlanList, config: dict):
         ]
         + ports_config
         + [
-            # 'vlan port eth_0/1 mode tag vlan 123',
-            # 'vlan port eth_0/2 mode tag vlan 123',
-            # 'vlan port eth_0/3 mode tag vlan 123',
-            # 'vlan port eth_0/4 mode tag vlan 123',
             "dhcp-ip ethuni eth_0/1 forbidden",
             "dhcp-ip ethuni eth_0/2 forbidden",
             "dhcp-ip ethuni eth_0/3 forbidden",
@@ -101,122 +92,14 @@ def _get_onu_mng_template(vlans: VlanList, config: dict):
     )
 
 
-@process_lock(lock_name="zte_olt")
-def _zte_onu_bridge_config_apply(
-    serial: str,
-    zte_ip_addr: str,
-    telnet_login: str,
-    telnet_passw: str,
-    telnet_prompt: str,
-    config: dict,
-    *args,
-    **kwargs,
-):
-    if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
-        raise expect_util.ExpectValidationError("ip address for zte not valid")
-
-    if not re.match(r"^ZTEG[0-9A-F]{8}$", serial):
-        raise ExpectValidationError("Serial not valid, match: ^ZTEG[0-9A-F]{8}$")
-
-    if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
-        raise ExpectValidationError("ip address for zte not valid")
-
-    all_vids = get_all_vlans_from_config(config=config)
-    if not all_vids:
-        raise zte_utils.OnuZteRegisterError("not passed vlan list")
-
-    # Enter via telnet
-    ch = expect_util.MySpawn("telnet %s" % zte_ip_addr)
-    ch.timeout = 15
-    ch.expect_exact("Username:")
-    ch.do_cmd(telnet_login, "Password:")
-
-    choice = ch.do_cmd(telnet_passw, ["bad password.", f"{telnet_prompt}#"])
-    if choice == 0:
-        raise zte_utils.ZteOltLoginFailed
-
-    ch.do_cmd("terminal length 0", f"{telnet_prompt}#")
-
-    # Find unregistered onu ↓
-    choice = ch.do_cmd("show gpon onu uncfg", ["No related information to show", f"{telnet_prompt}#"])
-    if choice == 0:
-        ch.close()
-        raise zte_utils.OnuZteRegisterError(_("unregistered onu not found, sn=%s") % serial)
-    if choice == 1:
-        # get unregistered onu devices
-        unregistered_onu = zte_utils.get_unregistered_onu(lines=ch.get_lines_before(), serial=serial)
-        if unregistered_onu is None:
-            ch.close()
-            raise zte_utils.OnuZteRegisterError(_("unregistered onu not found, sn=%s") % serial)
-
-        stack_num = int(unregistered_onu.get("stack_num"))
-        rack_num = int(unregistered_onu.get("rack_num"))
-        fiber_num = int(unregistered_onu.get("fiber_num"))
-
-        # get last registered onu
-        ch.do_cmd(f"show run int gpon-olt_{stack_num}/{rack_num}/{fiber_num}", f"{telnet_prompt}#")
-        free_onu_number = zte_utils.get_free_registered_onu_number(ch.get_lines_before())
-        if free_onu_number > 127:
-            ch.close()
-            raise zte_utils.ZTEFiberIsFull(_("olt fiber %d is full") % fiber_num)
-
-        # enter to config
-        ch.do_cmd("conf t", f"{telnet_prompt}(config)#")
-
-        config_if_prompt = f"{telnet_prompt}(config-if)#"
-
-        # go to olt interface
-        ch.do_cmd(f"interface gpon-olt_1/{rack_num}/{fiber_num}", config_if_prompt)
-
-        # register onu on olt interface
-        ch.do_cmd(f"onu {free_onu_number} type ZTE-F660 sn {serial}", config_if_prompt)
-
-        # Exit from int olt
-        ch.do_cmd("exit", f"{telnet_prompt}(config)#")
-
-        # Enter to int onu
-        ch.do_cmd(f"int gpon-onu_1/{rack_num}/{fiber_num}:{free_onu_number}", config_if_prompt)
-
-        # Apply int onu config
-        template = _get_onu_template(vlans=all_vids)
-        for line in template:
-            ch.do_cmd(line, config_if_prompt)
-
-        # Exit from int olt
-        ch.do_cmd("exit", f"{telnet_prompt}(config)#")
-
-        # Enter to pon-onu-mng
-        ch.do_cmd(
-            f"pon-onu-mng gpon-onu_1/{rack_num}/{fiber_num}:{free_onu_number}", f"{telnet_prompt}(gpon-onu-mng)#"
-        )
-
-        # Apply mng onu template
-        template = _get_onu_mng_template(vlans=all_vids, config=config)
-        mng_prompt = f"{telnet_prompt}(gpon-onu-mng)#"
-        for line in template:
-            ch.do_cmd(line, mng_prompt)
-
-        # Exit
-        ch.do_cmd("exit", f"{telnet_prompt}(config)#")
-        ch.do_cmd("exit", f"{telnet_prompt}#")
-        ch.sendline("exit")
-        ch.close()
-        return zte_utils.zte_onu_conv_to_num(rack_num=rack_num, fiber_num=fiber_num, port_num=free_onu_number)
-
-
-class ZteF660BridgeStaticScriptModule(DeviceConfigType):
+class ZteF660BridgeStaticScriptModule(ZteF601BridgeScriptModule):
     title = "Zte ONU F660 Static Bridge"
     short_code = "zte_f660_bridge"
     accept_vlan = True
+    zte_type = "ZTE-F660"
 
-    @classmethod
-    def entry_point(cls, config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
-        pdev = device.parent_dev
-        if not pdev:
-            raise DeviceConfigurationError(_("You should config parent OLT device for ONU"))
-        if not pdev.extra_data:
-            raise DeviceConfigurationError(_("You have not info in extra_data " "field, please fill it in JSON"))
-        zte_utils.reg_dev_zte(
-            device=device, extra_data=dict(pdev.extra_data), reg_func=_zte_onu_bridge_config_apply, config=config
-        )
-        return {1: "success"}
+    def apply_zte_bot_conf(self, get_pon_mng_template_fn=_get_onu_mng_template, *args, **kwargs) -> None:
+        return super().apply_zte_bot_conf(get_pon_mng_template_fn=get_pon_mng_template_fn, *args, **kwargs)
+
+    def apply_zte_top_conf(self, get_onu_template_fn=_get_onu_template, *args, **kwargs) -> None:
+        return super().apply_zte_top_conf(get_onu_template_fn=get_onu_template_fn, *args, **kwargs)

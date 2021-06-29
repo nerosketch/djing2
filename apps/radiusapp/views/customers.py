@@ -1,19 +1,23 @@
 from typing import Optional
 from datetime import datetime
-
+from netaddr import EUI
+from django.db.utils import IntegrityError
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.viewsets import GenericViewSet
+from rest_framework.permissions import AllowAny
 
 from customers.models import CustomerService
 from customers.serializers import RadiusCustomerServiceRequestSerializer
 from djing2.lib import LogicError, safe_int
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
-from djing2.viewsets import DjingAuthorizedViewSet
+from djing2.lib.mixins import AllowedSubnetMixin
 from networks.models import NetworkIpPoolKind, CustomerIpLeaseModel
 from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
+from radiusapp import tasks
 
 
 def _gigaword_imp(num: int, gwords: int) -> int:
@@ -22,16 +26,19 @@ def _gigaword_imp(num: int, gwords: int) -> int:
     return num + gwords * (10 ** 9)
 
 
-def _bad_ret(text):
-    return Response({"Reply-Message": text}, status=status.HTTP_400_BAD_REQUEST)
+def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST):
+    return Response({"Reply-Message": text}, status=custom_status)
 
 
 def _update_lease_send_ws_signal(customer_id: int):
     send_data2ws({"eventType": WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value, "data": {"customer_id": customer_id}})
 
 
-class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
+# TODO: Also protect requests by hash
+class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
     serializer_class = RadiusCustomerServiceRequestSerializer
+    authentication_classes = []
+    permission_classes = [AllowAny]
     vendor_manager = None
 
     def _check_data(self, data):
@@ -66,38 +73,32 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         serializer = self.get_serializer()
         return Response(serializer.data)
 
-    def assign_guest_session(
-        self, radius_uname: str, customer_mac: str, session_id: str, data: dict, customer_id: Optional[int] = None
-    ):
+    def assign_guest(self, customer_mac: EUI, data: dict, customer_id: Optional[int] = None):
         """
         Assign no service session.
 
-        :param radius_uname: User-Name av value from RADIUS.
         :param customer_mac: Customer device MAC address.
-        :param session_id: RADIUS unique id.
         :param data: Other data from RADIUS server.
         :param customer_id: customers.models.Customer model id.
         :return: rest_framework Response.
         """
         if customer_id is None:
-            session = CustomerRadiusSession.objects.assign_guest_session(
-                radius_uname=radius_uname, customer_mac=customer_mac, session_id=session_id
-            )
+            lease = CustomerRadiusSession.objects.assign_guest_session(customer_mac=customer_mac)
         else:
             customer_id = safe_int(customer_id)
             if customer_id == 0:
                 return _bad_ret('Bad "customer_id" arg.')
-            session = CustomerRadiusSession.objects.assign_guest_customer_session(
-                radius_uname=radius_uname, customer_id=customer_id, customer_mac=customer_mac, session_id=session_id
+            lease = CustomerRadiusSession.objects.assign_guest_customer_session(
+                customer_id=customer_id, customer_mac=customer_mac
             )
-        if session is None:
+        if lease is None:
             # Not possible to assign guest ip, it's bad
             return Response(
                 {"Reply-Message": "Not possible to assign guest ip, it's bad"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=status.HTTP_404_NOT_FOUND,
             )
         # Creating guest session
-        r = self.vendor_manager.get_auth_guest_session_response(guest_session=session, data=data)
+        r = self.vendor_manager.get_auth_guest_session_response(guest_lease=lease, data=data)
         return Response(r)
 
     @action(methods=["post"], detail=False, url_path=r"auth/(?P<vendor_name>\w{1,32})")
@@ -107,61 +108,33 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
 
         agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=request.data)
 
-        if not all([agent_remote_id, agent_circuit_id]):
-            return _bad_ret("Bad opt82")
-
-        dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
-            agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
-        )
-
-        if dev_mac is None:
-            return _bad_ret("Failed to parse option82")
-
         customer_mac = vendor_manager.get_customer_mac(request.data)
-        if customer_mac is None:
+        if not customer_mac:
             return _bad_ret("Customer mac is required")
 
-        radius_username = vendor_manager.get_radius_username(request.data)
-        radius_unique_id = vendor_manager.get_radius_unique_id(request.data)
+        customer = None
 
-        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(device_mac=dev_mac, device_port=dev_port)
+        if all([agent_remote_id, agent_circuit_id]):
+            dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+                agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
+            )
+            if not dev_mac:
+                return _bad_ret("Failed to parse option82")
+
+            customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                device_mac=dev_mac, device_port=dev_port
+            )
+        else:
+            # return _bad_ret("Bad opt82")
+            leases = CustomerIpLeaseModel.objects.filter(mac_address=str(customer_mac))
+            if leases.exists():
+                lease = leases.first()
+                customer = lease.customer if lease else None
+            del leases
+
         if customer is None:
             # If customer not found then assign guest session
-            return self.assign_guest_session(
-                radius_uname=radius_username, customer_mac=customer_mac, session_id=radius_unique_id, data=request.data
-            )
-
-        if customer.current_service_id is None:
-            # if customer has not service then assign guest
-            #  session with attached customer.
-            r = self.assign_guest_session(
-                radius_uname=radius_username,
-                customer_mac=customer_mac,
-                session_id=radius_unique_id,
-                data=request.data,
-                customer_id=customer.pk,
-            )
-            _update_lease_send_ws_signal(customer.pk)
-            return r
-
-        customer_service = CustomerService.find_customer_service_by_device_credentials(
-            customer_id=customer.pk, current_service_id=int(customer.current_service_id)
-        )
-        if customer_service is None:
-            # if customer has not service then assign guest
-            #  session with attached customer.
-            r = self.assign_guest_session(
-                radius_uname=radius_username,
-                customer_mac=customer_mac,
-                session_id=radius_unique_id,
-                data=request.data,
-                customer_id=customer.pk,
-            )
-            _update_lease_send_ws_signal(customer.pk)
-            return r
-
-        # TODO: return time to end session.
-        # sess_time = customer_service.calc_session_time()
+            return self.assign_guest(customer_mac=customer_mac, data=request.data)
 
         vid = vendor_manager.get_vlan_id(request.data)
 
@@ -175,30 +148,18 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
                 pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
             )
             if subscriber_lease is None:
-                r = self.assign_guest_session(
-                    radius_uname=radius_username,
+                r = self.assign_guest(
                     customer_mac=customer_mac,
-                    session_id=radius_unique_id,
                     data=request.data,
                     customer_id=customer.pk,
                 )
                 _update_lease_send_ws_signal(customer.pk)
                 return r
 
-            # create authorized session for customer
-            CustomerRadiusSession.objects.get_or_create(
-                ip_lease_id=subscriber_lease.lease_id,
-                customer_id=customer.pk,
-                defaults={
-                    "last_event_time": datetime.now(),
-                    "radius_username": radius_username,
-                    "session_id": radius_unique_id,
-                },
-            )
-
             response = vendor_manager.get_auth_session_response(
                 subscriber_lease=subscriber_lease,
-                customer_service=customer_service,
+                # TODO: customer.active_service() - hit to db
+                customer_service=customer.active_service(),
                 customer=customer,
                 request_data=request.data,
             )
@@ -221,7 +182,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
         return request_type_fn(request)
 
-    def _update_counters(self, session, data: dict, **update_kwargs):
+    def _update_counters(self, sessions, data: dict, **update_kwargs):
         vcls = self.vendor_manager.vendor_class
         v_inp_oct = _gigaword_imp(
             num=vcls.get_rad_val(data, "Acct-Input-Octets", 0),
@@ -233,7 +194,7 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
         )
         v_in_pkt = vcls.get_rad_val(data, "Acct-Input-Packets", 0)
         v_out_pkt = vcls.get_rad_val(data, "Acct-Output-Packets", 0)
-        return session.update(
+        return sessions.update(
             last_event_time=datetime.now(),
             input_octets=v_inp_oct,
             output_octets=v_out_oct,
@@ -242,50 +203,97 @@ class RadiusCustomerServiceRequestViewSet(DjingAuthorizedViewSet):
             **update_kwargs,
         )
 
-    # TODO: Сделать создание сессии в acct, а в
-    #  auth только предлагать ip для абонента
-    @staticmethod
-    def _acct_start(_):
+    def _acct_start(self, request):
+        """Accounting start handler."""
+        dat = request.data
+        vendor_manager = self.vendor_manager
+
+        ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
+        if not ip:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        radius_username = vendor_manager.get_radius_username(dat)
+        if not radius_username:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        leases = CustomerIpLeaseModel.objects.filter(ip_address=ip).only("pk", "ip_address", "pool_id", "customer_id")
+        if not leases.exists():
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        lease = leases.first()
+        if lease is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        radius_unique_id = vendor_manager.get_radius_unique_id(dat)
+
+        sessions = CustomerRadiusSession.objects.filter(ip_lease=lease)
+        if sessions.exists():
+            sessions.update(
+                customer=lease.customer,
+                radius_username=radius_username,
+                session_id=radius_unique_id,
+                last_event_time=datetime.now(),
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        try:
+            CustomerRadiusSession.objects.create(
+                customer=lease.customer,
+                ip_lease=lease,
+                last_event_time=datetime.now(),
+                radius_username=radius_username,
+                session_id=radius_unique_id,
+            )
+        except IntegrityError:
+            pass
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_stop(self, request):
+        # TODO: Удалять только сессию, без ip, только при Accounting-Stop.
+        #  Получается что когда сессия останавливается из radius, то и из билинга она пропадает.
+        #  Но только сессия, ip удалять не надо.
         dat = request.data
         vendor_manager = self.vendor_manager
-        username = vendor_manager.get_radius_username(dat)
         vcls = vendor_manager.vendor_class
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
-        session = CustomerRadiusSession.objects.filter(radius_username=username, ip_lease__ip_address=ip, closed=False)
-        if not session.exists():
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        self._update_counters(session, dat, closed=True)
-        session = session.first()
-        if session is None:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        customer = session.customer
-        if customer.is_access():
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        # if not access to service
+        CustomerRadiusSession.objects.filter(ip_lease__ip_address=ip).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_update(self, request):
         dat = request.data
         vendor_manager = self.vendor_manager
         vcls = vendor_manager.vendor_class
-        username = vendor_manager.get_radius_username(dat)
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
-        session = CustomerRadiusSession.objects.filter(
-            radius_username=username,
+        sessions = CustomerRadiusSession.objects.filter(
             ip_lease__ip_address=ip,
-            # closed=False
         )
-        if session.exists():
-            self._update_counters(session, dat)
-        session = session.first()
-        if session is None:
-            return _bad_ret("No session found")
+        if sessions.exists():
+            self._update_counters(sessions=sessions, data=dat)
 
-        # if not access to service
+            for single_session in sessions.iterator():
+                # single_customer = single_session.customer
+
+                # If session and customer not same then free session
+                agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=dat)
+                if all([agent_remote_id, agent_circuit_id]):
+                    dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+                        agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
+                    )
+                    if dev_mac is not None:
+                        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                            device_mac=dev_mac, device_port=dev_port
+                        )
+                        if customer is not None and single_session.customer_id is not None and int(customer.pk) != int(single_session.customer_id):
+                            tasks.async_finish_session_task(radius_uname=single_session.radius_username)
+                            single_session.delete()
+                            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        else:
+            radius_username = vendor_manager.get_radius_username(dat)
+            if radius_username:
+                tasks.async_finish_session_task(radius_uname=radius_username)
+            return _bad_ret("No session found", custom_status=status.HTTP_200_OK)
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @staticmethod

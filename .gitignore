@@ -19,3 +19,6 @@ apps/devices/device_config/custom/*.py
 docs/_build/
 docs/_static/
 docs/_templates/
+
+docker/secrets/
+docker/docker-compose.yml

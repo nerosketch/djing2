@@ -21,3 +21,4 @@ parsedump() {
 }
 
 parsedump "$1" | psql postgresql://postgres:password@127.0.0.1/djing2
+rm "$1"

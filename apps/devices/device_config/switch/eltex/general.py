@@ -11,14 +11,13 @@ from devices.device_config.base import (
     MacItem,
     Macs,
     DeviceImplementationError,
-    ListDeviceConfigType,
 )
 from devices.device_config.utils import plain_ip_device_mon_template
 from ..dlink import DlinkDGS1100_10ME
 
 
 class EltexPort(BasePortInterface):
-    def get_config_types(self) -> ListDeviceConfigType:
+    def get_config_types(self):
         return []
 
 
@@ -36,7 +35,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 s,
                 num=i,
                 name=self.get_item(".1.3.6.1.2.1.31.1.1.1.18.%d" % n),
-                status=self.get_item(".1.3.6.1.2.1.2.2.1.8.%d" % n),
+                status=self.get_item(".1.3.6.1.2.1.2.2.1.7.%d" % n) == 1,
                 mac=self.get_item(".1.3.6.1.2.1.2.2.1.6.%d" % n),
                 uptime=self.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % n),
                 speed=int(speed or 0),
@@ -79,10 +78,10 @@ class EltexSwitch(DlinkDGS1100_10ME):
         return True
 
     def port_disable(self, port_num: int):
-        self.set_int_value("%s.%d" % (".1.3.6.1.2.1.2.2.1.7", port_num), 2)
+        self.set_int_value("%s.%d" % (".1.3.6.1.2.1.2.2.1.7", port_num + 48), 2)
 
     def port_enable(self, port_num: int):
-        self.set_int_value("%s.%d" % (".1.3.6.1.2.1.2.2.1.7", port_num), 1)
+        self.set_int_value("%s.%d" % (".1.3.6.1.2.1.2.2.1.7", port_num + 48), 1)
 
     def read_port_vlan_info(self, port: int) -> Vlans:
         def _calc_ret(vlan_untagged_egress_oid, vlan_egress_bitmap, table_no) -> Vlans:

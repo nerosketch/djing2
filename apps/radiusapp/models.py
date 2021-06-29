@@ -1,17 +1,22 @@
 """radiusapp models file."""
-import subprocess
-from datetime import datetime
 from typing import Optional
-
-from django.conf import settings
+from netaddr import EUI
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
 
+from .radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
 
-def _human_readable_int(num: int) -> str:
+
+def _human_readable_int(num: int, u="b") -> str:
+    """
+    Translates 'num' into decimal prefixes with 'u' prefix name.
+
+    :prop num: Integer count number.
+    :prop u: Unit name.
+    """
     decs = (
         (10 ** 12, "T"),
         (10 ** 9, "G"),
@@ -21,7 +26,7 @@ def _human_readable_int(num: int) -> str:
     for dec, pref in decs:
         if num >= dec:
             num = round(num / dec, 2)
-            return f"{num} {pref}b"
+            return f"{num} {pref}{u}"
     return str(num)
 
 
@@ -32,7 +37,7 @@ class FetchSubscriberLeaseResponse:
     ip_addr = ""
     pool_id = 0
     lease_time = 0
-    customer_mac = ""
+    customer_mac = None
     customer_id = 0
     is_dynamic = None
     is_assigned = None
@@ -43,7 +48,7 @@ class FetchSubscriberLeaseResponse:
         ip_addr="",
         pool_id=0,
         lease_time=0,
-        customer_mac="",
+        customer_mac=None,
         customer_id=0,
         is_dynamic=None,
         is_assigned=None,
@@ -63,7 +68,7 @@ class FetchSubscriberLeaseResponse:
         self.ip_addr = ip_addr
         self.pool_id = pool_id
         self.lease_time = lease_time
-        self.customer_mac = customer_mac
+        self.customer_mac = EUI(customer_mac) if customer_mac else None
         self.customer_id = customer_id
         self.is_dynamic = is_dynamic
         self.is_assigned = is_assigned
@@ -89,7 +94,7 @@ class CustomerRadiusSessionManager(models.Manager):
 
     @staticmethod
     def fetch_subscriber_lease(
-        customer_mac: str,
+        customer_mac: EUI,
         customer_id: Optional[int],
         customer_group: Optional[int],
         is_dynamic: bool,
@@ -104,10 +109,10 @@ class CustomerRadiusSessionManager(models.Manager):
                 "select * from fetch_subscriber_lease"
                 "(%s::macaddr, %s, %s, %s::boolean,"
                 "%s::smallint, %s::smallint)",
-                [customer_mac, customer_id, customer_group, is_dynamic, vid, pool_kind.value],
+                [str(customer_mac), customer_id, customer_group, is_dynamic, vid, pool_kind.value],
             )
             res = cur.fetchone()
-        (lease_id, ip_addr, pool_id, lease_time, customer_mac, customer_id, is_dynamic, is_assigned) = res
+        (lease_id, ip_addr, pool_id, lease_time, lease_mac, customer_id, is_dynamic, is_assigned) = res
         if lease_id is None:
             return
         return FetchSubscriberLeaseResponse(
@@ -115,18 +120,18 @@ class CustomerRadiusSessionManager(models.Manager):
             ip_addr=ip_addr,
             pool_id=pool_id,
             lease_time=lease_time,
-            customer_mac=customer_mac,
+            customer_mac=lease_mac,
             customer_id=customer_id,
             is_dynamic=is_dynamic,
             is_assigned=is_assigned,
         )
 
     def _assign_guest_session(
-        self, radius_uname: str, customer_mac: str, session_id: str, customer_id: Optional[int] = None
-    ):
+        self, customer_mac: EUI, customer_id: Optional[int] = None
+    ) -> Optional[FetchSubscriberLeaseResponse]:
         """Fetch guest lease."""
-        # Тут создаём сессию и сразу выделяем гостевой ip для этой сессии.
-        r = self.fetch_subscriber_lease(
+        # Тут выделяем гостевой ip для этой сессии.
+        return self.fetch_subscriber_lease(
             customer_mac=customer_mac,
             customer_id=customer_id,
             customer_group=None,
@@ -134,41 +139,27 @@ class CustomerRadiusSessionManager(models.Manager):
             vid=None,
             pool_kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
         )
-        if not r:
-            return None
-        sess = self.filter(ip_lease_id=r.lease_id)
-        if sess.exists():
-            return sess.first()
-        # TODO: Move session creating into
-        #  'fetch_subscriber_lease' sql procedure
-        sess = self.create(
-            customer=None,
-            last_event_time=datetime.now(),
-            radius_username=radius_uname,
-            ip_lease_id=r.lease_id,
-            session_id=session_id,
-        )
-        return sess
 
-    def assign_guest_session(self, radius_uname: str, customer_mac: str, session_id: str):
+    def assign_guest_session(
+        self,
+        customer_mac: EUI,
+    ) -> Optional[FetchSubscriberLeaseResponse]:
         """Fetch guest lease 4 unknown customer."""
-        return self._assign_guest_session(radius_uname, customer_mac, session_id)
+        return self._assign_guest_session(customer_mac=customer_mac)
 
-    def assign_guest_customer_session(self, radius_uname: str, customer_id: int, customer_mac: str, session_id: str):
+    def assign_guest_customer_session(
+        self, customer_id: int, customer_mac: EUI
+    ) -> Optional[FetchSubscriberLeaseResponse]:
         """
         Fetch guest lease for known customer, but who hasn't access to service.
 
-        :param radius_uname: User-Name av from RADIUS.
         :param customer_id: customers.models.Customer model id.
         :param customer_mac: Customer device MAC address.
-        :param session_id: unique session id.
         :return: CustomerRadiusSession instance
         """
         # Тут создаём сессию и сразу выделяем гостевой ip для этой сессии,
         #  с привязкой абонента.
-        return self._assign_guest_session(
-            radius_uname=radius_uname, customer_mac=customer_mac, session_id=session_id, customer_id=customer_id
-        )
+        return self._assign_guest_session(customer_mac=customer_mac, customer_id=customer_id)
 
 
 class CustomerRadiusSession(models.Model):
@@ -195,14 +186,33 @@ class CustomerRadiusSession(models.Model):
         """Send radius disconnect packet to BRAS."""
         if not self.radius_username:
             return False
-        uname = str(self.radius_username).encode()
-        uname = uname.replace(b'"', b"")
-        uname = uname.replace(b"'", b"")
-        fin_cmd_list = getattr(settings, "RADIUS_FINISH_SESSION_CMD_LIST")
-        if not fin_cmd_list:
+        return finish_session(self.radius_username)
+
+    def radius_coa_inet2guest(self) -> bool:
+        if not self.radius_username:
             return False
-        r = subprocess.run(fin_cmd_list, input=b'User-Name="%s"' % uname)
-        return r.returncode == 0
+        return change_session_inet2guest(self.radius_username)
+
+    def radius_coa_guest2inet(self) -> bool:
+        if not self.radius_username:
+            return False
+        if not self.customer:
+            return False
+        customer_service = self.customer.current_service
+        if not customer_service:
+            return False
+        service = customer_service.service
+        if not service:
+            return False
+
+        speed_in_burst, speed_out_burst = service.calc_burst()
+        return change_session_guest2inet(
+            radius_uname=self.radius_username,
+            speed_in=int(service.speed_in * 1000000),
+            speed_out=int(service.speed_out * 1000000),
+            speed_in_burst=speed_in_burst,
+            speed_out_burst=speed_out_burst,
+        )
 
     # def is_guest_session(self) -> bool:
     #     """Is current session guest."""
@@ -210,26 +220,19 @@ class CustomerRadiusSession(models.Model):
 
     def h_input_octets(self):
         """Human readable input octets."""
-        return _human_readable_int(self.input_octets)
+        return _human_readable_int(num=self.input_octets)
 
     def h_output_octets(self):
         """Human readable output octets."""
-        return _human_readable_int(self.output_octets)
+        return _human_readable_int(num=self.output_octets)
 
     def h_input_packets(self):
         """Human readable input packets."""
-        return _human_readable_int(self.input_packets)
+        return _human_readable_int(num=self.input_packets, u="p")
 
     def h_output_packets(self):
         """Human readable output packets."""
-        return _human_readable_int(self.output_packets)
-
-    def delete(self, *args, **kwargs):
-        """Remove current instance. And also remove ip lease."""
-        # TODO: Move it to db trigger
-        lease_id = self.ip_lease_id
-        CustomerIpLeaseModel.objects.filter(pk=lease_id).delete()
-        return super().delete(*args, **kwargs)
+        return _human_readable_int(num=self.output_packets, u="p")
 
     def __str__(self):
         return f"{self.customer}: ({self.radius_username}) {self.ip_lease}"
