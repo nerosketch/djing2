@@ -36,10 +36,10 @@ def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
         if not vids:
             continue
 
-        native_vids = (vid.get("vid") for vid in vids if vid.get("native", False))
-        native_vids = list(set(native_vids))
-        trunk_vids = (vid.get("vid") for vid in vids if not vid.get("native", False))
-        trunk_vids = list(set(trunk_vids))
+        native_vids = {vid.get("vid") for vid in vids if vid.get("native", False)}
+        native_vids = list(native_vids)
+        trunk_vids = {vid.get("vid") for vid in vids if not vid.get("native", False)}
+        trunk_vids = list(trunk_vids)
 
         native_vids_len = len(native_vids)
         trunk_vids_len = len(trunk_vids)
