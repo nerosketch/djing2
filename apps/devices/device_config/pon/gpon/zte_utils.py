@@ -15,12 +15,12 @@ class OnuZteRegisterError(ZteOltConsoleError):
 
 class ZTEFiberIsFull(ZteOltConsoleError):
     def __init__(self, message=None):
-        self.message = message or "ZTE OLT fiber is full"
+        super().__init__(message=message or "ZTE OLT fiber is full")
 
 
 class ZteOltLoginFailed(ZteOltConsoleError):
     def __init__(self, message=None):
-        self.message = message or gettext("Wrong login or password for telnet access")
+        super().__init__(message=message or gettext("Wrong login or password for telnet access"))
 
 
 def parse_onu_name(onu_name: str, name_regexp=re.compile("[/:_]")):
