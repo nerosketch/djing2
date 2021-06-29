@@ -1,7 +1,7 @@
 import re
 
-from django.utils.translation import gettext
-from devices.device_config.base import DeviceConsoleError
+from django.utils.translation import gettext as _
+from devices.device_config.base import DeviceConsoleError, DeviceConfigurationError
 
 
 class ZteOltConsoleError(DeviceConsoleError):
@@ -20,7 +20,7 @@ class ZTEFiberIsFull(ZteOltConsoleError):
 
 class ZteOltLoginFailed(ZteOltConsoleError):
     def __init__(self, message=None):
-        super().__init__(message=message or gettext("Wrong login or password for telnet access"))
+        super().__init__(message=message or _("Wrong login or password for telnet access"))
 
 
 def parse_onu_name(onu_name: str, name_regexp=re.compile("[/:_]")):
@@ -36,6 +36,16 @@ def get_unregistered_onu(lines, serial):
                 if serial == spls[1]:
                     onu_index, sn, state = spls[:3]
                     return parse_onu_name(onu_index)
+
+
+def split_snmp_extra(snmp_extra: str):
+    if "." not in snmp_extra:
+        raise DeviceConfigurationError(_("Zte onu snmp field must be two dot separated integers"))
+    chunks = snmp_extra.split(".")
+    if len(chunks) != 2:
+        raise DeviceConfigurationError(_("Zte onu snmp field must be two dot separated integers"))
+    fiber_num, onu_num = chunks
+    return int(fiber_num), int(onu_num)
 
 
 def get_free_registered_onu_number(lines):
@@ -71,7 +81,7 @@ def zte_onu_conv_to_num(rack_num: int, fiber_num: int, port_num: int):
 
 def zte_onu_conv_from_onu(snmp_info: str) -> tuple:
     try:
-        fiber_num, onu_num = (int(i) for i in snmp_info.split("."))
+        fiber_num, onu_num = split_snmp_extra(snmp_info)
         fiber_num_bin = bin(fiber_num)[2:]
         rack_num = int(fiber_num_bin[5:13], base=2)
         fiber_num = int(fiber_num_bin[13:21], base=2)
