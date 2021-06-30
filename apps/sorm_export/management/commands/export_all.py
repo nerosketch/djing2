@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Any
 from django.core.management.base import BaseCommand
+from django.db.models.aggregates import Count
 
-from customers.models import Customer, CustomerService, AdditionalTelephone, CustomerStreet
+from customers.models import Customer, CustomerService, AdditionalTelephone
 from services.models import Service
 from sorm_export.hier_export.customer import (
     export_customer_root,
@@ -14,10 +15,11 @@ from sorm_export.hier_export.customer import (
     export_legal_customer,
     export_contact,
 )
+from sorm_export.ftp_worker.func import send_text_file
 from sorm_export.hier_export.networks import export_ip_leases
 from sorm_export.hier_export.service import export_nomenclature, export_customer_service
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus, FiasRecursiveAddressModel
-from sorm_export.tasks.task_export import task_export
+from sorm_export.tasks.task_export import task_export, _Conv2BinStringIO
 
 from networks.models import CustomerIpLeaseModel
 
@@ -117,11 +119,30 @@ def export_all_customer_services():
     task_export(data, fname, ExportStampTypeEnum.SERVICE_CUSTOMER)
 
 
+def export_customer_lease_binds():
+    def _exp():
+        customers = Customer.objects.annotate(leasecount=Count("customeripleasemodel")).filter(
+            is_active=True, leasecount__gt=0
+        )
+        for customer in customers.iterator():
+            ips = (lease.ip_address for lease in CustomerIpLeaseModel.objects.filter(customer=customer))
+            ips = ",".join(ips)
+            yield f"{customer.username};{ips}"
+
+    fname = "customer_ip_binds.txt"
+    csv_buffer = _Conv2BinStringIO()
+    for row_data in _exp():
+        csv_buffer.write("%s\n" % row_data)
+    csv_buffer.seek(0)
+    send_text_file(csv_buffer, fname)
+
+
 class Command(BaseCommand):
     help = "Exports all available data to sorm"
 
     def handle(self, *args: Any, **options: Any):
         funcs = (
+            (export_customer_lease_binds, "Customer lease binds"),
             (export_all_address_objects, "Address objects export"),
             (export_all_root_customers, "Customers root export"),
             (export_all_customer_contracts, "Customer contracts export"),
