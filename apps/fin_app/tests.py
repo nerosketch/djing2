@@ -7,7 +7,7 @@ from django.utils.html import escape
 from rest_framework.test import APITestCase
 
 from customers.models import Customer
-from fin_app.models import PayAllTimeGateway
+from fin_app.models.alltime import PayAllTimeGateway
 from profiles.models import UserProfile
 
 
