@@ -267,6 +267,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         sessions = CustomerRadiusSession.objects.filter(
             ip_lease__ip_address=ip,
         )
+        CustomerIpLeaseModel.objects.filter(ip_address=ip).update(ip_address=datetime.now())
         if sessions.exists():
             self._update_counters(sessions=sessions, data=dat)
 
@@ -283,7 +284,11 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                         customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
                             device_mac=dev_mac, device_port=dev_port
                         )
-                        if customer is not None and single_session.customer_id is not None and int(customer.pk) != int(single_session.customer_id):
+                        if (
+                            customer is not None
+                            and single_session.customer_id is not None
+                            and int(customer.pk) != int(single_session.customer_id)
+                        ):
                             tasks.async_finish_session_task(radius_uname=single_session.radius_username)
                             single_session.delete()
                             return Response(status=status.HTTP_204_NO_CONTENT)
