@@ -87,6 +87,7 @@ execute _tp('customers', 'change_additionaltelephone', 'Может изменя�
 execute _tp('customers', 'view_additionaltelephone', 'Может видеть дополнительные номера телефонов для абонентов');
 execute _tp('customers', 'delete_customer', 'Может удалять абонентов');
 execute _tp('customers', 'can_add_balance', 'Может пополнять абоненту счёт');
+execute _tp('customers', 'can_add_negative_balance', 'Может снимать средства со счёта абонента');
 execute _tp('customers', 'add_periodicpayforid', 'Может назначать периодический платёж');
 execute _tp('customers', 'view_periodicpayforid', 'Может видеть периодический платёж');
 execute _tp('customers', 'delete_passportinfo', 'Может удалять паспортные данные');
