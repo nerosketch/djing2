@@ -56,7 +56,6 @@ call vundle#begin()
     Plugin 'vim-airline/vim-airline'            " Lean & mean status/tabline for vim
     Plugin 'vim-airline/vim-airline-themes'     " Themes for airline
     Plugin 'fisadev/FixedTaskList.vim'          " Pending tasks list
-    Plugin 'yuttie/comfortable-motion.vim'      " Smooth scrolling
     Plugin 'MattesGroeger/vim-bookmarks'        " Bookmarks
     Plugin 'thaerkh/vim-indentguides'           " Visual representation of indents
     Plugin 'dense-analysis/ale'                 " Async Lint Engine
@@ -187,16 +186,10 @@ set mouse=a
 
 
 "=====================================================
-"" Comfortable Motion Settings
+"" Screen scrolling
 "=====================================================
-let g:comfortable_motion_scroll_down_key = "j"
-let g:comfortable_motion_scroll_up_key = "k"
-let g:comfortable_motion_no_default_key_mappings = 1
-let g:comfortable_motion_impulse_multiplier = 25  " Feel free to increase/decrease this value.
-nnoremap <silent> <C-d> :call comfortable_motion#flick(g:comfortable_motion_impulse_multiplier * winheight(0) * 2)<CR>
-nnoremap <silent> <C-u> :call comfortable_motion#flick(g:comfortable_motion_impulse_multiplier * winheight(0) * -2)<CR>
-nnoremap <silent> <C-f> :call comfortable_motion#flick(g:comfortable_motion_impulse_multiplier * winheight(0) * 4)<CR>
-nnoremap <silent> <C-b> :call comfortable_motion#flick(g:comfortable_motion_impulse_multiplier * winheight(0) * -4)<CR>
+noremap <C-Down> j1<C-e>
+noremap <C-Up> k1<C-y>
 
 "=====================================================
 "" AirLine settings
