@@ -176,7 +176,7 @@ set hlsearch	                            " highlight search results
 noremap <F3> :execute "vimgrep /" . expand("<cword>") . "/j **" <Bar> cw<CR>
 noremap <F4> :execute "/" . expand("<cword>") <CR>
 
-" Mouse Cusrsor enable
+" Mouse Cursor enable
 " set mouse=a
 
 
