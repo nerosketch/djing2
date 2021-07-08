@@ -1,6 +1,6 @@
 import csv
 from io import StringIO
-from sorm_export.ftp_worker.func import send_text_file
+from sorm_export.ftp_worker.func import send_text_buf2ftp
 from sorm_export.models import ExportStampTypeEnum
 
 
@@ -29,7 +29,7 @@ def task_export(data, filename: str, export_type: ExportStampTypeEnum):
         row = (eld for elt, eld in row_data.items())
         csv_writer.writerow(row)
     csv_buffer.seek(0)
-    send_text_file(csv_buffer, filename)
+    send_text_buf2ftp(csv_buffer, filename)
     #    em.attempts_count = 1
     #    em.last_attempt_time = datetime.now()
     #    em.export_status = ExportStampStatusEnum.SUCCESSFUL
