@@ -1,4 +1,5 @@
 from datetime import datetime
+from json import dump
 from radiusapp import custom_signals
 from django.dispatch.dispatcher import receiver
 from radiusapp.models import CustomerRadiusSession
@@ -24,7 +25,8 @@ def signal_radius_session_acc_start(
 ):
 
     with open("/tmp/radius_start.log", "a") as f:
-        f.write("%s\n" % customer_mac)
+        dump(data, f)
+        f.write("\n")
 
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
 
@@ -52,7 +54,8 @@ def signal_radius_session_acct_stop(
 ):
 
     with open("/tmp/radius_stop.log", "a") as f:
-        f.write("%s\n" % customer_mac)
+        dump(data, f)
+        f.write("\n")
 
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
 
