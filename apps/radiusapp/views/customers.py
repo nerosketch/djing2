@@ -250,7 +250,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         try:
-            customer = (lease.customer,)
+            customer = lease.customer
             event_time = datetime.now()
             new_session = CustomerRadiusSession.objects.create(
                 customer=customer,
