@@ -7,7 +7,7 @@ from sorm_export.base import format_fname
 
 
 @task()
-def save_radius_acct_start(event_time: datetime, data: AAAExportSerializer) -> None:
+def save_radius_acct(event_time: datetime, data: AAAExportSerializer) -> None:
     line = [v for k, v in data.items()]
     with open(AAA_EXPORT_FNAME, "a") as f:
         csv_writer = csv.writer(f, dialect="unix", delimiter=";")

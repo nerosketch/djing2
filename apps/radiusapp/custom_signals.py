@@ -22,6 +22,8 @@ radius_auth_start_signal = Signal()
 #    instance_queryset - CustomerRadiusSession Queryset in instance is None
 #    data - all raw data from radius request
 #    ip_addr - customer ip address from radius request
+#    radius_unique_id - obviously
+#    customer_mac: customer device mac address from radius request
 radius_auth_stop_signal = Signal()
 
 
