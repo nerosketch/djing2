@@ -3,7 +3,7 @@ from datetime import datetime
 from uwsgi_tasks import task, cron
 from sorm_export.serializers.aaa import AAAExportSerializer, AAA_EXPORT_FNAME
 from sorm_export.ftp_worker.func import send_file2ftp
-from sorm_export.base import format_fname
+from sorm_export.hier_export.base import format_fname
 
 
 @task()
