@@ -7,7 +7,7 @@ from django.dispatch import Signal
 #    instance - CustomerRadiusSession instance
 #    data - all raw data from radius request
 #    ip_addr - customer ip address from radius request
-#    customer_mac: customer device mac address from radius request
+#    customer_mac: netaddr.EUI instance -  customer device mac address from radius request
 #    radius_username - obviously, User-Name value from radius
 #    customer_ip_lease - networks.models.CustomerIpLeaseModel instance
 #    customer - customers.models.Customer instance
@@ -23,7 +23,7 @@ radius_auth_start_signal = Signal()
 #    data - all raw data from radius request
 #    ip_addr - customer ip address from radius request
 #    radius_unique_id - obviously
-#    customer_mac: customer device mac address from radius request
+#    customer_mac: netaddr.EUI instance -  customer device mac address from radius request
 radius_auth_stop_signal = Signal()
 
 
