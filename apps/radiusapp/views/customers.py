@@ -203,7 +203,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             output_packets=v_out_pkt,
             **update_kwargs,
         )
-        custom_signals.radius_auth_update_signal.send(
+        custom_signals.radius_auth_update_signal(
             sender=CustomerRadiusSession,
             instance=None,
             instance_queryset=sessions,
@@ -260,7 +260,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 session_id=radius_unique_id,
             )
             customer_mac = vendor_manager.get_customer_mac(dat)
-            custom_signals.radius_auth_start_signal.send(
+            custom_signals.radius_auth_start_signal(
                 sender=CustomerRadiusSession,
                 instance=new_session,
                 data=dat,
@@ -285,7 +285,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         vcls = vendor_manager.vendor_class
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
         sessions = CustomerRadiusSession.objects.filter(ip_lease__ip_address=ip)
-        custom_signals.radius_auth_start_signal.send(
+        custom_signals.radius_auth_start_signal(
             sender=CustomerRadiusSession,
             instance_queryset=sessions,
             data=dat,
