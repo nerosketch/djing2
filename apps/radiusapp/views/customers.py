@@ -287,7 +287,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         vcls = vendor_manager.vendor_class
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
-        customer_mac = vendor_manager.get_customer_mac(request.data)
+        customer_mac = vendor_manager.get_customer_mac(dat)
         sessions = CustomerRadiusSession.objects.filter(ip_lease__ip_address=ip)
         custom_signals.radius_auth_stop_signal.send(
             sender=CustomerRadiusSession,
