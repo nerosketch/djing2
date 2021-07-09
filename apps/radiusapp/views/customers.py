@@ -267,7 +267,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         sessions = CustomerRadiusSession.objects.filter(
             ip_lease__ip_address=ip,
         )
-        CustomerIpLeaseModel.objects.filter(ip_address=ip).update(ip_address=datetime.now())
+        CustomerIpLeaseModel.objects.filter(ip_address=ip).update(last_update=datetime.now())
         if sessions.exists():
             self._update_counters(sessions=sessions, data=dat)
 
