@@ -284,12 +284,16 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         vendor_manager = self.vendor_manager
         vcls = vendor_manager.vendor_class
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
+        radius_unique_id = vendor_manager.get_radius_unique_id(dat)
+        customer_mac = vendor_manager.get_customer_mac(request.data)
         sessions = CustomerRadiusSession.objects.filter(ip_lease__ip_address=ip)
-        custom_signals.radius_auth_start_signal.send(
+        custom_signals.radius_auth_stop_signal.send(
             sender=CustomerRadiusSession,
             instance_queryset=sessions,
             data=dat,
             ip_addr=ip,
+            radius_unique_id=radius_unique_id,
+            customer_mac=customer_mac,
         )
         sessions.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
