@@ -21,6 +21,9 @@ def signal_radius_session_acc_start(
     customer_mac: str,
 ):
 
+    with open("/tmp/radius_start.log", "a") as f:
+        f.write("%s\n" % customer_mac)
+
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
 
     customer_username = customer.username
@@ -45,6 +48,9 @@ def signal_radius_session_acc_start(
 def signal_radius_session_acct_stop(
     sender, instance_queryset, data: dict, ip_addr: str, radius_unique_id: str, customer_mac: str
 ):
+
+    with open("/tmp/radius_stop.log", "a") as f:
+        f.write("%s\n" % customer_mac)
 
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
 
