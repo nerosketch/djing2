@@ -32,11 +32,11 @@ def _send_buffer_as_file(ftp, fp: TextIOWrapper, remote_fname: str, _bin_mode=Tr
 
 
 def send_bin_buf2ftp(fp: TextIOWrapper, remote_fname: str) -> None:
-    _send_buffer_as_file(fp, remote_fname, True)
+    _send_buffer_as_file(fp=fp, remote_fname=remote_fname, _bin_mode=True)
 
 
 def send_text_buf2ftp(fp: TextIOWrapper, remote_fname: str) -> None:
-    _send_buffer_as_file(fp, remote_fname, False)
+    _send_buffer_as_file(fp=fp, remote_fname=remote_fname, _bin_mode=False)
 
 
 @_ftp_credentials
