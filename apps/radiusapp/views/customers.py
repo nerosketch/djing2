@@ -183,7 +183,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
         return request_type_fn(request)
 
-    def _update_counters(self, sessions, data: dict, **update_kwargs):
+    def _update_counters(self, sessions, data: dict, last_event_time: datetime, **update_kwargs):
         vcls = self.vendor_manager.vendor_class
         v_inp_oct = _gigaword_imp(
             num=vcls.get_rad_val(data, "Acct-Input-Octets", 0),
@@ -196,7 +196,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         v_in_pkt = vcls.get_rad_val(data, "Acct-Input-Packets", 0)
         v_out_pkt = vcls.get_rad_val(data, "Acct-Output-Packets", 0)
         sessions.update(
-            last_event_time=datetime.now(),
+            last_event_time=last_event_time,
             input_octets=v_inp_oct,
             output_octets=v_out_oct,
             input_packets=v_in_pkt,
