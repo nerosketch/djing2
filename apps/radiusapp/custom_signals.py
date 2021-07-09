@@ -35,4 +35,4 @@ radius_auth_stop_signal = Signal()
 #    output_octets - count of output octets from start session to now
 #    input_packets - count of input packets from start session to now
 #    output_packets - count of output packets from start session to now
-auth_update_signal = Signal()
+radius_auth_update_signal = Signal()
