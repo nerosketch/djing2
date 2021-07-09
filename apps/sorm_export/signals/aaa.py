@@ -55,7 +55,8 @@ def signal_radius_session_acct_stop(
 
     with open("/tmp/radius_stop.log", "a") as f:
         dump(data, f)
-        f.write("\n")
+        f.write('MAC: ERX-Dhcp-Mac-Addr "%s"\n' % customer_mac)
+        f.write("\n"*3)
 
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
 
