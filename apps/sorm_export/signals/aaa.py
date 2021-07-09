@@ -1,6 +1,7 @@
 from datetime import datetime
 from json import dump
 from netaddr import EUI
+from netfields.mac import mac_unix_common
 from radiusapp import custom_signals
 from django.dispatch.dispatcher import receiver
 from radiusapp.models import CustomerRadiusSession
@@ -38,11 +39,11 @@ def signal_radius_session_acc_start(
             "event_time": event_time,
             "event_type": AAAEventType.RADIUS_AUTH_START,
             "session_id": radius_unique_id,
-            "customer_ip": customer_ip_lease,
+            "customer_ip": ip_addr,
             "customer_db_username": customer_username,
             # 'nas_ip_addr': nas_ip_addr,
             "nas_port": nas_port,
-            "customer_device_mac": str(customer_mac),
+            "customer_device_mac": customer_mac.format(dialect=mac_unix_common)
         }
     )
     ser.is_valid(raise_exception=True)
@@ -81,7 +82,7 @@ def signal_radius_session_acct_stop(
             "customer_db_username": customer_username,
             # 'nas_ip_addr': nas_ip_addr,
             "nas_port": nas_port,
-            "customer_device_mac": str(customer_mac),
+            "customer_device_mac": customer_mac.format(dialect=mac_unix_common)
         }
     )
     ser.is_valid(raise_exception=True)
