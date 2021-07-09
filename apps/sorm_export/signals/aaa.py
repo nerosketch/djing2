@@ -1,7 +1,7 @@
 from datetime import datetime
 from radiusapp import custom_signals
 from django.dispatch.dispatcher import receiver
-from networks.models import CustomerRadiusSession
+from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendors import IVendorSpecific
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
 from sorm_export.tasks.aaa import save_radius_acct
@@ -19,6 +19,8 @@ def signal_radius_session_acc_start(
     radius_unique_id: str,
     event_time: datetime,
     customer_mac: str,
+    *args,
+    **kwargs
 ):
 
     with open("/tmp/radius_start.log", "a") as f:
@@ -46,7 +48,7 @@ def signal_radius_session_acc_start(
 
 @receiver(custom_signals.radius_auth_stop_signal, sender=CustomerRadiusSession)
 def signal_radius_session_acct_stop(
-    sender, instance_queryset, data: dict, ip_addr: str, radius_unique_id: str, customer_mac: str
+    sender, instance_queryset, data: dict, ip_addr: str, radius_unique_id: str, customer_mac: str, *args, **kwargs
 ):
 
     with open("/tmp/radius_stop.log", "a") as f:
