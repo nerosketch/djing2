@@ -138,7 +138,7 @@ def export_customer_lease_binds():
 
 
 class Command(BaseCommand):
-    help = "Exports all available data to sorm"
+    help = "Exports all available data to СОРМ"
 
     def handle(self, *args: Any, **options: Any):
         funcs = (
