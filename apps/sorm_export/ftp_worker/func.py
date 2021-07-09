@@ -42,4 +42,4 @@ def send_text_buf2ftp(fp: TextIOWrapper, remote_fname: str) -> None:
 @_ftp_credentials
 def send_file2ftp(ftp, fname: str, remote_fname: str) -> None:
     with open(fname, 'r') as file:
-        ftp.storebinary("STOR %s" % remote_fname, file)
+        ftp.storbinary("STOR %s" % remote_fname, file)
