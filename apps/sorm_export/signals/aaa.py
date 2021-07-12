@@ -43,7 +43,7 @@ def signal_radius_session_acc_start(
         customer_ip=ip_addr,
         customer_db_username=customer_username,
         nas_port=nas_port,
-        customer_device_mac=customer_mac.format(dialect=mac_unix_common)
+        customer_device_mac=customer_mac.format(dialect=mac_unix_common) if customer_mac else ''
     )
 
 
@@ -71,5 +71,5 @@ def signal_radius_session_acct_stop(
         customer_ip=ip_addr,
         customer_db_username=customer_username,
         nas_port=nas_port,
-        customer_device_mac=customer_mac.format(dialect=mac_unix_common)
+        customer_device_mac=customer_mac.format(dialect=mac_unix_common) if customer_mac else ''
     )

@@ -38,6 +38,6 @@ class AAAExportSerializer(serializers.Serializer):
     input_octets = serializers.IntegerField(default=0)
     output_octets = serializers.IntegerField(default=0)
     customer_password = serializers.CharField(default="")
-    customer_device_mac = serializers.CharField(default="")
+    customer_device_mac = serializers.CharField(default="", allow_blank=True)
     apn_string = serializers.CharField(default="")
     device_point_id = serializers.IntegerField(default=0)
