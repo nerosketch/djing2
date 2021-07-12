@@ -1,10 +1,12 @@
 import csv
-import sys
 from netfields.mac import mac_unix_common
+from datetime import datetime
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, no_translations
 from radiusapp.models import CustomerRadiusSession
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
+from sorm_export.ftp_worker.func import send_file2ftp
+from sorm_export.hier_export.base import format_fname
 
 
 class Command(BaseCommand):
@@ -14,8 +16,14 @@ class Command(BaseCommand):
         parser.add_argument(
             '--fname', type=str, help='Writes result into this file'
         )
+        parser.add_argument(
+            '--send2ftp',
+            action='store_true',
+            help='Send result 2 ftp, if --fname is specified'
+        )
 
-    def handle(self, fname=None, *args, **options):
+    @no_translations
+    def handle(self, fname=None, send2ftp=None, *args, **options):
         sessions = CustomerRadiusSession.objects.exclude(customer=None).only(
             'customer', 'assign_time', 'session_id', 'ip_lease',
             'input_octets', 'output_octets'
@@ -38,12 +46,19 @@ class Command(BaseCommand):
         lines_gen = ((v for k,v in i.items()) for i in ser.data)
 
         if fname is None:
-            csv_writer = csv.writer(sys.stdout, dialect="unix", delimiter=";")
+            csv_writer = csv.writer(self.stdout, dialect="unix", delimiter=";")
             csv_writer.writerows(lines_gen)
-        else:
-            with open(fname, "a") as f:
-                csv_writer = csv.writer(f, dialect="unix", delimiter=";")
-                csv_writer.writerows(lines_gen)
+            return
 
-            self.stdout.write('Result writes ', ending='')
+        with open(fname, "w") as f:
+            csv_writer = csv.writer(f, dialect="unix", delimiter=";")
+            csv_writer.writerows(lines_gen)
+
+        self.stdout.write('Result writes ', ending='')
+        self.stdout.write(self.style.SUCCESS('OK'))
+
+        if send2ftp:
+            now = datetime.now()
+            send_file2ftp(fname=fname, remote_fname=f"ISP/aaa/aaa_v1_{format_fname(now)}.txt")
+            self.stdout.write('FTP Store ', ending='')
             self.stdout.write(self.style.SUCCESS('OK'))
