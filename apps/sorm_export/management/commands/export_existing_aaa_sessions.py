@@ -37,7 +37,7 @@ class Command(BaseCommand):
             "customer_db_username": ses.customer.get_username(),
             'input_octets': ses.input_octets,
             'output_octets': ses.output_octets,
-            "customer_device_mac": ses.ip_lease.mac_address.format(dialect=mac_unix_common) if ses.ip_lease.mac_address else '00:00:00:00:00'
+            "customer_device_mac": ses.ip_lease.mac_address.format(dialect=mac_unix_common) if ses.ip_lease.mac_address else ''
         } for ses in sessions]
 
         ser = AAAExportSerializer(data=dat, many=True)
