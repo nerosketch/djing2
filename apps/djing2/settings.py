@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 import os
 
 try:
-    from . import local_settings
+    from djing2 import local_settings
 except ImportError:
     raise ImportError("You must create config file local_settings.py from template")
 
