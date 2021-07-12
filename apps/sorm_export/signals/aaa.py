@@ -1,5 +1,4 @@
 from datetime import datetime
-from json import dump
 from netaddr import EUI
 from netfields.mac import mac_unix_common
 from radiusapp import custom_signals
@@ -10,14 +9,23 @@ from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
 from sorm_export.tasks.aaa import save_radius_acct
 
 
+def _save_aaa_log(event_time: datetime, **serializer_keys):
+    serializer_keys.update({
+        "event_time": event_time,
+    })
+    ser = AAAExportSerializer(
+        data=serializer_keys
+    )
+    ser.is_valid(raise_exception=True)
+    return save_radius_acct(event_time=event_time, data=ser.data)
+
+
 @receiver(custom_signals.radius_auth_start_signal, sender=CustomerRadiusSession)
 def signal_radius_session_acc_start(
     sender,
     instance: CustomerRadiusSession,
     data: dict,
     ip_addr: str,
-    radius_username: str,
-    customer_ip_lease,
     customer,
     radius_unique_id: str,
     event_time: datetime,
@@ -25,41 +33,24 @@ def signal_radius_session_acc_start(
     *args,
     **kwargs
 ):
-
-    with open("/tmp/radius_start.log", "a") as f:
-        dump(data, f)
-        f.write("\n")
-
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
-
     customer_username = customer.username
 
-    ser = AAAExportSerializer(
-        data={
-            "event_time": event_time,
-            "event_type": AAAEventType.RADIUS_AUTH_START,
-            "session_id": radius_unique_id,
-            "customer_ip": ip_addr,
-            "customer_db_username": customer_username,
-            # 'nas_ip_addr': nas_ip_addr,
-            "nas_port": nas_port,
-            "customer_device_mac": customer_mac.format(dialect=mac_unix_common)
-        }
+    _save_aaa_log(
+        event_time=event_time,
+        event_type=AAAEventType.RADIUS_AUTH_START,
+        session_id=radius_unique_id,
+        customer_ip=ip_addr,
+        customer_db_username=customer_username,
+        nas_port=nas_port,
+        customer_device_mac=customer_mac.format(dialect=mac_unix_common)
     )
-    ser.is_valid(raise_exception=True)
-    save_radius_acct(event_time=event_time, data=ser.data)
 
 
 @receiver(custom_signals.radius_auth_stop_signal, sender=CustomerRadiusSession)
 def signal_radius_session_acct_stop(
     sender, instance_queryset, data: dict, ip_addr: str, radius_unique_id: str, customer_mac: EUI, *args, **kwargs
 ):
-
-    with open("/tmp/radius_stop.log", "a") as f:
-        dump(data, f)
-        f.write('MAC: ERX-Dhcp-Mac-Addr "%s"\n' % customer_mac)
-        f.write("\n"*3)
-
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
 
     if instance_queryset.exists():
@@ -73,17 +64,12 @@ def signal_radius_session_acct_stop(
 
     event_time = datetime.now()
 
-    ser = AAAExportSerializer(
-        data={
-            "event_time": event_time,
-            "event_type": AAAEventType.RADIUS_AUTH_STOP,
-            "session_id": radius_unique_id,
-            "customer_ip": ip_addr,
-            "customer_db_username": customer_username,
-            # 'nas_ip_addr': nas_ip_addr,
-            "nas_port": nas_port,
-            "customer_device_mac": customer_mac.format(dialect=mac_unix_common)
-        }
+    _save_aaa_log(
+        event_time=event_time,
+        event_type=AAAEventType.RADIUS_AUTH_STOP,
+        session_id=radius_unique_id,
+        customer_ip=ip_addr,
+        customer_db_username=customer_username,
+        nas_port=nas_port,
+        customer_device_mac=customer_mac.format(dialect=mac_unix_common)
     )
-    ser.is_valid(raise_exception=True)
-    save_radius_acct(event_time=event_time, data=ser.data)
