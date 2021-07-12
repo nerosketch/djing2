@@ -1,7 +1,6 @@
 from typing import Optional
 from datetime import datetime
 from netaddr import EUI
-from django.db.utils import IntegrityError
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -251,17 +250,17 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        try:
-            customer = lease.customer
-            event_time = datetime.now()
-            new_session = CustomerRadiusSession.objects.create(
-                customer=customer,
-                ip_lease=lease,
-                last_event_time=event_time,
-                radius_username=radius_username,
-                session_id=radius_unique_id,
-            )
-            customer_mac = vendor_manager.get_customer_mac(dat)
+        customer = lease.customer
+        event_time = datetime.now()
+        new_session = CustomerRadiusSession.objects.create(
+            customer=customer,
+            ip_lease=lease,
+            last_event_time=event_time,
+            radius_username=radius_username,
+            session_id=radius_unique_id,
+        )
+        customer_mac = vendor_manager.get_customer_mac(dat)
+        if customer:
             custom_signals.radius_auth_start_signal.send(
                 sender=CustomerRadiusSession,
                 instance=new_session,
@@ -274,8 +273,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 radius_unique_id=radius_unique_id,
                 event_time=event_time,
             )
-        except IntegrityError:
-            pass
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_stop(self, request):
