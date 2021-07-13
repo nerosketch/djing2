@@ -1,3 +1,4 @@
+import os
 import csv
 from datetime import datetime
 from uwsgi_tasks import task, cron
@@ -16,8 +17,9 @@ def save_radius_acct(event_time: datetime, data: AAAExportSerializer) -> None:
 
 @cron(minute=-15)
 def upload_aaa_2_ftp(signal_number):
-    now = datetime.now()
-    send_file2ftp(fname=AAA_EXPORT_FNAME, remote_fname=f"ISP/aaa/aaa_v1_{format_fname(now)}.txt")
+    if os.path.getsize(AAA_EXPORT_FNAME) > 0:
+        now = datetime.now()
+        send_file2ftp(fname=AAA_EXPORT_FNAME, remote_fname=f"ISP/aaa/aaa_v1_{format_fname(now)}.txt")
 
     # Erase all content
     open(AAA_EXPORT_FNAME, 'w').close()
