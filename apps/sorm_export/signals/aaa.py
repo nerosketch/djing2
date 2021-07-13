@@ -55,7 +55,7 @@ def signal_radius_session_acct_stop(
 
     if instance_queryset.exists():
         session = instance_queryset.first()
-        if session:
+        if session and session.customer:
             customer_username = session.customer.username
         else:
             return
