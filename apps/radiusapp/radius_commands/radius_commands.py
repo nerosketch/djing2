@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from pyrad.client import Client, Timeout
@@ -23,19 +24,23 @@ def _abspath(fname):
     return os.path.join(curdir, fname)
 
 
-class RadiusSessionNotFoundException(Exception):
+class RadiusBaseException(Exception):
     pass
 
 
-class RadiusTimeoutException(Timeout):
+class RadiusSessionNotFoundException(RadiusBaseException):
     pass
 
 
-class RadiusInvalidRequestException(Exception):
+class RadiusTimeoutException(RadiusBaseException):
     pass
 
 
-class RadiusMissingAttributeException(Exception):
+class RadiusInvalidRequestException(RadiusBaseException):
+    pass
+
+
+class RadiusMissingAttributeException(RadiusBaseException):
     pass
 
 
@@ -72,12 +77,12 @@ class RadiusInteract:
         request = self.client.CreateCoAPacket(code=packet.DisconnectRequest, **attrs)
         return self._process_request(request)
 
-    def _process_request(self, request):
+    def _process_request(self, request) -> Optional[str]:
         try:
             res = self.client.SendPacket(request)
             if res.code in (packet.CoAACK, packet.AccessAccept, packet.DisconnectACK):
                 # ok
-                return True
+                return
             res_keys = res.keys()
             exception = None
             if 'Error-Cause' in res_keys:
@@ -92,11 +97,10 @@ class RadiusInteract:
                 res_keys.remove('Error-Cause')
             # get err text
             res_text = b'\n\n'.join(b'\n'.join(res.get(i)) for i in res_keys)
-            if isinstance(res_text, bytes):
-                res_text = res_text.decode()
+            res_text = res_text.decode()
             if exception is not None:
                 raise exception(res_text)
-            return res, res_text
+            return res_text
         except Timeout as e:
             raise RadiusTimeoutException(e)
 
@@ -111,17 +115,17 @@ def _filter_uname(uname: str) -> str:
     return _uname
 
 
-def finish_session(radius_uname: str) -> bool:
+def finish_session(radius_uname: str):
     """Send radius disconnect packet to BRAS."""
     if not radius_uname:
-        return False
+        return
     uname = _filter_uname(radius_uname)
     return _rad_interact_instance.disconnect(uname=uname)
 
 
-def change_session_inet2guest(radius_uname: str) -> bool:
+def change_session_inet2guest(radius_uname: str):
     if not radius_uname:
-        return False
+        return
     uname = _filter_uname(radius_uname)
     # COA inet -> guest
     return _rad_interact_instance.coa_inet2guest(uname=uname)
@@ -129,7 +133,7 @@ def change_session_inet2guest(radius_uname: str) -> bool:
 
 def change_session_guest2inet(
     radius_uname: str, speed_in: int, speed_out: int, speed_in_burst: int, speed_out_burst: int
-) -> bool:
+):
     """
     Send COA via radclient, change guest service type to inet service type.
     :param radius_uname: User-Name from radius
@@ -140,7 +144,7 @@ def change_session_guest2inet(
     :return: boolean, is return code of script is equal 0
     """
     if not radius_uname:
-        return False
+        return
     uname = _filter_uname(radius_uname)
     speed_in = int(speed_in)
     speed_out = int(speed_out)
