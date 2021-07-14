@@ -1,11 +1,21 @@
 import os
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from pyrad.client import Client
 from pyrad import packet
 from pyrad import dictionary
 
 
-ADDRESS = 'empty'
-SECRET = b'empty'
+options = getattr(settings, 'RADIUSAPP_OPTIONS')
+if options is None:
+    raise ImproperlyConfigured('You must specified RADIUSAPP_OPTIONS in settings')
+
+ADDRESS = options.get('server_host')
+SECRET = options.get('secret')
+
+if not all([ADDRESS, SECRET]):
+    raise ImproperlyConfigured("You must set 'server_host' and 'secret' options to RADIUSAPP_OPTIONS dict")
+del options
 
 
 def _abspath(fname):

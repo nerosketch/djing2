@@ -306,3 +306,5 @@ WEBPUSH_SETTINGS = getattr(local_settings, "WEBPUSH_SETTINGS")
 DEFAULT_FTP_CREDENTIALS = getattr(
     local_settings, "DEFAULT_FTP_CREDENTIALS", {"host": "localhost", "uname": "user", "password": "******"}
 )
+
+RADIUSAPP_OPTIONS = getattr(local_settings, 'RADIUSAPP_OPTIONS', None)
