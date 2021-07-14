@@ -1,7 +1,7 @@
 import os
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from pyrad.client import Client
+from pyrad.client import Client, Timeout
 from pyrad import packet
 from pyrad import dictionary
 
@@ -23,6 +23,22 @@ def _abspath(fname):
     return os.path.join(curdir, fname)
 
 
+class RadiusSessionNotFoundException(Exception):
+    pass
+
+
+class RadiusTimeoutException(Timeout):
+    pass
+
+
+class RadiusInvalidRequestException(Exception):
+    pass
+
+
+class RadiusMissingAttributeException(Exception):
+    pass
+
+
 class RadiusInteract:
     client = Client(server=ADDRESS, secret=SECRET, dict=dictionary.Dictionary(_abspath("dictionary")))
     # client.timeout = 30
@@ -33,7 +49,7 @@ class RadiusInteract:
             'ERX-Service-Deactivate': 'SERVICE-INET',
             'ERX-Service-Activate:1': 'SERVICE-GUEST'
         }
-        return self.coa(uname=uname, **attrs)
+        return self.coa(**attrs)
 
     def coa_guest2inet(self, uname: str, speed_in: int, speed_out: int, speed_in_burst: int, speed_out_burst: int):
         attrs = {
@@ -41,7 +57,7 @@ class RadiusInteract:
             'ERX-Service-Deactivate': 'SERVICE-GUEST',
             'ERX-Service-Activate:1': f'SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})'
         }
-        return self.coa(uname=uname, **attrs)
+        return self.coa(**attrs)
 
     def coa(self, **attrs):
         # create coa request
@@ -57,13 +73,32 @@ class RadiusInteract:
         return self._process_request(request)
 
     def _process_request(self, request):
-        res = self.client.SendPacket(request)
-        if res.code in (packet.CoAACK, packet.AccessAccept, packet.DisconnectACK):
-            # ok
-            pass
-        for i in res.keys():
-            print("%s: %s" % (i, res.get(i)))
-        return res
+        try:
+            res = self.client.SendPacket(request)
+            if res.code in (packet.CoAACK, packet.AccessAccept, packet.DisconnectACK):
+                # ok
+                return True
+            res_keys = res.keys()
+            exception = None
+            if 'Error-Cause' in res_keys:
+                errs = res.get('Error-Cause')
+                if 'Session-Context-Not-Found' in errs:
+                    exception = RadiusSessionNotFoundException
+                elif 'Invalid-Request' in errs:
+                    exception = RadiusInvalidRequestException
+                elif 'Missing-Attribute' in errs:
+                    exception = RadiusMissingAttributeException
+
+                res_keys.remove('Error-Cause')
+            # get err text
+            res_text = b'\n\n'.join(b'\n'.join(res.get(i)) for i in res_keys)
+            if isinstance(res_text, bytes):
+                res_text = res_text.decode()
+            if exception is not None:
+                raise exception(res_text)
+            return res, res_text
+        except Timeout as e:
+            raise RadiusTimeoutException(e)
 
 
 _rad_interact_instance = RadiusInteract()
