@@ -18,7 +18,6 @@ class ViberMessenger(Messenger):
         super().__init__(*args, **kwargs)
         self._viber_cache = None
 
-    token = models.CharField(_("Bot secret token"), max_length=64)
     avatar = models.ImageField(_("Avatar"), upload_to="viber_avatar", null=True)
 
     def get_viber(self):
