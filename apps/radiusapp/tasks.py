@@ -1,39 +1,49 @@
 """Async tasks for radiusapp."""
-from typing import Tuple
+from functools import wraps
 import logging
-from uwsgi_tasks import task, TaskExecutor, SPOOL_OK
+from uwsgi_tasks import task, TaskExecutor, SPOOL_OK, SPOOL_RETRY
 
-from radiusapp.models import CustomerRadiusSession
-from .radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
-
-
-@task()
-def radius_batch_stop_customer_services_task(customer_ids: Tuple[int]):
-    """
-    Async COA RADIUS sessions inet->guest.
-
-    :param customer_ids: customers.models.Customer ids
-    :return: nothing
-    """
-    sessions = (
-        CustomerRadiusSession.objects.filter(customer_id__in=customer_ids).only("pk", "radius_username").iterator()
-    )
-    for session in sessions:
-        if session.radius_coa_inet2guest():
-            logging.info('Session "%s" changed inet -> guest' % session)
-        else:
-            logging.info('Session "%s" not changed inet -> guest' % session)
+from radiusapp import radius_commands as rc
 
 
-@task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_count=3, retry_timeout=5)
+def _radius_task_error_wrapper(fn):
+    @wraps(fn)
+    def _wrapped(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except rc.RadiusSessionNotFoundException:
+            return SPOOL_OK
+        except rc.RadiusTimeoutException:
+            return SPOOL_RETRY
+        except rc.RadiusInvalidRequestException:
+            # may raised when trying to change to already installed service
+            return SPOOL_OK
+        # except rc.RadiusMissingAttributeException:
+        #    pass
+    return _wrapped
+
+
+@task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_timeout=5)
+@_radius_task_error_wrapper
 def async_finish_session_task(radius_uname: str):
-    finish_session(radius_uname)
+    ret_text = rc.finish_session(radius_uname)
+    if ret_text is not None:
+        logging.warning(ret_text)
     return SPOOL_OK
 
 
-@task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_count=2, retry_timeout=5)
+@task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_timeout=15)
+@_radius_task_error_wrapper
 def async_change_session_inet2guest(radius_uname: str):
-    change_session_inet2guest(radius_uname)
+    """
+    Async COA RADIUS sessions inet->guest.
+
+    :param radius_uname: radius User-Name value
+    :return: nothing
+    """
+    ret_text = rc.change_session_inet2guest(radius_uname)
+    if ret_text is not None:
+        logging.warning(ret_text)
     return SPOOL_OK
 
 
@@ -47,7 +57,10 @@ def async_change_session_inet2guest(radius_uname: str):
 #     speed_out_burst: int
 # )
 #
-@task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_count=2, retry_timeout=5)
+@task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_timeout=15)
+@_radius_task_error_wrapper
 def async_change_session_guest2inet(*args, **kwargs):
-    change_session_guest2inet(*args, **kwargs)
+    ret_text = rc.change_session_guest2inet(*args, **kwargs)
+    if ret_text is not None:
+        logging.warning(ret_text)
     return SPOOL_OK

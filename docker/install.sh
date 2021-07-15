@@ -43,6 +43,11 @@ if [[ ! -s FIELD_ENCRYPTION_KEY ]]; then
   touch FIELD_ENCRYPTION_KEY
 fi
 
+# FreeRadius default secret
+if [[ ! -s RADIUS_SECRET ]]; then
+  echo 'testing123' > RADIUS_SECRET
+fi
+
 gen_random_str POSTGRES_PASSWORD "a-z0-9" "12"
 
 gen_random_str VAPID_PUBLIC_KEY
