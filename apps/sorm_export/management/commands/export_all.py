@@ -15,7 +15,7 @@ from sorm_export.hier_export.customer import (
     export_legal_customer,
     export_contact,
 )
-from sorm_export.ftp_worker.func import send_text_file
+from sorm_export.ftp_worker.func import send_text_buf2ftp
 from sorm_export.hier_export.networks import export_ip_leases
 from sorm_export.hier_export.service import export_nomenclature, export_customer_service
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus, FiasRecursiveAddressModel
@@ -134,11 +134,11 @@ def export_customer_lease_binds():
     for row_data in _exp():
         csv_buffer.write("%s\n" % row_data)
     csv_buffer.seek(0)
-    send_text_file(csv_buffer, fname)
+    send_text_buf2ftp(csv_buffer, fname)
 
 
 class Command(BaseCommand):
-    help = "Exports all available data to sorm"
+    help = "Exports all available data to СОРМ"
 
     def handle(self, *args: Any, **options: Any):
         funcs = (
