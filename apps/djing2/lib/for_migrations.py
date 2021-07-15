@@ -4,7 +4,7 @@ from django.contrib.sites.management import create_default_site
 
 
 def read_all_file(fname, fl):
-    curr_dir = os.path.dirname(os.path.abspath(fl))
+    curr_dir = os.path.dirname(fl)
     with open(os.path.join(curr_dir, fname)) as f:
         data = f.read(0xFFFF)
     return data

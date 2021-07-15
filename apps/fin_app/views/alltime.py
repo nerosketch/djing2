@@ -20,13 +20,13 @@ except ImportError:
     raise ImproperlyConfigured('"fin_app" application depends on "customers" application. Check if it installed')
 from djing2.lib import safe_int, safe_float
 from djing2.viewsets import DjingModelViewSet
-from fin_app import serializers
-from fin_app.models import AllTimePayLog, PayAllTimeGateway
+from fin_app.serializers import alltime as alltime_serializers
+from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway
 
 
 class AllTimeGatewayModelViewSet(DjingModelViewSet):
     queryset = PayAllTimeGateway.objects.annotate(pay_count=Count("alltimepaylog"))
-    serializer_class = serializers.AllTimeGatewayModelSerializer
+    serializer_class = alltime_serializers.AllTimeGatewayModelSerializer
 
     def perform_create(self, serializer, *args, **kwargs):
         return super().perform_create(serializer=serializer, sites=[self.request.site])
@@ -34,7 +34,7 @@ class AllTimeGatewayModelViewSet(DjingModelViewSet):
 
 class AllTimePayLogModelViewSet(DjingModelViewSet):
     queryset = AllTimePayLog.objects.all()
-    serializer_class = serializers.AllTimePayLogModelSerializer
+    serializer_class = alltime_serializers.AllTimePayLogModelSerializer
 
 
 class AllTimeSpecifiedXMLRenderer(XMLRenderer):
@@ -45,7 +45,7 @@ class AllTimePay(GenericAPIView):
     http_method_names = ("get",)
     renderer_classes = (AllTimeSpecifiedXMLRenderer,)
     queryset = PayAllTimeGateway.objects.all()
-    serializer_class = serializers.PayAllTimeGatewayModelSerializer
+    serializer_class = alltime_serializers.PayAllTimeGatewayModelSerializer
     lookup_field = "slug"
     lookup_url_kwarg = "pay_slug"
     permission_classes = [AllowAny]

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from fin_app import models
+from fin_app.models import alltime
 
-admin.site.register(models.PayAllTimeGateway)
-admin.site.register(models.AllTimePayLog)
+admin.site.register(alltime.PayAllTimeGateway)
+admin.site.register(alltime.AllTimePayLog)

@@ -55,8 +55,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         if not snmp_extra:
             return
 
-        fiber_num, onu_num = snmp_extra.split(".")
-        fiber_num, onu_num = int(fiber_num), int(onu_num)
+        fiber_num, onu_num = zte_utils.split_snmp_extra(snmp_extra)
         fiber_addr = "%d.%d" % (fiber_num, onu_num)
 
         signal = safe_int(self.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%s.1" % fiber_addr))
@@ -104,8 +103,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         snmp_extra = self.dev_instance.snmp_extra
         if not snmp_extra:
             return self.default_vlan_info()
-        fiber_num, onu_num = snmp_extra.split(".")
-        fiber_num, onu_num = int(fiber_num), int(onu_num)
+        fiber_num, onu_num = zte_utils.split_snmp_extra(snmp_extra)
 
         def _get_access_vlan(port_num: int) -> int:
             return safe_int(
@@ -159,11 +157,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
         # for example 268501760.5
-        try:
-            fiber_num, onu_port = v.split(".")
-            int(fiber_num), int(onu_port)
-        except ValueError:
-            raise expect_util.ExpectValidationError(_("Zte onu snmp field must be two dot separated integers"))
+        zte_utils.split_snmp_extra(v)
 
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
         device = self.dev_instance
@@ -199,8 +193,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         if not telnet:
             return False
 
-        fiber_num, onu_num = str(dev.snmp_extra).split(".")
-        fiber_num, onu_num = safe_int(fiber_num), safe_int(onu_num)
+        fiber_num, onu_num = zte_utils.split_snmp_extra(str(dev.snmp_extra))
         fiber_addr = "%d.%d" % (fiber_num, onu_num)
         sn = self.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
         if sn is not None:
@@ -226,12 +219,8 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             return
         dat = dev.snmp_extra
         if dat and "." in dat:
-            snmp_fiber_num, onu_port_num = dat.split(".")
-            snmp_fiber_num = int(snmp_fiber_num)
-            bin_snmp_fiber_num = bin(snmp_fiber_num)[2:]
-            rack_num = int(bin_snmp_fiber_num[5:13], 2)
-            fiber_num = int(bin_snmp_fiber_num[13:21], 2)
-            return "gpon-onu_1/%d/%d:%s" % (rack_num, fiber_num, onu_port_num)
+            rack_num, fiber_num, onu_num = zte_utils.zte_onu_conv_from_onu(dat)
+            return "gpon-onu_1/%d/%d:%s" % (rack_num, fiber_num, onu_num)
         return super().get_fiber_str()
 
     @staticmethod
