@@ -12,9 +12,12 @@ ALLOWED_HOSTS = [ALLOWED_HOST] if ALLOWED_HOST else ["*"]
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_EMAIL", "admin@yoursite.com")
 
 
-def get_secret(fname: str) -> str:
-    with open(os.path.join("/run/secrets", fname)) as f:
-        return f.read()
+def get_secret(fname: str, default=None) -> str:
+    try:
+        with open(os.path.join("/run/secrets", fname)) as f:
+            return f.read()
+    except FileNotFoundError:
+        return default
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -74,3 +77,8 @@ WEBPUSH_SETTINGS = {
 }
 
 RADIUS_FINISH_SESSION_CMD_LIST = ["/usr/bin/echo", "-sx", "127.0.0.1:3799", "disconnect", "passwordexample"]
+
+RADIUSAPP_OPTIONS = {
+    'server_host': os.environ.get('RADIUS_HOST', '127.0.0.1'),
+    'secret': get_secret('RADIUS_SECRET', 'testing123').encode()
+}

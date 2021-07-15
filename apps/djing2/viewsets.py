@@ -51,9 +51,9 @@ class DjingModelViewSet(ModelViewSet):
     # def list(self, request, *args, **kwargs):
     #     return super().list(request, *args, **kwargs)
 
-    def check_permission_code(self, request, perm_codename: str):
+    def check_permission_code(self, request, perm_codename: str, message=None, err_code=None):
         if not request.user.has_perm(perm=perm_codename):
-            self.permission_denied(request)
+            self.permission_denied(request, message=message, code=err_code)
 
     @action(detail=True, methods=["put"])
     def set_object_perms(self, request, *args, **kwargs):
