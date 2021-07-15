@@ -44,8 +44,8 @@ BEGIN
     FROM networks_ip_leases nil
       left join networks_ip_pool n on nil.pool_id = n.id
     where (v_customer_id is null or nil.customer_id = v_customer_id)
-      and (not v_is_dynamic or nil.mac_address = v_mac_addr)
-      and nil.is_dynamic = v_is_dynamic
+      and (not nil.is_dynamic or nil.mac_address = v_mac_addr)
+--       and nil.is_dynamic = v_is_dynamic
       and n.kind = v_pool_kind
     order by nil.id desc
     limit 1;
@@ -56,8 +56,8 @@ BEGIN
       left join networks_ip_pool n on nil.pool_id = n.id
       left join networks_vlan nv on n.vlan_if_id = nv.id
     where (v_customer_id is null or nil.customer_id = v_customer_id)
-      and (not v_is_dynamic or nil.mac_address = v_mac_addr)
-      and nil.is_dynamic = v_is_dynamic
+      and (not nil.is_dynamic or nil.mac_address = v_mac_addr)
+--       and nil.is_dynamic = v_is_dynamic
       and nv.vid = v_vid
       and n.kind = v_pool_kind
     order by nil.id desc

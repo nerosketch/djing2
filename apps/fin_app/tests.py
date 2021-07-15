@@ -7,7 +7,7 @@ from django.utils.html import escape
 from rest_framework.test import APITestCase
 
 from customers.models import Customer
-from fin_app.models import PayAllTimeGateway
+from fin_app.models.alltime import PayAllTimeGateway
 from profiles.models import UserProfile
 
 
@@ -138,7 +138,8 @@ class AllPayTestCase(CustomAPITestCase):
                 "<amount>18.21</amount>",
                 "<status>111</status>",
                 "<time_stamp>%s</time_stamp>" % escape(test_pay_time),
-                "</transaction>" "</pay-response>",
+                "</transaction>",
+                "</pay-response>",
             )
         )
         self.assertXMLEqual(r.content.decode(), xml)
@@ -166,7 +167,8 @@ class SitesAllPayTestCase(CustomAPITestCase):
                 "<pay-response>",
                 "<status_code>-40</status_code>",
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
-                "<description>Pay gateway does not exist</description>" "</pay-response>",
+                "<description>Pay gateway does not exist</description>",
+                "</pay-response>",
             )
         )
         self.maxDiff = None

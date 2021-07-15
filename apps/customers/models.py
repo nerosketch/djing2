@@ -10,7 +10,7 @@ from django.db import connection, models, transaction
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
-from djing2.lib import LogicError, safe_float, safe_int
+from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
@@ -93,6 +93,8 @@ class CustomerService(BaseAbstractModel):
 
     @staticmethod
     def get_user_credentials_by_ip(ip_addr: str):
+        if not ip_addr:
+            return None
         try:
             ip_addr = IPv4Address(ip_addr)
         except AddressValueError:
@@ -124,7 +126,7 @@ class CustomerService(BaseAbstractModel):
         current_service_id = safe_int(current_service_id)
         # TODO: make tests for it
         with connection.cursor() as cur:
-            query = "SELECT * FROM " "find_customer_service_by_device_credentials(%s, %s)"
+            query = "SELECT * FROM find_customer_service_by_device_credentials(%s, %s)"
             cur.execute(query, [customer_id, current_service_id])
             res = cur.fetchone()
         if res is None or res[0] is None:
@@ -278,7 +280,7 @@ class CustomerManager(MyUserManager):
         :return: nothing
         """
         if comment is None:
-            comment = _("Service for customer %(customer_name)s " "with name '%(service_name)s' has expired")
+            comment = _("Service for customer %(customer_name)s with name '%(service_name)s' has expired")
         now = datetime.now()
         expired_service = CustomerService.objects.filter(deadline__lt=now, customer__auto_renewal_service=False)
         if customer is not None and isinstance(customer, Customer):
@@ -342,15 +344,13 @@ class CustomerManager(MyUserManager):
                     CustomerLog.objects.create(
                         customer=expired_service_customer,
                         cost=-cost,
-                        comment=_("Automatic connect new service " "%(service_name)s for %(customer_name)s")
+                        comment=_("Automatic connect new service %(service_name)s for %(customer_name)s")
                         % {"service_name": service.title, "customer_name": uname},
                     )
             else:
                 # finish service otherwise
+                custom_signals.customer_service_pre_stop.send(sender=CustomerService, expired_service=expired_service)
                 with transaction.atomic():
-                    custom_signals.customer_service_pre_stop.send(
-                        sender=CustomerService, expired_service=expired_service
-                    )
                     expired_service.delete()
                     CustomerLog.objects.create(
                         customer=expired_service_customer,
@@ -433,7 +433,7 @@ class Customer(BaseAccount):
         self.markers = flags
         self.save(update_fields=["markers"])
 
-    def active_service(self):
+    def active_service(self) -> CustomerService:
         return self.current_service
 
     def add_balance(self, profile: UserProfile, cost: float, comment: str) -> None:
@@ -472,9 +472,9 @@ class Customer(BaseAccount):
             if self.current_service.service == service:
                 # if service already connected
                 raise LogicError(_("That service already activated"))
-            else:
-                # if service is present then speak about it
-                raise LogicError(_("Service already activated"))
+
+            # if service is present then speak about it
+            raise LogicError(_("Service already activated"))
 
         if allow_negative and not author.is_staff:
             raise LogicError(_("User, who is no staff, can not be buy services on credit"))
@@ -636,11 +636,30 @@ class Customer(BaseAccount):
         #     last_connected_service__in=sub
         # ).update(last_connected_service=None)
 
+    def ping_all_leases(self):
+        leases = self.customeripleasemodel_set.all()
+        if leases.count() < 1:
+            return _("Customer has not ips"), False
+        try:
+            for lease in leases:
+                if lease.ping_icmp():
+                    return _("Ping ok"), True
+                else:
+                    arping_enabled = getattr(settings, "ARPING_ENABLED", False)
+                    if arping_enabled and lease.ping_icmp(arp=True):
+                        return _("arp ping ok"), True
+            return _("no ping"), False
+        except ProcessLocked:
+            return _("Process locked by another process"), False
+        except ValueError as err:
+            return str(err), False
+
     class Meta:
         db_table = "customers"
         permissions = [
             ("can_buy_service", _("Buy service perm")),
             ("can_add_balance", _("fill account")),
+            ("can_add_negative_balance", _("Fill account balance on negative cost")),
             ("can_ping", _("Can ping")),
             ("can_complete_service", _("Can complete service")),
         ]

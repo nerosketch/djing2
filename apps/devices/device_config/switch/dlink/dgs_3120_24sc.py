@@ -173,8 +173,10 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
 
     def get_ports(self) -> Generator:
         ifs_ids = self.get_list(".1.3.6.1.2.1.10.7.2.1.1")
-        ifs_ids = tuple(next(ifs_ids) for _ in range(self.ports_len))
-        return (self.get_port(snmp_num=if_id) for if_id in ifs_ids)
+        for num, if_id in enumerate(ifs_ids, 1):
+            if num > self.ports_len:
+                return
+            yield self.get_port(snmp_num=if_id)
 
     def get_port(self, snmp_num: int):
         snmp_num = safe_int(snmp_num)

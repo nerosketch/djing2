@@ -7,6 +7,8 @@ from json import JSONEncoder
 from typing import Any, Union
 
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ParseError, APIException
 
 
 def safe_float(fl: Any) -> float:
@@ -24,12 +26,14 @@ def safe_int(i: Any) -> int:
 
 
 # Exceptions
-class LogicError(Exception):
-    pass
+class LogicError(ParseError):
+    default_detail = _("Internal logic error")
 
 
-class DuplicateEntry(Exception):
+class DuplicateEntry(APIException):
     """Raises when raised IntegrityError in db"""
+
+    default_detail = _("Duplicate entry error")
 
 
 # Предназначен для Django CHOICES чтоб можно было передавать
@@ -108,7 +112,7 @@ def calc_hash(get_values: dict) -> str:
     return sha256(result_data).hexdigest()
 
 
-def check_sign(get_values: dict, external_sign) -> bool:
+def check_sign(get_values: dict, external_sign: str) -> bool:
     my_sign = calc_hash(get_values)
     return external_sign == my_sign
 
@@ -139,6 +143,7 @@ def process_lock(lock_name=None):
     return process_lock_wrap
 
 
+# TODO: Replace it by netaddr.EUI
 def macbin2str(bin_mac: bytes) -> str:
     if isinstance(bin_mac, (bytes, bytearray)):
         return ":".join("%.2x" % i for i in bin_mac) if bin_mac else None

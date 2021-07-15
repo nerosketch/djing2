@@ -11,14 +11,14 @@ from tasks.models import Task
 def task_post_save(sender, instance: Task, created=False, **kwargs):
     if instance.priority == Task.TASK_PRIORITY_HIGHER:
         if created:
-            notify_text = _("High priority task was created")
+            notify_title = _("High priority task was created")
         else:
-            notify_text = _("High priority task was updated")
+            notify_title = _("High priority task was updated")
         recipients = instance.recipients.only("pk").values_list("pk", flat=True)
         send_data2ws(
             {
                 "eventType": WsEventTypeEnum.UPDATE_TASK.value,
-                "text": notify_text,
+                "text": notify_title,
                 "data": {
                     "recipients": list(recipients),
                     "author": instance.author_id if instance.author else None,
@@ -27,6 +27,10 @@ def task_post_save(sender, instance: Task, created=False, **kwargs):
             }
         )
         # FIXME: hardcode url
-        send_broadcast_push_notification(title=_("Reminders of tasks"), body=notify_text, url=f"/tasks/t{instance.pk}")
+        notify_text = "{customer_name}: {text}".format(
+            customer_name=instance.customer.get_full_name(),
+            text=instance.descr,
+        )
+        send_broadcast_push_notification(title=notify_title, body=notify_text, url=f"/tasks/t{instance.pk}")
         return
     send_data2ws({"eventType": WsEventTypeEnum.UPDATE_TASK.value, "data": {"task_id": instance.pk}})

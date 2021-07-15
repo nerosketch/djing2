@@ -1,0 +1,378 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2021.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
+"POT-Creation-Date: 2021-06-10 15:59+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+#: apps/sorm_export/models.py:32
+msgid "Not exported"
+msgstr "Не экспортирован"
+
+#: apps/sorm_export/models.py:33
+msgid "Successful"
+msgstr "Успешно"
+
+#: apps/sorm_export/models.py:34
+msgid "Failed"
+msgstr "Ошибка"
+
+#: apps/sorm_export/models.py:38
+msgid "Action time"
+msgstr "Дата действия"
+
+#: apps/sorm_export/models.py:39
+msgid "Last attempt time"
+msgstr "Дата последней попытки"
+
+#: apps/sorm_export/models.py:40
+msgid "Attempt count"
+msgstr "Количество попыток"
+
+#: apps/sorm_export/models.py:42
+msgid "Export status"
+msgstr "Статус экспорта"
+
+#: apps/sorm_export/models.py:47
+msgid "Export type"
+msgstr "Тип экспорта"
+
+#: apps/sorm_export/models.py:51
+msgid "Export event data"
+msgstr "Дата события экспорта"
+
+#: apps/sorm_export/models.py:72
+msgid "Individual entity"
+msgstr "Физическое лицо"
+
+#: apps/sorm_export/models.py:73
+msgid "Legal entity"
+msgstr "Юридическое лицо"
+
+#: apps/sorm_export/models.py:77
+msgid "Passport RF"
+msgstr "Пасспорт РФ"
+
+#: apps/sorm_export/models.py:78
+msgid "Passport USSR"
+msgstr "Пасспорт СССР"
+
+#: apps/sorm_export/models.py:79
+msgid "Passport other country"
+msgstr "Пасспорт другой страны"
+
+#: apps/sorm_export/models.py:80
+msgid "Military ticket"
+msgstr "Военный билет"
+
+#: apps/sorm_export/models.py:114
+msgid "Parent AO"
+msgstr "Родительский адресный объект"
+
+#: apps/sorm_export/models.py:120
+#: apps/sorm_export/serializers/individual_entity_serializers.py:105
+msgid "Title"
+msgstr "Название"
+
+#: apps/sorm_export/models.py:121
+msgid "AO Level"
+msgstr "Уровень адресного объекта"
+
+#: apps/sorm_export/models.py:123
+msgid "AO Type"
+msgstr "Тип адресного объекта"
+
+#: apps/sorm_export/serializers/customer_service_serializer.py:9
+#: apps/sorm_export/serializers/service_serializer.py:10
+msgid "Service id"
+msgstr "ID Услуги"
+
+#: apps/sorm_export/serializers/customer_service_serializer.py:15
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:24
+#: apps/sorm_export/serializers/individual_entity_serializers.py:14
+#: apps/sorm_export/serializers/individual_entity_serializers.py:48
+#: apps/sorm_export/serializers/individual_entity_serializers.py:127
+#: apps/sorm_export/serializers/individual_entity_serializers.py:344
+#: apps/sorm_export/serializers/individual_entity_serializers.py:541
+#: apps/sorm_export/serializers/networks.py:18
+#: apps/sorm_export/serializers/payment.py:10
+msgid "Customer id"
+msgstr "ID Абонента"
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:19
+msgid "Communication standard"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:29
+#: apps/sorm_export/serializers/individual_entity_serializers.py:29
+msgid "Customer login"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:35
+#: apps/sorm_export/serializers/individual_entity_serializers.py:65
+msgid "Contract number"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:40
+msgid "Current state"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:45
+#: apps/sorm_export/serializers/individual_entity_serializers.py:24
+#: apps/sorm_export/serializers/individual_entity_serializers.py:54
+msgid "Date of conclusion of the contract"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:50
+#: apps/sorm_export/serializers/individual_entity_serializers.py:59
+msgid "Contract completion date"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:55
+msgid "Customer type"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:60
+msgid "Name structured type"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:65
+msgid "Name"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:71
+#: apps/sorm_export/serializers/individual_entity_serializers.py:216
+msgid "Surname"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:77
+msgid "Second name"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:83
+msgid "Not structured name"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:85
+msgid "Fio from customer model"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:90
+#: apps/sorm_export/serializers/individual_entity_serializers.py:223
+msgid "Birthday"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:95
+msgid "Is structured data"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:100
+msgid "Passport serial"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:106
+msgid "Passport number"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:112
+msgid "Passport date"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:117
+msgid "Passport distributor"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:123
+msgid "Passport document type"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:128
+#: apps/sorm_export/serializers/individual_entity_serializers.py:413
+msgid "Customer bank"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:134
+#: apps/sorm_export/serializers/individual_entity_serializers.py:419
+msgid "Bank receipt number"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:140
+msgid "Legal entity title"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:19
+#: apps/sorm_export/serializers/individual_entity_serializers.py:352
+msgid "Legal customer id"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:35
+msgid "Communication_standard"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:43
+msgid "Contract ID"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:70
+msgid "Contract title"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:78
+msgid "Address id"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:84
+msgid "Parent address id"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:91
+msgid "Address type id"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:98
+msgid "Region type"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:114
+msgid "Full address title"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:122
+msgid "Access point id"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:132
+#: apps/sorm_export/serializers/individual_entity_serializers.py:158
+#: apps/sorm_export/serializers/individual_entity_serializers.py:276
+msgid "House"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:137
+msgid "Full address"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:142
+msgid "Internal address"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:150
+#: apps/sorm_export/serializers/individual_entity_serializers.py:287
+#: apps/sorm_export/serializers/individual_entity_serializers.py:383
+msgid "Parent ao id"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:163
+#: apps/sorm_export/serializers/individual_entity_serializers.py:308
+#: apps/sorm_export/serializers/individual_entity_serializers.py:397
+#: apps/sorm_export/serializers/individual_entity_serializers.py:505
+msgid "Building"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:168
+#: apps/sorm_export/serializers/individual_entity_serializers.py:314
+#: apps/sorm_export/serializers/individual_entity_serializers.py:403
+#: apps/sorm_export/serializers/individual_entity_serializers.py:511
+msgid "Building corpus"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:173
+#: apps/sorm_export/serializers/individual_entity_serializers.py:320
+#: apps/sorm_export/serializers/individual_entity_serializers.py:409
+#: apps/sorm_export/serializers/individual_entity_serializers.py:472
+msgid "Full description"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:177
+#: apps/sorm_export/serializers/individual_entity_serializers.py:325
+#: apps/sorm_export/serializers/individual_entity_serializers.py:521
+#: apps/sorm_export/serializers/individual_entity_serializers.py:555
+msgid "Actual start time"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:186
+#: apps/sorm_export/serializers/individual_entity_serializers.py:335
+#: apps/sorm_export/serializers/individual_entity_serializers.py:530
+#: apps/sorm_export/serializers/individual_entity_serializers.py:564
+msgid "Actual end time"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:204
+msgid "Individual customer name"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:210
+msgid "Last name"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:230
+msgid "Document document type"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:238
+msgid "Document serial"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:245
+msgid "Document number"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:252
+msgid "Document distributor"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:302
+msgid "House number"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:357
+msgid "Legal title"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:425
+msgid "Contact telephones"
+msgstr ""
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:546
+msgid "Contact info"
+msgstr ""
+
+#: apps/sorm_export/serializers/model_serializers.py:26
+#, python-format
+msgid "Groups \"%s\" has more than one \"FIAS\" address type."
+msgstr ""
+
+#: apps/sorm_export/serializers/networks.py:10
+msgid "Gray addr"
+msgstr ""
+
+#: apps/sorm_export/serializers/networks.py:11
+#: apps/sorm_export/serializers/networks.py:12
+msgid "White addr"
+msgstr ""
+
+#: apps/sorm_export/serializers/payment.py:16
+msgid "Payment time"
+msgstr ""
+
+#: apps/sorm_export/serializers/payment.py:21
+msgid "Pay amount"
+msgstr ""
+
+#: apps/sorm_export/serializers/service_serializer.py:21
+msgid "Service description"
+msgstr ""
+
+#: apps/sorm_export/serializers/service_serializer.py:38
+msgid "Operator type id"
+msgstr ""
