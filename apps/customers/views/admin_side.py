@@ -248,7 +248,6 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     def add_balance(self, request, pk=None):
         del pk
         self.check_permission_code(request, "customers.can_add_balance")
-        customer = self.get_object()
 
         cost = safe_float(request.data.get("cost"))
         if cost == 0.0:

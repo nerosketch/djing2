@@ -3,7 +3,6 @@ import logging
 from django.dispatch.dispatcher import receiver
 from django.db.models.signals import pre_delete
 
-from djing2.lib import safe_int
 from radiusapp.models import CustomerRadiusSession
 from radiusapp import tasks
 from customers import custom_signals as customer_custom_signals
@@ -97,6 +96,6 @@ def on_pre_batch_stop_customer_services_signal(sender, expired_services, **kwarg
     :param kwargs:
     :return: nothing
     """
-    customer_ids = (safe_int(es.customer.pk) for es in expired_services.iterator())
-    customer_ids = tuple(i for i in customer_ids if i > 0)
-    tasks.radius_batch_stop_customer_services_task(customer_ids=customer_ids)
+    for es in expired_services.select_related('customer').iterator():
+        uname = es.customer.username
+        tasks.async_change_session_inet2guest(radius_uname=uname)

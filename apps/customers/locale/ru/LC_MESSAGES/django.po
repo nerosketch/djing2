@@ -147,6 +147,7 @@ msgstr ""
 "Пользователь, который не является сотрудником, не может покупать услуги в "
 "долг"
 
+#: apps/customers/models.py:485 apps/customers/models.py:544
 #, python-format
 msgid "%(uname)s not enough money for service %(srv_name)s"
 msgstr ""
@@ -289,6 +290,7 @@ msgstr "Учётная запись"
 msgid "Charge for \"%(service)s\""
 msgstr "Плата за \"%(service)s\""
 
+#: apps/customers/views/admin_side.py:37
 msgid "Not allowed to direct create Customer service, use 'pick_service' url"
 msgstr ""
 "Запрещено прямое создание привязанных к абоненту услуг, используйте "
@@ -324,6 +326,20 @@ msgstr "Пополнение счёта сотрудником"
 msgid "Buy the service via user side, service '%s'"
 msgstr "Покупка тарифного плана через личный кабинет, тариф '%s'"
 
+#: apps/customers/views/user_side.py:51
+#, python-format
+msgid "The service '%s' was successfully activated"
+msgstr "Услуга '%s' успешно подключена"
+
+#: apps/customers/views/user_side.py:97
+msgid "Are you not sure that you want buy the service?"
+msgstr "Вы не уверены что хотите оплатить долг?"
+
+#: apps/customers/views/user_side.py:99
+msgid "Your account have not enough money"
+msgstr "Недостаточно средств на счету"
+
+#: apps/customers/views/user_side.py:106
 #, python-format
 msgid "%(username)s paid the debt %(amount).2f"
 msgstr "%(username)s заплатил долг в размере %(amount).2f"

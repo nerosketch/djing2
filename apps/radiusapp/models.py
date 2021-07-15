@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from customers.models import Customer
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
 
-from .radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
+from radiusapp.radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
 
 
 def _human_readable_int(num: int, u="b") -> str:
@@ -172,11 +172,8 @@ class CustomerRadiusSession(models.Model):
     ip_lease = models.OneToOneField(CustomerIpLeaseModel, verbose_name=_("Ip lease"), on_delete=models.CASCADE)
     session_id = models.UUIDField(_("Unique session id"))
     session_duration = models.DurationField(
-        verbose_name=_("Session duration"),
-        help_text=_("most often this is Acct-Session-Time av pair"),
-        blank=True,
-        null=True,
-        default=None,
+        verbose_name=_('Session duration'),
+        help_text=_("most often this is Acct-Session-Time av pair"), blank=True, null=True, default=None
     )
     input_octets = models.BigIntegerField(default=0)
     output_octets = models.BigIntegerField(default=0)
@@ -186,28 +183,28 @@ class CustomerRadiusSession(models.Model):
 
     objects = CustomerRadiusSessionManager()
 
-    def finish_session(self) -> bool:
+    def finish_session(self) -> Optional[str]:
         """Send radius disconnect packet to BRAS."""
         if not self.radius_username:
-            return False
+            return
         return finish_session(self.radius_username)
 
-    def radius_coa_inet2guest(self) -> bool:
+    def radius_coa_inet2guest(self) -> Optional[str]:
         if not self.radius_username:
-            return False
+            return
         return change_session_inet2guest(self.radius_username)
 
-    def radius_coa_guest2inet(self) -> bool:
+    def radius_coa_guest2inet(self) -> Optional[str]:
         if not self.radius_username:
-            return False
+            return
         if not self.customer:
-            return False
+            return
         customer_service = self.customer.current_service
         if not customer_service:
-            return False
+            return
         service = customer_service.service
         if not service:
-            return False
+            return
 
         speed_in_burst, speed_out_burst = service.calc_burst()
         return change_session_guest2inet(

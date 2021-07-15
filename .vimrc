@@ -169,21 +169,10 @@ let g:airline#extensions#ale#enabled = 1
 let g:ale_sign_column_always = 1
 
 "=====================================================
-"" Relative Numbering
-"=====================================================
-
-"=====================================================
 "" Search settings
 "=====================================================
 set incsearch	                            " incremental search
 set hlsearch	                            " highlight search results
-map <F3> :execute "vimgrep /" . expand("<cword>") . "/j **" <Bar> cw<CR>
-
-
-" Mouse Cusrsor enable
-set mouse=a
-
-
 noremap <F3> :execute "vimgrep /" . expand("<cword>") . "/j **" <Bar> cw<CR>
 noremap <F4> :execute "/" . expand("<cword>") <CR>
 
