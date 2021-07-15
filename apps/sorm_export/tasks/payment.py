@@ -1,0 +1,15 @@
+from typing import List
+
+from uwsgi_tasks import task
+
+from fin_app.models.alltime import AllTimePayLog
+from sorm_export.hier_export.payment import export_customer_unknown_payment
+from sorm_export.models import ExportStampTypeEnum
+from sorm_export.tasks.task_export import task_export
+
+
+@task()
+def export_customer_payment_task(pay_log_id_list: List[int], event_time=None):
+    pay_logs = AllTimePayLog.objects.filter(pk__in=pay_log_id_list)
+    data, fname = export_customer_unknown_payment(pays=pay_logs, event_time=event_time)
+    task_export(data, fname, ExportStampTypeEnum.PAYMENT_UNKNOWN)

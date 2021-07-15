@@ -19,7 +19,6 @@ charset = utf-8
 
 # Docstrings and comments use max_line_length = 79
 [*.py]
-indent_style = space
 indent_size = 4
 max_line_length = 119
 
@@ -34,10 +33,15 @@ indent_style = tab
 
 # Indentation override for all JS under lib directory
 [lib/**.js]
-indent_style = space
 indent_size = 2
 
 # Matches the exact files either package.json or .travis.yml
 [{package.json,.travis.yml}]
 indent_style = space
+indent_size = 2
+
+[*.sql]
+indent_size = 2
+
+[docker-compose*]
 indent_size = 2

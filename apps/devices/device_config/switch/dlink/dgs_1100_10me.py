@@ -34,7 +34,7 @@ class DlinkDGS1100_10ME(DlinkDGS_3120_24SCSwitchInterface):
     def reboot(self, save_before_reboot=False):
         dat = self.dev_instance.extra_data
         if dat is None:
-            raise DeviceConfigurationError(_("You have not info in extra_data " "field, please fill it in JSON"))
+            raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
         login = dat.get("login")
         passw = dat.get("password")
         if login and passw:

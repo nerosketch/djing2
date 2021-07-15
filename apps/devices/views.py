@@ -39,6 +39,8 @@ def catch_dev_manager_err(fn):
             return fn(self, *args, **kwargs)
         except (DeviceImplementationError, ExpectValidationError) as err:
             return Response({"text": str(err), "status": 2})
+        except EasySNMPTimeoutError as err:
+            return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
         except (
             ConnectionResetError,
             ConnectionRefusedError,
@@ -47,11 +49,9 @@ def catch_dev_manager_err(fn):
             EasySNMPConnectionError,
             EasySNMPError,
         ) as err:
-            return Response(str(err), status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        except EasySNMPTimeoutError as err:
-            return Response(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
+            return Response(str(err), status=452)
         except (SystemError, DeviceConsoleError) as err:
-            return Response(str(err), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(str(err), status=453)
 
     # Hack for decorator @action
     wrapper.__name__ = fn.__name__
@@ -154,7 +154,7 @@ class DevicePONViewSet(DjingModelViewSet):
                 onu_list = tuple(manager.get_ports_on_fiber(fiber_num=fiber_num))
                 return Response(onu_list)
             except ProcessLocked:
-                return Response(_("Process locked by another process"), status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                return Response(_("Process locked by another process"), status=452)
         else:
             return Response({"Error": {"text": 'Manager has not "get_ports_on_fiber" attribute'}})
 
@@ -204,7 +204,7 @@ class DevicePONViewSet(DjingModelViewSet):
             res = device.apply_onu_config(config=device_config_serializer.data)
             return Response(res)
         except DeviceConsoleError as err:
-            return Response(str(err), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(str(err), status=453)
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -244,7 +244,7 @@ class DevicePONViewSet(DjingModelViewSet):
         try:
             dev = self.get_object()
             if dev.is_onu_registered():
-                vlans = dev.read_onu_vlan_info()
+                vlans = tuple(dev.read_onu_vlan_info())
             else:
                 vlans = dev.default_vlan_info()
             return Response(vlans)
@@ -295,8 +295,11 @@ class DeviceModelViewSet(DjingModelViewSet):
         manager = device.get_manager_object_switch()
         if not issubclass(manager.__class__, BaseSwitchInterface):
             raise DeviceImplementationError("Expected BaseSwitchInterface subclass")
-        ports = manager.get_ports()
-        return Response(data=tuple(p.to_dict() for p in ports))
+        try:
+            ports = [p.to_dict() for p in manager.get_ports()]
+            return Response(data=ports)
+        except StopIteration:
+            return Response({"text": _("Device port count error"), "status": 2})
 
     @action(detail=True, methods=["put"])
     @catch_dev_manager_err
@@ -383,7 +386,7 @@ class DeviceWithoutGroupListAPIView(DjingListAPIView):
 
 
 class PortModelViewSet(DjingModelViewSet):
-    queryset = Port.objects.annotate(user_count=Count("customer"))
+    queryset = Port.objects.annotate(user_count=Count("customer")).order_by("num")
     serializer_class = dev_serializers.PortModelSerializer
     filterset_fields = ("device", "num")
 
