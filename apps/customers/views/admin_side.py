@@ -254,6 +254,19 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         if cost == 0.0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
+        if cost > 0.0:
+            self.check_permission_code(
+                request, "customers.can_add_balance", _("You can't top up an account with a " "positive amount")
+            )
+        else:
+            self.check_permission_code(
+                request,
+                "customers.can_add_negative_balance",
+                _("You can't top up an account " "with a negative amount"),
+            )
+
+        customer = self.get_object()
+
         comment = request.data.get("comment")
         if comment and len(comment) > 128:
             return Response(status=status.HTTP_400_BAD_REQUEST)

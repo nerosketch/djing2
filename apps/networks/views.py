@@ -1,6 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.translation import gettext_lazy as _
 from django.db.utils import IntegrityError
+from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -78,8 +79,8 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
         try:
             is_pinged = lease.ping_icmp()
             if not is_pinged:
-                is_pinged = lease.ping_icmp(arp=True)
-                if is_pinged:
+                arping_enabled = getattr(settings, "ARPING_ENABLED", False)
+                if arping_enabled and lease.ping_icmp(arp=True):
                     text = _("arp ping ok")
                 else:
                     text = _("no ping")

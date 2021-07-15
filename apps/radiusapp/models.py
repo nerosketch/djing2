@@ -172,7 +172,11 @@ class CustomerRadiusSession(models.Model):
     ip_lease = models.OneToOneField(CustomerIpLeaseModel, verbose_name=_("Ip lease"), on_delete=models.CASCADE)
     session_id = models.UUIDField(_("Unique session id"))
     session_duration = models.DurationField(
-        _("most often this is Acct-Session-Time av pair"), blank=True, null=True, default=None
+        verbose_name=_("Session duration"),
+        help_text=_("most often this is Acct-Session-Time av pair"),
+        blank=True,
+        null=True,
+        default=None,
     )
     input_octets = models.BigIntegerField(default=0)
     output_octets = models.BigIntegerField(default=0)
