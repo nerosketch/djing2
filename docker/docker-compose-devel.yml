@@ -40,8 +40,8 @@ services:
       - .env_db_credentials
       - .env_radiusapp
     volumes:
+      - ..:/var/www/djing2
       - media-data:/var/www/djing2/media
-      - ../:/var/www/djing2
       - /tmp:/tmp
       - /etc/localtime:/etc/localtime
       - ~/.gitconfig:/root/.gitconfig
@@ -53,7 +53,7 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - /home/ns/Projects/djing2_proj/djing2-elui:/home/node/app
+      - ../../djing2-elui:/home/node/app
       - /tmp:/tmp
       - /etc/localtime:/etc/localtime
   ws:
