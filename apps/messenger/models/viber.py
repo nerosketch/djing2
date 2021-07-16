@@ -5,15 +5,23 @@ from django.shortcuts import resolve_url
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from viberbot import Api, BotConfiguration
-from viberbot.api.messages import TextMessage
 from viberbot.api.messages.message import Message
 
-from djing2.models import BaseAbstractModel
-from messenger.models.messenger import Messenger
+from messenger.models.messenger import MessengerModel, MessengerSubscriberModel
 from profiles.models import UserProfile
 
+from rest_framework import status
+from viberbot.api.messages import TextMessage, ContactMessage
+from viberbot.api.user_profile import UserProfile as ViberUserProfile
+from viberbot.api.viber_requests import (
+    ViberMessageRequest,
+    ViberSubscribedRequest,
+    ViberFailedRequest,
+    ViberUnsubscribedRequest,
+)
 
-class ViberMessenger(Messenger):
+
+class ViberMessengerModel(MessengerModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._viber_cache = None
@@ -63,48 +71,100 @@ class ViberMessenger(Messenger):
         viber = self.get_viber()
         viber.set_webhook(public_url, ["failed", "subscribed", "unsubscribed", "conversation_started"])
 
+    def stop_webhook(self):
+        pass
+
+    def send_message(self, msg_text: str):
+        pass
+
+    def inbox_data(self, data):
+        # obj = self.model
+        request = self.request
+
+        viber = self.get_viber()
+        if not viber.verify_signature(request.body, request.META.get("HTTP_X_VIBER_CONTENT_SIGNATURE")):
+            return "", status.HTTP_403_FORBIDDEN
+
+        vr = viber.parse_request(request.body)
+        if isinstance(vr, ViberMessageRequest):
+            in_msg = vr.message
+            if isinstance(in_msg, ContactMessage):
+                self.inbox_contact(in_msg, vr.sender)
+            subscriber, created = self._make_subscriber(vr.sender)
+        elif isinstance(vr, ViberSubscribedRequest):
+            self.make_subscriber(vr.user)
+        elif isinstance(vr, ViberFailedRequest):
+            print(f"client failed receiving message. failure: {vr}")
+        elif isinstance(vr, ViberUnsubscribedRequest):
+            ViberSubscriber.objects.filter(uid=vr.user_id).delete()
+        return ""
+
+    def _make_subscriber(self, viber_user_profile: ViberUserProfile):
+        # subscriber, created = models.ViberSubscriber.objects.get_or_create(
+        #     uid=viber_user_profile.id,
+        #     defaults={
+        #         'name': viber_user_profile.name,
+        #         'avatar': viber_user_profile.avatar
+        #     }
+        # )
+        # if created and hasattr(self, 'object'):
+        #     msg = KeyboardMessage(keyboard={
+        #         'Type': 'keyboard',
+        #         'DefaultHeight': True,
+        #         'Buttons': ({
+        #                         'ActionType': 'share-phone',
+        #                         'ActionBody': 'reply to me',
+        #                         "Text": gettext('My telephone number'),
+        #                         "TextSize": "medium"
+        #                     },)
+        #     }, min_api_version=3)
+        #     viber = self.object
+        #     viber.send_message_to_id(viber_user_profile.id, msg)
+        # return subscriber, created
+        pass
+
+    def inbox_contact(self, msg, sender: ViberUserProfile):
+        # tel = msg.contact.phone_number
+        # accs = UserProfile.objects.filter(telephone__icontains=tel)
+        # viber = self.object
+        # if accs.exists():
+        #     first_acc = accs.first()
+        #     subs = models.ViberSubscriber.objects.filter(uid=sender.id)
+        #     subs_len = subs.count()
+        #     if subs_len > 0:
+        #         first_sub = subs.first()
+        #         if subs_len > 1:
+        #             models.ViberSubscriber.objects.exclude(pk=first_sub.pk).delete()
+        #         first_sub.account = first_acc
+        #         first_sub.name = first_acc.get_full_name()
+        #         first_sub.save(update_fields=('account', 'name'))
+        #         viber.send_message_to_acc(first_acc, gettext(
+        #             'Your account is attached. Now you will be receive notifications from billing'
+        #         ))
+        # else:
+        #     viber.send_message_to_id(sender.id, gettext(
+        #         'Telephone not found, please specify telephone number in account in billing'
+        #     ))
+        pass
+
     def __str__(self):
         return self.title
 
     class Meta:
-        db_table = "messenger_viber"
+        db_table = "messengers_viber"
         verbose_name = _("Viber messenger")
         verbose_name_plural = _("Viber messengers")
         ordering = ("title",)
 
 
-class ViberMessage(BaseAbstractModel):
-    msg = models.TextField(_("Message"))
-    date = models.DateTimeField(_("Date"), auto_now_add=True)
-    sender = models.CharField(_("Sender"), max_length=32)
-    messenger = models.ForeignKey(ViberMessenger, verbose_name=_("Messenger"), on_delete=models.CASCADE)
-    subscriber = models.ForeignKey(
-        "ViberSubscriber", on_delete=models.SET_NULL, verbose_name=_("Subscriber"), null=True
-    )
-
-    def __str__(self):
-        return self.msg
-
-    class Meta:
-        db_table = "messenger_viber_messages"
-        verbose_name = _("Viber message")
-        verbose_name_plural = _("Viber messages")
-        ordering = ("-date",)
-
-
-class ViberSubscriber(BaseAbstractModel):
-    uid = models.CharField(_("User unique id in viber"), max_length=32)
-    name = models.CharField(_("Name"), max_length=32, null=True, blank=True)
-    avatar = models.URLField(_("Avatar"), max_length=250, null=True, blank=True)
-    account = models.OneToOneField(
-        UserProfile, on_delete=models.CASCADE, verbose_name=_("System account"), blank=True, null=True
-    )
+class ViberMessengerSubscriberModel(MessengerSubscriberModel):
+    uid = models.CharField(_("User unique id"), max_length=32)
 
     def __str__(self):
         return self.name or "no"
 
     class Meta:
-        db_table = "messenger_viber_subscriber"
-        verbose_name = _("Viber subscriber")
-        verbose_name_plural = _("Viber subscribers")
+        db_table = "messengers_viber_subscriber"
+        verbose_name = _("Subscriber")
+        verbose_name_plural = _("Subscribers")
         ordering = ("name",)

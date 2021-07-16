@@ -1,7 +1,7 @@
 from typing import Optional, Iterable
 from uwsgi_tasks import task
 from profiles.models import UserProfile
-from messenger.models.viber import ViberMessenger
+from messenger.models.viber import ViberMessengerModel
 
 
 @task()
@@ -18,12 +18,12 @@ def send_viber_message(messenger_id: Optional[int], account_id: int, message_tex
     try:
         sp = UserProfile.objects.get(pk=account_id)
         if messenger_id is None:
-            for vm in ViberMessenger.objects.all().iterator():
+            for vm in ViberMessengerModel.objects.all().iterator():
                 vm.send_message_to_acc(sp, message_text)
         else:
-            vm = ViberMessenger.objects.get(pk=messenger_id)
+            vm = ViberMessengerModel.objects.get(pk=messenger_id)
             vm.send_message_to_acc(sp, message_text)
-    except ViberMessenger.DoesNotExist:
+    except ViberMessengerModel.DoesNotExist:
         return "ERROR: Viber messanger with id=%d not found" % messenger_id
     except UserProfile.DoesNotExist:
         return "ERROR: accounts_app.UserProfile with pk=%d does not exist" % account_id
@@ -47,10 +47,10 @@ def multicast_viber_notify(
     if not recipients.exists():
         return "No recipients found from ids: %s" % ",".join(str(i) for i in account_id_list)
     if messenger_id is None:
-        for vm in ViberMessenger.objects.all().iterator():
+        for vm in ViberMessengerModel.objects.all().iterator():
             vm.send_message_to_accs(recipients, message_text)
     else:
-        vm = ViberMessenger.objects.filter(pk=messenger_id).first()
+        vm = ViberMessengerModel.objects.filter(pk=messenger_id).first()
         if vm is None:
             return "ERROR ViberMessenger with pk=%d does not exist" % messenger_id
         vm.send_message_to_accs(recipients, message_text)
