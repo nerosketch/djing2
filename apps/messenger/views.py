@@ -15,7 +15,7 @@ class MessengerModelViewSet(DjingModelViewSet):
 
     @staticmethod
     def _get_specific_model(messenger_name: str):
-        messenger_model = models.MessengerModel.class_map.get(messenger_name, None)
+        messenger_model = models.class_map.get(messenger_name, None)
         if messenger_model is None:
             raise ParseError(detail='Unknown messenger name')
         return messenger_model

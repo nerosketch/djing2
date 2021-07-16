@@ -159,6 +159,7 @@ class ViberMessengerModel(MessengerModel):
 
 MessengerModel.add_child_classes(
     messenger_type_name='viber',
+    unique_int=2,
     messenger_class=ViberMessengerModel
 )
 
