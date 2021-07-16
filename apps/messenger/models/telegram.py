@@ -1,18 +1,18 @@
 from urllib.parse import urljoin
 
 from django.shortcuts import resolve_url
-from telebot import TeleBot
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from djing2.models import BaseAbstractModel
-from messenger.models import Messenger
+from messenger.models.messenger import MessengerModel, MessengerSubscriberModel
 from profiles.models import UserProfile
 
+from telebot import TeleBot, types
 
-class TelegramMessenger(Messenger):
-    token = models.CharField(_("Bot secret token"), max_length=128)
+
+class TelegramMessenger(MessengerModel):
+    avatar = models.ImageField(_("Avatar"), upload_to="telegram_avatar", null=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,7 +25,7 @@ class TelegramMessenger(Messenger):
         public_url = urljoin(pub_url, listen_url)
         self.tlgrm.set_webhook(url=public_url)
 
-    def remove_webhook(self):
+    def stop_webhook(self):
         self.tlgrm.remove_webhook()
 
     def send_message_to_accs(self, receivers, msg_text: str):
@@ -38,11 +38,52 @@ class TelegramMessenger(Messenger):
         for ts in TelegramSubscriber.objects.filter(account__in=receivers).iterator():
             ts.send_message(tb=self.tlgrm, text=msg_text)
 
+    def send_webhook(self):
+        pub_url = getattr(settings, "TELEGRAM_BOT_PUBLIC_URL")
+        listen_url = resolve_url("messenger:listen_telegram_bot", self.model.slug)
+        public_url = urljoin(pub_url, listen_url)
+        self.tlgrm.set_webhook(url=public_url)
 
-class TelegramSubscriber(BaseAbstractModel):
+    def remove_webhook(self):
+        self.tlgrm.remove_webhook()
+
+    def send_message_to_accs(self, receivers, msg_text: str):
+        """
+        :param receivers: QuerySet of profiles.UserProfile
+        :param msg_text: text message
+        :return: nothing
+        """
+        # self.tlgrm.send_message(
+        #     chat_id=2234234234,
+        #     text=msg_text
+        # )
+        # for ts in MessengerSubscriber.objects.filter(account__in=receivers).iterator():
+        #     ts.send_message(
+        #         tb=self.tlgrm,
+        #         text=msg_text
+        #     )
+
+    def send_message(self, msg_text: str):
+        pass
+
+    def inbox_data(self, data):
+        # obj = self.get_object()
+
+        upd = types.Update.de_json(data)
+        # Incoming updates from telegram bot
+        update_id = upd.update_id
+        print("update_id", update_id)
+        if upd.message is not None:
+            print("Msg", upd.message)
+            print("Msg text", upd.message.text)
+        return "ok"
+
+    class Meta:
+        db_table = 'messengers_telegram'
+
+
+class TelegramMessengerSubscriberModel(MessengerSubscriberModel):
     chat_id = models.CharField(_("User unique id in telegram"), max_length=32)
-    name = models.CharField(_("Name"), max_length=64, null=True, blank=True)
-    account = models.OneToOneField(UserProfile, on_delete=models.CASCADE, verbose_name=_("System account"))
 
     def send_message(self, tb: TeleBot, msg_text: str):
         return tb.send_message(chat_id=self.chat_id, text=msg_text)
@@ -51,7 +92,7 @@ class TelegramSubscriber(BaseAbstractModel):
         return self.name or "no"
 
     class Meta:
-        db_table = "messenger_telegram_subscriber"
+        db_table = "messengers_telegram_subscriber"
         verbose_name = _("Telegram subscriber")
         verbose_name_plural = _("Telegram subscribers")
         ordering = ("name",)
