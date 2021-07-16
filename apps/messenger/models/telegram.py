@@ -9,6 +9,8 @@ from messenger.models.base_messenger import MessengerModel, MessengerSubscriberM
 
 from telebot import TeleBot, types
 
+TYPE_NAME = 'telegram'
+
 
 class TelegramMessengerModel(MessengerModel):
     avatar = models.ImageField(_("Avatar"), upload_to="telegram_avatar", null=True)
@@ -20,22 +22,12 @@ class TelegramMessengerModel(MessengerModel):
 
     def set_webhook(self):
         pub_url = getattr(settings, "TELEGRAM_BOT_PUBLIC_URL")
-        listen_url = resolve_url("messenger:listen_telegram_bot", self.slug)
+        listen_url = resolve_url("messenger:messenger-listen-bot", pk=self.pk, messenger_name=TYPE_NAME)
         public_url = urljoin(pub_url, listen_url)
         self.tlgrm.set_webhook(url=public_url)
 
     def stop_webhook(self):
         self.tlgrm.remove_webhook()
-
-    def send_message_to_accs(self, receivers, msg_text: str):
-        """
-        :param receivers: QuerySet of profiles.UserProfile
-        :param msg_text: text message
-        :return: nothing
-        """
-        self.tlgrm.send_message(chat_id=2234234234, text=msg_text)
-        for ts in TelegramSubscriber.objects.filter(account__in=receivers).iterator():
-            ts.send_message(tb=self.tlgrm, text=msg_text)
 
     def send_webhook(self):
         pub_url = getattr(settings, "TELEGRAM_BOT_PUBLIC_URL")
@@ -66,8 +58,6 @@ class TelegramMessengerModel(MessengerModel):
         pass
 
     def inbox_data(self, data):
-        # obj = self.get_object()
-
         upd = types.Update.de_json(data)
         # Incoming updates from telegram bot
         update_id = upd.update_id
@@ -82,7 +72,7 @@ class TelegramMessengerModel(MessengerModel):
 
 
 MessengerModel.add_child_classes(
-    messenger_type_name='telegram',
+    messenger_type_name=TYPE_NAME,
     unique_int=1,
     messenger_class=TelegramMessengerModel
 )
