@@ -7,7 +7,7 @@ from django.conf import settings
 from viberbot import Api, BotConfiguration
 from viberbot.api.messages.message import Message
 
-from messenger.models.messenger import MessengerModel, MessengerSubscriberModel
+from messenger.models.base_messenger import MessengerModel, MessengerSubscriberModel
 from profiles.models import UserProfile
 
 from rest_framework import status
@@ -66,7 +66,7 @@ class ViberMessengerModel(MessengerModel):
 
     def send_webhook(self):
         pub_url = getattr(settings, "VIBER_BOT_PUBLIC_URL")
-        listen_url = resolve_url("messenger:listen_viber_bot", self.slug)
+        listen_url = resolve_url("messenger:listen_bot", self.pk, self.slug)
         public_url = urljoin(pub_url, listen_url)
         viber = self.get_viber()
         viber.set_webhook(public_url, ["failed", "subscribed", "unsubscribed", "conversation_started"])
@@ -155,6 +155,12 @@ class ViberMessengerModel(MessengerModel):
         verbose_name = _("Viber messenger")
         verbose_name_plural = _("Viber messengers")
         ordering = ("title",)
+
+
+MessengerModel.add_child_classes(
+    messenger_type_name='viber',
+    messenger_class=ViberMessengerModel
+)
 
 
 class ViberMessengerSubscriberModel(MessengerSubscriberModel):

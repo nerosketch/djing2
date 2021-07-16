@@ -6,17 +6,22 @@ from djing2.models import BaseAbstractModel
 from profiles.models import UserProfile
 
 
-class MessengerBotType(models.IntegerChoices):
-    VIBER = 1, _("Viber")
-    TELEGRAM = 2, _("Telegram")
+# class MessengerBotType(models.IntegerChoices):
+#     VIBER = 1, _("Viber")
+#     TELEGRAM = 2, _("Telegram")
 
 
 class MessengerModel(BaseAbstractModel):
     title = models.CharField(_("Title"), max_length=64)
     description = models.TextField(_("Description"), null=True, blank=True, default=None)
-    bot_type = models.PositiveSmallIntegerField(_("Bot type"), choices=MessengerBotType.choices, blank=True)
-    slug = models.SlugField(_("Slug"))
+    # bot_type = models.PositiveSmallIntegerField(_("Bot type"), choices=MessengerBotType.choices, blank=True)
     token = models.CharField(_("Bot secret token"), max_length=128)
+
+    class_map = {}
+
+    @classmethod
+    def add_child_classes(cls, messenger_type_name: str, messenger_class):
+        cls.class_map[messenger_type_name] = messenger_class
 
     @abc.abstractmethod
     def send_webhook(self, request):

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from djing2.lib.mixins import BaseCustomModelSerializer
-from messenger.models import messenger as models
+from messenger.models import base_messenger as models
 
 
 class MessengerModelSerializer(BaseCustomModelSerializer):
