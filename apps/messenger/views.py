@@ -15,21 +15,33 @@ class MessengerModelViewSet(DjingModelViewSet):
 
     @staticmethod
     def _get_specific_model(messenger_name: str):
-        messenger_model = models.class_map.get(messenger_name, None)
-        if messenger_model is None:
+        uint, messenger_model_class = models.class_map.get(messenger_name, None)
+        if messenger_model_class is None:
             raise ParseError(detail='Unknown messenger name')
-        return messenger_model
+        return messenger_model_class
 
     @action(detail=True)
     def send_webhook(self, request, pk=None):
+        """
+        Sends webhook url to messenger server.
+        """
+        # TODO: May optimize it?
         obj = self.get_object()
-        obj.send_webhook(request)
+        spec_model = models.get_messenger_model_by_uint(int(obj.bot_type))
+        spec_obj = get_object_or_404(spec_model, pk=pk)
+        spec_obj.send_webhook(request)
         return Response(status=status.HTTP_200_OK)
 
     @action(detail=True)
     def stop_webhook(self, request, pk=None):
+        """
+        Stop sending webhook.
+        """
+        # TODO: May optimize it?
         obj = self.get_object()
-        obj.stop_webhook(request)
+        spec_model = models.get_messenger_model_by_uint(int(obj.bot_type))
+        spec_obj = get_object_or_404(spec_model, pk=pk)
+        spec_obj.stop_webhook(request)
         return Response(status=status.HTTP_200_OK)
 
     @action(methods=["post"], detail=True, permission_classes=[], url_name="listen_bot",

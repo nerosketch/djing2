@@ -1,7 +1,9 @@
 import abc
+from typing import Optional
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
+from django.db.models.base import ModelBase
 from django.utils.translation import gettext_lazy as _
 
 from djing2.models import BaseAbstractModel
@@ -14,6 +16,16 @@ class_map = {}
 _bot_type_choices = (
     (int_and_class[0], str(int_and_class[1])) for type_name, int_and_class in class_map.items()
 )
+
+
+def get_messenger_model_by_name(name: str) -> Optional[ModelBase]:
+    uint, model_class = class_map.get(name, None)
+    return model_class
+
+
+def get_messenger_model_by_uint(uint: int) -> Optional[ModelBase]:
+    fg = (int_class[1] for type_name, int_class in class_map.items() if int_class[0] == uint)
+    return next(fg, None)
 
 
 class MessengerModel(BaseAbstractModel):
