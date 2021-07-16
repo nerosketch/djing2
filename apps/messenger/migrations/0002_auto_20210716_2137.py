@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('title', models.CharField(max_length=64, verbose_name='Title')),
                 ('description', models.TextField(blank=True, default=None, null=True, verbose_name='Description')),
-                ('bot_type', models.PositiveSmallIntegerField(blank=True, choices=[], verbose_name='Bot type')),
+                ('bot_type', models.PositiveSmallIntegerField(choices=[], verbose_name='Bot type')),
                 ('token', models.CharField(max_length=128, verbose_name='Bot secret token')),
             ],
             options={

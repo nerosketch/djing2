@@ -13,11 +13,6 @@ from profiles.models import UserProfile
 class_map = {}
 
 
-_bot_type_choices = (
-    (int_and_class[0], str(int_and_class[1])) for type_name, int_and_class in class_map.items()
-)
-
-
 def get_messenger_model_by_name(name: str) -> Optional[ModelBase]:
     uint, model_class = class_map.get(name, None)
     return model_class
@@ -32,9 +27,7 @@ class MessengerModel(BaseAbstractModel):
     title = models.CharField(_("Title"), max_length=64)
     description = models.TextField(_("Description"), null=True, blank=True, default=None)
     bot_type = models.PositiveSmallIntegerField(
-        _("Bot type"),
-        choices=_bot_type_choices,
-        blank=True
+        _("Bot type")
     )
     token = models.CharField(_("Bot secret token"), max_length=128)
 
@@ -69,6 +62,11 @@ class MessengerModel(BaseAbstractModel):
 
     def __str__(self):
         return self.title
+
+    def get_type_name(self) -> Optional[str]:
+        uint = int(self.bot_type)
+        g = (type_name for type_name, int_class in class_map.items() if int_class[0] == uint)
+        return next(g, None)
 
     class Meta:
         db_table = "messengers"
