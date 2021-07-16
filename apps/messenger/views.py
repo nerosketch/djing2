@@ -44,8 +44,8 @@ class MessengerModelViewSet(DjingModelViewSet):
         spec_obj.stop_webhook(request)
         return Response(status=status.HTTP_200_OK)
 
-    @action(methods=["post"], detail=True, permission_classes=[], url_name="listen_bot",
-            url_path=r'/(?P<messenger_name>\w{1,32})/listen')
+    @action(methods=["post"], detail=True, permission_classes=[], url_name="listen-bot",
+            url_path=r'(?P<messenger_name>\w{1,32})/listen')
     def listen(self, request, pk=None, messenger_name=None):
         specific_messenger_model = self._get_specific_model(messenger_name)
         obj = get_object_or_404(specific_messenger_model, pk=pk)

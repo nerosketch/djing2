@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register('subscriber', views.SubscriberModelViewSet)
-router.register('', views.MessengerModelViewSet)
+router.register('', views.MessengerModelViewSet, basename='messenger')
 
 app_name = "messenger"
 
