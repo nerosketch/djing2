@@ -83,6 +83,7 @@ class TelegramMessengerModel(MessengerModel):
 
 MessengerModel.add_child_classes(
     messenger_type_name='telegram',
+    unique_int=1,
     messenger_class=TelegramMessengerModel
 )
 
