@@ -48,7 +48,7 @@ call vundle#begin()
 
     " Add all your plugins here (note older versions of Vundle used Bundle instead of Plugin)
     "-------------------=== Code/Project navigation ===-------------
-    Plugin 'preservim/nerdtree'                " Project and file navigation
+    Plugin 'preservim/nerdtree'                 " Project and file navigation
     Plugin 'Xuyuanp/nerdtree-git-plugin'        " NerdTree git functionality
     Plugin 'majutsushi/tagbar'                  " Class/module browser
     Plugin 'vim-ctrlspace/vim-ctrlspace'        " Tabs/Buffers/Fuzzy/Workspaces/Bookmarks
@@ -178,6 +178,9 @@ noremap <F4> :execute "/" . expand("<cword>") <CR>
 
 " Mouse Cursor enable
 " set mouse=a
+
+" Magit open buffer
+nnoremap <silent> M :Magit <CR>
 
 
 "=====================================================
