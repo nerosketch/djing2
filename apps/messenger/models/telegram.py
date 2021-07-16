@@ -5,13 +5,12 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from messenger.models.messenger import MessengerModel, MessengerSubscriberModel
-from profiles.models import UserProfile
+from messenger.models.base_messenger import MessengerModel, MessengerSubscriberModel
 
 from telebot import TeleBot, types
 
 
-class TelegramMessenger(MessengerModel):
+class TelegramMessengerModel(MessengerModel):
     avatar = models.ImageField(_("Avatar"), upload_to="telegram_avatar", null=True)
 
     def __init__(self, *args, **kwargs):
@@ -80,6 +79,12 @@ class TelegramMessenger(MessengerModel):
 
     class Meta:
         db_table = 'messengers_telegram'
+
+
+MessengerModel.add_child_classes(
+    messenger_type_name='telegram',
+    messenger_class=TelegramMessengerModel
+)
 
 
 class TelegramMessengerSubscriberModel(MessengerSubscriberModel):
