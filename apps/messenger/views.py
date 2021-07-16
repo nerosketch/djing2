@@ -57,6 +57,11 @@ class MessengerModelViewSet(DjingModelViewSet):
             return Response(r, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(methods=['get'], detail=False)
+    def get_bot_types(self, request):
+        g = ((int_and_class[0], type_name) for type_name, int_and_class in models.class_map.items())
+        return Response(g)
+
 
 class SubscriberModelViewSet(DjingModelViewSet):
     queryset = models.MessengerSubscriberModel.objects.all()
