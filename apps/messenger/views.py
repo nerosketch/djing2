@@ -29,7 +29,7 @@ class MessengerModelViewSet(DjingModelViewSet):
         obj = self.get_object()
         spec_model = models.get_messenger_model_by_uint(int(obj.bot_type))
         spec_obj = get_object_or_404(spec_model, pk=pk)
-        spec_obj.send_webhook(request)
+        spec_obj.send_webhook()
         return Response(status=status.HTTP_200_OK)
 
     @action(detail=True)
@@ -41,7 +41,7 @@ class MessengerModelViewSet(DjingModelViewSet):
         obj = self.get_object()
         spec_model = models.get_messenger_model_by_uint(int(obj.bot_type))
         spec_obj = get_object_or_404(spec_model, pk=pk)
-        spec_obj.stop_webhook(request)
+        spec_obj.stop_webhook()
         return Response(status=status.HTTP_200_OK)
 
     @action(detail=True)
@@ -64,9 +64,9 @@ class MessengerModelViewSet(DjingModelViewSet):
         if isinstance(r, (tuple, list)):
             ret_text, ret_code = r
             return Response(ret_text, status=ret_code)
-        elif isinstance(r, str) or hasattr(r, "__str__"):
-            return Response(r, status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif isinstance(r, (str, dict, list)) or hasattr(r, "__str__"):
+            return Response(r)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(methods=['get'], detail=False)
     def get_bot_types(self, request):
