@@ -1,9 +1,5 @@
-from urllib.parse import urljoin
-
 from django.db import models
-from django.shortcuts import resolve_url
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
 from viberbot import Api, BotConfiguration
 from viberbot.api.messages.message import Message
 
@@ -19,6 +15,9 @@ from viberbot.api.viber_requests import (
     ViberFailedRequest,
     ViberUnsubscribedRequest,
 )
+
+
+TYPE_NAME = 'viber'
 
 
 class ViberMessengerModel(MessengerModel):
@@ -65,9 +64,7 @@ class ViberMessengerModel(MessengerModel):
             viber.send_messages(subscriber_id, TextMessage(text=msg))
 
     def send_webhook(self):
-        pub_url = getattr(settings, "VIBER_BOT_PUBLIC_URL")
-        listen_url = resolve_url("messenger:listen_bot", self.pk, self.slug)
-        public_url = urljoin(pub_url, listen_url)
+        public_url = self.get_webhook_url(bot_type=TYPE_NAME)
         viber = self.get_viber()
         viber.set_webhook(public_url, ["failed", "subscribed", "unsubscribed", "conversation_started"])
 
@@ -158,7 +155,7 @@ class ViberMessengerModel(MessengerModel):
 
 
 MessengerModel.add_child_classes(
-    messenger_type_name='viber',
+    messenger_type_name=TYPE_NAME,
     unique_int=2,
     messenger_class=ViberMessengerModel
 )

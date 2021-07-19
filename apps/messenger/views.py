@@ -44,6 +44,17 @@ class MessengerModelViewSet(DjingModelViewSet):
         spec_obj.stop_webhook(request)
         return Response(status=status.HTTP_200_OK)
 
+    @action(detail=True)
+    def show_webhook(self, request, pk=None):
+        """ Show current webhook url."""
+        # TODO: May optimize it?
+        obj = self.get_object()
+        spec_model = models.get_messenger_model_by_uint(int(obj.bot_type))
+        spec_obj = get_object_or_404(spec_model, messengermodel_ptr_id=pk)
+        type_name = obj.get_type_name()
+        webhook_url = spec_obj.get_webhook_url(type_name=type_name)
+        return Response(webhook_url)
+
     @action(methods=["post"], detail=True, permission_classes=[], url_name="listen-bot",
             url_path=r'(?P<messenger_name>\w{1,32})/listen')
     def listen(self, request, pk=None, messenger_name=None):
@@ -61,6 +72,16 @@ class MessengerModelViewSet(DjingModelViewSet):
     def get_bot_types(self, request):
         g = ((int_and_class[0], type_name) for type_name, int_and_class in models.class_map.items())
         return Response(g)
+
+    @action(methods=['post'], detail=False)
+    def create_inherited(self, request):
+        dat = request.data
+        bot_type = dat.pop('bot_type')
+        if not bot_type:
+            return Response('bad "bot_type"', status=status.HTTP_400_BAD_REQUEST)
+        new_inst = models.MessengerModel.objects.create_inherited(bot_type=bot_type, **dat)
+        serializer = self.get_serializer(new_inst)
+        return Response(serializer.data)
 
 
 class SubscriberModelViewSet(DjingModelViewSet):

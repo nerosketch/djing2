@@ -1,7 +1,3 @@
-from urllib.parse import urljoin
-
-from django.shortcuts import resolve_url
-from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -20,19 +16,11 @@ class TelegramMessengerModel(MessengerModel):
         token = str(self.token)
         self.tlgrm = TeleBot(token)
 
-    def set_webhook(self):
-        pub_url = getattr(settings, "TELEGRAM_BOT_PUBLIC_URL")
-        listen_url = resolve_url("messenger:messenger-listen-bot", pk=self.pk, messenger_name=TYPE_NAME)
-        public_url = urljoin(pub_url, listen_url)
-        self.tlgrm.set_webhook(url=public_url)
-
     def stop_webhook(self):
         self.tlgrm.remove_webhook()
 
     def send_webhook(self):
-        pub_url = getattr(settings, "TELEGRAM_BOT_PUBLIC_URL")
-        listen_url = resolve_url("messenger:listen_telegram_bot", self.model.slug)
-        public_url = urljoin(pub_url, listen_url)
+        public_url = self.get_webhook_url(bot_type=TYPE_NAME)
         self.tlgrm.set_webhook(url=public_url)
 
     def remove_webhook(self):

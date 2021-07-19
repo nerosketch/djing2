@@ -1,6 +1,9 @@
 import abc
 from typing import Optional
+from urllib.parse import urljoin
 
+from django.shortcuts import resolve_url
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.db.models.base import ModelBase
@@ -23,6 +26,14 @@ def get_messenger_model_by_uint(uint: int) -> Optional[ModelBase]:
     return next(fg, None)
 
 
+class MessengerModelManager(models.Manager):
+
+    @staticmethod
+    def create_inherited(bot_type: int, *args, **kwargs):
+        msg_model = get_messenger_model_by_uint(bot_type)
+        return msg_model.objects.create(bot_type=bot_type, *args, **kwargs)
+
+
 class MessengerModel(BaseAbstractModel):
     title = models.CharField(_("Title"), max_length=64)
     description = models.TextField(_("Description"), null=True, blank=True, default=None)
@@ -30,6 +41,8 @@ class MessengerModel(BaseAbstractModel):
         _("Bot type")
     )
     token = models.CharField(_("Bot secret token"), max_length=128)
+
+    objects = MessengerModelManager()
 
     @staticmethod
     def add_child_classes(messenger_type_name: str, unique_int: int, messenger_class):
@@ -59,6 +72,12 @@ class MessengerModel(BaseAbstractModel):
     @abc.abstractmethod
     def inbox_data(self, request):
         pass
+
+    def get_webhook_url(self, type_name: str):
+        pub_url = getattr(settings, "MESSENGER_BOT_PUBLIC_URL")
+        listen_url = resolve_url("messenger:messenger-listen-bot", pk=self.pk, messenger_name=type_name)
+        public_url = urljoin(pub_url, listen_url)
+        return public_url
 
     def __str__(self):
         return self.title
