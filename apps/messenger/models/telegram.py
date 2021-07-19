@@ -20,11 +20,8 @@ class TelegramMessengerModel(MessengerModel):
         self.tlgrm.remove_webhook()
 
     def send_webhook(self):
-        public_url = self.get_webhook_url(bot_type=TYPE_NAME)
+        public_url = self.get_webhook_url(type_name=TYPE_NAME)
         self.tlgrm.set_webhook(url=public_url)
-
-    def remove_webhook(self):
-        self.tlgrm.remove_webhook()
 
     def send_message_to_accs(self, receivers, msg_text: str):
         """
@@ -42,18 +39,16 @@ class TelegramMessengerModel(MessengerModel):
         #         text=msg_text
         #     )
 
-    def send_message(self, msg_text: str):
-        pass
-
-    def inbox_data(self, data):
-        upd = types.Update.de_json(data)
-        # Incoming updates from telegram bot
-        update_id = upd.update_id
-        print("update_id", update_id)
-        if upd.message is not None:
-            print("Msg", upd.message)
-            print("Msg text", upd.message.text)
-        return "ok"
+    def inbox_data(self, request):
+        # print('Inbox:', request.data)
+        upd = types.Update.de_json(request.data)
+        msg = upd.message
+        if msg.chat and msg.chat.id:
+            return self.tlgrm.send_message(
+                chat_id=msg.chat.id,
+                text='кирилица',
+                reply_to_message_id=msg.message_id
+            ).json
 
     class Meta:
         db_table = 'messengers_telegram'

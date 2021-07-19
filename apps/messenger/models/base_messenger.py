@@ -62,11 +62,11 @@ class MessengerModel(BaseAbstractModel):
         class_map[messenger_type_name] = (unique_int, messenger_class)
 
     @abc.abstractmethod
-    def send_webhook(self, request):
+    def send_webhook(self):
         pass
 
     @abc.abstractmethod
-    def stop_webhook(self, request):
+    def stop_webhook(self):
         pass
 
     @abc.abstractmethod
