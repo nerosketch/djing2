@@ -64,7 +64,7 @@ class ViberMessengerModel(MessengerModel):
             viber.send_messages(subscriber_id, TextMessage(text=msg))
 
     def send_webhook(self):
-        public_url = self.get_webhook_url(bot_type=TYPE_NAME)
+        public_url = self.get_webhook_url(type_name=TYPE_NAME)
         viber = self.get_viber()
         viber.set_webhook(public_url, ["failed", "subscribed", "unsubscribed", "conversation_started"])
 
