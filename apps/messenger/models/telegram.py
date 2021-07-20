@@ -1,9 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
 from messenger.models.base_messenger import MessengerModel, MessengerSubscriberModel
-
 from telebot import TeleBot, types
+from profiles.models import UserProfile
 
 TYPE_NAME = 'telegram'
 
@@ -40,20 +39,45 @@ class TelegramMessengerModel(MessengerModel):
         #     )
 
     def inbox_data(self, request):
-        # print('Inbox:', request.data)
         upd = types.Update.de_json(request.data)
-        msg = upd.message
-        # print('Msg:', msg)
 
-        return self._reply_telephone_contact(
-            button_text='Телефон из телеграма',
+        if upd.my_chat_member:
+            mcm = upd.my_chat_member
+            chat_id = mcm.chat.id
+            if mcm.new_chat_member:
+                st = mcm.new_chat_member.status
+                if st == 'kicked':
+                    # Kicked user from chat bot
+                    return self._leave_chat_bot(
+                        chat_id=chat_id
+                    )
+                elif st == 'member':
+                    # create new subscriber
+                    return self._make_subscriber(mcm.chat)
+                else:
+                    return None
+
+        msg = upd.message
+        if msg:
+            text = msg.text
+            if text == '/start':
+                return self._reply_telephone_contact(
+                    button_text=_('My telephone number'),
+                    chat_id=msg.chat.id,
+                    text=_('Telephone number required')
+                )
+            # handle_message_command(msg)
+            if msg.contact:
+                return self._inbox_contact(msg, msg.chat.id)
+
+        return self._reply_text(
             chat_id=msg.chat.id,
-            text='Нужен номер телефона из учётной записи в билинге'
+            text=_()
         )
 
     @staticmethod
     def _reply_telephone_contact(button_text: str, chat_id: int, text: str):
-        r = {
+        return {
             'chat_id': str(chat_id),
             'text': text,
             'reply_markup': {
@@ -70,7 +94,6 @@ class TelegramMessengerModel(MessengerModel):
             },
             'method': 'sendMessage'
         }
-        return r
 
     @staticmethod
     def _reply_text(chat_id: int, text: str, reply_to_msg_id=None):
@@ -82,6 +105,52 @@ class TelegramMessengerModel(MessengerModel):
         if reply_to_msg_id is not None:
             r['reply_to_message_id'] = reply_to_msg_id
         return r
+
+    @classmethod
+    def _inbox_contact(cls, msg: types.Message, chat_id: int):
+        tel = msg.contact.phone_number
+        accs = UserProfile.objects.filter(telephone__icontains=tel)
+        if accs.exists():
+            subs = TelegramMessengerSubscriberModel.objects.filter(
+                chat_id=chat_id
+            )
+            subs_len = subs.count()
+            if subs_len > 0:
+                first_sub = subs.first()
+                if subs_len > 1:
+                    TelegramMessengerSubscriberModel.objects.exclude(pk=first_sub.pk).delete()
+                first_sub.account = accs.first()
+                first_sub.name = msg.from_user.full_name
+                first_sub.save(update_fields=('account', 'name'))
+                return cls._reply_text(
+                    chat_id=chat_id,
+                    text=_('Your account is attached. Now you will be receive notifications from billing')
+                )
+            else:
+                return cls._reply_text(
+                    chat_id=chat_id,
+                    text=_('Subscription does not exists')
+                )
+        else:
+            cls._reply_text(
+                chat_id=chat_id,
+                text=_('Telephone not found, please specify telephone number in account in billing')
+            )
+
+    @staticmethod
+    def _make_subscriber(chat: types.Chat):
+        TelegramMessengerSubscriberModel.objects.get_or_create(
+            chat_id=chat.id,
+            defaults={
+                'name': "%s %s" % (chat.first_name, chat.last_name),
+            }
+        )
+
+    @classmethod
+    def _leave_chat_bot(cls, chat_id: int):
+        TelegramMessengerSubscriberModel.objects.filter(
+            chat_id=chat_id
+        ).delete()
 
     class Meta:
         db_table = 'messengers_telegram'
