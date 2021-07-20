@@ -43,12 +43,45 @@ class TelegramMessengerModel(MessengerModel):
         # print('Inbox:', request.data)
         upd = types.Update.de_json(request.data)
         msg = upd.message
-        if msg.chat and msg.chat.id:
-            return self.tlgrm.send_message(
-                chat_id=msg.chat.id,
-                text='кирилица',
-                reply_to_message_id=msg.message_id
-            ).json
+        # print('Msg:', msg)
+
+        return self._reply_telephone_contact(
+            button_text='Телефон из телеграма',
+            chat_id=msg.chat.id,
+            text='Нужен номер телефона из учётной записи в билинге'
+        )
+
+    @staticmethod
+    def _reply_telephone_contact(button_text: str, chat_id: int, text: str):
+        r = {
+            'chat_id': str(chat_id),
+            'text': text,
+            'reply_markup': {
+                'keyboard': [
+                    [
+                        {
+                            'text': button_text,
+                            'request_contact': True
+                        }
+                    ]
+                ],
+                'resize_keyboard': True,
+                'one_time_keyboard': True
+            },
+            'method': 'sendMessage'
+        }
+        return r
+
+    @staticmethod
+    def _reply_text(chat_id: int, text: str, reply_to_msg_id=None):
+        r = {
+            'chat_id': chat_id,
+            'text': text,
+            'method': 'sendMessage'
+        }
+        if reply_to_msg_id is not None:
+            r['reply_to_message_id'] = reply_to_msg_id
+        return r
 
     class Meta:
         db_table = 'messengers_telegram'
