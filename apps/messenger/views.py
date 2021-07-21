@@ -28,13 +28,6 @@ class MessengerModelViewSet(DjingModelViewSet):
         obj.stop_webhook()
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=True)
-    def show_webhook(self, request, pk=None):
-        """ Show current webhook url."""
-        obj = self.get_object()
-        webhook_url = obj.get_webhook_url()
-        return Response(webhook_url)
-
     @action(methods=["post"], detail=True, permission_classes=[], url_name="listen-bot")
     def listen(self, request, pk=None):
         obj = self.get_object()
