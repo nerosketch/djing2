@@ -123,6 +123,9 @@ msgstr "Нужен номер телефона"
 msgid "Unknown choice"
 msgstr "Не понятный вариант"
 
+msgid "Subscription does not exists. Send your contact."
+msgstr "Подписка не найдена. Отправьте ваш контакт."
+
 #~ msgid "Viber"
 #~ msgstr "Вайбер"
 

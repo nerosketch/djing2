@@ -79,7 +79,7 @@ class TelegramMessengerModel(MessengerModel):
                 )
             # handle_message_command(msg)
             if msg.contact:
-                return self._inbox_contact(msg, msg.chat.id)
+                return self._inbox_contact(msg, msg.chat)
 
         return self._reply_text(
             chat_id=msg.chat.id,
@@ -117,13 +117,12 @@ class TelegramMessengerModel(MessengerModel):
             r['reply_to_message_id'] = reply_to_msg_id
         return r
 
-    @classmethod
-    def _inbox_contact(cls, msg: types.Message, chat_id: int):
+    def _inbox_contact(self, msg: types.Message, chat: types.Chat):
         tel = msg.contact.phone_number
         accs = UserProfile.objects.filter(telephone__icontains=tel)
         if accs.exists():
             subs = TelegramMessengerSubscriberModel.objects.filter(
-                chat_id=chat_id
+                chat_id=chat.id
             )
             subs_len = subs.count()
             if subs_len > 0:
@@ -133,18 +132,21 @@ class TelegramMessengerModel(MessengerModel):
                 first_sub.account = accs.first()
                 first_sub.name = msg.from_user.full_name
                 first_sub.save(update_fields=('account', 'name'))
-                return cls._reply_text(
-                    chat_id=chat_id,
+                return self._reply_text(
+                    chat_id=chat.id,
                     text=_('Your account is attached. Now you will be receive notifications from billing')
                 )
             else:
-                return cls._reply_text(
-                    chat_id=chat_id,
-                    text=_('Subscription does not exists')
+                # Subscription does not exists, make it.
+                self._make_subscriber(chat=chat)
+                return self._reply_telephone_contact(
+                    button_text=_('My telephone number'),
+                    chat_id=msg.chat.id,
+                    text=_('Subscription does not exists. Send your contact.')
                 )
         else:
-            cls._reply_text(
-                chat_id=chat_id,
+            self._reply_text(
+                chat_id=chat.id,
                 text=_('Telephone not found, please specify telephone number in account in billing')
             )
 
