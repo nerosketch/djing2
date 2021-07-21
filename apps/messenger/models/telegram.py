@@ -22,21 +22,32 @@ class TelegramMessengerModel(MessengerModel):
         public_url = self.get_webhook_url(type_name=TYPE_NAME)
         self.tlgrm.set_webhook(url=public_url)
 
-    def send_message_to_accs(self, receivers, msg_text: str):
-        """
-        :param receivers: QuerySet of profiles.UserProfile
-        :param msg_text: text message
-        :return: nothing
-        """
-        # self.tlgrm.send_message(
-        #     chat_id=2234234234,
-        #     text=msg_text
-        # )
-        # for ts in MessengerSubscriber.objects.filter(account__in=receivers).iterator():
-        #     ts.send_message(
-        #         tb=self.tlgrm,
-        #         text=msg_text
-        #     )
+    def send_message_to_acc(self, to: UserProfile, msg: str):
+        try:
+            subs = TelegramMessengerSubscriberModel.objects.get(account=to)
+            self.tlgrm.send_message(
+                chat_id=subs.chat_id,
+                text=msg
+            )
+        except TelegramMessengerSubscriberModel.DoesNotExist:
+            pass
+
+    def send_message(self, text: str, chat_id=None, *args, **kwargs):
+        self.tlgrm.send_message(
+            chat_id=chat_id,
+            text=text
+        )
+
+    def send_message_broadcast(self, text: str, profile_ids=None):
+        subscribers = TelegramMessengerSubscriberModel.objects.select_related('messenger').filter(
+            messenger=self
+        )
+        if profile_ids is not None:
+            subscribers = subscribers.filter(
+                account__id__in=profile_ids
+            )
+        for subs in subscribers.iterator():
+            self.send_message(text=text, chat_id=subs.chat_id)
 
     def inbox_data(self, request):
         upd = types.Update.de_json(request.data)
@@ -72,7 +83,7 @@ class TelegramMessengerModel(MessengerModel):
 
         return self._reply_text(
             chat_id=msg.chat.id,
-            text=_()
+            text=_('Unknown choice')
         )
 
     @staticmethod
@@ -137,10 +148,10 @@ class TelegramMessengerModel(MessengerModel):
                 text=_('Telephone not found, please specify telephone number in account in billing')
             )
 
-    @staticmethod
-    def _make_subscriber(chat: types.Chat):
+    def _make_subscriber(self, chat: types.Chat):
         TelegramMessengerSubscriberModel.objects.get_or_create(
             chat_id=chat.id,
+            messenger=self,
             defaults={
                 'name': "%s %s" % (chat.first_name, chat.last_name),
             }
@@ -165,12 +176,13 @@ MessengerModel.add_child_classes(
 
 class TelegramMessengerSubscriberModel(MessengerSubscriberModel):
     chat_id = models.CharField(_("User unique id in telegram"), max_length=32)
+    messenger = models.ForeignKey(TelegramMessengerModel, on_delete=models.CASCADE)
 
-    def send_message(self, tb: TeleBot, msg_text: str):
-        return tb.send_message(chat_id=self.chat_id, text=msg_text)
-
-    def __str__(self):
-        return self.name or "no"
+    def send_message(self, text: str):
+        return self.messenger.send_message(
+            text=text,
+            chat_id=self.chat_id,
+        )
 
     class Meta:
         db_table = "messengers_telegram_subscriber"

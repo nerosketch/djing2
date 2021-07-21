@@ -120,6 +120,9 @@ msgstr "\"bot_type\" имеет не допустимое значение"
 msgid "Telephone number required"
 msgstr "Нужен номер телефона"
 
+msgid "Unknown choice"
+msgstr "Не понятный вариант"
+
 #~ msgid "Viber"
 #~ msgstr "Вайбер"
 

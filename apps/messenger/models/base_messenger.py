@@ -1,5 +1,5 @@
 import abc
-from typing import Optional
+from typing import Optional, Tuple, Generator
 from urllib.parse import urljoin
 
 from django.shortcuts import resolve_url
@@ -24,6 +24,10 @@ def get_messenger_model_by_name(name: str) -> Optional[ModelBase]:
 def get_messenger_model_by_uint(uint: int) -> Optional[ModelBase]:
     fg = (int_class[1] for type_name, int_class in class_map.items() if int_class[0] == uint)
     return next(fg, None)
+
+
+def get_messenger_model_info_generator() -> Generator[Tuple[str, int, ModelBase], None, None]:
+    return ((type_name, int_class[0], int_class[1]) for type_name, int_class in class_map.items())
 
 
 class MessengerModelManager(models.Manager):
@@ -63,15 +67,31 @@ class MessengerModel(BaseAbstractModel):
 
     @abc.abstractmethod
     def send_webhook(self):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def stop_webhook(self):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def inbox_data(self, request):
-        pass
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def send_message_to_acc(self, to: UserProfile, msg: str):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def send_message(self, text: str, *args, **kwargs):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def send_message_broadcast(self, text: str, profile_ids=None):
+        """
+        :param text: Message text.
+        :param profile_ids: list of profiles.UserProfile.id, optional.
+        """
+        raise NotImplementedError
 
     def get_webhook_url(self, type_name: str):
         pub_url = getattr(settings, "MESSENGER_BOT_PUBLIC_URL")
@@ -100,6 +120,9 @@ class MessengerSubscriberModel(BaseAbstractModel):
     account = models.OneToOneField(
         UserProfile, on_delete=models.CASCADE, verbose_name=_("System account"), blank=True, null=True
     )
+
+    def send_message(self, msg_text: str):
+        pass
 
     def __str__(self):
         return self.name or "no"
