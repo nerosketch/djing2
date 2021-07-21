@@ -120,6 +120,8 @@ class TaskModelViewSet(DjingModelViewSet):
 
     @action(detail=False)
     def task_mode_report(self, request):
+        self.check_permission_code(request, "tasks.can_view_task_mode_report")
+
         report = models.Task.objects.task_mode_report()
 
         def _get_display(val: int) -> str:
