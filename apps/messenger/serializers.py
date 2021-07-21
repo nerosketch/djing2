@@ -9,6 +9,7 @@ class MessengerModelSerializer(BaseCustomModelSerializer):
     bot_type_name = serializers.CharField(source='get_type_name', read_only=True)
     token = serializers.CharField(write_only=True)
     global_link = serializers.CharField(source='get_bot_url', read_only=True)
+    current_webhook = serializers.CharField(source='get_webhook_url', read_only=True)
 
     def validate_bot_type(self, value):
         ints = tuple(int_class[0] for type_name, int_class in models.class_map.items())

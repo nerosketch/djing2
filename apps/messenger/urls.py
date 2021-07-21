@@ -8,9 +8,10 @@ router = DefaultRouter()
 router.register('subscriber', views.SubscriberModelViewSet)
 
 for type_name, messenger_uint, messenger_model_class in get_messenger_model_info_generator():
-    viewset_with_qs = views.MessengerModelViewSet
-    viewset_with_qs.queryset = messenger_model_class.objects.all()
-    router.register(type_name, viewset_with_qs, basename=f'messenger-{type_name}')
+    tmp_viewset = views.MessengerModelViewSet
+    tmp_viewset.queryset = messenger_model_class.objects.all()
+    tmp_viewset.serializer_class.Meta.model = messenger_model_class
+    router.register(type_name, tmp_viewset, basename=f'messenger-{type_name}')
 
 
 app_name = "messenger"

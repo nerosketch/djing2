@@ -102,11 +102,6 @@ class MessengerModel(BaseAbstractModel):
         g = (type_name for type_name, int_class in class_map.items() if int_class[0] == uint)
         return next(g, None)
 
-    def save(self, *args, **kwargs):
-        if isinstance(self, MessengerModel):
-            raise TypeError('MessengerModel is abstract model')
-        return super().save(*args, **kwargs)
-
     class Meta:
         db_table = "messengers"
         verbose_name = _("Messenger")
