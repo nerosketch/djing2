@@ -258,7 +258,10 @@ class Task(BaseAbstractModel):
     class Meta:
         db_table = "task"
         ordering = ("-id",)
-        permissions = [("can_remind", _("Reminders of tasks"))]
+        permissions = [
+            ("can_remind", _("Reminders of tasks")),
+            ("can_view_task_mode_report", _("Can view task mode report"))
+        ]
 
 
 class ExtraComment(BaseAbstractModel):
