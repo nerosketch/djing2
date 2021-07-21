@@ -19,7 +19,7 @@ class TelegramMessengerModel(MessengerModel):
         self.tlgrm.remove_webhook()
 
     def send_webhook(self):
-        public_url = self.get_webhook_url(type_name=TYPE_NAME)
+        public_url = self.get_webhook_url()
         self.tlgrm.set_webhook(url=public_url)
 
     def send_message_to_acc(self, to: UserProfile, msg: str):
