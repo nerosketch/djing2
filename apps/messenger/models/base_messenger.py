@@ -30,14 +30,6 @@ def get_messenger_model_info_generator() -> Generator[Tuple[str, int, ModelBase]
     return ((type_name, int_class[0], int_class[1]) for type_name, int_class in class_map.items())
 
 
-class MessengerModelManager(models.Manager):
-
-    @staticmethod
-    def create_inherited(bot_type: int, *args, **kwargs):
-        msg_model = get_messenger_model_by_uint(bot_type)
-        return msg_model.objects.create(bot_type=bot_type, *args, **kwargs)
-
-
 class MessengerModel(BaseAbstractModel):
     title = models.CharField(_("Title"), max_length=64)
     description = models.TextField(_("Description"), null=True, blank=True, default=None)
@@ -45,8 +37,6 @@ class MessengerModel(BaseAbstractModel):
         _("Bot type")
     )
     token = models.CharField(_("Bot secret token"), max_length=128)
-
-    objects = MessengerModelManager()
 
     @staticmethod
     def add_child_classes(messenger_type_name: str, unique_int: int, messenger_class):
@@ -93,9 +83,14 @@ class MessengerModel(BaseAbstractModel):
         """
         raise NotImplementedError
 
-    def get_webhook_url(self, type_name: str):
+    @abc.abstractmethod
+    def get_bot_url(self):
+        raise NotImplementedError
+
+    def get_webhook_url(self):
+        type_name = self.get_type_name()
         pub_url = getattr(settings, "MESSENGER_BOT_PUBLIC_URL")
-        listen_url = resolve_url("messenger:messenger-listen-bot", pk=self.pk, messenger_name=type_name)
+        listen_url = resolve_url(f"messenger:messenger-{type_name}-listen-bot", pk=self.pk)
         public_url = urljoin(pub_url, listen_url)
         return public_url
 
@@ -106,6 +101,11 @@ class MessengerModel(BaseAbstractModel):
         uint = int(self.bot_type)
         g = (type_name for type_name, int_class in class_map.items() if int_class[0] == uint)
         return next(g, None)
+
+    def save(self, *args, **kwargs):
+        if isinstance(self, MessengerModel):
+            raise TypeError('MessengerModel is abstract model')
+        return super().save(*args, **kwargs)
 
     class Meta:
         db_table = "messengers"

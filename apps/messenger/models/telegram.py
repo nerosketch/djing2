@@ -49,6 +49,9 @@ class TelegramMessengerModel(MessengerModel):
         for subs in subscribers.iterator():
             self.send_message(text=text, chat_id=subs.chat_id)
 
+    def get_bot_url(self):
+        return f"https://t.me/{self.title}"
+
     def inbox_data(self, request):
         upd = types.Update.de_json(request.data)
 
