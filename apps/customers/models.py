@@ -663,6 +663,7 @@ class Customer(BaseAccount):
             ("can_ping", _("Can ping")),
             ("can_complete_service", _("Can complete service")),
             ("can_view_activity_report", _("Can view activity_report")),
+            ("can_view_service_type_report", _('Can view service type report'))
         ]
         verbose_name = _("Customer")
         verbose_name_plural = _("Customers")

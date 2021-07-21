@@ -325,6 +325,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
     @action(detail=False)
     def service_type_report(self, request):
+        self.check_permission_code(request, "customers.can_view_service_type_report")
         r = models.Customer.objects.customer_service_type_report()
         return Response(r)
 
