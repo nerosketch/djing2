@@ -28,6 +28,7 @@ class MessengerModelViewSet(DjingModelViewSet):
         obj.stop_webhook()
         return Response(status=status.HTTP_200_OK)
 
+    # TODO: Protect this action.
     @action(methods=["post"], detail=True, permission_classes=[], url_name="listen-bot")
     def listen(self, request, pk=None):
         if not request.data:
