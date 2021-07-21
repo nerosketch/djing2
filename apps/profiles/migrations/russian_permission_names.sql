@@ -125,6 +125,7 @@ execute _tp('tasks', 'view_taskdocumentattachment', 'Может видеть п�
 execute _tp('tasks', 'add_task', 'Может добавлять задачи');
 execute _tp('tasks', 'view_task', 'Может видеть задачи');
 execute _tp('tasks', 'can_remind', 'Может напоминать о задачах их исполнителям');
+execute _tp('tasks', 'can_view_task_mode_report', 'Может видеть отчёт по частоте использования характеров задач');
 execute _tp('tasks', 'delete_extracomment', 'Может удалять комментарии к задачам');
 execute _tp('fin_app', 'change_payalltimegateway', 'Может изменять платёжный шлюз AllTime');
 execute _tp('fin_app', 'delete_payalltimegateway', 'Может удалять платёжный шлюз AllTime');
