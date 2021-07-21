@@ -30,7 +30,11 @@ class MessengerModelViewSet(DjingModelViewSet):
 
     @action(methods=["post"], detail=True, permission_classes=[], url_name="listen-bot")
     def listen(self, request, pk=None):
-        obj = self.get_object()
+        if not request.data:
+            return Response('Empty data', status=status.HTTP_400_BAD_REQUEST)
+        obj = self.get_queryset().filter(pk=pk).first()
+        if obj is None:
+            return Response('Messenger bot not found', status=status.HTTP_404_NOT_FOUND)
         r = obj.inbox_data(request)
         if isinstance(r, (tuple, list)):
             ret_text, ret_code = r
