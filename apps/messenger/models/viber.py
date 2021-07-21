@@ -34,27 +34,19 @@ class ViberMessengerModel(MessengerModel):
             )
         return self._viber_cache
 
-    def send_message_to_acc(self, to: UserProfile, msg):
+    def send_message_to_acc(self, to: UserProfile, msg: str):
         try:
             viber = self.get_viber()
-            vs = to.vibermessengersubscribermodel
-            if issubclass(msg.__class__, Message):
-                viber.send_messages(str(vs.uid), msg)
-            else:
-                viber.send_messages(str(vs.uid), TextMessage(text=msg))
+            vs = ViberMessengerSubscriberModel.objects.get(account=to)
+            viber.send_messages(str(vs.uid), TextMessage(text=msg))
         except ViberMessengerSubscriberModel.DoesNotExist:
             pass
 
-    def send_message_to_accs(self, receivers, msg_text: str):
-        """
-        :param receivers: QuerySet of profiles.UserProfile
-        :param msg_text: text message
-        :return: nothing
-        """
-        viber = self.get_viber()
-        msg = TextMessage(text=msg_text)
-        for vs in ViberMessengerSubscriberModel.objects.filter(account__in=receivers).iterator():
-            viber.send_messages(str(vs.uid), msg)
+    def send_message(self, text: str, *args, **kwargs):
+        pass
+
+    def send_message_broadcast(self, text: str, profile_ids=None):
+        pass
 
     def send_message_to_id(self, subscriber_id: str, msg):
         viber = self.get_viber()
@@ -154,9 +146,10 @@ MessengerModel.add_child_classes(
 
 class ViberMessengerSubscriberModel(MessengerSubscriberModel):
     uid = models.CharField(_("User unique id"), max_length=32)
+    messenger = models.ForeignKey(ViberMessengerModel, on_delete=models.CASCADE)
 
-    def __str__(self):
-        return self.name or "no"
+    def send_message(self, msg_text: str):
+        pass
 
     class Meta:
         db_table = "messengers_viber_subscriber"

@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('title', models.CharField(max_length=64, verbose_name='Title')),
                 ('description', models.TextField(blank=True, default=None, null=True, verbose_name='Description')),
-                ('bot_type', models.PositiveSmallIntegerField(choices=[], verbose_name='Bot type')),
+                ('bot_type', models.PositiveSmallIntegerField(verbose_name='Bot type')),
                 ('token', models.CharField(max_length=128, verbose_name='Bot secret token')),
             ],
             options={
@@ -74,6 +74,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('messengersubscribermodel_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='messenger.messengersubscribermodel')),
                 ('chat_id', models.CharField(max_length=32, verbose_name='User unique id in telegram')),
+                ('messenger', models.ForeignKey(to='messenger.telegrammessengermodel', on_delete=django.db.models.CASCADE))
             ],
             options={
                 'verbose_name': 'Telegram subscriber',
@@ -102,6 +103,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('messengersubscribermodel_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='messenger.messengersubscribermodel')),
                 ('uid', models.CharField(max_length=32, verbose_name='User unique id')),
+                ('messenger', models.ForeignKey(to='messenger.vibermessengermodel', on_delete=django.db.models.CASCADE)),
             ],
             options={
                 'verbose_name': 'Subscriber',
