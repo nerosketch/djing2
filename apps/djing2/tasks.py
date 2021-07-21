@@ -2,7 +2,8 @@ import logging
 from _socket import gaierror
 from smtplib import SMTPException
 from typing import Iterable
-from webpush import send_group_notification
+
+# from webpush import send_group_notification
 
 from profiles.models import UserProfile
 from django.conf import settings
@@ -55,9 +56,10 @@ def multicast_email_notify(msg_text: str, account_ids: Iterable):
 
 @task()
 def send_broadcast_push_notification(title: str, body: str, url=None, **other_info):
-    payload = {"title": title, "body": body}
-    if url:
-        payload["url"] = url
-    if other_info:
-        payload.update(other_info)
-    send_group_notification(group_name="group_name", payload=payload, ttl=3600)
+    pass
+    # payload = {"title": title, "body": body}
+    # if url:
+    #    payload["url"] = url
+    # if other_info:
+    #    payload.update(other_info)
+    # send_group_notification(group_name="group_name", payload=payload, ttl=3600)

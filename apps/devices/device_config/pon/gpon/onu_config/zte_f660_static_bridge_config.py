@@ -35,10 +35,10 @@ def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
         if not vids:
             continue
 
-        native_vids = (vid.get("vid") for vid in vids if vid.get("native", False))
-        native_vids = list(set(native_vids))
-        trunk_vids = (vid.get("vid") for vid in vids if not vid.get("native", False))
-        trunk_vids = list(set(trunk_vids))
+        native_vids = {vid.get("vid") for vid in vids if vid.get("native", False)}
+        native_vids = list(native_vids)
+        trunk_vids = {vid.get("vid") for vid in vids if not vid.get("native", False)}
+        trunk_vids = list(trunk_vids)
 
         native_vids_len = len(native_vids)
         trunk_vids_len = len(trunk_vids)
@@ -98,8 +98,8 @@ class ZteF660BridgeStaticScriptModule(ZteF601BridgeScriptModule):
     accept_vlan = True
     zte_type = "ZTE-F660"
 
-    def apply_zte_bot_conf(self, *args, **kwargs) -> None:
-        return super().apply_zte_bot_conf(get_pon_mng_template_fn=_get_onu_mng_template, *args, **kwargs)
+    def apply_zte_bot_conf(self, get_pon_mng_template_fn=_get_onu_mng_template, *args, **kwargs) -> None:
+        return super().apply_zte_bot_conf(get_pon_mng_template_fn=get_pon_mng_template_fn, *args, **kwargs)
 
-    def apply_zte_top_conf(self, *args, **kwargs) -> None:
-        return super().apply_zte_top_conf(get_onu_template_fn=_get_onu_template, *args, **kwargs)
+    def apply_zte_top_conf(self, get_onu_template_fn=_get_onu_template, *args, **kwargs) -> None:
+        return super().apply_zte_top_conf(get_onu_template_fn=get_onu_template_fn, *args, **kwargs)

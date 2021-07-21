@@ -1,0 +1,164 @@
+rest {
+	tls {
+		#  Certificate Authorities:
+		#  "ca_file" (libcurl option CURLOPT_ISSUERCERT).
+		#    File containing a single CA, which is the issuer of the server
+		#    certificate.
+		#  "ca_info_file" (libcurl option CURLOPT_CAINFO).
+		#    File containing a bundle of certificates, which allow to handle
+		#    certificate chain validation.
+		#  "ca_path" (libcurl option CURLOPT_CAPATH).
+		#    Directory holding CA certificates to verify the peer with.
+#		ca_file = ${certdir}/cacert.pem
+#		ca_info_file = ${certdir}/cacert_bundle.pem
+#		ca_path = ${certdir}
+
+#		certificate_file        = /path/to/radius.crt
+#		private_key_file	= /path/to/radius.key
+#		private_key_password	= "supersecret"
+#		random_file		= /dev/urandom
+
+		#  Server certificate verification requirements.  Can be:
+		#    "no"  (don't even bother trying)
+		#    "yes" (verify the cert was issued by one of the
+		#	   trusted CAs)
+		#
+		#  The default is "yes"
+#		check_cert = yes
+
+		#  Server certificate CN verification requirements.  Can be:
+		#    "no"  (don't even bother trying)
+		#    "yes" (verify the CN in the certificate matches the host
+		#	   in the URI)
+		#
+		#  The default is "yes"
+#		check_cert_cn = yes
+	}
+
+	connect_uri = "http://app:8000"
+
+#	connect_timeout = 4.0
+
+	#  Additional HTTP headers may be specified with control:REST-HTTP-Header.
+	#  The values of those attributes should be in the format:
+	#
+	#    control:REST-HTTP-Header := "<HTTP attribute>: <value>"
+
+
+	#  Authorize/Authenticate
+	#
+	#  Code   Meaning       Process body  Module code
+	#  404    not found     no            notfound
+	#  410    gone          no            notfound
+	#  403    forbidden     no            userlock
+	#  401    unauthorized  yes           reject
+	#  204    no content    no            ok
+	#  2xx    successful    yes           ok/updated
+	#  5xx    server error  no            fail
+	#  xxx    -             no            invalid
+	authorize {
+		#uri = "${..connect_uri}/user/%{User-Name}/mac/%{Called-Station-ID}?action=authorize"
+		uri = "${..connect_uri}/api/radius/customer/auth/juniper/"
+		method = 'post'
+		# data = '{"User-Name": "%{User-Name}", "ERX-Dhcp-Mac-Addr": "%{ERX-Dhcp-Mac-Addr}", "ADSL-Agent-Remote-Id": "%{ADSL-Agent-Remote-Id}", "ADSL-Agent-Circuit-Id": "%{ADSL-Agent-Circuit-Id}", "NAS-Port-Id": "%{NAS-Port-Id}"}'
+		body = 'json'
+		tls = ${..tls}
+	}
+	authenticate {
+		#uri = "${..connect_uri}/user/%{User-Name}/mac/%{Called-Station-ID}?action=authenticate"
+		uri = "${..connect_uri}/api/radius/customer/auth/juniper/"
+		method = 'get'
+		body = 'json'
+		tls = ${..tls}
+	}
+
+	#  Preacct/Accounting/Post-auth/Pre-Proxy/Post-Proxy
+	#
+	#  Code   Meaning       Process body  Module code
+	#  204    no content    no            ok
+	#  2xx    successful    yes           ok/updated
+	#  5xx    server error  no            fail
+	#  xxx    -             no            invalid
+	preacct {
+		#uri = "${..connect_uri}/user/%{User-Name}/sessions/%{Acct-Unique-Session-ID}?action=preacct"
+		uri = "${..connect_uri}/api/radius/customer/preacct/"
+		method = 'post'
+		body = 'json'
+		tls = ${..tls}
+	}
+	accounting {
+		#uri = "${..connect_uri}/user/%{User-Name}/sessions/%{Acct-Unique-Session-ID}?action=accounting"
+		uri = "${..connect_uri}/api/radius/customer/acct/juniper/"
+		method = 'post'
+		body = 'json'
+		# data = '{"User-Name": "%{User-Name}", "Framed-IP-Address": "%{Framed-IP-Address}", "Acct-Unique-Session-Id": "%{Acct-Unique-Session-Id}", "Acct-Input-Octets": %{Acct-Input-Octets}, "Acct-Input-Gigawords": %{Acct-Input-Gigawords}, "Acct-Output-Octets": %{Acct-Output-Octets}, "Acct-Output-Gigawords": %{Acct-Output-Gigawords}, "Acct-Input-Packets": %{Acct-Input-Packets}, "Acct-Output-Packets": %{Acct-Output-Packets}, "ADSL-Agent-Remote-Id": "%{ADSL-Agent-Remote-Id}", "ADSL-Agent-Circuit-Id": "%{ADSL-Agent-Circuit-Id}"}'
+		#tls = ${..tls}
+	}
+	post-auth {
+		uri = "${..connect_uri}/user/%{User-Name}/mac/%{Called-Station-ID}?action=post-auth"
+		method = 'post'
+		tls = ${..tls}
+	}
+
+	#
+	#  The connection pool is new for 3.0, and will be used in many
+	#  modules, for all kinds of connection-related activity.
+	#
+	pool {
+		#  Connections to create during module instantiation.
+		#  If the server cannot create specified number of
+		#  connections during instantiation it will exit.
+		#  Set to 0 to allow the server to start without the
+		#  web service being available.
+		start = ${thread[pool].start_servers}
+
+		#  Minimum number of connections to keep open
+		min = ${thread[pool].min_spare_servers}
+
+		#  Maximum number of connections
+		#
+		#  If these connections are all in use and a new one
+		#  is requested, the request will NOT get a connection.
+		#
+		#  Setting 'max' to LESS than the number of threads means
+		#  that some threads may starve, and you will see errors
+		#  like 'No connections available and at max connection limit'
+		#
+		#  Setting 'max' to MORE than the number of threads means
+		#  that there are more connections than necessary.
+		max = ${thread[pool].max_servers}
+
+		#  Spare connections to be left idle
+		#
+		#  NOTE: Idle connections WILL be closed if "idle_timeout"
+		#  is set.  This should be less than or equal to "max" above.
+		spare = ${thread[pool].max_spare_servers}
+
+		#  Number of uses before the connection is closed
+		#
+		# 0 means "infinite"
+		uses = 0
+
+		#  The number of seconds to wait after the server tries
+		#  to open a connection, and fails.  During this time,
+		#  no new connections will be opened.
+		retry_delay = 30
+
+		#  The lifetime (in seconds) of the connection
+		lifetime = 0
+
+		#  idle timeout (in seconds).  A connection which is
+		#  unused for this length of time will be closed.
+		idle_timeout = 60
+
+		#  NOTE: All configuration settings are enforced.  If a
+		#  connection is closed because of "idle_timeout",
+		#  "uses", or "lifetime", then the total number of
+		#  connections MAY fall below "min".  When that
+		#  happens, it will open a new connection.  It will
+		#  also log a WARNING message.
+		#
+		#  The solution is to either lower the "min" connections,
+		#  or increase lifetime/idle_timeout.
+	}
+}

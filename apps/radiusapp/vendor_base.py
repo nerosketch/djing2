@@ -1,6 +1,7 @@
 import abc
 import enum
 from typing import Optional, Tuple
+from netaddr import EUI
 
 from customers.models import CustomerService, Customer
 from radiusapp.models import FetchSubscriberLeaseResponse
@@ -34,7 +35,7 @@ class IVendorSpecific(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_customer_mac(self, data):
+    def get_customer_mac(self, data) -> Optional[EUI]:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -55,7 +56,7 @@ class IVendorSpecific(abc.ABC):
     def get_auth_session_response(
         self,
         subscriber_lease: FetchSubscriberLeaseResponse,
-        customer_service: CustomerService,
+        customer_service: Optional[CustomerService],
         customer: Customer,
         request_data,
     ) -> dict:

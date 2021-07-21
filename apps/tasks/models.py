@@ -1,4 +1,5 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
+from types import GeneratorType
 from typing import Tuple, Optional
 
 from django.contrib.sites.models import Site
@@ -22,8 +23,20 @@ class TaskStateChangeLogModelManager(models.Manager):
     def create_state_migration(self, task, author, old_data: dict, new_data: dict):
         changed_fields = [k for k, v in new_data.items() if old_data.get(k) is not None and v != old_data.get(k)]
 
-        new_data = {k: v for k, v in new_data.items() if k in changed_fields}
-        old_data = {k: v for k, v in old_data.items() if k in changed_fields}
+        def _format_state_item(v):
+            if issubclass(v.__class__, models.Model):
+                return v.pk
+            elif isinstance(v, (datetime, date)):
+                return str(v)
+            elif isinstance(v, (list, tuple, GeneratorType)):
+                return tuple(map(_format_state_item, v))
+            return v
+
+        def _map_data(data) -> dict:
+            return {k: _format_state_item(v) for k, v in data.items() if k in changed_fields}
+
+        new_data = _map_data(new_data)
+        old_data = _map_data(old_data)
 
         state_data = {k: {"from": v, "to": new_data.get(k)} for k, v in old_data.items()}
         return self.create(task=task, state_data=state_data, who=author)
@@ -46,7 +59,10 @@ class TaskStateChangeLogModel(BaseAbstractModel):
             field_title = field.verbose_name
             field_from_val = field_value.get("from")
             field_to_val = field_value.get("to")
-            if hasattr(field, "choices"):
+            if isinstance(field, models.ManyToManyField):
+                # TODO: display UserProfile names instead of primary keys.
+                pass
+            elif hasattr(field, "choices"):
                 setattr(self.task, field_name, field_from_val)
                 field_from_val = self.task._get_FIELD_display(field)
                 setattr(self.task, field_name, field_to_val)

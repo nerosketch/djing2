@@ -1,4 +1,5 @@
 """Tests for fetching ip lease for customer."""
+from django.test import override_settings
 from rest_framework import status
 
 from customers.tests.customer import CustomAPITestCase
@@ -8,6 +9,7 @@ from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from services.models import Service
 
 
+@override_settings(API_AUTH_SUBNET="127.0.0.0/8")
 class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
     """Main test case class."""
 
@@ -56,6 +58,8 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
 
         self.customer.pick_service(self.service, self.customer)
 
+        self.client.logout()
+
     def _send_request(self, vlan_id: int, cid: str, arid: str, existing_ip="10.152.164.2", mac="18c0.4d51.dee2"):
         """Help method 4 send request to endpoint."""
         return self.post(
@@ -81,7 +85,7 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
     def test_auth_radius_session(self):
         """Just send simple request to existed customer."""
         r = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617")
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         self.assertEqual(r.data["Framed-IP-Address"], "10.152.64.2")
         self.assertEqual(r.data["User-Password"], self.service_inet_str)
 
@@ -99,17 +103,17 @@ class FetchSubscriberLeaseWebApiTestCase(CustomAPITestCase):
         self.assertEqual(r2.data["User-Password"], self.service_inet_str)
 
     def test_guest_and_inet_subnet(self):
-        """Проверка гостевой и инетной аренды ip.
+        """Проверка гостевой и инетной сессии.
 
         Проверяем что при включённой и выключенной услуге будет
-        выдавать интернетный и гостевой ip соответственно, при условии что
+        выдавать интернетную и гостевую сессию соответственно. При условии, что
         интернетный ip на мак уже выдан.
         """
         self.test_auth_radius_session()
         self.customer.stop_service(self.admin)
         r = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data["Framed-IP-Address"], "10.255.0.2")
+        self.assertEqual(r.data["Framed-IP-Address"], "10.152.64.2")
         self.assertEqual(r.data["User-Password"], "SERVICE-GUEST")
 
     def test_subnet_vid(self):

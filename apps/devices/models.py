@@ -129,12 +129,11 @@ class Device(BaseAbstractModel):
         if not pdev:
             raise DeviceConfigurationError(_("You should config parent OLT device for ONU"))
         if not pdev.extra_data:
-            raise DeviceConfigurationError(_("You have not info in extra_data " "field, please fill it in JSON"))
+            raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
         mng = self.get_manager_object_olt()
         r = mng.remove_from_olt(dict(pdev.extra_data))
         if r:
-            self.snmp_extra = None
-            self.save(update_fields=["snmp_extra"])
+            Device.objects.filter(pk=self.pk).update(snmp_extra=None)
         return r
 
     def onu_find_sn_by_mac(self) -> Tuple[Optional[int], Optional[str]]:
@@ -154,8 +153,7 @@ class Device(BaseAbstractModel):
     def fix_onu(self):
         onu_sn, err_text = self.onu_find_sn_by_mac()
         if onu_sn is not None:
-            self.snmp_extra = str(onu_sn)
-            self.save(update_fields=("snmp_extra",))
+            Device.objects.filter(pk=self.pk).update(snmp_extra=str(onu_sn))
             return True, _("Fixed")
         return False, err_text
 

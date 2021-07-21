@@ -6,3 +6,4 @@ class NetworksConfig(AppConfig):
 
     def ready(self):
         from networks import signals  # noqa
+        from networks import tasks  # noqa

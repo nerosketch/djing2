@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 
 from customers import models, serializers
 from customers.views.view_decorators import catch_customers_errs
-from djing2.lib import ProcessLocked, safe_float, safe_int
+from djing2.lib import safe_float, safe_int
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import DjingListAPIView, DjingModelViewSet
@@ -118,7 +118,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         if deadline:
             datetime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
             deadline = datetime.strptime(deadline, datetime_fmt)
-            log_comment = _("Service '%(service_name)s' " "has connected via admin until %(deadline)s") % {
+            log_comment = _("Service '%(service_name)s' has connected via admin until %(deadline)s") % {
                 "service_name": srv.title,
                 "deadline": deadline,
             }
@@ -186,7 +186,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         srv = cust_srv.service
         if srv is None:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         # if customer.gateway:
         #     customer_gw_remove.delay(
@@ -228,22 +228,8 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         self.check_permission_code(request, "customers.can_ping")
         del request, pk
         customer = self.get_object()
-
-        leases = customer.customeripleasemodel_set.all()
-        if leases.count() == 0:
-            return Response({"text": _("Customer has not ips"), "status": False})
-        try:
-            for lease in leases:
-                if lease.ping_icmp():
-                    return Response({"text": _("Ping ok"), "status": True})
-                else:
-                    if lease.ping_icmp(arp=True):
-                        return Response({"text": _("arp ping ok"), "status": True})
-            return Response({"text": _("no ping"), "status": False})
-        except ProcessLocked:
-            return Response({"text": _("Process locked by another process"), "status": False})
-        except ValueError as err:
-            return Response({"text": str(err), "status": False})
+        res_text, res_status = customer.ping_all_leases()
+        return Response({"text": res_text, "status": res_status})
 
     @action(detail=True)
     @catch_customers_errs
@@ -262,11 +248,23 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     def add_balance(self, request, pk=None):
         del pk
         self.check_permission_code(request, "customers.can_add_balance")
-        customer = self.get_object()
 
         cost = safe_float(request.data.get("cost"))
         if cost == 0.0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        if cost > 0.0:
+            self.check_permission_code(
+                request, "customers.can_add_balance", _("You can't top up an account with a " "positive amount")
+            )
+        else:
+            self.check_permission_code(
+                request,
+                "customers.can_add_negative_balance",
+                _("You can't top up an account " "with a negative amount"),
+            )
+
+        customer = self.get_object()
 
         comment = request.data.get("comment")
         if comment and len(comment) > 128:

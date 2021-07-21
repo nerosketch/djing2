@@ -48,15 +48,14 @@ call vundle#begin()
 
     " Add all your plugins here (note older versions of Vundle used Bundle instead of Plugin)
     "-------------------=== Code/Project navigation ===-------------
-    Plugin 'scrooloose/nerdtree'                " Project and file navigation
+    Plugin 'preservim/nerdtree'                " Project and file navigation
     Plugin 'Xuyuanp/nerdtree-git-plugin'        " NerdTree git functionality
-    " Plugin 'majutsushi/tagbar'                  " Class/module browser
+    Plugin 'majutsushi/tagbar'                  " Class/module browser
     Plugin 'vim-ctrlspace/vim-ctrlspace'        " Tabs/Buffers/Fuzzy/Workspaces/Bookmarks
     Plugin 'mileszs/ack.vim'                    " Ag/Grep
     Plugin 'vim-airline/vim-airline'            " Lean & mean status/tabline for vim
     Plugin 'vim-airline/vim-airline-themes'     " Themes for airline
     Plugin 'fisadev/FixedTaskList.vim'          " Pending tasks list
-    Plugin 'yuttie/comfortable-motion.vim'      " Smooth scrolling
     Plugin 'MattesGroeger/vim-bookmarks'        " Bookmarks
     Plugin 'thaerkh/vim-indentguides'           " Visual representation of indents
     Plugin 'dense-analysis/ale'                 " Async Lint Engine
@@ -67,10 +66,12 @@ call vundle#begin()
     Plugin 'flazz/vim-colorschemes'             " Colorschemes
     Plugin 'vimwiki/vimwiki'                    " Personal Wiki
     Plugin 'jreybert/vimagit'                   " Git Operations
+    Plugin 'airblade/vim-gitgutter'             " Plugin which shows a git diff in the sign column
     Plugin 'kien/rainbow_parentheses.vim'       " Rainbow Parentheses
     Plugin 'ryanoasis/vim-devicons'             " Dev Icons
     Plugin 'mhinz/vim-startify'                 " Vim Start Page
     Plugin 'editorconfig/editorconfig-vim'	    " Editorconfig support
+    Plugin 'Asheq/close-buffers.vim'            " Close buffers
 
     "-------------------=== Snippets support ===--------------------
     Plugin 'garbas/vim-snipmate'                " Snippets manager
@@ -79,7 +80,7 @@ call vundle#begin()
     Plugin 'honza/vim-snippets'                 " snippets repo
 
     "-------------------=== Languages support ===-------------------
-    Plugin 'scrooloose/nerdcommenter'           " Easy code documentation
+    Plugin 'preservim/nerdcommenter'           " Easy code documentation
     Plugin 'mitsuhiko/vim-sparkup'              " Sparkup(XML/jinja/htlm-django/etc.) support
 
     "-------------------=== Python  ===-----------------------------
@@ -104,7 +105,6 @@ endif
 set encoding=utf-8
 set t_Co=256                                " 256 colors
 set guifont=mononoki\ Nerd\ Font\ 18
-" set guifont=mononoki\-Regular\ Nerd\ Font\ Complete\ Mono 18
 colorscheme wombat256mod                    " set vim colorscheme
 let g:airline_theme='wombat'                " set airline theme
 syntax enable                               " enable syntax highlighting
@@ -138,7 +138,7 @@ set scrolloff=20                            " let 10 lines before/after cursor d
 set clipboard=unnamed                       " use system clipboard
 
 " set exrc                                    " enable usage of additional .vimrc files from working directory
-set secure                                  " prohibit .vimrc files to execute shell, create files, etc...
+" set secure                                  " prohibit .vimrc files to execute shell, create files, etc...
 
 "=====================================================
 "" Tabs / Buffers settings
@@ -146,9 +146,13 @@ set secure                                  " prohibit .vimrc files to execute s
 tab sball
 set switchbuf=useopen
 set laststatus=2
+" switch buffers
 nmap <F8> :bprev<CR>
 nmap <F9> :bnext<CR>
+" close buffers
 nmap <silent> <leader>q :SyntasticCheck # <CR> :bp <BAR> bd #<CR>
+nnoremap <silent> Q     :Bdelete menu<CR>
+
 
 "=====================================================
 "" YouCompleteMe Settings
@@ -165,32 +169,22 @@ let g:airline#extensions#ale#enabled = 1
 let g:ale_sign_column_always = 1
 
 "=====================================================
-"" Relative Numbering
-"=====================================================
-nnoremap <F4> :set relativenumber!<CR>
-
-"=====================================================
 "" Search settings
 "=====================================================
 set incsearch	                            " incremental search
 set hlsearch	                            " highlight search results
+noremap <F3> :execute "vimgrep /" . expand("<cword>") . "/j **" <Bar> cw<CR>
+noremap <F4> :execute "/" . expand("<cword>") <CR>
 
-
-" Mouse Cusrsor enable
-set mouse=a
+" Mouse Cursor enable
+" set mouse=a
 
 
 "=====================================================
-"" Comfortable Motion Settings
+"" Screen scrolling
 "=====================================================
-let g:comfortable_motion_scroll_down_key = "j"
-let g:comfortable_motion_scroll_up_key = "k"
-let g:comfortable_motion_no_default_key_mappings = 1
-let g:comfortable_motion_impulse_multiplier = 25  " Feel free to increase/decrease this value.
-nnoremap <silent> <C-d> :call comfortable_motion#flick(g:comfortable_motion_impulse_multiplier * winheight(0) * 2)<CR>
-nnoremap <silent> <C-u> :call comfortable_motion#flick(g:comfortable_motion_impulse_multiplier * winheight(0) * -2)<CR>
-nnoremap <silent> <C-f> :call comfortable_motion#flick(g:comfortable_motion_impulse_multiplier * winheight(0) * 4)<CR>
-nnoremap <silent> <C-b> :call comfortable_motion#flick(g:comfortable_motion_impulse_multiplier * winheight(0) * -4)<CR>
+noremap <C-Down> j1<C-e>
+noremap <C-Up> k1<C-y>
 
 "=====================================================
 "" AirLine settings
@@ -230,7 +224,7 @@ let g:NERDDefaultAlign = 'left'
 let g:NERDAltDelims_java = 1
 
 " Add your own custom formats or override the defaults
-let g:NERDCustomDelimiters = { 'c': { 'left': '/**','right': '*/' } }
+let g:NERDCustomDelimiters = { 'c': { 'left': '/**', 'right': '*/' } }
 
 " Allow commenting and inverting empty lines (useful when commenting a region)
 let g:NERDCommentEmptyLines = 1
@@ -410,6 +404,11 @@ imap <F5> <Esc>:w<CR>:!clear;python %<CR>
 " Editorconfig
 au FileType gitcommit let b:EditorConfig_disable = 1  " disable for git commits
 
+" Git gutter, diff highlights
+highlight GitGutterAdd    guifg=#009900 ctermfg=2
+highlight GitGutterChange guifg=#bbbb00 ctermfg=3
+highlight GitGutterDelete guifg=#ff2222 ctermfg=1
+
 
 " no <down> <Nop>
 " no <left> <Nop>
@@ -427,11 +426,16 @@ au FileType gitcommit let b:EditorConfig_disable = 1  " disable for git commits
 " vno <up> <Nop>
 
 
+" My Key Bindings
+
+nnoremap <F2> :!git pull<cr>
+
+
 autocmd StdinReadPre * let g:isReadingFromStdin = 1
 autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | Startify | endif
 autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | NERDTree | endif
 
 " Exit Vim if NERDTree is the only window left.
-autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() |
-    \ quit | endif
+" autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() |
+"   \ execute :new | endif
 
