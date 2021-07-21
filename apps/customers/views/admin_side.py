@@ -330,6 +330,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
     @action(detail=False)
     def activity_report(self, request):
+        self.check_permission_code(request, "customers.can_view_activity_report")
         r = models.Customer.objects.activity_report()
         return Response(r)
 
