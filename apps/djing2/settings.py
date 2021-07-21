@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 import os
 
 try:
-    from . import local_settings
+    from djing2 import local_settings
 except ImportError:
     raise ImportError("You must create config file local_settings.py from template")
 
@@ -306,3 +306,5 @@ WEBPUSH_SETTINGS = getattr(local_settings, "WEBPUSH_SETTINGS")
 DEFAULT_FTP_CREDENTIALS = getattr(
     local_settings, "DEFAULT_FTP_CREDENTIALS", {"host": "localhost", "uname": "user", "password": "******"}
 )
+
+RADIUSAPP_OPTIONS = getattr(local_settings, 'RADIUSAPP_OPTIONS', None)

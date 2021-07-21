@@ -55,3 +55,6 @@ pyupgrade==2.11.0
 
 sphinx==3.5.3
 recommonmark==0.7.1
+
+# radiusapp
+git+https://github.com/pyradius/pyrad.git#egg=pyrad

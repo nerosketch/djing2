@@ -22,3 +22,4 @@ docs/_templates/
 
 docker/secrets/
 docker/docker-compose.yml
+create_initial_user.py

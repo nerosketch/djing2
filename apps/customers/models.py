@@ -659,6 +659,7 @@ class Customer(BaseAccount):
         permissions = [
             ("can_buy_service", _("Buy service perm")),
             ("can_add_balance", _("fill account")),
+            ("can_add_negative_balance", _("Fill account balance on negative cost")),
             ("can_ping", _("Can ping")),
             ("can_complete_service", _("Can complete service")),
         ]
