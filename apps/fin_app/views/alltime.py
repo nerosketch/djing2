@@ -9,6 +9,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework_xml.renderers import XMLRenderer
 
 try:
@@ -21,12 +22,26 @@ except ImportError:
 from djing2.lib import safe_int, safe_float
 from djing2.viewsets import DjingModelViewSet
 from fin_app.serializers import alltime as alltime_serializers
-from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway
+from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway, report_by_pays
 
 
 class AllTimeGatewayModelViewSet(DjingModelViewSet):
     queryset = PayAllTimeGateway.objects.annotate(pay_count=Count("alltimepaylog"))
     serializer_class = alltime_serializers.AllTimeGatewayModelSerializer
+
+    @action(methods=['get'], detail=False)
+    def pays_report(self, request):
+        ser = alltime_serializers.PaysReportParamsSerializer(data=request.query_params)
+        ser.is_valid(raise_exception=True)
+        dat = ser.data
+        r = report_by_pays(
+            from_date=dat.get('from_date'),
+            pay_gw_id=dat.get('pay_gw'),
+            group_by_day=dat.get('group_by_day', False),
+            group_by_mon=dat.get('group_by_mon', False),
+            group_by_week=dat.get('group_by_week', False),
+        )
+        return Response(tuple(r))
 
     def perform_create(self, serializer, *args, **kwargs):
         return super().perform_create(serializer=serializer, sites=[self.request.site])
