@@ -1,7 +1,8 @@
 from datetime import datetime
 from django.contrib.sites.models import Site
 from django.utils.translation import gettext_lazy as _
-from django.db import models, connection, ProgrammingError
+from django.db import models, connection
+from rest_framework.exceptions import ParseError
 from rest_framework.settings import api_settings
 from encrypted_model_fields.fields import EncryptedCharField
 
@@ -26,17 +27,26 @@ class PayAllTimeGateway(BaseAbstractModel):
         ordering = ("title",)
 
 
-def report_by_pays(from_date: datetime, pay_gw_id=None, group_by_day=False, group_by_mon=False):
-    if group_by_day and group_by_mon:
-        raise ProgrammingError('No need to group both by day and month')
+def report_by_pays(from_date: datetime, pay_gw_id=None, group_by_day=False, group_by_week=False, group_by_mon=False):
+    grp_one_of = tuple(i for i in (group_by_day, group_by_week, group_by_mon) if i)
+    if len(grp_one_of) > 1:
+        raise ParseError('One of grouping is available')
+    del grp_one_of
+
     params = [from_date]
     query = [
         "SELECT"
     ]
+    date_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
     if group_by_day:
-        query.append("date_trunc('day', date_add) AS pay_date,")
+        query.append("date_trunc('day', date_add),")
+        date_fmt = getattr(api_settings, "DATE_FORMAT", "%Y-%m-%d")
     elif group_by_mon:
-        query.append("date_trunc('month', date_add) as date_add_mon,")
+        query.append("date_trunc('month', date_add),")
+        date_fmt = '%Y-%m'
+    elif group_by_week:
+        query.append("date_trunc('week', date_add),")
+        date_fmt = '%Y-%m'
 
     query.extend((
         'sum("sum") AS alsum,',
@@ -57,11 +67,7 @@ def report_by_pays(from_date: datetime, pay_gw_id=None, group_by_day=False, grou
     ))
     cur = connection.cursor()
     cur.execute(' '.join(query), params)
-    date_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
-    if group_by_day:
-        date_fmt = getattr(api_settings, "DATE_FORMAT", "%Y-%m-%d")
-    elif group_by_mon:
-        date_fmt = '%Y-%m'
+
     while True:
         r = cur.fetchone()
         if r is None:
