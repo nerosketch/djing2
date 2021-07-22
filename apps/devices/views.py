@@ -309,21 +309,34 @@ class DeviceModelViewSet(DjingModelViewSet):
         manager.reboot(save_before_reboot=False)
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["put"])
+    @action(detail=False, methods=["post"])
     @catch_dev_manager_err
     def monitoring_event(self, request):
-        dev_ip = request.query_params.get("dev_ip")
-        dev_status = request.query_params.get("status")
+        dat = request.data
+        dev_ip = dat.get("dev_ip")
+        dev_status = dat.get("status")
         if dev_status not in ("UP", "UNREACHABLE", "DOWN"):
-            return Response('bad "status" parameter', status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                'bad "status" parameter',
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if not dev_ip:
-            return Response({"text": "ip does not passed"})
+            return Response(
+                {"text": "ip does not passed"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if not re.match(IP_ADDR_REGEX, dev_ip):
-            return Response({"text": "ip address %s is not valid" % dev_ip})
+            return Response(
+                {"text": "ip address %s is not valid" % dev_ip},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         device = self.get_queryset().filter(ip_address=dev_ip).defer("extra_data").first()
         if device is None:
-            return Response({"text": "Devices with ip %s does not exist" % dev_ip})
+            return Response(
+                {"text": "Devices with ip %s does not exist" % dev_ip},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         status_map = {
             "UP": Device.NETWORK_STATE_UP,
@@ -340,23 +353,43 @@ class DeviceModelViewSet(DjingModelViewSet):
         device.save(update_fields=("status",))
 
         if not device.is_noticeable:
-            return {"text": "Notification for %s is unnecessary" % device.ip_address or device.comment}
+            return {
+                "text": "Notification for %s is unnecessary" % device.ip_address or device.comment
+            }
 
         if not device.group:
             return Response({"text": "Device has not have a group"})
 
-        recipients = UserProfile.objects.get_profiles_by_group(group_id=device.group.pk).filter(
-            flags=UserProfile.flags.notify_mon
+        recipients = UserProfile.objects.get_profiles_by_group(
+            group_id=device.group.pk
         )
+        # ).filter(
+        #     flags=UserProfile.flags.notify_mon
+        # )
         user_ids = tuple(recipient.pk for recipient in recipients.only("pk").iterator())
 
-        notify_text = status_text_map.get(dev_status, default="Device %(device_name)s getting undefined status code")
+        notify_text = status_text_map.get(
+            dev_status,
+            "Device %(device_name)s getting undefined status code"
+        )
         text = gettext(notify_text) % {
             "device_name": "{}({}) {}".format(device.ip_address or "", device.mac_addr, device.comment)
         }
-        ws_connector.send_data2ws({"type": "monitoring_event", "recipients": user_ids, "text": text})
-        notification_signal.send(sender=device.__class__, instance=device, recipients=user_ids, text=text)
-        return Response({"text": "notification successfully sent"})
+        # FIXME: make it done
+        # ws_connector.send_data2ws({
+        #     "eventType": "monitoring_event",
+        #     "recipients": user_ids,
+        #     "text": text
+        # })
+        notification_signal.send(
+            sender=device.__class__,
+            instance=device,
+            recipients=user_ids,
+            text=text
+        )
+        return Response({
+            "text": "notification successfully sent"
+        })
 
     @action(detail=True)
     @catch_dev_manager_err
