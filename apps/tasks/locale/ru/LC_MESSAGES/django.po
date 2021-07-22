@@ -264,6 +264,9 @@ msgstr "Вы не можете удалять назначенные на вас
 msgid "New task with this customer already exists."
 msgstr "Заявка для этого абонента уже создана."
 
+msgid "Can view task mode report"
+msgstr "Может видеть отчёт по частоте использования характеров задач"
+
 #~ msgid "Create task"
 #~ msgstr "Создание задачи"
 

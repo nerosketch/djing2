@@ -344,6 +344,12 @@ msgstr "Недостаточно средств на счету"
 msgid "%(username)s paid the debt %(amount).2f"
 msgstr "%(username)s заплатил долг в размере %(amount).2f"
 
+msgid "Can view activity_report"
+msgstr "Может просматривать отчёт об активности абонентов"
+
+msgid "Can view service type report"
+msgstr "Может просматривать отчёт о распределении использования услуг абонентами"
+
 #~ msgid "finish service perm"
 #~ msgstr "Завершение услуги"
 
