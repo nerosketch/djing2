@@ -29,7 +29,7 @@ def generate_random_password():
 class CustomerServiceModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerService
-        fields = ("service", "start_time", "deadline")
+        fields = '__all__'
 
 
 class DetailedCustomerServiceModelSerializer(BaseCustomModelSerializer):
