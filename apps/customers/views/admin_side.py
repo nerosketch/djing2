@@ -239,9 +239,10 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         if not customer.current_service:
             return Response(False)
         curr_srv = customer.current_service
-        ser = ServiceModelSerializer(instance=curr_srv.service)
-        r = {"start_time": curr_srv.start_time, "deadline": curr_srv.deadline, "service": ser.data}
-        return Response(r)
+        cur_ser_cls = serializers.CustomerServiceModelSerializer
+        cur_ser_cls.Meta.depth = 1
+        cur_ser = cur_ser_cls(instance=curr_srv)
+        return Response(cur_ser.data)
 
     @action(methods=["post"], detail=True)
     @catch_customers_errs
