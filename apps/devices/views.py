@@ -307,19 +307,17 @@ class DeviceModelViewSet(DjingModelViewSet):
         device = self.get_object()
         manager = device.get_manager_object_switch()
         manager.reboot(save_before_reboot=False)
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=["post"])
     @catch_dev_manager_err
-    def monitoring_event(self, request):
+    def zbx_monitoring_event(self, request):
         dat = request.data
+        # print('DAT:', dat)
         dev_ip = dat.get("dev_ip")
         dev_status = dat.get("status")
-        if dev_status not in ("UP", "UNREACHABLE", "DOWN"):
-            return Response(
-                'bad "status" parameter',
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        message = dat.get('message')
+        dev_status = safe_int(dev_status)
         if not dev_ip:
             return Response(
                 {"text": "ip does not passed"},
@@ -339,30 +337,31 @@ class DeviceModelViewSet(DjingModelViewSet):
             )
 
         status_map = {
-            "UP": Device.NETWORK_STATE_UP,
-            "UNREACHABLE": Device.NETWORK_STATE_UNREACHABLE,
-            "DOWN": Device.NETWORK_STATE_DOWN,
+            0: Device.NETWORK_STATE_UP,
+            1: Device.NETWORK_STATE_DOWN,
         }
         status_text_map = {
-            "UP": "Device %(device_name)s is up",
-            "UNREACHABLE": "Device %(device_name)s is unreachable",
-            "DOWN": "Device %(device_name)s is down",
+            0: "Device %(device_name)s is up",
+            1: "Device %(device_name)s has problem",
         }
         device.status = status_map.get(dev_status, Device.NETWORK_STATE_UNDEFINED)
 
         device.save(update_fields=("status",))
 
         if not device.is_noticeable:
-            return {
+            # print("Notification for %s is unnecessary" % device.ip_address or device.comment)
+            return Response({
                 "text": "Notification for %s is unnecessary" % device.ip_address or device.comment
-            }
+            })
 
         if not device.group:
+            # print('Device has not have a group')
             return Response({"text": "Device has not have a group"})
 
         recipients = UserProfile.objects.get_profiles_by_group(
             group_id=device.group.pk
         )
+        # TODO: make editable UserProfile.flags
         # ).filter(
         #     flags=UserProfile.flags.notify_mon
         # )
@@ -372,9 +371,9 @@ class DeviceModelViewSet(DjingModelViewSet):
             dev_status,
             "Device %(device_name)s getting undefined status code"
         )
-        text = gettext(notify_text) % {
+        text = "%s\n\n%s" % (gettext(notify_text) % {
             "device_name": "{}({}) {}".format(device.ip_address or "", device.mac_addr, device.comment)
-        }
+        }, message)
         # FIXME: make it done
         # ws_connector.send_data2ws({
         #     "eventType": "monitoring_event",
