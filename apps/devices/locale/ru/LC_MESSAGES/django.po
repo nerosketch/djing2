@@ -381,3 +381,20 @@ msgstr "Параметр port_state плох"
 
 msgid "Device implementation error"
 msgstr "Ошибка реализации устройства"
+
+
+#, python-format
+msgid "Device %(device_name)s is up"
+msgstr "Устройство %(device_name)s в сети"
+
+#, python-format
+#~ msgid "Device %(device_name)s is unreachable"
+#~ msgstr "Устройство %(device_name)s не доступно"
+
+#, python-format
+msgid "Device %(device_name)s has problem"
+msgstr "На '%(device_name)s' есть проблема"
+
+#, python-format
+msgid "Device %(device_name)s getting undefined status code"
+msgstr "Устройство %(device_name)s имеет не известный код состояния"

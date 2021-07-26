@@ -12,7 +12,7 @@ var Djing2 = {
             message: Djing2.message
         }
         request = new CurlHttpRequest(),
-        url = Djing2.domain + '/api/devices/monitoring_event/';
+        url = Djing2.domain + '/api/devices/zbx_monitoring_event/';
 
         if (Djing2.token !== null) {
             request.AddHeader('authorization: Token ' + Djing2.token);
@@ -47,6 +47,8 @@ try {
 
     if (typeof params.Token === 'undefined') {
         throw 'Incorrect value is given for parameter "Token": parameter is missing';
+    } else {
+        Djing2.token = params.Token;
     }
 
     if (params.Domain) {
@@ -54,8 +56,6 @@ try {
     } else {
         throw 'Empty value in "domain" parameter';
     }
-
-    Djing2.token = params.Token;
 
     Djing2.message = params.Message;
 
