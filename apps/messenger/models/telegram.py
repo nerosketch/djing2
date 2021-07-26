@@ -110,7 +110,7 @@ class TelegramMessengerModel(MessengerModel):
         }
 
     @staticmethod
-    def _reply_text(chat_id: int, text: str, reply_to_msg_id=None):
+    def _reply_text(chat_id: int, text: str, reply_to_msg_id=None, hide_kbd=False):
         r = {
             'chat_id': chat_id,
             'text': text,
@@ -118,6 +118,10 @@ class TelegramMessengerModel(MessengerModel):
         }
         if reply_to_msg_id is not None:
             r['reply_to_message_id'] = reply_to_msg_id
+        if hide_kbd:
+            r['reply_markup'] = {
+                'hide_keyboard': True
+            }
         return r
 
     def _inbox_contact(self, msg: types.Message, chat: types.Chat):
@@ -137,7 +141,8 @@ class TelegramMessengerModel(MessengerModel):
                 first_sub.save(update_fields=('account', 'name'))
                 return self._reply_text(
                     chat_id=chat.id,
-                    text=_('Your account is attached. Now you will be receive notifications from billing')
+                    text=_('Your account is attached. Now you will be receive notifications from billing'),
+                    hide_kbd=True
                 )
             else:
                 # Subscription does not exists, make it.
