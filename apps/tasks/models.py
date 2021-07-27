@@ -192,19 +192,19 @@ class Task(BaseAbstractModel):
     TASK_TYPE_INTERNET_CRASH = 11
     TASK_TYPE_OTHER = 12
     TASK_TYPES = (
-        (0, _("not chosen")),
-        (1, _("ip conflict")),
-        (2, _("yellow triangle")),
-        (3, _("red cross")),
-        (4, _("weak speed")),
-        (5, _("cable break")),
-        (6, _("connection")),
-        (7, _("periodic disappearance")),
-        (8, _("router setup")),
-        (9, _("configure onu")),
-        (10, _("crimp cable")),
-        (11, _("Internet crash")),
-        (12, _("other")),
+        (TASK_TYPE_NOT_CHOSEN, _("not chosen")),
+        (TASK_TYPE_IP_CONFLICT, _("ip conflict")),
+        (TASK_TYPE_YELLOW_TRIANGLE, _("yellow triangle")),
+        (TASK_TYPE_RED_CROSS, _("red cross")),
+        (TASK_TYPE_WAEK_SPEED, _("weak speed")),
+        (TASK_TYPE_CABLE_BREAK, _("cable break")),
+        (TASK_TYPE_CONNECTION, _("connection")),
+        (TASK_TYPE_PERIODIC_DISAPPEARANCE, _("periodic disappearance")),
+        (TASK_TYPE_ROUTER_SETUP, _("router setup")),
+        (TASK_TYPE_CONFIGURE_ONU, _("configure onu")),
+        (TASK_TYPE_CRIMP_CABLE, _("crimp cable")),
+        (TASK_TYPE_INTERNET_CRASH, _("Internet crash")),
+        (TASK_TYPE_OTHER, _("other")),
     )
     mode = models.PositiveSmallIntegerField(
         _("The nature of the damage"), choices=TASK_TYPES, default=TASK_TYPE_NOT_CHOSEN
