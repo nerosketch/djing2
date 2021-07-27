@@ -20,6 +20,7 @@ api_urls = [
     path("radius/", include("radiusapp.urls", namespace="radiusapp")),
     path("sorm/", include("sorm_export.urls", namespace="sorm_export")),
     path("traf_stat/", include("traf_stat.urls", namespace="traf_stat")),
+    path("maps/", include("maps.urls", namespace="maps")),
     path("can_login_by_location/", can_login_by_location),
     path("search/", SearchApiView.as_view()),
     path("webpush/", include("webpush.urls")),
