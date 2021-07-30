@@ -25,7 +25,6 @@ from djing2.viewsets import DjingListAPIView, DjingModelViewSet
 from groupapp.models import Group
 from profiles.models import UserProfileLogActionType
 from services.models import OneShotPay, PeriodicPay, Service
-from services.serializers import ServiceModelSerializer
 
 
 class CustomerServiceModelViewSet(DjingModelViewSet):
@@ -93,13 +92,11 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         self.request.user.log(
             do_type=UserProfileLogActionType.DELETE_USER,
             additional_text=(
-                '%(uname)s, "%(fio)s", %(group)s %(street)s %(house)s'
+                '%(uname)s, "%(fio)s", %(addr)s'
                 % {
                     "uname": instance.username,
                     "fio": instance.fio or "-",
-                    "group": instance.group.title if instance.group else "",
-                    "street": instance.street.name if instance.street else "",
-                    "house": instance.house or "",
+                    "addr": instance.full_address,
                 }
             ).strip(),
         )
@@ -199,29 +196,6 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         customer.stop_service(request.user)
         return Response()
 
-    # @action(methods=['post'], detail=False)
-    # @catch_customers_errs
-    # def attach_nas(self, request):
-    #     gateway_id = request.data.get('gateway')
-    #     if not gateway_id:
-    #         return Response(_('You must specify gateway'), status=status.HTTP_400_BAD_REQUEST)
-    #     gateway_id = safe_int(gateway_id)
-    #     gid = request.data.get('group')
-    #     if not gid:
-    #         return Response(_('You must specify group'), status=status.HTTP_400_BAD_REQUEST)
-    #     gid = safe_int(gid)
-    #     gw = get_object_or_404(Gateway, pk=gateway_id)
-    #     customers = models.Customer.objects.filter(group__id=gid)
-    #     if customers.exists():
-    #         customers.update(gateway=gw)
-    #         return Response(
-    #             _('Network access server for users in this '
-    #               'group, has been updated'),
-    #             status=status.HTTP_200_OK
-    #         )
-    #     else:
-    #         return Response(_('Users not found'))
-
     @action(detail=True)
     @catch_customers_errs
     def ping_all_ips(self, request, pk=None):
@@ -256,13 +230,13 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         if cost > 0.0:
             self.check_permission_code(
-                request, "customers.can_add_balance", _("You can't top up an account with a " "positive amount")
+                request, "customers.can_add_balance", _("You can't top up an account with a positive amount")
             )
         else:
             self.check_permission_code(
                 request,
                 "customers.can_add_negative_balance",
-                _("You can't top up an account " "with a negative amount"),
+                _("You can't top up an account with a negative amount"),
             )
 
         customer = self.get_object()
@@ -301,13 +275,10 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         customers = models.Customer.objects.filter(device_id=dev_id, dev_port_id=port_id)
         return Response(self.get_serializer(customers, many=True).data)
 
-    @action(methods=["get", "put"], detail=True)
+    @action(methods=["put"], detail=True)
     @catch_customers_errs
     def passport(self, request, pk=None):
         passport_obj = models.PassportInfo.objects.filter(customer__id=pk).first()
-        if request.method == "GET":
-            serializer = serializers.PassportInfoModelSerializer(instance=passport_obj)
-            return Response(serializer.data)
 
         if passport_obj is None:
             # create passport info for customer
@@ -323,6 +294,12 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             res_stat = status.HTTP_200_OK
 
         return Response(serializer.validated_data, status=res_stat)
+
+    @passport.mapping.get
+    def passport_get(self, request, pk=None):
+        passport_obj = models.PassportInfo.objects.filter(customer__id=pk).first()
+        serializer = serializers.PassportInfoModelSerializer(instance=passport_obj)
+        return Response(serializer.data)
 
     @action(detail=False)
     def service_type_report(self, request):
@@ -404,7 +381,7 @@ class AttachServicesToGroups(APIView):
     if getattr(settings, "DEBUG", False):
         from rest_framework.authentication import SessionAuthentication
 
-        authentication_classes = TokenAuthentication, SessionAuthentication
+        authentication_classes = (TokenAuthentication, SessionAuthentication)
     else:
         authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated, IsAdminUser)

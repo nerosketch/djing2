@@ -616,7 +616,8 @@ class Customer(BaseAccount):
             comment=_("Automatic connect service '%(service_name)s'") % {"service_name": srv.title},
         )
 
-    def get_address(self):
+    @property
+    def full_address(self):
         return f"{self.group}. {self.street} {self.house}"
 
     @staticmethod
@@ -638,7 +639,7 @@ class Customer(BaseAccount):
 
     def ping_all_leases(self):
         leases = self.customeripleasemodel_set.all()
-        if leases.count() < 1:
+        if not leases.exists():
             return _("Customer has not ips"), False
         try:
             for lease in leases:
