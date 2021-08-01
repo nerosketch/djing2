@@ -37,7 +37,7 @@ class DetailedCustomerServiceModelSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = models.CustomerService
-        fields = ("service", "start_time", "deadline")
+        fields = '__all__'
 
 
 class CustomerStreetModelSerializer(BaseCustomModelSerializer):
@@ -49,10 +49,12 @@ class CustomerStreetModelSerializer(BaseCustomModelSerializer):
 class CustomerLogModelSerializer(BaseCustomModelSerializer):
     author_name = serializers.CharField(source="author.get_short_name", read_only=True)
     cost = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
+    from_balance = serializers.DecimalField(max_digits=12, decimal_places=3, coerce_to_string=False, required=False)
+    to_balance = serializers.DecimalField(max_digits=12, decimal_places=3, coerce_to_string=False, required=False)
 
     class Meta:
         model = models.CustomerLog
-        fields = ("customer", "cost", "author", "author_name", "comment", "date")
+        fields = '__all__'
 
 
 def update_passw(acc, raw_password):
