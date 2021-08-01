@@ -140,7 +140,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             "ap_id": addr_group.pk,
             "customer_id": customer.pk,
             "house": customer.house,
-            "full_address": customer.get_address(),
+            "full_address": customer.full_address,
             "parent_id_ao": parent_id_ao,
             "house_num": customer.house,
             "actual_start_time": customer.create_date,
