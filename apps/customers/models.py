@@ -189,6 +189,8 @@ class CustomerStreet(BaseAbstractModel):
 class CustomerLog(BaseAbstractModel):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
+    from_balance = models.FloatField(_('From balance'), default=0.0)
+    to_balance = models.FloatField(_('To balance'), default=0.0)
     author = models.ForeignKey(BaseAccount, on_delete=models.SET_NULL, related_name="+", blank=True, null=True)
     comment = models.CharField(max_length=128)
     date = models.DateTimeField(auto_now_add=True)
@@ -331,6 +333,7 @@ class CustomerManager(MyUserManager):
             service = expired_service.service
             cost = round(service.cost, 3)
             if expired_service_customer.balance >= cost:
+                old_balance = expired_service_customer.balance
                 # can continue service
                 with transaction.atomic():
                     expired_service_customer.balance -= cost
@@ -344,6 +347,8 @@ class CustomerManager(MyUserManager):
                     CustomerLog.objects.create(
                         customer=expired_service_customer,
                         cost=-cost,
+                        from_balance=old_balance,
+                        to_balance=old_balance-cost,
                         comment=_("Automatic connect new service %(service_name)s for %(customer_name)s")
                         % {"service_name": service.title, "customer_name": uname},
                     )
@@ -437,9 +442,12 @@ class Customer(BaseAccount):
         return self.current_service
 
     def add_balance(self, profile: UserProfile, cost: float, comment: str) -> None:
+        old_balance = self.balance
         CustomerLog.objects.create(
             customer=self,
             cost=cost,
+            from_balance=old_balance,
+            to_balance=old_balance+cost,
             author=profile if isinstance(profile, UserProfile) else None,
             comment=re.sub(r"\W{1,128}", " ", comment),
         )
@@ -487,6 +495,7 @@ class Customer(BaseAccount):
             )
 
         custom_signals.customer_service_pre_pick.send(sender=Customer, customer=self, service=service)
+        old_balance = self.balance
         with transaction.atomic():
             self.current_service = CustomerService.objects.create(deadline=deadline, service=service)
             updated_fields = ["balance", "current_service"]
@@ -502,7 +511,12 @@ class Customer(BaseAccount):
             # make log about it
             # TODO: move it to db trigger
             CustomerLog.objects.create(
-                customer=self, cost=-cost, author=author, comment=comment or _("Buy service default log")
+                customer=self,
+                cost=-cost,
+                from_balance=old_balance,
+                to_balance=old_balance-cost,
+                author=author,
+                comment=comment or _("Buy service default log")
             )
         custom_signals.customer_service_post_pick.send(sender=Customer, customer=self, service=service)
 
@@ -544,6 +558,7 @@ class Customer(BaseAccount):
                 _("%(uname)s not enough money for service %(srv_name)s")
                 % {"uname": self.username, "srv_name": shot.name}
             )
+        old_balance = self.balance
         with transaction.atomic():
             # charge for the service
             self.balance -= cost
@@ -553,6 +568,8 @@ class Customer(BaseAccount):
             CustomerLog.objects.create(
                 customer=self,
                 cost=-cost,
+                from_balance=old_balance,
+                to_balance=old_balance-cost,
                 author=request.user,
                 comment=comment or _('Buy one-shot service for "%(title)s"') % {"title": shot.name},
             )
