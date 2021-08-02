@@ -7,7 +7,7 @@ from typing import Iterable
 
 from profiles.models import UserProfile
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, send_mail
 from django.utils.html import strip_tags
 from uwsgi_tasks import task
 
@@ -33,6 +33,11 @@ def send_email_notify(msg_text: str, account_id: int):
         logging.error("Socket error: %s" % e)
     except UserProfile.DoesNotExist:
         logging.error("UserProfile with pk=%d not found" % account_id)
+
+
+@task()
+def send_email_task(*args, **kwargs):
+    send_mail(*args, **kwargs)
 
 
 @task()
