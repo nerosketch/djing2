@@ -276,9 +276,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_stop(self, request):
-        # TODO: Удалять только сессию, без ip, только при Accounting-Stop.
-        #  Получается, что когда сессия останавливается из radius, то и из билинга она пропадает.
-        #  Но только сессия, ip удалять не надо.
         dat = request.data
         vendor_manager = self.vendor_manager
         vcls = vendor_manager.vendor_class
@@ -300,8 +297,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
     def _acct_update(self, request):
         dat = request.data
         vendor_manager = self.vendor_manager
-        vcls = vendor_manager.vendor_class
-        ip = vcls.get_rad_val(dat, "Framed-IP-Address")
+        vendor_manager_class = vendor_manager.vendor_class
+        ip = vendor_manager_class.get_rad_val(dat, "Framed-IP-Address")
         sessions = CustomerRadiusSession.objects.filter(
             ip_lease__ip_address=ip,
         )
