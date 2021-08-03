@@ -208,7 +208,6 @@ class CustomerIpLeaseModel(models.Model):
         (
             baseaccount_id,
             balance,
-            ip_addr,
             descr,
             house,
             is_dyn_ip,

@@ -377,7 +377,7 @@ class Customer(BaseAccount):
     balance = models.FloatField(default=0.0)
 
     # ip_address deprecated, marked for remove
-    ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
+    # ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
     street = models.ForeignKey(
         CustomerStreet, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
@@ -686,7 +686,6 @@ class Customer(BaseAccount):
         verbose_name = _("Customer")
         verbose_name_plural = _("Customers")
         ordering = ("fio",)
-        unique_together = ("ip_address", "gateway")
 
 
 class InvoiceForPayment(BaseAbstractModel):
