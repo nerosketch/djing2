@@ -1,6 +1,7 @@
 from dataclasses import dataclass, asdict
 from typing import List
 from django.core.mail import EmailMessage
+from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.backends.smtp import EmailBackend
 from uwsgi_tasks import task
 
@@ -27,10 +28,11 @@ def _send_smtp_email_task(messages: List[dict]):
             ).send()
 
 
-class Djing2EmailBackend(EmailBackend):
+class Djing2EmailBackend(BaseEmailBackend):
     """Email backend that send mails async."""
 
-    def send_messages(self, email_messages: List[EmailMessage]) -> int:
+    @staticmethod
+    def send_messages(email_messages: List[EmailMessage]) -> int:
         """
         Send one or more EmailMessage objects and return the number of email
         messages sent.
@@ -41,7 +43,7 @@ class Djing2EmailBackend(EmailBackend):
             EmailMessageDataClass(
                 from_email=message.from_email,
                 recipients=message.recipients(),
-                message=message.message(),
+                message=message.body,
                 subject=message.subject,
             )
         ) for message in email_messages]
