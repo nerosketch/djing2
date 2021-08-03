@@ -36,6 +36,8 @@ class VlanIfModelSerializer(BaseCustomModelSerializer):
 
 
 class CustomerIpLeaseModelSerializer(BaseCustomModelSerializer):
+    is_dynamic = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = CustomerIpLeaseModel
         fields = "__all__"
