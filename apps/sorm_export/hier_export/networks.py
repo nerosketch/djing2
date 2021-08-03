@@ -3,7 +3,15 @@ from ipaddress import ip_address
 from networks.models import CustomerIpLeaseModel
 from sorm_export.hier_export.base import simple_export_decorator, format_fname
 from sorm_export.serializers import networks
-from sorm_export.serializers.networks import IpLeaseAddrTypeChoice
+
+
+def get_addr_type(ip) -> networks.IpLeaseAddrTypeChoice:
+    # FIXME: identify VPN address type.
+    _addr = ip_address(ip)
+    if _addr.is_private:
+        return networks.IpLeaseAddrTypeChoice.GRAY
+    else:
+        return networks.IpLeaseAddrTypeChoice.WHITE
 
 
 @simple_export_decorator
@@ -13,13 +21,6 @@ def export_ip_leases(leases: Iterable[CustomerIpLeaseModel], event_time=None):
     В этом файле выгружается информация по статическим IP
     адресам и подсетям, выданным абонентам.
     """
-    def get_addr_type(ip) -> IpLeaseAddrTypeChoice:
-        # FIXME: identify VPN address type.
-        _addr = ip_address(ip)
-        if _addr.is_private:
-            return IpLeaseAddrTypeChoice.GRAY
-        else:
-            return IpLeaseAddrTypeChoice.WHITE
 
     dat = [{
         'customer_id': lease.customer_id,
