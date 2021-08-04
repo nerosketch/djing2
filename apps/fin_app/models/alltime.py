@@ -27,24 +27,26 @@ class PayAllTimeGateway(BaseAbstractModel):
         ordering = ("title",)
 
 
-def report_by_pays(from_date: datetime, pay_gw_id=None, group_by_day=False, group_by_week=False, group_by_mon=False):
-    grp_one_of = tuple(i for i in (group_by_day, group_by_week, group_by_mon) if i)
-    if len(grp_one_of) > 1:
-        raise ParseError('One of grouping is available')
-    del grp_one_of
+def report_by_pays(from_date: datetime, pay_gw_id=None, group_by=0):
+    group_by = safe_int(group_by)
+    if group_by == 0:
+        raise ParseError('Bad value in "group_by" param')
 
     params = [from_date]
     query = [
         "SELECT"
     ]
     date_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
-    if group_by_day:
+    if group_by == 1:
+        # group by day
         query.append("date_trunc('day', date_add),")
         date_fmt = getattr(api_settings, "DATE_FORMAT", "%Y-%m-%d")
-    elif group_by_mon:
+    elif group_by == 3:
+        # group by mon
         query.append("date_trunc('month', date_add),")
         date_fmt = '%Y-%m'
-    elif group_by_week:
+    elif group_by == 2:
+        # group by week
         query.append("date_trunc('week', date_add),")
         date_fmt = '%Y-%m'
 

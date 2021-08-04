@@ -37,9 +37,7 @@ class AllTimeGatewayModelViewSet(DjingModelViewSet):
         r = report_by_pays(
             from_date=dat.get('from_date'),
             pay_gw_id=dat.get('pay_gw'),
-            group_by_day=dat.get('group_by_day', False),
-            group_by_mon=dat.get('group_by_mon', False),
-            group_by_week=dat.get('group_by_week', False),
+            group_by=dat.get('group_by', 0),
         )
         return Response(tuple(r))
 
