@@ -9,6 +9,8 @@ from customers import custom_signals as customer_custom_signals
 from customers.models import Customer, CustomerService
 from networks.models import CustomerIpLeaseModel
 
+logger = logging.getLogger(__name__)
+
 
 @receiver(pre_delete, sender=CustomerIpLeaseModel)
 def send_finish_session_when_removed_it_ip(sender, instance, **kwargs):
@@ -40,9 +42,9 @@ def on_pre_stop_cust_srv_signal(sender, expired_service, **kwargs):
     sessions = CustomerRadiusSession.objects.filter(customer_id=expired_service.customer.pk).iterator()
     for session in sessions:
         if tasks.async_change_session_inet2guest(radius_uname=session.radius_username):
-            logging.info('Session "%s" changed inet -> guest' % session)
+            logger.info('Session "%s" changed inet -> guest' % session)
         else:
-            logging.error('Session "%s" not changed inet -> guest' % session)
+            logger.error('Session "%s" not changed inet -> guest' % session)
 
 
 @receiver(customer_custom_signals.customer_service_post_pick, sender=Customer, dispatch_uid="on_post_pick_cust_srv*$@0")
