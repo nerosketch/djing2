@@ -5,6 +5,8 @@ from uwsgi_tasks import task, TaskExecutor, SPOOL_OK, SPOOL_RETRY
 
 from radiusapp import radius_commands as rc
 
+logger = logging.getLogger(__name__)
+
 
 def _radius_task_error_wrapper(fn):
     @wraps(fn)
@@ -28,7 +30,7 @@ def _radius_task_error_wrapper(fn):
 def async_finish_session_task(radius_uname: str):
     ret_text = rc.finish_session(radius_uname)
     if ret_text is not None:
-        logging.warning(ret_text)
+        logger.warning(ret_text)
     return SPOOL_OK
 
 
@@ -43,7 +45,7 @@ def async_change_session_inet2guest(radius_uname: str):
     """
     ret_text = rc.change_session_inet2guest(radius_uname)
     if ret_text is not None:
-        logging.warning(ret_text)
+        logger.warning(ret_text)
     return SPOOL_OK
 
 
@@ -62,5 +64,5 @@ def async_change_session_inet2guest(radius_uname: str):
 def async_change_session_guest2inet(*args, **kwargs):
     ret_text = rc.change_session_guest2inet(*args, **kwargs)
     if ret_text is not None:
-        logging.warning(ret_text)
+        logger.warning(ret_text)
     return SPOOL_OK
