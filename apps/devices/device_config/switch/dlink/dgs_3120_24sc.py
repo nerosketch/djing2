@@ -104,7 +104,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
     def create_vlans(self, vlan_list: Vlans) -> bool:
         # ('1.3.6.1.2.1.17.7.1.4.3.1.3.152', b'\xff\xff\xff\xff', 'OCTETSTR'),  # untagged порты
         for v in vlan_list:
-            vname = self._normalize_name(v.title)
+            vname = self._normalize_name(v.title, v.vid)
             return self.set_multiple(
                 [
                     (".1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % v.vid, 4, "INTEGER"),  # 4 - vlan со всеми функциями
@@ -162,7 +162,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
 
-        results = tuple(self._toggle_vlan_on_port(vlan=v, port=port_num, member=True) for v in vlan_list)
+        results = tuple(self._toggle_vlan_on_port(vlan=v, port=port_num, member=True, request=request) for v in vlan_list)
         return results
 
     def attach_vlan_to_port(self, vlan: Vlan, port: int, request, tag: bool = True) -> bool:
