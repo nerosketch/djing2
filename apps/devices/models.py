@@ -285,15 +285,16 @@ class Port(BaseAbstractModel):
         device = self.device
         if not device:
             raise DeviceImplementationError("device could not found")
-        port_num = serializer.data.get("port_num")
+        data = serializer.data
+        port_num = data.get("port")
         if not port_num:
-            raise DeviceImplementationError("port_num field required")
+            raise DeviceImplementationError("'port' field required")
 
         mng = device.get_manager_object_switch()
 
-        vlans_data = serializer.data.get("vlans")
+        vlans_data = data.get("vids")
         if not vlans_data:
-            raise DeviceImplementationError("vlans field required")
+            raise DeviceImplementationError("vids field required")
 
         vlans_gen = (Vlan(**v) for v in vlans_data)
 
