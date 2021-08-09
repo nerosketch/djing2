@@ -127,7 +127,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             return self.create_vlan(vlan=vlan)
         return False
 
-    def _toggle_vlan_on_port(self, vlan: Vlan, port: int, member: bool):
+    def _toggle_vlan_on_port(self, vlan: Vlan, port: int, member: bool, request):
         if port > self.ports_len or port < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
 
@@ -158,18 +158,18 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             ]
         )
 
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> tuple:
+    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, request) -> tuple:
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
 
         results = tuple(self._toggle_vlan_on_port(vlan=v, port=port_num, member=True) for v in vlan_list)
         return results
 
-    def attach_vlan_to_port(self, vlan: Vlan, port: int, tag: bool = True) -> bool:
-        return self._toggle_vlan_on_port(vlan=vlan, port=port, member=True)
+    def attach_vlan_to_port(self, vlan: Vlan, port: int, request, tag: bool = True) -> bool:
+        return self._toggle_vlan_on_port(vlan=vlan, port=port, member=True, request=request)
 
-    def detach_vlan_from_port(self, vlan: Vlan, port: int) -> bool:
-        return self._toggle_vlan_on_port(vlan=vlan, port=port, member=False)
+    def detach_vlan_from_port(self, vlan: Vlan, port: int, request) -> bool:
+        return self._toggle_vlan_on_port(vlan=vlan, port=port, member=False, request=request)
 
     def get_ports(self) -> Generator:
         ifs_ids = self.get_list(".1.3.6.1.2.1.10.7.2.1.1")

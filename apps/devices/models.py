@@ -281,7 +281,7 @@ class Port(BaseAbstractModel):
         mng = self.device.get_manager_object_switch()
         yield from mng.read_port_vlan_info(port=int(self.num))
 
-    def apply_vlan_config(self, serializer):
+    def apply_vlan_config(self, serializer, request):
         device = self.device
         if not device:
             raise DeviceImplementationError("device could not found")
@@ -297,7 +297,7 @@ class Port(BaseAbstractModel):
 
         vlans_gen = (Vlan(**v) for v in vlans_data)
 
-        mng.attach_vlans_to_port(vlan_list=vlans_gen, port_num=port_num)
+        mng.attach_vlans_to_port(vlan_list=vlans_gen, port_num=port_num, request=request)
 
     class Meta:
         db_table = "device_port"

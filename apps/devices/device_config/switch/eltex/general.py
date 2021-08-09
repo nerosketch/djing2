@@ -260,7 +260,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         r = (bin_num == "1" for octet_num in bitmap for bin_num in f"{octet_num:08b}")
         return ((numer + 1) + (table * 1024) for numer, bit in enumerate(r) if bit)
 
-    def _set_vlans_on_port(self, vlan_list: Vlans, port_num: int):
+    def _set_vlans_on_port(self, vlan_list: Vlans, port_num: int, request):
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
         port_num = port_num + 48
@@ -271,12 +271,12 @@ class EltexSwitch(DlinkDGS1100_10ME):
             oids.append(("1.3.6.1.4.1.89.48.68.1.%d.%d" % (tbl_num, port_num), bitmap, "x"))
         return self.set_multiple(oids)
 
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
-        return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port_num)
+    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, request) -> bool:
+        return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port_num, request=request)
 
-    def detach_vlans_from_port(self, vlan_list: Vlans, port: int) -> bool:
-        return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port)
+    def detach_vlans_from_port(self, vlan_list: Vlans, port: int, request) -> bool:
+        return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port, request=request)
 
-    def detach_vlan_from_port(self, vlan: Vlan, port: int) -> bool:
+    def detach_vlan_from_port(self, vlan: Vlan, port: int, request) -> bool:
         _vlan_gen = (v for v in (vlan,))
-        return self.detach_vlans_from_port(_vlan_gen, port)
+        return self.detach_vlans_from_port(_vlan_gen, port, request=request)

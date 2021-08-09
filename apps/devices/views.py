@@ -25,7 +25,7 @@ from devices.device_config.base import (
 )
 from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
-from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, JSONBytesEncoder
+from djing2.lib import ProcessLocked, safe_int, RuTimedelta, JSONBytesEncoder
 from djing2.lib.custom_signals import notification_signal
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -478,7 +478,7 @@ class PortModelViewSet(DjingModelViewSet):
         port = self.get_object()
         serializer = dev_serializers.PortVlanConfigSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        port.apply_vlan_config(serializer=serializer)
+        port.apply_vlan_config(serializer=serializer, request=request)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
