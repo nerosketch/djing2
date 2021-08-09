@@ -324,10 +324,14 @@ class BaseSwitchInterface(BaseDeviceInterface):
         raise NotImplementedError
 
     @staticmethod
-    def _normalize_name(name: str) -> str:
-        language_code = getattr(settings, "LANGUAGE_CODE", "ru")
-        vname = translit(name, language_code=language_code, reversed=True)
-        return re.sub(r"\W+", "_", vname)[:32]
+    def _normalize_name(name: str, vid: Optional[int] = None) -> str:
+        if name:
+            language_code = getattr(settings, "LANGUAGE_CODE", "ru")
+            vname = translit(name, language_code=language_code, reversed=True)
+            return re.sub(r"\W+", "_", vname)[:32]
+        if vid and isinstance(vid, int):
+            return 'v%d' % vid
+        return ''
 
 
 class DeviceConfigType:
