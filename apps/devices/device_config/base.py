@@ -273,36 +273,39 @@ class BaseSwitchInterface(BaseDeviceInterface):
         """
         raise NotImplementedError
 
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
+    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, request) -> bool:
         """
         Attach vlan set to port
         :param vlan_list:
         :param port_num:
+        :param request: DRF Request
         :return: Operation result
         """
         raise NotImplementedError
 
     @abstractmethod
-    def attach_vlan_to_port(self, vlan: Vlan, port: int, tag: bool = True) -> bool:
+    def attach_vlan_to_port(self, vlan: Vlan, port: int, request, tag: bool = True) -> bool:
         """
         Attach vlan to switch port
         :param vlan:
         :param port:
+        :param request: DRF Request
         :param tag: Tagged if True or untagged otherwise
         :return:
         """
         _vlan_gen = (v for v in (vlan,))
-        return self.attach_vlans_to_port(_vlan_gen, port)
+        return self.attach_vlans_to_port(_vlan_gen, port, request)
 
     def _get_vid_name(self, vid: int) -> str:
         return self.get_item(".1.3.6.1.2.1.17.7.1.4.3.1.1.%d" % vid)
 
     @abstractmethod
-    def detach_vlan_from_port(self, vlan: Vlan, port: int) -> bool:
+    def detach_vlan_from_port(self, vlan: Vlan, port: int, request) -> bool:
         """
         Detach vlan from switch port
         :param vlan:
         :param port:
+        :param request: DRF Request
         :return: Operation result
         """
         raise NotImplementedError

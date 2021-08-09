@@ -87,7 +87,7 @@ class PortVlanConfigMemberSerializer(serializers.Serializer):
 
 class PortVlanConfigSerializer(serializers.Serializer):
     port_num = serializers.IntegerField(min_value=1, max_value=28)
-    vlans = serializers.ListField(child=PortVlanConfigMemberSerializer())
+    vlans = PortVlanConfigMemberSerializer(many=True)
 
 
 class DeviceGroupsModelSerializer(BaseCustomModelSerializer):
@@ -111,7 +111,7 @@ class DevOnuVlan(serializers.Serializer):
 
 class DevOnuVlanInfoTemplate(serializers.Serializer):
     port = serializers.IntegerField(default=1)
-    vids = serializers.ListField(child=DevOnuVlan())
+    vids = DevOnuVlan(many=True)
 
 
 class DeviceOnuConfigTemplate(serializers.Serializer):
