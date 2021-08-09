@@ -1,5 +1,6 @@
 import re
 from json import dumps as json_dumps
+from dataclasses import asdict
 
 from django.db.models import Count
 from django.http.response import StreamingHttpResponse
@@ -398,14 +399,14 @@ class DeviceModelViewSet(DjingModelViewSet):
         if vid == 0:
             return Response("Valid vid required", status=status.HTTP_400_BAD_REQUEST)
         macs = dev.dev_read_mac_address_vlan(vid=vid)
-        return Response([m._asdict() for m in macs])
+        return Response([asdict(m) for m in macs])
 
     @action(detail=True)
     @catch_dev_manager_err
     def scan_all_vlan_list(self, request, pk=None):
         dev = self.get_object()
         vlan_list = dev.dev_get_all_vlan_list()
-        res = (i._asdict() for i in vlan_list)
+        res = (asdict(i) for i in vlan_list)
         return Response(res)
 
 
@@ -463,14 +464,14 @@ class PortModelViewSet(DjingModelViewSet):
         if dev is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         macs = tuple(dev.dev_switch_get_mac_address_port(device_port_num=port.num))
-        return Response(m._asdict() for m in macs)
+        return Response(asdict(m) for m in macs)
 
     @action(detail=True)
     @catch_dev_manager_err
     def scan_vlan(self, request, pk=None):
         port = self.get_object()
         port_vlans = port.get_port_vlan_list()
-        return Response(p._asdict() for p in port_vlans)
+        return Response(asdict(p) for p in port_vlans)
 
     @action(methods=["post"], detail=True)
     @catch_dev_manager_err

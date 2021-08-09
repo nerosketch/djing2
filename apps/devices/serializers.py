@@ -80,14 +80,14 @@ class PortModelSerializer(BaseCustomModelSerializer):
 
 class PortVlanConfigMemberSerializer(serializers.Serializer):
     vid = serializers.IntegerField(min_value=1, max_value=4095, required=True)
-    title = serializers.CharField(max_length=128, required=True)
+    # title = serializers.CharField(max_length=128, required=False)
     is_management = serializers.BooleanField(default=False, initial=False, allow_null=True)
-    native = serializers.BooleanField(default=False, initial=False)
+    # native = serializers.BooleanField(default=False, initial=False)
 
 
 class PortVlanConfigSerializer(serializers.Serializer):
-    port_num = serializers.IntegerField(min_value=1, max_value=28)
-    vlans = PortVlanConfigMemberSerializer(many=True)
+    port = serializers.IntegerField(min_value=1, max_value=28)
+    vids = PortVlanConfigMemberSerializer(many=True)
 
 
 class DeviceGroupsModelSerializer(BaseCustomModelSerializer):

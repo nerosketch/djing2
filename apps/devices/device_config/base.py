@@ -1,6 +1,6 @@
 import re
 from abc import ABC, abstractmethod
-from collections import namedtuple
+from dataclasses import dataclass
 
 from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Type
 from easysnmp import Session, EasySNMPConnectionError
@@ -37,18 +37,31 @@ class UnsupportedReadingVlan(NotImplementedError):
     pass
 
 
-class Vlan(namedtuple("Vlan", "vid title native is_management")):
-    def __new__(cls, vid: int, title: str, native: bool = False, is_management: bool = False):
-        if title:
-            if isinstance(title, bytes):
-                title = "".join(chr(c) for c in title if chr(c).isalpha())
-            else:
-                title = "".join(filter(str.isalpha, title))
-        return super().__new__(cls, vid=vid, title=title, native=native, is_management=is_management)
+@dataclass
+class Vlan:
+    vid: int
+    title: Optional[str] = None
+    native: bool = False
+    is_management: bool = False
+
+    def __post_init__(self):
+        if not self.title:
+            return
+        if isinstance(self.title, bytes):
+            self.title = "".join(chr(c) for c in self.title if chr(c).isalpha())
+        else:
+            self.title = "".join(filter(str.isalpha, self.title))
+
+
+@dataclass
+class MacItem:
+    vid: int
+    name: str
+    mac: str
+    port: int
 
 
 Vlans = Generator[Vlan, None, None]
-MacItem = namedtuple("MacItem", "vid name mac port")
 Macs = Generator[MacItem, None, None]
 
 
