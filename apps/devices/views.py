@@ -6,7 +6,7 @@ from django.db.models import Count
 from django.http.response import StreamingHttpResponse
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
-from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError, EasySNMPConnectionError
+from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
@@ -47,7 +47,6 @@ def catch_dev_manager_err(fn):
             ConnectionRefusedError,
             OSError,
             DeviceConnectionError,
-            EasySNMPConnectionError,
             EasySNMPError,
         ) as err:
             return Response(str(err), status=452)
