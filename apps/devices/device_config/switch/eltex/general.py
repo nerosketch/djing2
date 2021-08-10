@@ -219,7 +219,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         \\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00
         \\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'}
         """
-        vids = list(vids)
+        vids = list(set(vids))
         vids.sort()
         res = {}
         for vid in vids:
@@ -254,7 +254,8 @@ class EltexSwitch(DlinkDGS1100_10ME):
         >>> tuple(EltexSwitch.parse_eltex_vlan_map(bitmap))
         (5, 143, 152)
         """
-        assert isinstance(bitmap, bytes)
+        if not isinstance(bitmap, bytes):
+            raise TypeError('"bitmap" must be an instance of bytes')
         if table < 0 or table > 3:
             raise DeviceImplementationError("table must be in range 1-3")
         r = (bin_num == "1" for octet_num in bitmap for bin_num in f"{octet_num:08b}")
@@ -268,7 +269,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         bit_maps = self.make_eltex_map_vlan(vids=vids)
         oids = []
         for tbl_num, bitmap in bit_maps.items():
-            oids.append(("1.3.6.1.4.1.89.48.68.1.%d.%d" % (tbl_num, port_num), bitmap, "x"))
+            oids.append(("1.3.6.1.4.1.89.48.68.1.%d.%d" % (tbl_num, port_num), bitmap, "b"))
         return self.set_multiple(oids)
 
     def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, request) -> bool:
