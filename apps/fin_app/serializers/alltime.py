@@ -14,9 +14,7 @@ class AllTimeGatewayModelSerializer(BaseCustomModelSerializer):
 class PaysReportParamsSerializer(serializers.Serializer):
     from_date = serializers.DateTimeField()
     pay_gw = serializers.IntegerField(default=None, allow_null=True)
-    group_by_day = serializers.NullBooleanField(default=False)
-    group_by_mon = serializers.NullBooleanField(default=False)
-    group_by_week = serializers.NullBooleanField(default=False)
+    group_by = serializers.IntegerField(default=0)
 
 
 class AllTimePayLogModelSerializer(BaseCustomModelSerializer):

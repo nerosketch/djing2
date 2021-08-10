@@ -51,6 +51,13 @@ def customer_pre_save_signal(sender, instance: Customer, update_fields=None, **k
             customer_root_export_task(customer_id=instance.pk, event_time=now)
 
 
+@receiver(post_save, sender=Customer)
+def customer_post_save_signal(sender, instance: Customer, created=False, **kwrargs):
+    if created:
+        # export customer root record
+        customer_root_export_task(customer_id=instance.pk, event_time=datetime.now())
+
+
 @receiver(customer_service_post_pick, sender=Customer)
 def customer_post_pick_service_signal_handler(sender, customer: Customer, service, **kwargs):
     if not customer.current_service_id:

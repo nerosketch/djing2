@@ -321,7 +321,10 @@ class CustomerManager(MyUserManager):
         :return: nothing
         """
         now = datetime.now()
-        expired_services = CustomerService.objects.filter(deadline__lt=now, customer__auto_renewal_service=True)
+        expired_services = CustomerService.objects.select_related('customer').filter(
+            deadline__lt=now,
+            customer__auto_renewal_service=True
+        )
         if customer is not None and isinstance(customer, Customer):
             expired_services = expired_services.filter(customer=customer)
         if not expired_services.exists():
@@ -377,7 +380,7 @@ class Customer(BaseAccount):
     balance = models.FloatField(default=0.0)
 
     # ip_address deprecated, marked for remove
-    ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
+    # ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
     street = models.ForeignKey(
         CustomerStreet, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
@@ -686,7 +689,6 @@ class Customer(BaseAccount):
         verbose_name = _("Customer")
         verbose_name_plural = _("Customers")
         ordering = ("fio",)
-        unique_together = ("ip_address", "gateway")
 
 
 class InvoiceForPayment(BaseAbstractModel):
