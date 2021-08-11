@@ -2,12 +2,13 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Type
+from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Type, Iterable
 from easysnmp import Session, EasySNMPConnectionError
 from transliterate import translit
 
 from django.utils.translation import gettext_lazy as _, gettext
 from django.conf import settings
+from django.db import models
 from djing2.lib import RuTimedelta, macbin2str
 from rest_framework import status
 from rest_framework.exceptions import APIException
@@ -45,12 +46,16 @@ class Vlan:
     is_management: bool = False
 
     def __post_init__(self):
-        if not self.title:
-            return
-        if isinstance(self.title, bytes):
-            self.title = "".join(chr(c) for c in self.title if chr(c).isalpha())
-        else:
-            self.title = "".join(filter(str.isalpha, self.title))
+        if self.title is None:
+            self.title = f'v{self.vid}'
+        elif isinstance(self.title, bytes):
+            self.title = self.title.decode()
+
+    def __hash__(self):
+        return self.vid
+
+    def __eq__(self, other):
+        return self.vid == other.vid
 
 
 @dataclass
@@ -61,7 +66,7 @@ class MacItem:
     port: int
 
 
-Vlans = Generator[Vlan, None, None]
+Vlans = Iterable[Vlan]
 Macs = Generator[MacItem, None, None]
 
 
@@ -254,6 +259,11 @@ class BaseDeviceInterface(BaseSNMPWorker):
         }
 
 
+class PortVlanConfigModeChoices(models.TextChoices):
+    TRUNK = ('trunk', _('Trunk'))
+    ACCESS = ('access', _('Access'))
+
+
 class BaseSwitchInterface(BaseDeviceInterface):
     @abstractmethod
     def get_ports(self) -> tuple:
@@ -286,11 +296,12 @@ class BaseSwitchInterface(BaseDeviceInterface):
         """
         raise NotImplementedError
 
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, request) -> bool:
+    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, config_mode: PortVlanConfigModeChoices, request) -> bool:
         """
         Attach vlan set to port
         :param vlan_list:
         :param port_num:
+        :param config_mode: devices.serializers.PortVlanConfigModeChoices
         :param request: DRF Request
         :return: Operation result
         """

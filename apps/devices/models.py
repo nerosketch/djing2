@@ -296,11 +296,14 @@ class Port(BaseAbstractModel):
         if not vlans_data:
             raise DeviceImplementationError("vids field required")
 
+        config_mode = data.get('config_mode')
+
         vlans_gen = (Vlan(**v) for v in vlans_data)
 
         mng.attach_vlans_to_port(
             vlan_list=vlans_gen,
             port_num=port_num,
+            config_mode=config_mode,
             request=request
         )
 

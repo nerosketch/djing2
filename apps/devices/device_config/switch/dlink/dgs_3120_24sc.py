@@ -158,7 +158,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             ]
         )
 
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, request) -> tuple:
+    def attach_vlans_to_port(self, vlan_list, port_num, config_mode, request) -> tuple:
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
 
