@@ -11,6 +11,7 @@ from devices.device_config.base import (
     MacItem,
     Macs,
     DeviceImplementationError,
+    PortVlanConfigModeChoices,
 )
 from devices.device_config.utils import plain_ip_device_mon_template
 from ..dlink import DlinkDGS1100_10ME
@@ -177,17 +178,23 @@ class EltexSwitch(DlinkDGS1100_10ME):
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
     def create_vlans(self, vlan_list: Vlans) -> bool:
-        for vlan in vlan_list:
-            oids = (
-                ("1.3.6.1.2.1.17.7.1.4.3.1.1.%d" % vlan.vid, vlan.title, "s"),
-                ("1.3.6.1.2.1.17.7.1.4.3.1.2.%d" % vlan.vid, 0, "x"),
-                ("1.3.6.1.2.1.17.7.1.4.3.1.3.%d" % vlan.vid, 0, "x"),
-                ("1.3.6.1.2.1.17.7.1.4.3.1.4.%d" % vlan.vid, 0, "x"),
-                ("1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % vlan.vid, 4, "i"),
-            )
-            if not self.set_multiple(oid_values=oids):
-                return False
-        return True
+        vlan_map = self.make_eltex_map_vlan(
+            vids=(v.vid for v in vlan_list)
+        )
+        oids = (
+            '1.3.6.1.4.1.89.48.69.1.2.0',   # rldot1qVlanStaticList1to1024
+            '1.3.6.1.4.1.89.48.69.1.3.0',   # rldot1qVlanStaticList1025to2048
+            '1.3.6.1.4.1.89.48.69.1.4.0',   # rldot1qVlanStaticList2049to3072
+            '1.3.6.1.4.1.89.48.69.1.5.0'    # rldot1qVlanStaticList3073to4094
+        )
+        reqs = ((oids[index], bit_map, 'b') for index, bit_map in vlan_map.items())
+        return self.set_multiple(reqs)
+
+        # for index, bit_map in vlan_map.items():
+        #     print('Set:', oids[index], bit_map)
+        #     if not self.set(oid=oids[index], value=bit_map, snmp_type='b'):
+        #         return False
+        # return True
 
     def delete_vlans(self, vlan_list: Vlans) -> bool:
         for vlan in vlan_list:
@@ -198,7 +205,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
     @staticmethod
     def make_eltex_map_vlan(vids: Iterable[int]) -> Dict[int, bytes]:
         """
-        https://eltexsl.ru/wp-content/uploads/2016/05/monitoring-i-upravlenie-ethernet-kommutatorami-mes-po-snmp.pdf
+        https://eltex-co.ru/upload/iblock/f69/MES_configuration_and_monitoring_via_SNMP_1.1.48.11,%202.5.48.11,%202.2.14.6.pdf
         :param vids: Vlan id iterable collection
         :return: bytes bit map vlan representation by Eltex version
                  with index of table in dict key
@@ -237,7 +244,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
     @staticmethod
     def parse_eltex_vlan_map(bitmap: bytes, table: int = 0) -> Generator[int, None, None]:
         """
-        https://eltexsl.ru/wp-content/uploads/2016/05/monitoring-i-upravlenie-ethernet-kommutatorami-mes-po-snmp.pdf
+        https://eltex-co.ru/upload/iblock/f69/MES_configuration_and_monitoring_via_SNMP_1.1.48.11,%202.5.48.11,%202.2.14.6.pdf
         :param bitmap: str bit map vlan representation by Eltex version
         :param table: Value from 0 to 3. In which table can find vlan id list
         :return: VID, vlan id
@@ -261,23 +268,46 @@ class EltexSwitch(DlinkDGS1100_10ME):
         r = (bin_num == "1" for octet_num in bitmap for bin_num in f"{octet_num:08b}")
         return ((numer + 1) + (table * 1024) for numer, bit in enumerate(r) if bit)
 
-    def _set_vlans_on_port(self, vlan_list: Vlans, port_num: int, request):
+    def _set_trunk_vlans_on_port(self, vlan_list: Vlans, port_num: int, config_mode: PortVlanConfigModeChoices, request):
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
-        port_num = port_num + 48
-        vids = (v.vid for v in vlan_list)
-        bit_maps = self.make_eltex_map_vlan(vids=vids)
-        oids = []
-        for tbl_num, bitmap in bit_maps.items():
-            oids.append(("1.3.6.1.4.1.89.48.68.1.%d.%d" % (tbl_num, port_num), bitmap, "b"))
-        return self.set_multiple(oids)
+        # eltex_port_num = port_num + 48
 
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, request) -> bool:
-        return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port_num, request=request)
+        # vlan_list = set(vlan_list)
+        # available_vids = set(self.read_port_vlan_info(port=port_num))
 
-    def detach_vlans_from_port(self, vlan_list: Vlans, port: int, request) -> bool:
-        return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port, request=request)
+        # new_vlans = vlan_list - available_vids
+        # self.create_vlans(vlan_list=new_vlans)
+        self.create_vlans(vlan_list=[Vlan(vid=622), Vlan(vid=3100)])
 
-    def detach_vlan_from_port(self, vlan: Vlan, port: int, request) -> bool:
-        _vlan_gen = (v for v in (vlan,))
-        return self.detach_vlans_from_port(_vlan_gen, port, request=request)
+        # for_del_vlans = vlan_list - available_vids
+        # print('for_del_vlans:', for_del_vlans)
+        # self.delete_vlans(vlan_list=for_del_vlans)
+
+        # vids = (v.vid for v in vlan_list)
+        # bit_maps = self.make_eltex_map_vlan(vids=vids)
+        # oids = []
+        # for tbl_num, bitmap in bit_maps.items():
+        #     oids.append(("1.3.6.1.4.1.89.48.68.1.%d.%d" % (tbl_num, port_num), bitmap, "b"))
+        return False  # self.set_multiple(oids)
+
+    def attach_vlans_to_port(self, vlan_list, port_num, config_mode, request):
+        return self._set_trunk_vlans_on_port(
+            vlan_list=vlan_list,
+            port_num=port_num,
+            config_mode=config_mode,
+            request=request
+        )
+
+    # def detach_vlans_from_port(self, vlan_list: Vlans, port: int, request):
+    #     return self._set_trunk_vlans_on_port(
+    #         vlan_list=vlan_list,
+    #         port_num=port,
+    #         config_mode=config_mode,
+    #         request=request
+    #     )
+
+    def detach_vlan_from_port(self, vlan, port, request):
+        pass
+        # _vlan_gen = (v for v in (vlan,))
+        # return self.detach_vlans_from_port(_vlan_gen, port, request=request)
