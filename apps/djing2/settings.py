@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "sorm_export.apps.SormExportConfig",
     "customer_comments.apps.CustomerCommentsConfig",
     "maps.apps.MapsConfig",
+    "scheme_app.apps.SchemeAppConfig",
 ]
 
 if DEBUG:
