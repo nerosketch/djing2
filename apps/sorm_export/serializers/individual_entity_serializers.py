@@ -210,42 +210,49 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         label=_('Last name'),
         required=False,
         max_length=64,
+        default=''
     )
     # 4
     surname = serializers.CharField(
         label=_('Surname'),
         max_length=64,
         required=False,
-        allow_blank=True
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
     # 5
     birthday = serializers.DateField(
         label=_('Birthday'),
         required=False,
         format=date_format,
-        allow_null=True
+        allow_null=True,
+        default=''
     )  # format DD.mm.YYYY
     # 6
     document_type = serializers.ChoiceField(
         label=_('Document document type'),
         required=False,
         choices=CustomerDocumentTypeChoices.choices,
+        default=CustomerDocumentTypeChoices.EMPTY,
+        allow_blank=True,
         allow_null=True,
-        allow_blank=True
     )
     # 7
     document_serial = serializers.CharField(
         label=_('Document serial'),
         max_length=32,
         validators=[validators.integer_validator],
-        required=False
+        required=False,
+        default=''
     )
     # 8
     document_number = serializers.CharField(
         label=_('Document number'),
         max_length=64,
         validators=[validators.integer_validator],
-        required=False
+        required=False,
+        default=''
     )
     # 9
     document_distributor = serializers.CharField(
@@ -254,20 +261,24 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
                   "выдавшего документ, например, "
                   "«35 о/м Приморского р-на, г. Санкт-Петербург»",
         max_length=128,
-        required=False
+        required=False,
+        default=''
     )
     # 10
     passport_code = serializers.CharField(
         label="Код подразделения",
         max_length=16,
         required=False,
-        allow_blank=True
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
     # 11
     passport_date = serializers.DateField(
         label="Дата выдачи документа",
         format=date_format,
-        required=False
+        required=False,
+        default=''
     )
     # 12
     reserved = serializers.CharField(default='', required=False)
@@ -278,7 +289,8 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         max_length=32,
         required=False,
         allow_blank=True,
-        allow_null=True
+        allow_null=True,
+        default=''
     )
     # 14
     ao_id = serializers.CharField(default='', required=False)  # reserved
@@ -288,9 +300,9 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         label=_('Parent ao id'),
         max_length=128,
         required=False,
-        allow_null=True,
         allow_blank=True,
-        default=None
+        allow_null=True,
+        default=''
     )  # AddressObjectFormat.address_id
     # 16
     ao_type_id = serializers.CharField(default='', required=False)  # reserved
@@ -302,24 +314,28 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
     house_num = serializers.CharField(
         label=_('House number'),
         max_length=32,
-        required=False
+        required=False,
+        default=''
     )
     # 20
     building = serializers.CharField(
         label=_('Building'),
         max_length=32,
-        required=False
+        required=False,
+        default=''
     )
     # 21
     building_corpus = serializers.CharField(
         label=_('Building corpus'),
         max_length=32,
-        required=False
+        required=False,
+        default=''
     )
     # 22
     full_description = serializers.CharField(
         label=_('Full description'),
         required=False,
+        default=''
     )  # reserved
     # 23
     actual_start_time = serializers.DateTimeField(
@@ -338,7 +354,8 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
                   "договора с абонентом и превышать дату начала интервала",
         required=False,
         format=datetime_format,
-        allow_null=True
+        allow_null=True,
+        default=''
     )
     # 25
     customer_id = serializers.CharField(

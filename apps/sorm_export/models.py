@@ -74,6 +74,7 @@ class CustomerTypeChoices(models.IntegerChoices):
 
 
 class CustomerDocumentTypeChoices(models.TextChoices):
+    EMPTY = ''
     PASSPORT_RF = _('Passport RF')
     PASSPORT_USSR = _('Passport USSR')
     PASSPORT_OTHER_COUNTRY = _('Passport other country')
