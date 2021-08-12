@@ -277,6 +277,7 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         help_text="квартира адреса прописки",
         max_length=32,
         required=False,
+        allow_blank=True,
         allow_null=True
     )
     # 14
