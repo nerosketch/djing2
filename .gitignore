@@ -9,6 +9,7 @@ apps/djing2/local_settings.py
 *.json
 *.bak
 *.mo
+*.csv
 db.sqlite3
 venv/
 static/
