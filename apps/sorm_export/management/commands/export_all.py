@@ -17,6 +17,7 @@ from sorm_export.hier_export.customer import (
 
 from sorm_export.hier_export.networks import export_ip_leases
 from sorm_export.hier_export.service import export_nomenclature, export_customer_service
+from sorm_export.hier_export.special_numbers import export_special_numbers
 from sorm_export.management.commands._general_func import export_customer_lease_binds
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus, FiasRecursiveAddressModel
 from sorm_export.tasks.task_export import task_export
@@ -135,6 +136,7 @@ class Command(BaseCommand):
             (export_all_ip_leases, "Network static leases export"),
             (export_all_service_nomenclature, "Services export status"),
             (export_all_customer_services, "Customer services export status"),
+            (export_special_numbers, "Special numbers export status"),
         )
         for fn, msg in funcs:
             try:
