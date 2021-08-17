@@ -14,13 +14,19 @@ def export_customer_unknown_payment(pays: Iterable[AllTimePayLog], event_time=No
     т.е. необходимо выгружать только новые события платежей
     за время, прошедшее с последней выгрузки.
     """
+    def _build_pay_params(pay: AllTimePayLog) -> str:
+        return 'Идентификатор торговой точки: "%s". Номер чека, выдаваемого клиенту: "%d".' % (
+            pay.trade_point,
+            pay.receipt_num
+        )
+
     dat = [
         {
             "customer_id": pay.customer_id,
             "pay_time": pay.date_add,
             "amount": pay.sum,
-            "pay_description": "Безналичный",  # TODO: Можно-ли указывать какой это платёж
-            # 'pay_params': lease.mac_address
+            "pay_description": "Безналичный",  # TODO: Вынести это куда-то, чтоб были разные типы
+            'pay_params': _build_pay_params(pay)
         }
         for pay in pays
     ]
