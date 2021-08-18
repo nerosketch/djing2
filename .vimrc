@@ -65,23 +65,23 @@ call vundle#begin()
     " Plugin 'tpope/vim-surround'                 Parentheses, brackets, quotes, XML tags, and more
     Plugin 'flazz/vim-colorschemes'             " Colorschemes
     " Plugin 'vimwiki/vimwiki'                     Personal Wiki
-    Plugin 'jreybert/vimagit'                   " Git Operations
+    " Plugin 'jreybert/vimagit'                   Git Operations
     Plugin 'airblade/vim-gitgutter'             " Plugin which shows a git diff in the sign column
     Plugin 'kien/rainbow_parentheses.vim'       " Rainbow Parentheses
     Plugin 'ryanoasis/vim-devicons'             " Dev Icons
     Plugin 'mhinz/vim-startify'                 " Vim Start Page
-    Plugin 'editorconfig/editorconfig-vim'	    " Editorconfig support
+    Plugin 'editorconfig/editorconfig-vim'      " Editorconfig support
     Plugin 'Asheq/close-buffers.vim'            " Close buffers
 
     "-------------------=== Snippets support ===--------------------
-    Plugin 'garbas/vim-snipmate'                " Snippets manager
-    Plugin 'MarcWeber/vim-addon-mw-utils'       " dependencies #1
-    Plugin 'tomtom/tlib_vim'                    " dependencies #2
-    Plugin 'honza/vim-snippets'                 " snippets repo
+    "Plugin 'garbas/vim-snipmate'                Snippets manager
+    "Plugin 'MarcWeber/vim-addon-mw-utils'       dependencies #1
+    "Plugin 'tomtom/tlib_vim'                    dependencies #2
+    "Plugin 'honza/vim-snippets'                 snippets repo
 
     "-------------------=== Languages support ===-------------------
     Plugin 'preservim/nerdcommenter'           " Easy code documentation
-    Plugin 'mitsuhiko/vim-sparkup'              " Sparkup(XML/jinja/htlm-django/etc.) support
+    " Plugin 'mitsuhiko/vim-sparkup'             Sparkup(XML/jinja/htlm-django/etc.) support
 
     "-------------------=== Python  ===-----------------------------
     Plugin 'python-mode/python-mode'            " Python mode (docs, refactor, lints...)
