@@ -7,4 +7,4 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         secret_key = get_random_string(length=32)
-        print("SECRET_KEY =", secret_key)
+        print("Generated SECRET_KEY =", secret_key)

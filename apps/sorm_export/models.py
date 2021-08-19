@@ -26,6 +26,7 @@ class ExportStampTypeEnum(models.IntegerChoices):
     SERVICE_NOMENCLATURE = 10
     SERVICE_CUSTOMER = 11
     SERVICE_CUSTOMER_MANUAL = 12
+    DEVICE_SWITCH = 13
 
 
 class ExportStampStatusEnum(models.IntegerChoices):
@@ -74,6 +75,7 @@ class CustomerTypeChoices(models.IntegerChoices):
 
 
 class CustomerDocumentTypeChoices(models.TextChoices):
+    EMPTY = ''
     PASSPORT_RF = _('Passport RF')
     PASSPORT_USSR = _('Passport USSR')
     PASSPORT_OTHER_COUNTRY = _('Passport other country')
