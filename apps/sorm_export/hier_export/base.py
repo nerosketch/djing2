@@ -14,7 +14,9 @@ def format_fname(fname_timestamp=None) -> str:
 def simple_export_decorator(fn):
     @wraps(fn)
     def _wrapped(event_time=None, *args, **kwargs):
-        if event_time is not None and isinstance(event_time, str):
+        if event_time is None:
+            event_time = datetime.now()
+        elif isinstance(event_time, str):
             event_time = datetime.fromisoformat(event_time)
         ser, fname = fn(event_time=event_time, *args, **kwargs)
         ser.is_valid(raise_exception=True)
@@ -25,7 +27,9 @@ def simple_export_decorator(fn):
 def iterable_export_decorator(fn):
     @wraps(fn)
     def _wrapped(event_time=None, *args, **kwargs):
-        if event_time is not None and isinstance(event_time, str):
+        if event_time is None:
+            event_time = datetime.now()
+        elif isinstance(event_time, str):
             event_time = datetime.fromisoformat(event_time)
 
         serializer_class, gen_fn, qs, fname = fn(event_time=event_time, *args, **kwargs)

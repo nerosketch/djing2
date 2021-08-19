@@ -313,7 +313,6 @@ class DeviceModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def zbx_monitoring_event(self, request):
         dat = request.data
-        # print('DAT:', dat)
         dev_ip = dat.get("dev_ip")
         dev_status = dat.get("status")
         message = dat.get('message')

@@ -26,6 +26,7 @@ class ExportStampTypeEnum(models.IntegerChoices):
     SERVICE_NOMENCLATURE = 10
     SERVICE_CUSTOMER = 11
     SERVICE_CUSTOMER_MANUAL = 12
+    DEVICE_SWITCH = 13
 
 
 class ExportStampStatusEnum(models.IntegerChoices):
