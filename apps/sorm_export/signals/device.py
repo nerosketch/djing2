@@ -26,7 +26,8 @@ def on_delete_device(sender, instance: Device, *args, **kwargs):
 
 @receiver(post_save, sender=Device)
 def on_update_device(sender, instance=Device, created=False, *args, **kwargs):
-    send_device_update_task(
-        device_id=int(instance.pk),
-        event_time=datetime.now()
-    )
+    if instance.place:
+        send_device_update_task(
+            device_id=int(instance.pk),
+            event_time=datetime.now()
+        )
