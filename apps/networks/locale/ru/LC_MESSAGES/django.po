@@ -74,8 +74,8 @@ msgid "Ip network address"
 msgstr "IP адрес сети"
 
 #: models.py:54
-msgid "Ip address of network. For example: 192.168.1.0 or fde8:6789:1234:1::"
-msgstr "IP адрес подсети. На пример: 192.168.1.0 or fde8:6789:1234:1::"
+msgid "Ip address of network. For example: 192.168.1.0/24 or fde8:6789:1234:1::/64"
+msgstr "IP адрес подсети. На пример: 192.168.1.0/24 or fde8:6789:1234:1::/64"
 
 #: models.py:59
 msgid "Kind of network"
