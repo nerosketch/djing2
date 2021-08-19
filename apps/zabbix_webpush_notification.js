@@ -12,7 +12,7 @@ var Djing2 = {
             message: Djing2.message
         }
         request = new CurlHttpRequest(),
-        url = Djing2.domain + '/api/devices/zbx_monitoring_event/';
+        url = Djing2.domain + '/api/devices/all/zbx_monitoring_event/';
 
         if (Djing2.token !== null) {
             request.AddHeader('authorization: Token ' + Djing2.token);
