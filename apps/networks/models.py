@@ -57,7 +57,7 @@ class NetworkIpPoolKind(models.IntegerChoices):
 class NetworkIpPool(BaseAbstractModel):
     network = CidrAddressField(
         verbose_name=_("Ip network address"),
-        help_text=_("Ip address of network. For example: 192.168.1.0 or fde8:6789:1234:1::"),
+        help_text=_("Ip address of network. For example: 192.168.1.0/24 or fde8:6789:1234:1::/64"),
         unique=True,
     )
     kind = models.PositiveSmallIntegerField(
