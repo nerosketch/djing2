@@ -56,22 +56,22 @@ services:
       - ../../djing2-elui:/home/node/app
       - /tmp:/tmp
       - /etc/localtime:/etc/localtime
-  ws:
-    build: ws/
-    ports:
-      - 3211:3211
-  djing2freeradius:
-    build: djing2freeradius/
-    depends_on:
-      - app
-    ports:
-      - 1812:1812
-      - 1813:1813
+#  ws:
+#    build: ws/
+#    ports:
+#      - 3211:3211
+#    djing2freeradius:
+#    build: djing2freeradius/
+#    depends_on:
+#      - app
+#    ports:
+#      - 1812:1812
+#      - 1813:1813
 #      - 67:67
-    env_file:
-      - .env_radiusapp
-    secrets:
-      - RADIUS_SECRET
+#    env_file:
+#      - .env_radiusapp
+#    secrets:
+#      - RADIUS_SECRET
 volumes:
   media-data:
   postgresql-data:

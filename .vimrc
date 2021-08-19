@@ -59,7 +59,7 @@ call vundle#begin()
     Plugin 'MattesGroeger/vim-bookmarks'        " Bookmarks
     Plugin 'thaerkh/vim-indentguides'           " Visual representation of indents
     " Plugin 'dense-analysis/ale'                 Async Lint Engine
-    Plugin 'Valloric/YouCompleteMe'             " Code Completion
+    Plugin 'ycm-core/YouCompleteMe'             " Code Completion
 
     "-------------------=== Other ===-------------------------------
     " Plugin 'tpope/vim-surround'                 Parentheses, brackets, quotes, XML tags, and more
@@ -157,7 +157,7 @@ nnoremap <silent> Q     :Bdelete menu<CR>
 " Bookmarks
 highlight BookmarkSign ctermbg=NONE ctermfg=160
 highlight BookmarkLine ctermbg=194 ctermfg=NONE
-let g:bookmark_sign = '♥'
+" let g:bookmark_sign = '♥'
 let g:bookmark_highlight_lines = 1
 "=====================================================
 

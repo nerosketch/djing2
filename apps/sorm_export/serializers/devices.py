@@ -1,12 +1,11 @@
 from rest_framework import serializers
-from django.utils.translation import gettext_lazy as _
 from django.db import models
 from sorm_export.models import datetime_format, CommunicationStandardChoices
 
 
 class DeviceSwitchTypeChoices(models.Choices):
-    INTERNAL = 'internal', _('Internal')
-    BORDER = 'border', _('border')
+    INTERNAL = 'internal'
+    BORDER = 'border'
 
 
 class DeviceSwitchExportFormat(serializers.Serializer):
@@ -58,7 +57,6 @@ class DeviceSwitchExportFormat(serializers.Serializer):
         required=False,
         allow_null=True,
         default='',
-        label="дата установки коммутатора",
+        label="дата демонтажа коммутатора",
         help_text="дата, формат DD.mm.YYYYTHH:MM:SS",
     )
-
