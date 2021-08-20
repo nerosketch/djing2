@@ -6,6 +6,7 @@ from sorm_export.hier_export.ip_numbering import (
     export_ip_numbering_stop_using
 )
 from networks.models import NetworkIpPool
+from sorm_export.models import ExportStampTypeEnum
 
 
 @task()
@@ -13,7 +14,7 @@ def export_ip_numbering_task(ip_pool_id: int, event_time=None):
     pools = NetworkIpPool.objects.filter(pk=ip_pool_id)
     if pools.exists():
         dat, fname = export_ip_numbering(pools=pools, event_time=event_time)
-        task_export(data, fname, ExportStampTypeEnum.IP_NUMBERING)
+        task_export(dat, fname, ExportStampTypeEnum.IP_NUMBERING)
 
 
 @task()
@@ -26,4 +27,4 @@ def export_ip_numbering_stop_using_task(ip_net: str, descr: str,
         start_usage_time=start_usage_time,
         event_time=event_time
     )
-    task_export(data, fname, ExportStampTypeEnum.IP_NUMBERING)
+    task_export(dat, fname, ExportStampTypeEnum.IP_NUMBERING)
