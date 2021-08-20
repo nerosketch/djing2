@@ -57,7 +57,7 @@ class NetworkIpPoolKind(models.IntegerChoices):
 class NetworkIpPool(BaseAbstractModel):
     network = CidrAddressField(
         verbose_name=_("Ip network address"),
-        help_text=_("Ip address of network. For example: 192.168.1.0 or fde8:6789:1234:1::"),
+        help_text=_("Ip address of network. For example: 192.168.1.0/24 or fde8:6789:1234:1::/64"),
         unique=True,
     )
     kind = models.PositiveSmallIntegerField(
@@ -80,10 +80,8 @@ class NetworkIpPool(BaseAbstractModel):
 
     is_dynamic = models.BooleanField(_("Is dynamic"), default=False)
 
-    # deprecated: pool_tag is deprecated, remove it
-    pool_tag = models.CharField(
-        _("Tag"), max_length=32, null=True, blank=True, default=None, validators=[validators.validate_slug]
-    )
+    create_time = models.DateTimeField(auto_now_add=True)
+
     sites = models.ManyToManyField(Site, blank=True)
 
     def __str__(self):
