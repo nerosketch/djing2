@@ -5,17 +5,22 @@ from networks.models import NetworkIpPool
 from sorm_export.serializers.ip_numbering import IpNumberingExportFormatSerializer
 
 
+def make_ip_numbering_description(pool: NetworkIpPool) -> str:
+    if pool.is_dynamic:
+        return "Динамические;ШПД"
+    return "Статические;ШПД"
+
+
 @simple_export_decorator
 def export_ip_numbering(pools: Iterable[NetworkIpPool], event_time: datetime):
     """
     В этом файле выгружаются вся IP-нумерация, используемая оператором.
     """
     dat = [{
-        'ip_net': net.network,
-        # FIXME: формировать описание
-        'descr': "Динамические;RADIUS;ШПД;NAT",
-        'start_usage_time': event_time,
-    } net in pools.iterator()]
+        'ip_net': pool.network,
+        'descr': make_ip_numbering_description(pool),
+        'start_usage_time': pool.create_time,
+    } for pool in pools.iterator()]
 
     ser = IpNumberingExportFormatSerializer(
         data=dat, many=True

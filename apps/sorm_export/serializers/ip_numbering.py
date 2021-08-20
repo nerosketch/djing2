@@ -4,7 +4,7 @@ from sorm_export.models import datetime_format
 
 
 class IpNumberingExportFormatSerializer(serializers.Serializer):
-    ip_net = CidtAddressField()
+    ip_net = CidrAddressField()
     descr = serializers.CharField(
         max_length=256,
         required=True,
@@ -18,6 +18,5 @@ class IpNumberingExportFormatSerializer(serializers.Serializer):
         format=datetime_format,
         required=False,
         allow_null=True,
-        allow_blank=True,
         default=''
     )

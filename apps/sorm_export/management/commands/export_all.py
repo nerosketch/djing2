@@ -26,7 +26,7 @@ from sorm_export.management.commands._general_func import export_customer_lease_
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus, FiasRecursiveAddressModel
 from sorm_export.tasks.task_export import task_export
 
-from networks.models import CustomerIpLeaseModel
+from networks.models import CustomerIpLeaseModel, NetworkIpPool
 
 
 def export_all_root_customers():
@@ -157,6 +157,7 @@ class Command(BaseCommand):
             (export_all_customer_services, "Customer services export status"),
             (export_special_numbers, "Special numbers export status"),
             (export_all_switches, "Switches export status"),
+            (export_all_ip_numbering, "Ip numbering export status"),
         )
         for fn, msg in funcs:
             try:

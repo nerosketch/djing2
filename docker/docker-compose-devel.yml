@@ -46,16 +46,16 @@ services:
       - /etc/localtime:/etc/localtime
       - ~/.gitconfig:/root/.gitconfig
     #networks: app_net_backend
-#  ui:
-#    build: djing2-ui/
-#    stop_grace_period: 1m
-#    user: node
-#    ports:
-#      - 8080:8080
-#    volumes:
-#      - ../../djing2-elui:/home/node/app
-#      - /tmp:/tmp
-#      - /etc/localtime:/etc/localtime
+  ui:
+    build: djing2-ui/
+    stop_grace_period: 1m
+    user: node
+    ports:
+      - 8080:8080
+    volumes:
+      - ../../djing2-elui:/home/node/app
+      - /tmp:/tmp
+      - /etc/localtime:/etc/localtime
 #  ws:
 #    build: ws/
 #    ports:
