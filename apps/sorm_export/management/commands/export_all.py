@@ -21,6 +21,7 @@ from sorm_export.hier_export.networks import export_ip_leases
 from sorm_export.hier_export.service import export_nomenclature, export_customer_service
 from sorm_export.hier_export.special_numbers import export_special_numbers
 from sorm_export.hier_export.devices import export_devices
+from sorm_export.hier_export.ip_numbering import export_ip_numbering
 from sorm_export.management.commands._general_func import export_customer_lease_binds
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus, FiasRecursiveAddressModel
 from sorm_export.tasks.task_export import task_export
@@ -128,6 +129,14 @@ def export_all_switches():
     if devs.exists():
         data, fname = export_devices(devices=devs, event_time=datetime.now())
         task_export(data, fname, ExportStampTypeEnum.DEVICE_SWITCH)
+
+
+def export_all_ip_numbering():
+    data, fname = export_ip_numbering(
+        pools=NetworkIpPool.objects.all(),
+        event_time=datetime.now()
+    )
+    task_export(data, fname, ExportStampTypeEnum.IP_NUMBERING)
 
 
 class Command(BaseCommand):
