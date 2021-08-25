@@ -1,12 +1,12 @@
 from django.contrib.messages.api import MessageFailure
 from django.db.models import Count, Q
 from rest_framework import status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 
 from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet
-from gateways.models import Gateway
+from gateways.models import Gateway, GatewayClassChoices
 from gateways.serializers import GatewayModelSerializer
 from profiles.models import UserProfileLogActionType
 
@@ -62,3 +62,9 @@ class GatewayModelViewSet(DjingModelViewSet):
             % {"title": instance.title, "ip": instance.ip_address, "type": instance.get_gw_type_display()},
         )
         return super().perform_destroy(instance)
+
+
+@api_view(['get'])
+def gateway_class_choices(request):
+    gwchoices = ({'v': k, 't': v} for k, v in GatewayClassChoices.choices)
+    return Response(gwchoices)
