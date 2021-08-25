@@ -1,18 +1,7 @@
 from django.db import models
 from rest_framework import serializers
 from sorm_export.models import datetime_format
-
-
-class GatewayTypeExportChoices(models.TextChoices):
-    SGSN = 'sgsn'       # узел обслуживания абонентов GPRS
-    GGSN = 'ggsn'       # узел обеспечивающий маршрутизацию данных между GPRS Core network (GTP) и внешними IP сетями
-    SMSC = 'smsc'       # SMS-центр
-    GMSC = 'gmsc'       # базовая сеть GSM
-    HSS = 'hss'         # сервер домашних абонентов
-    PSTN = 'pstn'       # телефонная сеть общего пользования
-    VOIP_GW = 'voip-gw' # VOIP-шлюз
-    AAA = 'aaa'         # AAA-сервер(RADIUS сервер)
-    NAT = 'nat'         # NAT-сервер
+from gateways.models import GatewayClassChoices
 
 
 class GatewayExportFormatSerializer(serializers.Serializer):
@@ -24,7 +13,7 @@ class GatewayExportFormatSerializer(serializers.Serializer):
     )
     gw_type = serializers.ChoiceField(
         label="тип шлюза",
-        choices=GatewayTypeExportChoices.choices,
+        choices=[(v, v) for k, v in GatewayClassChoices.choices]
     )
     descr = serializers.CharField(
         label='Описание',

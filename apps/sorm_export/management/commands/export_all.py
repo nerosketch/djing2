@@ -22,6 +22,7 @@ from sorm_export.hier_export.service import export_nomenclature, export_customer
 from sorm_export.hier_export.special_numbers import export_special_numbers
 from sorm_export.hier_export.devices import export_devices
 from sorm_export.hier_export.ip_numbering import export_ip_numbering
+from sorm_export.hier_export.gateways import export_gateways
 from sorm_export.management.commands._general_func import export_customer_lease_binds
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus, FiasRecursiveAddressModel
 from sorm_export.tasks.task_export import task_export
@@ -139,6 +140,15 @@ def export_all_ip_numbering():
     task_export(data, fname, ExportStampTypeEnum.IP_NUMBERING)
 
 
+def export_all_gateways():
+    from gateways.models import Gateway
+    data, fname = export_gateways(
+        event_time=datetime.now(),
+        gateways_qs=Gateway.objects.exclude(place=None),
+    )
+    task_export(data, fname, ExportStampTypeEnum.GATEWAYS)
+
+
 class Command(BaseCommand):
     help = "Exports all available data to СОРМ"
 
@@ -158,6 +168,7 @@ class Command(BaseCommand):
             (export_special_numbers, "Special numbers export status"),
             (export_all_switches, "Switches export status"),
             (export_all_ip_numbering, "Ip numbering export status"),
+            (export_all_gateways, "Gateways export status"),
         )
         for fn, msg in funcs:
             try:
