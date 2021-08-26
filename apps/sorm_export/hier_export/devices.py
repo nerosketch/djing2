@@ -30,7 +30,7 @@ def export_devices(devices: Iterable[Device], event_time: datetime):
     ser = DeviceSwitchExportFormat(
         data=dat, many=True
     )
-    return ser, f'ISP/abonents/ip_nets_v1_{format_fname(event_time)}.txt'
+    return ser, f'ISP/abonents/switches_{format_fname(event_time)}.txt'
 
 
 @simple_export_decorator
@@ -51,4 +51,4 @@ def export_device_finish_serve(dev_id: int, switch_type: DeviceSwitchTypeChoices
     ser = DeviceSwitchExportFormat(
         data=dat, many=True
     )
-    return ser, f'ISP/abonents/ip_nets_v1_{format_fname(event_time)}.txt'
+    return ser, f'ISP/abonents/switches_{format_fname(event_time)}.txt'
