@@ -172,7 +172,7 @@ class PassportInfoModelSerializer(BaseCustomModelSerializer):
         now = datetime.now().date()
         if value >= now:
             raise serializers.ValidationError(_("You can't specify the future"))
-        elif value <= datetime(1900, 1, 1):
+        elif value <= datetime(1900, 1, 1).date():
             raise serializers.ValidationError(_("Too old date. Must be newer than 1900-01-01 00:00:00"))
         return value
 
