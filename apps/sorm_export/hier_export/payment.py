@@ -15,7 +15,7 @@ def export_customer_unknown_payment(pays: Iterable[AllTimePayLog], event_time=No
     за время, прошедшее с последней выгрузки.
     """
     def _build_pay_params(pay: AllTimePayLog) -> str:
-        return 'Идентификатор торговой точки: "%s". Номер чека, выдаваемого клиенту: "%d".' % (
+        return "Идентификатор торговой точки: '%s'. Номер чека, выдаваемого клиенту: '%d'." % (
             pay.trade_point,
             pay.receipt_num
         )
