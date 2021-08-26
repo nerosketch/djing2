@@ -1,10 +1,13 @@
 from string import digits
+from datetime import datetime
 
 from django.contrib.auth.hashers import make_password
 from django.core import validators
 from django.utils.crypto import get_random_string
+from django.utils.translation import gettext as _
 from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
+from rest_framework.settings import api_settings
 
 from customers import models
 from djing2.lib import safe_int
@@ -164,6 +167,15 @@ class CustomerGroupSerializer(GroupsSerializer):
 
 
 class PassportInfoModelSerializer(BaseCustomModelSerializer):
+    @staticmethod
+    def validate_date_of_acceptance(value):
+        now = datetime.now().date()
+        if value >= now:
+            raise serializers.ValidationError(_("You can't specify the future"))
+        elif value <= datetime(1900, 1, 1):
+            raise serializers.ValidationError(_("Too old date. Must be newer than 1900-01-01 00:00:00"))
+        return value
+
     class Meta:
         model = models.PassportInfo
         exclude = ("customer",)
