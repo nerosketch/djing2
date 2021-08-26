@@ -25,7 +25,7 @@ class DeviceSwitchExportFormat(serializers.Serializer):
                    "коммутатор")
     )
     network_type = serializers.ChoiceField(
-        choices=CommunicationStandardChoices.choices,
+        choices=[(v, v) for k, v in CommunicationStandardChoices.choices],
         required=True,
         label="Тип сети",
         help_text=("строка, размер 128, справочник: «unknown» - неизвестная сеть, «GSM» - GSM, «CDMA» - CDMA, "

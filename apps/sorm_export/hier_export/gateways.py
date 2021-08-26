@@ -5,7 +5,6 @@ from sorm_export.hier_export.base import simple_export_decorator, format_fname
 from sorm_export.serializers.gateways import GatewayExportFormatSerializer
 
 
-
 @simple_export_decorator
 def export_gateways(gateways_qs: Iterable[Gateway], event_time: datetime):
     """
