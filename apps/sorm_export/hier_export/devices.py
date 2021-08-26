@@ -16,7 +16,7 @@ def export_devices(devices: Iterable[Device], event_time: datetime):
 
     def _calc_net_type(device):
         # TODO: calc it
-        return CommunicationStandardChoices.ETHERNET
+        return CommunicationStandardChoices.ETHERNET.label
 
     dat = [{
         'title': "switch_%d" % device.pk,
@@ -41,7 +41,7 @@ def export_device_finish_serve(dev_id: int, switch_type: DeviceSwitchTypeChoices
     dat = [{
         'title': "switch_%d" % dev_id,
         'switch_type': switch_type,
-        'network_type': network_type,
+        'network_type': network_type.label,
         'description': descr,
         'place': place,
         'start_usage_time': start_usage_time,
