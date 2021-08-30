@@ -179,10 +179,17 @@ def export_individual_customer(customers_queryset, event_time=None):
             return
         passport = customer.passportinfo
         create_date = customer.create_date
+        full_fname = customer.get_full_name()
+
+        # try to split surname
+        surname = full_fname.split()[:1] or ''
+        if isinstance(surname, list) and len(surname) > 0:
+            surname = surname[0]
+
         return {
             "contract_id": customer.pk,
-            "name": customer.fio,
-            "surname": customer.get_full_name(),
+            "name": full_fname,
+            "surname": surname,
             "birthday": customer.birth_day,
             "document_type": CustomerDocumentTypeChoices.PASSPORT_RF,
             "document_serial": passport.series,
