@@ -34,13 +34,13 @@ def iterable_export_decorator(fn):
 
         serializer_class, gen_fn, qs, fname = fn(event_time=event_time, *args, **kwargs)
 
-        def val_fn(dat):
+        def _val_fn(dat):
             ser = serializer_class(data=dat)
             ser.is_valid(raise_exception=True)
             return ser.data
 
         res_data = map(gen_fn, qs.iterator())
-        res_data = (val_fn(r) for r in res_data if r)
+        res_data = (_val_fn(r) for r in res_data if r)
 
         return res_data, fname
     return _wrapped

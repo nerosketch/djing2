@@ -1,26 +1,27 @@
 from typing import Iterable
 from datetime import datetime
 from gateways.models import Gateway
-from sorm_export.hier_export.base import simple_export_decorator, format_fname
+from sorm_export.hier_export.base import iterable_export_decorator, simple_export_decorator, format_fname
 from sorm_export.serializers.gateways import GatewayExportFormatSerializer
 
 
-@simple_export_decorator
+@iterable_export_decorator
 def export_gateways(gateways_qs: Iterable[Gateway], event_time: datetime):
     """
     В этом файле выгружаются все шлюзы, используемые оператором связи.
     """
-    dat = [{
-        'gw_id': gw.pk,
-        'gw_type': gw.get_gw_class_display(),
-        'descr': gw.title,
-        'gw_addr': gw.place,
-        'start_use_time': gw.create_time,
-        # 'deactivate_time':
-        'ip_addrs': "%s:%d" % (gw.ip_address, gw.ip_port)
-    } for gw in gateways_qs.iterator()]
-    ser = GatewayExportFormatSerializer(data=dat, many=True)
-    return ser, f"ISP/dict/gateways_v1_{format_fname(event_time)}.txt"
+    def _gen(gw: Gateway):
+        return {
+            'gw_id': gw.pk,
+            'gw_type': gw.get_gw_class_display(),
+            'descr': gw.title,
+            'gw_addr': gw.place,
+            'start_use_time': gw.create_time,
+            # 'deactivate_time':
+            'ip_addrs': "%s:%d" % (gw.ip_address, gw.ip_port)
+        }
+    return (GatewayExportFormatSerializer, _gen, gateways_qs,
+            f"ISP/dict/gateways_v1_{format_fname(event_time)}.txt")
 
 
 @simple_export_decorator
