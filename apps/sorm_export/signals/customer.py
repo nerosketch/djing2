@@ -110,7 +110,7 @@ def customer_passport_info_post_save_signal(sender, instance: Optional[PassportI
 @receiver(pre_delete, sender=CustomerService)
 def customer_service_deleted(sender, instance: CustomerService, **kwargs):
     # customer service end of life
-    srv = instance.service
+    # srv = instance.service
     if hasattr(instance, "customer"):
         dat = [
             {
