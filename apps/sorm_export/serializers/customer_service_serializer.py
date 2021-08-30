@@ -5,6 +5,7 @@ from sorm_export.models import datetime_format
 
 
 class CustomerServiceIncrementalFormat(serializers.Serializer):
+    # https://wiki.vasexperts.ru/doku.php?id=sorm:sorm3:sorm3_subs_dump:sorm3_subs_serv_list:services:start
     service_id = serializers.IntegerField(
         label=_('Service id'),
         required=True,
