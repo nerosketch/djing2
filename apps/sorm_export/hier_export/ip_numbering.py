@@ -1,6 +1,6 @@
 from typing import Iterable
 from datetime import datetime
-from sorm_export.hier_export.base import simple_export_decorator, format_fname
+from sorm_export.hier_export.base import simple_export_decorator, format_fname, iterable_export_decorator
 from networks.models import NetworkIpPool
 from sorm_export.serializers.ip_numbering import IpNumberingExportFormatSerializer
 
@@ -11,21 +11,19 @@ def make_ip_numbering_description(pool: NetworkIpPool) -> str:
     return "Статические;ШПД"
 
 
-@simple_export_decorator
+@iterable_export_decorator
 def export_ip_numbering(pools: Iterable[NetworkIpPool], event_time: datetime):
     """
     В этом файле выгружаются вся IP-нумерация, используемая оператором.
     """
-    dat = [{
-        'ip_net': pool.network,
-        'descr': make_ip_numbering_description(pool),
-        'start_usage_time': pool.create_time,
-    } for pool in pools.iterator()]
+    def _gen(pool: NetworkIpPool):
+        return {
+            'ip_net': pool.network,
+            'descr': make_ip_numbering_description(pool),
+            'start_usage_time': pool.create_time,
+        }
 
-    ser = IpNumberingExportFormatSerializer(
-        data=dat, many=True
-    )
-    return ser, f"ISP/dict/ip_numbering_{format_fname(event_time)}.txt"
+    return IpNumberingExportFormatSerializer, _gen, pools, f"ISP/dict/ip_numbering_{format_fname(event_time)}.txt"
 
 
 @simple_export_decorator
