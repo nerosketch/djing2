@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from ipaddress import AddressValueError, IPv4Address
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from bitfield import BitField
 from django.conf import settings
@@ -674,6 +674,23 @@ class Customer(BaseAccount):
             return _("Process locked by another process"), False
         except ValueError as err:
             return str(err), False
+
+    def split_fio(self) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """Try to split name, last_name, and surname."""
+        full_fname = str(self.fio)
+        full_name_list = full_fname.split()
+        surname, name, last_name = (None,) * 3
+        name_len = len(full_name_list)
+        if name_len > 0:
+            if name_len > 3:
+                surname = full_name_list[0]
+            elif name_len == 3:
+                surname, name, last_name = full_name_list
+            elif name_len == 2:
+                surname, name = full_name_list
+            elif name_len == 1:
+                name = full_fname
+        return surname, name, last_name
 
     class Meta:
         db_table = "customers"

@@ -25,7 +25,7 @@ class DeviceSwitchExportFormat(serializers.Serializer):
                    "коммутатор")
     )
     network_type = serializers.ChoiceField(
-        choices=CommunicationStandardChoices.choices,
+        choices=[(v, v) for k, v in CommunicationStandardChoices.choices],
         required=True,
         label="Тип сети",
         help_text=("строка, размер 128, справочник: «unknown» - неизвестная сеть, «GSM» - GSM, «CDMA» - CDMA, "
@@ -50,7 +50,7 @@ class DeviceSwitchExportFormat(serializers.Serializer):
         format=datetime_format,
         required=True,
         label="дата установки коммутатора",
-        help_text="дата, формат DD.mm.YYYYTHH:MM:SS",
+        help_text="дата, формат %s" % datetime_format,
     )
     end_usage_time = serializers.DateTimeField(
         format=datetime_format,
@@ -58,5 +58,5 @@ class DeviceSwitchExportFormat(serializers.Serializer):
         allow_null=True,
         default='',
         label="дата демонтажа коммутатора",
-        help_text="дата, формат DD.mm.YYYYTHH:MM:SS",
+        help_text="дата, формат %s" % datetime_format,
     )

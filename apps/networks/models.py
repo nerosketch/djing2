@@ -80,10 +80,8 @@ class NetworkIpPool(BaseAbstractModel):
 
     is_dynamic = models.BooleanField(_("Is dynamic"), default=False)
 
-    # deprecated: pool_tag is deprecated, remove it
-    pool_tag = models.CharField(
-        _("Tag"), max_length=32, null=True, blank=True, default=None, validators=[validators.validate_slug]
-    )
+    create_time = models.DateTimeField(auto_now_add=True)
+
     sites = models.ManyToManyField(Site, blank=True)
 
     def __str__(self):

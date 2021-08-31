@@ -350,6 +350,12 @@ msgstr "Может просматривать отчёт об активност
 msgid "Can view service type report"
 msgstr "Может просматривать отчёт о распределении использования услуг абонентами"
 
+msgid "You can't specify the future"
+msgstr "Нельзя указывать будущее время"
+
+msgid "Too old date. Must be newer than 1900-01-01 00:00:00"
+msgstr "Слишком старая дата. Должно быть новее чем 1900-01-01 00:00:00"
+
 #~ msgid "finish service perm"
 #~ msgstr "Завершение услуги"
 
