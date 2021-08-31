@@ -110,13 +110,13 @@ def customer_passport_info_post_save_signal(sender, instance: Optional[PassportI
 @receiver(pre_delete, sender=CustomerService)
 def customer_service_deleted(sender, instance: CustomerService, **kwargs):
     # customer service end of life
-    srv = instance.service
+    # srv = instance.service
     if hasattr(instance, "customer"):
         dat = [
             {
-                "service_id": srv.pk,
+                "service_id": 1,  # srv.pk,
                 "idents": instance.customer.pk,
-                "parameter": srv.descr or str(srv),
+                "parameter": "Услуга высокоскоростного доступа в интернет",  # srv.descr or str(srv),
                 "begin_time": instance.start_time,
                 "end_time": datetime.now(),
             }
