@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from ipaddress import AddressValueError, IPv4Address
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from bitfield import BitField
 from django.conf import settings
@@ -189,6 +189,8 @@ class CustomerStreet(BaseAbstractModel):
 class CustomerLog(BaseAbstractModel):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
+    from_balance = models.FloatField(_('From balance'), default=0.0)
+    to_balance = models.FloatField(_('To balance'), default=0.0)
     author = models.ForeignKey(BaseAccount, on_delete=models.SET_NULL, related_name="+", blank=True, null=True)
     comment = models.CharField(max_length=128)
     date = models.DateTimeField(auto_now_add=True)
@@ -319,7 +321,10 @@ class CustomerManager(MyUserManager):
         :return: nothing
         """
         now = datetime.now()
-        expired_services = CustomerService.objects.filter(deadline__lt=now, customer__auto_renewal_service=True)
+        expired_services = CustomerService.objects.select_related('customer').filter(
+            deadline__lt=now,
+            customer__auto_renewal_service=True
+        )
         if customer is not None and isinstance(customer, Customer):
             expired_services = expired_services.filter(customer=customer)
         if not expired_services.exists():
@@ -331,6 +336,7 @@ class CustomerManager(MyUserManager):
             service = expired_service.service
             cost = round(service.cost, 3)
             if expired_service_customer.balance >= cost:
+                old_balance = expired_service_customer.balance
                 # can continue service
                 with transaction.atomic():
                     expired_service_customer.balance -= cost
@@ -344,6 +350,8 @@ class CustomerManager(MyUserManager):
                     CustomerLog.objects.create(
                         customer=expired_service_customer,
                         cost=-cost,
+                        from_balance=old_balance,
+                        to_balance=old_balance-cost,
                         comment=_("Automatic connect new service %(service_name)s for %(customer_name)s")
                         % {"service_name": service.title, "customer_name": uname},
                     )
@@ -372,7 +380,7 @@ class Customer(BaseAccount):
     balance = models.FloatField(default=0.0)
 
     # ip_address deprecated, marked for remove
-    ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
+    # ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
     street = models.ForeignKey(
         CustomerStreet, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
@@ -437,9 +445,12 @@ class Customer(BaseAccount):
         return self.current_service
 
     def add_balance(self, profile: UserProfile, cost: float, comment: str) -> None:
+        old_balance = self.balance
         CustomerLog.objects.create(
             customer=self,
             cost=cost,
+            from_balance=old_balance,
+            to_balance=old_balance+cost,
             author=profile if isinstance(profile, UserProfile) else None,
             comment=re.sub(r"\W{1,128}", " ", comment),
         )
@@ -487,6 +498,7 @@ class Customer(BaseAccount):
             )
 
         custom_signals.customer_service_pre_pick.send(sender=Customer, customer=self, service=service)
+        old_balance = self.balance
         with transaction.atomic():
             self.current_service = CustomerService.objects.create(deadline=deadline, service=service)
             updated_fields = ["balance", "current_service"]
@@ -502,7 +514,12 @@ class Customer(BaseAccount):
             # make log about it
             # TODO: move it to db trigger
             CustomerLog.objects.create(
-                customer=self, cost=-cost, author=author, comment=comment or _("Buy service default log")
+                customer=self,
+                cost=-cost,
+                from_balance=old_balance,
+                to_balance=old_balance-cost,
+                author=author,
+                comment=comment or _("Buy service default log")
             )
         custom_signals.customer_service_post_pick.send(sender=Customer, customer=self, service=service)
 
@@ -544,6 +561,7 @@ class Customer(BaseAccount):
                 _("%(uname)s not enough money for service %(srv_name)s")
                 % {"uname": self.username, "srv_name": shot.name}
             )
+        old_balance = self.balance
         with transaction.atomic():
             # charge for the service
             self.balance -= cost
@@ -553,6 +571,8 @@ class Customer(BaseAccount):
             CustomerLog.objects.create(
                 customer=self,
                 cost=-cost,
+                from_balance=old_balance,
+                to_balance=old_balance-cost,
                 author=request.user,
                 comment=comment or _('Buy one-shot service for "%(title)s"') % {"title": shot.name},
             )
@@ -616,7 +636,8 @@ class Customer(BaseAccount):
             comment=_("Automatic connect service '%(service_name)s'") % {"service_name": srv.title},
         )
 
-    def get_address(self):
+    @property
+    def full_address(self):
         return f"{self.group}. {self.street} {self.house}"
 
     @staticmethod
@@ -638,7 +659,7 @@ class Customer(BaseAccount):
 
     def ping_all_leases(self):
         leases = self.customeripleasemodel_set.all()
-        if leases.count() < 1:
+        if not leases.exists():
             return _("Customer has not ips"), False
         try:
             for lease in leases:
@@ -654,6 +675,23 @@ class Customer(BaseAccount):
         except ValueError as err:
             return str(err), False
 
+    def split_fio(self) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """Try to split name, last_name, and surname."""
+        full_fname = str(self.fio)
+        full_name_list = full_fname.split()
+        surname, name, last_name = (None,) * 3
+        name_len = len(full_name_list)
+        if name_len > 0:
+            if name_len > 3:
+                surname = full_name_list[0]
+            elif name_len == 3:
+                surname, name, last_name = full_name_list
+            elif name_len == 2:
+                surname, name = full_name_list
+            elif name_len == 1:
+                name = full_fname
+        return surname, name, last_name
+
     class Meta:
         db_table = "customers"
         permissions = [
@@ -662,11 +700,12 @@ class Customer(BaseAccount):
             ("can_add_negative_balance", _("Fill account balance on negative cost")),
             ("can_ping", _("Can ping")),
             ("can_complete_service", _("Can complete service")),
+            ("can_view_activity_report", _("Can view activity_report")),
+            ("can_view_service_type_report", _('Can view service type report'))
         ]
         verbose_name = _("Customer")
         verbose_name_plural = _("Customers")
         ordering = ("fio",)
-        unique_together = ("ip_address", "gateway")
 
 
 class InvoiceForPayment(BaseAbstractModel):

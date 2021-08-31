@@ -4,7 +4,7 @@ from sorm_export.ftp_worker.func import send_text_buf2ftp
 from sorm_export.models import ExportStampTypeEnum
 
 
-class _Conv2BinStringIO(StringIO):
+class Conv2BinStringIO(StringIO):
     def readline(self, *args, **kwargs):
         r = super().readline(*args, **kwargs)
         if isinstance(r, str):
@@ -23,7 +23,7 @@ def task_export(data, filename: str, export_type: ExportStampTypeEnum):
     #    export_type=export_type
     # )
     # try:
-    csv_buffer = _Conv2BinStringIO()
+    csv_buffer = Conv2BinStringIO()
     csv_writer = csv.writer(csv_buffer, dialect="unix", delimiter=";")
     for row_data in data:
         row = (eld for elt, eld in row_data.items())

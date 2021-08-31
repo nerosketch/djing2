@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, Tuple
 
 from django.contrib.sites.models import Site
@@ -68,6 +69,19 @@ class Device(BaseAbstractModel):
 
     code = models.CharField(
         _("Code"), max_length=64, blank=True, null=True, default=None, choices=_make_device_code_config_choices()
+    )
+
+    create_time = models.DateTimeField(
+        _("Create time"),
+        default=datetime.now,
+    )
+
+    place = models.CharField(
+        _("Device place address"),
+        max_length=256,
+        null=True,
+        blank=True,
+        default=None
     )
 
     sites = models.ManyToManyField(Site, blank=True)
@@ -252,9 +266,6 @@ class PortVlanMemberModel(BaseAbstractModel):
         _("Operating mode"), default=PortVlanMemberMode.NOT_CHOSEN, choices=PortVlanMemberMode.choices
     )
 
-    class Meta:
-        abstract = False
-
 
 class PortOperatingMode(models.IntegerChoices):
     NOT_CHOSEN = 0, _("Not chosen")
@@ -273,6 +284,10 @@ class Port(BaseAbstractModel):
     )
     vlans = models.ManyToManyField(
         VlanIf, through=PortVlanMemberModel, verbose_name=_("VLan list"), through_fields=("port", "vlanif")
+    )
+    create_time = models.DateTimeField(
+        _("Create time"),
+        default=datetime.now,
     )
 
     # config_type = models.PositiveSmallIntegerField

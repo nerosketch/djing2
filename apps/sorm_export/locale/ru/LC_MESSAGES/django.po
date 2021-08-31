@@ -62,15 +62,15 @@ msgstr "Юридическое лицо"
 
 #: apps/sorm_export/models.py:77
 msgid "Passport RF"
-msgstr "Пасспорт РФ"
+msgstr "Паспорт РФ"
 
 #: apps/sorm_export/models.py:78
 msgid "Passport USSR"
-msgstr "Пасспорт СССР"
+msgstr "Паспорт СССР"
 
 #: apps/sorm_export/models.py:79
 msgid "Passport other country"
-msgstr "Пасспорт другой страны"
+msgstr "Паспорт иностранного гражданина"
 
 #: apps/sorm_export/models.py:80
 msgid "Military ticket"

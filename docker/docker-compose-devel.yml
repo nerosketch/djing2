@@ -40,8 +40,8 @@ services:
       - .env_db_credentials
       - .env_radiusapp
     volumes:
+      - ..:/var/www/djing2
       - media-data:/var/www/djing2/media
-      - ../:/var/www/djing2
       - /tmp:/tmp
       - /etc/localtime:/etc/localtime
       - ~/.gitconfig:/root/.gitconfig
@@ -53,25 +53,25 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - /home/ns/Projects/djing2_proj/djing2-elui:/home/node/app
+      - ../../djing2-elui:/home/node/app
       - /tmp:/tmp
       - /etc/localtime:/etc/localtime
-  ws:
-    build: ws/
-    ports:
-      - 3211:3211
-  djing2freeradius:
-    build: djing2freeradius/
-    depends_on:
-      - app
-    ports:
-      - 1812:1812
-      - 1813:1813
+#  ws:
+#    build: ws/
+#    ports:
+#      - 3211:3211
+#    djing2freeradius:
+#    build: djing2freeradius/
+#    depends_on:
+#      - app
+#    ports:
+#      - 1812:1812
+#      - 1813:1813
 #      - 67:67
-    env_file:
-      - .env_radiusapp
-    secrets:
-      - RADIUS_SECRET
+#    env_file:
+#      - .env_radiusapp
+#    secrets:
+#      - RADIUS_SECRET
 volumes:
   media-data:
   postgresql-data:

@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import Any
 from django.core.management.base import BaseCommand
-from django.db.models.aggregates import Count
 
 from customers.models import Customer, CustomerService, AdditionalTelephone
 from services.models import Service
+from devices.models import Device
+from devices.device_config import DEVICE_SWITCH_TYPES
 from sorm_export.hier_export.customer import (
     export_customer_root,
     export_contract,
@@ -15,13 +16,18 @@ from sorm_export.hier_export.customer import (
     export_legal_customer,
     export_contact,
 )
-from sorm_export.ftp_worker.func import send_text_buf2ftp
+
 from sorm_export.hier_export.networks import export_ip_leases
 from sorm_export.hier_export.service import export_nomenclature, export_customer_service
+from sorm_export.hier_export.special_numbers import export_special_numbers
+from sorm_export.hier_export.devices import export_devices
+from sorm_export.hier_export.ip_numbering import export_ip_numbering
+from sorm_export.hier_export.gateways import export_gateways
+from sorm_export.management.commands._general_func import export_customer_lease_binds
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus, FiasRecursiveAddressModel
-from sorm_export.tasks.task_export import task_export, _Conv2BinStringIO
+from sorm_export.tasks.task_export import task_export
 
-from networks.models import CustomerIpLeaseModel
+from networks.models import CustomerIpLeaseModel, NetworkIpPool
 
 
 def export_all_root_customers():
@@ -119,22 +125,28 @@ def export_all_customer_services():
     task_export(data, fname, ExportStampTypeEnum.SERVICE_CUSTOMER)
 
 
-def export_customer_lease_binds():
-    def _exp():
-        customers = Customer.objects.annotate(leasecount=Count("customeripleasemodel")).filter(
-            is_active=True, leasecount__gt=0
-        )
-        for customer in customers.iterator():
-            ips = (lease.ip_address for lease in CustomerIpLeaseModel.objects.filter(customer=customer))
-            ips = ",".join(ips)
-            yield f"{customer.username};{ips}"
+def export_all_switches():
+    devs = Device.objects.filter(dev_type__in=DEVICE_SWITCH_TYPES).exclude(place=None)
+    if devs.exists():
+        data, fname = export_devices(devices=devs, event_time=datetime.now())
+        task_export(data, fname, ExportStampTypeEnum.DEVICE_SWITCH)
 
-    fname = "customer_ip_binds.txt"
-    csv_buffer = _Conv2BinStringIO()
-    for row_data in _exp():
-        csv_buffer.write("%s\n" % row_data)
-    csv_buffer.seek(0)
-    send_text_buf2ftp(csv_buffer, fname)
+
+def export_all_ip_numbering():
+    data, fname = export_ip_numbering(
+        pools=NetworkIpPool.objects.all(),
+        event_time=datetime.now()
+    )
+    task_export(data, fname, ExportStampTypeEnum.IP_NUMBERING)
+
+
+def export_all_gateways():
+    from gateways.models import Gateway
+    data, fname = export_gateways(
+        event_time=datetime.now(),
+        gateways_qs=Gateway.objects.exclude(place=None),
+    )
+    task_export(data, fname, ExportStampTypeEnum.GATEWAYS)
 
 
 class Command(BaseCommand):
@@ -153,10 +165,15 @@ class Command(BaseCommand):
             (export_all_ip_leases, "Network static leases export"),
             (export_all_service_nomenclature, "Services export status"),
             (export_all_customer_services, "Customer services export status"),
+            (export_special_numbers, "Special numbers export status"),
+            (export_all_switches, "Switches export status"),
+            (export_all_ip_numbering, "Ip numbering export status"),
+            (export_all_gateways, "Gateways export status"),
         )
         for fn, msg in funcs:
             try:
+                self.stdout.write(msg, ending=' ')
                 fn()
-                self.stdout.write(msg + " " + self.style.SUCCESS("OK"))
+                self.stdout.write(self.style.SUCCESS("OK"))
             except ExportFailedStatus as err:
-                self.stdout.write("{}: {} {}".format(msg, err, self.style.ERROR("FAILED")))
+                self.stdout.write("{} {}".format(err, self.style.ERROR("FAILED")))

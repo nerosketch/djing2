@@ -48,40 +48,40 @@ call vundle#begin()
 
     " Add all your plugins here (note older versions of Vundle used Bundle instead of Plugin)
     "-------------------=== Code/Project navigation ===-------------
-    Plugin 'preservim/nerdtree'                " Project and file navigation
+    Plugin 'preservim/nerdtree'                 " Project and file navigation
     Plugin 'Xuyuanp/nerdtree-git-plugin'        " NerdTree git functionality
-    Plugin 'majutsushi/tagbar'                  " Class/module browser
-    Plugin 'vim-ctrlspace/vim-ctrlspace'        " Tabs/Buffers/Fuzzy/Workspaces/Bookmarks
-    Plugin 'mileszs/ack.vim'                    " Ag/Grep
+    " Plugin 'majutsushi/tagbar'                  Class/module browser
+    " Plugin 'vim-ctrlspace/vim-ctrlspace'        Tabs/Buffers/Fuzzy/Workspaces/Bookmarks
+    " Plugin 'mileszs/ack.vim'                    Ag/Grep
     Plugin 'vim-airline/vim-airline'            " Lean & mean status/tabline for vim
     Plugin 'vim-airline/vim-airline-themes'     " Themes for airline
-    Plugin 'fisadev/FixedTaskList.vim'          " Pending tasks list
+    " Plugin 'fisadev/FixedTaskList.vim'          Pending tasks list
     Plugin 'MattesGroeger/vim-bookmarks'        " Bookmarks
     Plugin 'thaerkh/vim-indentguides'           " Visual representation of indents
-    Plugin 'dense-analysis/ale'                 " Async Lint Engine
-    Plugin 'Valloric/YouCompleteMe'             " Code Completion
+    " Plugin 'dense-analysis/ale'                 Async Lint Engine
+    Plugin 'ycm-core/YouCompleteMe'             " Code Completion
 
     "-------------------=== Other ===-------------------------------
-    Plugin 'tpope/vim-surround'                 " Parentheses, brackets, quotes, XML tags, and more
+    " Plugin 'tpope/vim-surround'                 Parentheses, brackets, quotes, XML tags, and more
     Plugin 'flazz/vim-colorschemes'             " Colorschemes
-    Plugin 'vimwiki/vimwiki'                    " Personal Wiki
-    Plugin 'jreybert/vimagit'                   " Git Operations
+    " Plugin 'vimwiki/vimwiki'                     Personal Wiki
+    " Plugin 'jreybert/vimagit'                   Git Operations
     Plugin 'airblade/vim-gitgutter'             " Plugin which shows a git diff in the sign column
     Plugin 'kien/rainbow_parentheses.vim'       " Rainbow Parentheses
     Plugin 'ryanoasis/vim-devicons'             " Dev Icons
     Plugin 'mhinz/vim-startify'                 " Vim Start Page
-    Plugin 'editorconfig/editorconfig-vim'	    " Editorconfig support
+    Plugin 'editorconfig/editorconfig-vim'      " Editorconfig support
     Plugin 'Asheq/close-buffers.vim'            " Close buffers
 
     "-------------------=== Snippets support ===--------------------
-    Plugin 'garbas/vim-snipmate'                " Snippets manager
-    Plugin 'MarcWeber/vim-addon-mw-utils'       " dependencies #1
-    Plugin 'tomtom/tlib_vim'                    " dependencies #2
-    Plugin 'honza/vim-snippets'                 " snippets repo
+    "Plugin 'garbas/vim-snipmate'                Snippets manager
+    "Plugin 'MarcWeber/vim-addon-mw-utils'       dependencies #1
+    "Plugin 'tomtom/tlib_vim'                    dependencies #2
+    "Plugin 'honza/vim-snippets'                 snippets repo
 
     "-------------------=== Languages support ===-------------------
     Plugin 'preservim/nerdcommenter'           " Easy code documentation
-    Plugin 'mitsuhiko/vim-sparkup'              " Sparkup(XML/jinja/htlm-django/etc.) support
+    " Plugin 'mitsuhiko/vim-sparkup'             Sparkup(XML/jinja/htlm-django/etc.) support
 
     "-------------------=== Python  ===-----------------------------
     Plugin 'python-mode/python-mode'            " Python mode (docs, refactor, lints...)
@@ -106,7 +106,6 @@ set encoding=utf-8
 set t_Co=256                                " 256 colors
 set guifont=mononoki\ Nerd\ Font\ 18
 colorscheme wombat256mod                    " set vim colorscheme
-let g:airline_theme='wombat'                " set airline theme
 syntax enable                               " enable syntax highlighting
 
 set pyxversion=0
@@ -155,6 +154,14 @@ nnoremap <silent> Q     :Bdelete menu<CR>
 
 
 "=====================================================
+" Bookmarks
+highlight BookmarkSign ctermbg=NONE ctermfg=160
+highlight BookmarkLine ctermbg=194 ctermfg=NONE
+" let g:bookmark_sign = '♥'
+let g:bookmark_highlight_lines = 1
+"=====================================================
+
+"=====================================================
 "" YouCompleteMe Settings
 "=====================================================
 
@@ -179,6 +186,9 @@ noremap <F4> :execute "/" . expand("<cword>") <CR>
 " Mouse Cursor enable
 " set mouse=a
 
+" Magit open buffer
+nnoremap <silent> M :Magit <CR>
+
 
 "=====================================================
 "" Screen scrolling
@@ -192,6 +202,13 @@ noremap <C-Up> k1<C-y>
 let g:airline#extensions#tabline#enabled=1
 let g:airline#extensions#tabline#formatter='unique_tail'
 let g:airline_powerline_fonts=1
+" adding to vim-airline's tabline
+let g:webdevicons_enable_airline_tabline = 1
+" adding to vim-airline's statusline
+let g:webdevicons_enable_airline_statusline = 1
+let g:airline#extensions#ale#enabled = 1
+let g:airline_theme='wombat'                " set airline theme
+
 
 "=====================================================
 "" TagBar settings
@@ -241,12 +258,6 @@ let g:webdevicons_enable = 1
 
 " adding the flags to NERDTree
 let g:webdevicons_enable_nerdtree = 1
-
-" adding to vim-airline's tabline
-let g:webdevicons_enable_airline_tabline = 1
-
-" adding to vim-airline's statusline
-let g:webdevicons_enable_airline_statusline = 1
 
 " turn on/off file node glyph decorations (not particularly useful)
 let g:WebDevIconsUnicodeDecorateFileNodes = 1
@@ -327,9 +338,7 @@ nmap <leader>g :YcmCompleter GoTo<CR>
 nmap <leader>d :YcmCompleter GoToDefinition<CR>
 
 let g:ale_emit_conflict_warnings = 0
-let g:airline#extensions#ale#enabled = 1
 let g:pymode_rope_lookup_project = 0
-let g:airline#extensions#tabline#enabled = 1
 
 " rope
 let g:pymode_rope=0
@@ -395,9 +404,7 @@ let g:pymode_run_bind='<F5>'
 
 let g:ale_sign_column_always = 0
 let g:ale_emit_conflict_warnings = 0
-let g:airline#extensions#ale#enabled = 1
 let g:pymode_rope_lookup_project = 0
-let g:airline#extensions#tabline#enabled = 1
 
 imap <F5> <Esc>:w<CR>:!clear;python %<CR>
 

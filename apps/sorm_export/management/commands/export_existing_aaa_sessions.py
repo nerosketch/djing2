@@ -43,7 +43,7 @@ class Command(BaseCommand):
         ser = AAAExportSerializer(data=dat, many=True)
         ser.is_valid(raise_exception=True)
 
-        lines_gen = ((v for k,v in i.items()) for i in ser.data)
+        lines_gen = ((v for k, v in i.items()) for i in ser.data)
 
         if fname is None:
             csv_writer = csv.writer(self.stdout, dialect="unix", delimiter=";")

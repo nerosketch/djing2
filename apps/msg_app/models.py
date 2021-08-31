@@ -5,7 +5,6 @@ from django.utils.translation import gettext_lazy as _
 
 from djing2.models import BaseAbstractModel
 from profiles.models import UserProfile
-from djing2.tasks import send_email_notify
 
 
 class MessageError(Exception):
@@ -159,8 +158,8 @@ class Conversation(BaseAbstractModel):
                 if participant == author:
                     continue
                 MessageStatus.objects.create(msg=msg, user=participant)
-                if participant.flags.notify_msg:
-                    send_email_notify(msg_text=text, account_id=participant.pk)
+                # if participant.flags.notify_msg:
+                #     send_email_notify(msg_text=text, account_id=participant.pk)
         return msg
 
     @staticmethod

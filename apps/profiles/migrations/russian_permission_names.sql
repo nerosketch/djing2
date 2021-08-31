@@ -94,6 +94,8 @@ execute _tp('customers', 'delete_passportinfo', 'Может удалять па�
 execute _tp('customers', 'change_invoiceforpayment', 'Может изменять долг для абонента');
 execute _tp('customers', 'view_invoiceforpayment', 'Может видеть долг для абонента');
 execute _tp('customers', 'can_complete_service', 'Может завершать услугу абонента');
+execute _tp('customers', 'can_view_activity_report', 'Может просматривать отчёт об активности абонентов');
+execute _tp('customers', 'can_view_service_type_report', 'Может просматривать отчёт о распределении использования услуг абонентами');
 execute _tp('customers', 'delete_customerrawpassword', 'Может удалять абонентский пароль');
 execute _tp('customers', 'add_additionaltelephone', 'Может добавлять дополнительный номер телефона для абонента');
 execute _tp('customers', 'delete_additionaltelephone', 'Может удалять дополнительный номер телефона для абонента');
@@ -123,6 +125,7 @@ execute _tp('tasks', 'view_taskdocumentattachment', 'Может видеть п�
 execute _tp('tasks', 'add_task', 'Может добавлять задачи');
 execute _tp('tasks', 'view_task', 'Может видеть задачи');
 execute _tp('tasks', 'can_remind', 'Может напоминать о задачах их исполнителям');
+execute _tp('tasks', 'can_view_task_mode_report', 'Может видеть отчёт по частоте использования характеров задач');
 execute _tp('tasks', 'delete_extracomment', 'Может удалять комментарии к задачам');
 execute _tp('fin_app', 'change_payalltimegateway', 'Может изменять платёжный шлюз AllTime');
 execute _tp('fin_app', 'delete_payalltimegateway', 'Может удалять платёжный шлюз AllTime');

@@ -96,12 +96,8 @@ def can_login_by_location(request):
         remote_ip = ip_address(request.META.get("REMOTE_ADDR"))
         if remote_ip.version == 4:
             ips_exists = CustomerIpLeaseModel.objects.filter(ip_address=str(remote_ip)).exists()
-            if ips_exists:
-                return Response(True)
+            return Response(ips_exists)
 
-            # deprecated: marked to removal
-            has_exist = Customer.objects.filter(ip_address=str(remote_ip), is_active=True).exists()
-            return Response(has_exist)
     except AddressValueError:
         pass
     return Response(False)
