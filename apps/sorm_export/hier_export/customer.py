@@ -181,15 +181,10 @@ def export_individual_customer(customers_queryset, event_time=None):
         create_date = customer.create_date
         full_fname = customer.get_full_name()
 
-        # try to split surname
-        surname = full_fname.split()[:1] or ''
-        if isinstance(surname, list) and len(surname) > 0:
-            surname = surname[0]
-
-        return {
+        r = {
             "contract_id": customer.pk,
             "name": full_fname,
-            "surname": surname,
+            "surname": full_fname,
             "birthday": customer.birth_day,
             "document_type": CustomerDocumentTypeChoices.PASSPORT_RF,
             "document_serial": passport.series,
@@ -203,6 +198,14 @@ def export_individual_customer(customers_queryset, event_time=None):
             # 'actual_end_time':
             "customer_id": customer.pk,
         }
+        surname, name, last_name = customer.split_fio()
+        if surname is not None:
+            r['surname'] = surname
+        if name is not None:
+            r['name'] = name
+        if last_name is not None:
+            r['last_name'] = last_name
+        return r
 
     return (
         individual_entity_serializers.CustomerIndividualObjectFormat,
