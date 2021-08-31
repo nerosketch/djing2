@@ -35,7 +35,7 @@ from profiles.models import UserProfile, UserProfileLogActionType
 
 
 def catch_dev_manager_err(fn):
-    def wrapper(self, *args, **kwargs):
+    def _wrapper(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
         except (DeviceImplementationError, ExpectValidationError) as err:
@@ -53,9 +53,9 @@ def catch_dev_manager_err(fn):
         except (SystemError, DeviceConsoleError) as err:
             return Response(str(err), status=453)
 
-    # Hack for decorator @action
-    wrapper.__name__ = fn.__name__
-    return wrapper
+    # Hack for @action decorator
+    _wrapper.__name__ = fn.__name__
+    return _wrapper
 
 
 class DevicePONViewSet(DjingModelViewSet):
