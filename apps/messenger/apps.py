@@ -6,3 +6,4 @@ class MessengerConfig(AppConfig):
 
     def ready(self):
         from messenger import signals  # noqa
+        from messenger import tasks  # noqa
