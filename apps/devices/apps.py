@@ -6,3 +6,4 @@ class DevicesConfig(AppConfig):
 
     def ready(self):
         from devices import signals  # noqa
+        from devices import tasks  # noqa
