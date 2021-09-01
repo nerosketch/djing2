@@ -6,3 +6,4 @@ class ProfilesConfig(AppConfig):
 
     def ready(self):
         from profiles import signals  # noqa
+        from profiles import tasks  # noqa
