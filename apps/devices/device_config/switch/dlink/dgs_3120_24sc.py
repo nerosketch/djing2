@@ -2,6 +2,8 @@ from typing import Optional, AnyStr, List, Generator
 import struct
 
 from django.utils.translation import gettext
+
+from devices.device_config.switch import SwitchDeviceStrategyContext
 from djing2.lib import safe_int, RuTimedelta, process_lock
 from devices.device_config.base import (
     Vlans,
@@ -15,8 +17,12 @@ from devices.device_config.base import (
 from devices.device_config.utils import plain_ip_device_mon_template
 
 
+_DEVICE_UNIQUE_CODE = 9
+
+
 class DLinkPort(BasePortInterface):
-    def get_config_types(self):
+    @staticmethod
+    def get_config_types():
         return []
 
 
@@ -218,3 +224,6 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
     def monitoring_template(self, *args, **kwargs) -> Optional[str]:
         device = self.dev_instance
         return plain_ip_device_mon_template(device)
+
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)

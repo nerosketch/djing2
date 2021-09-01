@@ -5,6 +5,9 @@ from ..eltex import EltexSwitch, EltexPort
 from devices.device_config.base import DeviceImplementationError, Vlan, Vlans, Macs, MacItem
 
 
+_DEVICE_UNIQUE_CODE = 8
+
+
 class HuaweiS2300(EltexSwitch):
     description = _("Huawei switch")
     is_use_device_port = True

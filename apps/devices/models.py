@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterable
 
 from django.contrib.sites.models import Site
 from django.db import models
@@ -19,19 +19,30 @@ from devices.device_config.base import (
     Vlan,
     OptionalScriptCallResult,
 )
-from devices.device_config.device_config_util import get_all_device_config_types
+
+from devices.device_config.pon import PonDeviceStrategyContext
+from devices.device_config.switch import SwitchDeviceStrategyContext
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from networks.models import VlanIf
 
 
-def _make_device_code_config_choices():
-    return tuple({(dtype.short_code, dtype.title) for dtype in get_all_device_config_types()})
+def _get_all_device_config_types() -> Iterable[DeviceConfigType]:
+    all_dtypes = (
+        klass.get_config_types()
+        for code, klass in DEVICE_TYPES
+        if issubclass(klass, (BasePON_ONU_Interface, BasePortInterface))
+    )
+    return (a for b in all_dtypes if b for a in b)
+
+
+_device_code_config_choices = tuple({(dtype.short_code, dtype.title) for dtype in _get_all_device_config_types()})
 
 
 class Device(BaseAbstractModel):
     _cached_manager = None
+    device_strategy_context = PonDeviceStrategyContext()
 
     ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     mac_addr = MACAddressField(verbose_name=_("Mac address"), unique=True)
@@ -68,7 +79,7 @@ class Device(BaseAbstractModel):
     is_noticeable = models.BooleanField(_("Send notify when monitoring state changed"), default=False)
 
     code = models.CharField(
-        _("Code"), max_length=64, blank=True, null=True, default=None, choices=_make_device_code_config_choices()
+        _("Code"), max_length=64, blank=True, null=True, default=None, choices=_device_code_config_choices
     )
 
     create_time = models.DateTimeField(
@@ -97,55 +108,58 @@ class Device(BaseAbstractModel):
             ("can_apply_onu_config", _("Can apply onu config")),
         ]
 
-    def get_manager_klass(self):
-        try:
-            return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
-        except StopIteration:
-            raise TypeError(
-                "one of types is not subclass of BaseDeviceInterface. "
-                "Or implementation of that device type is not found"
-            )
+    # def get_manager_klass(self):
+    #     try:
+    #         return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
+    #     except StopIteration:
+    #         raise TypeError(
+    #             "one of types is not subclass of BaseDeviceInterface. "
+    #             "Or implementation of that device type is not found"
+    #         )
+    #
+    # def get_manager_object_switch(self) -> BaseSwitchInterface:
+    #     man_klass = self.get_manager_klass()
+    #     if self._cached_manager is None:
+    #         self._cached_manager = man_klass(
+    #             dev_instance=self, host=str(self.ip_address), snmp_community=str(self.man_passw)
+    #         )
+    #     return self._cached_manager
+    #
+    # def get_manager_object_olt(self) -> BasePONInterface:
+    #     man_klass = self.get_manager_klass()
+    #     if self._cached_manager is None:
+    #         self._cached_manager = man_klass(dev_instance=self)
+    #     return self._cached_manager
+    #
+    # def get_manager_object_onu(self) -> BasePON_ONU_Interface:
+    #     man_klass = self.get_manager_klass()
+    #     if self._cached_manager is None:
+    #         self._cached_manager = man_klass(dev_instance=self)
+    #     return self._cached_manager
 
-    def get_manager_object_switch(self) -> BaseSwitchInterface:
-        man_klass = self.get_manager_klass()
-        if self._cached_manager is None:
-            self._cached_manager = man_klass(
-                dev_instance=self, host=str(self.ip_address), snmp_community=str(self.man_passw)
-            )
-        return self._cached_manager
+    def get_pon_device_manager(self) -> PonDeviceStrategyContext:
+        return PonDeviceStrategyContext(model_instance=self)
 
-    def get_manager_object_olt(self) -> BasePONInterface:
-        man_klass = self.get_manager_klass()
-        if self._cached_manager is None:
-            self._cached_manager = man_klass(dev_instance=self)
-        return self._cached_manager
-
-    def get_manager_object_onu(self) -> BasePON_ONU_Interface:
-        man_klass = self.get_manager_klass()
-        if self._cached_manager is None:
-            self._cached_manager = man_klass(dev_instance=self)
-        return self._cached_manager
+    def get_switch_device_manager(self) -> SwitchDeviceStrategyContext:
+        return SwitchDeviceStrategyContext(model_instance=self)
 
     # Can attach device to customer in customer page
     def has_attachable_to_customer(self) -> bool:
-        mngr = self.get_manager_klass()
-        return mngr.has_attachable_to_customer
+        return self.device_strategy_context.has_attachable_to_customer
 
     def __str__(self):
         return "{} {}".format(self.ip_address or "", self.comment)
 
-    def generate_config_template(self):
-        mng = self.get_manager_object_switch()
-        return mng.monitoring_template()
-
-    def remove_from_olt(self):
-        pdev = self.parent_dev
-        if not pdev:
-            raise DeviceConfigurationError(_("You should config parent OLT device for ONU"))
-        if not pdev.extra_data:
-            raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
-        mng = self.get_manager_object_olt()
-        r = mng.remove_from_olt(dict(pdev.extra_data))
+    def remove_from_olt(self, extra_data=None) -> bool:
+        if extra_data is None:
+            pdev = self.parent_dev
+            if not pdev:
+                raise DeviceConfigurationError(_("You should config parent OLT device for ONU"))
+            if not pdev.extra_data:
+                raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
+            extra_data = dict(pdev.extra_data)
+        mng = self.get_pon_device_manager()
+        r = mng.remove_from_olt(extra_data=extra_data)
         if r:
             Device.objects.filter(pk=self.pk).update(snmp_extra=None)
         return r
@@ -172,7 +186,7 @@ class Device(BaseAbstractModel):
         return False, err_text
 
     def get_if_name(self):
-        mng = self.get_manager_object_olt()
+        mng = self.get_pon_device_manager()
         if hasattr(mng, "get_fiber_str"):
             return mng.get_fiber_str()
         return r"¯ \ _ (ツ) _ / ¯"
