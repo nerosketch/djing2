@@ -8,7 +8,7 @@ from devices.device_config.base import DeviceConsoleError
 from devices.device_config import expect_util
 from .onu_config.zte_onu import ZteOnuDeviceConfigType
 from . import zte_utils
-from ..epon import EPON_BDCOM_FORA
+from ..epon.epon_bdcom_fora import EPON_BDCOM_FORA
 from ..pon_device_strategy import PonONUDeviceStrategyContext
 from ...base_device_strategy import SNMPWorker
 

@@ -1,7 +1,7 @@
 from devices.device_config.base import Vlans, Vlan
 from djing2.lib import safe_int
 from .dgs_3120_24sc import DlinkDGS_3120_24SCSwitchInterface
-from .. import SwitchDeviceStrategyContext
+from ..switch_device_strategy import SwitchDeviceStrategyContext
 from ...base_device_strategy import SNMPWorker
 
 _DEVICE_UNIQUE_CODE = 10

@@ -5,9 +5,8 @@ from django.utils.translation import gettext_lazy as _
 
 # from netaddr import EUI, mac_cisco
 from devices.device_config.base_device_strategy import SNMPWorker
-from devices.device_config.pon import PonOLTDeviceStrategyContext
-from devices.device_config.pon.pon_device_strategy import PonOltDeviceStrategy
 from djing2.lib import safe_int, RuTimedelta, safe_float, macbin2str
+from ...pon.pon_device_strategy import PonOltDeviceStrategy, PonOLTDeviceStrategyContext
 
 
 ONUdevPort = namedtuple("ONUdevPort", "num name status mac signal uptime fiberid")
