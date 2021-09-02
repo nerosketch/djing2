@@ -162,22 +162,9 @@ class Device(BaseAbstractModel):
             Device.objects.filter(pk=self.pk).update(snmp_extra=None)
         return r
 
-    def onu_find_sn_by_mac(self) -> Tuple[Optional[int], Optional[str]]:
-        parent = self.parent_dev
-        if parent is not None:
-            manager = parent.get_manager_object_olt()
-            mac = self.mac_addr
-            ports = manager.get_list_keyval(".1.3.6.1.4.1.3320.101.10.1.1.3")
-            for srcmac, snmpnum in ports:
-                # convert bytes mac address to str presentation mac address
-                real_mac = macbin2str(srcmac)
-                if mac == real_mac:
-                    return safe_int(snmpnum), None
-            return None, _('Onu with mac "%(onu_mac)s" not found on OLT') % {"onu_mac": mac}
-        return None, _("Parent device not found")
-
     def fix_onu(self):
-        onu_sn, err_text = self.onu_find_sn_by_mac()
+        mng = self.get_pon_olt_device_manager()
+        onu_sn, err_text = mng.find_onu()
         if onu_sn is not None:
             Device.objects.filter(pk=self.pk).update(snmp_extra=str(onu_sn))
             return True, _("Fixed")

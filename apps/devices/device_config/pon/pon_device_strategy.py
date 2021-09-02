@@ -1,9 +1,11 @@
-from typing import Dict, Generator
+from typing import Dict, Generator, Tuple, Optional
 from abc import abstractmethod
 
 from devices.device_config.base import UnsupportedReadingVlan
-from devices.device_config.base_device_strategy import BaseDeviceStrategyContext, ListDeviceConfigType, \
+from devices.device_config.base_device_strategy import (
+    BaseDeviceStrategyContext, ListDeviceConfigType,
     BaseDeviceStrategy
+)
 from djing2.lib import macbin2str
 
 
@@ -40,6 +42,11 @@ class PonOltDeviceStrategy(BaseDeviceStrategy):
             "is_use_device_port": self.is_use_device_port,
         }
 
+    @abstractmethod
+    def find_onu(self, *args, **kwargs) -> Tuple[Optional[int], Optional[str]]:
+        """Finds onu by args on OLT, and returns its snmp_info"""
+        raise NotImplementedError
+
 
 class PonOLTDeviceStrategyContext(BaseDeviceStrategyContext):
     _current_dev_manager: PonOltDeviceStrategy
@@ -72,6 +79,10 @@ class PonOLTDeviceStrategyContext(BaseDeviceStrategyContext):
         """
         mng = self._current_dev_manager
         return mng.get_details()
+
+    def find_onu(self, *args, **kwargs) -> Tuple[Optional[int], Optional[str]]:
+        """Finds onu by args on OLT, and returns its snmp_info"""
+        return self._current_dev_manager.find_onu(*args, **kwargs)
 
 
 class PonOnuDeviceStrategy(BaseDeviceStrategy):
