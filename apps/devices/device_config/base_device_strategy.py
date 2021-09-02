@@ -1,14 +1,12 @@
 from abc import ABC, abstractmethod
-
-
-from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Type
+from typing import Generator, Optional, Dict, Tuple, Any, List, Type
 from easysnmp import Session, EasySNMPConnectionError
-
 from django.utils.translation import gettext_lazy as _, gettext
 from django.db import models
-
-from devices.device_config.base import DeviceImplementationError, DeviceConnectionError
-from djing2.lib import RuTimedelta, macbin2str
+from devices.device_config.base import (
+    DeviceImplementationError, DeviceConnectionError,
+    OptionalScriptCallResult
+)
 
 
 class SNMPWorker(Session):
@@ -83,10 +81,6 @@ class SNMPWorker(Session):
             return v
         except EasySNMPConnectionError as err:
             raise DeviceConnectionError(err)
-
-
-class BaseDeviceInterface(BaseSNMPWorker):
-    """How much ports is available for switch"""
 
 
 class PortVlanConfigModeChoices(models.TextChoices):

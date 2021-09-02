@@ -88,7 +88,7 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_onu_list(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_olt()
+        manager = device.get_pon_device_manager()
         if not issubclass(manager.__class__, BasePONInterface):
             raise DeviceImplementationError("Expected BasePONInterface subclass")
 

@@ -15,9 +15,8 @@ from devices.device_config.base import (
     Vlan,
     OptionalScriptCallResult,
 )
-
-from devices.device_config.pon import PonOLTDeviceStrategyContext
-from devices.device_config.pon.pon_device_strategy import PonONUDeviceStrategyContext
+from devices.device_config.base_device_strategy import DeviceConfigType
+from devices.device_config.pon import PonOLTDeviceStrategyContext, PonONUDeviceStrategyContext
 from devices.device_config.switch import SwitchDeviceStrategyContext
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
 from djing2.models import BaseAbstractModel
