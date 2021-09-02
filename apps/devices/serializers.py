@@ -3,7 +3,7 @@ from collections import OrderedDict
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
-from devices.device_config.base import PortVlanConfigModeChoices
+from devices.device_config.base_device_strategy import PortVlanConfigModeChoices
 from devices.models import Device, Port, PortVlanMemberModel
 from djing2.lib.mixins import BaseCustomModelSerializer
 from groupapp.models import Group
