@@ -1,24 +1,25 @@
-from typing import Optional, Dict
+from typing import Dict
 from django.utils.translation import gettext, gettext_lazy as _
 from easysnmp import EasySNMPTimeoutError
-from transliterate import translit
 
 from djing2.lib import safe_int, safe_float, macbin2str, RuTimedelta, bytes2human
-from devices.device_config.base import BasePON_ONU_Interface, DeviceImplementationError, DeviceConfigurationError
-from devices.device_config.utils import norm_name
+from devices.device_config.base import DeviceImplementationError, DeviceConfigurationError
 from devices.device_config.expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
+from ..pon_device_strategy import PonOnuDeviceStrategy
 
 
-class EPON_BDCOM_FORA(BasePON_ONU_Interface):
+class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
     has_attachable_to_customer = True
     description = "PON ONU BDCOM"
     tech_code = "bdcom_onu"
     is_use_device_port = False
     ports_len = 1
 
-    def __init__(self, dev_instance, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
+        super(EPON_BDCOM_FORA, self).__init__(*args, **kwargs)
         dev_ip_addr = None
+        dev_instance = self.model_instance
         if dev_instance.ip_address:
             dev_ip_addr = dev_instance.ip_address
         else:
@@ -42,9 +43,9 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
         pass
 
     def get_details(self):
-        if self.dev_instance is None:
+        if self.model_instance is None:
             return
-        num = safe_int(self.dev_instance.snmp_extra)
+        num = safe_int(self.model_instance.snmp_extra)
         if not num:
             return
         status_map = {3: "ok", 2: "down"}
@@ -102,32 +103,8 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
         except ValueError:
             raise ExpectValidationError(_("Onu snmp field must be en integer"))
 
-    def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.dev_instance
-        if not device:
-            return
-        host_name = norm_name("%d%s" % (device.pk, translit(device.comment, language_code="ru", reversed=True)))
-        snmp_item = device.snmp_extra
-        mac = device.mac_addr
-        if device.ip_address:
-            address = device.ip_address
-        elif device.parent_dev:
-            address = device.parent_dev.ip_address
-        else:
-            address = None
-        r = (
-            "define host{",
-            "\tuse				device-onu",
-            "\thost_name		%s" % host_name,
-            "\taddress			%s" % address if address else None,
-            "\t_snmp_item		%s" % snmp_item if snmp_item is not None else "",
-            "\t_mac_addr		%s" % mac if mac is not None else "",
-            "}\n",
-        )
-        return "\n".join(i for i in r if i)
-
-    def remove_from_olt(self, extra_data: Dict):
-        dev = self.dev_instance
+    def remove_from_olt(self, extra_data: Dict, **kwargs):
+        dev = self.model_instance
         if not dev:
             return False
         if not dev.parent_dev or not dev.snmp_extra:
@@ -145,3 +122,6 @@ class EPON_BDCOM_FORA(BasePON_ONU_Interface):
             telnet_prompt=telnet.get("prompt"),
             int_name=self.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % onu_sn),
         )
+
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)

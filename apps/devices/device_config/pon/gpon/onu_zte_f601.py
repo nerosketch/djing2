@@ -26,3 +26,5 @@ class OnuZTE_F601(OnuZTE_F660):
             return list(r)[:1]
         except StopIteration:
             return ()
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)

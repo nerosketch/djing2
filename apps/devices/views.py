@@ -18,9 +18,6 @@ from devices.models import Device, Port, PortVlanMemberModel
 from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
-    BaseSwitchInterface,
-    BasePONInterface,
-    BasePON_ONU_Interface,
     UnsupportedReadingVlan,
     DeviceConsoleError,
 )
@@ -206,12 +203,13 @@ class DevicePONViewSet(DjingModelViewSet):
         except DeviceConsoleError as err:
             return Response(str(err), status=453)
 
-    @action(detail=True)
+    @action(detail=True, methods=['get'])
     @catch_dev_manager_err
     def remove_from_olt(self, request, pk=None):
         self.check_permission_code(request, "devices.can_remove_from_olt")
         device = self.get_object()
-        if device.remove_from_olt():
+        args = request.query_params
+        if device.remove_from_olt(**args):
             return Response({"text": _("Deleted"), "status": 1})
         return Response({"text": _("Failed"), "status": 2})
 

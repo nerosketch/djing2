@@ -187,3 +187,6 @@ class OLT_ZTE_C320_Fiber:
     def custom_command(self, cmd: str, expect_after: str) -> None:
         self.bt.write(cmd)
         self.bt.read_until(expect_after)
+
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)

@@ -1,5 +1,5 @@
 import math
-from typing import Optional, Generator, Iterable, Dict
+from typing import Generator, Iterable, Dict
 
 from django.utils.translation import gettext_lazy as _
 
@@ -13,7 +13,6 @@ from devices.device_config.base import (
     DeviceImplementationError,
     PortVlanConfigModeChoices,
 )
-from devices.device_config.utils import plain_ip_device_mon_template
 from ..dlink import DlinkDGS1100_10ME
 
 
@@ -51,10 +50,6 @@ class EltexSwitch(DlinkDGS1100_10ME):
         uptimestamp = safe_int(self.get_item(".1.3.6.1.2.1.1.3.0"))
         tm = RuTimedelta(seconds=uptimestamp / 100)
         return tm
-
-    def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.dev_instance
-        return plain_ip_device_mon_template(device)
 
     def save_config(self) -> bool:
         return self.set_multiple(
@@ -311,3 +306,6 @@ class EltexSwitch(DlinkDGS1100_10ME):
         pass
         # _vlan_gen = (v for v in (vlan,))
         # return self.detach_vlans_from_port(_vlan_gen, port, request=request)
+
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)

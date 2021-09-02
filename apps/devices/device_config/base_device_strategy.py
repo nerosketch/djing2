@@ -9,20 +9,25 @@ from transliterate import translit
 from django.utils.translation import gettext_lazy as _, gettext
 from django.conf import settings
 from django.db import models
+
+from devices.device_config.base import DeviceImplementationError, DeviceConnectionError
 from djing2.lib import RuTimedelta, macbin2str
 
 
-
-
-
-class BaseSNMPWorker(Session):
-    def __init__(self, hostname: str = None, version=2, *args, **kwargs):
+class SNMPWorker(Session):
+    def __init__(self, hostname: str, *args, **kwargs):
         if not hostname:
             raise DeviceImplementationError(gettext("Hostname required for snmp"))
         try:
-            super().__init__(hostname=hostname, version=version, *args, **kwargs)
+            super().__init__(hostname=hostname, *args, **kwargs)
         except OSError as e:
             raise DeviceConnectionError(e)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return False
 
     def set_int_value(self, oid: str, value: int) -> bool:
         try:
@@ -160,98 +165,10 @@ class BaseDeviceInterface(BaseSNMPWorker):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        """
-        Template for monitoring system config
-        :return: string for config file
-        """
-
 
 class PortVlanConfigModeChoices(models.TextChoices):
     TRUNK = ('trunk', _('Trunk'))
     ACCESS = ('access', _('Access'))
-
-
-class BaseSwitchInterface(BaseDeviceInterface):
-    @abstractmethod
-    def get_ports(self) -> tuple:
-        """
-        If fast operation then just return tuple.
-        If long operation then return the generator of ports count first,
-        then max chunk size, and ports in next in generations
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def port_disable(self, port_num: int) -> None:
-        """Disable port by number"""
-
-    @abstractmethod
-    def read_port_vlan_info(self, port: int) -> Vlans:
-        """
-        Read info about all vlans on port
-        :param port: Port number
-        :return: Vlan list
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def read_mac_address_port(self, port_num: int) -> Macs:
-        """
-        Read FDB on port
-        :param port_num:
-        :return: Mac list
-        """
-        raise NotImplementedError
-
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, config_mode: PortVlanConfigModeChoices, request) -> bool:
-        """
-        Attach vlan set to port
-        :param vlan_list:
-        :param port_num:
-        :param config_mode: devices.serializers.PortVlanConfigModeChoices
-        :param request: DRF Request
-        :return: Operation result
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def attach_vlan_to_port(self, vlan: Vlan, port: int, request, tag: bool = True) -> bool:
-        """
-        Attach vlan to switch port
-        :param vlan:
-        :param port:
-        :param request: DRF Request
-        :param tag: Tagged if True or untagged otherwise
-        :return:
-        """
-        _vlan_gen = (v for v in (vlan,))
-        return self.attach_vlans_to_port(_vlan_gen, port, request)
-
-    def _get_vid_name(self, vid: int) -> str:
-        return self.get_item(".1.3.6.1.2.1.17.7.1.4.3.1.1.%d" % vid)
-
-    @abstractmethod
-    def detach_vlan_from_port(self, vlan: Vlan, port: int, request) -> bool:
-        """
-        Detach vlan from switch port
-        :param vlan:
-        :param port:
-        :param request: DRF Request
-        :return: Operation result
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def _normalize_name(name: str, vid: Optional[int] = None) -> str:
-        if name:
-            language_code = getattr(settings, "LANGUAGE_CODE", "ru")
-            vname = translit(name, language_code=language_code, reversed=True)
-            return re.sub(r"\W+", "_", vname)[:32]
-        if vid and isinstance(vid, int):
-            return 'v%d' % vid
-        return ''
 
 
 class DeviceConfigType:
@@ -346,56 +263,12 @@ class BasePortInterface(ABC):
         raise NotImplementedError
 
 
-class BasePON_ONU_Interface(BaseDeviceInterface):
-    def __init__(
-        self, num=0, name="", status=False, mac: bytes = b"", speed=0, uptime=None, snmp_num=None, *args, **kwargs
-    ):
-        """
-        :param dev_interface: a subclass of devices.device_config.base.BasePONInterface
-        :param dev_instance: an instance of devices.models.Device
-        :param num: onu number
-        :param name: onu name
-        :param status: onu status
-        :param mac: onu unique mac
-        :param speed:
-        :param uptime:
-        :param snmp_num:
-        """
-        super().__init__(*args, **kwargs)
-        self.num = int(num)
-        self.nm = name
-        self.st = status
-        self._mac: bytes = mac
-        self.sp = speed
-        self._uptime = int(uptime) if uptime else None
-        self.snmp_num = snmp_num
-
-    def mac(self) -> str:
-        return macbin2str(self._mac)
-
-    @abstractmethod
-    def get_fiber_str(self):
-        return r"¯ \ _ (ツ) _ / ¯"
-
-    @abstractmethod
-    def read_onu_vlan_info(self):
-        raise UnsupportedReadingVlan
-
-    @abstractmethod
-    def default_vlan_info(self):
-        raise UnsupportedReadingVlan
-
-    @staticmethod
-    @abstractmethod
-    def get_config_types() -> ListDeviceConfigType:
-        """
-        Returns all possible config type for this device type
-        :return: List instance of DeviceConfigType
-        """
-        return []
-
-
 class BaseDeviceStrategy(ABC):
+    model_instance = None
+
+    def __init__(self, model_instance):
+        self.model_instance = model_instance
+
     @abstractmethod
     def get_device_name(self) -> str:
         """Return device name by snmp"""
@@ -416,21 +289,34 @@ class BaseDeviceStrategy(ABC):
         """True if used device port while opt82 authorization"""
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def has_attachable_to_customer(self) -> bool:
+        """True if used device port while opt82 authorization"""
+        raise NotImplementedError
+
+    @staticmethod
+    def validate_extra_snmp_info(v: str) -> None:
+        raise NotImplementedError
+
 
 global_device_types_map: Dict[int, Type[BaseDeviceStrategy]] = {}
 
 
 class BaseDeviceStrategyContext(ABC):
-    _current_dev_manager = None
+    _current_dev_manager: BaseDeviceStrategy
 
     def __init__(self, model_instance):
         self.model_instance = model_instance
+        dev_type = int(model_instance.dev_type)
+        self.set_device_type(unique_code=dev_type)
 
-    @classmethod
-    def set_device_type(cls, unique_code: int):
+    def set_device_type(self, unique_code: int):
         kls = global_device_types_map.get(unique_code)
         if kls is not None:
-            cls._current_dev_manager = kls()
+            self._current_dev_manager = kls(
+                model_instance=self.model_instance
+            )
         else:
             raise TypeError(f'Device manager with code "{unique_code}" does not exists')
 

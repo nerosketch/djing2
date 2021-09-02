@@ -45,3 +45,5 @@ class DlinkDGS1100_10ME(DlinkDGS_3120_24SCSwitchInterface):
                 ),
                 None,
             )
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)
