@@ -137,11 +137,6 @@ class BaseDeviceInterface(BaseSNMPWorker):
         """
         raise NotImplementedError
 
-    @property
-    @abstractmethod
-    def description(self) -> str:
-        """Base device interface"""
-
     def reboot(self, save_before_reboot=False) -> Tuple[int, AnyStr]:
         """
         Send signal reboot to device
@@ -149,19 +144,6 @@ class BaseDeviceInterface(BaseSNMPWorker):
         :return: tuple of command return number and text of operation
         """
         return 5, _("Reboot not ready")
-
-    @abstractmethod
-    def get_device_name(self) -> str:
-        """Return device name by snmp"""
-
-    @abstractmethod
-    def get_uptime(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def is_use_device_port(self) -> bool:
-        """True if used device port while opt82 authorization"""
 
     @classmethod
     def get_is_use_device_port(cls) -> bool:
@@ -184,19 +166,6 @@ class BaseDeviceInterface(BaseSNMPWorker):
         Template for monitoring system config
         :return: string for config file
         """
-
-    def get_details(self) -> dict:
-        """
-        Return basic information by SNMP or other method
-        :return: dict of information
-        """
-        return {
-            "uptime": self.get_uptime(),
-            "name": self.get_device_name(),
-            "description": self.description,
-            "has_attachable_to_customer": self.has_attachable_to_customer,
-            "is_use_device_port": self.is_use_device_port,
-        }
 
 
 class PortVlanConfigModeChoices(models.TextChoices):
@@ -377,11 +346,6 @@ class BasePortInterface(ABC):
         raise NotImplementedError
 
 
-class BasePONInterface(BaseDeviceInterface):
-
-
-
-
 class BasePON_ONU_Interface(BaseDeviceInterface):
     def __init__(
         self, num=0, name="", status=False, mac: bytes = b"", speed=0, uptime=None, snmp_num=None, *args, **kwargs
@@ -432,10 +396,28 @@ class BasePON_ONU_Interface(BaseDeviceInterface):
 
 
 class BaseDeviceStrategy(ABC):
-    pass
+    @abstractmethod
+    def get_device_name(self) -> str:
+        """Return device name by snmp"""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        """Base device interface"""
+
+    @abstractmethod
+    def get_uptime(self) -> str:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def is_use_device_port(self) -> bool:
+        """True if used device port while opt82 authorization"""
+        raise NotImplementedError
 
 
-global_device_types_map = {}
+global_device_types_map: Dict[int, Type[BaseDeviceStrategy]] = {}
 
 
 class BaseDeviceStrategyContext(ABC):
@@ -467,3 +449,34 @@ class BaseDeviceStrategyContext(ABC):
 
     # def get_snmp_worker(self):
     #     return BaseSNMPWorker(hostname=)
+
+    def get_device_name(self) -> str:
+        """Return device name by snmp"""
+        return self._current_dev_manager.get_device_name()
+
+    @property
+    def description(self) -> str:
+        """Base device interface"""
+        return self._current_dev_manager.description
+
+    def get_uptime(self) -> str:
+        return self._current_dev_manager.get_uptime()
+
+    @property
+    def is_use_device_port(self) -> bool:
+        """True if used device port while opt82 authorization"""
+        return self._current_dev_manager.is_use_device_port
+
+    def get_details(self) -> dict:
+        """
+        Return basic information by SNMP or other method
+        :return: dict of information
+        """
+        mng = self._current_dev_manager
+        return {
+            "uptime": mng.get_uptime(),
+            "name": mng.get_device_name(),
+            "description": mng.description,
+            "has_attachable_to_customer": self.has_attachable_to_customer,
+            "is_use_device_port": mng.is_use_device_port,
+        }

@@ -41,8 +41,7 @@ _device_code_config_choices = tuple({(dtype.short_code, dtype.title) for dtype i
 
 
 class Device(BaseAbstractModel):
-    _cached_manager = None
-    device_strategy_context = PonDeviceStrategyContext()
+    # _cached_manager = None
 
     ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     mac_addr = MACAddressField(verbose_name=_("Mac address"), unique=True)
@@ -144,8 +143,8 @@ class Device(BaseAbstractModel):
         return SwitchDeviceStrategyContext(model_instance=self)
 
     # Can attach device to customer in customer page
-    def has_attachable_to_customer(self) -> bool:
-        return self.device_strategy_context.has_attachable_to_customer
+    # def has_attachable_to_customer(self) -> bool:
+    #     return self.device_strategy_context.has_attachable_to_customer
 
     def __str__(self):
         return "{} {}".format(self.ip_address or "", self.comment)
