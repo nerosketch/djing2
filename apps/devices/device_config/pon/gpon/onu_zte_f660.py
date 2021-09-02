@@ -9,8 +9,8 @@ from devices.device_config import expect_util
 from .onu_config.zte_onu import ZteOnuDeviceConfigType
 from . import zte_utils
 from ..epon import EPON_BDCOM_FORA
+from ..pon_device_strategy import PonONUDeviceStrategyContext
 from ...base_device_strategy import SNMPWorker
-from ...switch import SwitchDeviceStrategyContext
 
 _DEVICE_UNIQUE_CODE = 6
 
@@ -217,4 +217,4 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         return [ZteF660RouterScriptModule, ZteF660BridgeStaticScriptModule, ZteF660BridgeDynamicScriptModule]
 
 
-SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, OnuZTE_F660)
+PonONUDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, OnuZTE_F660)

@@ -1,14 +1,59 @@
 import re
 from abc import abstractmethod
 from typing import Optional, Tuple, AnyStr
+from dataclasses import dataclass
 from transliterate import translit
 from django.conf import settings
 from django.utils.translation import gettext
+from django.db.models import Model
 from devices.device_config.base import Vlan, Vlans, Macs
 from devices.device_config.base_device_strategy import (
     BaseDeviceStrategyContext, BaseDeviceStrategy,
-    PortVlanConfigModeChoices, SNMPWorker
+    PortVlanConfigModeChoices, SNMPWorker, ListDeviceConfigType
 )
+from djing2.lib import macbin2str, RuTimedelta
+
+
+@dataclass
+class PortType:
+    model_instance: Model
+    num: int = 0
+    snmp_num: Optional[int] = None
+    name: str = ""
+    status: bool = False
+    speed: int = 0
+    __uptime: int = 0
+    __mac: bytes = b""
+
+    def __post_init__(self):
+        self.snmp_num = int(self.num) if self.snmp_num is None else int(self.snmp_num)
+
+    @property
+    def mac(self) -> str:
+        m = self.__mac
+        if isinstance(m, bytes):
+            return macbin2str(m)
+        elif isinstance(m, str):
+            return m
+        raise ValueError('Unexpected type for mac: %s' % type(m))
+
+    @mac.setter
+    def mac(self, mac):
+        self.__mac = mac
+
+    @property
+    def uptime(self) -> str:
+        if self.__uptime:
+            return str(RuTimedelta(seconds=self.__uptime / 100))
+        return ''
+
+    @uptime.setter
+    def uptime(self, time: int):
+        self.__uptime = time
+
+    @staticmethod
+    def get_config_types() -> ListDeviceConfigType:
+        return []
 
 
 class SwitchDeviceStrategy(BaseDeviceStrategy):

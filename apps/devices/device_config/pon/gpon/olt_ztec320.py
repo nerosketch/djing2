@@ -2,10 +2,10 @@ from typing import Iterable
 
 from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock
 from .zte_utils import conv_zte_signal
+from .. import PonOLTDeviceStrategyContext
 from ..epon import BDCOM_P3310C
 from devices.device_config.base import Vlans, Vlan
 from ...base_device_strategy import SNMPWorker
-from ...switch import SwitchDeviceStrategyContext
 
 _DEVICE_UNIQUE_CODE = 5
 
@@ -210,4 +210,4 @@ class ZTE_C320(BDCOM_P3310C):
 #         self.bt.read_until(expect_after)
 
 
-SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, ZTE_C320)
+PonOLTDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, ZTE_C320)
