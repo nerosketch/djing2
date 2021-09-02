@@ -7,6 +7,10 @@ from devices.device_config.base import DeviceImplementationError, DeviceConfigur
 from devices.device_config.expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
 from ..pon_device_strategy import PonOnuDeviceStrategy
+from ...base_device_strategy import SNMPWorker
+from ...switch import SwitchDeviceStrategyContext
+
+_DEVICE_UNIQUE_CODE = 3
 
 
 class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
@@ -43,19 +47,21 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
         pass
 
     def get_details(self):
-        if self.model_instance is None:
+        dev = self.model_instance
+        if dev is None:
             return
-        num = safe_int(self.model_instance.snmp_extra)
+        num = safe_int(dev.snmp_extra)
         if not num:
             return
         status_map = {3: "ok", 2: "down"}
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         try:
             # https://www.zabbix.com/documentation/1.8/ru/manual/advanced_snmp
-            status = safe_int(self.get_item(".1.3.6.1.4.1.3320.101.10.1.1.26.%d" % num))
-            signal = safe_float(self.get_item(".1.3.6.1.4.1.3320.101.10.5.1.5.%d" % num))
-            # distance = self.get_item('.1.3.6.1.4.1.3320.101.10.1.1.27.%d' % num)
-            mac = self.get_item_plain(".1.3.6.1.4.1.3320.101.10.1.1.3.%d" % num)
-            uptime = safe_int(self.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % num))
+            status = safe_int(snmp.get_item(".1.3.6.1.4.1.3320.101.10.1.1.26.%d" % num))
+            signal = safe_float(snmp.get_item(".1.3.6.1.4.1.3320.101.10.5.1.5.%d" % num))
+            # distance = snmp.get_item('.1.3.6.1.4.1.3320.101.10.1.1.27.%d' % num)
+            mac = snmp.get_item_plain(".1.3.6.1.4.1.3320.101.10.1.1.3.%d" % num)
+            uptime = safe_int(snmp.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % num))
             if uptime > 0:
                 uptime = RuTimedelta(seconds=uptime / 100)
             # speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % num)
@@ -66,29 +72,29 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
                     "mac": macbin2str(mac),
                     "info": (
                         # IF-MIB::ifDescr
-                        (_("name"), self.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % num)),
+                        (_("name"), snmp.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % num)),
                         # IF-MIB::ifMtu
-                        (_("mtu"), self.get_item(".1.3.6.1.2.1.2.2.1.4.%d" % num)),
+                        (_("mtu"), snmp.get_item(".1.3.6.1.2.1.2.2.1.4.%d" % num)),
                         # IF-MIB::ifInOctets
-                        (_("in_octets"), bytes2human(safe_float(self.get_item(".1.3.6.1.2.1.2.2.1.10.%d" % num)))),
+                        (_("in_octets"), bytes2human(safe_float(snmp.get_item(".1.3.6.1.2.1.2.2.1.10.%d" % num)))),
                         # IF-MIB::ifInUcastPkts
-                        (_("in_ucst_pkts"), self.get_item(".1.3.6.1.2.1.2.2.1.11.%d" % num)),
+                        (_("in_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.11.%d" % num)),
                         # IF-MIB::ifInNUcastPkts
-                        (_("in_not_ucst_pkts"), self.get_item(".1.3.6.1.2.1.2.2.1.12.%d" % num)),
+                        (_("in_not_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.12.%d" % num)),
                         # IF-MIB::ifInDiscards
-                        (_("in_discards"), self.get_item(".1.3.6.1.2.1.2.2.1.13.%d" % num)),
+                        (_("in_discards"), snmp.get_item(".1.3.6.1.2.1.2.2.1.13.%d" % num)),
                         # IF-MIB::ifInErrors
-                        (_("in_errors"), self.get_item(".1.3.6.1.2.1.2.2.1.14.%d" % num)),
+                        (_("in_errors"), snmp.get_item(".1.3.6.1.2.1.2.2.1.14.%d" % num)),
                         # IF-MIB::ifOutOctets
-                        (_("out_octets"), bytes2human(safe_float(self.get_item(".1.3.6.1.2.1.2.2.1.16.%d" % num)))),
+                        (_("out_octets"), bytes2human(safe_float(snmp.get_item(".1.3.6.1.2.1.2.2.1.16.%d" % num)))),
                         # IF-MIB::ifOutUcastPkts
-                        (_("out_ucst_pkts"), self.get_item(".1.3.6.1.2.1.2.2.1.17.%d" % num)),
+                        (_("out_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.17.%d" % num)),
                         # IF-MIB::ifOutNUcastPkts
-                        (_("out_not_ucst_pkts"), self.get_item(".1.3.6.1.2.1.2.2.1.18.%d" % num)),
+                        (_("out_not_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.18.%d" % num)),
                         # IF-MIB::ifOutDiscards
-                        (_("out_discards"), self.get_item(".1.3.6.1.2.1.2.2.1.19.%d" % num)),
+                        (_("out_discards"), snmp.get_item(".1.3.6.1.2.1.2.2.1.19.%d" % num)),
                         # IF-MIB::ifOutErrors
-                        (_("out_errors"), self.get_item(".1.3.6.1.2.1.2.2.1.20.%d" % num)),
+                        (_("out_errors"), snmp.get_item(".1.3.6.1.2.1.2.2.1.20.%d" % num)),
                         (_("uptime"), str(uptime)),
                     ),
                 }
@@ -115,13 +121,21 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
         onu_sn, err_text = dev.onu_find_sn_by_mac()
         if onu_sn is None:
             raise DeviceConfigurationError(err_text)
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            int_name = snmp.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % onu_sn)
         return remove_from_olt(
             ip_addr=str(dev.parent_dev.ip_address),
             telnet_login=telnet.get("login"),
             telnet_passw=telnet.get("password"),
             telnet_prompt=telnet.get("prompt"),
-            int_name=self.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % onu_sn),
+            int_name=int_name,
         )
 
+    # def read_onu_vlan_info(self):
+    #     pass
 
-SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)
+    # def default_vlan_info(self):
+    #     pass
+
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, EPON_BDCOM_FORA)

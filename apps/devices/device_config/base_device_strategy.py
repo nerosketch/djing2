@@ -1,13 +1,10 @@
-import re
 from abc import ABC, abstractmethod
 
 
-from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Type, Iterable
+from typing import Generator, Optional, Dict, AnyStr, Tuple, Any, List, Type
 from easysnmp import Session, EasySNMPConnectionError
-from transliterate import translit
 
 from django.utils.translation import gettext_lazy as _, gettext
-from django.conf import settings
 from django.db import models
 
 from devices.device_config.base import DeviceImplementationError, DeviceConnectionError
@@ -27,7 +24,7 @@ class SNMPWorker(Session):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        return False
+        del self.sess_ptr
 
     def set_int_value(self, oid: str, value: int) -> bool:
         try:

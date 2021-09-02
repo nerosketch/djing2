@@ -76,7 +76,6 @@ class PonOnuDeviceStrategy(BaseDeviceStrategy):
         self._uptime = int(uptime) if uptime else None
         self.snmp_num = snmp_num
 
-    @abstractmethod
     def get_fiber_str(self) -> str:
         return r"¯ \ _ (ツ) _ / ¯"
 
