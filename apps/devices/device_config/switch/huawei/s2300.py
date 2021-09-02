@@ -92,7 +92,7 @@ class HuaweiS2300(EltexSwitch):
             if not member_ports[port]:
                 # if port num is not <port>
                 continue
-            name = self._get_vid_name(vid)
+            name = self.get_vid_name(vid)
             yield Vlan(vid=vid, title=name)
 
 

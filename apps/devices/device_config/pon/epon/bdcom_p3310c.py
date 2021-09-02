@@ -194,7 +194,7 @@ class BDCOM_P3310C(PonOltDeviceStrategy):
     #     for vlan in vlan_list:
     #         self.write('vlan %d' % vlan.vid)
     #         self.read_until('config_vlan%d#' % vlan.vid)
-    #         self.write('name %s' % self._normalize_name(vlan.title))
+    #         self.write('name %s' % self.normalize_name(vlan.title))
     #         self.read_until('config_vlan%d#' % vlan.vid)
     #         self.write('ex')
     #         self.read_until('_config#')

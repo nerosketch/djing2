@@ -85,7 +85,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
             vlan_untagged_egress = list(self.parse_eltex_vlan_map(vlan_untagged_egress, table=table_no))
             is_native = next((v == 1 for i, v in enumerate(vlan_untagged_egress, 1) if i >= port), False)
             return (
-                Vlan(vid=vid, title=self._get_vid_name(vid=vid), native=is_native)
+                Vlan(vid=vid, title=self.get_vid_name(vid=vid), native=is_native)
                 for vid in self.parse_eltex_vlan_map(vlan_egress_bitmap, table=table_no)
             )
 
@@ -141,7 +141,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
             if vid < 100000 or vid > 104095:
                 break
             vid = (vid - 100000) + 1
-            name = self._get_vid_name(vid=vid)
+            name = self.get_vid_name(vid=vid)
             yield Vlan(vid=vid, title=name)
 
     @process_lock()
@@ -158,7 +158,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 continue
             vid = safe_int(oid[-7:-6][0])
             fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
-            vid_name = self._get_vid_name(vid)
+            vid_name = self.get_vid_name(vid)
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
     def read_mac_address_vlan(self, vid: int) -> Macs:
@@ -169,7 +169,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         for fdb_port, oid in self.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2.%d" % vid):
             real_fdb_port_num = ports_map.get(int(fdb_port))
             fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
-            vid_name = self._get_vid_name(vid)
+            vid_name = self.get_vid_name(vid)
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
     def create_vlans(self, vlan_list: Vlans) -> bool:
