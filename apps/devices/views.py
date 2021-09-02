@@ -219,8 +219,8 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_pon_details(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_olt()
-        data = manager.get_details()
+        pon_manager = device.get_pon_device_manager()
+        data = pon_manager.get_details()
         return Response(data)
 
     @action(detail=True)
