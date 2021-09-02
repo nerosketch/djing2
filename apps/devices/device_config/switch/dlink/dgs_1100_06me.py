@@ -58,3 +58,5 @@ class DlinkDGS_1100_06MESwitchInterface(DlinkDGS_3120_24SCSwitchInterface):
     #     })
     #     out = self.read_until(self.prompt)
     #     return b'Success' in out
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)

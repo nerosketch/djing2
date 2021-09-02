@@ -159,31 +159,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         # for example 268501760.5
         zte_utils.split_snmp_extra(v)
 
-    def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.dev_instance
-        if not device:
-            return
-        host_name = norm_name("%d%s" % (device.pk, translit(device.comment, language_code="ru", reversed=True)))
-        snmp_item = device.snmp_extra
-        mac = device.mac_addr
-        if device.ip_address:
-            address = device.ip_address
-        elif device.parent_dev:
-            address = device.parent_dev.ip_address
-        else:
-            address = None
-        r = (
-            "define host{",
-            "\tuse				dev-onu-zte-f660",
-            "\thost_name		%s" % host_name,
-            "\taddress			%s" % address if address else None,
-            "\t_snmp_item		%s" % snmp_item if snmp_item is not None else "",
-            "\t_mac_addr		%s" % mac if mac is not None else "",
-            "}\n",
-        )
-        return "\n".join(i for i in r if i)
-
-    def remove_from_olt(self, extra_data: Dict):
+    def remove_from_olt(self, extra_data: Dict, **kwargs):
         dev = self.dev_instance
         if not dev:
             return False
@@ -230,3 +206,6 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         from .onu_config.zte_f660_dynamic_bridge_config import ZteF660BridgeDynamicScriptModule
 
         return [ZteF660RouterScriptModule, ZteF660BridgeStaticScriptModule, ZteF660BridgeDynamicScriptModule]
+
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)

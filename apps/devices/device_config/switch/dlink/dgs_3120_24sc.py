@@ -221,9 +221,5 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         # Dlink has no require snmp info
         pass
 
-    def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.dev_instance
-        return plain_ip_device_mon_template(device)
-
 
 SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)

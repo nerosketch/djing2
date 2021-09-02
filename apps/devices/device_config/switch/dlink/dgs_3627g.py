@@ -9,3 +9,6 @@ class DlinkDGS_3627GSwitchInterface(DlinkDGS_3120_24SCSwitchInterface):
     description = "DLink DGS-3627G"
     is_use_device_port = True
     ports_len = 24
+
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)

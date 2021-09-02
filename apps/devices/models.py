@@ -10,17 +10,14 @@ from devices.device_config import DEVICE_TYPES, DEVICE_TYPE_UNKNOWN
 from devices.device_config.base import (
     Vlans,
     Macs,
-    BaseSwitchInterface,
-    BasePONInterface,
-    BasePON_ONU_Interface,
-    ListDeviceConfigType,
     DeviceConfigurationError,
     DeviceImplementationError,
     Vlan,
     OptionalScriptCallResult,
 )
 
-from devices.device_config.pon import PonDeviceStrategyContext
+from devices.device_config.pon import PonOLTDeviceStrategyContext
+from devices.device_config.pon.pon_device_strategy import PonONUDeviceStrategyContext
 from devices.device_config.switch import SwitchDeviceStrategyContext
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
 from djing2.models import BaseAbstractModel
@@ -136,8 +133,11 @@ class Device(BaseAbstractModel):
     #         self._cached_manager = man_klass(dev_instance=self)
     #     return self._cached_manager
 
-    def get_pon_device_manager(self) -> PonDeviceStrategyContext:
-        return PonDeviceStrategyContext(model_instance=self)
+    def get_pon_olt_device_manager(self) -> PonOLTDeviceStrategyContext:
+        return PonOLTDeviceStrategyContext(model_instance=self)
+
+    def get_pon_onu_device_manager(self) -> PonONUDeviceStrategyContext:
+        return PonONUDeviceStrategyContext(model_instance=self)
 
     def get_switch_device_manager(self) -> SwitchDeviceStrategyContext:
         return SwitchDeviceStrategyContext(model_instance=self)
@@ -149,7 +149,7 @@ class Device(BaseAbstractModel):
     def __str__(self):
         return "{} {}".format(self.ip_address or "", self.comment)
 
-    def remove_from_olt(self, extra_data=None) -> bool:
+    def remove_from_olt(self, extra_data=None, **kwargs) -> bool:
         if extra_data is None:
             pdev = self.parent_dev
             if not pdev:
@@ -157,8 +157,8 @@ class Device(BaseAbstractModel):
             if not pdev.extra_data:
                 raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
             extra_data = dict(pdev.extra_data)
-        mng = self.get_pon_device_manager()
-        r = mng.remove_from_olt(extra_data=extra_data)
+        mng = self.get_pon_onu_device_manager()
+        r = mng.remove_from_olt(extra_data=extra_data, **kwargs)
         if r:
             Device.objects.filter(pk=self.pk).update(snmp_extra=None)
         return r

@@ -102,3 +102,6 @@ class HuaweiS5300_10P_LI_AC(HuaweiS2300):
     description = _("Huawei switch S5300")
     is_use_device_port = True
     has_attachable_to_customer = True
+
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)

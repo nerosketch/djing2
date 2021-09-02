@@ -1,19 +1,18 @@
-from typing import Optional, Dict, Generator
+from typing import Generator
 from collections import namedtuple
 from easysnmp import EasySNMPTimeoutError
 from django.utils.translation import gettext
 
 # from netaddr import EUI, mac_cisco
-
+from devices.device_config.pon.pon_device_strategy import PonOltDeviceStrategy
 from djing2.lib import safe_int, RuTimedelta, safe_float, macbin2str
-from devices.device_config.utils import plain_ip_device_mon_template
-from devices.device_config.base import BasePONInterface, DeviceImplementationError
+from devices.device_config.base import DeviceImplementationError
 
 
 ONUdevPort = namedtuple("ONUdevPort", "num name status mac signal uptime fiberid")
 
 
-class BDCOM_P3310C(BasePONInterface):
+class BDCOM_P3310C(PonOltDeviceStrategy):
     has_attachable_to_customer = False
     description = "PON OLT"
     is_use_device_port = False
@@ -96,14 +95,9 @@ class BDCOM_P3310C(BasePONInterface):
         tm = RuTimedelta(seconds=up_timestamp / 100)
         return tm
 
-    @staticmethod
-    def validate_extra_snmp_info(v: str) -> None:
+    def validate_extra_snmp_info(self, v: str) -> None:
         # Olt has no require snmp info
         pass
-
-    def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.dev_instance
-        return plain_ip_device_mon_template(device)
 
     #############################
     #      Telnet access
@@ -321,15 +315,12 @@ class BDCOM_P3310C(BasePONInterface):
     #     self._exit_fiber()
     #     return True
 
-    def remove_from_olt(self, extra_data: Dict) -> None:
-        pass
 
-
-class OLT_BDCOM_P33C_ONU:
-    def __init__(self, bt: BDCOM_P3310C, fiber_num: int, onu_num: int):
-        self.bt: BDCOM_P3310C = bt
-        self.fiber_num = fiber_num
-        self.onu_num = onu_num
+# class OLT_BDCOM_P33C_ONU:
+#     def __init__(self, bt: BDCOM_P3310C, fiber_num: int, onu_num: int):
+#         self.bt: BDCOM_P3310C = bt
+#         self.fiber_num = fiber_num
+#         self.onu_num = onu_num
 
     # def __enter__(self):
     #     self.bt.write('int EPON0/%d:%d' % (self.fiber_num, self.onu_num))
@@ -360,3 +351,5 @@ class OLT_BDCOM_P33C_ONU:
     #         native_vid, tag_vids
     #     ))
     #     self._read_until_onu_int()
+
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)
