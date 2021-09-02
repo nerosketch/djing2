@@ -2,21 +2,22 @@ import re
 from typing import Optional, Dict
 
 from django.utils.translation import gettext_lazy as _
-from transliterate import translit
 
 from djing2.lib import safe_int, process_lock
 from devices.device_config.base import DeviceConsoleError
-from devices.device_config.utils import norm_name
 from devices.device_config import expect_util
 from .onu_config.zte_onu import ZteOnuDeviceConfigType
 from . import zte_utils
 from ..epon import EPON_BDCOM_FORA
+from ...base_device_strategy import SNMPWorker
+from ...switch import SwitchDeviceStrategyContext
+
+_DEVICE_UNIQUE_CODE = 6
 
 
 @process_lock(lock_name="zte_olt")
-def _remove_zte_onu_from_olt(
-    zte_ip_addr: str, telnet_login: str, telnet_passw: str, telnet_prompt: str, snmp_info: str, *args, **kwargs
-):
+def _remove_zte_onu_from_olt(zte_ip_addr: str, telnet_login: str, telnet_passw: str,
+                             telnet_prompt: str, snmp_info: str, *args, **kwargs):
     if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
         raise expect_util.ExpectValidationError("ip address for zte not valid")
 
@@ -49,19 +50,22 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
     ports_len = 4
 
     def get_details(self) -> Optional[Dict]:
-        if self.dev_instance is None:
+        dev = self.model_instance
+        if dev is None:
             return
-        snmp_extra = self.dev_instance.snmp_extra
+        snmp_extra = dev.snmp_extra
         if not snmp_extra:
             return
 
         fiber_num, onu_num = zte_utils.split_snmp_extra(snmp_extra)
         fiber_addr = "%d.%d" % (fiber_num, onu_num)
 
-        signal = safe_int(self.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%s.1" % fiber_addr))
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
+
+        signal = safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%s.1" % fiber_addr))
         # distance = self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.18.%s.1' % fiber_addr)
 
-        sn = self.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
+        sn = snmp.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
         if sn is not None:
             if isinstance(sn, bytes):
                 sn = "ZTEG%s" % "".join("%.2X" % int(x) for x in sn[-4:])
@@ -71,24 +75,25 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         status_map = {1: "ok", 2: "down"}
         return {
             "status": status_map.get(
-                safe_int(self.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1" % fiber_addr)), "unknown"
+                safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1" % fiber_addr)), "unknown"
             ),
             "signal": zte_utils.conv_zte_signal(signal),
             "mac": zte_utils.sn_to_mac(sn),
             "info": (
-                (_("name"), self.get_item(".1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s" % fiber_addr)),
+                (_("name"), snmp.get_item(".1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s" % fiber_addr)),
                 # 'distance': safe_float(distance) / 10,
                 # 'ip_addr': self.get_item('.1.3.6.1.4.1.3902.1012.3.50.16.1.1.10.%s' % fiber_addr),
-                (_("vlans"), self.get_item(".1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%s.1.1" % fiber_addr)),
+                (_("vlans"), snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%s.1.1" % fiber_addr)),
                 (_("serial"), sn),
-                (_("onu_type"), self.get_item(".1.3.6.1.4.1.3902.1012.3.28.1.1.1.%s" % fiber_addr)),
+                (_("onu_type"), snmp.get_item(".1.3.6.1.4.1.3902.1012.3.28.1.1.1.%s" % fiber_addr)),
             ),
         }
 
     def default_vlan_info(self):
         default_vid = 1
-        if self.dev_instance and self.dev_instance.parent_dev and self.dev_instance.parent_dev.extra_data:
-            default_vid = self.dev_instance.parent_dev.extra_data.get("default_vid", 1)
+        dev = self.model_instance
+        if dev and dev.parent_dev and dev.parent_dev.extra_data:
+            default_vid = dev.parent_dev.extra_data.get("default_vid", 1)
         def_vids = [{"vid": default_vid, "native": True}]
         return [
             {"port": 1, "vids": def_vids},
@@ -98,23 +103,26 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         ]
 
     def read_onu_vlan_info(self):
-        if self.dev_instance is None:
+        dev = self.model_instance
+        if dev is None:
             return
-        snmp_extra = self.dev_instance.snmp_extra
+        snmp_extra = dev.snmp_extra
         if not snmp_extra:
             return self.default_vlan_info()
         fiber_num, onu_num = zte_utils.split_snmp_extra(snmp_extra)
 
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
+
         def _get_access_vlan(port_num: int) -> int:
             return safe_int(
-                self.get_item(
+                snmp.get_item(
                     ".1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.4.%(fiber_num)d.%(onu_num)d.1.%(port_num)d"
                     % {"port_num": port_num, "fiber_num": fiber_num, "onu_num": onu_num}
                 )
             )
 
         def _get_trunk_vlans(port_num: int) -> list:
-            trunk_vlans = self.get_item(
+            trunk_vlans = snmp.get_item(
                 ".1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%(fiber_num)d.%(onu_num)d.1.%(port_num)d"
                 % {"port_num": port_num, "fiber_num": fiber_num, "onu_num": onu_num}
             )
@@ -160,7 +168,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         zte_utils.split_snmp_extra(v)
 
     def remove_from_olt(self, extra_data: Dict, **kwargs):
-        dev = self.dev_instance
+        dev = self.model_instance
         if not dev:
             return False
         if not dev.parent_dev or not dev.snmp_extra:
@@ -171,7 +179,8 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
 
         fiber_num, onu_num = zte_utils.split_snmp_extra(str(dev.snmp_extra))
         fiber_addr = "%d.%d" % (fiber_num, onu_num)
-        sn = self.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            sn = snmp.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
         if sn is not None:
             if isinstance(sn, str):
                 sn = "ZTEG%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
@@ -190,7 +199,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         raise DeviceConsoleError(_("Could not fetch serial for onu"))
 
     def get_fiber_str(self):
-        dev = self.dev_instance
+        dev = self.model_instance
         if not dev:
             return
         dat = dev.snmp_extra
@@ -208,4 +217,4 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         return [ZteF660RouterScriptModule, ZteF660BridgeStaticScriptModule, ZteF660BridgeDynamicScriptModule]
 
 
-SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, OnuZTE_F660)

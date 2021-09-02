@@ -349,17 +349,3 @@ class BaseDeviceStrategyContext(ABC):
     def is_use_device_port(self) -> bool:
         """True if used device port while opt82 authorization"""
         return self._current_dev_manager.is_use_device_port
-
-    def get_details(self) -> dict:
-        """
-        Return basic information by SNMP or other method
-        :return: dict of information
-        """
-        mng = self._current_dev_manager
-        return {
-            "uptime": mng.get_uptime(),
-            "name": mng.get_device_name(),
-            "description": mng.description,
-            "has_attachable_to_customer": self.has_attachable_to_customer,
-            "is_use_device_port": mng.is_use_device_port,
-        }
