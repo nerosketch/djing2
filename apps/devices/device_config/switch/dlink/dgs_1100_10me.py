@@ -4,7 +4,7 @@ from django.conf import settings
 
 from .dgs_3120_24sc import DlinkDGS_3120_24SCSwitchInterface
 from devices.device_config.base import DeviceConfigurationError
-from .. import SwitchDeviceStrategyContext
+from ..switch_device_strategy import SwitchDeviceStrategyContext
 
 _DEVICE_UNIQUE_CODE = 1
 

@@ -14,8 +14,8 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
 from devices import serializers as dev_serializers
-from devices.device_config.pon import PonOLTDeviceStrategyContext
-from devices.device_config.switch import SwitchDeviceStrategyContext
+from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
+from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
 from devices.models import Device, Port, PortVlanMemberModel
 from devices.device_config.base import (
     DeviceImplementationError,

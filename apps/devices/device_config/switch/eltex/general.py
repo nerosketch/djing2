@@ -11,8 +11,8 @@ from devices.device_config.base import (
     Macs,
     DeviceImplementationError,
 )
-from .. import SwitchDeviceStrategyContext
-from ..dlink import DlinkDGS1100_10ME
+from ..switch_device_strategy import SwitchDeviceStrategyContext
+from ..dlink.dgs_1100_10me import DlinkDGS1100_10ME
 from ..switch_device_strategy import PortType
 from ...base_device_strategy import SNMPWorker, PortVlanConfigModeChoices
 

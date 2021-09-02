@@ -1,10 +1,12 @@
 from typing import AnyStr, List, Generator
 import struct
 
-from devices.device_config.switch.switch_device_strategy import PortType
 from djing2.lib import safe_int, RuTimedelta, process_lock
 from devices.device_config.base_device_strategy import SNMPWorker
-from devices.device_config.switch import SwitchDeviceStrategyContext, SwitchDeviceStrategy
+from devices.device_config.switch.switch_device_strategy import (
+    SwitchDeviceStrategyContext, SwitchDeviceStrategy,
+    PortType
+)
 from devices.device_config.base import (
     Vlans,
     Vlan,

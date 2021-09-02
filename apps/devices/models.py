@@ -18,8 +18,8 @@ from devices.device_config.base import (
     OptionalScriptCallResult,
 )
 from devices.device_config.base_device_strategy import BaseDeviceStrategyContext
-from devices.device_config.pon import PonOLTDeviceStrategyContext, PonONUDeviceStrategyContext
-from devices.device_config.switch import SwitchDeviceStrategyContext
+from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext, PonONUDeviceStrategyContext
+from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
 from groupapp.models import Group
 from networks.models import VlanIf
 

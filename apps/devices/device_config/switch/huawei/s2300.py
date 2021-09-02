@@ -1,8 +1,8 @@
 from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import safe_int
-from .. import SwitchDeviceStrategyContext
-from ..eltex import EltexSwitch
+from ..switch_device_strategy import SwitchDeviceStrategyContext
+from ..eltex.general import EltexSwitch
 from devices.device_config.base import DeviceImplementationError, Vlan, Vlans, Macs, MacItem
 from ..switch_device_strategy import PortType
 from ...base_device_strategy import SNMPWorker
