@@ -1,7 +1,7 @@
 from typing import Generator
 from collections import namedtuple
 from easysnmp import EasySNMPTimeoutError
-from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy as _
 
 # from netaddr import EUI, mac_cisco
 from devices.device_config.base_device_strategy import SNMPWorker
@@ -64,7 +64,7 @@ class BDCOM_P3310C(PonOltDeviceStrategy):
                         fiberid=safe_int(fiber_id),
                     )
         except EasySNMPTimeoutError as e:
-            raise EasySNMPTimeoutError("{} ({})".format(gettext("wait for a reply from the SNMP Timeout"), e))
+            raise EasySNMPTimeoutError("{} ({})".format(_("wait for a reply from the SNMP Timeout"), e))
 
     def get_fibers(self):
         dev = self.model_instance
@@ -100,6 +100,21 @@ class BDCOM_P3310C(PonOltDeviceStrategy):
     def validate_extra_snmp_info(self, v: str) -> None:
         # Olt has no require snmp info
         pass
+
+    def find_onu(self, *args, **kwargs):
+        dev = self.model_instance
+        parent = dev.parent_dev
+        if parent is not None:
+            manager = parent.get_manager_object_olt()
+            mac = dev.mac_addr
+            ports = manager.get_list_keyval(".1.3.6.1.4.1.3320.101.10.1.1.3")
+            for srcmac, snmpnum in ports:
+                # convert bytes mac address to str presentation mac address
+                real_mac = macbin2str(srcmac)
+                if mac == real_mac:
+                    return safe_int(snmpnum), None
+            return None, _('Onu with mac "%(onu_mac)s" not found on OLT') % {"onu_mac": mac}
+        return None, _("Parent device not found")
 
     #############################
     #      Telnet access
