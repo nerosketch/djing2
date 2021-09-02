@@ -241,7 +241,7 @@ class DevicePONViewSet(DjingModelViewSet):
     def read_onu_vlan_info(self, request, pk=None):
         try:
             dev = self.get_object()
-            if dev.is_onu_registered():
+            if dev.is_onu_registered:
                 vlans = tuple(dev.read_onu_vlan_info())
             else:
                 vlans = dev.default_vlan_info()

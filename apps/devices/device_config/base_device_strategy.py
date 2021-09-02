@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _, gettext
 from django.db import models
 from devices.device_config.base import (
     DeviceImplementationError, DeviceConnectionError,
-    OptionalScriptCallResult
+    OptionalScriptCallResult, Vlans
 )
 
 
@@ -163,6 +163,14 @@ class BaseDeviceStrategy(ABC):
     def validate_extra_snmp_info(v: str) -> None:
         raise NotImplementedError
 
+    @abstractmethod
+    def read_all_vlan_info(self) -> Vlans:
+        """
+        Read info about all vlans
+        :return: Vlan list
+        """
+        raise NotImplementedError
+
 
 global_device_types_map: Dict[int, Type[BaseDeviceStrategy]] = {}
 
@@ -216,3 +224,11 @@ class BaseDeviceStrategyContext(ABC):
     def is_use_device_port(self) -> bool:
         """True if used device port while opt82 authorization"""
         return self._current_dev_manager.is_use_device_port
+
+    @abstractmethod
+    def read_all_vlan_info(self) -> Vlans:
+        """
+        Read info about all vlans
+        :return: Vlan list
+        """
+        return self._current_dev_manager.read_all_vlan_info()
