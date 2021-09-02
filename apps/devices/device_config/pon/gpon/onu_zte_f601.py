@@ -1,5 +1,5 @@
 from .onu_zte_f660 import OnuZTE_F660
-from ...switch import SwitchDeviceStrategyContext
+from ..pon_device_strategy import PonONUDeviceStrategyContext
 
 _DEVICE_UNIQUE_CODE = 7
 
@@ -32,4 +32,4 @@ class OnuZTE_F601(OnuZTE_F660):
             return ()
 
 
-SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, OnuZTE_F601)
+PonONUDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, OnuZTE_F601)

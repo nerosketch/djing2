@@ -5,8 +5,8 @@ from django.utils.translation import gettext
 
 # from netaddr import EUI, mac_cisco
 from devices.device_config.base_device_strategy import SNMPWorker
+from devices.device_config.pon import PonOLTDeviceStrategyContext
 from devices.device_config.pon.pon_device_strategy import PonOltDeviceStrategy
-from devices.device_config.switch import SwitchDeviceStrategyContext
 from djing2.lib import safe_int, RuTimedelta, safe_float, macbin2str
 
 
@@ -354,4 +354,4 @@ class BDCOM_P3310C(PonOltDeviceStrategy):
     #     ))
     #     self._read_until_onu_int()
 
-SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, BDCOM_P3310C)
+PonOLTDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, BDCOM_P3310C)

@@ -1,10 +1,9 @@
-from typing import AnyStr, List, Generator, Optional
-from dataclasses import dataclass
+from typing import AnyStr, List, Generator
 import struct
 
-from django.db.models import Model
-from djing2.lib import safe_int, RuTimedelta, process_lock, macbin2str
-from devices.device_config.base_device_strategy import SNMPWorker, ListDeviceConfigType
+from devices.device_config.switch.switch_device_strategy import PortType
+from djing2.lib import safe_int, RuTimedelta, process_lock
+from devices.device_config.base_device_strategy import SNMPWorker
 from devices.device_config.switch import SwitchDeviceStrategyContext, SwitchDeviceStrategy
 from devices.device_config.base import (
     Vlans,
@@ -16,48 +15,6 @@ from devices.device_config.base import (
 
 
 _DEVICE_UNIQUE_CODE = 9
-
-
-@dataclass
-class DLinkPort:
-    model_instance: Model
-    num: int = 0
-    snmp_num: Optional[int] = None
-    name: str = ""
-    status: bool = False
-    speed: int = 0
-    __uptime: int = 0
-    __mac: bytes = b""
-
-    def __post_init__(self):
-        self.snmp_num = int(self.num) if self.snmp_num is None else int(self.snmp_num)
-
-    @property
-    def mac(self) -> str:
-        m = self.__mac
-        if isinstance(m, bytes):
-            return macbin2str(m)
-        elif isinstance(m, str):
-            return m
-        raise ValueError('Unexpected type for mac: %s' % type(m))
-
-    @mac.setter
-    def mac(self, mac):
-        self.__mac = mac
-
-    @property
-    def uptime(self) -> str:
-        if self.__uptime:
-            return str(RuTimedelta(seconds=self.__uptime / 100))
-        return ''
-
-    @uptime.setter
-    def uptime(self, time: int):
-        self.__uptime = time
-
-    @staticmethod
-    def get_config_types() -> ListDeviceConfigType:
-        return []
 
 
 class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
@@ -237,7 +194,7 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
         with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
             status = snmp.get_item(".1.3.6.1.2.1.2.2.1.7.%d" % snmp_num)
             status = status and int(status) == 1
-            return DLinkPort(
+            return PortType(
                 num=snmp_num,
                 name=snmp.get_item(".1.3.6.1.2.1.31.1.1.1.18.%d" % snmp_num),
                 status=status,

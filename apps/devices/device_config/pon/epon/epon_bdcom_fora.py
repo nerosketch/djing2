@@ -6,9 +6,8 @@ from djing2.lib import safe_int, safe_float, macbin2str, RuTimedelta, bytes2huma
 from devices.device_config.base import DeviceImplementationError, DeviceConfigurationError
 from devices.device_config.expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
-from ..pon_device_strategy import PonOnuDeviceStrategy
+from ..pon_device_strategy import PonOnuDeviceStrategy, PonONUDeviceStrategyContext
 from ...base_device_strategy import SNMPWorker
-from ...switch import SwitchDeviceStrategyContext
 
 _DEVICE_UNIQUE_CODE = 3
 
@@ -138,4 +137,4 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
     #     pass
 
 
-SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, EPON_BDCOM_FORA)
+PonONUDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, EPON_BDCOM_FORA)
