@@ -140,7 +140,7 @@ class ZTE_C320(BDCOM_P3310C):
     #     for v in vlan_list:
     #         self.write('vlan %d' % v.vid)
     #         self.read_until('(config-vlan)#')
-    #         self.write('name %s' % self._normalize_name(v.title))
+    #         self.write('name %s' % self.normalize_name(v.title))
     #         self.read_until('(config-vlan)#')
     #         self.write('exit')
     #         self.read_until('(config)#')

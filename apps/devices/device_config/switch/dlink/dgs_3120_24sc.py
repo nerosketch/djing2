@@ -10,17 +10,14 @@ from devices.device_config.base import (
     Vlan,
     Macs,
     MacItem,
-    BaseSwitchInterface,
-    BasePortInterface,
     DeviceImplementationError,
 )
-from devices.device_config.utils import plain_ip_device_mon_template
 
 
 _DEVICE_UNIQUE_CODE = 9
 
 
-class DLinkPort(BasePortInterface):
+class DLinkPort:
     @staticmethod
     def get_config_types():
         return []
@@ -59,7 +56,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
                 continue
             untagged_members = self.get_item("1.3.6.1.2.1.17.7.1.4.3.1.4.%d" % vid)
             untagged_members = self._make_ports_map(untagged_members[:4])
-            name = self._get_vid_name(vid)
+            name = self.get_vid_name(vid)
             yield Vlan(vid=vid, title=name, native=untagged_members[port - 1])
 
     @staticmethod
@@ -94,7 +91,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
                 continue
             vid = safe_int(oid[-7:-6][0])
             fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
-            vid_name = self._get_vid_name(vid)
+            vid_name = self.get_vid_name(vid)
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
 
     def read_mac_address_vlan(self, vid: int) -> Macs:
@@ -102,7 +99,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         if vid > 4095 or vid < 1:
             raise DeviceImplementationError("VID must be in range 1-%d" % 4095)
         fdb = self.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2.%d" % vid)
-        vid_name = self._get_vid_name(vid)
+        vid_name = self.get_vid_name(vid)
         for port_num, oid in fdb:
             fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
@@ -110,7 +107,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
     def create_vlans(self, vlan_list: Vlans) -> bool:
         # ('1.3.6.1.2.1.17.7.1.4.3.1.3.152', b'\xff\xff\xff\xff', 'OCTETSTR'),  # untagged порты
         for v in vlan_list:
-            vname = self._normalize_name(v.title, v.vid)
+            vname = self.normalize_name(v.title, v.vid)
             return self.set_multiple(
                 [
                     (".1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % v.vid, 4, "INTEGER"),  # 4 - vlan со всеми функциями
