@@ -27,6 +27,19 @@ class PonOltDeviceStrategy(BaseDeviceStrategy):
     def get_fibers(self) -> Generator:
         raise NotImplementedError
 
+    def get_details(self) -> dict:
+        """
+        Return basic information by SNMP or other method
+        :return: dict of information
+        """
+        return {
+            "uptime": self.get_uptime(),
+            "name": self.get_device_name(),
+            "description": self.description,
+            "has_attachable_to_customer": self.has_attachable_to_customer,
+            "is_use_device_port": self.is_use_device_port,
+        }
+
 
 class PonOLTDeviceStrategyContext(BaseDeviceStrategyContext):
     _current_dev_manager: PonOltDeviceStrategy
@@ -51,6 +64,14 @@ class PonOLTDeviceStrategyContext(BaseDeviceStrategyContext):
     @abstractmethod
     def get_fibers(self) -> Generator:
         return self._current_dev_manager.get_fibers()
+
+    def get_details(self) -> dict:
+        """
+        Return basic information by SNMP or other method
+        :return: dict of information
+        """
+        mng = self._current_dev_manager
+        return mng.get_details()
 
 
 class PonOnuDeviceStrategy(BaseDeviceStrategy):
