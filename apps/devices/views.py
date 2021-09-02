@@ -14,6 +14,8 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
 from devices import serializers as dev_serializers
+from devices.device_config.pon import PonOLTDeviceStrategyContext
+from devices.device_config.switch import SwitchDeviceStrategyContext
 from devices.models import Device, Port, PortVlanMemberModel
 from devices.device_config.base import (
     DeviceImplementationError,
@@ -89,8 +91,8 @@ class DevicePONViewSet(DjingModelViewSet):
     def scan_onu_list(self, request, pk=None):
         device = self.get_object()
         manager = device.get_pon_device_manager()
-        if not issubclass(manager.__class__, BasePONInterface):
-            raise DeviceImplementationError("Expected BasePONInterface subclass")
+        if not isinstance(manager, PonOLTDeviceStrategyContext):
+            raise DeviceImplementationError("Expected PonOLTDeviceStrategyContext instance")
 
         def chunk_cook(chunk: dict) -> bytes:
             chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONBytesEncoder)
@@ -168,10 +170,10 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def apply_device_onu_config_template(self, request, pk=None):
         self.check_permission_code(request, "devices.can_apply_onu_config")
-        device = self.get_object()
-        mng = device.get_manager_object_onu()
-        if not issubclass(mng.__class__, BasePON_ONU_Interface):
-            return Response("device must be PON ONU type", status=status.HTTP_400_BAD_REQUEST)
+
+        # mng = device.get_manager_object_onu()
+        # if not isinstance(mng, BasePON_ONU_Interface):
+        #     return Response("device must be PON ONU type", status=status.HTTP_400_BAD_REQUEST)
 
         # TODO: Describe this as TypedDict from python3.8
         # apply config
@@ -198,6 +200,7 @@ class DevicePONViewSet(DjingModelViewSet):
         device_config_serializer.is_valid(raise_exception=True)
 
         try:
+            device = self.get_object()
             res = device.apply_onu_config(config=device_config_serializer.data)
             return Response(res)
         except DeviceConsoleError as err:
@@ -291,8 +294,8 @@ class DeviceModelViewSet(DjingModelViewSet):
     def scan_ports(self, request, pk=None):
         device = self.get_object()
         manager = device.get_manager_object_switch()
-        if not issubclass(manager.__class__, BaseSwitchInterface):
-            raise DeviceImplementationError("Expected BaseSwitchInterface subclass")
+        if not isinstance(manager, SwitchDeviceStrategyContext):
+            raise DeviceImplementationError("Expected SwitchDeviceStrategyContext instance")
         try:
             ports = [p.to_dict() for p in manager.get_ports()]
             return Response(data=ports)

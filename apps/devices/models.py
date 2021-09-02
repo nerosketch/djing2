@@ -1,11 +1,13 @@
 from datetime import datetime
-from typing import Optional, Tuple, Iterable
+from typing import Optional, Tuple
 
+from netfields import MACAddressField
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from netfields import MACAddressField
 
+from djing2.lib import MyChoicesAdapter
+from djing2.models import BaseAbstractModel
 from devices.device_config import DEVICE_TYPES, DEVICE_TYPE_UNKNOWN
 from devices.device_config.base import (
     Vlans,
@@ -15,30 +17,14 @@ from devices.device_config.base import (
     Vlan,
     OptionalScriptCallResult,
 )
-from devices.device_config.base_device_strategy import DeviceConfigType, BaseDeviceStrategyContext
+from devices.device_config.base_device_strategy import BaseDeviceStrategyContext
 from devices.device_config.pon import PonOLTDeviceStrategyContext, PonONUDeviceStrategyContext
 from devices.device_config.switch import SwitchDeviceStrategyContext
-from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
-from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from networks.models import VlanIf
 
 
-def _get_all_device_config_types() -> Iterable[DeviceConfigType]:
-    all_dtypes = (
-        klass.get_config_types()
-        for code, klass in DEVICE_TYPES
-        if issubclass(klass, (BasePON_ONU_Interface, BasePortInterface))
-    )
-    return (a for b in all_dtypes if b for a in b)
-
-
-_device_code_config_choices = tuple({(dtype.short_code, dtype.title) for dtype in _get_all_device_config_types()})
-
-
 class Device(BaseAbstractModel):
-    # _cached_manager = None
-
     ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     mac_addr = MACAddressField(verbose_name=_("Mac address"), unique=True)
     comment = models.CharField(_("Comment"), max_length=256)
@@ -74,7 +60,8 @@ class Device(BaseAbstractModel):
     is_noticeable = models.BooleanField(_("Send notify when monitoring state changed"), default=False)
 
     code = models.CharField(
-        _("Code"), max_length=64, blank=True, null=True, default=None, choices=_device_code_config_choices
+        _("Code"), max_length=64, blank=True,
+        null=True, default=None
     )
 
     create_time = models.DateTimeField(
@@ -297,11 +284,12 @@ class Port(BaseAbstractModel):
         return "%d: %s" % (self.num, self.descr)
 
     def get_port_vlan_list(self) -> Vlans:
-        mng = self.device.get_manager_object_switch()
+        dev: Device = self.device
+        mng = dev.get_switch_device_manager()
         yield from mng.read_port_vlan_info(port=int(self.num))
 
     def apply_vlan_config(self, serializer, request):
-        device = self.device
+        device: Device = self.device
         if not device:
             raise DeviceImplementationError("device could not found")
         data = serializer.data
@@ -309,7 +297,7 @@ class Port(BaseAbstractModel):
         if not port_num:
             raise DeviceImplementationError("'port' field required")
 
-        mng = device.get_manager_object_switch()
+        mng = device.get_switch_device_manager()
 
         vlans_data = data.get("vids")
         if not vlans_data:
