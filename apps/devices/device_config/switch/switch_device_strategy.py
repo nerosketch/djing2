@@ -173,14 +173,6 @@ class SwitchDeviceStrategy(BaseDeviceStrategy):
         return self.delete_vlans(_vlan_gen)
 
     @abstractmethod
-    def read_all_vlan_info(self) -> Vlans:
-        """
-        Read info about all vlans
-        :return: Vlan list
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def read_mac_address_vlan(self, vid: int) -> Macs:
         """
         Read FDB in vlan
@@ -312,14 +304,6 @@ class SwitchDeviceStrategyContext(BaseDeviceStrategyContext):
 
     def delete_vlan(self, vid: int, is_management: bool) -> bool:
         return self._current_dev_manager.delete_vlan(vid=vid, is_management=is_management)
-
-    @abstractmethod
-    def read_all_vlan_info(self) -> Vlans:
-        """
-        Read info about all vlans
-        :return: Vlan list
-        """
-        return self._current_dev_manager.read_all_vlan_info()
 
     @abstractmethod
     def read_mac_address_vlan(self, vid: int) -> Macs:

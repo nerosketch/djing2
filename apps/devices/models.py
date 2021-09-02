@@ -15,7 +15,7 @@ from devices.device_config.base import (
     Vlan,
     OptionalScriptCallResult,
 )
-from devices.device_config.base_device_strategy import DeviceConfigType
+from devices.device_config.base_device_strategy import DeviceConfigType, BaseDeviceStrategyContext
 from devices.device_config.pon import PonOLTDeviceStrategyContext, PonONUDeviceStrategyContext
 from devices.device_config.switch import SwitchDeviceStrategyContext
 from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
@@ -141,6 +141,9 @@ class Device(BaseAbstractModel):
     def get_switch_device_manager(self) -> SwitchDeviceStrategyContext:
         return SwitchDeviceStrategyContext(model_instance=self)
 
+    def get_general_device_manager(self) -> BaseDeviceStrategyContext:
+        return BaseDeviceStrategyContext(model_instance=self)
+
     # Can attach device to customer in customer page
     # def has_attachable_to_customer(self) -> bool:
     #     return self.device_strategy_context.has_attachable_to_customer
@@ -162,7 +165,7 @@ class Device(BaseAbstractModel):
             Device.objects.filter(pk=self.pk).update(snmp_extra=None)
         return r
 
-    def fix_onu(self):
+    def fix_onu(self) -> Tuple[Optional[int], Optional[str]]:
         mng = self.get_pon_olt_device_manager()
         onu_sn, err_text = mng.find_onu()
         if onu_sn is not None:
@@ -171,14 +174,12 @@ class Device(BaseAbstractModel):
         return False, err_text
 
     def get_if_name(self):
-        mng = self.get_pon_device_manager()
-        if hasattr(mng, "get_fiber_str"):
-            return mng.get_fiber_str()
-        return r"¯ \ _ (ツ) _ / ¯"
+        mng = self.get_pon_onu_device_manager()
+        return mng.get_fiber_str()
 
-    def get_config_types(self) -> ListDeviceConfigType:
-        mng_klass = self.get_manager_klass()
-        return mng_klass.get_config_types()
+    def get_config_types(self):
+        mng = self.get_pon_onu_device_manager()
+        return mng.get_config_types()
 
     def apply_onu_config(self, config: dict) -> OptionalScriptCallResult:
         self.code = config.get("configTypeCode")
@@ -196,17 +197,18 @@ class Device(BaseAbstractModel):
     #############################
 
     def dev_get_all_vlan_list(self) -> Vlans:
-        mng = self.get_manager_object_switch()
+        mng = self.get_general_device_manager()
         return mng.read_all_vlan_info()
 
     def read_onu_vlan_info(self) -> Vlans:
-        mng = self.get_manager_object_onu()
+        mng = self.get_pon_onu_device_manager()
         return mng.read_onu_vlan_info()
 
     def default_vlan_info(self) -> Vlans:
-        mng = self.get_manager_object_onu()
+        mng = self.get_pon_onu_device_manager()
         return mng.default_vlan_info()
 
+    @property
     def is_onu_registered(self) -> bool:
         return self.snmp_extra is not None
 
@@ -221,7 +223,7 @@ class Device(BaseAbstractModel):
     #         raise DeviceConsoleError(_('Failed while removing vlan'))
 
     def dev_read_mac_address_vlan(self, vid: int) -> Macs:
-        mng = self.get_manager_object_switch()
+        mng = self.get_switch_device_manager()
         return mng.read_mac_address_vlan(vid=vid)
 
     ##############################
@@ -238,7 +240,7 @@ class Device(BaseAbstractModel):
     #     return tln.detach_vlan_from_port(vid=vid, port=port)
 
     def dev_switch_get_mac_address_port(self, device_port_num: int) -> Macs:
-        mng = self.get_manager_object_switch()
+        mng = self.get_switch_device_manager()
         return mng.read_mac_address_port(port_num=device_port_num)
 
     ##############################
