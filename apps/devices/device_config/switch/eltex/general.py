@@ -30,19 +30,19 @@ class EltexSwitch(DlinkDGS1100_10ME):
         dev = self.model_instance
         snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
 
-        def build_port(s, i: int, n: int):
+        def build_port(i: int, n: int):
             speed = snmp.get_item(".1.3.6.1.2.1.2.2.1.5.%d" % n)
             return PortType(
-                s,
                 num=i,
                 name=snmp.get_item(".1.3.6.1.2.1.31.1.1.1.18.%d" % n),
                 status=snmp.get_item(".1.3.6.1.2.1.2.2.1.7.%d" % n) == 1,
                 mac=snmp.get_item(".1.3.6.1.2.1.2.2.1.6.%d" % n),
                 uptime=snmp.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % n),
                 speed=int(speed or 0),
+                model_instance=dev,
             )
 
-        return tuple(build_port(self, i, n) for i, n in enumerate(range(49, self.ports_len + 49), 1))
+        return tuple(build_port(i, n) for i, n in enumerate(range(49, self.ports_len + 49), 1))
 
     def get_device_name(self):
         dev = self.model_instance

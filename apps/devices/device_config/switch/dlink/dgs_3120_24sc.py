@@ -201,7 +201,7 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
                 mac=snmp.get_item(".1.3.6.1.2.1.2.2.1.6.%d" % snmp_num),
                 speed=snmp.get_item(".1.3.6.1.2.1.2.2.1.5.%d" % snmp_num),
                 uptime=int(snmp.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % snmp_num)),
-                model_instance=self,
+                model_instance=dev,
             )
 
     def port_toggle(self, port_num: int, state: int):
