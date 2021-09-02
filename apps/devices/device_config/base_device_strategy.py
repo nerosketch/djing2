@@ -16,7 +16,7 @@ class SNMPWorker(Session):
         if not hostname:
             raise DeviceImplementationError(gettext("Hostname required for snmp"))
         try:
-            super().__init__(hostname=hostname, *args, **kwargs)
+            super().__init__(hostname=str(hostname), *args, **kwargs)
         except OSError as e:
             raise DeviceConnectionError(e)
 
@@ -86,81 +86,7 @@ class SNMPWorker(Session):
 
 
 class BaseDeviceInterface(BaseSNMPWorker):
-
     """How much ports is available for switch"""
-
-    ports_len: int
-
-    def __init__(self, dev_instance=None, host: str = None, snmp_community="public"):
-        """
-        :param dev_instance: an instance of devices.models.Device
-        :param host: device host address
-        """
-        BaseSNMPWorker.__init__(self, hostname=host, community=snmp_community)
-        # BaseTelnetWorker.__init__(self, host=host)
-        self.dev_instance = dev_instance
-
-    def create_vlans(self, vlan_list: Vlans) -> bool:
-        """
-        Create new vlan with name
-        :param vlan_list:
-        :return: Operation result
-        """
-        raise NotImplementedError
-
-    def delete_vlans(self, vlan_list: Vlans) -> bool:
-        """
-        Delete vlans from switch
-        :param vlan_list:
-        :return: Operation result
-        """
-        raise NotImplementedError
-
-    def create_vlan(self, vlan: Vlan) -> bool:
-        _vlan_gen = (v for v in (vlan,))
-        return self.create_vlans(_vlan_gen)
-
-    def delete_vlan(self, vid: int, is_management: bool) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, title=None, is_management=is_management, native=False),))
-        return self.delete_vlans(_vlan_gen)
-
-    def read_all_vlan_info(self) -> Vlans:
-        """
-        Read info about all vlans
-        :return: Vlan list
-        """
-        raise NotImplementedError
-
-    def read_mac_address_vlan(self, vid: int) -> Macs:
-        """
-        Read FDB in vlan
-        :param vid
-        :return: Mac list
-        """
-        raise NotImplementedError
-
-    def reboot(self, save_before_reboot=False) -> Tuple[int, AnyStr]:
-        """
-        Send signal reboot to device
-        :param save_before_reboot:
-        :return: tuple of command return number and text of operation
-        """
-        return 5, _("Reboot not ready")
-
-    @classmethod
-    def get_is_use_device_port(cls) -> bool:
-        return bool(cls.is_use_device_port)
-
-    @staticmethod
-    def validate_extra_snmp_info(v: str) -> None:
-        """
-        Validate extra snmp field for each device.
-        If validation failed then raise en exception from
-        devapp.expect_scripts.ExpectValidationError
-        with description of error.
-        :param v: String value for validate
-        """
-        raise NotImplementedError
 
 
 class PortVlanConfigModeChoices(models.TextChoices):
@@ -211,56 +137,15 @@ class DeviceConfigType:
 ListDeviceConfigType = List[Type[DeviceConfigType]]
 
 
-class BasePortInterface(ABC):
-    def __init__(
-        self,
-        dev_interface: BaseSwitchInterface,
-        num=0,
-        name="",
-        status=False,
-        mac: bytes = b"",
-        speed=0,
-        uptime=None,
-        snmp_num=None,
-        *args,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-        self.num = int(num)
-        self.snmp_num = int(num) if snmp_num is None else int(snmp_num)
-        self.nm = name
-        self.st = status
-        self._mac: bytes = mac
-        self.sp = speed
-        self._uptime = int(uptime) if uptime else None
-        self.dev_interface = dev_interface
-
-    @property
-    def mac(self) -> str:
-        return macbin2str(self._mac)
-
-    def to_dict(self) -> dict:
-        return {
-            "num": self.num,
-            "snmp_number": self.snmp_num,
-            "name": self.nm,
-            "status": self.st,
-            "mac_addr": self.mac,
-            "speed": int(self.sp or 0),
-            "uptime": str(RuTimedelta(seconds=self._uptime / 100)) if self._uptime else None,
-        }
-
-    @staticmethod
-    @abstractmethod
-    def get_config_types() -> ListDeviceConfigType:
-        """
-        Returns all possible config type for this device type
-        :return: List instance of DeviceConfigType
-        """
-        raise NotImplementedError
-
-
 class BaseDeviceStrategy(ABC):
+
+    """True if used device port while opt82 authorization"""
+    has_attachable_to_customer = False
+
+    tech_code: str
+    description: str
+    is_use_device_port = False
+
     model_instance = None
 
     def __init__(self, model_instance):
@@ -278,18 +163,6 @@ class BaseDeviceStrategy(ABC):
 
     @abstractmethod
     def get_uptime(self) -> str:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def is_use_device_port(self) -> bool:
-        """True if used device port while opt82 authorization"""
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def has_attachable_to_customer(self) -> bool:
-        """True if used device port while opt82 authorization"""
         raise NotImplementedError
 
     @staticmethod

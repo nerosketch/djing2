@@ -1,10 +1,11 @@
-from typing import Optional, AnyStr, List, Generator
+from typing import AnyStr, List, Generator, Optional
+from dataclasses import dataclass
 import struct
 
-from django.utils.translation import gettext
-
-from devices.device_config.switch import SwitchDeviceStrategyContext
-from djing2.lib import safe_int, RuTimedelta, process_lock
+from django.db.models import Model
+from djing2.lib import safe_int, RuTimedelta, process_lock, macbin2str
+from devices.device_config.base_device_strategy import SNMPWorker, ListDeviceConfigType
+from devices.device_config.switch import SwitchDeviceStrategyContext, SwitchDeviceStrategy
 from devices.device_config.base import (
     Vlans,
     Vlan,
@@ -17,13 +18,49 @@ from devices.device_config.base import (
 _DEVICE_UNIQUE_CODE = 9
 
 
+@dataclass
 class DLinkPort:
+    model_instance: Model
+    num: int = 0
+    snmp_num: Optional[int] = None
+    name: str = ""
+    status: bool = False
+    speed: int = 0
+    __uptime: int = 0
+    __mac: bytes = b""
+
+    def __post_init__(self):
+        self.snmp_num = int(self.num) if self.snmp_num is None else int(self.snmp_num)
+
+    @property
+    def mac(self) -> str:
+        m = self.__mac
+        if isinstance(m, bytes):
+            return macbin2str(m)
+        elif isinstance(m, str):
+            return m
+        raise ValueError('Unexpected type for mac: %s' % type(m))
+
+    @mac.setter
+    def mac(self, mac):
+        self.__mac = mac
+
+    @property
+    def uptime(self) -> str:
+        if self.__uptime:
+            return str(RuTimedelta(seconds=self.__uptime / 100))
+        return ''
+
+    @uptime.setter
+    def uptime(self, time: int):
+        self.__uptime = time
+
     @staticmethod
-    def get_config_types():
+    def get_config_types() -> ListDeviceConfigType:
         return []
 
 
-class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
+class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
     """Dlink DGS-3120-24SC"""
 
     has_attachable_to_customer = False
@@ -32,18 +69,14 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
     is_use_device_port = True
     ports_len = 24
 
-    def __init__(self, dev_instance, *args, **kwargs):
-        if not dev_instance.ip_address:
-            raise DeviceImplementationError(gettext("Ip address required"))
-        dev_ip_addr = dev_instance.ip_address
-        super().__init__(dev_instance=dev_instance, host=dev_ip_addr, snmp_community=str(dev_instance.man_passw))
-
     def read_port_vlan_info(self, port: int) -> Vlans:
         if port > self.ports_len or port < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
         vid = 1
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         while True:
-            member_ports, vid = self.get_next_keyval(".1.3.6.1.2.1.17.7.1.4.3.1.2.%d" % vid)
+            member_ports, vid = snmp.get_next_keyval(".1.3.6.1.2.1.17.7.1.4.3.1.2.%d" % vid)
             if not member_ports:
                 break
             if isinstance(member_ports, str):
@@ -54,7 +87,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
             member_ports = self._make_ports_map(member_ports[:4])
             if not member_ports[port - 1]:
                 continue
-            untagged_members = self.get_item("1.3.6.1.2.1.17.7.1.4.3.1.4.%d" % vid)
+            untagged_members = snmp.get_item("1.3.6.1.2.1.17.7.1.4.3.1.4.%d" % vid)
             untagged_members = self._make_ports_map(untagged_members[:4])
             name = self.get_vid_name(vid)
             yield Vlan(vid=vid, title=name, native=untagged_members[port - 1])
@@ -74,7 +107,9 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         return struct.pack("!I", i)
 
     def read_all_vlan_info(self) -> Vlans:
-        vids = self.get_list_keyval(".1.3.6.1.2.1.17.7.1.4.3.1.1")
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            vids = snmp.get_list_keyval(".1.3.6.1.2.1.17.7.1.4.3.1.1")
         for vid_name, vid in vids:
             vid = safe_int(vid)
             if vid in (0, 1):
@@ -85,7 +120,9 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
-        fdb = self.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2")
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            fdb = snmp.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2")
         for fdb_port, oid in fdb:
             if port_num != int(fdb_port):
                 continue
@@ -98,7 +135,9 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         vid = safe_int(vid)
         if vid > 4095 or vid < 1:
             raise DeviceImplementationError("VID must be in range 1-%d" % 4095)
-        fdb = self.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2.%d" % vid)
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            fdb = snmp.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2.%d" % vid)
         vid_name = self.get_vid_name(vid)
         for port_num, oid in fdb:
             fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
@@ -106,28 +145,34 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
 
     def create_vlans(self, vlan_list: Vlans) -> bool:
         # ('1.3.6.1.2.1.17.7.1.4.3.1.3.152', b'\xff\xff\xff\xff', 'OCTETSTR'),  # untagged порты
-        for v in vlan_list:
-            vname = self.normalize_name(v.title, v.vid)
-            return self.set_multiple(
-                [
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            for v in vlan_list:
+                vname = self.normalize_name(v.title, v.vid)
+                if not snmp.set_multiple([
                     (".1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % v.vid, 4, "INTEGER"),  # 4 - vlan со всеми функциями
                     (".1.3.6.1.2.1.17.7.1.4.3.1.1.%d" % v.vid, vname, "OCTETSTR"),  # имя влана
-                ]
-            )
+                ]):
+                    return False
+        return True
 
     def delete_vlans(self, vlan_list: Vlans) -> bool:
         req = [("1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % v.vid, 6) for v in vlan_list]
-        return self.set_multiple(req)
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            return snmp.set_multiple(req)
 
-    def _add_vlan_if_not_exists(self, vlan: Vlan):
+    def _add_vlan_if_not_exists(self, vlan: Vlan) -> bool:
         """
         If vlan does not exsists on device, then create it
         :param vlan: vlan for check
         :return: True if vlan created
         """
-        snmp_vlan = self.get_item(".1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % vlan.vid)
-        if snmp_vlan is None:
-            return self.create_vlan(vlan=vlan)
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            snmp_vlan = snmp.get_item(".1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % vlan.vid)
+            if snmp_vlan is None:
+                return self.create_vlan(vlan=vlan)
         return False
 
     def _toggle_vlan_on_port(self, vlan: Vlan, port: int, member: bool, request):
@@ -137,8 +182,11 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         # if vlan does not exsists on device, then create it
         self._add_vlan_if_not_exists(vlan)
 
-        port_member_tagged = self.get_item(".1.3.6.1.2.1.17.7.1.4.3.1.2.%d" % vlan.vid)
-        port_member_untag = self.get_item(".1.3.6.1.2.1.17.7.1.4.3.1.4.%d" % vlan.vid)
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
+
+        port_member_tagged = snmp.get_item(".1.3.6.1.2.1.17.7.1.4.3.1.2.%d" % vlan.vid)
+        port_member_untag = snmp.get_item(".1.3.6.1.2.1.17.7.1.4.3.1.4.%d" % vlan.vid)
         if not port_member_tagged or not port_member_untag:
             return False
 
@@ -154,7 +202,7 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         port_member_tagged = self._make_buf_from_ports_map(port_member_tagged_map)
         port_member_untag = self._make_buf_from_ports_map(port_member_untag_map)
 
-        return self.set_multiple(
+        return snmp.set_multiple(
             oid_values=[
                 (".1.3.6.1.2.1.17.7.1.4.3.1.2.%d" % vlan.vid, port_member_tagged, "OCTETSTR"),
                 (".1.3.6.1.2.1.17.7.1.4.3.1.4.%d" % vlan.vid, port_member_untag, "OCTETSTR"),
@@ -175,7 +223,9 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         return self._toggle_vlan_on_port(vlan=vlan, port=port, member=False, request=request)
 
     def get_ports(self) -> Generator:
-        ifs_ids = self.get_list(".1.3.6.1.2.1.10.7.2.1.1")
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            ifs_ids = snmp.get_list(".1.3.6.1.2.1.10.7.2.1.1")
         for num, if_id in enumerate(ifs_ids, 1):
             if num > self.ports_len:
                 return
@@ -183,21 +233,25 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
 
     def get_port(self, snmp_num: int):
         snmp_num = safe_int(snmp_num)
-        status = self.get_item(".1.3.6.1.2.1.2.2.1.7.%d" % snmp_num)
-        status = status and int(status) == 1
-        return DLinkPort(
-            num=snmp_num,
-            name=self.get_item(".1.3.6.1.2.1.31.1.1.1.18.%d" % snmp_num),
-            status=status,
-            mac=self.get_item(".1.3.6.1.2.1.2.2.1.6.%d" % snmp_num),
-            speed=self.get_item(".1.3.6.1.2.1.2.2.1.5.%d" % snmp_num),
-            uptime=self.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % snmp_num),
-            dev_interface=self,
-        )
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            status = snmp.get_item(".1.3.6.1.2.1.2.2.1.7.%d" % snmp_num)
+            status = status and int(status) == 1
+            return DLinkPort(
+                num=snmp_num,
+                name=snmp.get_item(".1.3.6.1.2.1.31.1.1.1.18.%d" % snmp_num),
+                status=status,
+                mac=snmp.get_item(".1.3.6.1.2.1.2.2.1.6.%d" % snmp_num),
+                speed=snmp.get_item(".1.3.6.1.2.1.2.2.1.5.%d" % snmp_num),
+                uptime=int(snmp.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % snmp_num)),
+                model_instance=self,
+            )
 
     def port_toggle(self, port_num: int, state: int):
         oid = "%s.%d" % (".1.3.6.1.2.1.2.2.1.7", port_num)
-        self.set_int_value(oid, state)
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            snmp.set_int_value(oid, state)
 
     def port_disable(self, port_num: int):
         self.port_toggle(port_num, 2)
@@ -206,10 +260,14 @@ class DlinkDGS_3120_24SCSwitchInterface(BaseSwitchInterface):
         self.port_toggle(port_num, 1)
 
     def get_device_name(self):
-        return self.get_item(".1.3.6.1.2.1.1.1.0")
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            return snmp.get_item(".1.3.6.1.2.1.1.1.0")
 
     def get_uptime(self) -> str:
-        uptimestamp = safe_int(self.get_item(".1.3.6.1.2.1.1.8.0"))
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            uptimestamp = safe_int(snmp.get_item(".1.3.6.1.2.1.1.8.0"))
         tm = RuTimedelta(seconds=uptimestamp / 100)
         return str(tm)
 

@@ -6,7 +6,7 @@ from .dlink import (
 )
 from .eltex import EltexSwitch
 from .huawei import HuaweiS2300, HuaweiS5300_10P_LI_AC
-from .switch_device_strategy import SwitchDeviceStrategyContext
+from .switch_device_strategy import SwitchDeviceStrategyContext, SwitchDeviceStrategy
 
 
 __all__ = (
@@ -18,4 +18,5 @@ __all__ = (
     "HuaweiS2300",
     "HuaweiS5300_10P_LI_AC",
     "SwitchDeviceStrategyContext",
+    "SwitchDeviceStrategy",
 )

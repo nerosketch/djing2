@@ -1,8 +1,9 @@
 import re
 from abc import abstractmethod
-from typing import Optional
+from typing import Optional, Tuple, AnyStr
 from transliterate import translit
 from django.conf import settings
+from django.utils.translation import gettext
 from devices.device_config.base import Vlan, Vlans, Macs
 from devices.device_config.base_device_strategy import (
     BaseDeviceStrategyContext, BaseDeviceStrategy,
@@ -11,6 +12,8 @@ from devices.device_config.base_device_strategy import (
 
 
 class SwitchDeviceStrategy(BaseDeviceStrategy):
+    ports_len: int
+
     @staticmethod
     def normalize_name(name: str, vid: Optional[int] = None) -> str:
         if name:
@@ -33,6 +36,11 @@ class SwitchDeviceStrategy(BaseDeviceStrategy):
     @abstractmethod
     def port_disable(self, port_num: int) -> None:
         """Disable port by number"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def port_enable(self, port_num: int):
+        raise NotImplementedError
 
     @abstractmethod
     def read_port_vlan_info(self, port: int) -> Vlans:
@@ -93,6 +101,72 @@ class SwitchDeviceStrategy(BaseDeviceStrategy):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def create_vlans(self, vlan_list: Vlans) -> bool:
+        """
+        Create new vlan with name
+        :param vlan_list:
+        :return: Operation result
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def delete_vlans(self, vlan_list: Vlans) -> bool:
+        """
+        Delete vlans from switch
+        :param vlan_list:
+        :return: Operation result
+        """
+        raise NotImplementedError
+
+    def create_vlan(self, vlan: Vlan) -> bool:
+        _vlan_gen = (v for v in (vlan,))
+        return self.create_vlans(_vlan_gen)
+
+    def delete_vlan(self, vid: int, is_management: bool) -> bool:
+        _vlan_gen = (v for v in (Vlan(vid=vid, title=None, is_management=is_management, native=False),))
+        return self.delete_vlans(_vlan_gen)
+
+    @abstractmethod
+    def read_all_vlan_info(self) -> Vlans:
+        """
+        Read info about all vlans
+        :return: Vlan list
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def read_mac_address_vlan(self, vid: int) -> Macs:
+        """
+        Read FDB in vlan
+        :param vid
+        :return: Mac list
+        """
+        raise NotImplementedError
+
+    def reboot(self, save_before_reboot=False) -> Tuple[int, AnyStr]:
+        """
+        Send signal reboot to device
+        :param save_before_reboot:
+        :return: tuple of command return number and text of operation
+        """
+        return 5, gettext("Reboot not ready")
+
+    @classmethod
+    def get_is_use_device_port(cls) -> bool:
+        return bool(cls.is_use_device_port)
+
+    @staticmethod
+    def validate_extra_snmp_info(v: str) -> None:
+        """
+        Validate extra snmp field for each device.
+        If validation failed then raise en exception from
+        devapp.expect_scripts.ExpectValidationError
+        with description of error.
+        :param v: String value for validate
+        """
+        raise NotImplementedError
+
 
 class SwitchDeviceStrategyContext(BaseDeviceStrategyContext):
     _current_dev_manager: SwitchDeviceStrategy
@@ -108,6 +182,9 @@ class SwitchDeviceStrategyContext(BaseDeviceStrategyContext):
     def port_disable(self, port_num: int) -> None:
         """Disable port by number"""
         return self._current_dev_manager.port_disable(port_num=port_num)
+
+    def port_enable(self, port_num: int):
+        return self._current_dev_manager.port_enable(port_num=port_num)
 
     def read_port_vlan_info(self, port: int) -> Vlans:
         """
@@ -166,3 +243,62 @@ class SwitchDeviceStrategyContext(BaseDeviceStrategyContext):
 
     def normalize_name(self, name: str, vid: Optional[int] = None) -> str:
         return self._current_dev_manager.normalize_name(name=name, vid=vid)
+
+    @abstractmethod
+    def create_vlans(self, vlan_list: Vlans) -> bool:
+        """
+        Create new vlan with name
+        :param vlan_list:
+        :return: Operation result
+        """
+        return self._current_dev_manager.create_vlans(vlan_list=vlan_list)
+
+    @abstractmethod
+    def delete_vlans(self, vlan_list: Vlans) -> bool:
+        """
+        Delete vlans from switch
+        :param vlan_list:
+        :return: Operation result
+        """
+        return self._current_dev_manager.delete_vlans(vlan_list=vlan_list)
+
+    def create_vlan(self, vlan: Vlan) -> bool:
+        return self._current_dev_manager.create_vlan(vlan=vlan)
+
+    def delete_vlan(self, vid: int, is_management: bool) -> bool:
+        return self._current_dev_manager.delete_vlan(vid=vid, is_management=is_management)
+
+    @abstractmethod
+    def read_all_vlan_info(self) -> Vlans:
+        """
+        Read info about all vlans
+        :return: Vlan list
+        """
+        return self._current_dev_manager.read_all_vlan_info()
+
+    @abstractmethod
+    def read_mac_address_vlan(self, vid: int) -> Macs:
+        """
+        Read FDB in vlan
+        :param vid
+        :return: Mac list
+        """
+        return self._current_dev_manager.read_mac_address_vlan(vid=vid)
+
+    def reboot(self, save_before_reboot=False) -> Tuple[int, AnyStr]:
+        """
+        Send signal reboot to device
+        :param save_before_reboot:
+        :return: tuple of command return number and text of operation
+        """
+        return self._current_dev_manager.reboot(save_before_reboot=save_before_reboot)
+
+    def validate_extra_snmp_info(self, v: str) -> None:
+        """
+        Validate extra snmp field for each device.
+        If validation failed then raise en exception from
+        devapp.expect_scripts.ExpectValidationError
+        with description of error.
+        :param v: String value for validate
+        """
+        return self._current_dev_manager.validate_extra_snmp_info(v=v)
