@@ -1,4 +1,7 @@
 from .dgs_3120_24sc import DlinkDGS_3120_24SCSwitchInterface
+from .. import SwitchDeviceStrategyContext
+
+_DEVICE_UNIQUE_CODE = 11
 
 
 class DlinkDGS_3627GSwitchInterface(DlinkDGS_3120_24SCSwitchInterface):
@@ -11,4 +14,4 @@ class DlinkDGS_3627GSwitchInterface(DlinkDGS_3120_24SCSwitchInterface):
     ports_len = 24
 
 
-SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3120_24SCSwitchInterface)
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_3627GSwitchInterface)
