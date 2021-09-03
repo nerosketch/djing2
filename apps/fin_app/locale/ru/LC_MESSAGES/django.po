@@ -1,0 +1,131 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: fin_app/models.py:9
+msgid "Title"
+msgstr "Название"
+
+#: fin_app/models.py:10
+msgid "Secret"
+msgstr "Секрет"
+
+#: fin_app/models.py:11
+msgid "Service id"
+msgstr ""
+
+#: fin_app/models.py:13
+msgid "Slug"
+msgstr ""
+
+#: fin_app/models.py:22
+msgid "All time gateway"
+msgstr "Платёжный шлюз AllTime"
+
+#: fin_app/models.py:40
+msgid "Cost"
+msgstr "Цена"
+
+#: fin_app/models.py:42
+msgid "Trade point"
+msgstr "Торговая точка"
+
+#: fin_app/models.py:48
+#, fuzzy
+#| msgid "Receipt num"
+msgid "Receipt number"
+msgstr "Номер квитанции"
+
+#: fin_app/models.py:51
+msgid "Pay gateway"
+msgstr "Платёжный шлюз"
+
+#~ msgid "Fin report"
+#~ msgstr "Фин. отчёт"
+
+#~ msgid "Money by days"
+#~ msgstr "Денег за дни"
+
+#~ msgid "Date"
+#~ msgstr "Дата"
+
+#~ msgid "Pays not found"
+#~ msgstr "Платежи не найдены"
+
+#~ msgid "Export to csv"
+#~ msgstr "Экспортировать в csv"
+
+#~ msgid "Payment system"
+#~ msgstr "Платёжная система"
+
+#~ msgid "Payment history"
+#~ msgstr "История платежей"
+
+#~ msgid "User"
+#~ msgstr "Абонент"
+
+#~ msgid "Pay id"
+#~ msgstr "ID платежа"
+
+#~ msgid "Payment history is empty"
+#~ msgstr "История платежей пуста"
+
+#~ msgid "Change payment gateway"
+#~ msgstr "Редактировать платёжный шлюз"
+
+#~ msgid "Add payment gateway"
+#~ msgstr "Добавить платёжный шлюз"
+
+#~ msgid "Make new payment gateway"
+#~ msgstr "Создать новый платёжный шлюз"
+
+#~ msgid "Type info about payment gateway"
+#~ msgstr "Укажите данные для платёжной системы"
+
+#~ msgid "Save"
+#~ msgstr "Сохранить"
+
+#~ msgid "Add"
+#~ msgstr "Добвить"
+
+#~ msgid "Reset"
+#~ msgstr "Сбросить"
+
+#~ msgid "List of payment gateways"
+#~ msgstr "Список платёжных систем"
+
+#~ msgid "Pays count"
+#~ msgstr "Количество платежей всего"
+
+#~ msgid "Edit"
+#~ msgstr "Изменить"
+
+#~ msgid "Permission required"
+#~ msgstr "Не хватает прав"
+
+#~ msgid "Payment gateways not found"
+#~ msgstr "Платёжные шлюзы не найдены"
+
+#~ msgid "New pay gateway created successfully"
+#~ msgstr "Новый платёжный шлюз успешно создан"
+
+#~ msgid "Payment gateway successfully updated"
+#~ msgstr "Платёжный шлюз успешно обновлён"
+
+#~ msgid "Deleted"
+#~ msgstr "Удалён"

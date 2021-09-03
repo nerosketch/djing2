@@ -1,0 +1,33 @@
+language: python
+python:
+  - "3.6"
+  - "3.7"
+  - "3.8"
+install:
+  - pip install wheel
+  - pip install -r requirements
+services:
+  - postgresql
+  - redis-server
+  - memcached
+script:
+  - python manage.py test
+virtualenv:
+  system_site_packages: true
+env:
+  - DJANGO_VERSION=3.0.8
+before_install:
+  - cp djing2/local_settings.py.template djing2/local_settings.py
+  - sudo apt-get update && sudo apt-get --reinstall install -qq libmemcached-dev python3-psycopg2 postgresql-server-dev-12 libsnmp-dev
+before_script:
+  - psql -c 'create database djing2;' -U postgres
+  - psql -c "create user postgres_user with password 'password';" -U postgres
+  - python manage.py migrate --noinput
+addons:
+  postgresql: "10
+  apt:
+    packages:
+      - libmemcached-dev
+      - python3-psycopg2
+      - postgresql-server-dev-12
+      - libsnmp-dev

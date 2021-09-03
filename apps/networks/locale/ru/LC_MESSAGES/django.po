@@ -1,0 +1,363 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-10 13:42+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: models.py:25
+msgid "Vlan title"
+msgstr "Название vlan"
+
+#: models.py:26
+msgid "VID"
+msgstr ""
+
+#: models.py:27
+msgid "Vid could not be less then 2"
+msgstr "VID не может быть меньше чем 2"
+
+#: models.py:28
+msgid "Vid could not be more than 4094"
+msgstr "VID не может быть больше чем 4094"
+
+#: models.py:30
+msgid "Is management"
+msgstr "Управляемый"
+
+#: models.py:38
+msgid "Vlan"
+msgstr ""
+
+#: models.py:39
+msgid "Vlan list"
+msgstr "Список vlan"
+
+#: models.py:43
+msgid "Not defined"
+msgstr "Не определённая"
+
+#: models.py:44
+msgid "Internet"
+msgstr "Интернет"
+
+#: models.py:45
+msgid "Guest"
+msgstr "Гостевая"
+
+#: models.py:46
+msgid "Trusted"
+msgstr "Доверенная"
+
+#: models.py:47
+msgid "Devices"
+msgstr "Устройства"
+
+#: models.py:48
+msgid "Admin"
+msgstr "Административная"
+
+#: models.py:53
+msgid "Ip network address"
+msgstr "IP адрес сети"
+
+#: models.py:54
+msgid "Ip address of network. For example: 192.168.1.0/24 or fde8:6789:1234:1::/64"
+msgstr "IP адрес подсети. На пример: 192.168.1.0/24 or fde8:6789:1234:1::/64"
+
+#: models.py:59
+msgid "Kind of network"
+msgstr "Тип сети"
+
+#: models.py:63
+msgid "Description"
+msgstr "Описание"
+
+#: models.py:65
+msgid "Member groups"
+msgstr "Группы"
+
+#: models.py:71
+msgid "Start work ip range"
+msgstr "Начальный ip из диапазона"
+
+#: models.py:72
+msgid "End work ip range"
+msgstr "Конечный ip из диапазона"
+
+#: models.py:75
+msgid "Vlan interface"
+msgstr "Интерфейс vlan"
+
+#: models.py:80
+msgid "Gateway ip address"
+msgstr "IP адрес шлюза"
+
+#: models.py:82
+msgid "Is dynamic"
+msgstr "Динамичейский"
+
+#: models.py:85
+msgid "Tag"
+msgstr ""
+
+#: models.py:96
+msgid "Network is invalid"
+msgstr "Подсеть не правильная"
+
+#: models.py:111
+msgid "Ip start is invalid"
+msgstr "Начальный ip из диапазона не верный"
+
+#: models.py:118
+msgid "Start ip must be in subnet of specified network"
+msgstr "Начальный ip должен быть в указанной подсети"
+
+#: models.py:123
+msgid "Ip end is invalid"
+msgstr "Конечный ip из диапазона не верный"
+
+#: models.py:130
+msgid "End ip must be in subnet of specified network"
+msgstr "Конечный ip должен быть в указанной подсети"
+
+#: models.py:137
+msgid "Gateway ip must be in subnet of specified network"
+msgstr "Шлюз должен принадлежать текущей подсети"
+
+#: models.py:142
+msgid "Gateway must not be in the range of allowed ips"
+msgstr "Шлюз не должен быть в диапазоне доступных ip"
+
+#: models.py:157
+#, python-format
+msgid "Network is overlaps with %(other_network)s"
+msgstr "Подсеть пересекается с сетью '%(other_network)s'"
+
+#: models.py:196
+msgid "Network ip pool"
+msgstr "Подсеть"
+
+#: models.py:197
+msgid "Network ip pools"
+msgstr "Подсети"
+
+#: models.py:228
+msgid "Ip address"
+msgstr "IP адрес"
+
+#: models.py:230
+msgid "Lease time"
+msgstr "Время аредны"
+
+#: models.py:232
+msgid "Mac address"
+msgstr "MAC адрес"
+
+#: models.py:233
+msgid "Is synamic"
+msgstr "Динамический"
+
+#: models.py:325
+msgid "IP lease"
+msgstr "IP аренда"
+
+#: models.py:326
+msgid "IP leases"
+msgstr "IP аренды"
+
+#: serializers/net.py:18
+msgid "Network can not be empty"
+msgstr "Сеть не может быть пустой"
+
+#: serializers/radius.py:7
+msgid "remote id"
+msgstr ""
+
+#: serializers/radius.py:8
+msgid "circuit id"
+msgstr ""
+
+#: serializers/radius.py:12
+msgid "Option82"
+msgstr ""
+
+#: serializers/radius.py:13
+msgid "Client mac address"
+msgstr "MAC адрес клиента"
+
+#: serializers/radius.py:14
+msgid "Location pool tag"
+msgstr ""
+
+#: views/generic.py:64
+msgid "Ping ok"
+msgstr "Пингуется OK"
+
+#: views/generic.py:70
+msgid "arp ping ok"
+msgstr "Пингуется по ARP"
+
+#: views/generic.py:72
+msgid "no ping"
+msgstr "не пингуется"
+
+#: views/generic.py:75
+msgid "Process locked by another process"
+msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
+
+#~ msgid "IP network"
+#~ msgstr "IP подсеть"
+
+#~ msgid "Groups"
+#~ msgstr "Группы"
+
+#~ msgid "Network"
+#~ msgstr "Подсеть"
+
+#~ msgid "IP address with prefix length, or subnet for ipv4"
+#~ msgstr "IP адрес с длиной префикса, или подсеть IPv4)"
+
+#~ msgid "Enter a valid IPv4 or IPv6 address with prefix length."
+#~ msgstr "Введите валидный IPv4 или IPv6 адрес с маской сети"
+
+#~ msgid "Global"
+#~ msgstr "Глобальная"
+
+#~ msgid "Loopback"
+#~ msgstr "Локальное кольцо(loopback)"
+
+#~ msgid "Private"
+#~ msgstr "Приватный"
+
+#~ msgid "Reserved"
+#~ msgstr "Зарезервированный"
+
+#~ msgid "Unspecified"
+#~ msgstr "Не определён"
+
+#~ msgid "Ip that you typed is not in subnet that you have selected"
+#~ msgstr "Введённый вами IP не в выбранной подсети"
+
+#~ msgid "Ip that you have passed is less than allowed network range"
+#~ msgstr "IP который вы указали меньше чем разрешённый диапазон ip адресов"
+
+#~ msgid "Ip that you have passed is greater than allowed network range"
+#~ msgstr "IP который вы указали больше чем разрешённый диапазон ip адресов"
+
+#~ msgid "Possible networks"
+#~ msgstr "Доступные подсети"
+
+#~ msgid "Parent network"
+#~ msgstr "Родительская подсеть"
+
+#~ msgid "Is active"
+#~ msgstr "Активный"
+
+#~ msgid "Ip address %(ip)s not in %(net)s network"
+#~ msgstr "IP адрес %(ip)s не в %(net)s сети"
+
+#~ msgid "Employed ip"
+#~ msgstr "Занятый ip"
+
+#~ msgid "Employed ip addresses"
+#~ msgstr "Занятые ip"
+
+#~ msgid "Ip pool"
+#~ msgstr "IP пул"
+
+#~ msgid "All networks"
+#~ msgstr "Все подсети"
+
+#~ msgid "You have not any available dedicated ips in this network"
+#~ msgstr "Нет ни одного выделенного ip в этой сети"
+
+#~ msgid "Add network"
+#~ msgstr "Добавить сеть"
+
+#~ msgid "Add new subnet"
+#~ msgstr "Добавить подсеть"
+
+#~ msgid "Add"
+#~ msgstr "Добавить"
+
+#~ msgid "Back"
+#~ msgstr "Назад"
+
+#~ msgid "Edit network"
+#~ msgstr "Редактировать сеть"
+
+#~ msgid "Save"
+#~ msgstr "Сохранить"
+
+#~ msgid "Remove"
+#~ msgstr "Удалить"
+
+#~ msgid "View employed"
+#~ msgstr "Показать выделенные"
+
+#~ msgid "Groups available"
+#~ msgstr "Доступные группы"
+
+#~ msgid "Belonging networks for groups"
+#~ msgstr "Принадлежность сетей к группам"
+
+#~ msgid "Make that pool available in specified groups"
+#~ msgstr "Сделать этот пул доступным в указанных группах"
+
+#~ msgid "Kind"
+#~ msgstr "Тип"
+
+#~ msgid "Scope"
+#~ msgstr "Масштаб"
+
+#~ msgid "Edit"
+#~ msgstr "Редактировать"
+
+#~ msgid "Permission denied"
+#~ msgstr "Не достаточно прав"
+
+#~ msgid "You have not any networks available"
+#~ msgstr "Нет ни одной доступной сети"
+
+#~ msgid "Remove network"
+#~ msgstr "Удалить сеть"
+
+#~ msgid "To delete network '%(network_name)s'?"
+#~ msgstr "Удалить сеть '%(network_name)s'?"
+
+#~ msgid ""
+#~ "Attention! All leases in that network will be removed and services "
+#~ "finished."
+#~ msgstr ""
+#~ "Внимание! Все аренды ip в этой сети будут удалены, а услуги "
+#~ "приостановлены."
+
+#~ msgid "Enter a valid IPv4 or IPv6 address."
+#~ msgstr "Введите валидный IPv4 или IPv6 адрес."
+
+#~ msgid ""
+#~ "Select a valid choice. %(value)s is not one of the available choices."
+#~ msgstr ""
+#~ "Выберите правильный вариант. %(value)s не в одной из доступных вариантов."
+
+#~ msgid "Network successfully updated"
+#~ msgstr "Сеть успешно обновлена"
+
+#~ msgid "Network has been created"
+#~ msgstr "Сеть создана"
+
+#~ msgid "Successfully saved"
+#~ msgstr "Успешно сохранено"

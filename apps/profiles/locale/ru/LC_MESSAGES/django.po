@@ -1,0 +1,185 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-07-06 11:30+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: apps/profiles/models.py:23 apps/profiles/models.py:143
+msgid "Users must have an telephone number"
+msgstr "Пользователи должны иметь номер телефона"
+
+#: apps/profiles/models.py:51
+msgid "profile username"
+msgstr "Имя пользователя"
+
+#: apps/profiles/models.py:52
+msgid "fio"
+msgstr "ФИО"
+
+#: apps/profiles/models.py:53
+msgid "birth day"
+msgstr "День рождения"
+
+#: apps/profiles/models.py:54
+msgid "Create date"
+msgstr "Дата создания"
+
+#: apps/profiles/models.py:55
+msgid "Last update time"
+msgstr "Время последнего обновления"
+
+#: apps/profiles/models.py:56
+msgid "Is active"
+msgstr "Активность"
+
+#: apps/profiles/models.py:60
+msgid "Telephone"
+msgstr "Номер телефона"
+
+#: apps/profiles/models.py:98
+msgid "Undefined"
+msgstr "Не определён"
+
+#: apps/profiles/models.py:99
+msgid "Create user"
+msgstr "Создать пользователя"
+
+#: apps/profiles/models.py:100
+msgid "Delete user"
+msgstr "Удалить пользователя"
+
+#: apps/profiles/models.py:101
+msgid "Create device"
+msgstr "Создать устройство"
+
+#: apps/profiles/models.py:102
+msgid "Delete device"
+msgstr "Удалить устройство"
+
+#: apps/profiles/models.py:103
+msgid "Create NAS"
+msgstr "Создать NAS"
+
+#: apps/profiles/models.py:104
+msgid "Delete NAS"
+msgstr "Удалить NAS"
+
+#: apps/profiles/models.py:105
+msgid "Create service"
+msgstr "Создать услугу"
+
+#: apps/profiles/models.py:106
+msgid "Delete service"
+msgstr "Удалить услугу"
+
+#: apps/profiles/models.py:110
+msgid "Author"
+msgstr "Автор"
+
+#: apps/profiles/models.py:113
+msgid "Action type"
+msgstr "Тип действия"
+
+#: apps/profiles/models.py:115
+msgid "Additional info"
+msgstr "Дополнительная информация"
+
+#: apps/profiles/models.py:116
+msgid "Action date"
+msgstr "Врремя действия"
+
+#: apps/profiles/models.py:123
+msgid "User profile log"
+msgstr "Лог учётной записи"
+
+#: apps/profiles/models.py:124
+msgid "User profile logs"
+msgstr "Логи учётных записей"
+
+#: apps/profiles/models.py:157
+msgid "Avatar"
+msgstr "Аватар"
+
+#: apps/profiles/models.py:160
+msgid "Responsibility groups"
+msgstr "Ответственность за группы"
+
+#: apps/profiles/models.py:162
+msgid "Notification about tasks"
+msgstr "Оповещения о задачах"
+
+#: apps/profiles/models.py:163
+msgid "Notification about messages"
+msgstr "Оповещения о сообщениях"
+
+#: apps/profiles/models.py:164
+msgid "Notification from monitoring"
+msgstr "Оповещения из мониторинга"
+
+#: apps/profiles/models.py:166
+msgid "Settings flags"
+msgstr "Настройки флагов"
+
+#: apps/profiles/models.py:171
+msgid "Staff account profile"
+msgstr "Учётная запись сотрудника"
+
+#: apps/profiles/models.py:172
+msgid "Staff account profiles"
+msgstr "Учётные записи сотрудников"
+
+#: apps/profiles/models.py:209
+msgid "Auth time"
+msgstr "Время авторизации"
+
+#: apps/profiles/models.py:210
+msgid "Profile"
+msgstr "Профиль"
+
+#: apps/profiles/models.py:211
+msgid "Remote ip"
+msgstr "IP источника"
+
+#: apps/profiles/models.py:212
+msgid "Details"
+msgstr "Подробности"
+
+#: apps/profiles/serializers.py:146 apps/profiles/views.py:128
+msgid "Unable to log in with provided credentials."
+msgstr "Не получается войти с предоставленными учётными данными."
+
+#: apps/profiles/serializers.py:158
+msgid "Must include \"username\" and \"password\"."
+msgstr "Должны быть \"username\" и \"password\"."
+
+#: apps/profiles/views.py:89
+msgid "Passwords must be same"
+msgstr "Пароли должны быть одинаковыми"
+
+#: apps/profiles/views.py:91
+msgid "Wrong old password"
+msgstr "Не правильный старый пароль"
+
+#: apps/profiles/views.py:121
+msgid "Login profile via customer's ip address"
+msgstr "Вход учётной записи через ip адрес"
+
+#: apps/profiles/views.py:132
+msgid "Incorrect provided credentials."
+msgstr "Авторизация с предоставленными учётными данными невозможна"
+
+#~ msgid "Login is not possible"
+#~ msgstr "Не получается войти в предоставленными учётными данными"
