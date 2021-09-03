@@ -32,7 +32,6 @@ class HuaweiS2300(EltexSwitch):
             oper_status = safe_int(snmp.get_item(".1.3.6.1.2.1.2.2.1.7.%d" % n)) == 1
             link_status = safe_int(snmp.get_item(".1.3.6.1.2.1.2.2.1.8.%d" % n)) == 1
             ep = PortType(
-                model_instance=dev,
                 num=i + 1,
                 snmp_num=n,
                 name=snmp.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % n),  # name
