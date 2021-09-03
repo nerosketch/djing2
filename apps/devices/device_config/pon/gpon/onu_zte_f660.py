@@ -52,15 +52,19 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
     def get_details(self) -> Optional[Dict]:
         dev = self.model_instance
         if dev is None:
-            return
+            return {}
         snmp_extra = dev.snmp_extra
         if not snmp_extra:
-            return
+            return {}
+
+        parent = dev.parent_dev
+        if not parent:
+            return {}
 
         fiber_num, onu_num = zte_utils.split_snmp_extra(snmp_extra)
         fiber_addr = "%d.%d" % (fiber_num, onu_num)
 
-        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
+        snmp = SNMPWorker(hostname=parent.ip_address, community=str(parent.man_passw))
 
         signal = safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%s.1" % fiber_addr))
         # distance = self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.18.%s.1' % fiber_addr)
@@ -111,7 +115,10 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             return self.default_vlan_info()
         fiber_num, onu_num = zte_utils.split_snmp_extra(snmp_extra)
 
-        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
+        parent = dev.parent_dev
+        if not parent:
+            return []
+        snmp = SNMPWorker(hostname=parent.ip_address, community=str(parent.man_passw))
 
         def _get_access_vlan(port_num: int) -> int:
             return safe_int(
@@ -177,9 +184,11 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         if not telnet:
             return False
 
+        parent = dev.parent_dev
+
         fiber_num, onu_num = zte_utils.split_snmp_extra(str(dev.snmp_extra))
         fiber_addr = "%d.%d" % (fiber_num, onu_num)
-        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+        with SNMPWorker(hostname=parent.ip_address, community=str(parent.man_passw)) as snmp:
             sn = snmp.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
         if sn is not None:
             if isinstance(sn, str):

@@ -38,7 +38,10 @@ class ZTE_C320(BDCOM_P3310C):
 
     def get_details(self) -> dict:
         dev = self.model_instance
-        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+        parent = dev.parent_dev
+        if not parent:
+            return {}
+        with SNMPWorker(hostname=parent.ip_address, community=str(parent.man_passw)) as snmp:
             details = {
                 "disk_total": snmp.get_item(".1.3.6.1.4.1.3902.1015.14.1.1.1.7.1.1.4.0.5.102.108.97.115.104.1"),
                 "disk_free": snmp.get_item(".1.3.6.1.4.1.3902.1015.14.1.1.1.8.1.1.4.0.5.102.108.97.115.104.1"),
@@ -79,7 +82,7 @@ class ZTE_C320(BDCOM_P3310C):
 
         return onu_list
 
-    def get_units_unregistered(self, fiber_num: int) -> Iterable:
+    def get_units_unregistered(self, fiber_num: int):
         dev = self.model_instance
         snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         sn_num_list = snmp.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.13.3.1.2.%d" % fiber_num)

@@ -10,11 +10,11 @@ from devices.device_config.base import (
 
 
 class SNMPWorker(Session):
-    def __init__(self, hostname: str, *args, **kwargs):
+    def __init__(self, hostname: str, version=2, *args, **kwargs):
         if not hostname:
             raise DeviceImplementationError(gettext("Hostname required for snmp"))
         try:
-            super().__init__(hostname=str(hostname), *args, **kwargs)
+            super().__init__(hostname=str(hostname), version=version, *args, **kwargs)
         except OSError as e:
             raise DeviceConnectionError(e)
 
@@ -171,6 +171,22 @@ class BaseDeviceStrategy(ABC):
         """
         raise NotImplementedError
 
+    def get_details(self) -> dict:
+        """
+        Return basic information by SNMP or other method
+        :return: dict of information
+        """
+        return {
+            "uptime": self.get_uptime(),
+            "name": self.get_device_name(),
+            "description": self.description,
+            "has_attachable_to_customer": self.has_attachable_to_customer,
+            "is_use_device_port": self.is_use_device_port,
+        }
+
+    def get_fiber_str(self) -> str:
+        return r"¯ \ _ (ツ) _ / ¯"
+
 
 global_device_types_map: Dict[int, Type[BaseDeviceStrategy]] = {}
 
@@ -225,10 +241,20 @@ class BaseDeviceStrategyContext(ABC):
         """True if used device port while opt82 authorization"""
         return self._current_dev_manager.is_use_device_port
 
-    @abstractmethod
     def read_all_vlan_info(self) -> Vlans:
         """
         Read info about all vlans
         :return: Vlan list
         """
         return self._current_dev_manager.read_all_vlan_info()
+
+    def get_details(self) -> dict:
+        """
+        Return basic information by SNMP or other method
+        :return: dict of information
+        """
+        mng = self._current_dev_manager
+        return mng.get_details()
+
+    def get_fiber_str(self) -> str:
+        return self._current_dev_manager.get_fiber_str()

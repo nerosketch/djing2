@@ -77,7 +77,7 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_units_unregistered(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_olt()
+        manager = device.get_pon_olt_device_manager()
         if hasattr(manager, "get_fibers"):
             unregistered = []
             for fb in manager.get_fibers():
@@ -90,7 +90,7 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_onu_list(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_pon_device_manager()
+        manager = device.get_pon_olt_device_manager()
         if not isinstance(manager, PonOLTDeviceStrategyContext):
             raise DeviceImplementationError("Expected PonOLTDeviceStrategyContext instance")
 
@@ -133,7 +133,7 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_olt_fibers(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_olt()
+        manager = device.get_pon_olt_device_manager()
         if hasattr(manager, "get_fibers"):
             fb = manager.get_fibers()
             return Response(tuple(fb))
@@ -147,7 +147,7 @@ class DevicePONViewSet(DjingModelViewSet):
             return Response('"fiber_num" number param required', status=status.HTTP_400_BAD_REQUEST)
         fiber_num = safe_int(fiber_num)
         device = self.get_object()
-        manager = device.get_manager_object_olt()
+        manager = device.get_pon_olt_device_manager()
         if hasattr(manager, "get_ports_on_fiber"):
             try:
                 onu_list = tuple(manager.get_ports_on_fiber(fiber_num=fiber_num))
@@ -220,7 +220,7 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_pon_details(self, request, pk=None):
         device = self.get_object()
-        pon_manager = device.get_pon_device_manager()
+        pon_manager = device.get_pon_onu_device_manager()
         data = pon_manager.get_details()
         return Response(data)
 

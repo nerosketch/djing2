@@ -3,7 +3,10 @@ from django.utils.translation import gettext, gettext_lazy as _
 from easysnmp import EasySNMPTimeoutError
 
 from djing2.lib import safe_int, safe_float, macbin2str, RuTimedelta, bytes2human
-from devices.device_config.base import DeviceImplementationError, DeviceConfigurationError
+from devices.device_config.base import (
+    DeviceImplementationError, DeviceConfigurationError,
+    Vlans, Vlan
+)
 from devices.device_config.expect_util import ExpectValidationError
 from .epon_bdcom_expect import remove_from_olt
 from ..pon_device_strategy import PonOnuDeviceStrategy, PonONUDeviceStrategyContext
@@ -35,25 +38,25 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
             )
         if not dev_instance.man_passw:
             raise DeviceImplementationError(gettext("For fetch additional device info, snmp community required"))
-        super().__init__(
-            dev_instance=dev_instance, host=dev_ip_addr, snmp_community=str(dev_instance.man_passw), *args, **kwargs
-        )
 
     def get_device_name(self):
-        pass
+        return 'fora'
 
     def get_uptime(self):
-        pass
+        return '0'
 
     def get_details(self):
         dev = self.model_instance
         if dev is None:
-            return
+            return {}
         num = safe_int(dev.snmp_extra)
         if not num:
-            return
+            return {}
+        parent = dev.parent_dev
+        if not parent:
+            return {}
         status_map = {3: "ok", 2: "down"}
-        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
+        snmp = SNMPWorker(hostname=parent.ip_address, community=str(parent.man_passw))
         try:
             # https://www.zabbix.com/documentation/1.8/ru/manual/advanced_snmp
             status = safe_int(snmp.get_item(".1.3.6.1.4.1.3320.101.10.1.1.26.%d" % num))
@@ -117,24 +120,43 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
         telnet = extra_data.get("telnet")
         if not telnet:
             return False
-        onu_sn, err_text = dev.onu_find_sn_by_mac()
+        onu_sn, err_text = self.find_onu()
         if onu_sn is None:
             raise DeviceConfigurationError(err_text)
-        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+        parent = dev.parent_dev
+        with SNMPWorker(hostname=parent.ip_address, community=str(parent.man_passw)) as snmp:
             int_name = snmp.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % onu_sn)
         return remove_from_olt(
-            ip_addr=str(dev.parent_dev.ip_address),
+            ip_addr=str(parent.ip_address),
             telnet_login=telnet.get("login"),
             telnet_passw=telnet.get("password"),
             telnet_prompt=telnet.get("prompt"),
             int_name=int_name,
         )
 
-    # def read_onu_vlan_info(self):
-    #     pass
+    def read_onu_vlan_info(self):
+        return []
 
-    # def default_vlan_info(self):
-    #     pass
+    def default_vlan_info(self):
+        return []
+
+    def read_all_vlan_info(self) -> Vlans:
+        yield Vlan(vid=1, title='Default')
+
+    def find_onu(self, *args, **kwargs):
+        dev = self.model_instance
+        parent = dev.parent_dev
+        if parent is not None:
+            mac = dev.mac_addr
+            snmp = SNMPWorker(hostname=parent.ip_address, community=str(parent.man_passw))
+            onu_macs = snmp.get_list_keyval(".1.3.6.1.4.1.3320.101.10.1.1.3")
+            for srcmac, snmpnum in onu_macs:
+                # convert bytes mac address to str presentation mac address
+                real_mac = macbin2str(srcmac)
+                if mac == real_mac:
+                    return safe_int(snmpnum), None
+            return None, _('Onu with mac "%(onu_mac)s" not found on OLT') % {"onu_mac": mac}
+        return None, _("Parent device not found")
 
 
 PonONUDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, EPON_BDCOM_FORA)

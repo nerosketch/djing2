@@ -1,4 +1,4 @@
-from typing import Dict, Generator, Tuple, Optional
+from typing import Dict, Generator, Tuple, Optional, Iterable
 from abc import abstractmethod
 
 from devices.device_config.base import UnsupportedReadingVlan
@@ -29,23 +29,8 @@ class PonOltDeviceStrategy(BaseDeviceStrategy):
     def get_fibers(self) -> Generator:
         raise NotImplementedError
 
-    def get_details(self) -> dict:
-        """
-        Return basic information by SNMP or other method
-        :return: dict of information
-        """
-        return {
-            "uptime": self.get_uptime(),
-            "name": self.get_device_name(),
-            "description": self.description,
-            "has_attachable_to_customer": self.has_attachable_to_customer,
-            "is_use_device_port": self.is_use_device_port,
-        }
-
-    @abstractmethod
-    def find_onu(self, *args, **kwargs) -> Tuple[Optional[int], Optional[str]]:
-        """Finds onu by args on OLT, and returns its snmp_info"""
-        raise NotImplementedError
+    def get_units_unregistered(self, *args, **kwargs) -> Iterable:
+        return ()
 
 
 class PonOLTDeviceStrategyContext(BaseDeviceStrategyContext):
@@ -64,25 +49,14 @@ class PonOLTDeviceStrategyContext(BaseDeviceStrategyContext):
     #     """
     #     return self._current_dev_manager.attach_vlans_to_uplink(vlans=vlans, *args, **kwargs)
 
-    @abstractmethod
     def scan_onu_list(self) -> Generator:
         return self._current_dev_manager.scan_onu_list()
 
-    @abstractmethod
     def get_fibers(self) -> Generator:
         return self._current_dev_manager.get_fibers()
 
-    def get_details(self) -> dict:
-        """
-        Return basic information by SNMP or other method
-        :return: dict of information
-        """
-        mng = self._current_dev_manager
-        return mng.get_details()
-
-    def find_onu(self, *args, **kwargs) -> Tuple[Optional[int], Optional[str]]:
-        """Finds onu by args on OLT, and returns its snmp_info"""
-        return self._current_dev_manager.find_onu(*args, **kwargs)
+    def get_units_unregistered(self, *args, **kwargs):
+        return self._current_dev_manager.get_units_unregistered(*args, **kwargs)
 
 
 class PonOnuDeviceStrategy(BaseDeviceStrategy):
@@ -108,9 +82,6 @@ class PonOnuDeviceStrategy(BaseDeviceStrategy):
         self._uptime = int(uptime) if uptime else None
         self.snmp_num = snmp_num
 
-    def get_fiber_str(self) -> str:
-        return r"¯ \ _ (ツ) _ / ¯"
-
     @abstractmethod
     def read_onu_vlan_info(self):
         raise UnsupportedReadingVlan
@@ -135,6 +106,11 @@ class PonOnuDeviceStrategy(BaseDeviceStrategy):
     def mac(self) -> str:
         return macbin2str(self._mac)
 
+    @abstractmethod
+    def find_onu(self, *args, **kwargs) -> Tuple[Optional[int], Optional[str]]:
+        """Finds onu by args on OLT, and returns its snmp_info"""
+        raise NotImplementedError
+
 
 class PonONUDeviceStrategyContext(BaseDeviceStrategyContext):
     _current_dev_manager: PonOnuDeviceStrategy
@@ -142,9 +118,6 @@ class PonONUDeviceStrategyContext(BaseDeviceStrategyContext):
     @property
     def mac(self) -> str:
         return self._current_dev_manager.mac
-
-    def get_fiber_str(self) -> str:
-        return self._current_dev_manager.get_fiber_str()
 
     def read_onu_vlan_info(self):
         return self._current_dev_manager.read_onu_vlan_info()
@@ -162,3 +135,7 @@ class PonONUDeviceStrategyContext(BaseDeviceStrategyContext):
     def remove_from_olt(self, extra_data: Dict, **kwargs) -> bool:
         """Removes device from OLT if devices is ONU"""
         return self._current_dev_manager.remove_from_olt(extra_data, **kwargs)
+
+    def find_onu(self, *args, **kwargs) -> Tuple[Optional[int], Optional[str]]:
+        """Finds onu by args on OLT, and returns its snmp_info"""
+        return self._current_dev_manager.find_onu(*args, **kwargs)

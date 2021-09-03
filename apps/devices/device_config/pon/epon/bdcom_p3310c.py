@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 # from netaddr import EUI, mac_cisco
 from devices.device_config.base_device_strategy import SNMPWorker
 from djing2.lib import safe_int, RuTimedelta, safe_float, macbin2str
+from ...base import Vlans, Vlan
 from ...pon.pon_device_strategy import PonOltDeviceStrategy, PonOLTDeviceStrategyContext
 
 
@@ -100,20 +101,8 @@ class BDCOM_P3310C(PonOltDeviceStrategy):
         # Olt has no require snmp info
         pass
 
-    def find_onu(self, *args, **kwargs):
-        dev = self.model_instance
-        parent = dev.parent_dev
-        if parent is not None:
-            manager = parent.get_manager_object_olt()
-            mac = dev.mac_addr
-            ports = manager.get_list_keyval(".1.3.6.1.4.1.3320.101.10.1.1.3")
-            for srcmac, snmpnum in ports:
-                # convert bytes mac address to str presentation mac address
-                real_mac = macbin2str(srcmac)
-                if mac == real_mac:
-                    return safe_int(snmpnum), None
-            return None, _('Onu with mac "%(onu_mac)s" not found on OLT') % {"onu_mac": mac}
-        return None, _("Parent device not found")
+    def read_all_vlan_info(self) -> Vlans:
+        yield Vlan(vid=1, title='Default')
 
     #############################
     #      Telnet access
