@@ -82,13 +82,13 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
         dev = self.model_instance
         with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
             fdb = snmp.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2")
-        for fdb_port, oid in fdb:
-            if port_num != int(fdb_port):
-                continue
-            vid = safe_int(oid[-7:-6][0])
-            fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
-            vid_name = self.get_vid_name(vid)
-            yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
+            for fdb_port, oid in fdb:
+                if port_num != int(fdb_port):
+                    continue
+                vid = safe_int(oid[-7:-6][0])
+                fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
+                vid_name = self.get_vid_name(vid)
+                yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
 
     def read_mac_address_vlan(self, vid: int) -> Macs:
         vid = safe_int(vid)
@@ -97,10 +97,10 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
         dev = self.model_instance
         with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
             fdb = snmp.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2.%d" % vid)
-        vid_name = self.get_vid_name(vid)
-        for port_num, oid in fdb:
-            fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
-            yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
+            vid_name = self.get_vid_name(vid)
+            for port_num, oid in fdb:
+                fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
+                yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
 
     def create_vlans(self, vlan_list: Vlans) -> bool:
         # ('1.3.6.1.2.1.17.7.1.4.3.1.3.152', b'\xff\xff\xff\xff', 'OCTETSTR'),  # untagged порты
@@ -185,10 +185,10 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
         dev = self.model_instance
         with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
             ifs_ids = snmp.get_list(".1.3.6.1.2.1.10.7.2.1.1")
-        for num, if_id in enumerate(ifs_ids, 1):
-            if num > self.ports_len:
-                return
-            yield self.get_port(snmp_num=if_id)
+            for num, if_id in enumerate(ifs_ids, 1):
+                if num > self.ports_len:
+                    return
+                yield self.get_port(snmp_num=if_id)
 
     def get_port(self, snmp_num: int):
         snmp_num = safe_int(snmp_num)
@@ -203,7 +203,6 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
                 mac=snmp.get_item(".1.3.6.1.2.1.2.2.1.6.%d" % snmp_num),
                 speed=snmp.get_item(".1.3.6.1.2.1.2.2.1.5.%d" % snmp_num),
                 uptime=int(snmp.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % snmp_num)),
-                model_instance=dev,
             )
 
     def port_toggle(self, port_num: int, state: int):

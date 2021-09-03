@@ -293,11 +293,11 @@ class DeviceModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_ports(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_switch()
+        manager = device.get_switch_device_manager()
         if not isinstance(manager, SwitchDeviceStrategyContext):
             raise DeviceImplementationError("Expected SwitchDeviceStrategyContext instance")
         try:
-            ports = [p.to_dict() for p in manager.get_ports()]
+            ports = [p.as_dict() for p in manager.get_ports()]
             return Response(data=ports)
         except StopIteration:
             return Response({"text": _("Device port count error"), "status": 2})
@@ -306,7 +306,7 @@ class DeviceModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def send_reboot(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_switch()
+        manager = device.get_switch_device_manager()
         manager.reboot(save_before_reboot=False)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -434,7 +434,7 @@ class PortModelViewSet(DjingModelViewSet):
             port_num = port_snmp_num
         else:
             port_num = int(port.num)
-        manager = port.device.get_manager_object_switch()
+        manager = port.device.get_switch_device_manager()
         if port_state == "up":
             manager.port_enable(port_num=port_num)
         elif port_state == "down":

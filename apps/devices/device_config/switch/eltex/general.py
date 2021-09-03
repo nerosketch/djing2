@@ -39,7 +39,6 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 mac=snmp.get_item(".1.3.6.1.2.1.2.2.1.6.%d" % n),
                 uptime=snmp.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % n),
                 speed=int(speed or 0),
-                model_instance=dev,
             )
 
         return tuple(build_port(i, n) for i, n in enumerate(range(49, self.ports_len + 49), 1))

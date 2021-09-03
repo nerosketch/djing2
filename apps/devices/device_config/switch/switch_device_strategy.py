@@ -1,11 +1,9 @@
 import re
 from abc import abstractmethod
 from typing import Optional, Tuple, AnyStr
-from dataclasses import dataclass
 from transliterate import translit
 from django.conf import settings
 from django.utils.translation import gettext
-from django.db.models import Model
 from devices.device_config.base import Vlan, Vlans, Macs
 from devices.device_config.base_device_strategy import (
     BaseDeviceStrategyContext, BaseDeviceStrategy,
@@ -14,19 +12,23 @@ from devices.device_config.base_device_strategy import (
 from djing2.lib import macbin2str, RuTimedelta
 
 
-@dataclass
-class PortType:
-    model_instance: Model
+class PortType(object):
+    __uptime: int
+    __mac: bytes
     num: int = 0
     snmp_num: Optional[int] = None
     name: str = ""
     status: bool = False
     speed: int = 0
-    __uptime: int = 0
-    __mac: bytes = b""
 
-    def __post_init__(self):
-        self.snmp_num = int(self.num) if self.snmp_num is None else int(self.snmp_num)
+    def __init__(self, uptime: int = 0, mac: bytes = b'', num=0, snmp_num=None, name='', status=False, speed=0):
+        self.uptime = uptime
+        self.mac = mac
+        self.num = num
+        self.snmp_num = int(num) if snmp_num is None else int(snmp_num)
+        self.name = name
+        self.status = status
+        self.speed = speed
 
     @property
     def mac(self) -> str:
@@ -38,7 +40,7 @@ class PortType:
         raise ValueError('Unexpected type for mac: %s' % type(m))
 
     @mac.setter
-    def mac(self, mac):
+    def mac(self, mac: bytes) -> None:
         self.__mac = mac
 
     @property
@@ -48,12 +50,23 @@ class PortType:
         return ''
 
     @uptime.setter
-    def uptime(self, time: int):
-        self.__uptime = time
+    def uptime(self, uptime: int) -> None:
+        self.__uptime = uptime
 
     @staticmethod
     def get_config_types() -> ListDeviceConfigType:
         return []
+
+    def as_dict(self) -> dict:
+        return {
+            'uptime': self.uptime,
+            'mac': self.mac,
+            'num': self.num,
+            'snmp_num': self.snmp_num,
+            'name': self.name,
+            'status': self.status,
+            'speed': self.speed
+        }
 
 
 class SwitchDeviceStrategy(BaseDeviceStrategy):
@@ -277,7 +290,6 @@ class SwitchDeviceStrategyContext(BaseDeviceStrategyContext):
     def normalize_name(self, name: str, vid: Optional[int] = None) -> str:
         return self._current_dev_manager.normalize_name(name=name, vid=vid)
 
-    @abstractmethod
     def create_vlans(self, vlan_list: Vlans) -> bool:
         """
         Create new vlan with name
@@ -286,7 +298,6 @@ class SwitchDeviceStrategyContext(BaseDeviceStrategyContext):
         """
         return self._current_dev_manager.create_vlans(vlan_list=vlan_list)
 
-    @abstractmethod
     def delete_vlans(self, vlan_list: Vlans) -> bool:
         """
         Delete vlans from switch
@@ -301,7 +312,6 @@ class SwitchDeviceStrategyContext(BaseDeviceStrategyContext):
     def delete_vlan(self, vid: int, is_management: bool) -> bool:
         return self._current_dev_manager.delete_vlan(vid=vid, is_management=is_management)
 
-    @abstractmethod
     def read_mac_address_vlan(self, vid: int) -> Macs:
         """
         Read FDB in vlan
