@@ -129,15 +129,11 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         res = models.split_fio(full_fio)
         if len(res) == 3:
             surname, name, last_name = res
-            print(surname, name, last_name, res)
             if _is_bad_chunk(surname):
-                print(1)
                 raise serializers.ValidationError(err_text)
             if _is_bad_chunk(name):
-                print(2)
                 raise serializers.ValidationError(err_text)
             if _is_bad_chunk(last_name):
-                print(3)
                 raise serializers.ValidationError(err_text)
 
             return f"{surname} {name} {last_name}"
