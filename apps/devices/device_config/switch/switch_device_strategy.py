@@ -189,10 +189,6 @@ class SwitchDeviceStrategy(BaseDeviceStrategy):
         """
         return 5, gettext("Reboot not ready")
 
-    @classmethod
-    def get_is_use_device_port(cls) -> bool:
-        return bool(cls.is_use_device_port)
-
     @staticmethod
     def validate_extra_snmp_info(v: str) -> None:
         """
