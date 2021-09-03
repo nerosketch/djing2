@@ -1,3 +1,4 @@
+import re
 from string import digits
 from datetime import datetime
 
@@ -7,7 +8,6 @@ from django.utils.crypto import get_random_string
 from django.utils.translation import gettext as _
 from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
-from rest_framework.settings import api_settings
 
 from customers import models
 from djing2.lib import safe_int
@@ -118,6 +118,31 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
 
         return instance
+
+    @staticmethod
+    def validate_fio(full_fio: str) -> str:
+        def _is_bad_chunk(v: str, rgxp=re.compile(r"[^\dA-Za-zА-Яа-яЁё_]")):
+            r = rgxp.search(v)
+            return bool(r)
+        err_text = _('Credentials must be without spaces or any special symbols, only digits and letters')
+
+        res = models.split_fio(full_fio)
+        if len(res) == 3:
+            surname, name, last_name = res
+            print(surname, name, last_name, res)
+            if _is_bad_chunk(surname):
+                print(1)
+                raise serializers.ValidationError(err_text)
+            if _is_bad_chunk(name):
+                print(2)
+                raise serializers.ValidationError(err_text)
+            if _is_bad_chunk(last_name):
+                print(3)
+                raise serializers.ValidationError(err_text)
+
+            return f"{surname} {name} {last_name}"
+        else:
+            raise serializers.ValidationError(_('3 words required: surname, name and last_name without spaces'))
 
     class Meta:
         model = models.Customer
