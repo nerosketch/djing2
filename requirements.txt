@@ -1,43 +1,59 @@
-wheel
-urllib3
-Django
-djangorestframework
-Pillow
+Django==3.1.12
+djangorestframework==3.12.2
+Pillow>=8.2.0
 
-# for mac address field
-netaddr
-
-# db client for Postgres
-psycopg2-binary
-
--e git://github.com/nerosketch/easysnmp.git#egg=easysnmp
-pid
+# permissions
 django-guardian
 
-requests
-webdavclient
-transliterate
+# for mac address field
+netaddr==0.8.0
+
+# db client for Postgres
+psycopg2-binary==2.8.6
+
+git+git://github.com/nerosketch/easysnmp.git#egg=easysnmp
+# pid==3.0.4
+
+transliterate==1.10.2
 
 # xml for pay system allpay
-djangorestframework-xml
+djangorestframework-xml==2.0.0
 
 # django-bitfield
--e git://github.com/disqus/django-bitfield.git#egg=django-bitfield
+git+git://github.com/disqus/django-bitfield.git#egg=django-bitfield
 
-# django_cleanup for clean unused media
--e git://github.com/un1t/django-cleanup.git#egg=django_cleanup
+# for clean unused media
+django-cleanup==5.1.0
 
 # viberbot
--e git://github.com/Viber/viber-bot-python.git#egg=viberbot
+git+git://github.com/Viber/viber-bot-python.git#egg=viberbot
 
-celery
-redis
+uwsgi_tasks==0.7.3
+# redis==3.5.3
 
-django-cors-headers
-django-encrypted-model-fields
-django-netfields
+django-cors-headers==3.7.0
+git+https://gitlab.com/slei99/django-encrypted-model-fields.git#egg=django-encrypted-model-fields
+django-netfields==1.2.2
 
 # pexpect
--e git://github.com/pexpect/pexpect.git#egg=pexpect
+git+git://github.com/pexpect/pexpect.git#egg=pexpect
 
-django-filter
+django-filter==2.4.0
+#pylibmc==1.6.1
+djangorestframework-queryfields==1.0.0
+
+djangorestframework-guardian
+
+django-webpush==0.3.3
+
+# linters, and pre commit hook
+flake8==3.9.0
+pre-commit==2.11.1
+autoflake==1.4
+black==20.8b1
+pyupgrade==2.11.0
+
+pyTelegramBotAPI
+
+# radiusapp
+git+https://github.com/pyradius/pyrad.git#egg=pyrad

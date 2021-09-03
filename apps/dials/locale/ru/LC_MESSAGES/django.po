@@ -1,0 +1,121 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2019.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-12-18 00:39+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: dials/models.py:16
+msgid "ATS device name"
+msgstr "Название устройства звонка"
+
+#: dials/models.py:27
+msgid "ATS Number"
+msgstr "Номер АТС"
+
+#: dials/models.py:66
+msgid "Unique identifier"
+msgstr "Уникальный идентификатор"
+
+#: dials/models.py:69
+msgid "Caller number"
+msgstr "Номер звонящего"
+
+#: dials/models.py:73
+msgid "Caller name"
+msgstr "Имя звонящего"
+
+#: dials/models.py:77
+msgid "Dst caller number"
+msgstr "Номер адресата"
+
+#: dials/models.py:81
+msgid "Duration"
+msgstr "Вся длительность"
+
+#: dials/models.py:81
+msgid "Duration of the call"
+msgstr "Количество секунд от начала вызова до его завершения"
+
+#: dials/models.py:84
+msgid "Talk time"
+msgstr "Время разговора"
+
+#: dials/models.py:84
+msgid "Duration of the call once it was answered"
+msgstr "Фактическое время разговора"
+
+#: dials/models.py:86
+msgid "Start call time"
+msgstr "Время начала звонка"
+
+#: dials/models.py:87
+msgid "Answer time"
+msgstr "Время ответа"
+
+#: dials/models.py:88
+msgid "End call time"
+msgstr "Время завершения звонка"
+
+#: dials/models.py:91
+msgid "ATS device"
+msgstr "Устройство звонка"
+
+#: dials/models.py:94
+msgid "Account"
+msgstr "Учётная запись"
+
+#: dials/models.py:98
+msgid "Answered"
+msgstr "Отвечен"
+
+#: dials/models.py:100
+msgid "Unknown"
+msgstr "Не известен"
+
+#: dials/models.py:101
+msgid "Incoming"
+msgstr "Входящий"
+
+#: dials/models.py:102
+msgid "Outgoing"
+msgstr "Исходящий"
+
+#: dials/models.py:105
+msgid "Call type"
+msgstr "Тип звонка"
+
+#: dials/models.py:109
+msgid "Call killer"
+msgstr "Кто завершил звонок"
+
+#: dials/models.py:142
+msgid "Create time"
+msgstr "Время начала"
+
+#: dials/models.py:143
+msgid "Sender"
+msgstr "Отправитель"
+
+#: dials/models.py:144
+msgid "Receiver"
+msgstr "Получатель"
+
+#: dials/models.py:145
+msgid "Text"
+msgstr "Текст"
+
+msgid "Dst caller name"
+msgstr "Имя адресата"

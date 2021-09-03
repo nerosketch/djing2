@@ -1,0 +1,10 @@
+{% load i18n %}
+{% blocktrans with full_addr=customer.full_address telephone=customer.telephone task_type=task.get_mode_display task_detail=task.descr %}
+{{ task_status }}
+{{ customer }}
+Address: {{ full_addr }}
+Tel: {{ telephone }}
+Task type: {{ task_type }}
+
+{{ task_detail }}
+{% endblocktrans %}
