@@ -26,6 +26,25 @@ class NotEnoughMoney(LogicError):
     pass
 
 
+def split_fio(fio) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Try to split name, last_name, and surname."""
+    full_fname = str(fio)
+    full_name_list = full_fname.split()
+    surname, name, last_name = (None,) * 3
+    name_len = len(full_name_list)
+    if name_len > 0:
+        if name_len > 3:
+            surname, name, last_name, *other = full_name_list
+            last_name = f"{last_name} {' '.join(other)}"
+        elif name_len == 3:
+            surname, name, last_name = full_name_list
+        elif name_len == 2:
+            surname, name = full_name_list
+        elif name_len == 1:
+            name = full_fname
+    return surname, name, last_name
+
+
 class CustomerServiceModelManager(models.QuerySet):
     def _filter_raw_manage_customer_service(self, balance_equal_operator: str, customer_id=None):
         """
@@ -675,22 +694,9 @@ class Customer(BaseAccount):
         except ValueError as err:
             return str(err), False
 
-    def split_fio(self) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    def split_fio(self):
         """Try to split name, last_name, and surname."""
-        full_fname = str(self.fio)
-        full_name_list = full_fname.split()
-        surname, name, last_name = (None,) * 3
-        name_len = len(full_name_list)
-        if name_len > 0:
-            if name_len > 3:
-                surname = full_name_list[0]
-            elif name_len == 3:
-                surname, name, last_name = full_name_list
-            elif name_len == 2:
-                surname, name = full_name_list
-            elif name_len == 1:
-                name = full_fname
-        return surname, name, last_name
+        return split_fio(str(self.fio))
 
     class Meta:
         db_table = "customers"

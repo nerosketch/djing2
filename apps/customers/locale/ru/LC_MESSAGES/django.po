@@ -356,6 +356,12 @@ msgstr "Нельзя указывать будущее время"
 msgid "Too old date. Must be newer than 1900-01-01 00:00:00"
 msgstr "Слишком старая дата. Должно быть новее чем 1900-01-01 00:00:00"
 
+msgid "3 words required: surname, name and last_name without spaces"
+msgstr "3 слова необходимо: фамилия, имя и отчество без пробелов"
+
+msgid "Credentials must be without spaces or any special symbols, only digits and letters"
+msgstr "ФИО должно быть без пробелов и спец знаков, только буквы и цифры"
+
 #~ msgid "finish service perm"
 #~ msgstr "Завершение услуги"
 
