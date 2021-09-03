@@ -153,7 +153,7 @@ class Device(BaseAbstractModel):
         return r
 
     def fix_onu(self) -> Tuple[Optional[int], Optional[str]]:
-        mng = self.get_pon_olt_device_manager()
+        mng = self.get_pon_onu_device_manager()
         onu_sn, err_text = mng.find_onu()
         if onu_sn is not None:
             Device.objects.filter(pk=self.pk).update(snmp_extra=str(onu_sn))
