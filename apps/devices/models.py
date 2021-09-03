@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import MyChoicesAdapter
 from djing2.models import BaseAbstractModel
-from devices.device_config import DEVICE_TYPES, DEVICE_TYPE_UNKNOWN
+from devices.device_config.device_type_collection import DEVICE_TYPE_UNKNOWN, DEVICE_TYPES
 from devices.device_config.base import (
     Vlans,
     Macs,
