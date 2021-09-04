@@ -12,7 +12,8 @@ class AllTimeGatewayModelSerializer(BaseCustomModelSerializer):
 
 
 class PaysReportParamsSerializer(serializers.Serializer):
-    from_date = serializers.DateTimeField()
+    from_time = serializers.DateTimeField()
+    to_time = serializers.DateTimeField()
     pay_gw = serializers.IntegerField(default=None, allow_null=True)
     group_by = serializers.IntegerField(default=0)
 
