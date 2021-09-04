@@ -472,15 +472,6 @@ class PortModelViewSet(DjingModelViewSet):
         port_vlans = port.get_port_vlan_list()
         return Response(asdict(p) for p in port_vlans)
 
-    @action(methods=["post"], detail=True)
-    @catch_dev_manager_err
-    def vlan_config_apply(self, request, pk=None):
-        port = self.get_object()
-        serializer = dev_serializers.PortVlanConfigSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        port.apply_vlan_config(serializer=serializer, request=request)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 class PortVlanMemberModelViewSet(DjingModelViewSet):
     queryset = PortVlanMemberModel.objects.all()

@@ -14,7 +14,7 @@ from devices.device_config.base import (
 from ..switch_device_strategy import SwitchDeviceStrategyContext
 from ..dlink.dgs_1100_10me import DlinkDGS1100_10ME
 from ..switch_device_strategy import PortType
-from ...base_device_strategy import SNMPWorker, PortVlanConfigModeChoices
+from ...base_device_strategy import SNMPWorker
 
 _DEVICE_UNIQUE_CODE = 4
 
@@ -192,35 +192,6 @@ class EltexSwitch(DlinkDGS1100_10ME):
             vid_name = self.get_vid_name(vid)
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
-    def create_vlans(self, vlan_list: Vlans) -> bool:
-        vlan_map = self.make_eltex_map_vlan(
-            vids=(v.vid for v in vlan_list)
-        )
-        oids = (
-            '1.3.6.1.4.1.89.48.69.1.2.0',   # rldot1qVlanStaticList1to1024
-            '1.3.6.1.4.1.89.48.69.1.3.0',   # rldot1qVlanStaticList1025to2048
-            '1.3.6.1.4.1.89.48.69.1.4.0',   # rldot1qVlanStaticList2049to3072
-            '1.3.6.1.4.1.89.48.69.1.5.0'    # rldot1qVlanStaticList3073to4094
-        )
-        reqs = ((oids[index], bit_map, 'b') for index, bit_map in vlan_map.items())
-        dev = self.model_instance
-        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
-            return snmp.set_multiple(reqs)
-
-        # for index, bit_map in vlan_map.items():
-        #     print('Set:', oids[index], bit_map)
-        #     if not self.set(oid=oids[index], value=bit_map, snmp_type='b'):
-        #         return False
-        # return True
-
-    def delete_vlans(self, vlan_list: Vlans) -> bool:
-        dev = self.model_instance
-        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
-            for vlan in vlan_list:
-                if not snmp.set_int_value("1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % vlan.vid, 6):
-                    return False
-        return True
-
     @staticmethod
     def make_eltex_map_vlan(vids: Iterable[int]) -> Dict[int, bytes]:
         """
@@ -287,37 +258,6 @@ class EltexSwitch(DlinkDGS1100_10ME):
         r = (bin_num == "1" for octet_num in bitmap for bin_num in f"{octet_num:08b}")
         return ((numer + 1) + (table * 1024) for numer, bit in enumerate(r) if bit)
 
-    def _set_trunk_vlans_on_port(self, vlan_list: Vlans, port_num: int, config_mode: PortVlanConfigModeChoices, request):
-        if port_num > self.ports_len or port_num < 1:
-            raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
-        # eltex_port_num = port_num + 48
-
-        # vlan_list = set(vlan_list)
-        # available_vids = set(self.read_port_vlan_info(port=port_num))
-
-        # new_vlans = vlan_list - available_vids
-        # self.create_vlans(vlan_list=new_vlans)
-        self.create_vlans(vlan_list=[Vlan(vid=622), Vlan(vid=3100)])
-
-        # for_del_vlans = vlan_list - available_vids
-        # print('for_del_vlans:', for_del_vlans)
-        # self.delete_vlans(vlan_list=for_del_vlans)
-
-        # vids = (v.vid for v in vlan_list)
-        # bit_maps = self.make_eltex_map_vlan(vids=vids)
-        # oids = []
-        # for tbl_num, bitmap in bit_maps.items():
-        #     oids.append(("1.3.6.1.4.1.89.48.68.1.%d.%d" % (tbl_num, port_num), bitmap, "b"))
-        return False  # self.set_multiple(oids)
-
-    def attach_vlans_to_port(self, vlan_list, port_num, config_mode, request):
-        return self._set_trunk_vlans_on_port(
-            vlan_list=vlan_list,
-            port_num=port_num,
-            config_mode=config_mode,
-            request=request
-        )
-
     # def detach_vlans_from_port(self, vlan_list: Vlans, port: int, request):
     #     return self._set_trunk_vlans_on_port(
     #         vlan_list=vlan_list,
@@ -325,11 +265,6 @@ class EltexSwitch(DlinkDGS1100_10ME):
     #         config_mode=config_mode,
     #         request=request
     #     )
-
-    def detach_vlan_from_port(self, vlan, port, request):
-        pass
-        # _vlan_gen = (v for v in (vlan,))
-        # return self.detach_vlans_from_port(_vlan_gen, port, request=request)
 
 
 SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, EltexSwitch)

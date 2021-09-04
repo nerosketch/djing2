@@ -139,22 +139,6 @@ class ZTE_C320(BDCOM_P3310C):
             for vid, vname in snmp.get_list_keyval(".1.3.6.1.4.1.3902.1015.20.2.1.2"):
                 yield Vlan(vid=int(vid), title=vname)
 
-    # def create_vlans(self, vlan_list: Vlans) -> bool:
-    #     for v in vlan_list:
-    #         self.write('vlan %d' % v.vid)
-    #         self.read_until('(config-vlan)#')
-    #         self.write('name %s' % self.normalize_name(v.title))
-    #         self.read_until('(config-vlan)#')
-    #         self.write('exit')
-    #         self.read_until('(config)#')
-    #     return True
-
-    # def delete_vlans(self, vlan_list: Vlans) -> bool:
-    #     for v in vlan_list:
-    #         self.write('no vlan %d' % v.vid)
-    #         self.read_until('(config)#')
-    #     return True
-
     # def attach_vlans_to_uplink(self, vids: Iterable[int], stack_num: int,
     #                            rack_num: int, port_num: int) -> None:
     #     self.write('int gei_%d/%d/%d' % (stack_num, rack_num, port_num))

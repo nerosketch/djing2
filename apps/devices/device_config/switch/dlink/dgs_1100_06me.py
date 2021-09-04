@@ -57,15 +57,5 @@ class DlinkDGS_1100_06MESwitchInterface(DlinkDGS_3120_24SCSwitchInterface):
     #     out = self.read_until(self.prompt)
     #     return b'Success' in out
 
-    # def detach_vlan_from_port(self, vid: int, port: int) -> bool:
-    #     if port > self.ports_len or port < 1:
-    #         raise ValueError('Port must be in range 1-%d' % self.ports_len)
-    #     self.write('config vlan vlanid %(vid)d delete %(port)d' % {
-    #         'vid': vid,
-    #         'port': port
-    #     })
-    #     out = self.read_until(self.prompt)
-    #     return b'Success' in out
-
 
 SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS_1100_06MESwitchInterface)

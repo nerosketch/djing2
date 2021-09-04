@@ -4,10 +4,10 @@ from typing import Optional, Tuple, AnyStr
 from transliterate import translit
 from django.conf import settings
 from django.utils.translation import gettext
-from devices.device_config.base import Vlan, Vlans, Macs
+from devices.device_config.base import Vlans, Macs
 from devices.device_config.base_device_strategy import (
     BaseDeviceStrategyContext, BaseDeviceStrategy,
-    PortVlanConfigModeChoices, SNMPWorker, ListDeviceConfigType
+    SNMPWorker, ListDeviceConfigType
 )
 from djing2.lib import macbin2str, RuTimedelta
 
@@ -118,72 +118,10 @@ class SwitchDeviceStrategy(BaseDeviceStrategy):
         """
         raise NotImplementedError
 
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, config_mode: PortVlanConfigModeChoices,
-                             request) -> bool:
-        """
-        Attach vlan set to port
-        :param vlan_list:
-        :param port_num:
-        :param config_mode: devices.serializers.PortVlanConfigModeChoices
-        :param request: DRF Request
-        :return: Operation result
-        """
-        raise NotImplementedError
-
-    # @abstractmethod
-    # def attach_vlan_to_port(self, vlan: Vlan, port: int, request, tag: bool = True) -> bool:
-    #     """
-    #     Attach vlan to switch port
-    #     :param vlan:
-    #     :param port:
-    #     :param request: DRF Request
-    #     :param tag: Tagged if True or untagged otherwise
-    #     :return:
-    #     """
-    #     _vlan_gen = (v for v in (vlan,))
-    #     return self.attach_vlans_to_port(_vlan_gen, port, request)
-
     def get_vid_name(self, vid: int) -> str:
         dev = self.model_instance
         with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
             return snmp.get_item(".1.3.6.1.2.1.17.7.1.4.3.1.1.%d" % vid)
-
-    @abstractmethod
-    def detach_vlan_from_port(self, vlan: Vlan, port: int, request) -> bool:
-        """
-        Detach vlan from switch port
-        :param vlan:
-        :param port:
-        :param request: DRF Request
-        :return: Operation result
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def create_vlans(self, vlan_list: Vlans) -> bool:
-        """
-        Create new vlan with name
-        :param vlan_list:
-        :return: Operation result
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def delete_vlans(self, vlan_list: Vlans) -> bool:
-        """
-        Delete vlans from switch
-        :param vlan_list:
-        :return: Operation result
-        """
-        raise NotImplementedError
-
-    def create_vlan(self, vlan: Vlan) -> bool:
-        _vlan_gen = (v for v in (vlan,))
-        return self.create_vlans(_vlan_gen)
-
-    def delete_vlan(self, vid: int, is_management: bool) -> bool:
-        _vlan_gen = (v for v in (Vlan(vid=vid, title=None, is_management=is_management, native=False),))
-        return self.delete_vlans(_vlan_gen)
 
     @abstractmethod
     def read_mac_address_vlan(self, vid: int) -> Macs:
@@ -248,69 +186,11 @@ class SwitchDeviceStrategyContext(BaseDeviceStrategyContext):
         """
         return self._current_dev_manager.read_mac_address_port(port_num=port_num)
 
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int, config_mode: PortVlanConfigModeChoices,
-                             request) -> bool:
-        """
-        Attach vlan set to port
-        :param vlan_list:
-        :param port_num:
-        :param config_mode: devices.serializers.PortVlanConfigModeChoices
-        :param request: DRF Request
-        :return: Operation result
-        """
-        return self._current_dev_manager.attach_vlans_to_port(vlan_list=vlan_list, port_num=port_num,
-                                                              config_mode=config_mode, request=request)
-
-    # @abstractmethod
-    # def attach_vlan_to_port(self, vlan: Vlan, port: int, request, tag: bool = True) -> bool:
-    #     """
-    #     Attach vlan to switch port
-    #     :param vlan:
-    #     :param port:
-    #     :param request: DRF Request
-    #     :param tag: Tagged if True or untagged otherwise
-    #     :return:
-    #     """
-    #     _vlan_gen = (v for v in (vlan,))
-    #     return self.attach_vlans_to_port(_vlan_gen, port, request)
-
     def get_vid_name(self, vid: int) -> str:
         return self._current_dev_manager.get_vid_name(vid=vid)
 
-    def detach_vlan_from_port(self, vlan: Vlan, port: int, request) -> bool:
-        """
-        Detach vlan from switch port
-        :param vlan:
-        :param port:
-        :param request: DRF Request
-        :return: Operation result
-        """
-        return self._current_dev_manager.detach_vlan_from_port(vlan=vlan, port=port, request=request)
-
     def normalize_name(self, name: str, vid: Optional[int] = None) -> str:
         return self._current_dev_manager.normalize_name(name=name, vid=vid)
-
-    def create_vlans(self, vlan_list: Vlans) -> bool:
-        """
-        Create new vlan with name
-        :param vlan_list:
-        :return: Operation result
-        """
-        return self._current_dev_manager.create_vlans(vlan_list=vlan_list)
-
-    def delete_vlans(self, vlan_list: Vlans) -> bool:
-        """
-        Delete vlans from switch
-        :param vlan_list:
-        :return: Operation result
-        """
-        return self._current_dev_manager.delete_vlans(vlan_list=vlan_list)
-
-    def create_vlan(self, vlan: Vlan) -> bool:
-        return self._current_dev_manager.create_vlan(vlan=vlan)
-
-    def delete_vlan(self, vid: int, is_management: bool) -> bool:
-        return self._current_dev_manager.delete_vlan(vid=vid, is_management=is_management)
 
     def read_mac_address_vlan(self, vid: int) -> Macs:
         """
