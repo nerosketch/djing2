@@ -1,7 +1,7 @@
 from .onu_zte_f660 import OnuZTE_F660
 from ..pon_device_strategy import PonONUDeviceStrategyContext
 
-_DEVICE_UNIQUE_CODE = 7
+DEVICE_UNIQUE_CODE = 7
 
 
 class OnuZTE_F601(OnuZTE_F660):
@@ -32,4 +32,4 @@ class OnuZTE_F601(OnuZTE_F660):
             return ()
 
 
-PonONUDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, OnuZTE_F601)
+PonONUDeviceStrategyContext.add_device_type(DEVICE_UNIQUE_CODE, OnuZTE_F601)
