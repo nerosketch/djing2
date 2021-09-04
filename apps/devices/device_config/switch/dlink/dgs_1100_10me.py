@@ -6,7 +6,7 @@ from .dgs_3120_24sc import DlinkDGS_3120_24SCSwitchInterface
 from devices.device_config.base import DeviceConfigurationError
 from ..switch_device_strategy import SwitchDeviceStrategyContext
 
-_DEVICE_UNIQUE_CODE = 1
+DEVICE_UNIQUE_CODE = 1
 
 
 def _ex_expect(filename, params=()):
@@ -50,4 +50,4 @@ class DlinkDGS1100_10ME(DlinkDGS_3120_24SCSwitchInterface):
             )
 
 
-SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, DlinkDGS1100_10ME)
+SwitchDeviceStrategyContext.add_device_type(DEVICE_UNIQUE_CODE, DlinkDGS1100_10ME)
