@@ -341,7 +341,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             1: Device.NETWORK_STATE_DOWN,
         }
         status_text_map = {
-            0: "Device %(device_name)s is up",
+            0: "Device %(device_name)s is ok",
             1: "Device %(device_name)s has problem",
         }
         device.status = status_map.get(dev_status, Device.NETWORK_STATE_UNDEFINED)
