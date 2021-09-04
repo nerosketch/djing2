@@ -199,16 +199,6 @@ class Device(BaseAbstractModel):
     def is_onu_registered(self) -> bool:
         return self.snmp_extra is not None
 
-    # @_telnet_methods_wrapper
-    # def dev_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
-    #     if not tln.create_vlans(vids):
-    #         raise DeviceConsoleError(_('Failed while create vlans'))
-
-    # @_telnet_methods_wrapper
-    # def dev_delete_vlan(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
-    #     if not tln.delete_vlans(vlan_list=vids):
-    #         raise DeviceConsoleError(_('Failed while removing vlan'))
-
     def dev_read_mac_address_vlan(self, vid: int) -> Macs:
         mng = self.get_switch_device_manager()
         return mng.read_mac_address_vlan(vid=vid)
@@ -221,10 +211,6 @@ class Device(BaseAbstractModel):
     # def telnet_switch_attach_vlan_to_port(self, tln: BaseSwitchInterface, vid: int,
     #                                       port: int, tag: bool = True) -> bool:
     #     return tln.attach_vlan_to_port(vid=vid, port=port, tag=tag)
-
-    # @_telnet_methods_wrapper
-    # def telnet_switch_detach_vlan_from_port(self, tln: BaseSwitchInterface, vid: int, port: int) -> bool:
-    #     return tln.detach_vlan_from_port(vid=vid, port=port)
 
     def dev_switch_get_mac_address_port(self, device_port_num: int) -> Macs:
         mng = self.get_switch_device_manager()
@@ -287,32 +273,6 @@ class Port(BaseAbstractModel):
         dev: Device = self.device
         mng = dev.get_switch_device_manager()
         yield from mng.read_port_vlan_info(port=int(self.num))
-
-    def apply_vlan_config(self, serializer, request):
-        device: Device = self.device
-        if not device:
-            raise DeviceImplementationError("device could not found")
-        data = serializer.data
-        port_num = data.get("port")
-        if not port_num:
-            raise DeviceImplementationError("'port' field required")
-
-        mng = device.get_switch_device_manager()
-
-        vlans_data = data.get("vids")
-        if not vlans_data:
-            raise DeviceImplementationError("vids field required")
-
-        config_mode = data.get('config_mode')
-
-        vlans_gen = (Vlan(**v) for v in vlans_data)
-
-        mng.attach_vlans_to_port(
-            vlan_list=vlans_gen,
-            port_num=port_num,
-            config_mode=config_mode,
-            request=request
-        )
 
     class Meta:
         db_table = "device_port"

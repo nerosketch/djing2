@@ -102,25 +102,6 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
                 fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
                 yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=safe_int(port_num))
 
-    def create_vlans(self, vlan_list: Vlans) -> bool:
-        # ('1.3.6.1.2.1.17.7.1.4.3.1.3.152', b'\xff\xff\xff\xff', 'OCTETSTR'),  # untagged порты
-        dev = self.model_instance
-        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
-            for v in vlan_list:
-                vname = self.normalize_name(v.title, v.vid)
-                if not snmp.set_multiple([
-                    (".1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % v.vid, 4, "INTEGER"),  # 4 - vlan со всеми функциями
-                    (".1.3.6.1.2.1.17.7.1.4.3.1.1.%d" % v.vid, vname, "OCTETSTR"),  # имя влана
-                ]):
-                    return False
-        return True
-
-    def delete_vlans(self, vlan_list: Vlans) -> bool:
-        req = [("1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % v.vid, 6) for v in vlan_list]
-        dev = self.model_instance
-        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
-            return snmp.set_multiple(req)
-
     def _add_vlan_if_not_exists(self, vlan: Vlan) -> bool:
         """
         If vlan does not exsists on device, then create it
@@ -167,19 +148,6 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
                 (".1.3.6.1.2.1.17.7.1.4.3.1.4.%d" % vlan.vid, port_member_untag, "OCTETSTR"),
             ]
         )
-
-    def attach_vlans_to_port(self, vlan_list, port_num, config_mode, request) -> tuple:
-        if port_num > self.ports_len or port_num < 1:
-            raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
-
-        results = tuple(self._toggle_vlan_on_port(vlan=v, port=port_num, member=True, request=request) for v in vlan_list)
-        return results
-
-    def attach_vlan_to_port(self, vlan: Vlan, port: int, request, tag: bool = True) -> bool:
-        return self._toggle_vlan_on_port(vlan=vlan, port=port, member=True, request=request)
-
-    def detach_vlan_from_port(self, vlan: Vlan, port: int, request) -> bool:
-        return self._toggle_vlan_on_port(vlan=vlan, port=port, member=False, request=request)
 
     def get_ports(self) -> Generator:
         dev = self.model_instance

@@ -3,7 +3,6 @@ from collections import namedtuple
 from easysnmp import EasySNMPTimeoutError
 from django.utils.translation import gettext_lazy as _
 
-# from netaddr import EUI, mac_cisco
 from devices.device_config.base_device_strategy import SNMPWorker
 from djing2.lib import safe_int, RuTimedelta, safe_float, macbin2str
 from ...base import Vlans, Vlan
@@ -191,32 +190,6 @@ class BDCOM_P3310C(PonOltDeviceStrategy):
     #         except (ValueError, IndexError):
     #             pass
 
-    # def create_vlans(self, vlan_list: Vlans) -> bool:
-    #     self.write('conf')
-    #     self.read_until('_config#')
-    #     for vlan in vlan_list:
-    #         self.write('vlan %d' % vlan.vid)
-    #         self.read_until('config_vlan%d#' % vlan.vid)
-    #         self.write('name %s' % self.normalize_name(vlan.title))
-    #         self.read_until('config_vlan%d#' % vlan.vid)
-    #         self.write('ex')
-    #         self.read_until('_config#')
-    #     self.write('exit')
-    #     self.read_until(self.prompt)
-    #     return True
-
-    # def delete_vlans(self, vlan_list: Vlans) -> bool:
-    #     self.write('conf')
-    #     self.read_until('_config#')
-    #     for vlan in vlan_list:
-    #         self.write('no vlan %d' % vlan.vid)
-    #         res = self.read_until('_config#')
-    #         if b'OK!' not in res:
-    #             return False
-    #     self.write('exit')
-    #     self.read_until(self.prompt)
-    #     return True
-
     # def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
     #     return self.attach_vlan_to_eport(vid, port, tag)
 
@@ -259,39 +232,6 @@ class BDCOM_P3310C(PonOltDeviceStrategy):
 
     # def attach_vlans_to_uplink(self, vlans: Vlans, port: int, tag: bool = True) -> None:
     #     self.attach_vlan_to_gport(vids, port, tag)
-
-    # def detach_vlan_from_port(self, vlan: Vlan, port: int, tag: bool = True) -> bool:
-    #     return self.detach_vlan_from_eport(vlan, port, tag)
-
-    # def detach_vlan_from_eport(self, vid: int, port: int, tag: bool = True) -> bool:
-    #     self.write('conf')
-    #     self.read_until('_config#')
-    #     self.write('int EPON0/%d' % port)
-    #     self.read_until('_epon0/%d#' % port)
-    #     if tag:
-    #         self.write('switch trunk vlan-allowed remove %d' % vid)
-    #     else:
-    #         self.write('switchport trunk vlan-untagged remove %d' % vid)
-    #     self.read_until('_epon0/%d#' % port)
-    #     self._exit_fiber()
-    #     self.write('exit')
-    #     self.read_until(self.prompt)
-    #     return True
-
-    # def detach_vlan_from_gport(self, vid: int, port: int, tag: bool = True) -> bool:
-    #     self.write('conf')
-    #     self.read_until('_config#')
-    #     self.write('int g0/%d' % port)
-    #     self.read_until('_g0/%d#' % port)
-    #     if tag:
-    #         self.write('switch trunk vlan-allowed remove %d' % vid)
-    #     else:
-    #         self.write('switchport trunk vlan-untagged remove %d' % vid)
-    #     self.read_until('_g0/%d#' % port)
-    #     self._exit_fiber()
-    #     self.write('exit')
-    #     self.read_until(self.prompt)
-    #     return True
 
     # def _enter_fiber(self, fiber_num: int):
     #     self.write('conf')

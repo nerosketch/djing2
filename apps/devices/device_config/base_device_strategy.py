@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Generator, Optional, Dict, Tuple, Any, List, Type
 from easysnmp import Session, EasySNMPConnectionError
-from django.utils.translation import gettext_lazy as _, gettext
-from django.db import models
+from django.utils.translation import gettext
 from devices.device_config.base import (
     DeviceImplementationError, DeviceConnectionError,
     OptionalScriptCallResult, Vlans
@@ -81,11 +80,6 @@ class SNMPWorker(Session):
             return v
         except EasySNMPConnectionError as err:
             raise DeviceConnectionError(err)
-
-
-class PortVlanConfigModeChoices(models.TextChoices):
-    TRUNK = ('trunk', _('Trunk'))
-    ACCESS = ('access', _('Access'))
 
 
 class DeviceConfigType:
