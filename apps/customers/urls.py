@@ -23,6 +23,7 @@ router.register("customer-raw-password", admin_side.CustomerRawPasswordModelView
 router.register("additional-telephone", admin_side.AdditionalTelephoneModelViewSet)
 router.register("periodic-pay", admin_side.PeriodicPayForIdModelViewSet)
 router.register("attachments", admin_side.CustomerAttachmentViewSet)
+router.register("dynamic-fields", admin_side.CustomerDynamicFieldContentModelViewSet)
 router.register("", admin_side.CustomerModelViewSet)
 
 urlpatterns = [

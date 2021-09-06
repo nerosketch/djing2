@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "radiusapp.apps.RadiusAppConfig",
     "sorm_export.apps.SormExportConfig",
     "customer_comments.apps.CustomerCommentsConfig",
+    "dynamicfields.apps.DynamicfieldsConfig",
 ]
 
 if DEBUG:
