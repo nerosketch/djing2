@@ -22,7 +22,6 @@ from djing2.lib import safe_float, safe_int
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import DjingListAPIView, DjingModelViewSet
-from dynamicfields.models import FieldModel
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 from groupapp.models import Group
 from profiles.models import UserProfileLogActionType
@@ -453,60 +452,7 @@ class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelVi
             customer_id=self.customer_id,
         )
 
-    @action(methods=['get'], detail=False)
-    def combine(self, request):
-        customer_id = request.query_params.get('customer')
-        if not customer_id:
-            return Response('customer required')
-
-        customer = get_object_or_404(models.Customer.objects.only('group_id'), pk=customer_id)
-
-        field_models = FieldModel.objects.filter(
-            groups__in=[customer.group_id]
-        ).values()
-        field_content_models = models.CustomerDynamicFieldContentModel.objects.filter(
-            customer_id=customer_id,
-            field__groups__in=[customer.group_id]
-        ).values()
-
-        field_content_models_map = {fcm['field_id']: fcm for fcm in field_content_models}
-
-        res = []
-        for fm in field_models:
-            ser = self.serializer_class(data={
-                'field': fm.get('id'),
-                # 'customer': customer_id
-            })
-            ser.is_valid()
-            content_field_data = ser.data
-
-            content_field = field_content_models_map.get(fm.get('id'))
-            if content_field is not None:
-
-                content_field_data.update({
-                    'id': content_field.get('id'),
-                    'content': content_field.get('content'),
-                })
-
-            res.append(content_field_data)
-
-        return Response(res)
-
-    @action(methods=['put'], detail=False)
-    def update_all(self, request):
-        data = request.data
-        for field_data in data:
-            content = field_data.get('content')
-            field = field_data.get('field')
-            customer = field_data.get('customer')
-            pk = safe_int(field_data.get('id'))
-            if pk is not None and pk > 0:
-                models.CustomerDynamicFieldContentModel.objects.filter(pk=pk).update(content=content)
-            else:
-                models.CustomerDynamicFieldContentModel.objects.create(
-                    content=content,
-                    field_id=field,
-                    customer_id=customer
-                )
-
-        return Response('ok')
+    def create_content_field_kwargs(self):
+        return {
+            'customer_id': self.customer_id
+        }
