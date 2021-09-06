@@ -133,16 +133,17 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
                 raise serializers.ValidationError(err_text)
             if _is_bad_chunk(name):
                 raise serializers.ValidationError(err_text)
-            if _is_bad_chunk(last_name):
+            if last_name is not None and _is_bad_chunk(last_name):
                 raise serializers.ValidationError(err_text)
 
-            return f"{surname} {name} {last_name}"
+            return f"{surname} {name} {last_name or ''}"
         else:
             raise serializers.ValidationError(_('3 words required: surname, name and last_name without spaces'))
 
     class Meta:
         model = models.Customer
         # depth = 1
+        # TODO: remove pk
         fields = (
             "pk",
             "username",
