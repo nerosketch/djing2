@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from djing2.lib import safe_int
-from dynamicfields.models import FieldModel
+from dynamicfields.models import FieldModel, FieldModelTypeChoices
 from dynamicfields.serializers import FieldModelSerializer
 from djing2.viewsets import DjingModelViewSet
 
@@ -13,6 +13,11 @@ class FieldModelViewSet(DjingModelViewSet):
     queryset = FieldModel.objects.all()
     serializer_class = FieldModelSerializer
     filterset_fields = ('field_type', 'groups')
+
+    @action(methods=['get'], detail=False)
+    def get_type_choices(self, request):
+        choices = ({'value': c_id, 'label': c_label} for c_id, c_label in FieldModelTypeChoices.choices)
+        return Response(choices)
 
 
 class AbstractDynamicFieldContentModelViewSet(ABC, DjingModelViewSet):
