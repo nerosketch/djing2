@@ -12,6 +12,7 @@ from encrypted_model_fields.fields import EncryptedCharField
 
 from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked
 from djing2.models import BaseAbstractModel
+from dynamicfields.models import AbstractDynamicFieldContentModel
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.custom_logic import SERVICE_CHOICES
@@ -725,6 +726,13 @@ class Customer(BaseAccount):
         verbose_name = _("Customer")
         verbose_name_plural = _("Customers")
         ordering = ("fio",)
+
+
+class CustomerDynamicFieldContentModel(AbstractDynamicFieldContentModel):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'dynamic_field_content'
 
 
 class InvoiceForPayment(BaseAbstractModel):
