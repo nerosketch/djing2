@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
+
 from devices.models import Device, Port, PortVlanMemberModel
 from djing2.lib.mixins import BaseCustomModelSerializer
 from groupapp.models import Group
@@ -58,18 +59,6 @@ class PortModelSerializer(BaseCustomModelSerializer):
         fields = ("pk", "device", "num", "descr", "user_count")
 
 
-class PortVlanConfigMemberSerializer(serializers.Serializer):
-    vid = serializers.IntegerField(min_value=1, max_value=4095, required=True)
-    title = serializers.CharField(max_length=128, required=True)
-    is_management = serializers.BooleanField(default=False, initial=False, allow_null=True)
-    native = serializers.BooleanField(default=False, initial=False)
-
-
-class PortVlanConfigSerializer(serializers.Serializer):
-    port_num = serializers.IntegerField(min_value=1, max_value=28)
-    vlans = serializers.ListField(child=PortVlanConfigMemberSerializer())
-
-
 class DeviceGroupsModelSerializer(BaseCustomModelSerializer):
     device_count = serializers.IntegerField(read_only=True)
 
@@ -91,7 +80,7 @@ class DevOnuVlan(serializers.Serializer):
 
 class DevOnuVlanInfoTemplate(serializers.Serializer):
     port = serializers.IntegerField(default=1)
-    vids = serializers.ListField(child=DevOnuVlan())
+    vids = DevOnuVlan(many=True)
 
 
 class DeviceOnuConfigTemplate(serializers.Serializer):

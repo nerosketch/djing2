@@ -400,6 +400,11 @@ msgstr "Параметр port_state плох"
 #~ msgid "Device %(device_name)s is up"
 #~ msgstr "Устройство %(device_name)s в сети"
 
+#, python-format
+msgid "Device %(device_name)s is ok"
+msgstr "Устройство %(device_name)s всё ок"
+
+#, python-format
 #~ msgid "Device %(device_name)s is unreachable"
 #~ msgstr "Устройство %(device_name)s не доступно"
 
