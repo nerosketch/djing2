@@ -452,7 +452,11 @@ class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelVi
             customer_id=self.customer_id,
         )
 
-    def create_content_field_kwargs(self):
+    def create_content_field_kwargs(self, field_data):
+        if hasattr(self, 'customer_id'):
+            return {
+                'customer_id': self.customer_id
+            }
         return {
-            'customer_id': self.customer_id
+            'customer_id': field_data.get('customer')
         }

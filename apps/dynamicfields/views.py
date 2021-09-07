@@ -12,6 +12,7 @@ from djing2.viewsets import DjingModelViewSet
 class FieldModelViewSet(DjingModelViewSet):
     queryset = FieldModel.objects.all()
     serializer_class = FieldModelSerializer
+    filterset_fields = ('field_type', 'groups')
 
 
 class AbstractDynamicFieldContentModelViewSet(ABC, DjingModelViewSet):
@@ -31,7 +32,7 @@ class AbstractDynamicFieldContentModelViewSet(ABC, DjingModelViewSet):
     def filter_content_fields_queryset(self):
         raise NotImplementedError
 
-    def create_content_field_kwargs(self):
+    def create_content_field_kwargs(self, field_data):
         return {}
 
     @action(methods=['get'], detail=False)
@@ -51,10 +52,13 @@ class AbstractDynamicFieldContentModelViewSet(ABC, DjingModelViewSet):
         for fm in field_models:
             serializer_class = self.get_serializer_class()
             ser = serializer_class(data={
-                'field': fm.get('id')
+                'field': fm.get('id'),
             })
             ser.is_valid()
             content_field_data = ser.data
+            content_field_data.update({
+                'title': fm.get('title')
+            })
 
             content_field = field_content_models_map.get(fm.get('id'))
             if content_field is not None:
@@ -74,16 +78,15 @@ class AbstractDynamicFieldContentModelViewSet(ABC, DjingModelViewSet):
         for field_data in data:
             content = field_data.get('content')
             field = field_data.get('field')
-            # customer = field_data.get('customer')
             pk = safe_int(field_data.get('id'))
             if pk > 0:
                 content_field_model.objects.filter(pk=pk).update(content=content)
             else:
-                create_kwargs = self.create_content_field_kwargs()
+                create_kwargs = self.create_content_field_kwargs(field_data)
                 content_field_model.objects.create(
                     content=content,
                     field_id=field,
-                    *create_kwargs
+                    **create_kwargs
                 )
 
-        return Response('ok')
+        return Response(data)
