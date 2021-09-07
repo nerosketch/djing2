@@ -22,6 +22,7 @@ from djing2.lib import safe_float, safe_int
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import DjingListAPIView, DjingModelViewSet
+from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 from groupapp.models import Group
 from profiles.models import UserProfileLogActionType
 from services.models import OneShotPay, PeriodicPay, Service
@@ -434,3 +435,28 @@ class CustomerAttachmentViewSet(DjingModelViewSet):
 
     def perform_create(self, serializer, *args, **kwargs) -> None:
         serializer.save(author=self.request.user)
+
+
+class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelViewSet):
+    queryset = models.CustomerDynamicFieldContentModel.objects.all()
+
+    def get_group_id(self) -> int:
+        customer_id = self.request.query_params.get('customer')
+        self.customer_id = customer_id
+        customer = get_object_or_404(models.Customer.objects.only('group_id'), pk=customer_id)
+        self.customer = customer
+        return customer.group_id
+
+    def filter_content_fields_queryset(self):
+        return models.CustomerDynamicFieldContentModel.objects.filter(
+            customer_id=self.customer_id,
+        )
+
+    def create_content_field_kwargs(self, field_data):
+        if hasattr(self, 'customer_id'):
+            return {
+                'customer_id': self.customer_id
+            }
+        return {
+            'customer_id': field_data.get('customer')
+        }

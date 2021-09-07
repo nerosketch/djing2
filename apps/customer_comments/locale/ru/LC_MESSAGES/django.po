@@ -28,6 +28,6 @@ msgstr "Текст"
 msgid "Comment time"
 msgstr "Время коммента"
 
-#: apps/customer_comments/views.py:24
+#: apps/customer_comments/views.py:27
 msgid "You can't delete foreign comments"
 msgstr "Вы не можете удалять чужие комментарии"

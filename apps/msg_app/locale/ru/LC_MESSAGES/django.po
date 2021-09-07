@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2019-12-18 00:39+0300\n"
+"POT-Creation-Date: 2021-09-07 15:41+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -16,90 +16,93 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
-#: msg_app/models.py:24
+
+#: apps/msg_app/models.py:17
 msgid "New"
 msgstr "Новое"
 
-#: msg_app/models.py:25
+#: apps/msg_app/models.py:17
 msgid "Seen"
 msgstr "Старое"
 
-#: msg_app/models.py:26
+#: apps/msg_app/models.py:17
 msgid "Deleted"
 msgstr "Удалённое"
 
-#: msg_app/models.py:44
+#: apps/msg_app/models.py:26
 msgid "Message status"
 msgstr "Состояние сообщения"
 
-#: msg_app/models.py:45
+#: apps/msg_app/models.py:27
 msgid "Messages statuses"
 msgstr "Состояния сообщений"
 
-#: msg_app/models.py:49
+#: apps/msg_app/models.py:31
 msgid "Body"
 msgstr "Тело сообщения"
 
-#: msg_app/models.py:50
+#: apps/msg_app/models.py:32
 msgid "sent at"
 msgstr "просмотрено в"
 
-#: msg_app/models.py:57 msg_app/models.py:301
+#: apps/msg_app/models.py:34 apps/msg_app/models.py:230
 msgid "Conversation"
 msgstr "Беседа"
 
-#: msg_app/models.py:92
+#: apps/msg_app/models.py:62
 msgid "Message"
 msgstr "Сообщение"
 
-#: msg_app/models.py:93
+#: apps/msg_app/models.py:63
 msgid "Messages"
 msgstr "Сообщения"
 
-#: msg_app/models.py:103
+#: apps/msg_app/models.py:69
 msgid "Admin"
 msgstr "Админ"
 
-#: msg_app/models.py:104
+#: apps/msg_app/models.py:69
 msgid "Guest"
 msgstr "Гость"
 
-#: msg_app/models.py:105
+#: apps/msg_app/models.py:69
 msgid "Banned user"
 msgstr "Заблокированный"
 
-#: msg_app/models.py:106
+#: apps/msg_app/models.py:69
 msgid "Inviter"
 msgstr "Тот кто пригласил"
 
-#: msg_app/models.py:122
+#: apps/msg_app/models.py:80
 msgid "Conversation membership"
 msgstr "Членство в беседе"
 
-#: msg_app/models.py:123
+#: apps/msg_app/models.py:81
 msgid "Conversation memberships"
 msgstr "Членства в беседах"
 
-#: msg_app/models.py:134
+#: apps/msg_app/models.py:92
 msgid "Participant profile does not found"
 msgstr "Учётки адресата нет"
 
-#: msg_app/models.py:142
+#: apps/msg_app/models.py:98
 msgid "No name"
 msgstr "Нет имени"
 
-#: msg_app/models.py:176
+#: apps/msg_app/models.py:125
 msgid "Title"
 msgstr "Название"
 
-#: msg_app/models.py:179
+#: apps/msg_app/models.py:129
 msgid "Participants"
 msgstr "Адресаты"
 
-#: msg_app/models.py:182
+#: apps/msg_app/models.py:132
 msgid "for select multiple press ctrl and click on field"
-msgstr "для того чтобы выделить несколько вариантов нажмите ctrl и кликните нужный вариант"
+msgstr ""
+"для того чтобы выделить несколько вариантов нажмите ctrl и кликните нужный "
+"вариант"
 
-#: msg_app/models.py:302
+#: apps/msg_app/models.py:231
 msgid "Conversations"
 msgstr "Беседы"
