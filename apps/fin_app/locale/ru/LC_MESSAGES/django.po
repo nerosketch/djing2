@@ -6,8 +6,8 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-18 00:39+0300\n"
+"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
+"POT-Creation-Date: 2021-09-07 15:41+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,41 +17,41 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: fin_app/models.py:9
+#: apps/fin_app/models/alltime.py:15
 msgid "Title"
 msgstr "Название"
 
-#: fin_app/models.py:10
+#: apps/fin_app/models/alltime.py:16
 msgid "Secret"
 msgstr "Секрет"
 
-#: fin_app/models.py:11
+#: apps/fin_app/models/alltime.py:17
 msgid "Service id"
 msgstr ""
 
-#: fin_app/models.py:13
+#: apps/fin_app/models/alltime.py:18
 msgid "Slug"
 msgstr ""
 
-#: fin_app/models.py:22
+#: apps/fin_app/models/alltime.py:26
 msgid "All time gateway"
 msgstr "Платёжный шлюз AllTime"
 
-#: fin_app/models.py:40
+#: apps/fin_app/models/alltime.py:89
 msgid "Cost"
 msgstr "Цена"
 
-#: fin_app/models.py:42
+#: apps/fin_app/models/alltime.py:90
 msgid "Trade point"
 msgstr "Торговая точка"
 
-#: fin_app/models.py:48
+#: apps/fin_app/models/alltime.py:91
 #, fuzzy
 #| msgid "Receipt num"
 msgid "Receipt number"
 msgstr "Номер квитанции"
 
-#: fin_app/models.py:51
+#: apps/fin_app/models/alltime.py:92
 msgid "Pay gateway"
 msgstr "Платёжный шлюз"
 
