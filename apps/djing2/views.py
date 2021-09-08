@@ -70,6 +70,7 @@ class SearchApiView(DjingListAPIView):
                     | Q(username__icontains=s)
                     | Q(telephone__icontains=s)
                     | Q(additional_telephones__telephone__icontains=s)
+                    | Q(description__icontains=s)
                 )
             customers = customers.select_related("group")[:limit_count]
 
