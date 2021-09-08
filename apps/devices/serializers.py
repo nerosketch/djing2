@@ -36,19 +36,14 @@ class DevicePONModelSerializer(DeviceModelSerializer):
 class DeviceWithoutGroupModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = Device
-        fields = (
-            "pk",
-            "ip_address",
-            "mac_addr",
-            "comment",
-            "dev_type",
-            "man_passw",
-            "parent_dev",
-            "snmp_extra",
-            "status",
-            "is_noticeable",
-            "sites",
-        )
+        exclude = [
+            'group',
+            'extra_data',
+            'vlans',
+            'code',
+            'create_time',
+            'place'
+        ]
 
 
 class PortModelSerializer(BaseCustomModelSerializer):
@@ -56,7 +51,7 @@ class PortModelSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = Port
-        fields = ("pk", "device", "num", "descr", "user_count")
+        fields = ("id", "device", "num", "descr", "user_count")
 
 
 class DeviceGroupsModelSerializer(BaseCustomModelSerializer):
@@ -64,7 +59,7 @@ class DeviceGroupsModelSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = Group
-        fields = ("pk", "title", "code", "device_count")
+        fields = ("id", "title", "code", "device_count")
 
 
 class PortVlanMemberModelSerializer(BaseCustomModelSerializer):

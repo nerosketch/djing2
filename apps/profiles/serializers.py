@@ -21,26 +21,7 @@ class UserProfileSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = (
-            "pk",
-            "username",
-            "fio",
-            "birth_day",
-            "create_date",
-            "is_active",
-            "is_admin",
-            "telephone",
-            "avatar",
-            "email",
-            "full_name",
-            "last_login",
-            "is_superuser",
-            "password",
-            "groups",
-            "user_permissions",
-            "access_level",
-            "sites",
-        )
+        fields = '__all__'
 
     def create(self, validated_data):
         return UserProfile.objects.create_superuser(

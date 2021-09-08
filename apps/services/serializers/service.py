@@ -14,28 +14,13 @@ class ServiceModelSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = models.Service
-        fields = (
-            "pk",
-            "title",
-            "descr",
-            "speed_in",
-            "speed_out",
-            "speed_burst",
-            "cost",
-            "calc_type",
-            "is_admin",
-            "usercount",
-            "planned_deadline",
-            "calc_type_name",
-            "sites",
-            "create_time",
-        )
+        exclude = ['groups']
 
 
 class PeriodicPayModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.PeriodicPay
-        fields = ("pk", "name", "when_add", "amount", "sites")
+        fields = ("id", "name", "when_add", "amount", "sites")
 
 
 class OneShotPaySerializer(BaseCustomModelSerializer):

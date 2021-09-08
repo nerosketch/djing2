@@ -46,7 +46,7 @@ class DetailedCustomerServiceModelSerializer(BaseCustomModelSerializer):
 class CustomerStreetModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerStreet
-        fields = ("pk", "name", "group")
+        fields = ("id", "name", "group")
 
 
 class CustomerLogModelSerializer(BaseCustomModelSerializer):
@@ -144,48 +144,18 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         model = models.Customer
         # depth = 1
         # TODO: remove pk
-        fields = (
-            "pk",
-            "username",
-            "telephone",
-            "fio",
-            "group",
-            "group_title",
-            "balance",
-            "description",
-            "street",
-            "street_name",
-            "house",
-            "is_active",
-            "gateway",
-            "gateway_title",
-            "auto_renewal_service",
-            "device",
-            "device_comment",
-            "dev_port",
-            "last_connected_service",
-            "last_connected_service_title",
-            "current_service",
-            "current_service__service__title",
-            "service_id",
-            "is_dynamic_ip",
-            "full_name",
-            "password",
-            "raw_password",
-            "create_date",
-            "birth_day",
-            "lease_count",
-            "sites",
-            "traf_octs",
-            "marker_icons",
-        )
+        exclude = [
+            'groups',
+            'user_permissions',
+            'markers'
+        ]
 
 
 class CustomerGroupSerializer(GroupsSerializer):
     usercount = serializers.IntegerField(read_only=True)
 
     class Meta(GroupsSerializer.Meta):
-        fields = ("pk", "title", "code", "usercount")
+        fields = ("id", "title", "code", "usercount")
 
 
 class PassportInfoModelSerializer(BaseCustomModelSerializer):
