@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from djing2.lib import safe_int
-from dynamicfields.models import FieldModel, FieldModelTypeChoices
+from dynamicfields.models import FieldModel, FieldModelTypeChoices, FieldModelTagChoices
 from dynamicfields.serializers import FieldModelSerializer
 from djing2.viewsets import DjingModelViewSet
 
@@ -17,6 +17,11 @@ class FieldModelViewSet(DjingModelViewSet):
     @action(methods=['get'], detail=False)
     def get_type_choices(self, request):
         choices = ({'value': c_id, 'label': c_label} for c_id, c_label in FieldModelTypeChoices.choices)
+        return Response(choices)
+
+    @action(methods=['get'], detail=False)
+    def get_system_tags(self, request):
+        choices = ({'value': c_id, 'label': c_label} for c_id, c_label in FieldModelTagChoices.choices)
         return Response(choices)
 
 

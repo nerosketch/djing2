@@ -1,4 +1,6 @@
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
+from django.utils.regex_helper import _lazy_re_compile
 from django.utils.translation import gettext_lazy as _
 from django.core import validators
 from django.db import models
@@ -54,12 +56,37 @@ class FieldModelTypeChoices(models.IntegerChoices):
     SLUG_FIELD = 5, _('Slug Field')
 
 
+class FieldModelTagChoices(models.IntegerChoices):
+    DEFAULT = 0, _('Default tag')
+    IPTV = 1, _('Uses IPTV')
+
+
+validate_tags = RegexValidator(
+    _lazy_re_compile(r'^(\w+\,?)+$'),
+    _('Tags must contain only word characters (equivalent to [a-zA-Z0-9_]). And separated by comma.'),
+    'invalid'
+)
+
+
 class FieldModel(models.Model):
     title = models.CharField(_('Title'), max_length=80)
     field_type = models.PositiveSmallIntegerField(
         _('Field type'),
         choices=FieldModelTypeChoices.choices,
         default=FieldModelTypeChoices.CHAR_FIELD
+    )
+    system_tag = models.PositiveSmallIntegerField(
+        _('System tag'),
+        choices=FieldModelTagChoices.choices,
+        default=FieldModelTagChoices.DEFAULT
+    )
+    user_tag = models.CharField(
+        _('User tag'),
+        validators=[validate_tags],
+        max_length=128,
+        null=True,
+        blank=True,
+        default=None
     )
     groups = models.ManyToManyField(
         Group, related_name='fields',
