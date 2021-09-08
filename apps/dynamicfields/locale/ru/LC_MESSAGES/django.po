@@ -66,7 +66,7 @@ msgid "Tags must contain only word characters (equivalent to [a-zA-Z0-9_]). And 
 msgstr "Тэги должны содержать только буквы, цифры и знак подчёркивания (как [a-zA-Z0-9_]). И могут быть разделены запятой."
 
 msgid "Default tag"
-msgstr "Тэк по умолчанию"
+msgstr "Тэг по умолчанию"
 
 msgid "Uses IPTV"
 msgstr "Использует IPTV"
