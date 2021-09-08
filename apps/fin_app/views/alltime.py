@@ -35,7 +35,8 @@ class AllTimeGatewayModelViewSet(DjingModelViewSet):
         ser.is_valid(raise_exception=True)
         dat = ser.data
         r = report_by_pays(
-            from_date=dat.get('from_date'),
+            from_time=dat.get('from_time'),
+            to_time=dat.get('to_time'),
             pay_gw_id=dat.get('pay_gw'),
             group_by=dat.get('group_by', 0),
         )

@@ -50,7 +50,7 @@ class CustomerStreetModelSerializer(BaseCustomModelSerializer):
 
 
 class CustomerLogModelSerializer(BaseCustomModelSerializer):
-    author_name = serializers.CharField(source="author.get_short_name", read_only=True)
+    author_name = serializers.CharField(source="author.get_full_name", read_only=True)
     cost = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
     from_balance = serializers.DecimalField(max_digits=12, decimal_places=3, coerce_to_string=False, required=False)
     to_balance = serializers.DecimalField(max_digits=12, decimal_places=3, coerce_to_string=False, required=False)

@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2019-07-16 02:37+0300\n"
+"POT-Creation-Date: 2021-09-07 15:41+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,64 +17,77 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: gateways/models.py:12
-msgid "Title"
-msgstr "Название"
-
-#: gateways/models.py:13
-msgid "Ip address"
-msgstr "IP адрес"
-
-#: gateways/models.py:14
-msgid "Port"
-msgstr "Порт"
-
-#: gateways/models.py:15
-msgid "Auth login"
-msgstr "Логин для входа"
-
-#: gateways/models.py:16
-msgid "Auth password"
-msgstr "Пароль для входа"
-
-#: gateways/models.py:17
-msgid "Type"
-msgstr "Тип"
-
-#: gateways/models.py:18
-msgid "Is default"
-msgstr "По умолчанию"
-
-#: gateways/models.py:19
-msgid "Enabled"
-msgstr "Включен"
-
-#: gateways/models.py:25
-msgid "One of nas types implementation is not found"
-msgstr "Не найден тип реализации NAS"
-
-#: gateways/models.py:50
-msgid "Network access server. Gateway"
-msgstr "Сервер доступа в интернет(NAS, Шлюз)"
-
-#: gateways/models.py:51
-msgid "Network access servers. Gateways"
-msgstr "Серверы доступа в интернет"
-
-#: gateways/models.py:61
-msgid "You cannot remove default server"
-msgstr "Вы не можете удалить шлюз по умолчанию"
-
-#: gateways/nas_managers/mod_mikrotik.py:171
-msgid "Mikrotik gateway"
-msgstr "Mikrotik шлюз"
-
+#: apps/gateways/gw_facade/linux_gw.py:7
 msgid "Linux gateway"
 msgstr "Linux шлюз"
 
-#: gateways/nas_managers/mod_mikrotik.py:176
-msgid "Gateway disabled"
+#: apps/gateways/gw_facade/mikrotik_gw.py:7
+msgid "Mikrotik gateway"
+msgstr "Mikrotik шлюз"
+
+#: apps/gateways/models.py:25
+msgid "Title"
+msgstr "Название"
+
+#: apps/gateways/models.py:26
+msgid "Ip address"
+msgstr "IP адрес"
+
+#: apps/gateways/models.py:27
+msgid "Port"
+msgstr "Порт"
+
+#: apps/gateways/models.py:28
+msgid "Auth login"
+msgstr "Логин для входа"
+
+#: apps/gateways/models.py:29
+msgid "Auth password"
+msgstr "Пароль для входа"
+
+#: apps/gateways/models.py:30
+msgid "Type"
+msgstr "Тип"
+
+#: apps/gateways/models.py:32
+#, fuzzy
+#| msgid "Gateway disabled"
+msgid "Gateway class"
 msgstr "Шлюз выключен"
 
+#: apps/gateways/models.py:36
+msgid "Is default"
+msgstr "По умолчанию"
+
+#: apps/gateways/models.py:37
+msgid "Enabled"
+msgstr "Включен"
+
+#: apps/gateways/models.py:38
+msgid "Create time"
+msgstr ""
+
+#: apps/gateways/models.py:40
+#, fuzzy
+#| msgid "Ip address"
+msgid "Device place address"
+msgstr "IP адрес"
+
+#: apps/gateways/models.py:85
+msgid "Network access server. Gateway"
+msgstr "Сервер доступа в интернет(NAS, Шлюз)"
+
+#: apps/gateways/models.py:86
+msgid "Network access servers. Gateways"
+msgstr "Серверы доступа в интернет"
+
+#: apps/gateways/signals.py:14
+msgid "You cannot remove default server"
+msgstr "Вы не можете удалить шлюз по умолчанию"
+
+#: apps/gateways/signals.py:22
 msgid "You can't have two default gateways"
 msgstr "Вы не можете иметь более одного шлюза по умолчанию"
+
+#~ msgid "One of nas types implementation is not found"
+#~ msgstr "Не найден тип реализации NAS"

@@ -12,6 +12,7 @@ from encrypted_model_fields.fields import EncryptedCharField
 
 from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked
 from djing2.models import BaseAbstractModel
+from dynamicfields.models import AbstractDynamicFieldContentModel
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.custom_logic import SERVICE_CHOICES
@@ -34,8 +35,8 @@ def split_fio(fio) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     name_len = len(full_name_list)
     if name_len > 0:
         if name_len > 3:
-            surname, name, last_name, *other = full_name_list
-            last_name = f"{last_name} {' '.join(other)}"
+            surname, name, *last_name = full_name_list
+            last_name = '-'.join(last_name)
         elif name_len == 3:
             surname, name, last_name = full_name_list
         elif name_len == 2:
@@ -205,6 +206,22 @@ class CustomerStreet(BaseAbstractModel):
         ordering = ("name",)
 
 
+class CustomerLogModelQuerySet(models.QuerySet):
+
+    def filter_afk(self):
+        # TODO: кто продолжительное время не пользуется услугой
+        return self.raw(
+            raw_query="SELECT MAX(CL.date) AS last_date, CL.customer_id, "
+                      "MAX(BA.username) AS customer_uname, MAX(BA.fio) AS "
+                      "customer_fio FROM customer_log AS CL "
+                      "LEFT JOIN base_accounts AS BA ON (CL.customer_id = BA.id) "
+                      "WHERE CL.cost < 0 "
+                      "AND CL.date < (now() - interval '2 month') "
+                      "AND (CL.author_id = CL.customer_id OR CL.author_id is null) "
+                      "GROUP BY CL.customer_id"
+        )
+
+
 class CustomerLog(BaseAbstractModel):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
@@ -213,6 +230,8 @@ class CustomerLog(BaseAbstractModel):
     author = models.ForeignKey(BaseAccount, on_delete=models.SET_NULL, related_name="+", blank=True, null=True)
     comment = models.CharField(max_length=128)
     date = models.DateTimeField(auto_now_add=True)
+
+    objects = CustomerLogModelQuerySet.as_manager()
 
     class Meta:
         db_table = "customer_log"
@@ -270,15 +289,15 @@ class CustomerManager(MyUserManager):
 
         active_count = (
             qs.annotate(ips=models.Count("customeripleasemodel"))
-            .filter(is_active=True, ips__gt=0)
-            .exclude(current_service=None)
-            .count()
+                .filter(is_active=True, ips__gt=0)
+                .exclude(current_service=None)
+                .count()
         )
 
         commercial_customers = (
             qs.filter(is_active=True, current_service__service__is_admin=False, current_service__service__cost__gt=0)
-            .exclude(current_service=None)
-            .count()
+                .exclude(current_service=None)
+                .count()
         )
 
         return {
@@ -319,7 +338,8 @@ class CustomerManager(MyUserManager):
                         cost=0,
                         author=profile if isinstance(profile, UserProfile) else None,
                         comment=comment
-                        % {"customer_name": exp_srv_customer.get_short_name(), "service_name": exp_srv.service.title},
+                                % {"customer_name": exp_srv_customer.get_short_name(),
+                                   "service_name": exp_srv.service.title},
                     )
             custom_signals.customer_service_batch_pre_stop.send(
                 sender=CustomerService, expired_services=expired_service
@@ -370,9 +390,9 @@ class CustomerManager(MyUserManager):
                         customer=expired_service_customer,
                         cost=-cost,
                         from_balance=old_balance,
-                        to_balance=old_balance-cost,
+                        to_balance=old_balance - cost,
                         comment=_("Automatic connect new service %(service_name)s for %(customer_name)s")
-                        % {"service_name": service.title, "customer_name": uname},
+                                % {"service_name": service.title, "customer_name": uname},
                     )
             else:
                 # finish service otherwise
@@ -469,7 +489,7 @@ class Customer(BaseAccount):
             customer=self,
             cost=cost,
             from_balance=old_balance,
-            to_balance=old_balance+cost,
+            to_balance=old_balance + cost,
             author=profile if isinstance(profile, UserProfile) else None,
             comment=re.sub(r"\W{1,128}", " ", comment),
         )
@@ -536,7 +556,7 @@ class Customer(BaseAccount):
                 customer=self,
                 cost=-cost,
                 from_balance=old_balance,
-                to_balance=old_balance-cost,
+                to_balance=old_balance - cost,
                 author=author,
                 comment=comment or _("Buy service default log")
             )
@@ -591,7 +611,7 @@ class Customer(BaseAccount):
                 customer=self,
                 cost=-cost,
                 from_balance=old_balance,
-                to_balance=old_balance-cost,
+                to_balance=old_balance - cost,
                 author=request.user,
                 comment=comment or _('Buy one-shot service for "%(title)s"') % {"title": shot.name},
             )
@@ -712,6 +732,13 @@ class Customer(BaseAccount):
         verbose_name = _("Customer")
         verbose_name_plural = _("Customers")
         ordering = ("fio",)
+
+
+class CustomerDynamicFieldContentModel(AbstractDynamicFieldContentModel):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'dynamic_field_content'
 
 
 class InvoiceForPayment(BaseAbstractModel):
