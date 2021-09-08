@@ -121,7 +121,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     @staticmethod
     def validate_fio(full_fio: str) -> str:
-        def _is_bad_chunk(v: str, rgxp=re.compile(r"[^\dA-Za-zА-Яа-яЁё_]")):
+        def _is_bad_chunk(v: str, rgxp=re.compile(r"[^\dA-Za-zА-Яа-яЁё-]")):
             r = rgxp.search(v)
             return bool(r)
         err_text = _('Credentials must be without spaces or any special symbols, only digits and letters')
