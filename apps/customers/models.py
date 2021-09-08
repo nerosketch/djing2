@@ -206,22 +206,6 @@ class CustomerStreet(BaseAbstractModel):
         ordering = ("name",)
 
 
-class CustomerLogModelQuerySet(models.QuerySet):
-
-    def filter_afk(self):
-        # TODO: кто продолжительное время не пользуется услугой
-        return self.raw(
-            raw_query="SELECT MAX(CL.date) AS last_date, CL.customer_id, "
-                      "MAX(BA.username) AS customer_uname, MAX(BA.fio) AS "
-                      "customer_fio FROM customer_log AS CL "
-                      "LEFT JOIN base_accounts AS BA ON (CL.customer_id = BA.id) "
-                      "WHERE CL.cost < 0 "
-                      "AND CL.date < (now() - interval '2 month') "
-                      "AND (CL.author_id = CL.customer_id OR CL.author_id is null) "
-                      "GROUP BY CL.customer_id"
-        )
-
-
 class CustomerLog(BaseAbstractModel):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
@@ -230,8 +214,6 @@ class CustomerLog(BaseAbstractModel):
     author = models.ForeignKey(BaseAccount, on_delete=models.SET_NULL, related_name="+", blank=True, null=True)
     comment = models.CharField(max_length=128)
     date = models.DateTimeField(auto_now_add=True)
-
-    objects = CustomerLogModelQuerySet.as_manager()
 
     class Meta:
         db_table = "customer_log"
@@ -307,6 +289,24 @@ class CustomerManager(MyUserManager):
             "active_count": active_count,
             "commercial_customers": commercial_customers,
         }
+
+    @staticmethod
+    def filter_afk(limit=100):
+        # TODO: кто продолжительное время не пользуется услугой
+        raw_query = ("SELECT CL.customer_id, MAX(CL.date) AS last_date, "
+                     "MAX(BA.username) AS customer_uname, MAX(BA.fio) AS "
+                     "customer_fio FROM customer_log AS CL "
+                     "LEFT JOIN base_accounts AS BA ON (CL.customer_id = BA.id) "
+                     "WHERE CL.cost < 0 "
+                     "AND CL.date < (now() - interval '2 month') "
+                     "AND (CL.author_id = CL.customer_id OR CL.author_id is null) "
+                     "GROUP BY CL.customer_id LIMIT %s")
+        with connection.cursor() as cur:
+            cur.execute(raw_query, [limit])
+            res = cur.fetchone()
+            while res is not None:
+                yield res
+                res = cur.fetchone()
 
     @staticmethod
     def finish_services_if_expired(profile: Optional[UserProfile] = None, comment=None, customer=None) -> None:
