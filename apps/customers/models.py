@@ -703,7 +703,8 @@ class Customer(BaseAccount):
         name_len = len(full_name_list)
         if name_len > 0:
             if name_len > 3:
-                surname = full_name_list[0]
+                surname, name, *last_name = full_name_list
+                last_name = '-'.join(last_name)
             elif name_len == 3:
                 surname, name, last_name = full_name_list
             elif name_len == 2:
