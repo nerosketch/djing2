@@ -14,6 +14,7 @@ api_urls = [
     path("messenger/", include("messenger.urls", namespace="messenger")),
     path("tasks/", include("tasks.urls", namespace="tasks")),
     path("networks/", include("networks.urls", namespace="networks")),
+    path("dynamicfields/", include("dynamicfields.urls", namespace="dynamicfields")),
     path("fin/", include("fin_app.urls", namespace="fin_app")),
     path("dial/", include("dials.urls", namespace="dials")),
     path("sites/", include("sitesapp.urls", namespace="sitesapp")),

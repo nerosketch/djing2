@@ -1,3 +1,3 @@
-from .general import EltexSwitch, EltexPort
+from .general import EltexSwitch
 
-__all__ = ("EltexSwitch", "EltexPort")
+__all__ = ("EltexSwitch",)

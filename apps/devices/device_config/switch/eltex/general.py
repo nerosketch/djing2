@@ -1,24 +1,22 @@
 import math
-from typing import Optional, Generator, Iterable, Dict
+from typing import Generator, Iterable, Dict
 
 from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import safe_int, RuTimedelta, process_lock
 from devices.device_config.base import (
-    BasePortInterface,
     Vlans,
     Vlan,
     MacItem,
     Macs,
     DeviceImplementationError,
 )
-from devices.device_config.utils import plain_ip_device_mon_template
-from ..dlink import DlinkDGS1100_10ME
+from ..switch_device_strategy import SwitchDeviceStrategyContext
+from ..dlink.dgs_1100_10me import DlinkDGS1100_10ME
+from ..switch_device_strategy import PortType
+from ...base_device_strategy import SNMPWorker
 
-
-class EltexPort(BasePortInterface):
-    def get_config_types(self):
-        return []
+_DEVICE_UNIQUE_CODE = 4
 
 
 class EltexSwitch(DlinkDGS1100_10ME):
@@ -29,67 +27,76 @@ class EltexSwitch(DlinkDGS1100_10ME):
     ports_len = 24
 
     def get_ports(self) -> tuple:
-        def build_port(s, i: int, n: int):
-            speed = self.get_item(".1.3.6.1.2.1.2.2.1.5.%d" % n)
-            return EltexPort(
-                s,
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
+
+        def build_port(i: int, n: int):
+            speed = snmp.get_item(".1.3.6.1.2.1.2.2.1.5.%d" % n)
+            return PortType(
                 num=i,
-                name=self.get_item(".1.3.6.1.2.1.31.1.1.1.18.%d" % n),
-                status=self.get_item(".1.3.6.1.2.1.2.2.1.7.%d" % n) == 1,
-                mac=self.get_item(".1.3.6.1.2.1.2.2.1.6.%d" % n),
-                uptime=self.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % n),
+                name=snmp.get_item(".1.3.6.1.2.1.31.1.1.1.18.%d" % n),
+                status=snmp.get_item(".1.3.6.1.2.1.2.2.1.7.%d" % n) == 1,
+                mac=snmp.get_item(".1.3.6.1.2.1.2.2.1.6.%d" % n),
+                uptime=snmp.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % n),
                 speed=int(speed or 0),
             )
 
-        return tuple(build_port(self, i, n) for i, n in enumerate(range(49, self.ports_len + 49), 1))
+        return tuple(build_port(i, n) for i, n in enumerate(range(49, self.ports_len + 49), 1))
 
     def get_device_name(self):
-        return self.get_item(".1.3.6.1.2.1.1.5.0")
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            return snmp.get_item(".1.3.6.1.2.1.1.5.0")
 
     def get_uptime(self):
-        uptimestamp = safe_int(self.get_item(".1.3.6.1.2.1.1.3.0"))
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            uptimestamp = safe_int(snmp.get_item(".1.3.6.1.2.1.1.3.0"))
         tm = RuTimedelta(seconds=uptimestamp / 100)
         return tm
 
-    def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.dev_instance
-        return plain_ip_device_mon_template(device)
-
     def save_config(self) -> bool:
-        return self.set_multiple(
-            [
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            return snmp.set_multiple([
                 ("1.3.6.1.4.1.89.87.2.1.3.1", 1, "i"),
                 ("1.3.6.1.4.1.89.87.2.1.7.1", 2, "i"),
                 ("1.3.6.1.4.1.89.87.2.1.8.1", 1, "i"),
                 ("1.3.6.1.4.1.89.87.2.1.12.1", 3, "i"),
                 ("1.3.6.1.4.1.89.87.2.1.17.1", 4, "i"),
-            ]
-        )
+            ])
 
     def reboot(self, save_before_reboot=False) -> bool:
+        dev = self.model_instance
         if save_before_reboot:
             if not self.save_config():
                 return False
-            if not self.set("1.3.6.1.4.1.89.1.10.0", 8, snmp_type="t"):
-                return False
+            with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+                if not snmp.set("1.3.6.1.4.1.89.1.10.0", 8, snmp_type="t"):
+                    return False
         else:
-            if not self.set("1.3.6.1.4.1.89.1.10.0", 0, snmp_type="t"):
-                return False
+            with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+                if not snmp.set("1.3.6.1.4.1.89.1.10.0", 0, snmp_type="t"):
+                    return False
         return True
 
     def port_disable(self, port_num: int):
-        self.set_int_value("%s.%d" % (".1.3.6.1.2.1.2.2.1.7", port_num + 48), 2)
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            snmp.set_int_value("%s.%d" % (".1.3.6.1.2.1.2.2.1.7", port_num + 48), 2)
 
     def port_enable(self, port_num: int):
-        self.set_int_value("%s.%d" % (".1.3.6.1.2.1.2.2.1.7", port_num + 48), 1)
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            snmp.set_int_value("%s.%d" % (".1.3.6.1.2.1.2.2.1.7", port_num + 48), 1)
 
     def read_port_vlan_info(self, port: int) -> Vlans:
         def _calc_ret(vlan_untagged_egress_oid, vlan_egress_bitmap, table_no) -> Vlans:
-            vlan_untagged_egress = self.get_item(vlan_untagged_egress_oid)
+            vlan_untagged_egress = snmp.get_item(vlan_untagged_egress_oid)
             vlan_untagged_egress = list(self.parse_eltex_vlan_map(vlan_untagged_egress, table=table_no))
             is_native = next((v == 1 for i, v in enumerate(vlan_untagged_egress, 1) if i >= port), False)
             return (
-                Vlan(vid=vid, title=self._get_vid_name(vid=vid), native=is_native)
+                Vlan(vid=vid, title=self.get_vid_name(vid=vid), native=is_native)
                 for vid in self.parse_eltex_vlan_map(vlan_egress_bitmap, table=table_no)
             )
 
@@ -97,8 +104,11 @@ class EltexSwitch(DlinkDGS1100_10ME):
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
         port = port + 48
 
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
+
         # rldot1qPortVlanStaticEgressList1to1024
-        vlan_egress = self.get_item("1.3.6.1.4.1.89.48.68.1.1.%d" % port)
+        vlan_egress = snmp.get_item("1.3.6.1.4.1.89.48.68.1.1.%d" % port)
         if vlan_egress:
             return _calc_ret(
                 # rldot1qPortVlanStaticUntaggedEgressList1to1024
@@ -108,7 +118,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
             )
 
         # rldot1qPortVlanStaticEgressList1025to2048
-        vlan_egress = self.get_item("1.3.6.1.4.1.89.48.68.1.2.%d" % port)
+        vlan_egress = snmp.get_item("1.3.6.1.4.1.89.48.68.1.2.%d" % port)
         if vlan_egress:
             return _calc_ret(
                 # rldot1qPortVlanStaticUntaggedEgressList1025to2048
@@ -117,7 +127,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 table_no=1,
             )
         # rldot1qPortVlanStaticEgressList2049to3072
-        vlan_egress = self.get_item("1.3.6.1.4.1.89.48.68.1.3.%d" % port)
+        vlan_egress = snmp.get_item("1.3.6.1.4.1.89.48.68.1.3.%d" % port)
         if vlan_egress:
             return _calc_ret(
                 # rldot1qPortVlanStaticUntaggedEgressList2049to3072
@@ -126,7 +136,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
                 table_no=2,
             )
         # rldot1qPortVlanStaticEgressList3073to4094
-        vlan_egress = self.get_item("1.3.6.1.4.1.89.48.68.1.4.%d" % port)
+        vlan_egress = snmp.get_item("1.3.6.1.4.1.89.48.68.1.4.%d" % port)
         if vlan_egress:
             return _calc_ret(
                 # rldot1qPortVlanStaticUntaggedEgressList3073to4094
@@ -137,68 +147,55 @@ class EltexSwitch(DlinkDGS1100_10ME):
 
     def read_all_vlan_info(self) -> Vlans:
         snmp_vid = 100000
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         while True:
-            res = self.get_next(".1.3.6.1.2.1.2.2.1.1.%d" % snmp_vid)
+            res = snmp.get_next(".1.3.6.1.2.1.2.2.1.1.%d" % snmp_vid)
             if res.snmp_type != "INTEGER":
                 break
             vid = snmp_vid = safe_int(res.value)
             if vid < 100000 or vid > 104095:
                 break
             vid = (vid - 100000) + 1
-            name = self._get_vid_name(vid=vid)
+            name = self.get_vid_name(vid=vid)
             yield Vlan(vid=vid, title=name)
 
     @process_lock()
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         try:
-            ports_map = {int(i): n + 1 for n, i in enumerate(self.get_list(".1.3.6.1.2.1.2.2.1.1")) if int(i) > 0}
+            ports_map = {int(i): n + 1 for n, i in enumerate(snmp.get_list(".1.3.6.1.2.1.2.2.1.1")) if int(i) > 0}
         except ValueError:
             return
-        for fdb_port, oid in self.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2"):
+        for fdb_port, oid in snmp.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2"):
             real_fdb_port_num = ports_map.get(int(fdb_port))
             if port_num != real_fdb_port_num:
                 continue
             vid = safe_int(oid[-7:-6][0])
             fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
-            vid_name = self._get_vid_name(vid)
+            vid_name = self.get_vid_name(vid)
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
     def read_mac_address_vlan(self, vid: int) -> Macs:
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         try:
-            ports_map = {int(i): n + 1 for n, i in enumerate(self.get_list(".1.3.6.1.2.1.2.2.1.1")) if int(i) > 0}
+            ports_map = {int(i): n + 1 for n, i in enumerate(snmp.get_list(".1.3.6.1.2.1.2.2.1.1")) if int(i) > 0}
         except ValueError:
             return
-        for fdb_port, oid in self.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2.%d" % vid):
+        for fdb_port, oid in snmp.get_list_with_oid(".1.3.6.1.2.1.17.7.1.2.2.1.2.%d" % vid):
             real_fdb_port_num = ports_map.get(int(fdb_port))
             fdb_mac = ":".join("%.2x" % int(i) for i in oid[-6:])
-            vid_name = self._get_vid_name(vid)
+            vid_name = self.get_vid_name(vid)
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
-
-    def create_vlans(self, vlan_list: Vlans) -> bool:
-        for vlan in vlan_list:
-            oids = (
-                ("1.3.6.1.2.1.17.7.1.4.3.1.1.%d" % vlan.vid, vlan.title, "s"),
-                ("1.3.6.1.2.1.17.7.1.4.3.1.2.%d" % vlan.vid, 0, "x"),
-                ("1.3.6.1.2.1.17.7.1.4.3.1.3.%d" % vlan.vid, 0, "x"),
-                ("1.3.6.1.2.1.17.7.1.4.3.1.4.%d" % vlan.vid, 0, "x"),
-                ("1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % vlan.vid, 4, "i"),
-            )
-            if not self.set_multiple(oid_values=oids):
-                return False
-        return True
-
-    def delete_vlans(self, vlan_list: Vlans) -> bool:
-        for vlan in vlan_list:
-            if not self.set_int_value("1.3.6.1.2.1.17.7.1.4.3.1.5.%d" % vlan.vid, 6):
-                return False
-        return True
 
     @staticmethod
     def make_eltex_map_vlan(vids: Iterable[int]) -> Dict[int, bytes]:
         """
-        https://eltexsl.ru/wp-content/uploads/2016/05/monitoring-i-upravlenie-ethernet-kommutatorami-mes-po-snmp.pdf
+        https://eltex-co.ru/upload/iblock/f69/MES_configuration_and_monitoring_via_SNMP_1.1.48.11,%202.5.48.11,%202.2.14.6.pdf
         :param vids: Vlan id iterable collection
         :return: bytes bit map vlan representation by Eltex version
                  with index of table in dict key
@@ -219,7 +216,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
         \\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00
         \\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'}
         """
-        vids = list(vids)
+        vids = list(set(vids))
         vids.sort()
         res = {}
         for vid in vids:
@@ -237,7 +234,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
     @staticmethod
     def parse_eltex_vlan_map(bitmap: bytes, table: int = 0) -> Generator[int, None, None]:
         """
-        https://eltexsl.ru/wp-content/uploads/2016/05/monitoring-i-upravlenie-ethernet-kommutatorami-mes-po-snmp.pdf
+        https://eltex-co.ru/upload/iblock/f69/MES_configuration_and_monitoring_via_SNMP_1.1.48.11,%202.5.48.11,%202.2.14.6.pdf
         :param bitmap: str bit map vlan representation by Eltex version
         :param table: Value from 0 to 3. In which table can find vlan id list
         :return: VID, vlan id
@@ -254,29 +251,20 @@ class EltexSwitch(DlinkDGS1100_10ME):
         >>> tuple(EltexSwitch.parse_eltex_vlan_map(bitmap))
         (5, 143, 152)
         """
-        assert isinstance(bitmap, bytes)
+        if not isinstance(bitmap, bytes):
+            raise TypeError('"bitmap" must be an instance of bytes')
         if table < 0 or table > 3:
             raise DeviceImplementationError("table must be in range 1-3")
         r = (bin_num == "1" for octet_num in bitmap for bin_num in f"{octet_num:08b}")
         return ((numer + 1) + (table * 1024) for numer, bit in enumerate(r) if bit)
 
-    def _set_vlans_on_port(self, vlan_list: Vlans, port_num: int):
-        if port_num > self.ports_len or port_num < 1:
-            raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
-        port_num = port_num + 48
-        vids = (v.vid for v in vlan_list)
-        bit_maps = self.make_eltex_map_vlan(vids=vids)
-        oids = []
-        for tbl_num, bitmap in bit_maps.items():
-            oids.append(("1.3.6.1.4.1.89.48.68.1.%d.%d" % (tbl_num, port_num), bitmap, "x"))
-        return self.set_multiple(oids)
+    # def detach_vlans_from_port(self, vlan_list: Vlans, port: int, request):
+    #     return self._set_trunk_vlans_on_port(
+    #         vlan_list=vlan_list,
+    #         port_num=port,
+    #         config_mode=config_mode,
+    #         request=request
+    #     )
 
-    def attach_vlans_to_port(self, vlan_list: Vlans, port_num: int) -> bool:
-        return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port_num)
 
-    def detach_vlans_from_port(self, vlan_list: Vlans, port: int) -> bool:
-        return self._set_vlans_on_port(vlan_list=vlan_list, port_num=port)
-
-    def detach_vlan_from_port(self, vlan: Vlan, port: int) -> bool:
-        _vlan_gen = (v for v in (vlan,))
-        return self.detach_vlans_from_port(_vlan_gen, port)
+SwitchDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, EltexSwitch)

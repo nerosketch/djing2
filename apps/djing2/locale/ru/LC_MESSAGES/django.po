@@ -6,8 +6,8 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-04-02 14:02+0300\n"
+"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
+"POT-Creation-Date: 2021-09-07 15:41+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,19 +17,27 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: lib/authenticators.py:14
+#: apps/djing2/lib/__init__.py:30
+msgid "Internal logic error"
+msgstr "Внутренняя ошибка логики"
+
+#: apps/djing2/lib/__init__.py:36
+msgid "Duplicate entry error"
+msgstr "Дубликат в БД"
+
+#: apps/djing2/lib/authenticators.py:14
 msgid "Invalid token."
 msgstr "Не правильный токен"
 
-#: lib/authenticators.py:17
+#: apps/djing2/lib/authenticators.py:17
 msgid "User inactive or deleted."
 msgstr "Пользователь не активен или удалён"
 
-#: settings.py:178
+#: apps/djing2/settings.py:177
 msgid "Russian"
 msgstr "Русский"
 
-#: views.py:55
+#: apps/djing2/views.py:49
 msgid ""
 "Search customers and devices globally entire all system. Customer search "
 "provides by username, fio, and telephone. Devices search provides by ip "
@@ -38,9 +46,3 @@ msgstr ""
 "Ищет пользователей и устройства по всей системе. Пользователь ищется по "
 "логину, фио, и номеру телефона. Устройства ищутся по ip адресу, мак адресу, "
 "и его названию."
-
-msgid "Internal logic error"
-msgstr "Внутренняя ошибка логики"
-
-msgid "Duplicate entry error"
-msgstr "Дубликат в БД"

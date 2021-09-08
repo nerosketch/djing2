@@ -40,7 +40,7 @@ class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNo
 
         customer.pick_service(
             service=srv,
-            author=None,
+            author=request.user,
             comment=_("Buy the service via user side, service '%s'") % srv,
             allow_negative=False,
         )

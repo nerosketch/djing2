@@ -1,4 +1,7 @@
 from .onu_zte_f660 import OnuZTE_F660
+from ..pon_device_strategy import PonONUDeviceStrategyContext
+
+DEVICE_UNIQUE_CODE = 7
 
 
 class OnuZTE_F601(OnuZTE_F660):
@@ -14,8 +17,9 @@ class OnuZTE_F601(OnuZTE_F660):
 
     def default_vlan_info(self):
         default_vid = 1
-        if self.dev_instance and self.dev_instance.parent_dev and self.dev_instance.parent_dev.extra_data:
-            default_vid = self.dev_instance.parent_dev.extra_data.get("default_vid", 1)
+        dev = self.model_instance
+        if dev and dev.parent_dev and dev.parent_dev.extra_data:
+            default_vid = dev.parent_dev.extra_data.get("default_vid", 1)
         return [{"port": 1, "vids": [{"vid": default_vid, "native": True}]}]
 
     def read_onu_vlan_info(self):
@@ -26,3 +30,6 @@ class OnuZTE_F601(OnuZTE_F660):
             return list(r)[:1]
         except StopIteration:
             return ()
+
+
+PonONUDeviceStrategyContext.add_device_type(DEVICE_UNIQUE_CODE, OnuZTE_F601)
