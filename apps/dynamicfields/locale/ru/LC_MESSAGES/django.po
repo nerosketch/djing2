@@ -62,3 +62,17 @@ msgstr "Тип поля"
 msgid "Groups"
 msgstr "Группы"
 
+msgid "Tags must contain only word characters (equivalent to [a-zA-Z0-9_]). And separated by comma."
+msgstr "Тэги должны содержать только буквы, цифры и знак подчёркивания (как [a-zA-Z0-9_]). И могут быть разделены запятой."
+
+msgid "Default tag"
+msgstr "Тэк по умолчанию"
+
+msgid "Uses IPTV"
+msgstr "Использует IPTV"
+
+msgid "System tag"
+msgstr "Системный тэг"
+
+msgid "User tag"
+msgstr "Пользовательский тэг"
