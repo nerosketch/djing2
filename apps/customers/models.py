@@ -27,7 +27,7 @@ class NotEnoughMoney(LogicError):
     pass
 
 
-def split_fio(fio) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def split_fio(fio: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Try to split name, last_name, and surname."""
     full_fname = str(fio)
     full_name_list = full_fname.split()
