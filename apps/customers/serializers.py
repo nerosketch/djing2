@@ -129,9 +129,9 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         res = models.split_fio(full_fio)
         if len(res) == 3:
             surname, name, last_name = res
-            if not _is_chunk_ok(surname):
+            if surname is not None and not _is_chunk_ok(surname):
                 raise serializers.ValidationError(err_text)
-            if not _is_chunk_ok(name):
+            if name is not None and not _is_chunk_ok(name):
                 raise serializers.ValidationError(err_text)
             if last_name is not None and not _is_chunk_ok(last_name):
                 raise serializers.ValidationError(err_text)
