@@ -121,7 +121,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     @staticmethod
     def validate_fio(full_fio: str) -> str:
-        def _is_bad_chunk(v: str, rgxp=re.compile(r"^[A-Za-zА-Яа-яЁё-]{1,250}$")):
+        def _is_chunk_ok(v: str, rgxp=re.compile(r"^[A-Za-zА-Яа-яЁё-]{1,250}$")):
             r = rgxp.search(v)
             return bool(r)
         err_text = _('Credentials must be without spaces or any special symbols, only digits and letters')
@@ -129,11 +129,11 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         res = models.split_fio(full_fio)
         if len(res) == 3:
             surname, name, last_name = res
-            if _is_bad_chunk(surname):
+            if not _is_chunk_ok(surname):
                 raise serializers.ValidationError(err_text)
-            if _is_bad_chunk(name):
+            if not _is_chunk_ok(name):
                 raise serializers.ValidationError(err_text)
-            if last_name is not None and _is_bad_chunk(last_name):
+            if last_name is None or not _is_chunk_ok(last_name):
                 raise serializers.ValidationError(err_text)
 
             return f"{surname} {name} {last_name or ''}"
