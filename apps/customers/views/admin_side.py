@@ -339,6 +339,22 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         customer.set_markers(flag_names=flag_names)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @action(methods=['get'], detail=False)
+    def get_afk(self, request):
+        afk = models.Customer.objects.filter_afk()
+        res = ({
+            'customer_id': customer_id,
+            'last_date': last_date,
+            'customer_uname': customer_uname,
+            'customer_fio': customer_fio
+        } for customer_id, last_date, customer_uname, customer_fio in afk)
+        return Response({
+            'count': 1,
+            'next': None,
+            'previous': None,
+            'results': res
+        })
+
 
 class CustomersGroupsListAPIView(DjingListAPIView):
     serializer_class = serializers.CustomerGroupSerializer
