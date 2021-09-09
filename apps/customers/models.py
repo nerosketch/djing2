@@ -206,22 +206,6 @@ class CustomerStreet(BaseAbstractModel):
         ordering = ("name",)
 
 
-class CustomerLogModelQuerySet(models.QuerySet):
-
-    def filter_afk(self):
-        # TODO: кто продолжительное время не пользуется услугой
-        return self.raw(
-            raw_query="SELECT MAX(CL.date) AS last_date, CL.customer_id, "
-                      "MAX(BA.username) AS customer_uname, MAX(BA.fio) AS "
-                      "customer_fio FROM customer_log AS CL "
-                      "LEFT JOIN base_accounts AS BA ON (CL.customer_id = BA.id) "
-                      "WHERE CL.cost < 0 "
-                      "AND CL.date < (now() - interval '2 month') "
-                      "AND (CL.author_id = CL.customer_id OR CL.author_id is null) "
-                      "GROUP BY CL.customer_id"
-        )
-
-
 class CustomerLog(BaseAbstractModel):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
@@ -230,8 +214,6 @@ class CustomerLog(BaseAbstractModel):
     author = models.ForeignKey(BaseAccount, on_delete=models.SET_NULL, related_name="+", blank=True, null=True)
     comment = models.CharField(max_length=128)
     date = models.DateTimeField(auto_now_add=True)
-
-    objects = CustomerLogModelQuerySet.as_manager()
 
     class Meta:
         db_table = "customer_log"
@@ -307,6 +289,27 @@ class CustomerManager(MyUserManager):
             "active_count": active_count,
             "commercial_customers": commercial_customers,
         }
+
+    @staticmethod
+    def filter_afk(date_limit: Optional[datetime] = None, out_limit=50):
+        # TODO: кто продолжительное время не пользуется услугой
+        if date_limit is None or not isinstance(date_limit, datetime):
+            date_limit = datetime.now() - timedelta(days=60)
+        with connection.cursor() as cur:
+            cur.execute("select * from fetch_customers_by_not_activity(%s, %s);", [
+                date_limit, int(out_limit)
+            ])
+            res = cur.fetchone()
+            while res is not None:
+                timediff, last_date, customer_id, customer_uname, customer_fio = res
+                yield {
+                    'timediff': timediff,
+                    'last_date': last_date,
+                    'customer_id': customer_id,
+                    'customer_uname': customer_uname,
+                    'customer_fio': customer_fio
+                }
+                res = cur.fetchone()
 
     @staticmethod
     def finish_services_if_expired(profile: Optional[UserProfile] = None, comment=None, customer=None) -> None:

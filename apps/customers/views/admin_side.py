@@ -339,6 +339,35 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         customer.set_markers(flag_names=flag_names)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @action(methods=['get'], detail=False)
+    def get_afk(self, request):
+        date_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
+
+        date_limit = request.query_params.get('date_limit')
+        if date_limit is not None:
+            date_limit = datetime.strptime(date_limit, date_fmt)
+
+        out_limit = request.query_params.get('out_limit')
+        out_limit = safe_int(out_limit, 50)
+
+        afk = models.Customer.objects.filter_afk(
+            date_limit=date_limit,
+            out_limit=out_limit
+        )
+        res_afk = [{
+            'timediff': str(r['timediff']),
+            'last_date': r['last_date'].strftime(date_fmt),
+            'customer_id': r['customer_id'],
+            'customer_uname': r['customer_uname'],
+            'customer_fio': r['customer_fio']
+        } for r in afk]
+        return Response({
+            'count': 1,
+            'next': None,
+            'previous': None,
+            'results': res_afk
+        })
+
 
 class CustomersGroupsListAPIView(DjingListAPIView):
     serializer_class = serializers.CustomerGroupSerializer
