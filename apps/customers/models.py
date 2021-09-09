@@ -291,21 +291,24 @@ class CustomerManager(MyUserManager):
         }
 
     @staticmethod
-    def filter_afk(limit=100):
+    def filter_afk(date_limit: Optional[datetime] = None, out_limit=50):
         # TODO: кто продолжительное время не пользуется услугой
-        raw_query = ("SELECT CL.customer_id, MAX(CL.date) AS last_date, "
-                     "MAX(BA.username) AS customer_uname, MAX(BA.fio) AS "
-                     "customer_fio FROM customer_log AS CL "
-                     "LEFT JOIN base_accounts AS BA ON (CL.customer_id = BA.id) "
-                     "WHERE CL.cost < 0 "
-                     "AND CL.date < (now() - interval '2 month') "
-                     "AND (CL.author_id = CL.customer_id OR CL.author_id is null) "
-                     "GROUP BY CL.customer_id LIMIT %s")
+        if date_limit is None or not isinstance(date_limit, datetime):
+            date_limit = datetime.now() - timedelta(days=60)
         with connection.cursor() as cur:
-            cur.execute(raw_query, [limit])
+            cur.execute("select * from fetch_customers_by_not_activity(%s, %s);", [
+                date_limit, int(out_limit)
+            ])
             res = cur.fetchone()
             while res is not None:
-                yield res
+                timediff, last_date, customer_id, customer_uname, customer_fio = res
+                yield {
+                    'timediff': timediff,
+                    'last_date': last_date,
+                    'customer_id': customer_id,
+                    'customer_uname': customer_uname,
+                    'customer_fio': customer_fio
+                }
                 res = cur.fetchone()
 
     @staticmethod
