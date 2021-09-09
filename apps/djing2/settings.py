@@ -196,8 +196,8 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
 
-# time to session live, 1 day
-SESSION_COOKIE_AGE = 60 * 60 * 24
+# time to session live, 1 week
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
 
 
 # Static files (CSS, JavaScript, Images)
