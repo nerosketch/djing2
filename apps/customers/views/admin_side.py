@@ -342,17 +342,19 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     @action(methods=['get'], detail=False)
     def get_afk(self, request):
         afk = models.Customer.objects.filter_afk()
-        res = ({
-            'customer_id': customer_id,
-            'last_date': last_date,
-            'customer_uname': customer_uname,
-            'customer_fio': customer_fio
-        } for customer_id, last_date, customer_uname, customer_fio in afk)
+        date_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
+        res_afk = [{
+            'timediff': str(r['timediff']),
+            'last_date': r['last_date'].strftime(date_fmt),
+            'customer_id': r['customer_id'],
+            'customer_uname': r['customer_uname'],
+            'customer_fio': r['customer_fio']
+        } for r in afk]
         return Response({
             'count': 1,
             'next': None,
             'previous': None,
-            'results': res
+            'results': res_afk
         })
 
 
