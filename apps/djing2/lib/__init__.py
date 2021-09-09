@@ -11,18 +11,18 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ParseError, APIException
 
 
-def safe_float(fl: Any) -> float:
+def safe_float(fl: Any, default=0.0) -> float:
     try:
-        return 0.0 if not fl else float(fl or 0)
+        return default if not fl else float(fl or 0)
     except (ValueError, OverflowError):
-        return 0.0
+        return default
 
 
-def safe_int(i: Any) -> int:
+def safe_int(i: Any, default=0) -> int:
     try:
-        return 0 if not i else int(i)
+        return default if not i else int(i)
     except (ValueError, OverflowError):
-        return 0
+        return default
 
 
 # Exceptions
