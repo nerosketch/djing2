@@ -341,8 +341,19 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_afk(self, request):
-        afk = models.Customer.objects.filter_afk()
         date_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
+
+        date_limit = request.query_params.get('date_limit')
+        if date_limit is not None:
+            date_limit = datetime.strptime(date_limit, date_fmt)
+
+        out_limit = request.query_params.get('out_limit')
+        out_limit = safe_int(out_limit, 50)
+
+        afk = models.Customer.objects.filter_afk(
+            date_limit=date_limit,
+            out_limit=out_limit
+        )
         res_afk = [{
             'timediff': str(r['timediff']),
             'last_date': r['last_date'].strftime(date_fmt),
