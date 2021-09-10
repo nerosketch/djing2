@@ -82,7 +82,7 @@ class RadiusInteract:
             res = self.client.SendPacket(request)
             if res.code in (packet.CoAACK, packet.AccessAccept, packet.DisconnectACK):
                 # ok
-                return
+                return 'ok'
             res_keys = res.keys()
             exception = None
             if 'Error-Cause' in res_keys:
