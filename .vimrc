@@ -436,6 +436,7 @@ highlight GitGutterDelete guifg=#ff2222 ctermfg=1
 " My Key Bindings
 
 nnoremap <F2> :!git pull<cr>
+nnoremap s :vsplit<cr>
 
 
 autocmd StdinReadPre * let g:isReadingFromStdin = 1

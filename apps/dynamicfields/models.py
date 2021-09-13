@@ -89,7 +89,7 @@ class FieldModel(models.Model):
         default=None
     )
     groups = models.ManyToManyField(
-        Group, related_name='fields',
+        Group, related_name='+',
         verbose_name=_('Groups'),
         db_table='dynamic_fields_groups'
     )
@@ -123,7 +123,7 @@ class FieldModel(models.Model):
 
 class AbstractDynamicFieldContentModel(models.Model):
     content = _DynamicField(max_length=512, null=True, blank=True)
-    field = models.ForeignKey(FieldModel, on_delete=models.CASCADE, related_name='field_contents')
+    field = models.ForeignKey(FieldModel, on_delete=models.CASCADE, related_name='+')
 
     # objects = FieldContentModelManager()
 
