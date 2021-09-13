@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "sorm_export.apps.SormExportConfig",
     "customer_comments.apps.CustomerCommentsConfig",
     "dynamicfields.apps.DynamicfieldsConfig",
+    "customers_legal.apps.CustomersLegalConfig",
 ]
 
 if DEBUG:
