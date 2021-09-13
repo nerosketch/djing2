@@ -17,15 +17,15 @@ class DeviceConfigurationError(DeviceImplementationError):
     pass
 
 
-class DeviceConsoleError(Exception):
+class DeviceConsoleError(DeviceImplementationError):
     pass
 
 
-class DeviceConnectionError(ConnectionError):
+class DeviceConnectionError(DeviceImplementationError):
     pass
 
 
-class UnsupportedReadingVlan(NotImplementedError):
+class UnsupportedReadingVlan(DeviceImplementationError):
     pass
 
 
