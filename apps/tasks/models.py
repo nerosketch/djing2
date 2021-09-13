@@ -8,10 +8,12 @@ from django.utils.translation import gettext_lazy as _
 
 try:
     from customers.models import Customer
-except ImportError:
+except ImportError as err:
     from django.core.exceptions import ImproperlyConfigured
 
-    raise ImproperlyConfigured('"tasks" application depends on "customers" application. Check if it installed')
+    raise ImproperlyConfigured(
+        '"tasks" application depends on "customers" application. Check if it installed'
+    ) from err
 
 from djing2.lib import safe_float, safe_int
 from djing2.models import BaseAbstractModel

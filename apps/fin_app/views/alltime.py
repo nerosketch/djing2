@@ -15,10 +15,14 @@ from rest_framework_xml.renderers import XMLRenderer
 try:
     from customers.models import Customer
     from customers.tasks import customer_check_service_for_expiration
-except ImportError:
+except ImportError as imperr:
     from django.core.exceptions import ImproperlyConfigured
 
-    raise ImproperlyConfigured('"fin_app" application depends on "customers" application. Check if it installed')
+    raise ImproperlyConfigured(
+        '"fin_app" application depends on "customers" '
+        'application. Check if it installed'
+    ) from imperr
+
 from djing2.lib import safe_int, safe_float
 from djing2.viewsets import DjingModelViewSet
 from fin_app.serializers import alltime as alltime_serializers

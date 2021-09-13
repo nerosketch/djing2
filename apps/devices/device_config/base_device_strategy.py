@@ -15,7 +15,7 @@ class SNMPWorker(Session):
         try:
             super().__init__(hostname=str(hostname), version=version, *args, **kwargs)
         except OSError as e:
-            raise DeviceConnectionError(e)
+            raise DeviceConnectionError(e) from e
 
     def __enter__(self):
         return self
@@ -27,14 +27,14 @@ class SNMPWorker(Session):
         try:
             return self.set(oid, value, "i")
         except EasySNMPConnectionError as err:
-            raise DeviceConnectionError(err)
+            raise DeviceConnectionError(err) from err
 
     def get_list(self, oid) -> Generator:
         try:
             for v in self.walk(oid):
                 yield v.value
         except EasySNMPConnectionError as err:
-            raise DeviceConnectionError(err)
+            raise DeviceConnectionError(err) from err
 
     def get_list_keyval(self, oid) -> Generator:
         try:
@@ -42,7 +42,7 @@ class SNMPWorker(Session):
                 snmpnum = v.oid.split(".")[-1:]
                 yield v.value, snmpnum[0] if len(snmpnum) > 0 else None
         except EasySNMPConnectionError as err:
-            raise DeviceConnectionError(err)
+            raise DeviceConnectionError(err) from err
 
     def get_next_keyval(self, oid) -> Tuple:
         v = self.get_next(oid)
@@ -57,7 +57,7 @@ class SNMPWorker(Session):
                 res_oid = v.oid.split(".")
                 yield v.value, res_oid
         except EasySNMPConnectionError as err:
-            raise DeviceConnectionError(err)
+            raise DeviceConnectionError(err) from err
 
     def get_item(self, oid) -> Any:
         try:
@@ -68,7 +68,7 @@ class SNMPWorker(Session):
                 return None
             return v
         except EasySNMPConnectionError as err:
-            raise DeviceConnectionError(err)
+            raise DeviceConnectionError(err) from err
 
     def get_item_plain(self, oid) -> Any:
         try:
@@ -79,7 +79,7 @@ class SNMPWorker(Session):
                 return None
             return v
         except EasySNMPConnectionError as err:
-            raise DeviceConnectionError(err)
+            raise DeviceConnectionError(err) from err
 
 
 class DeviceConfigType:

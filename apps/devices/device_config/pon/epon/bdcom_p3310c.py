@@ -63,7 +63,7 @@ class BDCOM_P3310C(PonOltDeviceStrategy):
                         fiberid=safe_int(fiber_id),
                     )
         except EasySNMPTimeoutError as e:
-            raise EasySNMPTimeoutError("{} ({})".format(_("wait for a reply from the SNMP Timeout"), e))
+            raise EasySNMPTimeoutError("{} ({})".format(_("wait for a reply from the SNMP Timeout"), e)) from e
 
     def get_fibers(self):
         dev = self.model_instance

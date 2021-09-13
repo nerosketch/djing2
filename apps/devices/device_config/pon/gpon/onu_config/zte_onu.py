@@ -64,7 +64,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
             else:
                 raise DeviceConfigurationError(_("unregistered onu not found, sn=%s") % sn)
         except TIMEOUT as e:
-            raise zte_utils.OnuZteRegisterError(e)
+            raise zte_utils.OnuZteRegisterError(e) from e
 
         return {1: "success"}
 

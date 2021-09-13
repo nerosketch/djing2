@@ -86,8 +86,8 @@ def zte_onu_conv_from_onu(snmp_info: str) -> tuple:
         rack_num = int(fiber_num_bin[5:13], base=2)
         fiber_num = int(fiber_num_bin[13:21], base=2)
         return rack_num, fiber_num, onu_num
-    except ValueError:
-        raise OnuZteRegisterError("Bad snmp info format for zte")
+    except ValueError as err:
+        raise OnuZteRegisterError("Bad snmp info format for zte") from err
 
 
 def conv_zte_signal(lvl: int) -> float:

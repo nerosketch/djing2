@@ -108,8 +108,8 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
         # DBCOM Onu have en integer snmp port
         try:
             int(v)
-        except ValueError:
-            raise ExpectValidationError(_("Onu snmp field must be en integer"))
+        except ValueError as err:
+            raise ExpectValidationError(_("Onu snmp field must be en integer")) from err
 
     def remove_from_olt(self, extra_data: Dict, **kwargs):
         dev = self.model_instance

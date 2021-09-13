@@ -102,7 +102,7 @@ class RadiusInteract:
                 raise exception(res_text)
             return res_text
         except Timeout as e:
-            raise RadiusTimeoutException(e)
+            raise RadiusTimeoutException(e) from e
 
 
 _rad_interact_instance = RadiusInteract()

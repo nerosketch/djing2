@@ -12,12 +12,12 @@ from groupapp.models import Group
 def _float_validator(value: float):
     try:
         return float(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError) as err:
         raise ValidationError(
             _("'%(value)s' value must be a float."),
             code='invalid',
             params={'value': value},
-        )
+        ) from err
 
 
 class _DynamicField(models.CharField):
