@@ -14,8 +14,8 @@ import os
 
 try:
     from djing2 import local_settings
-except ImportError:
-    raise ImportError("You must create config file local_settings.py from template")
+except ImportError as err:
+    raise ImportError("You must create config file local_settings.py from template") from err
 
 from django.utils.translation import gettext_lazy as _
 

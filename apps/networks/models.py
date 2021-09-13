@@ -96,7 +96,7 @@ class NetworkIpPool(BaseAbstractModel):
             net = ip_network("%s" % self.network)
         except ValueError as err:
             errs["network"] = ValidationError(message=str(err), code="invalid")
-            raise ValidationError(errs)
+            raise ValidationError(errs) from err
 
         if self.ip_start is None:
             errs["ip_start"] = ValidationError(_("Ip start is invalid"), code="invalid")
@@ -272,7 +272,7 @@ class CustomerIpLeaseModel(models.Model):
             # lease_id, ip_addr, pool_id, lease_time, mac_addr, customer_id, is_dynamic, last_update = res
             return res
         except InternalError as err:
-            raise LogicError(str(err))
+            raise LogicError(str(err)) from err
 
     class Meta:
         db_table = "networks_ip_leases"

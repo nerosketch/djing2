@@ -21,8 +21,8 @@ class GatewayFacade(BaseGateway):
         self._gw_type = gw_type
         try:
             gw_class = next(klass for num, klass in GATEWAY_TYPES if num == gw_type)
-        except StopIteration:
-            raise TypeError("gw_type must be GATEWAY_TYPES choice")
+        except StopIteration as err:
+            raise TypeError("gw_type must be GATEWAY_TYPES choice") from err
         self.gw_instance = gw_class(*args, **kwargs)
 
     def send_command_add_customer(self, *args, **kwargs) -> Optional[str]:

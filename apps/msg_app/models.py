@@ -88,8 +88,8 @@ class ConversationManager(models.Manager):
                 return acc
             try:
                 return UserProfile.objects.get(pk=acc)
-            except UserProfile.DoesNotExist:
-                raise MessageError(_("Participant profile does not found"))
+            except UserProfile.DoesNotExist as err:
+                raise MessageError(_("Participant profile does not found")) from err
 
         other_participants = tuple(id_to_userprofile(acc) for acc in other_participants)
         if not title:

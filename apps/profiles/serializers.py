@@ -40,7 +40,7 @@ class UserProfileSerializer(BaseCustomModelSerializer):
             validate_password(value)
             return value
         except DjangoValidationError as err:
-            raise ValidationError(err)
+            raise ValidationError(err) from err
 
     def is_valid(self, raise_exception: bool = ...):
         forbidden_usernames = ("log", "api-token-auth", "api")
@@ -75,7 +75,7 @@ class UserProfilePasswordSerializer(serializers.Serializer):
             validate_password(value)
             return value
         except DjangoValidationError as err:
-            raise ValidationError(err)
+            raise ValidationError(err) from err
 
 
 class UserObjectPermissionSerializer(BaseCustomModelSerializer):

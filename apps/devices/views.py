@@ -1,4 +1,5 @@
 import re
+from functools import wraps
 from json import dumps as json_dumps
 from dataclasses import asdict
 
@@ -34,6 +35,7 @@ from profiles.models import UserProfile, UserProfileLogActionType
 
 
 def catch_dev_manager_err(fn):
+    @wraps(fn)
     def _wrapper(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
@@ -52,8 +54,6 @@ def catch_dev_manager_err(fn):
         except (SystemError, DeviceConsoleError) as err:
             return Response(str(err), status=453)
 
-    # Hack for @action decorator
-    _wrapper.__name__ = fn.__name__
     return _wrapper
 
 

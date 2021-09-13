@@ -51,7 +51,7 @@ class Command(BaseFileBasedCommand):
             return telephone_num, description, start_date
         except ValueError as err:
             raise CommandError("Arguments must be separated by comma. And check date format('DD.mm.YYYYTHH:MM:SS'). "
-                               "Detail: %s" % err)
+                               "Detail: %s" % err) from err
 
     def add(self, val):
         telephone_num, descr, start_time = self._split_args_data(val)

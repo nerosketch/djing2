@@ -132,8 +132,8 @@ def process_lock(lock_name=None):
                 lock_fn_name = lock_name if lock_name is not None else fn.__name__
                 s.bind("\0postconnect_djing2_lock_func_%s" % lock_fn_name)
                 return fn(*args, **kwargs)
-            except OSError:
-                raise ProcessLocked
+            except OSError as err:
+                raise ProcessLocked from err
             finally:
                 if s is not None:
                     s.close()
