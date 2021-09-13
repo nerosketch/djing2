@@ -3,9 +3,9 @@ from typing import Any
 from django.core.management.base import BaseCommand
 
 from customers.models import Customer, CustomerService, AdditionalTelephone
+from devices.device_config.device_type_collection import DEVICE_SWITCH_TYPES
 from services.models import Service
 from devices.models import Device
-from devices.device_config import DEVICE_SWITCH_TYPES
 from sorm_export.hier_export.customer import (
     export_customer_root,
     export_contract,
