@@ -32,6 +32,9 @@ class PonOltDeviceStrategy(BaseDeviceStrategy):
     def get_units_unregistered(self, *args, **kwargs) -> Iterable:
         return ()
 
+    def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
+        return ()
+
 
 class PonOLTDeviceStrategyContext(BaseDeviceStrategyContext):
     _current_dev_manager: PonOltDeviceStrategy
@@ -57,6 +60,9 @@ class PonOLTDeviceStrategyContext(BaseDeviceStrategyContext):
 
     def get_units_unregistered(self, *args, **kwargs):
         return self._current_dev_manager.get_units_unregistered(*args, **kwargs)
+
+    def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
+        return self._current_dev_manager.get_ports_on_fiber(fiber_num=fiber_num)
 
 
 class PonOnuDeviceStrategy(BaseDeviceStrategy):

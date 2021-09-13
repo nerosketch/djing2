@@ -57,7 +57,7 @@ class ZTE_C320(BDCOM_P3310C):
         snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         onu_types = snmp.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.28.1.1.1.%d" % fiber_num)
         onu_ports = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.28.1.1.2.%d" % fiber_num)
-        onu_signals = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%d" % fiber_num)
+        # onu_signals = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%d" % fiber_num)
         onu_states = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%d" % fiber_num)
 
         # Real sn in last 3 octets
@@ -70,13 +70,13 @@ class ZTE_C320(BDCOM_P3310C):
             {
                 "onu_type": onu_type_num[0],
                 "onu_port": onu_port,
-                "onu_signal": conv_zte_signal(onu_signal),
+                "onu_signal": 0,  # conv_zte_signal(onu_signal),
                 "onu_sn": onu_prefix.decode() + "".join("%.2X" % i for i in onu_sn[-4:]),  # Real sn in last 4 octets,
                 "snmp_extra": "%d.%d" % (fiber_num, safe_int(onu_type_num[1])),
                 "onu_state": status_map.get(safe_int(onu_state), "unknown"),
             }
-            for onu_type_num, onu_port, onu_signal, onu_sn, onu_prefix, onu_state in zip(
-                onu_types, onu_ports, onu_signals, onu_sns, onu_prefixs, onu_states
+            for onu_type_num, onu_port, onu_sn, onu_prefix, onu_state in zip(
+                onu_types, onu_ports, onu_sns, onu_prefixs, onu_states
             )
         )
 
