@@ -1,5 +1,7 @@
 import sys
-from pexpect import spawn
+from pexpect.pty_spawn import spawn, TIMEOUT
+
+from devices.device_config.base import DeviceTimeoutError
 
 
 class ExpectValidationError(ValueError):
@@ -20,8 +22,11 @@ class MySpawn(spawn):
         self.logfile = sys.stdout
 
     def do_cmd(self, c, prompt):
-        self.sendline(c)
-        return self.expect_exact(prompt)
+        try:
+            self.sendline(c)
+            return self.expect_exact(prompt)
+        except TIMEOUT as err:
+            raise DeviceTimeoutError('PExpec timeout error') from err
 
     def get_lines(self):
         return self.buffer.split("\r\n")
