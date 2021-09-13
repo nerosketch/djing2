@@ -3,7 +3,8 @@ from typing import Any
 from django.core.management.base import BaseCommand
 
 from customers.models import Customer, CustomerService, AdditionalTelephone
-from devices.device_config.device_type_collection import DEVICE_SWITCH_TYPES
+from devices.device_config.device_type_collection import DEVICE_TYPES
+from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
 from services.models import Service
 from devices.models import Device
 from sorm_export.hier_export.customer import (
@@ -126,7 +127,9 @@ def export_all_customer_services():
 
 
 def export_all_switches():
-    devs = Device.objects.filter(dev_type__in=DEVICE_SWITCH_TYPES).exclude(place=None)
+    device_switch_type_ids = [uniq_num for uniq_num, dev_klass in DEVICE_TYPES if issubclass(
+        dev_klass, SwitchDeviceStrategy)]
+    devs = Device.objects.filter(dev_type__in=device_switch_type_ids).exclude(place=None)
     if devs.exists():
         data, fname = export_devices(devices=devs, event_time=datetime.now())
         task_export(data, fname, ExportStampTypeEnum.DEVICE_SWITCH)
