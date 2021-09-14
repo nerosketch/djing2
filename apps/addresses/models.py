@@ -5,7 +5,7 @@ from djing2.models import BaseAbstractModel
 
 
 class LocalityModel(BaseAbstractModel):
-    title = models.CharField(_('Title'), max_length=127)
+    title = models.CharField(_('Title'), max_length=127, unique=True)
     sites = models.ManyToManyField(Site, blank=True)
 
     def __str__(self):
@@ -27,3 +27,4 @@ class StreetModel(BaseAbstractModel):
         verbose_name = _("Street")
         verbose_name_plural = _("Streets")
         ordering = ("name",)
+        unique_together = ('name', 'locality')
