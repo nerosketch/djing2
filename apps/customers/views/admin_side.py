@@ -39,12 +39,6 @@ class CustomerServiceModelViewSet(DjingModelViewSet):
         )
 
 
-class CustomerStreetModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerStreet.objects.select_related("group")
-    serializer_class = serializers.CustomerStreetModelSerializer
-    filterset_fields = ("group",)
-
-
 class CustomerLogModelViewSet(DjingModelViewSet):
     queryset = models.CustomerLog.objects.select_related("customer", "author")
     serializer_class = serializers.CustomerLogModelSerializer
