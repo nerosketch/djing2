@@ -16,7 +16,6 @@ router.register("users/debts", user_side.DebtsList)
 
 # Admin Views
 router.register("customer-service", admin_side.CustomerServiceModelViewSet)
-router.register("streets", admin_side.CustomerStreetModelViewSet)
 router.register("customer-log", admin_side.CustomerLogModelViewSet)
 router.register("invoices", admin_side.InvoiceForPaymentModelViewSet)
 router.register("customer-raw-password", admin_side.CustomerRawPasswordModelViewSet)

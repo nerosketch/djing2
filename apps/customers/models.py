@@ -17,6 +17,7 @@ from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.custom_logic import SERVICE_CHOICES
 from services.models import OneShotPay, PeriodicPay, Service
+from addresses.models import StreetModel
 
 from . import custom_signals
 
@@ -190,20 +191,6 @@ class CustomerService(BaseAbstractModel):
         verbose_name = _("Customer service")
         verbose_name_plural = _("Customer services")
         ordering = ("start_time",)
-
-
-class CustomerStreet(BaseAbstractModel):
-    name = models.CharField(max_length=64)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = "customer_street"
-        verbose_name = _("Street")
-        verbose_name_plural = _("Streets")
-        ordering = ("name",)
 
 
 class CustomerLog(BaseAbstractModel):
@@ -425,7 +412,7 @@ class Customer(BaseAccount):
     # ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
     street = models.ForeignKey(
-        CustomerStreet, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
+       StreetModel, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
     )
     house = models.CharField(_("House"), max_length=12, null=True, blank=True, default=None)
     device = models.ForeignKey("devices.Device", null=True, blank=True, default=None, on_delete=models.SET_NULL)
