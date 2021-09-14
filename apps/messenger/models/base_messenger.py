@@ -1,5 +1,5 @@
 import abc
-from typing import Optional, Tuple, Generator
+from typing import Optional, Tuple, Generator, List
 from urllib.parse import urljoin
 
 from django.shortcuts import resolve_url
@@ -8,6 +8,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.db.models.base import ModelBase
 from django.utils.translation import gettext_lazy as _
+from bitfield import BitField
 
 from djing2.models import BaseAbstractModel
 from profiles.models import UserProfile
@@ -127,3 +128,42 @@ class MessengerSubscriberModel(BaseAbstractModel):
         verbose_name = _("Subscriber")
         verbose_name_plural = _("Subscribers")
         ordering = ("name",)
+
+
+class NotificationProfileOptionsQuerySet(models.QuerySet):
+    def set_options(self, opts: List[str]):
+        available_flags = frozenset(NotificationProfileOptions.get_all_options())
+        flags = (getattr(NotificationProfileOptions.notification_flags, opt) for opt in
+                 opts if opt in available_flags)
+        fin_flags = 0
+        for flag in flags:
+            fin_flags = fin_flags | flag
+        return self.update(flags=fin_flags)
+
+
+class NotificationProfileOptions(models.Model):
+    profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
+    NOTIFICATION_TELEGRAM_FLAG = 'telegram'
+    NOTIFICATION_VIBER_FLAG = 'viber'
+    NOTIFICATION_EMAIL_FLAG = 'email'
+    NOTIFICATION_PUSH_FLAG = 'push'
+    NOTIFICATION_CUSTOM_FLAG = 'custom'
+    NOTIFICATION_FLAGS = (
+        (NOTIFICATION_TELEGRAM_FLAG, _('Telegram notifications')),
+        (NOTIFICATION_VIBER_FLAG, _('Viber notifications')),
+        (NOTIFICATION_EMAIL_FLAG, _('Email notifications')),
+        (NOTIFICATION_PUSH_FLAG, _('Push notifications')),
+        (NOTIFICATION_CUSTOM_FLAG, _('Custom notifications')),
+    )
+    notification_flags = BitField(flags=NOTIFICATION_FLAGS, default=0)
+
+    objects = NotificationProfileOptionsQuerySet.as_manager()
+
+    @staticmethod
+    def get_all_options():
+        available_flags = (flag_code for flag_code, flag_description in
+                           NotificationProfileOptions.NOTIFICATION_FLAGS)
+        return available_flags
+
+    class Meta:
+        db_table = 'messenger_options'
