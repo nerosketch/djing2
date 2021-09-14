@@ -1,7 +1,7 @@
 from django.utils.translation import gettext as _
 from django.db.models import JSONField
 from django.db import models, connection
-from groupapp.models import Group
+from addresses.models import LocalityModel
 from sorm_export.fias_socrbase import AddressFIASLevelChoices, AddressFIASInfo
 
 date_format = '%d.%m.%Y'
@@ -114,7 +114,8 @@ ao_type_choices = ((num, '%s' % name[0]) for lev, inf in AddressFIASInfo.items()
 
 
 class FiasRecursiveAddressModelManager(models.Manager):
-    def get_streets_as_addr_objects(self):
+    @staticmethod
+    def get_streets_as_addr_objects():
         with connection.cursor() as cur:
             cur.execute("SELECT * FROM get_streets_as_addr_objects;")
             res = cur.fetchone()
@@ -138,7 +139,7 @@ class FiasRecursiveAddressModel(models.Model):
         _('AO Type'),
         choices=ao_type_choices
     )
-    groups = models.ManyToManyField(Group, blank=True)
+    localities = models.ManyToManyField(LocalityModel, blank=True)
 
     objects = FiasRecursiveAddressModelManager()
 
