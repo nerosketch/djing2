@@ -6,6 +6,7 @@ from djing2.views import SearchApiView, can_login_by_location, get_vapid_public_
 api_urls = [
     path("profiles/", include("profiles.urls", namespace="profiles")),
     path("groups/", include("groupapp.urls", namespace="groups")),
+    path("addrs/", include("addresses.urls", namespace="addresses")),
     path("services/", include("services.urls", namespace="services")),
     path("gateways/", include("gateways.urls", namespace="gateways")),
     path("devices/", include("devices.urls", namespace="devices")),
