@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 
 from djing2.viewsets import DjingModelViewSet
 from messenger.models import base_messenger as models
@@ -54,3 +55,12 @@ def get_bot_types(request):
 class SubscriberModelViewSet(DjingModelViewSet):
     queryset = models.MessengerSubscriberModel.objects.all()
     serializer_class = serializers.MessengerSubscriberModelSerializer
+
+
+class NotificationProfileOptionsModelViewSet(ModelViewSet):
+    queryset = models.NotificationProfileOptionsModel.objects.all()
+    serializer_class = serializers.NotificationProfileOptionsModelSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return super().get_queryset().filter(profile=user)

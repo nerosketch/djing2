@@ -132,8 +132,8 @@ class MessengerSubscriberModel(BaseAbstractModel):
 
 class NotificationProfileOptionsQuerySet(models.QuerySet):
     def set_options(self, opts: List[str]):
-        available_flags = frozenset(NotificationProfileOptions.get_all_options())
-        flags = (getattr(NotificationProfileOptions.notification_flags, opt) for opt in
+        available_flags = frozenset(NotificationProfileOptionsModel.get_all_options())
+        flags = (getattr(NotificationProfileOptionsModel.notification_flags, opt) for opt in
                  opts if opt in available_flags)
         fin_flags = 0
         for flag in flags:
@@ -141,7 +141,7 @@ class NotificationProfileOptionsQuerySet(models.QuerySet):
         return self.update(flags=fin_flags)
 
 
-class NotificationProfileOptions(models.Model):
+class NotificationProfileOptionsModel(models.Model):
     profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
     NOTIFICATION_TELEGRAM_FLAG = 'telegram'
     NOTIFICATION_VIBER_FLAG = 'viber'
@@ -162,7 +162,7 @@ class NotificationProfileOptions(models.Model):
     @staticmethod
     def get_all_options():
         available_flags = (flag_code for flag_code, flag_description in
-                           NotificationProfileOptions.NOTIFICATION_FLAGS)
+                           NotificationProfileOptionsModel.NOTIFICATION_FLAGS)
         return available_flags
 
     class Meta:

@@ -6,6 +6,7 @@ from messenger.models.base_messenger import get_messenger_model_info_generator
 
 router = DefaultRouter()
 router.register('subscriber', views.SubscriberModelViewSet)
+router.register('options', views.NotificationProfileOptionsModelViewSet)
 
 for type_name, messenger_uint, messenger_model_class in get_messenger_model_info_generator():
     tmp_viewset = views.MessengerModelViewSet

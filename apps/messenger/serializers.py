@@ -29,3 +29,9 @@ class MessengerSubscriberModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.MessengerSubscriberModel
         fields = "__all__"
+
+
+class NotificationProfileOptionsModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = models.NotificationProfileOptionsModel
+        fields = '__all__'
