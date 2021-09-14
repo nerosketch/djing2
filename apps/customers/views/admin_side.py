@@ -1,27 +1,23 @@
 from datetime import datetime, timedelta
 
-from django.conf import settings
 from django.db.models import Count, Q, Sum
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
-from rest_framework.views import APIView
 
 from customers import models, serializers
 from customers.views.view_decorators import catch_customers_errs
 from djing2.lib import safe_float, safe_int
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.mixins import SitesFilterMixin
-from djing2.viewsets import DjingListAPIView, DjingModelViewSet
+from djing2.viewsets import DjingListAPIView, DjingModelViewSet, DjingAdminAPIView
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 from groupapp.models import Group
 from profiles.models import UserProfileLogActionType
@@ -407,18 +403,9 @@ class PeriodicPayForIdModelViewSet(DjingModelViewSet):
     filterset_fields = ("account",)
 
 
-class AttachServicesToGroups(APIView):
-    if getattr(settings, "DEBUG", False):
-        from rest_framework.authentication import SessionAuthentication
-
-        authentication_classes = (TokenAuthentication, SessionAuthentication)
-    else:
-        authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated, IsAdminUser)
-
+class AttachServicesToGroups(DjingAdminAPIView):
     @staticmethod
     def get(request, format=None):
-        del format
         gid = safe_int(request.query_params.get("group"))
         grp = get_object_or_404(Group, pk=gid)
 
@@ -430,7 +417,6 @@ class AttachServicesToGroups(APIView):
 
     @staticmethod
     def post(request, format=None):
-        del format
         group = safe_int(request.query_params.get("group"))
         group = get_object_or_404(Group, pk=group)
         # selected_service_ids_db = frozenset(t.pk for t in group.service_set.only('pk'))

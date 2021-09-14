@@ -1,3 +1,4 @@
+from bitfield import BitHandler
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -31,7 +32,29 @@ class MessengerSubscriberModelSerializer(BaseCustomModelSerializer):
         fields = "__all__"
 
 
+class BitFieldSerializer(serializers.Field):
+    initial = []
+
+    def to_representation(self, value):
+        if isinstance(value, dict):
+            return [i[0] for i in value.items() if i[1]]
+        else:
+            return int(value)
+
+    def to_internal_value(self, data):
+        model_field = getattr(self.root.Meta.model, self.source)
+        result = BitHandler(0, model_field.keys())
+        for k in data:
+            try:
+                setattr(result, str(k), True)
+            except AttributeError:
+                raise serializers.ValidationError("Unknown choice: %r" % (k,))
+        return result
+
+
 class NotificationProfileOptionsModelSerializer(BaseCustomModelSerializer):
+    notification_flags = BitFieldSerializer()
+
     class Meta:
         model = models.NotificationProfileOptionsModel
         fields = '__all__'

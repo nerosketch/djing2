@@ -1,14 +1,17 @@
 from django.contrib.auth.models import Permission, Group as ProfileGroup
 from django.db import IntegrityError
 from django_filters.rest_framework import DjangoFilterBackend
+from django.conf import settings
 from guardian.ctypes import get_content_type
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import status
+from rest_framework.views import APIView
 from rest_framework.decorators import action
-from rest_framework.generics import ListAPIView, get_object_or_404
+from rest_framework.generics import ListAPIView, get_object_or_404, GenericAPIView
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, GenericViewSet
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 from djing2.lib import safe_int
@@ -157,3 +160,21 @@ class BaseNonAdminModelViewSet(ModelViewSet):
 
 class DjingAuthorizedViewSet(GenericViewSet):
     permission_classes = [IsAuthenticated, IsAdminUser]
+
+
+class DjingAdminAPIMixin:
+    if getattr(settings, "DEBUG", False):
+        from rest_framework.authentication import SessionAuthentication
+
+        authentication_classes = (TokenAuthentication, SessionAuthentication)
+    else:
+        authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+
+class DjingAdminGenericAPIView(DjingAdminAPIMixin, GenericAPIView):
+    pass
+
+
+class DjingAdminAPIView(DjingAdminAPIMixin, APIView):
+    pass

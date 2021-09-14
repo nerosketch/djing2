@@ -6,7 +6,6 @@ from messenger.models.base_messenger import get_messenger_model_info_generator
 
 router = DefaultRouter()
 router.register('subscriber', views.SubscriberModelViewSet)
-router.register('options', views.NotificationProfileOptionsModelViewSet)
 
 for type_name, messenger_uint, messenger_model_class in get_messenger_model_info_generator():
     tmp_viewset = views.MessengerModelViewSet
@@ -19,5 +18,7 @@ app_name = "messenger"
 
 urlpatterns = [
     path('get_bot_types/', views.get_bot_types),
+    path('options/', views.NotificationProfileOptionsModelViewSet.as_view()),
+    path('get_notification_options/', views.get_notification_options),
     path("", include(router.urls)),
 ]

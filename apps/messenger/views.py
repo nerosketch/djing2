@@ -1,9 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
-
-from djing2.viewsets import DjingModelViewSet
+from djing2.viewsets import DjingModelViewSet, DjingAdminGenericAPIView
 from messenger.models import base_messenger as models
 from messenger import serializers
 
@@ -57,10 +55,37 @@ class SubscriberModelViewSet(DjingModelViewSet):
     serializer_class = serializers.MessengerSubscriberModelSerializer
 
 
-class NotificationProfileOptionsModelViewSet(ModelViewSet):
+class NotificationProfileOptionsModelViewSet(DjingAdminGenericAPIView):
     queryset = models.NotificationProfileOptionsModel.objects.all()
     serializer_class = serializers.NotificationProfileOptionsModelSerializer
 
     def get_queryset(self):
         user = self.request.user
         return super().get_queryset().filter(profile=user)
+
+    def get(self, request, format=None):
+        obj = self.get_queryset().first()
+        if obj is None:
+            ser = self.serializer_class()
+        else:
+            ser = self.serializer_class(instance=obj)
+            ser.is_valid(raise_exception=True)
+        return Response(ser.data)
+
+    def put(self, request, format=None):
+        obj = self.get_queryset().first()
+        if obj is None:
+            ser = self.serializer_class(data=request.data)
+            ser.is_valid(raise_exception=True)
+            ser.save()
+        else:
+            ser = self.serializer_class(instance=obj, data=request.data)
+            ser.is_valid(raise_exception=True)
+            ser.save()
+        return Response(ser.data)
+
+
+@api_view(['get'])
+def get_notification_options(request):
+    res = {code: name for code, name in models.NotificationProfileOptionsModel.NOTIFICATION_FLAGS}
+    return Response(res)
