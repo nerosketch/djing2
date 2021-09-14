@@ -59,6 +59,9 @@ class FieldModelTypeChoices(models.IntegerChoices):
 class FieldModelTagChoices(models.IntegerChoices):
     DEFAULT = 0, _('Default tag')
     IPTV = 1, _('Uses IPTV')
+    # POST_INDEX = 2, _('Post index')
+    # CUSTOMER_BANK_TITLE = 3, _('Customer bank title')
+    # CUSTOMER_BANK_ACCOUNT = 4, _('Customer bank account number')
 
 
 validate_tags = RegexValidator(
