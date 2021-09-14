@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "webpush",
     "djing2.apps.Djing2Config",
     "groupapp.apps.GroupappConfig",
+    "addresses.app.AddressesConfig",
     "profiles.apps.ProfilesConfig",
     "services.apps.ServicesConfig",
     "gateways.apps.GatewaysConfig",
