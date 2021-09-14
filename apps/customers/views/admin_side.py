@@ -477,7 +477,7 @@ class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelVi
         return customer.group_id
 
     def filter_content_fields_queryset(self):
-        return self.get_queryset().objects.filter(
+        return self.get_queryset().filter(
             customer_id=self.customer_id,
         )
 
