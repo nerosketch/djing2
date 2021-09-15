@@ -1,15 +1,11 @@
 -- Copy title from groupapp.Group to addresses.LocalityModel
-insert into locality(title)
-select title from groups;
+insert into locality(id, title)
+select id, title from groups;
 
 -- Copy sites for addresses.LocalityModel
 insert into locality_sites(localitymodel_id, site_id)
-select l.id, gs.site_id from groups_sites gs
-    left join groups g on gs.group_id = g.id
-    left join locality l on g.title = l.title;
+select group_id, site_id from groups_sites;
 
 -- Copy streets from customers.CustomerStreet into addresses.StreetModel
-insert into locality_street(name, locality_id)
-select name, l.id from customer_street cs
-left join groups g on cs.group_id = g.id
-left join locality l on g.title = l.title;
+insert into locality_street(id, name, locality_id)
+select id, name, group_id from customer_street;
