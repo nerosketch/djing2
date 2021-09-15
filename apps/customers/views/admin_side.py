@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 
+from addresses.models import LocalityModel
 from customers import models, serializers
 from customers.views.view_decorators import catch_customers_errs
 from djing2.lib import safe_float, safe_int
@@ -55,7 +56,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ("username", "fio", "telephone", "description")
-    filterset_fields = ("group", "street", "device", "dev_port", "current_service__service")
+    filterset_fields = ("group", "locality", "street", "device", "dev_port", "current_service__service")
     ordering_fields = ("username", "fio", "house", "balance", "current_service__service__title")
 
     def get_queryset(self):
@@ -363,13 +364,13 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         })
 
 
-class CustomersGroupsListAPIView(DjingListAPIView):
-    serializer_class = serializers.CustomerGroupSerializer
+class CustomersLocationsListAPIView(DjingListAPIView):
+    serializer_class = serializers.CustomerLocationSerializer
     # filter_backends = (OrderingFilter,)
     # ordering_fields = ('title', 'usercount')
 
     def get_queryset(self):
-        qs = get_objects_for_user(self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
+        qs = get_objects_for_user(self.request.user, perms="addresses.view_localitymodel", klass=LocalityModel).order_by("title")
         if self.request.user.is_superuser:
             return qs.annotate(usercount=Count("customer"))
         return qs.filter(sites__in=[self.request.site]).annotate(
