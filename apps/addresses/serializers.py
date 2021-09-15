@@ -5,10 +5,10 @@ from addresses.models import LocalityModel, StreetModel
 class LocalityModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = LocalityModel
-        fields = '__all__'
+        exclude = ['sites']
 
 
 class StreetModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = StreetModel
-        field = '__all__'
+        fields = '__all__'

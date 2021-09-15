@@ -26,5 +26,4 @@ class StreetModel(BaseAbstractModel):
         db_table = "locality_street"
         verbose_name = _("Street")
         verbose_name_plural = _("Streets")
-        ordering = ("name",)
         unique_together = ('name', 'locality')

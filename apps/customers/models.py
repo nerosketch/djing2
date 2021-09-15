@@ -17,7 +17,7 @@ from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.custom_logic import SERVICE_CHOICES
 from services.models import OneShotPay, PeriodicPay, Service
-from addresses.models import StreetModel
+from addresses.models import StreetModel, LocalityModel
 
 from . import custom_signals
 
@@ -405,6 +405,9 @@ class Customer(BaseAccount):
     )
     group = models.ForeignKey(
         Group, on_delete=models.SET_NULL, blank=True, null=True, default=None, verbose_name=_("Customer group")
+    )
+    locality = models.ForeignKey(
+        LocalityModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
     )
     balance = models.FloatField(default=0.0)
 
