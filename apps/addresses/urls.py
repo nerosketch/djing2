@@ -6,8 +6,8 @@ from addresses import views
 app_name = 'addresses'
 
 router = DefaultRouter()
-router.register('', views.LocalityModelViewSet)
 router.register('street', views.StreetModelViewSet)
+router.register('', views.LocalityModelViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

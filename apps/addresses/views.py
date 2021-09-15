@@ -10,4 +10,5 @@ class LocalityModelViewSet(DjingModelViewSet):
 
 class StreetModelViewSet(DjingModelViewSet):
     queryset = StreetModel.objects.all()
-    serialier_class = StreetModelSerializer
+    serializer_class = StreetModelSerializer
+    filterset_fields = ['locality']
