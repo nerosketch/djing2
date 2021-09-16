@@ -151,6 +151,10 @@ class NotificationProfileOptionsQuerySet(models.QuerySet):
             fin_flags = fin_flags | flag
         return self.update(flags=fin_flags)
 
+    def set_various_options(self, opts: List[str]):
+        available_opt_types = {code for code, label in notification_types.items()}
+        Доделать
+
 
 class NotificationProfileOptionsModel(models.Model):
     profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
@@ -184,6 +188,8 @@ class NotificationProfileOptionsModel(models.Model):
     @staticmethod
     def add_notification_type(code: str, label: str):
         global notification_types
+        if notification_types.get(code) is not None:
+            raise ValueError('Notification type code "%s" already exists' % code)
         notification_types[code] = label
 
     class Meta:
