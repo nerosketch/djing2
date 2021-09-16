@@ -413,3 +413,6 @@ msgstr "Устройство %(device_name)s всё ок"
 
 #~ msgid "Device %(device_name)s getting undefined status code"
 #~ msgstr "Устройство %(device_name)s имеет не известный код состояния"
+
+msgid "Notify about device events"
+msgstr "Оповещать о событиях устройств"

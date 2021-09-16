@@ -17,6 +17,17 @@ from profiles.models import UserProfile
 class_map = {}
 
 
+#
+# Stores notification types
+# For example:
+# notification_types = {
+#     'task': _('Notify about tasks'),
+#     'device': _('Notify about device events'),
+# }
+#
+notification_types = {}
+
+
 def get_messenger_model_by_name(name: str) -> Optional[ModelBase]:
     uint, model_class = class_map.get(name, None)
     return model_class
@@ -156,6 +167,7 @@ class NotificationProfileOptionsModel(models.Model):
         (NOTIFICATION_CUSTOM_FLAG, _('Custom notifications')),
     )
     notification_flags = BitField(flags=NOTIFICATION_FLAGS, default=0)
+    various_options = models.JSONField()
 
     objects = NotificationProfileOptionsQuerySet.as_manager()
 
@@ -164,6 +176,15 @@ class NotificationProfileOptionsModel(models.Model):
         available_flags = (flag_code for flag_code, flag_description in
                            NotificationProfileOptionsModel.NOTIFICATION_FLAGS)
         return available_flags
+
+    @staticmethod
+    def get_notification_types():
+        return notification_types
+
+    @staticmethod
+    def add_notification_type(code: str, label: str):
+        global notification_types
+        notification_types[code] = label
 
     class Meta:
         db_table = 'messenger_options'

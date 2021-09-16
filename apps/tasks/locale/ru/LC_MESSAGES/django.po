@@ -264,6 +264,9 @@ msgstr "Вы не можете удалять назначенные на вас
 msgid "New task with this customer already exists."
 msgstr "Заявка для этого абонента уже создана."
 
+msgid "Notify about tasks"
+msgstr "Оповещать о задачах"
+
 #~ msgid "Create task"
 #~ msgstr "Создание задачи"
 

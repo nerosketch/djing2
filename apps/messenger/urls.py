@@ -20,5 +20,6 @@ urlpatterns = [
     path('get_bot_types/', views.get_bot_types),
     path('options/', views.NotificationProfileOptionsModelViewSet.as_view()),
     path('get_notification_options/', views.get_notification_options),
+    path('get_notification_types/', views.get_notification_types),
     path("", include(router.urls)),
 ]

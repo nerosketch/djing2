@@ -19,6 +19,7 @@ from djing2.lib import safe_float, safe_int
 from djing2.models import BaseAbstractModel
 from profiles.models import UserProfile
 from tasks.handle import handle as task_handle
+from messenger.models.base_messenger import NotificationProfileOptionsModel
 
 
 class TaskStateChangeLogModelManager(models.Manager):
@@ -294,3 +295,7 @@ class TaskDocumentAttachment(BaseAbstractModel):
 
     class Meta:
         db_table = "task_doc_attachments"
+
+
+NotificationProfileOptionsModel.add_notification_type('tasks', _('Notify about tasks'))
+

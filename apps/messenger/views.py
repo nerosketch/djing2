@@ -89,3 +89,9 @@ class NotificationProfileOptionsModelViewSet(DjingAdminGenericAPIView):
 def get_notification_options(request):
     res = {code: name for code, name in models.NotificationProfileOptionsModel.NOTIFICATION_FLAGS}
     return Response(res)
+
+
+@api_view(['get'])
+def get_notification_types(request):
+    types = models.NotificationProfileOptionsModel.get_notification_types()
+    return Response(types)

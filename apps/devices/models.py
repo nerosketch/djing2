@@ -22,6 +22,7 @@ from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyCo
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
 from groupapp.models import Group
 from networks.models import VlanIf
+from messenger.models.base_messenger import NotificationProfileOptionsModel
 
 
 class Device(BaseAbstractModel):
@@ -283,3 +284,7 @@ class Port(BaseAbstractModel):
         verbose_name = _("Port")
         verbose_name_plural = _("Ports")
         ordering = ("num",)
+
+
+NotificationProfileOptionsModel.add_notification_type('devices', _('Notify about device events'))
+
