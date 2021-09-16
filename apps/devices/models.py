@@ -22,6 +22,7 @@ from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyCo
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
 from groupapp.models import Group
 from networks.models import VlanIf
+from addresses.models import StreetModel, LocalityModel
 
 
 class Device(BaseAbstractModel):
@@ -67,6 +68,13 @@ class Device(BaseAbstractModel):
     create_time = models.DateTimeField(
         _("Create time"),
         default=datetime.now,
+    )
+
+    locality = models.ForeignKey(
+        LocalityModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
+    )
+    street = models.ForeignKey(
+       StreetModel, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
     )
 
     place = models.CharField(
