@@ -4,11 +4,11 @@ from addresses.serializers import LocalityModelSerializer, StreetModelSerializer
 
 
 class LocalityModelViewSet(DjingModelViewSet):
-    queryset = LocalityModel.objects.all()
+    queryset = LocalityModel.objects.order_by('title')
     serializer_class = LocalityModelSerializer
 
 
 class StreetModelViewSet(DjingModelViewSet):
-    queryset = StreetModel.objects.all()
+    queryset = StreetModel.objects.order_by('name')
     serializer_class = StreetModelSerializer
     filterset_fields = ['locality']
