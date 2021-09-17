@@ -490,4 +490,8 @@ class DeviceLocalitiesList(DjingListAPIView):
 
     def get_queryset(self):
         qs = get_objects_for_user(self.request.user, perms="addresses.view_localitymodel", klass=LocalityModel).order_by("title")
-        return qs.annotate(device_count=Count("device"))
+        qs = qs.annotate(device_count=Count("device"))
+        if self.request.user.is_superuser:
+            return qs
+        return qs.filter(sites__in=[self.request.site])
+
