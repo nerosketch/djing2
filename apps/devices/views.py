@@ -258,7 +258,7 @@ class DevicePONViewSet(DjingModelViewSet):
 class DeviceModelViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related("parent_dev")
     serializer_class = dev_serializers.DeviceModelSerializer
-    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
+    filterset_fields = ("group", "locality", "dev_type", "status", "is_noticeable")
     filter_backends = (CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend)
     search_fields = ("comment", "ip_address", "mac_addr")
     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
