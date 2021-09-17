@@ -22,9 +22,6 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(blank=True, default=None, null=True, on_delete=models.deletion.SET_NULL,
                                     to='addresses.localitymodel'),
         ),
-        migrations.DeleteModel(
-            name='CustomerStreet',
-        ),
         migrations.RunSQL(
             sql="update customers set locality_id = group_id;"
         )
