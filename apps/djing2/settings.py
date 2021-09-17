@@ -233,9 +233,6 @@ API_AUTH_SECRET = getattr(local_settings, "API_AUTH_SECRET", "secret")
 # Allowed subnet for api
 API_AUTH_SUBNET = getattr(local_settings, "API_AUTH_SUBNET", ("127.0.0.0/8", "10.0.0.0/8"))
 
-# Company name
-COMPANY_NAME = getattr(local_settings, "COMPANY_NAME", "Company Name")
-
 # public url for messenger bot
 MESSENGER_BOT_PUBLIC_URL = getattr(local_settings, 'MESSENGER_BOT_PUBLIC_URL', "https://localhost.name")
 
