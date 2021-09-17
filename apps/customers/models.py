@@ -193,6 +193,21 @@ class CustomerService(BaseAbstractModel):
         ordering = ("start_time",)
 
 
+# Deprecated. Will be removed in future versions.
+class CustomerStreet(BaseAbstractModel):
+    name = models.CharField(max_length=64)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "customer_street"
+        verbose_name = _("Street")
+        verbose_name_plural = _("Streets")
+        ordering = ("name",)
+
+
 class CustomerLog(BaseAbstractModel):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)

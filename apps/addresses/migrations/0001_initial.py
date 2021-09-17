@@ -11,6 +11,8 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('sites', '0002_alter_domain_unique'),
+        ('groupapp', '0002_group_sites'),
+        ('customers', '0001_initial'),
     ]
 
     operations = [
