@@ -50,9 +50,6 @@ API_AUTH_SECRET = get_secret("API_AUTH_SECRET")
 # Fox example: API_AUTH_SUBNET = ('127.0.0.0/8', '10.0.0.0/8', '192.168.0.0/16')
 API_AUTH_SUBNET = os.environ.get("API_AUTH_SUBNET", "127.0.0.0/8")
 
-# Company name
-COMPANY_NAME = os.environ.get("COMPANY_NAME", "Your company name")
-
 # Email config
 # EMAIL_HOST_USER = 'YOUR-EMAIL@mailserver.com'
 # EMAIL_HOST = 'smtp.mailserver.com'

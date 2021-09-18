@@ -1,3 +1,4 @@
 #!/bin/bash
-docker rm $(docker ps -aq) && docker rmi $(docker images -q)
+docker rm $(docker ps -aq)
+docker rmi $(docker images -q)
 
