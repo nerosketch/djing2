@@ -1,5 +1,5 @@
 import abc
-from typing import Optional, Tuple, Generator, List
+from typing import Optional, Tuple, Generator
 from urllib.parse import urljoin
 
 from django.shortcuts import resolve_url
@@ -141,21 +141,6 @@ class MessengerSubscriberModel(BaseAbstractModel):
         ordering = ("name",)
 
 
-class NotificationProfileOptionsQuerySet(models.QuerySet):
-    def set_options(self, opts: List[str]):
-        available_flags = frozenset(NotificationProfileOptionsModel.get_all_options())
-        flags = (getattr(NotificationProfileOptionsModel.notification_flags, opt) for opt in
-                 opts if opt in available_flags)
-        fin_flags = 0
-        for flag in flags:
-            fin_flags = fin_flags | flag
-        return self.update(flags=fin_flags)
-
-    def set_various_options(self, opts: List[str]):
-        available_opt_types = {code for code, label in notification_types.items()}
-        Доделать
-
-
 class NotificationProfileOptionsModel(models.Model):
     profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
     NOTIFICATION_TELEGRAM_FLAG = 'telegram'
@@ -172,8 +157,6 @@ class NotificationProfileOptionsModel(models.Model):
     )
     notification_flags = BitField(flags=NOTIFICATION_FLAGS, default=0)
     various_options = models.JSONField()
-
-    objects = NotificationProfileOptionsQuerySet.as_manager()
 
     @staticmethod
     def get_all_options():

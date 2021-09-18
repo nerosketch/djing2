@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import action, api_view
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
 from djing2.viewsets import DjingModelViewSet, DjingAdminGenericAPIView
 from messenger.models import base_messenger as models
@@ -55,7 +56,7 @@ class SubscriberModelViewSet(DjingModelViewSet):
     serializer_class = serializers.MessengerSubscriberModelSerializer
 
 
-class NotificationProfileOptionsModelViewSet(DjingAdminGenericAPIView):
+class NotificationProfileOptionsModelViewSet(RetrieveAPIView, DjingAdminGenericAPIView):
     queryset = models.NotificationProfileOptionsModel.objects.all()
     serializer_class = serializers.NotificationProfileOptionsModelSerializer
 
@@ -63,35 +64,7 @@ class NotificationProfileOptionsModelViewSet(DjingAdminGenericAPIView):
         user = self.request.user
         return super().get_queryset().filter(profile=user)
 
-    def get(self, request, format=None):
-        obj = self.get_queryset().first()
-        if obj is None:
-            ser = self.serializer_class()
-        else:
-            ser = self.serializer_class(instance=obj)
-            ser.is_valid(raise_exception=True)
-        return Response(ser.data)
-
-    def put(self, request, format=None):
-        obj = self.get_queryset().first()
-        if obj is None:
-            ser = self.serializer_class(data=request.data)
-            ser.is_valid(raise_exception=True)
-            ser.save()
-        else:
-            ser = self.serializer_class(instance=obj, data=request.data)
-            ser.is_valid(raise_exception=True)
-            ser.save()
-        return Response(ser.data)
-
-
-@api_view(['get'])
-def get_notification_options(request):
-    res = {code: name for code, name in models.NotificationProfileOptionsModel.NOTIFICATION_FLAGS}
-    return Response(res)
-
-
-@api_view(['get'])
-def get_notification_types(request):
-    types = models.NotificationProfileOptionsModel.get_notification_types()
-    return Response(types)
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_queryset().first()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
