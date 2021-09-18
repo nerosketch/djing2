@@ -152,9 +152,15 @@ execute _tp('networks', 'view_networkippool', 'Может видеть подс�
 -- execute _tp('admin', 'delete_logentry', 'Может удалять логи');
 -- execute _tp('admin', 'view_logentry', 'Может видеть логи');
 
-execute _tp('customers', 'add_streetmodel', 'Может добавлять улицы');
-execute _tp('customers', 'change_streetmodel', 'Может изменять улицы');
-execute _tp('customers', 'delete_streetmodel', 'Может удалять улицы');
-execute _tp('customers', 'view_streetmodel', 'Может видеть улицы');
+execute _tp('addresses', 'add_streetmodel', 'Может добавлять улицы');
+execute _tp('addresses', 'change_streetmodel', 'Может изменять улицы');
+execute _tp('addresses', 'delete_streetmodel', 'Может удалять улицы');
+execute _tp('addresses', 'view_streetmodel', 'Может видеть улицы');
+
+execute _tp('addresses', 'add_localitymodel', 'Может добавлять населённые пункты');
+execute _tp('addresses', 'change_localitymodel', 'Может изменять населённые пункты');
+execute _tp('addresses', 'delete_localitymodel', 'Может удалять населённые пункты');
+execute _tp('addresses', 'view_localitymodel', 'Может видеть населённые пункты');
+
 
 deallocate _tp;
