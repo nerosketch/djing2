@@ -16,7 +16,6 @@ router.register("users/debts", user_side.DebtsList)
 
 # Admin Views
 router.register("customer-service", admin_side.CustomerServiceModelViewSet)
-router.register("streets", admin_side.CustomerStreetModelViewSet)
 router.register("customer-log", admin_side.CustomerLogModelViewSet)
 router.register("invoices", admin_side.InvoiceForPaymentModelViewSet)
 router.register("customer-raw-password", admin_side.CustomerRawPasswordModelViewSet)
@@ -28,6 +27,6 @@ router.register("", admin_side.CustomerModelViewSet)
 
 urlpatterns = [
     path("attach_group_service/", admin_side.AttachServicesToGroups.as_view()),
-    path("groups/", admin_side.CustomersGroupsListAPIView.as_view()),
+    path("locations/", admin_side.CustomersLocationsListAPIView.as_view()),
     path("", include(router.urls)),
 ]

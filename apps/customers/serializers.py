@@ -9,10 +9,10 @@ from django.utils.translation import gettext as _
 from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
 
+from addresses.serializers import LocalityModelSerializer
 from customers import models
 from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
-from groupapp.serializers import GroupsSerializer
 from services.serializers import ServiceModelSerializer
 
 
@@ -43,12 +43,6 @@ class DetailedCustomerServiceModelSerializer(BaseCustomModelSerializer):
         fields = '__all__'
 
 
-class CustomerStreetModelSerializer(BaseCustomModelSerializer):
-    class Meta:
-        model = models.CustomerStreet
-        fields = ("id", "name", "group")
-
-
 class CustomerLogModelSerializer(BaseCustomModelSerializer):
     author_name = serializers.CharField(source="author.get_full_name", read_only=True)
     cost = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
@@ -72,6 +66,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     is_active = serializers.BooleanField(initial=True)
     full_name = serializers.CharField(source="get_full_name", read_only=True)
     group_title = serializers.CharField(source="group.title", read_only=True)
+    locality_title = serializers.CharField(source='locality.title', read_only=True)
     street_name = serializers.CharField(source="street.name", read_only=True)
     gateway_title = serializers.CharField(source="gateway.title", read_only=True)
     device_comment = serializers.CharField(source="device.comment", read_only=True)
@@ -151,11 +146,12 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         ]
 
 
-class CustomerGroupSerializer(GroupsSerializer):
+class CustomerLocationSerializer(LocalityModelSerializer):
     usercount = serializers.IntegerField(read_only=True)
 
-    class Meta(GroupsSerializer.Meta):
-        fields = ("id", "title", "code", "usercount")
+    class Meta(LocalityModelSerializer.Meta):
+        exclude = None
+        fields = ("id", "title", "usercount")
 
 
 class PassportInfoModelSerializer(BaseCustomModelSerializer):
