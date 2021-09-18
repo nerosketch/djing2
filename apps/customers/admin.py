@@ -2,7 +2,6 @@ from django.contrib import admin
 from customers import models
 
 admin.site.register(models.Customer)
-admin.site.register(models.CustomerStreet)
 admin.site.register(models.CustomerService)
 admin.site.register(models.CustomerLog)
 admin.site.register(models.AdditionalTelephone)

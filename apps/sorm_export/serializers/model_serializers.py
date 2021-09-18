@@ -2,7 +2,8 @@ from django.db.models import Count
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from groupapp.models import Group
+
+from addresses.models import LocalityModel
 from sorm_export.models import FiasRecursiveAddressModel
 
 
@@ -15,15 +16,18 @@ class FiasRecursiveAddressModelSerializer(serializers.ModelSerializer):
         """Group must have only one FiasRecursiveAddressModel.
         And specifying ForeignKey in Group model may be corrupt
         flexibility. So I did this validation here."""
-        selected_group_ids = [sg.pk for sg in attrs.get('groups', [])]
-        groups = Group.objects.filter(
-            pk__in=selected_group_ids
+        selected_localities_ids = [locality.pk for locality in attrs.get('localities', [])]
+        if len(selected_localities_ids) < 1:
+            return attrs
+        localities = LocalityModel.objects.filter(
+            pk__in=selected_localities_ids
         ).annotate(
             addrs_count=Count('fiasrecursiveaddressmodel')
         ).filter(addrs_count__gt=0)
-        if groups.exists():
+        if localities.exists():
             raise ValidationError({
-                'groups': _('Groups "%s" has more than one "FIAS" address type.') % ','.join(g.title for g in groups)
+                'localities': _('Localities "%s" has more than one "FIAS" address type.')
+                              % ','.join(locality.title for locality in localities)
             })
         return attrs
 

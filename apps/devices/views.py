@@ -32,6 +32,7 @@ from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
 from profiles.models import UserProfile, UserProfileLogActionType
+from addresses.models import LocalityModel
 
 
 def catch_dev_manager_err(fn):
@@ -257,7 +258,7 @@ class DevicePONViewSet(DjingModelViewSet):
 class DeviceModelViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related("parent_dev")
     serializer_class = dev_serializers.DeviceModelSerializer
-    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
+    filterset_fields = ("group", "locality", "dev_type", "status", "is_noticeable")
     filter_backends = (CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend)
     search_fields = ("comment", "ip_address", "mac_addr")
     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
@@ -479,14 +480,18 @@ class PortVlanMemberModelViewSet(DjingModelViewSet):
     filterset_fields = ("vlanif", "port")
 
 
-class DeviceGroupsList(DjingListAPIView):
-    serializer_class = dev_serializers.DeviceGroupsModelSerializer
+class DeviceLocalitiesList(DjingListAPIView):
+    serializer_class = dev_serializers.DeviceLocalitiesModelSerializer
     filter_backends = (
         CustomObjectPermissionsFilter,
         OrderingFilter,
     )
-    ordering_fields = ("title", "code")
+    ordering_fields = ["title"]
 
     def get_queryset(self):
-        qs = get_objects_for_user(self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
-        return qs.annotate(device_count=Count("device"))
+        qs = get_objects_for_user(self.request.user, perms="addresses.view_localitymodel", klass=LocalityModel).order_by("title")
+        qs = qs.annotate(device_count=Count("device"))
+        if self.request.user.is_superuser:
+            return qs
+        return qs.filter(sites__in=[self.request.site])
+
