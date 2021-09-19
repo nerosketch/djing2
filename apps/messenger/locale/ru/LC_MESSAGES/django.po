@@ -6,8 +6,8 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-09-07 15:41+0300\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-09-19 23:13+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,52 +17,72 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: apps/messenger/models/base_messenger.py:34
+#: apps/messenger/models/base_messenger.py:46
 msgid "Title"
 msgstr "Название"
 
-#: apps/messenger/models/base_messenger.py:35
+#: apps/messenger/models/base_messenger.py:47
 msgid "Description"
 msgstr "Описание"
 
-#: apps/messenger/models/base_messenger.py:37
+#: apps/messenger/models/base_messenger.py:49
 msgid "Bot type"
 msgstr "Тип бота"
 
-#: apps/messenger/models/base_messenger.py:39
+#: apps/messenger/models/base_messenger.py:51
 msgid "Bot secret token"
 msgstr "Секретный токен viber"
 
-#: apps/messenger/models/base_messenger.py:107
+#: apps/messenger/models/base_messenger.py:119
 msgid "Messenger"
 msgstr "Мэссенджэр"
 
-#: apps/messenger/models/base_messenger.py:108
+#: apps/messenger/models/base_messenger.py:120
 msgid "Messengers"
 msgstr "Мэссенджэры"
 
-#: apps/messenger/models/base_messenger.py:113
+#: apps/messenger/models/base_messenger.py:125
 msgid "Name"
 msgstr "Имя"
 
-#: apps/messenger/models/base_messenger.py:114
+#: apps/messenger/models/base_messenger.py:126
 #: apps/messenger/models/telegram.py:11 apps/messenger/models/viber.py:28
 msgid "Avatar"
 msgstr "Аватар"
 
-#: apps/messenger/models/base_messenger.py:116
+#: apps/messenger/models/base_messenger.py:128
 msgid "System account"
 msgstr "Системная учётная запись"
 
-#: apps/messenger/models/base_messenger.py:127
+#: apps/messenger/models/base_messenger.py:139
 #: apps/messenger/models/viber.py:156
 msgid "Subscriber"
 msgstr "Подписчик"
 
-#: apps/messenger/models/base_messenger.py:128
+#: apps/messenger/models/base_messenger.py:140
 #: apps/messenger/models/viber.py:157
 msgid "Subscribers"
 msgstr "Подписчики"
+
+#: apps/messenger/models/base_messenger.py:152
+msgid "Telegram notifications"
+msgstr "Оповещения Telegram"
+
+#: apps/messenger/models/base_messenger.py:153
+msgid "Viber notifications"
+msgstr "Оповещения Viber"
+
+#: apps/messenger/models/base_messenger.py:154
+msgid "Email notifications"
+msgstr "Оповещения на Eпочту"
+
+#: apps/messenger/models/base_messenger.py:155
+msgid "Push notifications"
+msgstr "Оповещения в браузере (Push)"
+
+#: apps/messenger/models/base_messenger.py:156
+msgid "Custom notifications"
+msgstr "Опциональные оповещения"
 
 #: apps/messenger/models/telegram.py:79 apps/messenger/models/telegram.py:151
 #: apps/messenger/models/viber.py:101
@@ -95,22 +115,16 @@ msgstr ""
 "Номер телефона не найден. Укажите свой номер телефона в учётке в биллинге"
 
 #: apps/messenger/models/telegram.py:188
-#, fuzzy
-#| msgid "User unique id in viber"
 msgid "User unique id in telegram"
-msgstr "Уникальный id viber"
+msgstr "Уникальный id Telegram"
 
 #: apps/messenger/models/telegram.py:199
-#, fuzzy
-#| msgid "Viber subscriber"
 msgid "Telegram subscriber"
-msgstr "Подписчик viber"
+msgstr "Подписчик Telegram"
 
 #: apps/messenger/models/telegram.py:200
-#, fuzzy
-#| msgid "Viber subscribers"
 msgid "Telegram subscribers"
-msgstr "Подписчики viber"
+msgstr "Подписчики Telegram"
 
 #: apps/messenger/models/viber.py:135
 msgid "Viber messenger"
@@ -121,12 +135,10 @@ msgid "Viber messengers"
 msgstr "Viber мэссенджэры"
 
 #: apps/messenger/models/viber.py:148
-#, fuzzy
-#| msgid "User unique id in viber"
 msgid "User unique id"
-msgstr "Уникальный id viber"
+msgstr "Уникальный id"
 
-#: apps/messenger/serializers.py:17
+#: apps/messenger/serializers.py:19
 msgid "\"bot_type\" not among the allowed values"
 msgstr "\"bot_type\" имеет не допустимое значение"
 
