@@ -18,21 +18,22 @@ from viberbot.api.viber_requests import (
 
 
 TYPE_NAME = 'viber'
+_viber_cache = None
 
 
 class ViberMessengerModel(MessengerModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._viber_cache = None
 
     avatar = models.ImageField(_("Avatar"), upload_to="viber_avatar", null=True)
 
     def get_viber(self):
-        if self._viber_cache is None:
-            self._viber_cache = Api(
+        global _viber_cache
+        if _viber_cache is None:
+            _viber_cache = Api(
                 BotConfiguration(name=str(self.title), avatar=self.avatar.url, auth_token=str(self.token))
             )
-        return self._viber_cache
+        return _viber_cache
 
     def send_message_to_acc(self, to: UserProfile, msg: str):
         try:
@@ -42,11 +43,20 @@ class ViberMessengerModel(MessengerModel):
         except ViberMessengerSubscriberModel.DoesNotExist:
             pass
 
-    def send_message(self, text: str, *args, **kwargs):
-        pass
+    def send_message(self, text: str, uid=None, *args, **kwargs):
+        viber = self.get_viber()
+        viber.send_messages(uid, TextMessage(text=text))
 
     def send_message_broadcast(self, text: str, profile_ids=None):
-        pass
+        subscribers = ViberMessengerSubscriberModel.objects.select_related('messenger').filter(
+            messenger=self
+        )
+        if profile_ids is not None:
+            subscribers = subscribers.filter(
+                account__id__in=profile_ids
+            )
+        for subs in subscribers.iterator():
+            self.send_message(text=text, uid=subs.uid)
 
     def send_message_to_id(self, subscriber_id: str, msg):
         viber = self.get_viber()
@@ -56,13 +66,16 @@ class ViberMessengerModel(MessengerModel):
             viber.send_messages(subscriber_id, TextMessage(text=msg))
 
     def send_webhook(self):
-        public_url = self.get_webhook_url(type_name=TYPE_NAME)
+        public_url = self.get_webhook_url()
         viber = self.get_viber()
         viber.set_webhook(public_url, ["failed", "subscribed", "unsubscribed", "conversation_started"])
 
     def stop_webhook(self):
         viber = self.get_viber()
         viber.unset_webhook()
+
+    def get_bot_url(self):
+        return f"viber://pa?chatURI={self.title}"
 
     def inbox_data(self, request):
         viber = self.get_viber()
@@ -148,8 +161,11 @@ class ViberMessengerSubscriberModel(MessengerSubscriberModel):
     uid = models.CharField(_("User unique id"), max_length=32)
     messenger = models.ForeignKey(ViberMessengerModel, on_delete=models.CASCADE)
 
-    def send_message(self, msg_text: str):
-        pass
+    def send_message(self, text: str):
+        return self.messenger.send_message(
+            text=text,
+            chat_id=self.chat_id,
+        )
 
     class Meta:
         db_table = "messengers_viber_subscriber"

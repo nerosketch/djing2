@@ -1,2 +1,2 @@
-# from .viber import *  # turn off it for now
+from .viber import *
 from .telegram import *
