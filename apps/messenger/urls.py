@@ -7,6 +7,10 @@ from messenger.models.base_messenger import get_messenger_model_info_generator
 router = DefaultRouter()
 router.register('subscriber', views.SubscriberModelViewSet)
 
+
+#
+# Generate and register viewsets for different messenger types
+#
 bvs = views.MessengerModelViewSet
 for type_name, messenger_uint, messenger_model_class in get_messenger_model_info_generator():
     tmp_viewset = type('tmp_viewset', bvs.__bases__, dict(bvs.__dict__))
