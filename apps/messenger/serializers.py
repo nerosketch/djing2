@@ -1,8 +1,8 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
+from bitfield.models import BitHandler
 
 from djing2.lib.mixins import BaseCustomModelSerializer
-from djing2.serializers import BitFieldSerializer
 from messenger.models import base_messenger as models
 from messenger.models.base_messenger import notification_types
 
@@ -33,18 +33,38 @@ class MessengerSubscriberModelSerializer(BaseCustomModelSerializer):
         fields = "__all__"
 
 
-class NotificationFlagsBitFieldSerializer(BitFieldSerializer):
-    def get_initial(self):
-        flags = models.NotificationProfileOptionsModel.NOTIFICATION_FLAGS
-        return ({
-            'code': code,
-            'label': label,
-            'value': False
-        } for code, label in flags)
+class NotificationFlagsBitFieldSerializer(serializers.Field):
+    def to_representation(self, value: BitHandler):
+        if isinstance(value, BitHandler):
+            return ({
+                'code': code,
+                'label': value.get_label(code),
+                'value': val
+            } for code, val in value)
+        return value
+
+    def to_internal_value(self, opts):
+        available_flags = frozenset(models.NotificationProfileOptionsModel.get_all_options())
+        flags = (getattr(models.NotificationProfileOptionsModel.notification_flags, opt.get('code')) for opt in
+                 opts if opt.get('value', False) and opt.get('code') in available_flags)
+        fin_flags = 0
+        for flag in flags:
+            fin_flags = fin_flags | flag
+        return fin_flags
 
 
-class VariousOptionsSerializerField(serializers.JSONField):
-    def get_initial(self):
+class VariousOptionsSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=64)
+    label = serializers.CharField(max_length=64)
+    value = serializers.BooleanField(default=False)
+
+
+class NotificationProfileOptionsModelSerializer(BaseCustomModelSerializer):
+    notification_flags = NotificationFlagsBitFieldSerializer()
+    various_options = VariousOptionsSerializer(many=True)
+
+    @classmethod
+    def _get_various_options_initial(cls):
         types = models.NotificationProfileOptionsModel.get_notification_types()
         return ({
             'code': code,
@@ -52,26 +72,28 @@ class VariousOptionsSerializerField(serializers.JSONField):
             'value': False
         } for code, name in types.items())
 
+    @classmethod
+    def get_notification_flags_initial(cls):
+        flags = models.NotificationProfileOptionsModel.NOTIFICATION_FLAGS
+        return ({
+            'code': code,
+            'label': label,
+            'value': False
+        } for code, label in flags)
 
-class NotificationProfileOptionsModelSerializer(BaseCustomModelSerializer):
-    notification_flags = NotificationFlagsBitFieldSerializer()
-    various_options = VariousOptionsSerializerField()
-
-    @staticmethod
-    def validate_notification_flags(opts):
-        available_flags = frozenset(models.NotificationProfileOptionsModel.get_all_options())
-        flags = (getattr(models.NotificationProfileOptionsModel.notification_flags, code) for code, val in
-                 opts if val and code in available_flags)
-        fin_flags = 0
-        for flag in flags:
-            fin_flags = fin_flags | flag
-        return fin_flags
+    def get_initial(self):
+        return {
+            'various_options': self._get_various_options_initial(),
+            'notification_flags': self.get_notification_flags_initial()
+        }
 
     @staticmethod
     def validate_various_options(opts):
         available_opt_codes = {code for code, label in notification_types.items()}
-        res = {code: True for code, val in opts if val and code in available_opt_codes}
-        return res
+        for opt in opts:
+            if opt.get('code') not in available_opt_codes:
+                raise serializers.ValidationError("various_options has invalid code", code='invalid')
+        return opts
 
     class Meta:
         model = models.NotificationProfileOptionsModel

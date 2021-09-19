@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import action, api_view
-from rest_framework.generics import RetrieveAPIView
+from rest_framework.generics import RetrieveAPIView, UpdateAPIView
+from rest_framework.mixins import CreateModelMixin
 from rest_framework.response import Response
 from djing2.viewsets import DjingModelViewSet, DjingAdminGenericAPIView
 from messenger.models import base_messenger as models
@@ -56,7 +57,7 @@ class SubscriberModelViewSet(DjingModelViewSet):
     serializer_class = serializers.MessengerSubscriberModelSerializer
 
 
-class NotificationProfileOptionsModelViewSet(RetrieveAPIView, DjingAdminGenericAPIView):
+class NotificationProfileOptionsModelViewSet(RetrieveAPIView, UpdateAPIView, CreateModelMixin, DjingAdminGenericAPIView):
     queryset = models.NotificationProfileOptionsModel.objects.all()
     serializer_class = serializers.NotificationProfileOptionsModelSerializer
 
@@ -64,7 +65,12 @@ class NotificationProfileOptionsModelViewSet(RetrieveAPIView, DjingAdminGenericA
         user = self.request.user
         return super().get_queryset().filter(profile=user)
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_queryset().first()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+    def get_object(self):
+        obj = self.get_queryset().first()
+        return obj
+
+    def perform_create(self, serializer):
+        serializer.save(profile=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(profile=self.request.user)
