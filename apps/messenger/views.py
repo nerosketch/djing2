@@ -70,7 +70,7 @@ class NotificationProfileOptionsModelViewSet(RetrieveAPIView, UpdateAPIView, Cre
         return obj
 
     def perform_create(self, serializer):
-        serializer.save(profile=self.request.user)
+        serializer.save(profile_id=self.request.user.pk)
 
     def perform_update(self, serializer):
-        serializer.save(profile=self.request.user)
+        serializer.save(profile_id=self.request.user.pk)
