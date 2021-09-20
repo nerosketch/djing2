@@ -7,26 +7,29 @@ ENV PYTHONOPTIMIZE 1
 
 EXPOSE 3031
 
+RUN apt-get update 
+RUN apt-get install -y git python3-psycopg2 libsnmp-dev arping gcc gettext telnet --no-install-recommends
+RUN mkdir ./spooler && touch ./touch_reload && mkdir -p /usr/src/app/conf/apps/djing2
+
+RUN useradd -ms /bin/bash -g users user
+
 WORKDIR /var/www/djing2
 
-RUN apt-get update && apt-get install -y git python3-psycopg2 libsnmp-dev arping gcc gettext telnet --no-install-recommends
+RUN git clone --depth=1 git://github.com/nerosketch/djing2.git -b master /var/www/djing2
 
-RUN git clone --depth=1 git://github.com/nerosketch/djing2.git -b master /var/www/djing2 \
-    && mkdir ./spooler && touch ./touch_reload
-
-RUN pip install --no-cache-dir uWSGI \
-    && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 RUN apt-get purge --auto-remove git gcc
 
-COPY uwsgi_djing2.ini ./
-COPY create_initial_user.py ./
-COPY local_settings.py ./apps/djing2
+COPY create_initial_user.py /usr/src/app/conf
+COPY local_settings.py /usr/src/app/conf/apps/djing2
+COPY uwsgi_djing2.ini /usr/src/app/conf
 
-RUN chown -R www-data. /var/www/djing2
+RUN chown -R user. /usr/src/app/conf
+RUN chown -R user. ./
 
-USER www-data
-GROUP www-data
+
+USER user
 
 CMD ./manage.py migrate \
     && ./manage.py compilemessages \
