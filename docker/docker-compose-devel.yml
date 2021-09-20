@@ -23,6 +23,7 @@ services:
       context: djing2_app/
       dockerfile: Dockerfile_dev
     hostname: app
+    user: user
     depends_on:
       - postgres
     ports:
@@ -50,6 +51,7 @@ services:
     build: djing2-ui/
     stop_grace_period: 1m
     user: node
+    tty: true
     ports:
       - 8080:8080
     volumes:
