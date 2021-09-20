@@ -9,7 +9,7 @@ from sorm_export.serializers import model_serializers as serializers
 
 
 class FiasRecursiveAddressModelViewSet(DjingModelViewSet):
-    queryset = models.FiasRecursiveAddressModel.objects.all()
+    queryset = models.FiasRecursiveAddressModel.objects.order_by('title')
     serializer_class = serializers.FiasRecursiveAddressModelSerializer
     ordering_fields = ['title']
 

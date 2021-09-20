@@ -89,26 +89,6 @@ class Choice4BooleanField(models.TextChoices):
     NO = '0'
 
 
-"""
-class FtpCredentialsModel(models.Model):
-    host = models.CharField(
-        verbose_name=_('Hostname'),
-        max_length=128
-    )
-    login = models.CharField(
-        verbose_name=_('Login'),
-        max_length=64
-    )
-    password = EncryptedCharField(max_length=64)
-    default = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.host
-
-    class Meta:
-        db_table = 'sorm_export_ftp_credentials'
-"""
-
 ao_type_choices = ((num, '%s' % name[0]) for lev, inf in AddressFIASInfo.items() for num, name in inf.items())
 
 
