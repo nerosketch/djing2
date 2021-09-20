@@ -2,8 +2,6 @@
 
 from django.db import migrations, models
 
-from djing2.lib.for_migrations import read_all_file
-
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -14,11 +12,12 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='fiasrecursiveaddressmodel',
-            name='localities',
-            field=models.ManyToManyField(blank=True, to='addresses.LocalityModel'),
+            name='locality',
+            field=models.OneToOneField(to='addresses.LocalityModel', on_delete=models.deletion.CASCADE,
+                                       null=True, blank=True, default=None),
         ),
         migrations.RunSQL(
-            sql=read_all_file("0003_auto_20210914_1803.sql", __file__)
+            sql="drop view if exists get_streets_as_addr_objects;"
         ),
         migrations.RemoveField(
             model_name='fiasrecursiveaddressmodel',

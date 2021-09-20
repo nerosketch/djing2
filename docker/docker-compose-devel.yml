@@ -28,6 +28,7 @@ services:
       - postgres
     ports:
       - 8000:8000
+    tty: true
     secrets:
       - POSTGRES_PASSWORD
       - DJANGO_SECRET_KEY

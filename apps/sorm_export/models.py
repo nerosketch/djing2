@@ -109,7 +109,6 @@ class FtpCredentialsModel(models.Model):
         db_table = 'sorm_export_ftp_credentials'
 """
 
-
 ao_type_choices = ((num, '%s' % name[0]) for lev, inf in AddressFIASInfo.items() for num, name in inf.items())
 
 
@@ -117,7 +116,14 @@ class FiasRecursiveAddressModelManager(models.Manager):
     @staticmethod
     def get_streets_as_addr_objects():
         with connection.cursor() as cur:
-            cur.execute("SELECT * FROM get_streets_as_addr_objects;")
+            cur.execute(
+                "SELECT cs.id AS street_id,"
+                "sa.id        AS parent_ao_id,"
+                "sa.ao_type   AS parent_ao_type,"
+                "cs.name      AS street_name"
+                "FROM locality_street cs"
+                "JOIN sorm_address sa ON cs.locality_id = sa.locality_id;"
+            )
             res = cur.fetchone()
             while res is not None:
                 # res: street_id, parent_ao_id, parent_ao_type, street_name
@@ -139,7 +145,11 @@ class FiasRecursiveAddressModel(models.Model):
         _('AO Type'),
         choices=ao_type_choices
     )
-    localities = models.ManyToManyField(LocalityModel, blank=True)
+    locality = models.OneToOneField(
+        to=LocalityModel,
+        on_delete=models.deletion.CASCADE,
+        null=True, blank=True, default=None
+    )
 
     objects = FiasRecursiveAddressModelManager()
 
