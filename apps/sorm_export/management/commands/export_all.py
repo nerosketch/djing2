@@ -7,11 +7,13 @@ from devices.device_config.device_type_collection import DEVICE_TYPES
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
 from services.models import Service
 from devices.models import Device
+from sorm_export.hier_export.addresses import (
+    make_address_street_objects,
+    export_address_object
+)
 from sorm_export.hier_export.customer import (
     export_customer_root,
     export_contract,
-    export_address_object,
-    make_address_street_objects,
     export_access_point_address,
     export_individual_customer,
     export_legal_customer,
