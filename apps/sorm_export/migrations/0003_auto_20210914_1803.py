@@ -12,10 +12,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='fiasrecursiveaddressmodel',
-            name='groups',
-        ),
         migrations.AddField(
             model_name='fiasrecursiveaddressmodel',
             name='localities',
@@ -23,5 +19,9 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             sql=read_all_file("0003_auto_20210914_1803.sql", __file__)
-        )
+        ),
+        migrations.RemoveField(
+            model_name='fiasrecursiveaddressmodel',
+            name='groups',
+        ),
     ]
