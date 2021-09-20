@@ -23,6 +23,7 @@ services:
       context: djing2_app/
       dockerfile: Dockerfile_dev
     hostname: app
+    user: user
     depends_on:
       - postgres
     ports:
