@@ -356,11 +356,6 @@ msgstr ""
 msgid "Contact info"
 msgstr ""
 
-#: apps/sorm_export/serializers/model_serializers.py:26
-#, python-format
-msgid "Localities \"%s\" has more than one \"FIAS\" address type."
-msgstr ""
-
 #: apps/sorm_export/serializers/networks.py:10
 msgid "Gray addr"
 msgstr ""
