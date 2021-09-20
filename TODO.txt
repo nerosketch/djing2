@@ -60,3 +60,5 @@
     - Изменить где reraise, raise на raise from
     + Убрать в serializers.Meta.fields лапшу из полей, и заменить
       использование .pk на .id в frontend
+
+- Не отображается последный vlan на ZTE ONU.
