@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 
 from customers.models import Customer, CustomerService, AdditionalTelephone
 from devices.device_config.device_type_collection import DEVICE_TYPES
@@ -131,7 +132,7 @@ def export_all_customer_services():
 def export_all_switches():
     device_switch_type_ids = [uniq_num for uniq_num, dev_klass in DEVICE_TYPES if issubclass(
         dev_klass, SwitchDeviceStrategy)]
-    devs = Device.objects.filter(dev_type__in=device_switch_type_ids).exclude(place=None)
+    devs = Device.objects.filter(dev_type__in=device_switch_type_ids).select_related('locality', 'street')
     if devs.exists():
         data, fname = export_devices(devices=devs, event_time=datetime.now())
         task_export(data, fname, ExportStampTypeEnum.DEVICE_SWITCH)
