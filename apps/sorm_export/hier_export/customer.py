@@ -126,11 +126,7 @@ def export_individual_customer(customers_queryset, event_time=None):
             return
         if not hasattr(customer, "group"):
             return
-        group = customer.group
 
-        addr_group = group.fiasrecursiveaddressmodel_set.first()
-        if addr_group is None:
-            return
         passport = customer.passportinfo
         create_date = customer.create_date
         full_fname = customer.get_full_name()
@@ -147,7 +143,7 @@ def export_individual_customer(customers_queryset, event_time=None):
             "passport_code": passport.division_code or "",
             "passport_date": passport.date_of_acceptance,
             "house": customer.house,
-            "parent_id_ao": addr_group.pk,
+            "parent_id_ao": customer.street_id,
             "actual_start_time": datetime(create_date.year, create_date.month, create_date.day),
             # 'actual_end_time':
             "customer_id": customer.pk,

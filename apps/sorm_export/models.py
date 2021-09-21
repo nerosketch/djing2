@@ -100,8 +100,8 @@ class FiasRecursiveAddressModelManager(models.Manager):
                 "SELECT cs.id AS street_id,"
                 "sa.id        AS parent_ao_id,"
                 "sa.ao_type   AS parent_ao_type,"
-                "cs.name      AS street_name"
-                "FROM locality_street cs"
+                "cs.name      AS street_name "
+                "FROM locality_street cs "
                 "JOIN sorm_address sa ON cs.locality_id = sa.locality_id;"
             )
             res = cur.fetchone()
