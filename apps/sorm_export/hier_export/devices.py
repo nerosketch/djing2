@@ -24,7 +24,7 @@ def export_devices(devices: Iterable[Device], event_time: datetime):
             'switch_type': _calc_switch_type(device),
             'network_type': _calc_net_type(device),
             'description': device.comment,
-            'place': device.place,
+            'place': device.get_full_address(),
             'start_usage_time': device.create_time,
         }
 

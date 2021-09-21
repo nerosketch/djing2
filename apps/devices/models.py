@@ -98,6 +98,9 @@ class Device(BaseAbstractModel):
             ("can_apply_onu_config", _("Can apply onu config")),
         ]
 
+    def get_full_address(self):
+        return ' '.join(str(e) for e in [self.locality, self.street, self.place] if e)
+
     # def get_manager_klass(self):
     #     try:
     #         return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
