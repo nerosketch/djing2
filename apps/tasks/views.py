@@ -16,7 +16,7 @@ from tasks import serializers
 
 class TaskModelViewSet(DjingModelViewSet):
     queryset = models.Task.objects.select_related(
-        "author", "customer", "customer__group", "customer__street"
+        "author", "customer", "customer__group", "customer__address"
     ).annotate(comment_count=Count("extracomment"))
     serializer_class = serializers.TaskModelSerializer
     filterset_fields = ("task_state", "recipients", "customer")
@@ -143,7 +143,7 @@ class AllTasksList(DjingListAPIView):
 
     def get_queryset(self):
         qs = get_objects_for_user(user=self.request.user, perms="tasks.view_task", klass=models.Task).order_by("-id")
-        return qs.select_related("customer", "customer__street", "customer__group", "author").annotate(
+        return qs.select_related("customer", "customer__address", "customer__group", "author").annotate(
             comment_count=Count("extracomment")
         )
 

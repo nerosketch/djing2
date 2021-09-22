@@ -2,6 +2,7 @@ from django.utils.translation import gettext as _
 from django.db.models import JSONField
 from django.db import models
 from addresses.models import AddressModel
+from .fias_socrbase import AddressFIASInfo
 
 
 date_format = '%d.%m.%Y'
@@ -87,3 +88,39 @@ class CustomerDocumentTypeChoices(models.TextChoices):
 class Choice4BooleanField(models.TextChoices):
     YES = '1'
     NO = '0'
+
+
+class FiasRecursiveAddressModelManager(models.Manager):
+    @staticmethod
+    def get_streets_as_addr_objects():
+        with connection.cursor() as cur:
+            cur.execute(
+                "SELECT cs.id AS street_id,"
+                "sa.id        AS parent_ao_id,"
+                "sa.ao_type   AS parent_ao_type,"
+                "cs.name      AS street_name "
+                "FROM locality_street cs "
+                "JOIN sorm_address sa ON cs.locality_id = sa.locality_id;"
+            )
+            res = cur.fetchone()
+            while res is not None:
+                # res: street_id, parent_ao_id, parent_ao_type, street_name
+                yield res
+                res = cur.fetchone()
+
+
+class FiasRecursiveAddressModel(AddressModel):
+    fias_address_level = models.IntegerField(_('Address Level'),
+                                             choices=((l, "Level %d" % l) for l in AddressFIASInfo.get_levels()))
+    fias_address_type = models.IntegerField(
+        _('FIAS address type'),
+        choices=AddressFIASInfo.get_address_type_choices()
+    )
+
+    objects = FiasRecursiveAddressModelManager()
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        db_table = 'sorm_address'
