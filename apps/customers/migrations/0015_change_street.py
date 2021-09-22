@@ -11,18 +11,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='customer',
-            name='street',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=models.deletion.SET_NULL, to='addresses.streetmodel', verbose_name='Street'),
-        ),
         migrations.AddField(
             model_name='customer',
-            name='locality',
+            name='address',
             field=models.ForeignKey(blank=True, default=None, null=True, on_delete=models.deletion.SET_NULL,
-                                    to='addresses.localitymodel'),
+                                    to='addresses.addressmodel'),
         ),
-        migrations.RunSQL(
-            sql="update customers set locality_id = group_id;"
+        migrations.RemoveField(
+            model_name='customer',
+            name='street'
         )
     ]

@@ -1,6 +1,3 @@
-from sorm_export.models import (
-    FiasRecursiveAddressModel,
-)
 from sorm_export.serializers import individual_entity_serializers
 from .base import simple_export_decorator, format_fname
 
@@ -36,6 +33,7 @@ def make_address_street_objects():
     streets = FiasRecursiveAddressModel.objects.get_streets_as_addr_objects()
     for street in streets:
         # FIXME: расчитывать код улицы.
+        # FIXME: street_id может пересекаться с FiasRecursiveAddressModel.pk т.к. это разные таблицы, со своими id
         street_id, parent_ao_id, parent_ao_type, street_name = street
         dat = {
             "address_id": str(street_id),

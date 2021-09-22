@@ -1,4 +1,7 @@
-AddressFIASInfo = {
+from typing import Generator, Any
+from dataclasses import dataclass
+
+_address_fias_info = {
     0: {0: ("-", "Не выбрано")},
     1: {
         1: ("стр", "Страна"),
@@ -443,4 +446,48 @@ AddressFIASInfo = {
     },
 }
 
-AddressFIASLevelChoices = tuple((level_num, 'Level %d' % level_num) for level_num, _ in AddressFIASInfo.items())
+
+AddressFIASLevelType = int
+
+
+@dataclass
+class IAddressFIASType:
+    addr_id: int = 0
+    addr_short_name: str = ''
+    addr_name: str = ''
+
+    @staticmethod
+    def street_ids():
+        return 6576, 729, 762, 9129
+
+    @staticmethod
+    def locality_ids():
+        return 111, 112, 401, 402, 403, 404, 405, 410, 414, 417, 418, 419
+
+    @property
+    def is_street(self) -> bool:
+        return self.addr_id in self.street_ids()
+
+    @property
+    def is_locality(self):
+        return self.addr_id in self.locality_ids()
+
+
+class AddressFIASInfo:
+    @staticmethod
+    def get_levels() -> Generator[AddressFIASLevelType, Any, None]:
+        return (level for level, _ in _address_fias_info.items())
+
+    @staticmethod
+    def get_address_types_by_level(level: int) -> Generator[IAddressFIASType, Any, None]:
+        addrs = _address_fias_info.get(level)
+        for addr_id, (short_name, name) in addrs:
+            yield IAddressFIASType(
+                addr_id=addr_id,
+                addr_short_name=short_name,
+                addr_name=name
+            )
+
+    @staticmethod
+    def get_address_type_choices():
+        return ((num, '%s' % name[0]) for lev, inf in _address_fias_info.items() for num, name in inf.items())

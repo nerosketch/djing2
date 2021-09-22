@@ -1,5 +1,4 @@
 from django.contrib import admin
-from addresses.models import LocalityModel, StreetModel
+from addresses.models import AddressModel
 
-admin.site.register(LocalityModel)
-admin.site.register(StreetModel)
+admin.site.register(AddressModel)
