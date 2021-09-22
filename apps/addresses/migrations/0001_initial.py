@@ -2,7 +2,6 @@
 
 from django.db import migrations, models
 
-from addresses.fias_socrbase import AddressFIASInfo
 from addresses.interfaces import IAddressObject
 from djing2.models import BaseAbstractModelMixin
 
@@ -33,11 +32,6 @@ class Migration(migrations.Migration):
                     verbose_name='Address type',
                     choices=((0, 'Choices'), (4, 'Locality'), (9, 'Street'), (12, 'House'), (16, 'Building')),
                     default=0
-                )),
-                ('fias_address_level', models.IntegerField('Address Level', choices=((l, "Level %d" % l) for l in AddressFIASInfo.get_levels()))),
-                ('fias_address_type', models.IntegerField(
-                    'FIAS address type',
-                    choices=AddressFIASInfo.get_address_type_choices()
                 )),
                 ('title', models.CharField('Title', max_length=128)),
             ],
