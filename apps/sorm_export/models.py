@@ -1,8 +1,8 @@
 from django.utils.translation import gettext as _
 from django.db.models import JSONField
-from django.db import models, connection
-from addresses.models import LocalityModel
-from sorm_export.fias_socrbase import AddressFIASLevelChoices, AddressFIASInfo
+from django.db import models
+from addresses.models import AddressModel
+
 
 date_format = '%d.%m.%Y'
 datetime_format = '%d.%m.%YT%H:%M:%S'
@@ -87,54 +87,3 @@ class CustomerDocumentTypeChoices(models.TextChoices):
 class Choice4BooleanField(models.TextChoices):
     YES = '1'
     NO = '0'
-
-
-ao_type_choices = ((num, '%s' % name[0]) for lev, inf in AddressFIASInfo.items() for num, name in inf.items())
-
-
-class FiasRecursiveAddressModelManager(models.Manager):
-    @staticmethod
-    def get_streets_as_addr_objects():
-        with connection.cursor() as cur:
-            cur.execute(
-                "SELECT cs.id AS street_id,"
-                "sa.id        AS parent_ao_id,"
-                "sa.ao_type   AS parent_ao_type,"
-                "cs.name      AS street_name "
-                "FROM locality_street cs "
-                "JOIN sorm_address sa ON cs.locality_id = sa.locality_id;"
-            )
-            res = cur.fetchone()
-            while res is not None:
-                # res: street_id, parent_ao_id, parent_ao_type, street_name
-                yield res
-                res = cur.fetchone()
-
-
-class FiasRecursiveAddressModel(models.Model):
-    parent_ao = models.ForeignKey(
-        'self', verbose_name=_('Parent AO'),
-        on_delete=models.SET_DEFAULT,
-        null=True,
-        blank=True,
-        default=None
-    )
-    title = models.CharField(_('Title'), max_length=128)
-    ao_level = models.IntegerField(_('AO Level'), choices=AddressFIASLevelChoices)
-    ao_type = models.IntegerField(
-        _('AO Type'),
-        choices=ao_type_choices
-    )
-    locality = models.OneToOneField(
-        to=LocalityModel,
-        on_delete=models.deletion.CASCADE,
-        null=True, blank=True, default=None
-    )
-
-    objects = FiasRecursiveAddressModelManager()
-
-    def __str__(self):
-        return self.title
-
-    class Meta:
-        db_table = 'sorm_address'

@@ -15,16 +15,8 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='device',
-            name='locality',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='addresses.localitymodel'),
-        ),
-        migrations.RunSQL(
-            sql="update device set locality_id = group_id;"
-        ),
-        migrations.AddField(
-            model_name='device',
-            name='street',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='addresses.streetmodel', verbose_name='Street'),
+            name='address',
+            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='addresses.addressmodel'),
         ),
         migrations.AlterField(
             model_name='device',

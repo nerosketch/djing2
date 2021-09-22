@@ -27,6 +27,6 @@ router.register("", admin_side.CustomerModelViewSet)
 
 urlpatterns = [
     path("attach_group_service/", admin_side.AttachServicesToGroups.as_view()),
-    path("locations/", admin_side.CustomersLocationsListAPIView.as_view()),
+    path("addresses/", admin_side.CustomersAddressesListAPIView.as_view()),
     path("", include(router.urls)),
 ]

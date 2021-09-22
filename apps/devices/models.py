@@ -13,8 +13,6 @@ from devices.device_config.base import (
     Vlans,
     Macs,
     DeviceConfigurationError,
-    DeviceImplementationError,
-    Vlan,
     OptionalScriptCallResult,
 )
 from devices.device_config.base_device_strategy import BaseDeviceStrategyContext
@@ -22,10 +20,11 @@ from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyCo
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
 from groupapp.models import Group
 from networks.models import VlanIf
-from addresses.models import StreetModel, LocalityModel
+from addresses.interfaces import IAddressContaining
+from addresses.models import AddressModel
 
 
-class Device(BaseAbstractModel):
+class Device(IAddressContaining, BaseAbstractModel):
     ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     mac_addr = MACAddressField(verbose_name=_("Mac address"), unique=True)
     comment = models.CharField(_("Comment"), max_length=256)
@@ -70,13 +69,11 @@ class Device(BaseAbstractModel):
         default=datetime.now,
     )
 
-    locality = models.ForeignKey(
-        LocalityModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
-    )
-    street = models.ForeignKey(
-       StreetModel, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
+    address = models.ForeignKey(
+        AddressModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
     )
 
+    # deprecated
     place = models.CharField(
         _("Device place address"),
         max_length=256,
@@ -98,8 +95,8 @@ class Device(BaseAbstractModel):
             ("can_apply_onu_config", _("Can apply onu config")),
         ]
 
-    def get_full_address(self):
-        return ' '.join(str(e) for e in [self.locality, self.street, self.place] if e)
+    def get_address(self):
+        return self.address
 
     # def get_manager_klass(self):
     #     try:

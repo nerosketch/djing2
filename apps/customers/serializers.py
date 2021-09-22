@@ -9,7 +9,7 @@ from django.utils.translation import gettext as _
 from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
 
-from addresses.serializers import LocalityModelSerializer
+from addresses.serializers import AddressModelSerializer
 from customers import models
 from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
@@ -66,8 +66,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     is_active = serializers.BooleanField(initial=True)
     full_name = serializers.CharField(source="get_full_name", read_only=True)
     group_title = serializers.CharField(source="group.title", read_only=True)
-    locality_title = serializers.CharField(source='locality.title', read_only=True)
-    street_name = serializers.CharField(source="street.name", read_only=True)
+    address_title = serializers.CharField(source='get_address', read_only=True)
     gateway_title = serializers.CharField(source="gateway.title", read_only=True)
     device_comment = serializers.CharField(source="device.comment", read_only=True)
     last_connected_service_title = serializers.CharField(source="last_connected_service.title", read_only=True)
@@ -146,10 +145,10 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         ]
 
 
-class CustomerLocationSerializer(LocalityModelSerializer):
+class CustomerAddressModelSerializer(AddressModelSerializer):
     usercount = serializers.IntegerField(read_only=True)
 
-    class Meta(LocalityModelSerializer.Meta):
+    class Meta(AddressModelSerializer.Meta):
         exclude = None
         fields = ("id", "title", "usercount")
 

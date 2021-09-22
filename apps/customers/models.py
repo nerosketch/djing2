@@ -10,6 +10,7 @@ from django.db import connection, models, transaction
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
+from addresses.interfaces import IAddressContaining
 from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked
 from djing2.models import BaseAbstractModel
 from dynamicfields.models import AbstractDynamicFieldContentModel
@@ -17,7 +18,7 @@ from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.custom_logic import SERVICE_CHOICES
 from services.models import OneShotPay, PeriodicPay, Service
-from addresses.models import StreetModel, LocalityModel
+from addresses.models import AddressModel
 
 from . import custom_signals
 
@@ -414,25 +415,25 @@ class CustomerManager(MyUserManager):
                     )
 
 
-class Customer(BaseAccount):
+class Customer(IAddressContaining, BaseAccount):
     current_service = models.OneToOneField(
         CustomerService, null=True, blank=True, on_delete=models.SET_NULL, default=None
     )
     group = models.ForeignKey(
         Group, on_delete=models.SET_NULL, blank=True, null=True, default=None, verbose_name=_("Customer group")
     )
-    locality = models.ForeignKey(
-        LocalityModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
+    address = models.ForeignKey(
+        AddressModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
     )
     balance = models.FloatField(default=0.0)
 
     # ip_address deprecated, marked for remove
     # ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
-    street = models.ForeignKey(
-       StreetModel, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
-    )
+
+    # deprecated
     house = models.CharField(_("House"), max_length=12, null=True, blank=True, default=None)
+
     device = models.ForeignKey("devices.Device", null=True, blank=True, default=None, on_delete=models.SET_NULL)
     dev_port = models.ForeignKey("devices.Port", null=True, blank=True, default=None, on_delete=models.SET_NULL)
     is_dynamic_ip = models.BooleanField(_("Is dynamic ip"), default=False)
@@ -502,6 +503,9 @@ class Customer(BaseAccount):
             comment=re.sub(r"\W{1,128}", " ", comment),
         )
         self.balance += cost
+
+    def get_address(self):
+        return self.address
 
     def pick_service(
         self, service, author: Optional[UserProfile], comment=None, deadline=None, allow_negative=False

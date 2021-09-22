@@ -1,14 +1,8 @@
 from djing2.lib.mixins import BaseCustomModelSerializer
-from addresses.models import LocalityModel, StreetModel
+from addresses.models import AddressModel
 
 
-class LocalityModelSerializer(BaseCustomModelSerializer):
+class AddressModelSerializer(BaseCustomModelSerializer):
     class Meta:
-        model = LocalityModel
-        fields = '__all__'
-
-
-class StreetModelSerializer(BaseCustomModelSerializer):
-    class Meta:
-        model = StreetModel
+        model = AddressModel
         fields = '__all__'
