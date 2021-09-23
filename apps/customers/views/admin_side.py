@@ -51,12 +51,12 @@ class CustomerLogModelViewSet(DjingModelViewSet):
 
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = models.Customer.objects.select_related(
-        "current_service", "current_service__service", "gateway", "street"
+        "current_service", "current_service__service", "gateway"
     )
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ("username", "fio", "telephone", "description")
-    filterset_fields = ("group", "device", "dev_port", "current_service__service")
+    filterset_fields = ("group", "device", "dev_port", "current_service__service", "address")
     ordering_fields = ("username", "fio", "house", "balance", "current_service__service__title")
 
     def get_queryset(self):

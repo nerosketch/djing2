@@ -3,6 +3,7 @@
 from django.db import migrations, models
 
 from addresses.interfaces import IAddressObject
+from djing2.lib.for_migrations import read_all_file
 from djing2.models import BaseAbstractModelMixin
 
 
@@ -41,4 +42,7 @@ class Migration(migrations.Migration):
             },
             bases=(IAddressObject, BaseAbstractModelMixin, models.Model),
         ),
+        migrations.RunSQL(
+            sql=read_all_file('0001_initial.sql', __file__)
+        )
     ]

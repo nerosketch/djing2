@@ -38,4 +38,7 @@ class Migration(migrations.Migration):
             name='create_time',
             field=models.DateTimeField(default=datetime.datetime.now, verbose_name='Create time'),
         ),
+        migrations.RunSQL(
+            sql="UPDATE device SET address_id = group_id;"
+        )
     ]
