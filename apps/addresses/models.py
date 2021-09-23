@@ -57,7 +57,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
     objects = AddressModelQuerySet.as_manager()
 
     def is_street(self):
-        return self.ao_type == AddressModelTypes.STREET
+        return self.address_type == AddressModelTypes.STREET
 
     def is_locality(self):
         return self.address_type == AddressModelTypes.LOCALITY
