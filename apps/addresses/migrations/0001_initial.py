@@ -31,14 +31,14 @@ class Migration(migrations.Migration):
                 )),
                 ('address_type', models.PositiveSmallIntegerField(
                     verbose_name='Address type',
-                    choices=((0, 'Choices'), (4, 'Locality'), (9, 'Street'), (12, 'House'), (16, 'Building')),
+                    choices=[(0, 'Unknown'), (4, 'Locality'), (8, 'Street')],
                     default=0
                 )),
                 ('title', models.CharField('Title', max_length=128)),
             ],
             options={
                 'db_table': 'addresses',
-                'unique_together': ('parent_addr', 'address_type', 'title')
+                'unique_together': {('parent_addr', 'address_type', 'title')}
             },
             bases=(IAddressObject, BaseAbstractModelMixin, models.Model),
         ),

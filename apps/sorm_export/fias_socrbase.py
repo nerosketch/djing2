@@ -456,22 +456,6 @@ class IAddressFIASType:
     addr_short_name: str = ''
     addr_name: str = ''
 
-    @staticmethod
-    def street_ids():
-        return 6576, 729, 762, 9129
-
-    @staticmethod
-    def locality_ids():
-        return 111, 112, 401, 402, 403, 404, 405, 410, 414, 417, 418, 419
-
-    @property
-    def is_street(self) -> bool:
-        return self.addr_id in self.street_ids()
-
-    @property
-    def is_locality(self):
-        return self.addr_id in self.locality_ids()
-
 
 class AddressFIASInfo:
     @staticmethod
