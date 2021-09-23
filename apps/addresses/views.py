@@ -9,7 +9,7 @@ from addresses.serializers import AddressModelSerializer
 class AddressModelViewSet(DjingModelViewSet):
     queryset = AddressModel.objects.order_by('title')
     serializer_class = AddressModelSerializer
-    filterset_fields = ['address_type']
+    filterset_fields = ['address_type', 'parent_addr']
 
     @action(methods=['get'], detail=False)
     def get_addr_types(self, request):
