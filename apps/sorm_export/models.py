@@ -1,6 +1,6 @@
 from django.utils.translation import gettext as _
 from django.db.models import JSONField
-from django.db import models
+from django.db import models, connection
 from addresses.models import AddressModel
 from .fias_socrbase import AddressFIASInfo
 
@@ -90,7 +90,21 @@ class Choice4BooleanField(models.TextChoices):
     NO = '0'
 
 
-class FiasRecursiveAddressModelManager(models.Manager):
+AddressFIASLevelChoices = tuple((l, "Level %d" % l) for l in AddressFIASInfo.get_levels())
+
+
+class FiasRecursiveAddressModel(AddressModel):
+    fias_address_level = models.IntegerField(
+        _('Address Level'),
+        choices=AddressFIASLevelChoices,
+        default=0
+    )
+    fias_address_type = models.IntegerField(
+        _('FIAS address type'),
+        choices=AddressFIASInfo.get_address_type_choices(),
+        default=0
+    )
+
     @staticmethod
     def get_streets_as_addr_objects():
         with connection.cursor() as cur:
@@ -107,17 +121,6 @@ class FiasRecursiveAddressModelManager(models.Manager):
                 # res: street_id, parent_ao_id, parent_ao_type, street_name
                 yield res
                 res = cur.fetchone()
-
-
-class FiasRecursiveAddressModel(AddressModel):
-    fias_address_level = models.IntegerField(_('Address Level'),
-                                             choices=((l, "Level %d" % l) for l in AddressFIASInfo.get_levels()))
-    fias_address_type = models.IntegerField(
-        _('FIAS address type'),
-        choices=AddressFIASInfo.get_address_type_choices()
-    )
-
-    objects = FiasRecursiveAddressModelManager()
 
     def __str__(self):
         return self.title
