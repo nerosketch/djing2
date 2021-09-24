@@ -68,6 +68,18 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             ),
         )
 
+    def filter_queryset(self, queryset, *args, **kwargs):
+        address = safe_int(self.request.query_params.get('address'))
+        page = safe_int(self.request.query_params.get('page'), default=None)
+        page_size = safe_int(self.request.query_params.get('page_size'), default=None)
+        if not address:
+            return Response('address param required')
+        return models.Customer.objects.filter_customers_by_addr(
+            addr_id=address,
+            offset=page-1 if page else None,
+            limit=page_size
+        )
+
     def perform_create(self, serializer, *args, **kwargs):
         customer_instance = super().perform_create(serializer=serializer, sites=[self.request.site])
         if customer_instance is not None:
@@ -370,7 +382,9 @@ class CustomersAddressesListAPIView(DjingListAPIView):
     # ordering_fields = ('title', 'usercount')
 
     def get_queryset(self):
-        qs = get_objects_for_user(self.request.user, perms="addresses.view_addressmodel", klass=AddressModel).order_by("title")
+        qs = get_objects_for_user(self.request.user, perms="addresses.view_addressmodel", klass=AddressModel)\
+            .order_by("title")\
+            .filter_localities()
         if self.request.user.is_superuser:
             return qs.annotate(usercount=Count("customer"))
         return qs.filter(sites__in=[self.request.site]).annotate(
