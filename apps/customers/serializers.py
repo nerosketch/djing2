@@ -67,10 +67,10 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     full_name = serializers.CharField(source="get_full_name", read_only=True)
     group_title = serializers.CharField(source="group.title", read_only=True)
     address_title = serializers.CharField(source='get_address', read_only=True)
-    gateway_title = serializers.CharField(source="gateway.title", read_only=True)
+    # gateway_title = serializers.CharField(source="gateway.title", read_only=True)
     device_comment = serializers.CharField(source="device.comment", read_only=True)
     last_connected_service_title = serializers.CharField(source="last_connected_service.title", read_only=True)
-    current_service__service__title = serializers.CharField(source="current_service.service.title", read_only=True)
+    current_service_title = serializers.CharField(source="current_service.service.title", read_only=True)
     service_id = serializers.IntegerField(source="current_service.service.id", read_only=True)
     password = serializers.CharField(
         write_only=True, required=False, initial=generate_random_password, validators=[validators.integer_validator]

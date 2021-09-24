@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.db import models
 from django.contrib.sites.models import Site
 from django.utils.translation import gettext as _
@@ -14,8 +16,14 @@ class AddressModelTypes(models.IntegerChoices):
 
 
 class AddressModelQuerySet(models.QuerySet):
-    def filter_streets(self):
-        return self.filter(address_type=AddressModelTypes.STREET)
+    def filter_streets(self, locality_id: Optional[int] = None):
+        qs = self.filter(address_type=AddressModelTypes.STREET)
+        if locality_id is not None:
+            return qs.filter(
+                parent_addr__address_type=AddressModelTypes.LOCALITY,
+                parent_addr__id=locality_id
+            )
+        return qs
 
     def filter_localities(self):
         return self.filter(address_type=AddressModelTypes.LOCALITY)
