@@ -18,7 +18,7 @@ from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.custom_logic import SERVICE_CHOICES
 from services.models import OneShotPay, PeriodicPay, Service
-from addresses.models import AddressModel
+from addresses.models import AddressModel, AddressModelTypes
 
 from . import custom_signals
 
@@ -413,6 +413,36 @@ class CustomerManager(MyUserManager):
                     custom_signals.customer_service_post_stop.send(
                         sender=CustomerService, expired_service=expired_service
                     )
+
+    def filter_customers_by_addr(self, addr_id: int, offset: int = 0, limit: int = 60,
+                                 addr_type: AddressModelTypes = AddressModelTypes.LOCALITY):
+        # TODO: Optimize it.
+        # -- Получить всех абонентов для населённого пункта.
+        # Get all customers in specified location by their address_id.
+        query = (
+            "SELECT ba.*, cs.* "
+            "FROM customers cs "
+            "LEFT JOIN addresses adr ON adr.id = ("
+                "WITH RECURSIVE chain(id, parent_addr_id, title, address_type) AS ("
+                    "SELECT id, parent_addr_id, title, address_type from addresses where id=cs.address_id "
+                    "UNION "
+                    "SELECT a.id, a.parent_addr_id, a.title, a.address_type "
+                    "FROM chain c "
+                    "LEFT JOIN addresses a ON a.id = c.parent_addr_id "
+                        "WHERE c.parent_addr_id IS NOT NULL"
+                ")"
+                "SELECT id FROM chain WHERE address_type=%s AND id=%s"
+            ")"
+            "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+            "WHERE adr.address_type IS NOT NULL AND adr.id IS NOT NULL "
+            "ORDER BY ba.fio "
+            "OFFSET %s "
+            "LIMIT %s;"
+        )
+        return self.raw(
+            raw_query=query,
+            params=[addr_type.value, addr_id, offset, limit]
+        )
 
 
 class Customer(IAddressContaining, BaseAccount):
