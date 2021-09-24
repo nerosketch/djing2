@@ -420,7 +420,8 @@ class CustomerManager(MyUserManager):
         # -- Получить всех абонентов для населённого пункта.
         # Get all customers in specified location by their address_id.
         query = (
-            "SELECT ba.*, cs.* "
+            "SELECT ba.* as baseac, cs.*, g.title as group_title, d.comment as device_comment, "
+            "s.title as current_service_title "
             "FROM customers cs "
             "LEFT JOIN addresses adr ON adr.id = ("
                 "WITH RECURSIVE chain(id, parent_addr_id, title, address_type) AS ("
@@ -434,6 +435,9 @@ class CustomerManager(MyUserManager):
                 "SELECT id FROM chain WHERE address_type=%s AND id=%s"
             ")"
             "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+            "LEFT JOIN groups g ON g.id = cs.group_id "
+            "LEFT JOIN device d ON d.id = cs.device_id "
+            "LEFT JOIN services s ON s.id = cs.current_service_id "
             "WHERE adr.address_type IS NOT NULL AND adr.id IS NOT NULL "
             "ORDER BY ba.fio "
             "OFFSET %s "
@@ -441,7 +445,7 @@ class CustomerManager(MyUserManager):
         )
         return self.raw(
             raw_query=query,
-            params=[addr_type.value, addr_id, offset, limit]
+            params=[addr_type.value, addr_id, offset, limit],
         )
 
 
