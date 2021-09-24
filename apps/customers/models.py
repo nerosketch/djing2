@@ -459,6 +459,8 @@ class Customer(BaseAccount):
         ("icon_dollar", _("Dollar")),
         ("icon_service", _("Service")),
         ("icon_mrk", _("Marker")),
+        ("icon_red_tel", _("Red phone")),
+        ("icon_green_tel", _("Green phone")),
     )
     markers = BitField(flags=MARKER_FLAGS, default=0)
 
