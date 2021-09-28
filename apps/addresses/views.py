@@ -3,8 +3,9 @@ from rest_framework.response import Response
 
 from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet
-from addresses.models import AddressModel, AddressModelTypes
+from addresses.models import AddressModel, AddressModelTypes, AddressFIASLevelChoices
 from addresses.serializers import AddressModelSerializer
+from addresses.fias_socrbase import AddressFIASInfo
 
 
 class AddressModelViewSet(DjingModelViewSet):
@@ -30,3 +31,21 @@ class AddressModelViewSet(DjingModelViewSet):
         qs = qs.filter_streets(locality_id=parent_addr)
         ser = self.get_serializer(qs, many=True)
         return Response(ser.data)
+
+    @action(methods=['get'], detail=True)
+    def get_parent(self, request, pk=None):
+        obj = self.get_object()
+        parent = obj.parent_ao
+        if not parent:
+            return Response()
+        serializer = self.get_serializer(obj)
+        return Response(serializer.data)
+
+    @action(methods=['get'], detail=False)
+    def get_ao_levels(self, request):
+        return Response(AddressFIASLevelChoices)
+
+    @action(methods=['get'], detail=False)
+    def get_ao_types(self, request):
+        level = request.query_params.get('level')
+        return Response(AddressFIASInfo.get_ao_types(level=level))

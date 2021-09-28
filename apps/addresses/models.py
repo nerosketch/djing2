@@ -5,6 +5,7 @@ from django.contrib.sites.models import Site
 from django.utils.translation import gettext as _
 from djing2.models import BaseAbstractModel
 from .interfaces import IAddressObject
+from .fias_socrbase import AddressFIASInfo
 
 
 class AddressModelTypes(models.IntegerChoices):
@@ -46,6 +47,9 @@ class AddressModelQuerySet(models.QuerySet):
         )
 
 
+AddressFIASLevelChoices = tuple((level, "Level %d" % level) for level in AddressFIASInfo.get_levels())
+
+
 class AddressModel(IAddressObject, BaseAbstractModel):
     parent_addr = models.ForeignKey(
         'self', verbose_name=_('Parent address'),
@@ -60,6 +64,17 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         default=AddressModelTypes.UNKNOWN
     )
 
+    fias_address_level = models.IntegerField(
+        _('Address Level'),
+        choices=AddressFIASLevelChoices,
+        default=0
+    )
+    fias_address_type = models.IntegerField(
+        _('FIAS address type'),
+        choices=AddressFIASInfo.get_address_type_choices(),
+        default=0
+    )
+
     title = models.CharField(_('Title'), max_length=128)
 
     objects = AddressModelQuerySet.as_manager()
@@ -72,6 +87,23 @@ class AddressModel(IAddressObject, BaseAbstractModel):
 
     def str_representation(self):
         return self.title
+
+    # @staticmethod
+    # def get_streets_as_addr_objects():
+    #     with connection.cursor() as cur:
+    #         cur.execute(
+    #             "SELECT cs.id AS street_id,"
+    #             "sa.id        AS parent_ao_id,"
+    #             "sa.ao_type   AS parent_ao_type,"
+    #             "cs.name      AS street_name "
+    #             "FROM locality_street cs "
+    #             "JOIN sorm_address sa ON cs.locality_id = sa.locality_id;"
+    #         )
+    #         res = cur.fetchone()
+    #         while res is not None:
+    #             # res: street_id, parent_ao_id, parent_ao_type, street_name
+    #             yield res
+    #             res = cur.fetchone()
 
     class Meta:
         db_table = 'addresses'
