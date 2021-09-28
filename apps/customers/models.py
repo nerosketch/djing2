@@ -7,7 +7,6 @@ from bitfield import BitField
 from django.conf import settings
 from django.core import validators
 from django.db import connection, models, transaction
-from django.db.models.expressions import RawSQL
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
@@ -20,7 +19,7 @@ from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.custom_logic import SERVICE_CHOICES
 from services.models import OneShotPay, PeriodicPay, Service
-from addresses.models import AddressModel, AddressModelTypes
+from addresses.models import AddressModel
 
 from . import custom_signals
 
@@ -233,21 +232,7 @@ class CustomerQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
         # Получить всех абонентов для населённого пункта.
         # Get all customers in specified location by their address_id.
 
-        query = (
-            "WITH RECURSIVE chain(id, parent_addr_id) AS ("
-                "SELECT id, parent_addr_id "
-                "FROM addresses "
-                "WHERE id = %s "
-                "UNION "
-                "SELECT a.id, a.parent_addr_id "
-                "FROM chain c "
-                     "LEFT JOIN addresses a ON a.parent_addr_id = c.id"
-            ")"
-            "SELECT id "
-            "FROM chain "
-            "WHERE id IS NOT NULL"
-        )
-        addr_ids_raw_query = RawSQL(sql=query, params=[addr_id])
+        addr_ids_raw_query = AddressModel.objects.get_address_recursive_ids(addr_id=addr_id)
         return self.remove_filter('address_id').filter(address_id__in=addr_ids_raw_query)
 
 

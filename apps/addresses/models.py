@@ -47,6 +47,24 @@ class AddressModelQuerySet(models.QuerySet):
         )
 
 
+class AddressModelManager(models.Manager):
+    @staticmethod
+    def get_address_recursive_ids(addr_id: int):
+        query = (
+            "WITH RECURSIVE chain(id, parent_addr_id) AS ("
+                "SELECT id, parent_addr_id "
+                "FROM addresses "
+                "WHERE id = %s "
+                "UNION "
+                "SELECT a.id, a.parent_addr_id "
+                "FROM chain c "
+                "LEFT JOIN addresses a ON a.parent_addr_id = c.id"
+            ")"
+            "SELECT id FROM chain WHERE id IS NOT NULL"
+        )
+        return models.expressions.RawSQL(sql=query, params=[addr_id])
+
+
 AddressFIASLevelChoices = tuple((level, "Level %d" % level) for level in AddressFIASInfo.get_levels())
 
 
@@ -77,7 +95,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
 
     title = models.CharField(_('Title'), max_length=128)
 
-    objects = AddressModelQuerySet.as_manager()
+    objects = AddressModelManager.from_queryset(AddressModelQuerySet)()
 
     def is_street(self):
         return self.address_type == AddressModelTypes.STREET
