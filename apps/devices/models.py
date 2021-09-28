@@ -7,6 +7,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import MyChoicesAdapter
+from djing2.lib.mixins import RemoveFilterQuerySetMixin
 from djing2.models import BaseAbstractModel
 from devices.device_config.device_type_collection import DEVICE_TYPE_UNKNOWN, DEVICE_TYPES
 from devices.device_config.base import (
@@ -22,6 +23,15 @@ from groupapp.models import Group
 from networks.models import VlanIf
 from addresses.interfaces import IAddressContaining
 from addresses.models import AddressModel
+
+
+class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
+    def filter_devices_by_addr(self, addr_id: int):
+        # Получить все устройства для населённого пункта.
+        # Get all devices in specified location by their address_id.
+
+        addr_ids_raw_query = AddressModel.objects.get_address_recursive_ids(addr_id=addr_id)
+        return self.remove_filter('address_id').filter(address_id__in=addr_ids_raw_query)
 
 
 class Device(IAddressContaining, BaseAbstractModel):
@@ -83,6 +93,8 @@ class Device(IAddressContaining, BaseAbstractModel):
     )
 
     sites = models.ManyToManyField(Site, blank=True)
+
+    objects = DeviceModelQuerySet.as_manager()
 
     class Meta:
         db_table = "device"

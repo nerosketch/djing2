@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from devices import serializers as dev_serializers
 from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
-from devices.models import Device, Port, PortVlanMemberModel
+from devices.models import Device, Port, PortVlanMemberModel, DeviceModelQuerySet
 from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
@@ -58,14 +58,7 @@ def catch_dev_manager_err(fn):
     return _wrapper
 
 
-class DevicePONViewSet(DjingModelViewSet):
-    queryset = Device.objects.select_related("parent_dev")
-    serializer_class = dev_serializers.DevicePONModelSerializer
-    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
-    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend]
-    search_fields = ("comment", "ip_address", "mac_addr")
-    ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
+class FilterQuerySetMixin:
     def get_queryset(self):
         qs = super().get_queryset()
         if self.request.user.is_superuser:
@@ -73,6 +66,26 @@ class DevicePONViewSet(DjingModelViewSet):
         # TODO: May optimize
         grps = get_objects_for_user(user=self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
         return qs.filter(group__in=grps)
+
+    def filter_queryset(self, queryset: DeviceModelQuerySet):
+        queryset = super().filter_queryset(queryset=queryset)
+
+        address = safe_int(self.request.query_params.get('address'))
+        if address > 0:
+            return queryset.filter_devices_by_addr(
+                addr_id=address,
+            )
+
+        return queryset
+
+
+class DevicePONViewSet(FilterQuerySetMixin, DjingModelViewSet):
+    queryset = Device.objects.select_related("parent_dev")
+    serializer_class = dev_serializers.DevicePONModelSerializer
+    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
+    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend]
+    search_fields = ("comment", "ip_address", "mac_addr")
+    ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -255,21 +268,13 @@ class DevicePONViewSet(DjingModelViewSet):
             return Response(())
 
 
-class DeviceModelViewSet(DjingModelViewSet):
+class DeviceModelViewSet(FilterQuerySetMixin, DjingModelViewSet):
     queryset = Device.objects.select_related("parent_dev")
     serializer_class = dev_serializers.DeviceModelSerializer
     filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
     filter_backends = (CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend)
     search_fields = ("comment", "ip_address", "mac_addr")
     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if self.request.user.is_superuser:
-            return qs
-        # TODO: May optimize
-        grps = get_objects_for_user(user=self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
-        return qs.filter(group__in=grps)
 
     def perform_create(self, serializer, *args, **kwargs):
         device_instance = super().perform_create(serializer=serializer, sites=[self.request.site])
@@ -478,20 +483,3 @@ class PortVlanMemberModelViewSet(DjingModelViewSet):
     queryset = PortVlanMemberModel.objects.all()
     serializer_class = dev_serializers.PortVlanMemberModelSerializer
     filterset_fields = ("vlanif", "port")
-
-
-class DeviceAddressesList(DjingListAPIView):
-    serializer_class = dev_serializers.DeviceAddressModelSerializer
-    filter_backends = (
-        CustomObjectPermissionsFilter,
-        OrderingFilter,
-    )
-    ordering_fields = ["title"]
-
-    def get_queryset(self):
-        qs = get_objects_for_user(self.request.user, perms="addresses.view_addressmodel", klass=AddressModel).order_by("title")
-        qs = qs.annotate(device_count=Count("device"))
-        if self.request.user.is_superuser:
-            return qs
-        return qs.filter(sites__in=[self.request.site])
-

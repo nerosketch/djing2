@@ -5,7 +5,6 @@ from django.utils.translation import gettext_lazy as _
 
 from devices.models import Device, Port, PortVlanMemberModel
 from djing2.lib.mixins import BaseCustomModelSerializer
-from addresses.models import AddressModel
 
 
 class AttachedUserSerializer(serializers.Serializer):
@@ -52,14 +51,6 @@ class PortModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = Port
         fields = ("id", "device", "num", "descr", "user_count")
-
-
-class DeviceAddressModelSerializer(BaseCustomModelSerializer):
-    device_count = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = AddressModel
-        fields = ("id", "title", "device_count")
 
 
 class PortVlanMemberModelSerializer(BaseCustomModelSerializer):

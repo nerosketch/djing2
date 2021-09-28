@@ -67,7 +67,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             ),
         )
 
-    def filter_queryset(self, queryset: CustomerQuerySet, *args, **kwargs):
+    def filter_queryset(self, queryset: CustomerQuerySet):
         queryset = super().filter_queryset(queryset=queryset)
 
         street = safe_int(self.request.query_params.get('street'))
