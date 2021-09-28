@@ -16,6 +16,7 @@ from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 
 from customers import models, serializers
+from customers.models import CustomerQuerySet
 from customers.views.view_decorators import catch_customers_errs
 from djing2.lib import safe_float, safe_int
 from djing2.lib.filters import CustomObjectPermissionsFilter
@@ -66,8 +67,9 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             ),
         )
 
-    def filter_queryset(self, queryset, *args, **kwargs):
+    def filter_queryset(self, queryset: CustomerQuerySet, *args, **kwargs):
         address = safe_int(self.request.query_params.get('address'))
+        queryset = super().filter_queryset(queryset=queryset)
         if address is not None and address > 0:
             return queryset.filter_customers_by_addr(
                 addr_id=address,

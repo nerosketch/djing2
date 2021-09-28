@@ -13,6 +13,7 @@ from encrypted_model_fields.fields import EncryptedCharField
 
 from addresses.interfaces import IAddressContaining
 from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked
+from djing2.lib.mixins import RemoveFilterQuerySetMixin
 from djing2.models import BaseAbstractModel
 from dynamicfields.models import AbstractDynamicFieldContentModel
 from groupapp.models import Group
@@ -227,7 +228,7 @@ class CustomerLog(BaseAbstractModel):
         return self.comment
 
 
-class CustomerQuerySet(models.QuerySet):
+class CustomerQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
     def filter_customers_by_addr(self, addr_id: int):
         # Получить всех абонентов для населённого пункта.
         # Get all customers in specified location by their address_id.
@@ -236,20 +237,18 @@ class CustomerQuerySet(models.QuerySet):
             "WITH RECURSIVE chain(id, parent_addr_id) AS ("
                 "SELECT id, parent_addr_id "
                 "FROM addresses "
-                "where id = %s "
-
+                "WHERE id = %s "
                 "UNION "
-
                 "SELECT a.id, a.parent_addr_id "
                 "FROM chain c "
-                     "LEFT JOIN addresses a ON a.parent_addr_id = c.id "
+                     "LEFT JOIN addresses a ON a.parent_addr_id = c.id"
             ")"
             "SELECT id "
             "FROM chain "
             "WHERE id IS NOT NULL"
         )
         addr_ids_raw_query = RawSQL(sql=query, params=[addr_id])
-        return self.filter(address_id__in=addr_ids_raw_query)
+        return self.remove_filter('address_id').filter(address_id__in=addr_ids_raw_query)
 
 
 class CustomerManager(MyUserManager):
