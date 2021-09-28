@@ -376,22 +376,6 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         })
 
 
-class CustomersAddressesListAPIView(DjingListAPIView):
-    serializer_class = serializers.CustomerAddressModelSerializer
-    # filter_backends = (OrderingFilter,)
-    # ordering_fields = ('title', 'usercount')
-
-    def get_queryset(self):
-        qs = get_objects_for_user(self.request.user, perms="addresses.view_addressmodel", klass=AddressModel)\
-            .order_by("title")\
-            .filter_localities()
-        if self.request.user.is_superuser:
-            return qs.annotate(usercount=Count("customer"))
-        return qs.filter(sites__in=[self.request.site]).annotate(
-            usercount=Count("customer", filter=Q(customer__sites__in=[self.request.site]))
-        )
-
-
 class InvoiceForPaymentModelViewSet(DjingModelViewSet):
     queryset = models.InvoiceForPayment.objects.select_related("customer", "author")
     serializer_class = serializers.InvoiceForPaymentModelSerializer

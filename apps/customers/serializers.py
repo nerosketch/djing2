@@ -145,14 +145,6 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         ]
 
 
-class CustomerAddressModelSerializer(AddressModelSerializer):
-    usercount = serializers.IntegerField(read_only=True)
-
-    class Meta(AddressModelSerializer.Meta):
-        exclude = None
-        fields = ("id", "title", "usercount")
-
-
 class PassportInfoModelSerializer(BaseCustomModelSerializer):
     @staticmethod
     def validate_date_of_acceptance(value):
