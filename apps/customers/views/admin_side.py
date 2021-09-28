@@ -68,12 +68,20 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         )
 
     def filter_queryset(self, queryset: CustomerQuerySet, *args, **kwargs):
-        address = safe_int(self.request.query_params.get('address'))
         queryset = super().filter_queryset(queryset=queryset)
-        if address is not None and address > 0:
+
+        street = safe_int(self.request.query_params.get('street'))
+        if street > 0:
+            return queryset.filter_customers_by_addr(
+                addr_id=street,
+            )
+
+        address = safe_int(self.request.query_params.get('address'))
+        if address > 0:
             return queryset.filter_customers_by_addr(
                 addr_id=address,
             )
+
         return queryset
 
     def perform_create(self, serializer, *args, **kwargs):

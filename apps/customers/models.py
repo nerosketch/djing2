@@ -714,7 +714,7 @@ class Customer(IAddressContaining, BaseAccount):
 
     @property
     def full_address(self):
-        return f"{self.group}. {self.street} {self.house}"
+        return str(self.get_address())
 
     @staticmethod
     def set_service_group_accessory(group, wanted_service_ids: list, request):
