@@ -20,12 +20,17 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             # Attach customers to address streets
             sql=(
-                "UPDATE customers SET address_id = adrs.id "
-                "from addresses adrs "
-                "left join customer_street cs on group_id = adrs.parent_addr_id "
-                "WHERE adrs.parent_addr_id = customers.group_id "
-                "  AND adrs.title = cs.name "
-                "  AND adrs.address_type = 8;"
+                "UPDATE customers "
+                "SET address_id = ("
+                    "SELECT adrs.id "
+                        "FROM customers c "
+                            "LEFT JOIN customer_street cs ON cs.id = c.street_id "
+                             "LEFT JOIN addresses adrs ON ("
+                                 "adrs.parent_addr_id = cs.group_id "
+                                 "AND adrs.title = cs.name"
+                             ") "
+                            "WHERE c.baseaccount_ptr_id = customers.baseaccount_ptr_id"
+                    ")"
             )
         ),
         migrations.RemoveField(

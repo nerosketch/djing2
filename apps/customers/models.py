@@ -7,6 +7,7 @@ from bitfield import BitField
 from django.conf import settings
 from django.core import validators
 from django.db import connection, models, transaction
+from django.db.models.expressions import RawSQL
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
@@ -226,6 +227,31 @@ class CustomerLog(BaseAbstractModel):
         return self.comment
 
 
+class CustomerQuerySet(models.QuerySet):
+    def filter_customers_by_addr(self, addr_id: int):
+        # Получить всех абонентов для населённого пункта.
+        # Get all customers in specified location by their address_id.
+
+        query = (
+            "WITH RECURSIVE chain(id, parent_addr_id) AS ("
+                "SELECT id, parent_addr_id "
+                "FROM addresses "
+                "where id = %s "
+
+                "UNION "
+
+                "SELECT a.id, a.parent_addr_id "
+                "FROM chain c "
+                     "LEFT JOIN addresses a ON a.parent_addr_id = c.id "
+            ")"
+            "SELECT id "
+            "FROM chain "
+            "WHERE id IS NOT NULL"
+        )
+        addr_ids_raw_query = RawSQL(sql=query, params=[addr_id])
+        return self.filter(address_id__in=addr_ids_raw_query)
+
+
 class CustomerManager(MyUserManager):
     def get_queryset(self):
         return super().get_queryset().filter(is_admin=False)
@@ -414,40 +440,6 @@ class CustomerManager(MyUserManager):
                         sender=CustomerService, expired_service=expired_service
                     )
 
-    def filter_customers_by_addr(self, addr_id: int, offset: int = 0, limit: int = 60,
-                                 addr_type: AddressModelTypes = AddressModelTypes.LOCALITY):
-        # TODO: Optimize it.
-        # -- Получить всех абонентов для населённого пункта.
-        # Get all customers in specified location by their address_id.
-        query = (
-            "SELECT ba.* as baseac, cs.*, g.title as group_title, d.comment as device_comment, "
-            "s.title as current_service_title "
-            "FROM customers cs "
-            "LEFT JOIN addresses adr ON adr.id = ("
-                "WITH RECURSIVE chain(id, parent_addr_id, title, address_type) AS ("
-                    "SELECT id, parent_addr_id, title, address_type from addresses where id=cs.address_id "
-                    "UNION "
-                    "SELECT a.id, a.parent_addr_id, a.title, a.address_type "
-                    "FROM chain c "
-                    "LEFT JOIN addresses a ON a.id = c.parent_addr_id "
-                        "WHERE c.parent_addr_id IS NOT NULL"
-                ")"
-                "SELECT id FROM chain WHERE address_type=%s AND id=%s"
-            ")"
-            "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
-            "LEFT JOIN groups g ON g.id = cs.group_id "
-            "LEFT JOIN device d ON d.id = cs.device_id "
-            "LEFT JOIN services s ON s.id = cs.current_service_id "
-            "WHERE adr.address_type IS NOT NULL AND adr.id IS NOT NULL "
-            "ORDER BY ba.fio "
-            "OFFSET %s "
-            "LIMIT %s;"
-        )
-        return self.raw(
-            raw_query=query,
-            params=[addr_type.value, addr_id, offset, limit],
-        )
-
 
 class Customer(IAddressContaining, BaseAccount):
     current_service = models.OneToOneField(
@@ -502,7 +494,7 @@ class Customer(IAddressContaining, BaseAccount):
     )
     markers = BitField(flags=MARKER_FLAGS, default=0)
 
-    objects = CustomerManager()
+    objects = CustomerManager.from_queryset(CustomerQuerySet)()
 
     def get_flag_icons(self) -> tuple:
         """

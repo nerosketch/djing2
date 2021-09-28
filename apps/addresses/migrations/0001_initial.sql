@@ -1,5 +1,6 @@
 -- Copy groups into addresses
-INSERT INTO addresses (id, address_type, fias_address_level, fias_address_type, title) SELECT id, 4, 0, 0, title from groups;
+INSERT INTO addresses (id, address_type, fias_address_level, fias_address_type, title)
+SELECT id, 4, 0, 0, title from groups;
 SELECT setval('addresses_id_seq', (SELECT max(id) as mid from addresses));
 
 -- Attach customers to addresses

@@ -5,7 +5,6 @@ from django.db.models import Count, Q, Sum
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
-from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
@@ -16,13 +15,12 @@ from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 
-from addresses.models import AddressModel
 from customers import models, serializers
 from customers.views.view_decorators import catch_customers_errs
 from djing2.lib import safe_float, safe_int
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.mixins import SitesFilterMixin
-from djing2.viewsets import DjingListAPIView, DjingModelViewSet
+from djing2.viewsets import DjingModelViewSet
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 from groupapp.models import Group
 from profiles.models import UserProfileLogActionType
@@ -70,15 +68,11 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
     def filter_queryset(self, queryset, *args, **kwargs):
         address = safe_int(self.request.query_params.get('address'))
-        page = safe_int(self.request.query_params.get('page'), default=None)
-        page_size = safe_int(self.request.query_params.get('page_size'), default=None)
-        if not address:
-            return Response('address param required')
-        return models.Customer.objects.filter_customers_by_addr(
-            addr_id=address,
-            offset=page-1 if page else None,
-            limit=page_size
-        )
+        if address is not None and address > 0:
+            return queryset.filter_customers_by_addr(
+                addr_id=address,
+            )
+        return queryset
 
     def perform_create(self, serializer, *args, **kwargs):
         customer_instance = super().perform_create(serializer=serializer, sites=[self.request.site])
