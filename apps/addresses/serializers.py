@@ -11,3 +11,10 @@ class AddressModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = AddressModel
         fields = '__all__'
+
+
+class AddressAutocompleteSearchResultSerializer(AddressModelSerializer):
+    adrcount = serializers.IntegerField(read_only=True)
+
+    class Meta(AddressModelSerializer.Meta):
+        pass
