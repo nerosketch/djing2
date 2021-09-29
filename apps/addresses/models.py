@@ -14,6 +14,7 @@ class AddressModelTypes(models.IntegerChoices):
     STREET = 8, _('Street')
     # HOUSE = 12, _('House')
     # BUILDING = 16, _('Building')
+    OTHER = 64, _('Other')
 
 
 class AddressModelQuerySet(models.QuerySet):
