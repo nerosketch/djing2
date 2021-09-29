@@ -29,6 +29,9 @@ msgstr "Населённый пункт"
 msgid "Street"
 msgstr "Улица"
 
+msgid "Other"
+msgstr "Другое"
+
 #: models.py:43
 msgid "Parent address"
 msgstr "Родительский адресный объект"
