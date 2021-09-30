@@ -22,9 +22,6 @@ _viber_cache = None
 
 
 class ViberMessengerModel(MessengerModel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     avatar = models.ImageField(_("Avatar"), upload_to="viber_avatar", null=True)
 
     def get_viber(self):
@@ -145,8 +142,7 @@ class ViberMessengerModel(MessengerModel):
 
     class Meta:
         db_table = "messengers_viber"
-        verbose_name = _("Viber messenger")
-        verbose_name_plural = _("Viber messengers")
+        verbose_name = "Viber"
         ordering = ("title",)
 
 

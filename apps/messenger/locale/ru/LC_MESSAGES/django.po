@@ -126,14 +126,6 @@ msgstr "Подписчик Telegram"
 msgid "Telegram subscribers"
 msgstr "Подписчики Telegram"
 
-#: apps/messenger/models/viber.py:135
-msgid "Viber messenger"
-msgstr "Viber мэссенджэр"
-
-#: apps/messenger/models/viber.py:136
-msgid "Viber messengers"
-msgstr "Viber мэссенджэры"
-
 #: apps/messenger/models/viber.py:148
 msgid "User unique id"
 msgstr "Уникальный id"

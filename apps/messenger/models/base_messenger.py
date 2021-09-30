@@ -67,6 +67,15 @@ class MessengerModel(BaseAbstractModel):
 
         class_map[messenger_type_name] = (unique_int, messenger_class)
 
+        print('messenger_class:', messenger_class, messenger_class.Meta().verbose_name, dir(messenger_class.Meta()),)
+        # for messenger_type_name, (uint, msg_class) in class_map.items():
+        #     print('\t#### ', messenger_type_name, uint, getattr(msg_class(), 'Meta').verbose_name)
+
+        # Update choices for NotificationProfileOptionsModel.notification_flags
+        # flags = [(messenger_type_name, uint_msg_class[1].Meta.verbose_name)
+        #          for messenger_type_name, uint_msg_class in class_map.items()]
+        # NotificationProfileOptionsModel.notification_flags.set_flags(flags=flags)
+
     @abc.abstractmethod
     def send_webhook(self):
         raise NotImplementedError
@@ -129,7 +138,7 @@ class MessengerSubscriberModel(BaseAbstractModel):
     )
 
     def send_message(self, msg_text: str):
-        pass
+        raise NotImplementedError
 
     def __str__(self):
         return self.name or "no"

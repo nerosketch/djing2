@@ -175,6 +175,7 @@ class TelegramMessengerModel(MessengerModel):
 
     class Meta:
         db_table = 'messengers_telegram'
+        verbose_name = "Telegram"
 
 
 MessengerModel.add_child_classes(
