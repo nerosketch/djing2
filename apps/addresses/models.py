@@ -5,7 +5,7 @@ from django.contrib.sites.models import Site
 from django.utils.translation import gettext as _
 from djing2.models import BaseAbstractModel
 from .interfaces import IAddressObject
-from .fias_socrbase import AddressFIASInfo
+from .fias_socrbase import AddressFIASInfo, AddressFIASLevelType
 
 
 class AddressModelTypes(models.IntegerChoices):
@@ -32,6 +32,11 @@ class AddressModelQuerySet(models.QuerySet):
 
     def filter_unknown(self):
         return self.filter(address_type=AddressModelTypes.UNKNOWN)
+
+    def filter_by_fias_level(self, level: AddressFIASLevelType):
+        addr_type_ids_gen = AddressFIASInfo.get_address_types_by_level(level=level)
+        addr_type_ids = [a.addr_id for a in addr_type_ids_gen]
+        return self.filter(fias_address_type__in=addr_type_ids)
 
     def create_street(self, **kwargs):
         del kwargs['address_type']
