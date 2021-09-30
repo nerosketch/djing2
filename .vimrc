@@ -164,6 +164,7 @@ let g:bookmark_highlight_lines = 1
 "=====================================================
 "" YouCompleteMe Settings
 "=====================================================
+nnoremap gd :YcmCompleter GoTo<CR>
 
 "=====================================================
 "" Ale Settings (Linting)
@@ -447,3 +448,9 @@ autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | NERDTr
 " autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() |
 "   \ execute :new | endif
 
+
+" Use the below highlight group when displaying bad whitespace is desired.
+highlight BadWhitespace ctermbg=red guibg=red
+
+" Make trailing whitespace be flagged as bad.
+au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
