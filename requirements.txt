@@ -58,4 +58,4 @@ pyTelegramBotAPI
 # radiusapp
 git+https://github.com/pyradius/pyrad.git#egg=pyrad
 
-drf_ujson==1.2
+drf-orjson-renderer==1.1.5
