@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
+from rest_framework.utils.encoders import JSONEncoder
 
 from devices import serializers as dev_serializers
 from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
@@ -26,7 +27,7 @@ from devices.device_config.base import (
 )
 from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
-from djing2.lib import ProcessLocked, safe_int, RuTimedelta, JSONBytesEncoder
+from djing2.lib import ProcessLocked, safe_int, RuTimedelta
 from djing2.lib.custom_signals import notification_signal
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -109,7 +110,7 @@ class DevicePONViewSet(FilterQuerySetMixin, DjingModelViewSet):
             raise DeviceImplementationError("Expected PonOLTDeviceStrategyContext instance")
 
         def chunk_cook(chunk: dict) -> bytes:
-            chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONBytesEncoder)
+            chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONEncoder)
             chunk_json = "%s\n" % chunk_json
             format_string = "{:%ds}" % chunk_max_len
             dat = format_string.format(chunk_json)
