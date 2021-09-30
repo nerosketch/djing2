@@ -3,7 +3,6 @@ from collections.abc import Iterator
 from datetime import timedelta
 from functools import wraps
 from hashlib import sha256
-from json import JSONEncoder
 from typing import Any, Union
 
 from django.conf import settings
@@ -148,10 +147,3 @@ def macbin2str(bin_mac: bytes) -> str:
     if isinstance(bin_mac, (bytes, bytearray)):
         return ":".join("%.2x" % i for i in bin_mac) if bin_mac else None
     return ":".join("%.2x" % ord(i) for i in bin_mac) if bin_mac else None
-
-
-class JSONBytesEncoder(JSONEncoder):
-    def default(self, o):
-        if isinstance(o, bytes):
-            return o.decode()
-        return o
