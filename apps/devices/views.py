@@ -11,7 +11,7 @@ from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from rest_framework.utils.encoders import JSONEncoder
 
@@ -33,7 +33,6 @@ from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
 from profiles.models import UserProfile, UserProfileLogActionType
-from addresses.models import AddressModel
 
 
 def catch_dev_manager_err(fn):
