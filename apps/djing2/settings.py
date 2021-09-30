@@ -256,9 +256,9 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAdminUser",
         # 'djing2.permissions.CustomizedDjangoObjectPermissions'
     ],
-    # 'DEFAULT_RENDERER_CLASSES': (
-    #     'rest_framework.renderers.JSONRenderer',
-    # )
+    'DEFAULT_RENDERER_CLASSES': (
+        'drf_ujson.renderers.UJSONRenderer',
+    )
 }
 
 # Guardian options
