@@ -66,7 +66,7 @@ class AddressModelManager(models.Manager):
         return models.expressions.RawSQL(sql=query, params=[addr_id])
 
 
-AddressFIASLevelChoices = tuple((level, "Level %d" % level) for level in AddressFIASInfo.get_levels())
+AddressFIASLevelChoices = tuple(AddressFIASInfo.get_levels())
 
 
 class AddressModel(IAddressObject, BaseAbstractModel):

@@ -17,7 +17,7 @@ USER user
 
 WORKDIR /var/www/djing2
 
-RUN git clone --depth=1 git://github.com/nerosketch/djing2.git -b devel /var/www/djing2
+RUN git clone --depth=1 git://github.com/nerosketch/djing2.git -b legal_customers_recursive_addr /var/www/djing2
 
 RUN pip install --no-cache-dir -r /var/www/djing2/requirements.txt
 

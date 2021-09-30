@@ -9,6 +9,5 @@ router = DefaultRouter()
 router.register('', views.AddressModelViewSet)
 
 urlpatterns = [
-    path('autocomplete/', views.AddressAutocompleteAPIView.as_view()),
     path('', include(router.urls)),
 ]
