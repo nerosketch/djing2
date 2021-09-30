@@ -56,3 +56,15 @@ class AddressModelViewSet(DjingModelViewSet):
         if not level:
             return Response('level parameter required', status=status.HTTP_400_BAD_REQUEST)
         return Response(list(asdict(a) for a in AddressFIASInfo.get_address_types_by_level(level=level)))
+
+    @action(methods=['get'], detail=False)
+    def filter_by_fias_level(self, request):
+        level = safe_int(request.query_params.get('level'))
+        if level and level > 0:
+            qs = self.get_queryset()
+            qs = qs.filter_by_fias_level(level=level)
+            ser = self.serializer_class(instance=qs, many=True, context={
+                'request': request
+            })
+            return Response(ser.data)
+        return Response('level parameter required', status=status.HTTP_400_BAD_REQUEST)

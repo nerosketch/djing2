@@ -511,7 +511,6 @@ class AddressFIASInfo:
     @staticmethod
     def get_address_types_by_level(level: int) -> Generator[IAddressFIASType, Any, None]:
         level = safe_int(level, default=None)
-        print('Level:', level)
         addr = _address_fias_info.get(level)
         if not addr:
             raise ValueError('Unknown level passed: %d' % level)
