@@ -207,6 +207,10 @@ class BaseDeviceStrategyContext(ABC):
         global global_device_types_map
         global_device_types_map[unique_code] = device_class
 
+    @staticmethod
+    def get_device_types() -> Dict[int, Type[BaseDeviceStrategy]]:
+        return global_device_types_map
+
     def get_description(self):
         return self._current_dev_manager.description
 

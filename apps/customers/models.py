@@ -376,7 +376,7 @@ class CustomerManager(MyUserManager):
         :return: nothing
         """
         now = datetime.now()
-        expired_services = CustomerService.objects.select_related('customer').filter(
+        expired_services = CustomerService.objects.select_related('customer', 'service').filter(
             deadline__lt=now,
             customer__auto_renewal_service=True
         )

@@ -414,6 +414,15 @@ class DeviceModelViewSet(FilterQuerySetMixin, DjingModelViewSet):
         res = (asdict(i) for i in vlan_list)
         return Response(res)
 
+    @action(methods=['get'], detail=False)
+    def device_types(self, request):
+        dev_types = SwitchDeviceStrategyContext.get_device_types()
+        result_dev_types = ({
+            'v': uint,
+            'nm': str(klass.description)
+        } for uint, klass in dev_types.items())
+        return Response(result_dev_types)
+
 
 class DeviceWithoutGroupListAPIView(DjingListAPIView):
     serializer_class = dev_serializers.DeviceWithoutGroupModelSerializer
