@@ -183,6 +183,9 @@ msgstr "Файл '%(filename)s' не существует или не испол
 msgid "Eltex switch"
 msgstr "Элтекс свич"
 
+msgid "Eltex MES5324A switch"
+msgstr "Элтекс MES5324A свич"
+
 #: apps/devices/device_config/switch/huawei/s2300.py:9
 msgid "Huawei switch"
 msgstr "Huawei свич"
