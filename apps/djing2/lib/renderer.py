@@ -1,4 +1,6 @@
+from django.core.serializers.json import DjangoJSONEncoder
 from orjson import orjson
+import json
 from rest_framework.renderers import BrowsableAPIRenderer
 from drf_orjson_renderer.renderers import ORJSONRenderer
 
@@ -51,7 +53,14 @@ class ExtendedRenderer(ORJSONRenderer):
         else:
             default = renderer_context["default_function"]
 
-        serialized = orjson.dumps(
-            data, default=default, option=self.options
-        )
+        # If `indent` is provided in the context, then pretty print the result.
+        # E.g. If we're being called by RestFramework's BrowsableAPIRenderer.
+        indent = renderer_context.get("indent")
+        if indent is None or "application/json" in media_type:
+            serialized = orjson.dumps(
+                data, default=default, option=self.options
+            )
+        else:
+            encoder_class = DjangoJSONEncoder
+            serialized = json.dumps(data, indent=indent, cls=encoder_class, ensure_ascii=False)
         return serialized
