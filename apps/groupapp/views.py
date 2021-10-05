@@ -1,6 +1,3 @@
-# from django.contrib.auth.models import Group as ProfileGroup
-# from rest_framework import status
-# from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
 # from rest_framework.generics import get_object_or_404
@@ -16,7 +13,7 @@ from groupapp.serializers import GroupsSerializer  # , SetRelatedPermsRecursiveS
 
 
 class GroupsModelViewSets(SitesFilterMixin, DjingModelViewSet):
-    queryset = Group.objects.all()
+    queryset = Group.objects.all().order_by('title')
     serializer_class = GroupsSerializer
     filter_backends = [CustomObjectPermissionsFilter, OrderingFilter]
     ordering_fields = ("title",)
