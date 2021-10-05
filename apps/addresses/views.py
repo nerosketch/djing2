@@ -68,3 +68,10 @@ class AddressModelViewSet(DjingModelViewSet):
             })
             return Response(ser.data)
         return Response('level parameter required', status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['get'], detail=True)
+    def get_full_title(self, request, pk=None):
+        full_title = AddressModel.objects.get_address_full_title(
+            addr_id=safe_int(pk)
+        )
+        return Response(full_title)

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from django.db import models
+from django.db import models, connection
 from django.contrib.sites.models import Site
 from django.utils.translation import gettext as _
 from djing2.models import BaseAbstractModel
@@ -55,7 +55,7 @@ class AddressModelQuerySet(models.QuerySet):
 
 class AddressModelManager(models.Manager):
     @staticmethod
-    def get_address_recursive_ids(addr_id: int):
+    def get_address_recursive_ids(addr_id: int, direction_down=True):
         query = (
             "WITH RECURSIVE chain(id, parent_addr_id) AS ("
                 "SELECT id, parent_addr_id "
@@ -64,11 +64,43 @@ class AddressModelManager(models.Manager):
                 "UNION "
                 "SELECT a.id, a.parent_addr_id "
                 "FROM chain c "
-                "LEFT JOIN addresses a ON a.parent_addr_id = c.id"
+                "LEFT JOIN addresses a ON "
+                f"{'a.parent_addr_id = c.id' if direction_down else 'a.id = c.parent_addr_id'}"
             ")"
             "SELECT id FROM chain WHERE id IS NOT NULL"
         )
         return models.expressions.RawSQL(sql=query, params=[addr_id])
+
+    @staticmethod
+    def get_address_full_title(addr_id: int) -> str:
+        query = (
+            "WITH RECURSIVE chain(id, parent_addr_id) AS ("
+                "SELECT id, parent_addr_id, fias_address_type, title "
+                "FROM addresses "
+                "WHERE id = %s "
+                "UNION "
+                "SELECT a.id, a.parent_addr_id, a.fias_address_type, a.title "
+                "FROM chain c "
+                "LEFT JOIN addresses a ON "
+                "a.id = c.parent_addr_id"
+            ")"
+            "SELECT id, fias_address_type, title FROM chain WHERE id IS NOT NULL"
+        )
+        addr_type_map = AddressFIASInfo.get_address_types_map()
+
+        def _accumulate_addrs_hierarchy():
+            with connection.cursor() as cur:
+                cur.execute(query, (addr_id,))
+                r = cur.fetchone()
+                while r is not None:
+                    r_addr_id, addr_type, title = r
+                    type_code_short_title = addr_type_map.get(addr_type)
+                    yield r_addr_id, type_code_short_title, title
+                    r = cur.fetchone()
+
+        title_hierarchy = list(_accumulate_addrs_hierarchy())
+        title_hierarchy.reverse()
+        return ', '.join(f'{short_title}. {title}' for aid, short_title, title in title_hierarchy)
 
 
 AddressFIASLevelChoices = tuple(AddressFIASInfo.get_levels())
@@ -111,6 +143,12 @@ class AddressModel(IAddressObject, BaseAbstractModel):
 
     def str_representation(self):
         return self.title
+
+    def full_title(self):
+        addr_id = int(self.pk)
+        return AddressModelManager.get_address_full_title(
+            addr_id=addr_id
+        )
 
     # @staticmethod
     # def get_streets_as_addr_objects():
