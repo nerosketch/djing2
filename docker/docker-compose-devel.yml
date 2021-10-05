@@ -10,6 +10,7 @@ services:
     stop_grace_period: 1m
     ports:
       - 5432:5432
+    tty: true
     restart: on-failure
     volumes:
       - postgresql-data:/var/lib/postgresql/data
