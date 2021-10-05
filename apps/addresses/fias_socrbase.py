@@ -522,6 +522,13 @@ class AddressFIASInfo:
             )
 
     @staticmethod
+    def get_address_types_map():
+        levels = (level for level, name in AddressFIASInfo.get_levels())
+        return {
+            a.addr_id: a.addr_short_name for level in levels for a in AddressFIASInfo.get_address_types_by_level(level=level)
+        }
+
+    @staticmethod
     def get_address_type_choices():
         for lev, inf in _address_fias_info.items():
             children = inf.get('children')

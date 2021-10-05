@@ -11,6 +11,8 @@ from rest_framework.exceptions import ParseError, APIException
 
 
 def safe_float(fl: Any, default=0.0) -> float:
+    if isinstance(fl, float):
+        return fl
     try:
         return default if not fl else float(fl or 0)
     except (ValueError, OverflowError):
@@ -18,6 +20,8 @@ def safe_float(fl: Any, default=0.0) -> float:
 
 
 def safe_int(i: Any, default=0) -> int:
+    if isinstance(i, int):
+        return i
     try:
         return default if not i else int(i)
     except (ValueError, OverflowError):
