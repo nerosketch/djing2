@@ -25,7 +25,6 @@ class PayAllTimeGateway(BaseAbstractModel):
     class Meta:
         db_table = "pay_all_time_gateways"
         verbose_name = _("All time gateway")
-        ordering = ("title",)
 
 
 def report_by_pays(from_time: datetime, to_time: Optional[datetime] = None, pay_gw_id=None, group_by=0):
@@ -101,4 +100,3 @@ class AllTimePayLog(BaseAbstractModel):
 
     class Meta:
         db_table = "all_time_pay_log"
-        ordering = ("-date_add",)

@@ -198,4 +198,3 @@ class TelegramMessengerSubscriberModel(MessengerSubscriberModel):
         db_table = "messengers_telegram_subscriber"
         verbose_name = _("Telegram subscriber")
         verbose_name_plural = _("Telegram subscribers")
-        ordering = ("name",)
