@@ -99,7 +99,6 @@ class FieldModel(models.Model):
 
     class Meta:
         db_table = 'dynamic_fields'
-        ordering = ('title',)
 
 
 # class FieldContentQuerySet(models.QuerySet):

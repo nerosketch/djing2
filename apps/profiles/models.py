@@ -91,7 +91,6 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = "base_accounts"
-        ordering = ("username",)
 
 
 class UserProfileLogActionType(models.IntegerChoices):
@@ -119,7 +118,6 @@ class UserProfileLog(BaseAbstractModel):
         return self.get_do_type_display()
 
     class Meta:
-        ordering = ("-action_date",)
         verbose_name = _("User profile log")
         verbose_name_plural = _("User profile logs")
         db_table = "profiles_userprofilelog"
@@ -170,7 +168,6 @@ class UserProfile(BaseAccount):
     class Meta:
         verbose_name = _("Staff account profile")
         verbose_name_plural = _("Staff account profiles")
-        ordering = ("fio",)
         db_table = "profiles_userprofile"
 
     def save(self, *args, **kwargs):
@@ -216,4 +213,3 @@ class ProfileAuthLog(models.Model):
 
     class Meta:
         db_table = "profiles_auth_log"
-        ordering = ("-id",)

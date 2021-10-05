@@ -120,7 +120,6 @@ class TaskStateChangeLogModel(BaseAbstractModel):
         db_table = "task_state_change_log"
         verbose_name = _("Change log")
         verbose_name_plural = _("Change logs")
-        ordering = ("-id",)
 
 
 def delta_add_days():
@@ -259,7 +258,6 @@ class Task(BaseAbstractModel):
 
     class Meta:
         db_table = "task"
-        ordering = ("-id",)
         permissions = [
             ("can_remind", _("Reminders of tasks")),
             ("can_view_task_mode_report", _("Can view task mode report"))
@@ -279,7 +277,6 @@ class ExtraComment(BaseAbstractModel):
         db_table = "task_extra_comments"
         verbose_name = _("Extra comment")
         verbose_name_plural = _("Extra comments")
-        ordering = ("-date_create",)
 
 
 class TaskDocumentAttachment(BaseAbstractModel):

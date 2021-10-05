@@ -189,7 +189,6 @@ class CustomerService(BaseAbstractModel):
         db_table = "customer_service"
         verbose_name = _("Customer service")
         verbose_name_plural = _("Customer services")
-        ordering = ("start_time",)
 
 
 class CustomerStreet(BaseAbstractModel):
@@ -203,7 +202,6 @@ class CustomerStreet(BaseAbstractModel):
         db_table = "customer_street"
         verbose_name = _("Street")
         verbose_name_plural = _("Streets")
-        ordering = ("name",)
 
 
 class CustomerLog(BaseAbstractModel):
@@ -217,7 +215,6 @@ class CustomerLog(BaseAbstractModel):
 
     class Meta:
         db_table = "customer_log"
-        ordering = ("-date",)
 
     def __str__(self):
         return self.comment
@@ -736,7 +733,6 @@ class Customer(BaseAccount):
         ]
         verbose_name = _("Customer")
         verbose_name_plural = _("Customers")
-        ordering = ("fio",)
 
 
 class CustomerDynamicFieldContentModel(AbstractDynamicFieldContentModel):
@@ -765,7 +761,6 @@ class InvoiceForPayment(BaseAbstractModel):
         self.date_pay = datetime.now()
 
     class Meta:
-        ordering = ("id",)
         db_table = "customer_inv_pay"
         verbose_name = _("Debt")
         verbose_name_plural = _("Debts")
@@ -783,7 +778,6 @@ class PassportInfo(BaseAbstractModel):
         db_table = "passport_info"
         verbose_name = _("Passport Info")
         verbose_name_plural = _("Passport Info")
-        ordering = ("id",)
 
     def __str__(self):
         return f"{self.series} {self.number}"
@@ -816,7 +810,6 @@ class AdditionalTelephone(BaseAbstractModel):
 
     class Meta:
         db_table = "additional_telephones"
-        ordering = ("id",)
         verbose_name = _("Additional telephone")
         verbose_name_plural = _("Additional telephones")
 
@@ -854,7 +847,6 @@ class PeriodicPayForId(BaseAbstractModel):
 
     class Meta:
         db_table = "periodic_pay_for_id"
-        ordering = ("last_pay",)
 
 
 class CustomerAttachment(BaseAbstractModel):
@@ -869,4 +861,3 @@ class CustomerAttachment(BaseAbstractModel):
 
     class Meta:
         db_table = "customer_attachments"
-        ordering = ("id",)
