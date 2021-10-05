@@ -84,4 +84,3 @@ class Gateway(BaseAbstractModel):
         db_table = "gateways"
         verbose_name = _("Network access server. Gateway")
         verbose_name_plural = _("Network access servers. Gateways")
-        ordering = ("ip_address",)

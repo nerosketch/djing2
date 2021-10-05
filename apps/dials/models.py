@@ -21,7 +21,6 @@ class ATSDeviceModel(BaseAbstractModel):
 
     class Meta:
         db_table = "ats_devices"
-        ordering = ("-id",)
 
 
 class DialAccount(UserProfile):
@@ -122,7 +121,6 @@ class DialLog(BaseAbstractModel):
 
     class Meta:
         db_table = "dial_log"
-        ordering = ("-id",)
 
 
 class SMSModel(BaseAbstractModel):
@@ -136,4 +134,3 @@ class SMSModel(BaseAbstractModel):
 
     class Meta:
         db_table = "dial_sms"
-        ordering = ("-id",)

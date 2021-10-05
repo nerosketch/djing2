@@ -100,7 +100,6 @@ class Device(IAddressContaining, BaseAbstractModel):
         db_table = "device"
         verbose_name = _("Device")
         verbose_name_plural = _("Devices")
-        ordering = ("id",)
         permissions = [
             ("can_remove_from_olt", _("Can remove from OLT")),
             ("can_fix_onu", _("Can fix onu")),
@@ -302,4 +301,3 @@ class Port(BaseAbstractModel):
         ]
         verbose_name = _("Port")
         verbose_name_plural = _("Ports")
-        ordering = ("num",)

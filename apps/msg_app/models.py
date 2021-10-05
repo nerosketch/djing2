@@ -58,7 +58,6 @@ class Message(BaseAbstractModel):
 
     class Meta:
         db_table = "messages"
-        ordering = ("-id",)
         verbose_name = _("Message")
         verbose_name_plural = _("Messages")
 
@@ -229,4 +228,3 @@ class Conversation(BaseAbstractModel):
         db_table = "conversations"
         verbose_name = _("Conversation")
         verbose_name_plural = _("Conversations")
-        ordering = ("title",)

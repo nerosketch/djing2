@@ -106,7 +106,6 @@ class MessengerModel(BaseAbstractModel):
         db_table = "messengers"
         verbose_name = _("Messenger")
         verbose_name_plural = _("Messengers")
-        ordering = ("title",)
 
 
 class MessengerSubscriberModel(BaseAbstractModel):
@@ -126,4 +125,3 @@ class MessengerSubscriberModel(BaseAbstractModel):
         db_table = "messenger_subscriber"
         verbose_name = _("Subscriber")
         verbose_name_plural = _("Subscribers")
-        ordering = ("name",)

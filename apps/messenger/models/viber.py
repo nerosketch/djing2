@@ -134,7 +134,6 @@ class ViberMessengerModel(MessengerModel):
         db_table = "messengers_viber"
         verbose_name = _("Viber messenger")
         verbose_name_plural = _("Viber messengers")
-        ordering = ("title",)
 
 
 MessengerModel.add_child_classes(
@@ -155,4 +154,3 @@ class ViberMessengerSubscriberModel(MessengerSubscriberModel):
         db_table = "messengers_viber_subscriber"
         verbose_name = _("Subscriber")
         verbose_name_plural = _("Subscribers")
-        ordering = ("name",)
