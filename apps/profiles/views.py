@@ -102,7 +102,8 @@ class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
 
     @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
     def get_current_auth_permissions(self, request):
-        return Response(request.user.get_all_permissions())
+        perms = request.user.get_all_permissions()
+        return Response(list(perms))
 
     def perform_create(self, serializer, *args, **kwargs):
         return super().perform_create(serializer=serializer, sites=[self.request.site])
