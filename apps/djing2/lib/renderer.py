@@ -1,6 +1,7 @@
+from types import GeneratorType
+import json
 from django.core.serializers.json import DjangoJSONEncoder
 from orjson import orjson
-import json
 from rest_framework.renderers import BrowsableAPIRenderer
 from drf_orjson_renderer.renderers import ORJSONRenderer
 
@@ -17,6 +18,8 @@ class ExtendedRenderer(ORJSONRenderer):
             return obj.decode()
         elif hasattr(obj, '__str__'):
             return str(obj)
+        elif isinstance(obj, (set, GeneratorType)):
+            return list(obj)
         return ORJSONRenderer.default(obj=obj)
 
     def render(self, data, media_type=None, renderer_context=None):
