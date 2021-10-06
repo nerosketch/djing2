@@ -1,3 +1,5 @@
+from types import GeneratorType
+
 from orjson import orjson
 from rest_framework.renderers import BrowsableAPIRenderer
 from drf_orjson_renderer.renderers import ORJSONRenderer
@@ -13,6 +15,8 @@ class ExtendedRenderer(ORJSONRenderer):
     def default(obj):
         if isinstance(obj, bytes):
             return obj.decode()
+        elif isinstance(obj, (set, GeneratorType)):
+            return list(obj)
         if hasattr(obj, '__str__'):
             return str(obj)
         return ORJSONRenderer.default(obj=obj)
