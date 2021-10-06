@@ -13,6 +13,8 @@ class ExtendedRenderer(ORJSONRenderer):
     def default(obj):
         if isinstance(obj, bytes):
             return obj.decode()
+        if hasattr(obj, '__str__'):
+            return str(obj)
         return ORJSONRenderer.default(obj=obj)
 
     def render(self, data, media_type=None, renderer_context=None):
