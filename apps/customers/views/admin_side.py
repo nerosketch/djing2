@@ -46,7 +46,7 @@ class CustomerStreetModelViewSet(DjingModelViewSet):
 
 
 class CustomerLogModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerLog.objects.select_related("customer", "author")
+    queryset = models.CustomerLog.objects.select_related("customer", "author").order_by('-id')
     serializer_class = serializers.CustomerLogModelSerializer
     filterset_fields = ("customer",)
 
