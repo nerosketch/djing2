@@ -35,7 +35,7 @@ class AddressModelQuerySet(models.QuerySet):
 
     def filter_by_fias_level(self, level: AddressFIASLevelType):
         addr_type_ids_gen = AddressFIASInfo.get_address_types_by_level(level=level)
-        addr_type_ids = [a.addr_id for a in addr_type_ids_gen]
+        addr_type_ids = [a.addr_code for a in addr_type_ids_gen]
         return self.filter(fias_address_type__in=addr_type_ids)
 
     def create_street(self, **kwargs):
@@ -94,7 +94,8 @@ class AddressModelManager(models.Manager):
                 r = cur.fetchone()
                 while r is not None:
                     r_addr_id, addr_type, title = r
-                    type_code_short_title = addr_type_map.get(addr_type)
+                    addr = addr_type_map.get(addr_type)
+                    type_code_short_title = addr.addr_short_name
                     yield r_addr_id, type_code_short_title, title
                     r = cur.fetchone()
 

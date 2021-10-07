@@ -1,4 +1,4 @@
-from typing import Generator, Any
+from typing import Generator, Any, Dict, Optional
 from dataclasses import dataclass
 
 from djing2.lib import safe_int
@@ -495,7 +495,7 @@ AddressFIASLevelType = int
 
 @dataclass
 class IAddressFIASType:
-    addr_id: int = 0
+    addr_code: int = 0
     addr_short_name: str = ''
     addr_name: str = ''
 
@@ -513,18 +513,24 @@ class AddressFIASInfo:
         addr = _address_fias_info.get(level)
         if not addr:
             raise ValueError('Unknown level passed: %d' % level)
-        for addr_id, (short_name, name) in addr.get('children').items():
+        for addr_code, (short_name, name) in addr.get('children').items():
             yield IAddressFIASType(
-                addr_id=addr_id,
+                addr_code=addr_code,
                 addr_short_name=short_name,
                 addr_name=name
             )
 
     @staticmethod
-    def get_address_types_map():
+    def get_address(addr_code: int) -> Optional[IAddressFIASType]:
+        levels = (level for level, name in AddressFIASInfo.get_levels())
+        r = (a for level in levels for a in AddressFIASInfo.get_address_types_by_level(level=level) if a.addr_code == addr_code)
+        return next(r, None)
+
+    @staticmethod
+    def get_address_types_map() -> Dict[int, IAddressFIASType]:
         levels = (level for level, name in AddressFIASInfo.get_levels())
         return {
-            a.addr_id: a.addr_short_name for level in levels for a in AddressFIASInfo.get_address_types_by_level(level=level)
+            a.addr_code: a for level in levels for a in AddressFIASInfo.get_address_types_by_level(level=level)
         }
 
     @staticmethod

@@ -1,15 +1,17 @@
 from datetime import datetime
 from typing import Any
+
+import logging
 from django.core.management.base import BaseCommand
 
+from addresses.models import AddressModel
 from customers.models import Customer, CustomerService, AdditionalTelephone
 from devices.device_config.device_type_collection import DEVICE_TYPES
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
 from services.models import Service
 from devices.models import Device
 from sorm_export.hier_export.addresses import (
-    make_address_street_objects,
-    export_address_object
+    export_address_object, get_remote_export_filename
 )
 from sorm_export.hier_export.customer import (
     export_customer_root,
@@ -27,7 +29,7 @@ from sorm_export.hier_export.devices import export_devices
 from sorm_export.hier_export.ip_numbering import export_ip_numbering
 from sorm_export.hier_export.gateways import export_gateways
 from sorm_export.management.commands._general_func import export_customer_lease_binds
-from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus, FiasRecursiveAddressModel
+from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
 from sorm_export.tasks.task_export import task_export
 
 from networks.models import CustomerIpLeaseModel, NetworkIpPool
@@ -46,21 +48,21 @@ def export_all_customer_contracts():
 
 
 def export_all_address_objects():
-    addr_objects = FiasRecursiveAddressModel.objects.order_by("ao_level")
+    addr_objects = AddressModel.objects.order_by("fias_address_level")
     et = datetime.now()
-    data = []
-    fname = None
-    for addr_object in addr_objects.iterator():
-        try:
-            dat, fname = export_address_object(fias_addr=addr_object, event_time=et)
+    fname = get_remote_export_filename(event_time=et)
 
-            data.append(dat)
+    def _make_exportable_object(addr_object):
+        try:
+            dat = export_address_object(fias_addr=addr_object, event_time=et)
+            if not dat:
+                return
+            yield dat
         except ExportFailedStatus as err:
-            print("ERROR:", err)
-    streets_data = make_address_street_objects()
-    data.extend(streets_data)
-    if fname is not None and len(data) > 0:
-        task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ADDRESS)
+            logging.error(str(err))
+
+    data = (_make_exportable_object(a) for a in addr_objects.iterator())
+    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ADDRESS)
 
 
 def export_all_access_point_addresses():
@@ -160,21 +162,21 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any):
         funcs = (
-            (export_customer_lease_binds, "Customer lease binds"),
+            # (export_customer_lease_binds, "Customer lease binds"),
             (export_all_address_objects, "Address objects export"),
-            (export_all_root_customers, "Customers root export"),
-            (export_all_customer_contracts, "Customer contracts export"),
-            # (export_all_access_point_addresses, 'Customer ap export'),
-            (export_all_individual_customers, "Customer individual export"),
-            # (export_all_legal_customers, 'Customer legal export'),
-            (export_all_customer_contacts, "Customer contacts export"),
-            (export_all_ip_leases, "Network static leases export"),
-            (export_all_service_nomenclature, "Services export status"),
-            (export_all_customer_services, "Customer services export status"),
-            (export_special_numbers, "Special numbers export status"),
-            (export_all_switches, "Switches export status"),
-            (export_all_ip_numbering, "Ip numbering export status"),
-            (export_all_gateways, "Gateways export status"),
+            # (export_all_root_customers, "Customers root export"),
+            # (export_all_customer_contracts, "Customer contracts export"),
+            # # (export_all_access_point_addresses, 'Customer ap export'),
+            # (export_all_individual_customers, "Customer individual export"),
+            # # (export_all_legal_customers, 'Customer legal export'),
+            # (export_all_customer_contacts, "Customer contacts export"),
+            # (export_all_ip_leases, "Network static leases export"),
+            # (export_all_service_nomenclature, "Services export status"),
+            # (export_all_customer_services, "Customer services export status"),
+            # (export_special_numbers, "Special numbers export status"),
+            # (export_all_switches, "Switches export status"),
+            # (export_all_ip_numbering, "Ip numbering export status"),
+            # (export_all_gateways, "Gateways export status"),
         )
         for fn, msg in funcs:
             try:
