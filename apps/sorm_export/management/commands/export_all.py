@@ -54,10 +54,10 @@ def export_all_address_objects():
 
     def _make_exportable_object(addr_object):
         try:
-            dat = export_address_object(fias_addr=addr_object, event_time=et)
+            dat, _ = export_address_object(fias_addr=addr_object, event_time=et)
             if not dat:
                 return
-            yield dat
+            return dat
         except ExportFailedStatus as err:
             logging.error(str(err))
 

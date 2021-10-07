@@ -36,4 +36,4 @@ def export_address_object(fias_addr: AddressModel, event_time=None):
     }
 
     ser = individual_entity_serializers.AddressObjectFormat(data=dat)
-    return ser
+    return ser, None
