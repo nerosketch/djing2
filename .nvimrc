@@ -1,16 +1,36 @@
-set mouse=a
+set mouse=a  " enable mouse
 set encoding=utf-8
 set number
+set nobackup
 set noswapfile
+set nowritebackup                           " only in case you don't want a backup file while editing
+
 set scrolloff=7
 
 set tabstop=4
 set softtabstop=4
 set shiftwidth=4
+set smarttab                                " set tabs for a shifttabs logic
 set expandtab
 set autoindent
 set fileformat=unix
-filetype indent on
+
+set showmatch                               " shows matching part of bracket pairs (), [], {}
+
+filetype indent on      " load filetype-specific indent files
+
+" Options
+set shell=/bin/bash
+set ttyfast                                 " terminal acceleration
+
+set backspace=indent,eol,start              " backspace removes all (indents, EOLs, start) What is start?
+
+set clipboard=unnamed                       " use system clipboard
+
+
+" My key bindings
+nnoremap <F12> onull=True, blank=True, default=None,<esc>
+
 
 
 
@@ -28,7 +48,7 @@ if !isdirectory(expand("~/.fonts/NerdFonts/"))
     silent !fc-cache -f -
 
     " Reload nvimrc
-    source ~/.nvimrc
+    source ./.nvimrc
 endif
 
 
@@ -37,13 +57,7 @@ endif
 
 
 
-
-" Specify a directory for plugins
-" - For Neovim: stdpath('data') . '/plugged'
-" - Avoid using standard Vim directory names like 'plugin'
 call plug#begin('~/.vim/plugged')
-
-    " Make sure you use single quotes
 
     Plug 'neovim/nvim-lspconfig'
     Plug 'hrsh7th/nvim-cmp'
@@ -51,111 +65,261 @@ call plug#begin('~/.vim/plugged')
     Plug 'saadparwaiz1/cmp_luasnip'
     Plug 'L3MON4D3/LuaSnip'
 
-    " Color schemas
-    Plug 'morhetz/gruvbox'
-    "Plug 'mhartington/ocenic-next'
-    "Plug 'kaicataldo/material.vim', { 'branch': 'main' }
-    "Plug 'ayu-theme/ayu-vim'
 
+    " color schemas
+    Plug 'morhetz/gruvbox'  " colorscheme gruvbox
+    " Plug 'mhartington/oceanic-next'  colorscheme OceanicNext
+    " Plug 'kaicataldo/material.vim', { 'branch': 'main' }
+    " Plug 'ayu-theme/ayu-vim'
 
     Plug 'preservim/nerdtree'                 " Project and file navigation
     Plug 'Xuyuanp/nerdtree-git-plugin'        " NerdTree git functionality
+    Plug 'ryanoasis/vim-devicons'             " Dev Icons
 
-    Plug 'vim-airline/vim-airline'            " Lean & mean status/tabline for vim
-    Plug 'vim-airline/vim-airline-themes'     " Themes for airline
-    " Plug 'fisadev/FixedTaskList.vim'          Pending tasks list
     Plug 'MattesGroeger/vim-bookmarks'        " Bookmarks
     Plug 'thaerkh/vim-indentguides'           " Visual representation of indents
-    " Plug 'dense-analysis/ale'                 Async Lint Engine
-    Plug 'ycm-core/YouCompleteMe'             " Code Completion
-
-    "-------------------=== Other ===-------------------------------
-    " Plug 'tpope/vim-surround'                 Parentheses, brackets, quotes, XML tags, and more
-    Plug 'flazz/vim-colorschemes'             " Colorschemes
-    " Plug 'vimwiki/vimwiki'                     Personal Wiki
-    " Plug 'jreybert/vimagit'                   Git Operations
-    Plug 'airblade/vim-gitgutter'             " Plug which shows a git diff in the sign column
-    Plug 'kien/rainbow_parentheses.vim'       " Rainbow Parentheses
-    Plug 'ryanoasis/vim-devicons'             " Dev Icons
     Plug 'mhinz/vim-startify'                 " Vim Start Page
     Plug 'editorconfig/editorconfig-vim'      " Editorconfig support
     Plug 'Asheq/close-buffers.vim'            " Close buffers
 
-    "-------------------=== Snippets support ===--------------------
-    "Plug 'garbas/vim-snipmate'                Snippets manager
-    "Plug 'MarcWeber/vim-addon-mw-utils'       dependencies #1
-    "Plug 'tomtom/tlib_vim'                    dependencies #2
-    "Plug 'honza/vim-snippets'                 snippets repo
-
-    "-------------------=== Languages support ===-------------------
-    Plug 'preservim/nerdcommenter'           " Easy code documentation
-    " Plug 'mitsuhiko/vim-sparkup'             Sparkup(XML/jinja/htlm-django/etc.) support
-
-    "-------------------=== Python  ===-----------------------------
-    Plug 'python-mode/python-mode'            " Python mode (docs, refactor, lints...)
-    Plug 'hynek/vim-python-pep8-indent'
-    Plug 'mitsuhiko/vim-python-combined'
-    Plug 'mitsuhiko/vim-jinja'
-    Plug 'jmcantrell/vim-virtualenv'
+    Plug 'crispgm/nvim-tabline'               " Vim tabline
 
 
 
-
-
-
-    " Initialize plugin system
 call plug#end()
+
 
 colorscheme gruvbox
 " colorscheme OceanicNext
-
+"let g:material_terminal_italics = 1
+" variants: default, palenight, ocean, lighter, darker, default-community,
+"           palenight-community, ocean-community, lighter-community,
+"           darker-community
+"let g:material_theme_style = 'darker'
+"colorscheme material
 if (has('termguicolors'))
   set termguicolors
 endif
 
+" variants: mirage, dark, dark
+"let ayucolor="mirage"
+"colorscheme ayu
 
-filetype on
-filetype plugin on
-filetype plugin indent on
 
-"=====================================================
-"" General settings
-"=====================================================
-if filereadable(expand("~/.vimrc_background"))
-  source ~/.vimrc_background
+
+
+
+
+
+" turn off search highlight
+nnoremap ,<space> :nohlsearch<CR>
+
+
+
+lua << EOF
+-- Set completeopt to have a better completion experience
+vim.o.completeopt = 'menuone,noselect'
+
+-- luasnip setup
+local luasnip = require 'luasnip'
+
+-- nvim-tabline setup
+require('tabline').setup({})
+
+
+
+
+
+-- nvim-cmp setup
+local cmp = require 'cmp'
+cmp.setup {
+  completion = {
+    autocomplete = false
+  },
+  snippet = {
+    expand = function(args)
+      require('luasnip').lsp_expand(args.body)
+    end,
+  },
+  mapping = {
+    ['<C-p>'] = cmp.mapping.select_prev_item(),
+    ['<C-n>'] = cmp.mapping.select_next_item(),
+    ['<C-d>'] = cmp.mapping.scroll_docs(-4),
+    ['<C-f>'] = cmp.mapping.scroll_docs(4),
+    ['<C-Space>'] = cmp.mapping.complete(),
+    ['<C-e>'] = cmp.mapping.close(),
+    ['<CR>'] = cmp.mapping.confirm {
+      behavior = cmp.ConfirmBehavior.Replace,
+      select = true,
+    },
+    ['<Tab>'] = function(fallback)
+      if vim.fn.pumvisible() == 1 then
+        vim.fn.feedkeys(vim.api.nvim_replace_termcodes('<C-n>', true, true, true), 'n')
+      elseif luasnip.expand_or_jumpable() then
+        vim.fn.feedkeys(vim.api.nvim_replace_termcodes('<Plug>luasnip-expand-or-jump', true, true, true), '')
+      else
+        fallback()
+      end
+    end,
+    ['<S-Tab>'] = function(fallback)
+      if vim.fn.pumvisible() == 1 then
+        vim.fn.feedkeys(vim.api.nvim_replace_termcodes('<C-p>', true, true, true), 'n')
+      elseif luasnip.jumpable(-1) then
+        vim.fn.feedkeys(vim.api.nvim_replace_termcodes('<Plug>luasnip-jump-prev', true, true, true), '')
+      else
+        fallback()
+      end
+    end,
+  },
+  sources = {
+    { name = 'nvim_lsp' },
+    { name = 'luasnip' },
+  },
+}
+EOF
+
+
+
+
+lua << EOF
+local nvim_lsp = require('lspconfig')
+
+-- Use an on_attach function to only map the following keys
+-- after the language server attaches to the current buffer
+local on_attach = function(client, bufnr)
+
+  local function buf_set_keymap(...) vim.api.nvim_buf_set_keymap(bufnr, ...) end
+  local function buf_set_option(...) vim.api.nvim_buf_set_option(bufnr, ...) end
+
+  -- Enable completion triggered by <c-x><c-o>
+  buf_set_option('omnifunc', 'v:lua.vim.lsp.omnifunc')
+
+  -- Mappings.
+  local opts = { noremap=true, silent=true }
+
+  -- See `:help vim.lsp.*` for documentation on any of the below functions
+  buf_set_keymap('n', 'gD', '<cmd>lua vim.lsp.buf.declaration()<CR>', opts)
+  buf_set_keymap('n', 'gd', '<cmd>lua vim.lsp.buf.definition()<CR>', opts)
+  buf_set_keymap('n', 'K', '<cmd>lua vim.lsp.buf.hover()<CR>', opts)
+  buf_set_keymap('n', 'gi', '<cmd>lua vim.lsp.buf.implementation()<CR>', opts)
+  buf_set_keymap('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<CR>', opts)
+  buf_set_keymap('n', '<space>wa', '<cmd>lua vim.lsp.buf.add_workspace_folder()<CR>', opts)
+  buf_set_keymap('n', '<space>wr', '<cmd>lua vim.lsp.buf.remove_workspace_folder()<CR>', opts)
+  buf_set_keymap('n', '<space>wl', '<cmd>lua print(vim.inspect(vim.lsp.buf.list_workspace_folders()))<CR>', opts)
+  buf_set_keymap('n', '<space>D', '<cmd>lua vim.lsp.buf.type_definition()<CR>', opts)
+  buf_set_keymap('n', '<space>rn', '<cmd>lua vim.lsp.buf.rename()<CR>', opts)
+  buf_set_keymap('n', '<space>ca', '<cmd>lua vim.lsp.buf.code_action()<CR>', opts)
+  buf_set_keymap('n', 'gr', '<cmd>lua vim.lsp.buf.references()<CR>', opts)
+  buf_set_keymap('n', '<space>e', '<cmd>lua vim.lsp.diagnostic.show_line_diagnostics()<CR>', opts)
+  buf_set_keymap('n', '[d', '<cmd>lua vim.lsp.diagnostic.goto_prev()<CR>', opts)
+  buf_set_keymap('n', ']d', '<cmd>lua vim.lsp.diagnostic.goto_next()<CR>', opts)
+  buf_set_keymap('n', '<space>q', '<cmd>lua vim.lsp.diagnostic.set_loclist()<CR>', opts)
+  buf_set_keymap('n', '<space>f', '<cmd>lua vim.lsp.buf.formatting()<CR>', opts)
+
+end
+
+-- Use a loop to conveniently call 'setup' on multiple servers and
+-- map buffer local keybindings when the language server attaches
+local servers = { 'pyright' }
+for _, lsp in ipairs(servers) do
+  nvim_lsp[lsp].setup {
+    on_attach = on_attach,
+    flags = {
+      debounce_text_changes = 150,
+    }
+  }
+end
+EOF
+
+
+
+" Delete buffer while keeping window layout (don't close buffer's windows).
+" Version 2008-11-18 from http://vim.wikia.com/wiki/VimTip165
+if v:version < 700 || exists('loaded_bclose') || &cp
+  finish
 endif
-syntax enable                               " enable syntax highlighting
+let loaded_bclose = 1
+if !exists('bclose_multiple')
+  let bclose_multiple = 1
+endif
 
-set pyxversion=0
-let g:loaded_python_provider = 1
-set shell=/bin/bash
-set number                                  " show line numbers
-set ruler
-set ttyfast                                 " terminal acceleration
+" Display an error message.
+function! s:Warn(msg)
+  echohl ErrorMsg
+  echomsg a:msg
+  echohl NONE
+endfunction
 
-set tabstop=4                               " 4 whitespaces for tabs visual presentation
-set shiftwidth=4                            " shift lines by 4 spaces
-set smarttab                                " set tabs for a shifttabs logic
-set expandtab                               " expand tabs into spaces
-set autoindent                              " indent when moving to the next line while writing code
+" Command ':Bclose' executes ':bd' to delete buffer in current window.
+" The window will show the alternate buffer (Ctrl-^) if it exists,
+" or the previous buffer (:bp), or a blank buffer if no previous.
+" Command ':Bclose!' is the same, but executes ':bd!' (discard changes).
+" An optional argument can specify which buffer to close (name or number).
+function! s:Bclose(bang, buffer)
+  if empty(a:buffer)
+    let btarget = bufnr('%')
+  elseif a:buffer =~ '^\d\+$'
+    let btarget = bufnr(str2nr(a:buffer))
+  else
+    let btarget = bufnr(a:buffer)
+  endif
+  if btarget < 0
+    call s:Warn('No matching buffer for '.a:buffer)
+    return
+  endif
+  if empty(a:bang) && getbufvar(btarget, '&modified')
+    call s:Warn('No write since last change for buffer '.btarget.' (use :Bclose!)')
+    return
+  endif
+  " Numbers of windows that view target buffer which we will delete.
+  let wnums = filter(range(1, winnr('$')), 'winbufnr(v:val) == btarget')
+  if !g:bclose_multiple && len(wnums) > 1
+    call s:Warn('Buffer is in multiple windows (use ":let bclose_multiple=1")')
+    return
+  endif
+  let wcurrent = winnr()
+  for w in wnums
+    execute w.'wincmd w'
+    let prevbuf = bufnr('#')
+    if prevbuf > 0 && buflisted(prevbuf) && prevbuf != btarget
+      buffer #
+    else
+      bprevious
+    endif
+    if btarget == bufnr('%')
+      " Numbers of listed buffers which are not the target to be deleted.
+      let blisted = filter(range(1, bufnr('$')), 'buflisted(v:val) && v:val != btarget')
+      " Listed, not target, and not displayed.
+      let bhidden = filter(copy(blisted), 'bufwinnr(v:val) < 0')
+      " Take the first buffer, if any (could be more intelligent).
+      let bjump = (bhidden + blisted + [-1])[0]
+      if bjump > 0
+        execute 'buffer '.bjump
+      else
+        execute 'enew'.a:bang
+      endif
+    endif
+  endfor
+  execute 'bdelete'.a:bang.' '.btarget
+  execute wcurrent.'wincmd w'
+endfunction
+command! -bang -complete=buffer -nargs=? Bclose call <SID>Bclose(<q-bang>, <q-args>)
+nnoremap <silent> <Leader>bd :Bclose<CR>
 
-set cursorline                              " shows line under the cursor's line
-set showmatch                               " shows matching part of bracket pairs (), [], {}
 
-set enc=utf-8	                            " utf-8 by default
+map gn :bn<cr>
+map gp :bp<cr>
+map gw :Bclose<cr>
 
-set nobackup 	                            " no backup files
-set nowritebackup                           " only in case you don't want a backup file while editing
-set noswapfile 	                            " no swap files
+set colorcolumn=79
+setlocal textwidth=79
+setlocal commentstring=#\%s
 
-set backspace=indent,eol,start              " backspace removes all (indents, EOLs, start) What is start?
+" run current script with python3 by CTRL+R in command and insert mode
+autocmd FileType python map <buffer> <C-r> :w<CR>:exec '!python3' shellescape(@%, 1)<CR>
+autocmd FileType python imap <buffer> <C-r> <esc>:w<CR>:exec '!python3' shellescape(@%, 1)<CR>
 
-set scrolloff=10                            " let 10 lines before/after cursor during scroll
 
-set clipboard=unnamed                       " use system clipboard
-
-" set exrc                                    " enable usage of additional .vimrc files from working directory
-" set secure                                  " prohibit .vimrc files to execute shell, create files, etc...
 
 "=====================================================
 "" Tabs / Buffers settings
@@ -179,20 +343,6 @@ highlight BookmarkLine ctermbg=194 ctermfg=NONE
 let g:bookmark_highlight_lines = 1
 "=====================================================
 
-"=====================================================
-"" YouCompleteMe Settings
-"=====================================================
-nnoremap gd :YcmCompleter GoTo<CR>
-
-"=====================================================
-"" Ale Settings (Linting)
-"=====================================================
-" Use Ale.
-" Show Ale in Airline
-let g:airline#extensions#ale#enabled = 1
-
-" Ale Gutter
-let g:ale_sign_column_always = 1
 
 "=====================================================
 "" Search settings
@@ -202,40 +352,6 @@ set hlsearch	                            " highlight search results
 noremap <F3> :execute "vimgrep /" . expand("<cword>") . "/j **" <Bar> cw<CR>
 noremap <F4> :execute "/" . expand("<cword>") <CR>
 
-" Mouse Cursor enable
-" set mouse=a
-
-" Magit open buffer
-nnoremap <silent> M :Magit <CR>
-
-
-"=====================================================
-"" Screen scrolling
-"=====================================================
-noremap <C-Down> j1<C-e>
-noremap <C-Up> k1<C-y>
-
-"=====================================================
-"" AirLine settings
-"=====================================================
-let g:airline#extensions#tabline#enabled=1
-let g:airline#extensions#tabline#formatter='unique_tail'
-let g:airline_powerline_fonts=1
-" adding to vim-airline's tabline
-let g:webdevicons_enable_airline_tabline = 1
-" adding to vim-airline's statusline
-let g:webdevicons_enable_airline_statusline = 1
-let g:airline#extensions#ale#enabled = 1
-let g:airline_theme='wombat'                " set airline theme
-
-
-"=====================================================
-"" TagBar settings
-"=====================================================
-"let g:tagbar_autofocus=0
-"let g:tagbar_width=42
-"autocmd BufEnter *.py :call tagbar#autoopen(0)
-"autocmd BufWinLeave *.py :TagbarClose
 
 "=====================================================
 "" NERDTree settings
@@ -244,29 +360,7 @@ let NERDTreeIgnore=['\.pyc$', '\.pyo$', '__pycache__$']     " Ignore files in NE
 let NERDTreeWinSize=35
 nmap " :NERDTreeToggle<CR>
 
-"=====================================================
-"" NERDComment Settings
-"=====================================================
-" Add spaces after comment delimiters by default
-let g:NERDSpaceDelims = 1
 
-" Use compact syntax for prettified multi-line comments
-let g:NERDCompactSexyComs = 1
-
-" Align line-wise comment delimiters flush left instead of following code indentation
-let g:NERDDefaultAlign = 'left'
-
-" Set a language to use its alternate delimiters by default
-let g:NERDAltDelims_java = 1
-
-" Add your own custom formats or override the defaults
-let g:NERDCustomDelimiters = { 'c': { 'left': '/**', 'right': '*/' } }
-
-" Allow commenting and inverting empty lines (useful when commenting a region)
-let g:NERDCommentEmptyLines = 1
-
-" Enable trimming of trailing whitespace when uncommenting
-let g:NERDTrimTrailingWhitespace = 1
 
 
 "=====================================================
@@ -314,201 +408,43 @@ let g:DevIconsEnableFolderPatternMatching = 1
 let g:DevIconsEnableFolderExtensionPatternMatching = 0
 
 
-"=====================================================
-"" SnipMate settings
-"=====================================================
-let g:snippets_dir='~/.vim/vim-snippets/snippets'
-let g:snipMate = get(g:, 'snipMate', {}) " Allow for vimrc re-sourcing
-let g:snipMate.snippet_version = 0
-
-"=====================================================
-"" Indent Guides Settings
-"=====================================================
-set listchars=tab:›\ ,trail:•,extends:#,nbsp:.
-"=====================================================
-"" Python settings
-"=====================================================
-
-let g:pymode = 1
-let g:pymode_paths = ['./apps']
-let g:pymode_trim_whitespaces = 1
-setlocal textwidth=119
-setlocal commentstring=#\%s
-let g:pymode_options_max_line_length=119
-let g:syntastic_python_pylint_post_args="--max-line-length=120"
-
-" Autocompletition, and no auto insert first item
-set completeopt=menuone,noinsert
-
-
-" python executables for different plugins
-let g:pymode_python='python3'
-
-
-nmap <leader>g :YcmCompleter GoTo<CR>
-nmap <leader>d :YcmCompleter GoToDefinition<CR>
-
-let g:ale_emit_conflict_warnings = 0
-let g:pymode_rope_lookup_project = 0
-
-" rope
-let g:pymode_rope=0
-let g:pymode_rope_completion=0
-let g:pymode_rope_complete_on_dot=0
-let g:pymode_rope_auto_project=0
-let g:pymode_rope_enable_autoimport=0
-let g:pymode_rope_autoimport_generate=0
-let g:pymode_rope_guess_project=0
-
-" documentation
-let g:pymode_doc=0
-let g:pymode_doc_bind='K'
-
-" lints
-let g:pymode_lint=0
-
-" virtualenv
-let g:pymode_virtualenv=1
-
-" breakpoints
-let g:pymode_breakpoint=1
-let g:pymode_breakpoint_key='<leader>b'
-
-" syntax highlight
-let g:pymode_syntax=1
-let g:pymode_syntax_slow_sync=1
-let g:pymode_syntax_all=1
-let g:pymode_syntax_print_as_function=g:pymode_syntax_all
-let g:pymode_syntax_highlight_async_await=g:pymode_syntax_all
-let g:pymode_syntax_highlight_equal_operator=g:pymode_syntax_all
-let g:pymode_syntax_highlight_stars_operator=g:pymode_syntax_all
-let g:pymode_syntax_highlight_self=g:pymode_syntax_all
-" let g:pymode_syntax_indent_errors=g:pymode_syntax_all
-let g:pymode_syntax_string_formatting=g:pymode_syntax_all
-let g:pymode_syntax_space_errors=g:pymode_syntax_all
-let g:pymode_syntax_string_format=g:pymode_syntax_all
-let g:pymode_syntax_string_templates=g:pymode_syntax_all
-let g:pymode_syntax_doctests=g:pymode_syntax_all
-let g:pymode_syntax_builtin_objs=g:pymode_syntax_all
-let g:pymode_syntax_builtin_types=g:pymode_syntax_all
-let g:pymode_syntax_highlight_exceptions=g:pymode_syntax_all
-let g:pymode_syntax_docstrings=g:pymode_syntax_all
-
-" highlight 'long' lines (>= 119 symbols) in python files
-augroup vimrc_autocmds
-    autocmd!
-    autocmd FileType python,rst,c,cpp highlight Excess ctermbg=DarkGrey guibg=Black
-    autocmd FileType python,rst,c,cpp match Excess /\%120v.*/
-    autocmd FileType python,rst,c,cpp set nowrap
-    autocmd FileType python,rst,c,cpp set colorcolumn=119
-augroup END
-
-" code folding
-let g:pymode_folding=0
-
-" pep8 indents
-let g:pymode_indent=1
-
-" code running
-let g:pymode_run=1
-let g:pymode_run_bind='<F5>'
-
-let g:ale_sign_column_always = 0
-let g:ale_emit_conflict_warnings = 0
-let g:pymode_rope_lookup_project = 0
-
-imap <F5> <Esc>:w<CR>:!clear;python %<CR>
-
-" Editorconfig
-au FileType gitcommit let b:EditorConfig_disable = 1  " disable for git commits
-
-" Git gutter, diff highlights
-highlight GitGutterAdd    guifg=#009900 ctermfg=2
-highlight GitGutterChange guifg=#bbbb00 ctermfg=3
-highlight GitGutterDelete guifg=#ff2222 ctermfg=1
-
-
-" no <down> <Nop>
-" no <left> <Nop>
-" no <right> <Nop>
-" no <up> <Nop>
-
-" ino <down> <Nop>
-" ino <left> <Nop>
-" ino <right> <Nop>
-" ino <up> <Nop>
-
-" vno <down> <Nop>
-" vno <left> <Nop>
-" vno <right> <Nop>
-" vno <up> <Nop>
-
-
-" My Key Bindings
-
-nnoremap <F2> :!git pull<cr>
-
-
-autocmd StdinReadPre * let g:isReadingFromStdin = 1
-autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | Startify | endif
-autocmd VimEnter * nested if !argc() && !exists('g:isReadingFromStdin') | NERDTree | endif
-
-" Exit Vim if NERDTree is the only window left.
-" autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() |
-"   \ execute :new | endif
-
-
-" Use the below highlight group when displaying bad whitespace is desired.
-highlight BadWhitespace ctermbg=red guibg=red
-
-" Make trailing whitespace be flagged as bad.
-au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
 
 
 
+:set tabline=%!MyTabLine()
 
+function MyTabLine()
+  let s = ''
+  for i in range(tabpagenr('$'))
+    " select the highlighting
+    if i + 1 == tabpagenr()
+      let s .= '%#TabLineSel#'
+    else
+      let s .= '%#TabLine#'
+    endif
 
+    " set the tab page number (for mouse clicks)
+    let s .= '%' . (i + 1) . 'T'
 
+    " the label is made by MyTabLabel()
+    let s .= ' %{MyTabLabel(' . (i + 1) . ')} '
+  endfor
 
+  " after the last tab fill with TabLineFill and reset tab page nr
+  let s .= '%#TabLineFill#%T'
 
-" For xml formatting
-
-set redrawtime=10000
-
-
-function! DoPrettyXML()
-  " save the filetype so we can restore it later
-  let l:origft = &ft
-  set ft=
-  " delete the xml header if it exists. This will
-  " permit us to surround the document with fake tags
-  " without creating invalid xml.
-  1s/<?xml .*?>//e
-  " insert fake tags around the entire document.
-  " This will permit us to pretty-format excerpts of
-  " XML that may contain multiple top-level elements.
-  0put ='<PrettyXML>'
-  $put ='</PrettyXML>'
-  silent %!xmllint --nonet --encode utf8 --format -
-  " xmllint will insert an <?xml?> header. it's easy enough to delete
-  " if you don't want it.
-  " delete the fake tags
-  2d
-  $d
-  " restore the 'normal' indentation, which is one extra level
-  " too deep due to the extra tags we wrapped around the document.
-  silent %<
-  " back to home
-  1
-  " restore the filetype
-  exe "set ft=" . l:origft
+  " right-align the label to close the current tab page
+  if tabpagenr('$') > 1
+    let s .= '%=%#TabLine#%999Xclose'
+  endif
+  return s
 endfunction
-command! PrettyXML call DoPrettyXML()
 
-" com! FormatXML :%!python3 -c "import xml.dom.minidom, sys; print(xml.dom.minidom.parse(sys.stdin).toprettyxml())"
-" nnoremap = :FormatXML<Cr>
-" nnoremap <F3> :FormatXML<cr>
-nnoremap <F6> :PrettyXML<cr>
+function MyTabLabel(n)
+  let buflist = tabpagebuflist(a:n)
+  let winnr = tabpagewinnr(a:n)
+  return bufname(buflist[winnr - 1])
+endfunction
 
-nnoremap <F12> onull=True, blank=True, default=None,<esc>
+command! MTabLn call MyTabLine()
 
