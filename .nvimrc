@@ -51,10 +51,13 @@ if !isdirectory(expand("~/.fonts/NerdFonts/"))
     source ./.nvimrc
 endif
 
+" Plug /*
+" if !isdirectory(expand("~/.vim/bundle/plug.nvim/"))
+if !isdirectory(expand('"${XDG_DATA_HOME:-$HOME/.local/share}/nvim/site/autoload/plug.vim'))
 
+    silent !curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
-
-
+endif
 
 
 call plug#begin('~/.vim/plugged')
@@ -64,7 +67,6 @@ call plug#begin('~/.vim/plugged')
     Plug 'hrsh7th/cmp-nvim-lsp'
     Plug 'saadparwaiz1/cmp_luasnip'
     Plug 'L3MON4D3/LuaSnip'
-
 
     " color schemas
     Plug 'morhetz/gruvbox'  " colorscheme gruvbox
@@ -83,8 +85,6 @@ call plug#begin('~/.vim/plugged')
     Plug 'Asheq/close-buffers.vim'            " Close buffers
 
     Plug 'crispgm/nvim-tabline'               " Vim tabline
-
-
 
 call plug#end()
 
