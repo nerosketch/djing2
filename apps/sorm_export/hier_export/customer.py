@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Iterable
 
@@ -55,7 +56,7 @@ def export_contract(customers: Iterable[Customer], event_time=None):
             # 'contract_end_date': customer.create_date + timedelta(days=3650),
             "contract_number": customer.username,
             # TODO: Название контракта а не имя абонента
-            "contract_title": customer.get_full_name(),
+            "contract_title": "Договор на оказание услуг связи" # customer.get_full_name(),
         }
 
     return (
@@ -79,23 +80,17 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
     """
 
     def gen(customer: Customer):
-        if not hasattr(customer, "group"):
+        if not hasattr(customer, "address"):
             return
-        group = customer.group
-        if not hasattr(group, "fiasrecursiveaddressmodel"):
+        addr = customer.address
+        if not addr.parent_addr:
             return
-        if not hasattr(group.fiasrecursiveaddressmodel, "fias_recursive_address"):
-            return
-        addr_group = group.fiasrecursiveaddressmodel.fias_recursive_address
-        if not addr_group.parent_ao:
-            return
-        parent_id_ao = addr_group.parent_ao_id
         return {
-            "ap_id": addr_group.pk,
+            "ap_id": addr.pk,
             "customer_id": customer.pk,
-            "house": customer.house,
-            "full_address": customer.full_address,
-            "parent_id_ao": parent_id_ao,
+            "house": addr.title,
+            "full_address": addr.full_title(),
+            "parent_id_ao": addr.parent_addr_id,
             "house_num": customer.house,
             "actual_start_time": customer.create_date,
             # TODO: указывать дату конца, когда абонент выключается или удаляется
@@ -106,7 +101,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
         individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
         gen,
         customers.select_related(
-            "group", "group__fiasrecursiveaddressmodel", "group__fiasrecursiveaddressmodel__fias_recursive_address"
+            "address"
         ),
         f"ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt",
     )
@@ -122,14 +117,20 @@ def export_individual_customer(customers_queryset, event_time=None):
 
     def gen(customer: Customer):
         if not hasattr(customer, "passportinfo"):
-            print('Customer "%s" has no passport info' % customer)
+            logging.warning('Customer "%s" has no passport info' % customer)
             return
-        if not hasattr(customer, "group"):
+        addr = customer.address
+        if not addr:
+            logging.warning('Customer "%s" has no address info' % customer)
             return
 
         passport = customer.passportinfo
         create_date = customer.create_date
         full_fname = customer.get_full_name()
+
+        parent_addr_id = addr.parent_addr_id
+        if not parent_addr_id:
+            return
 
         r = {
             "contract_id": customer.pk,
@@ -142,8 +143,8 @@ def export_individual_customer(customers_queryset, event_time=None):
             "document_distributor": passport.distributor,
             "passport_code": passport.division_code or "",
             "passport_date": passport.date_of_acceptance,
-            "house": customer.house,
-            "parent_id_ao": customer.street_id,
+            "house": addr.title,
+            "parent_id_ao": parent_addr_id,
             "actual_start_time": datetime(create_date.year, create_date.month, create_date.day),
             # 'actual_end_time':
             "customer_id": customer.pk,

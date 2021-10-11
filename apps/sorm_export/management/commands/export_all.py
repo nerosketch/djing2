@@ -163,11 +163,11 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any):
         funcs = (
             # (export_customer_lease_binds, "Customer lease binds"),
-            (export_all_address_objects, "Address objects export"),
+            # # (export_all_address_objects, "Address objects export"),
             # (export_all_root_customers, "Customers root export"),
             # (export_all_customer_contracts, "Customer contracts export"),
             # # (export_all_access_point_addresses, 'Customer ap export'),
-            # (export_all_individual_customers, "Customer individual export"),
+            (export_all_individual_customers, "Customer individual export"),
             # # (export_all_legal_customers, 'Customer legal export'),
             # (export_all_customer_contacts, "Customer contacts export"),
             # (export_all_ip_leases, "Network static leases export"),
