@@ -1,7 +1,6 @@
 from typing import Optional
 
 from django.db import models, connection
-from django.contrib.sites.models import Site
 from django.utils.translation import gettext as _
 from djing2.models import BaseAbstractModel
 from .interfaces import IAddressObject
@@ -101,7 +100,7 @@ class AddressModelManager(models.Manager):
 
         title_hierarchy = list(_accumulate_addrs_hierarchy())
         title_hierarchy.reverse()
-        return ', '.join(f'{short_title}. {title}' for aid, short_title, title in title_hierarchy)
+        return ', '.join(f'{short_title}. {title}' for _, short_title, title in title_hierarchy)
 
 
 AddressFIASLevelChoices = tuple(AddressFIASInfo.get_levels())
