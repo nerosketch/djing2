@@ -83,6 +83,7 @@ call plug#begin('~/.vim/plugged')
     Plug 'mhinz/vim-startify'                 " Vim Start Page
     Plug 'editorconfig/editorconfig-vim'      " Editorconfig support
     Plug 'Asheq/close-buffers.vim'            " Close buffers
+    Plug 'airblade/vim-gitgutter'             " Plugin which shows a git diff in the sign column
 
     Plug 'pacha/vem-tabline'
 
@@ -311,7 +312,6 @@ map gw :Bclose<cr>
 
 set colorcolumn=79
 setlocal textwidth=79
-setlocal commentstring=#\%s
 
 " run current script with python3 by CTRL+R in command and insert mode
 autocmd FileType python map <buffer> <C-r> :w<CR>:exec '!python3' shellescape(@%, 1)<CR>
