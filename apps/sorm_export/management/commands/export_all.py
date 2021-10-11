@@ -157,7 +157,7 @@ def export_all_gateways():
 
 
 class Command(BaseCommand):
-    help = "Exports all available data to СОРМ"
+    help = "Exports all available data to 'СОРМ'"
 
     def handle(self, *args: Any, **options: Any):
         funcs = (
