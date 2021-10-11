@@ -103,9 +103,6 @@ class AddressModelManager(models.Manager):
         return ', '.join(f'{short_title}. {title}' for _, short_title, title in title_hierarchy)
 
 
-AddressFIASLevelChoices = tuple(AddressFIASInfo.get_levels())
-
-
 class AddressModel(IAddressObject, BaseAbstractModel):
     parent_addr = models.ForeignKey(
         'self', verbose_name=_('Parent address'),
@@ -120,10 +117,11 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         default=AddressModelTypes.UNKNOWN
     )
 
-    fias_address_level = models.IntegerField(
+    fias_address_level = models.CharField(
         _('Address Level'),
-        choices=AddressFIASLevelChoices,
-        default=0
+        max_length=8,
+        choices=((str(num), name) for num, name in AddressFIASInfo.get_levels()),
+        null=True, blank=True, default=None,
     )
     fias_address_type = models.IntegerField(
         _('FIAS address type'),

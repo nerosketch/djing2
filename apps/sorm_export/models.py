@@ -1,7 +1,6 @@
 from django.utils.translation import gettext as _
 from django.db.models import JSONField
 from django.db import models
-from addresses.models import AddressModel
 
 
 date_format = '%d.%m.%Y'

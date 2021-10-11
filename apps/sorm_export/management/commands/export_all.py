@@ -48,7 +48,7 @@ def export_all_customer_contracts():
 
 
 def export_all_address_objects():
-    addr_objects = AddressModel.objects.order_by("fias_address_level")
+    addr_objects = AddressModel.objects.order_by("")
     et = datetime.now()
     fname = get_remote_export_filename(event_time=et)
 

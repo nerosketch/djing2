@@ -34,10 +34,11 @@ class Migration(migrations.Migration):
                     choices=[(0, 'Unknown'), (4, 'Locality'), (8, 'Street')],
                     default=0
                 )),
-                ('fias_address_level', models.IntegerField(
+                ('fias_address_level', models.CharField(
                     'Address Level',
-                    choices=[(0, 'Level 0'), (1, 'Level 1'), (2, 'Level 2'), (3, 'Level 3'), (35, 'Level 35'), (4, 'Level 4'), (5, 'Level 5'), (6, 'Level 6'), (65, 'Level 65'), (7, 'Level 7'), (75, 'Level 75'), (8, 'Level 8'), (90, 'Level 90'), (9, 'Level 9'), (91, 'Level 91')],
-                    default=0
+                    max_length=8,
+                    choices=[('0', 'Level 0'), ('1', 'Level 1'), ('2', 'Level 2'), ('3', 'Level 3'), ('35', 'Level 35'), ('4', 'Level 4'), ('5', 'Level 5'), ('6', 'Level 6'), ('65', 'Level 65'), ('7', 'Level 7'), ('75', 'Level 75'), ('8', 'Level 8'), ('90', 'Level 90'), ('9', 'Level 9'), ('91', 'Level 91')],
+                    null=True, blank=True, default=None,
                 )),
                 ('fias_address_type', models.IntegerField(
                     'FIAS address type',

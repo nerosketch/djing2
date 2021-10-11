@@ -1,4 +1,4 @@
-from typing import Generator, Any, Dict, Optional
+from typing import Generator, Any, Dict, Optional, Tuple
 from dataclasses import dataclass
 
 from djing2.lib import safe_int
@@ -502,10 +502,11 @@ class IAddressFIASType:
 
 class AddressFIASInfo:
     @staticmethod
-    def get_levels() -> Generator[AddressFIASLevelType, Any, None]:
+    def get_levels() -> Generator[Tuple[AddressFIASLevelType, str], Any, None]:
         for level, obj in _address_fias_info.items():
             name = obj.get('name')
-            yield level, name
+            if name:
+                yield level, name
 
     @staticmethod
     def get_address_types_by_level(level: int) -> Generator[IAddressFIASType, Any, None]:
