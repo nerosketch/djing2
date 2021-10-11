@@ -24,7 +24,9 @@ def _ftp_credentials(fn):
 
 
 @_ftp_credentials
-def _send_buffer_as_file(ftp, fp: TextIOWrapper, remote_fname: str, _bin_mode=True) -> None:
+def _send_buffer_as_file(fp: TextIOWrapper, remote_fname: str, _bin_mode=True, ftp=None) -> None:
+    if ftp is None:
+        return
     if _bin_mode:
         ftp.storbinary("STOR %s" % remote_fname, fp)
     else:

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet
-from addresses.models import AddressModel, AddressModelTypes, AddressFIASLevelChoices
+from addresses.models import AddressModel, AddressModelTypes
 from addresses.serializers import AddressModelSerializer
 from addresses.fias_socrbase import AddressFIASInfo
 
@@ -48,7 +48,7 @@ class AddressModelViewSet(DjingModelViewSet):
         return Response({
             'name': name,
             'value': val
-        } for val, name in AddressFIASLevelChoices)
+        } for val, name in AddressFIASInfo.get_levels())
 
     @action(methods=['get'], detail=False)
     def get_ao_types(self, request):
