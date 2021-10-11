@@ -133,8 +133,7 @@ def export_all_customer_services():
 def export_all_switches():
     device_switch_type_ids = [uniq_num for uniq_num, dev_klass in DEVICE_TYPES if issubclass(
         dev_klass, SwitchDeviceStrategy)]
-    переделать
-    devs = Device.objects.filter(dev_type__in=device_switch_type_ids).select_related('address')
+    devs = Device.objects.filter(dev_type__in=device_switch_type_ids).exclude(address=None).select_related('address')
     if devs.exists():
         data, fname = export_devices(devices=devs, event_time=datetime.now())
         task_export(data, fname, ExportStampTypeEnum.DEVICE_SWITCH)
@@ -162,21 +161,21 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any):
         funcs = (
-            # (export_customer_lease_binds, "Customer lease binds"),
-            # # (export_all_address_objects, "Address objects export"),
-            # (export_all_root_customers, "Customers root export"),
-            # (export_all_customer_contracts, "Customer contracts export"),
-            # # (export_all_access_point_addresses, 'Customer ap export'),
-            # (export_all_individual_customers, "Customer individual export"),
-            # # (export_all_legal_customers, 'Customer legal export'),
-            # (export_all_customer_contacts, "Customer contacts export"),
-            # (export_all_ip_leases, "Network static leases export"),
-            # (export_all_service_nomenclature, "Services export status"),
-            # (export_all_customer_services, "Customer services export status"),
-            # (export_special_numbers, "Special numbers export status"),
+            (export_customer_lease_binds, "Customer lease binds"),
+            # (export_all_address_objects, "Address objects export"),
+            (export_all_root_customers, "Customers root export"),
+            (export_all_customer_contracts, "Customer contracts export"),
+            # (export_all_access_point_addresses, 'Customer ap export'),
+            (export_all_individual_customers, "Customer individual export"),
+            # (export_all_legal_customers, 'Customer legal export'),
+            (export_all_customer_contacts, "Customer contacts export"),
+            (export_all_ip_leases, "Network static leases export"),
+            (export_all_service_nomenclature, "Services export status"),
+            (export_all_customer_services, "Customer services export status"),
+            (export_special_numbers, "Special numbers export status"),
             (export_all_switches, "Switches export status"),
-            # (export_all_ip_numbering, "Ip numbering export status"),
-            # (export_all_gateways, "Gateways export status"),
+            (export_all_ip_numbering, "Ip numbering export status"),
+            (export_all_gateways, "Gateways export status"),
         )
         for fn, msg in funcs:
             try:
