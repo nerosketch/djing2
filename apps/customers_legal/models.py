@@ -4,10 +4,11 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from djing2.models import BaseAbstractModel
+from addresses.models import AddressModel
 from dynamicfields.models import AbstractDynamicFieldContentModel
 from profiles.models import BaseAccount
 from groupapp.models import Group
-from customers.models import Customer, CustomerStreet
+from customers.models import Customer
 
 
 class CustomerLegalModel(BaseAccount):
@@ -16,11 +17,21 @@ class CustomerLegalModel(BaseAccount):
     )
     branches = models.ManyToManyField(Customer, blank=True, verbose_name=_('Branches'))
     balance = models.FloatField(default=0.0)
-    street = models.ForeignKey(
-        CustomerStreet, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
+    address = models.ForeignKey(
+        AddressModel,
+        on_delete=models.SET_DEFAULT,
+        null=True, blank=True, default=None,
+        verbose_name=_("Address")
     )
+
+    # ИНН, налоговый номер
+    tax_number = models.CharField(
+        _('Tax number'),
+        max_length=32,
+    )
+
+
     title = models.CharField(_('Title'), max_length=256)
-    house = models.CharField(_("House"), max_length=12, null=True, blank=True, default=None)
 
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
 
