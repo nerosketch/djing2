@@ -130,6 +130,7 @@ def export_individual_customer(customers_queryset, event_time=None):
 
         parent_addr_id = addr.parent_addr_id
         if not parent_addr_id:
+            logging.warning("Address '%s' has no parent object" % addr)
             return
 
         r = {
