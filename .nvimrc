@@ -48,7 +48,7 @@ if !isdirectory(expand("~/.fonts/NerdFonts/"))
     silent !fc-cache -f -
 
     " Reload nvimrc
-    source ./.nvimrc
+    source %
 endif
 
 " Plug /*
@@ -84,7 +84,7 @@ call plug#begin('~/.vim/plugged')
     Plug 'editorconfig/editorconfig-vim'      " Editorconfig support
     Plug 'Asheq/close-buffers.vim'            " Close buffers
 
-    Plug 'crispgm/nvim-tabline'               " Vim tabline
+    Plug 'pacha/vem-tabline'
 
 call plug#end()
 
@@ -123,8 +123,6 @@ vim.o.completeopt = 'menuone,noselect'
 -- luasnip setup
 local luasnip = require 'luasnip'
 
--- nvim-tabline setup
-require('tabline').setup({})
 
 
 
@@ -407,44 +405,4 @@ let g:DevIconsEnableFolderPatternMatching = 1
 " enable file extension pattern matching glyphs on folder/directory (disabled by default with 0)
 let g:DevIconsEnableFolderExtensionPatternMatching = 0
 
-
-
-
-
-:set tabline=%!MyTabLine()
-
-function MyTabLine()
-  let s = ''
-  for i in range(tabpagenr('$'))
-    " select the highlighting
-    if i + 1 == tabpagenr()
-      let s .= '%#TabLineSel#'
-    else
-      let s .= '%#TabLine#'
-    endif
-
-    " set the tab page number (for mouse clicks)
-    let s .= '%' . (i + 1) . 'T'
-
-    " the label is made by MyTabLabel()
-    let s .= ' %{MyTabLabel(' . (i + 1) . ')} '
-  endfor
-
-  " after the last tab fill with TabLineFill and reset tab page nr
-  let s .= '%#TabLineFill#%T'
-
-  " right-align the label to close the current tab page
-  if tabpagenr('$') > 1
-    let s .= '%=%#TabLine#%999Xclose'
-  endif
-  return s
-endfunction
-
-function MyTabLabel(n)
-  let buflist = tabpagebuflist(a:n)
-  let winnr = tabpagewinnr(a:n)
-  return bufname(buflist[winnr - 1])
-endfunction
-
-command! MTabLn call MyTabLine()
 
