@@ -25,12 +25,12 @@ def task_export(data, filename: str, export_type: ExportStampTypeEnum):
     # try:
     csv_buffer = Conv2BinStringIO()
     csv_writer = csv.writer(csv_buffer, dialect="unix", delimiter=";")
-    num = 0
+    num = None
     for num, row_data in enumerate(data):
-        row = (eld for elt, eld in row_data.items())
+        row = (eld for _, eld in row_data.items())
         csv_writer.writerow(row)
     csv_buffer.seek(0)
-    if num > 0:
+    if num is not None:
         send_text_buf2ftp(csv_buffer, filename)
     csv_buffer.close()
     del csv_buffer
