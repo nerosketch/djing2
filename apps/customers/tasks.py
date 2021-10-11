@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from uwsgi_tasks import cron, task
@@ -26,7 +27,7 @@ def customer_check_service_for_expiration(customer_id: int):
     except Customer.DoesNotExist:
         pass
     except LogicError as err:
-        print(err)
+        logging.error(str(err))
 
 
 def _manage_periodic_pays_run():

@@ -1,3 +1,4 @@
+import logging
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.translation import gettext_lazy as _
 from django.db.utils import IntegrityError
@@ -153,5 +154,5 @@ class DhcpLever(SecureApiViewMixin, APIView):
             else:
                 return '"cmd" parameter is invalid: %s' % data_action
         except (LogicError, DuplicateEntry) as e:
-            print("Error: %s:" % e.__class__.__name__, e)
+            logging.error("%s: %s" % (e.__class__.__name__, e))
             return str(e)
