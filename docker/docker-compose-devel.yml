@@ -10,6 +10,7 @@ services:
     stop_grace_period: 1m
     ports:
       - 5432:5432
+    stdin_open: true
     tty: true
     restart: on-failure
     volumes:
@@ -29,6 +30,7 @@ services:
       - postgres
     ports:
       - 8000:8000
+    stdin_open: true
     tty: true
     secrets:
       - POSTGRES_PASSWORD
@@ -52,9 +54,11 @@ services:
   ui:
     build: djing2-ui/
     stop_grace_period: 1m
-    tty: true
+    user: node
     ports:
       - 8080:8080
+    stdin_open: true
+    tty: true
     volumes:
       - ../../djing2-elui:/home/node/app
       - /tmp:/tmp
