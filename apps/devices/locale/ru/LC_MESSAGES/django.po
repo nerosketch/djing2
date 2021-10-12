@@ -407,6 +407,13 @@ msgstr "Параметр port_state плох"
 #~ msgid "Device %(device_name)s is ok"
 #~ msgstr "Устройство %(device_name)s всё ок"
 
+msgid "Success"
+msgstr "Успешно"
+
+msgid "Devices has not mac address."
+msgstr "Устройство не имеет mac адреса в настройках."
+
+#, python-format
 #~ msgid "Device %(device_name)s is unreachable"
 #~ msgstr "Устройство %(device_name)s не доступно"
 

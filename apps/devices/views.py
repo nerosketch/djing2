@@ -23,7 +23,6 @@ from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
     UnsupportedReadingVlan,
-    DeviceConsoleError,
 )
 from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
@@ -52,7 +51,7 @@ def catch_dev_manager_err(fn):
             EasySNMPError,
         ) as err:
             return Response(str(err), status=452)
-        except (SystemError, DeviceConsoleError) as err:
+        except SystemError as err:
             return Response(str(err), status=453)
 
     return _wrapper
@@ -213,12 +212,9 @@ class DevicePONViewSet(FilterQuerySetMixin, DjingModelViewSet):
         device_config_serializer = dev_serializers.DeviceOnuConfigTemplate(data=request.data)
         device_config_serializer.is_valid(raise_exception=True)
 
-        try:
-            device = self.get_object()
-            res = device.apply_onu_config(config=device_config_serializer.data)
-            return Response(res)
-        except DeviceConsoleError as err:
-            return Response(str(err), status=453)
+        device = self.get_object()
+        res = device.apply_onu_config(config=device_config_serializer.data)
+        return Response(res)
 
     @action(detail=True, methods=['get'])
     @catch_dev_manager_err
@@ -304,7 +300,7 @@ class DeviceModelViewSet(FilterQuerySetMixin, DjingModelViewSet):
             raise DeviceImplementationError("Expected SwitchDeviceStrategyContext instance")
         try:
             ports = [p.as_dict() for p in manager.get_ports()]
-            return Response(data=ports)
+            return Response({"text": '', "status": 1, "ports": ports})
         except StopIteration:
             return Response({"text": _("Device port count error"), "status": 2})
 

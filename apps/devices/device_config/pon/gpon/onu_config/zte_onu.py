@@ -33,13 +33,17 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         elif device.parent_dev:
             ip = device.parent_dev.ip_address
             if not ip:
-                raise DeviceConfigurationError("not have ip")
+                raise DeviceConfigurationError(_("Ip address or parent device with ip address required for ONU device"))
         mac = str(device.mac_addr) if device.mac_addr else None
+        if mac is None:
+            raise DeviceConfigurationError(_('Devices has not mac address.'))
 
         # Format serial number from mac address
         # because saved mac address got from serial number
         sn = "ZTEG%s" % "".join("%.2X" % int(x, base=16) for x in mac.split(":")[-4:])
         telnet = extra_data.get("telnet")
+        if telnet is None:
+            raise DeviceConfigurationError("'telnet' parameter no passed")
 
         @process_lock(lock_name="zte_olt")
         def _locked_register_onu(device_config_type: ZteOnuDeviceConfigType, *args, **kwargs):
@@ -66,7 +70,10 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         except TIMEOUT as e:
             raise zte_utils.OnuZteRegisterError(e) from e
 
-        return {1: "success"}
+        return {
+            "status": 1,
+            "text": _("Success")
+        }
 
     @staticmethod
     def get_extra_data(device) -> dict:

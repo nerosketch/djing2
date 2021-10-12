@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import Generator, Optional, Dict, Iterable
+from typing import Generator, Optional, Dict, Iterable, Union, Any
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.exceptions import APIException
 
 
-OptionalScriptCallResult = Optional[Dict[int, str]]
+OptionalScriptCallResult = Optional[Dict[str, Union[str, Any]]]
 
 
 class DeviceImplementationError(APIException):
