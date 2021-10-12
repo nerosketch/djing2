@@ -10,6 +10,7 @@ from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
 
 from addresses.serializers import AddressModelSerializer
+from profiles.models import split_fio
 from customers import models
 from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
@@ -120,7 +121,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             return bool(r)
         err_text = _('Credentials must be without spaces or any special symbols, only letters and "-"')
 
-        res = models.split_fio(full_fio)
+        res = split_fio(full_fio)
         if len(res) == 3:
             surname, name, last_name = res
             if surname is not None and not _is_chunk_ok(surname):
