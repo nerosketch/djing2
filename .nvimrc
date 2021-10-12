@@ -25,7 +25,7 @@ set ttyfast                                 " terminal acceleration
 
 set backspace=indent,eol,start              " backspace removes all (indents, EOLs, start) What is start?
 
-set clipboard=unnamed                       " use system clipboard
+set clipboard+=unnamedplus                  " use system clipboard
 
 
 " My key bindings
