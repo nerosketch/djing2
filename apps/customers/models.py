@@ -30,25 +30,6 @@ class NotEnoughMoney(LogicError):
     pass
 
 
-def split_fio(fio: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Try to split name, last_name, and surname."""
-    full_fname = str(fio)
-    full_name_list = full_fname.split()
-    surname, name, last_name = (None,) * 3
-    name_len = len(full_name_list)
-    if name_len > 0:
-        if name_len > 3:
-            surname, name, *last_name = full_name_list
-            last_name = '-'.join(last_name)
-        elif name_len == 3:
-            surname, name, last_name = full_name_list
-        elif name_len == 2:
-            surname, name = full_name_list
-        elif name_len == 1:
-            name = full_fname
-    return surname, name, last_name
-
-
 class CustomerServiceModelManager(models.QuerySet):
     def _filter_raw_manage_customer_service(self, balance_equal_operator: str, customer_id=None):
         """
@@ -734,10 +715,6 @@ class Customer(IAddressContaining, BaseAccount):
             return _("Process locked by another process"), False
         except ValueError as err:
             return str(err), False
-
-    def split_fio(self):
-        """Try to split name, last_name, and surname."""
-        return split_fio(str(self.fio))
 
     class Meta:
         db_table = "customers"

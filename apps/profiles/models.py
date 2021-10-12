@@ -1,5 +1,5 @@
 import os
-
+from typing import Tuple, Optional
 from bitfield.models import BitField
 from django.conf import settings
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin, Permission
@@ -11,6 +11,25 @@ from djing2.lib.validators import latinValidator, telephoneValidator
 from djing2.models import BaseAbstractModel, BaseAbstractModelMixin
 from groupapp.models import Group
 from profiles.tasks import resize_profile_avatar
+
+
+def split_fio(fio: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Try to split name, last_name, and surname."""
+    full_fname = str(fio)
+    full_name_list = full_fname.split()
+    surname, name, last_name = (None,) * 3
+    name_len = len(full_name_list)
+    if name_len > 0:
+        if name_len > 3:
+            surname, name, *last_name = full_name_list
+            last_name = '-'.join(last_name)
+        elif name_len == 3:
+            surname, name, last_name = full_name_list
+        elif name_len == 2:
+            surname, name = full_name_list
+        elif name_len == 1:
+            name = full_fname
+    return surname, name, last_name
 
 
 class MyUserManager(BaseUserManager):
@@ -76,6 +95,10 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
 
     def auth_log(self, user_agent: str, remote_ip: str):
         ProfileAuthLog.objects.create(profile=self, user_agent=user_agent, remote_ip=remote_ip)
+
+    def split_fio(self):
+        """Try to split name, last_name, and surname."""
+        return split_fio(str(self.fio))
 
     # Use UserManager to get the create_user method, etc.
     objects = MyUserManager()
