@@ -30,7 +30,6 @@ set clipboard+=unnamedplus                  " use system clipboard
 
 " My key bindings
 nnoremap <F12> onull=True, blank=True, default=None,<esc>
-nnoremap <C-r> :redo<cr>
 
 
 " Install nerd fonts
@@ -311,11 +310,6 @@ map gw :Bclose<cr>
 
 set colorcolumn=79
 setlocal textwidth=79
-
-" run current script with python3 by CTRL+R in command and insert mode
-autocmd FileType python map <buffer> <C-r> :w<CR>:exec '!python3' shellescape(@%, 1)<CR>
-autocmd FileType python imap <buffer> <C-r> <esc>:w<CR>:exec '!python3' shellescape(@%, 1)<CR>
-
 
 
 "=====================================================

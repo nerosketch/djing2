@@ -1,18 +1,18 @@
 from rest_framework.generics import get_object_or_404
 
-from customers_legal.models import CustomerLegalModel, CustomerLegalDynamicFieldContentModel
-from customers_legal.serializers import CustomerLegalModelSerializer
+from customers_legal import models
+from customers_legal import serializers
 from djing2.viewsets import DjingModelViewSet
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 
 
 class CustomerLegalDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelViewSet):
-    queryset = CustomerLegalDynamicFieldContentModel.objects.all()
+    queryset = models.CustomerLegalDynamicFieldContentModel.objects.all()
 
     def get_group_id(self) -> int:
         legal_customer_id = self.request.query_params.get('legal_customer_id')
         self.legal_customer_id = legal_customer_id
-        legal_customer = get_object_or_404(CustomerLegalModel.objects.only('group_id'), pk=legal_customer_id)
+        legal_customer = get_object_or_404(models.CustomerLegalModel.objects.only('group_id'), pk=legal_customer_id)
         self.legal_customer = legal_customer
         return legal_customer.group_id
 
@@ -32,5 +32,15 @@ class CustomerLegalDynamicFieldContentModelViewSet(AbstractDynamicFieldContentMo
 
 
 class CustomerLegalModelViewSet(DjingModelViewSet):
-    queryset = CustomerLegalModel.objects.all()
-    serializer_class = CustomerLegalModelSerializer
+    queryset = models.CustomerLegalModel.objects.all()
+    serializer_class = serializers.CustomerLegalModelSerializer
+
+
+class LegalCustomerBankModelViewSet(DjingModelViewSet):
+    queryset = models.LegalCustomerBankModel.objects.all()
+    serializer_class = serializers.LegalCustomerBankModelSerializer
+
+
+class LegalCustomerPostAddressModelViewSet(DjingModelViewSet):
+    queryset = models.LegalCustomerPostAddressModel.objects.all()
+    serializer_class = serializers.LegalCustomerPostAddressModelSerializer

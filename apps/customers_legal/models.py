@@ -60,7 +60,7 @@ class CustomerLegalModel(BaseAccount):
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
 
     def get_telephones(self):
-        return CustomerLegalTelephone.objects.filter(legal_customer=self).defer('legal_customer')
+        return CustomerLegalTelephoneModel.objects.filter(legal_customer=self).defer('legal_customer')
 
     def __str__(self):
         return self.title
@@ -69,7 +69,7 @@ class CustomerLegalModel(BaseAccount):
         db_table = 'customers_legal'
 
 
-class LegalCustomerBank(BaseAbstractModel):
+class LegalCustomerBankModel(BaseAbstractModel):
     legal_customer = models.OneToOneField(
         to=CustomerLegalModel,
         on_delete=models.CASCADE,
@@ -93,7 +93,7 @@ class LegalCustomerBank(BaseAbstractModel):
         db_table = 'customer_legal_bank'
 
 
-class LegalCustomerPostAddressInfo(BaseAbstractModel):
+class LegalCustomerPostAddressModel(BaseAbstractModel):
     legal_customer = models.ForeignKey(
         to=CustomerLegalModel,
         on_delete=models.CASCADE,
@@ -117,7 +117,7 @@ class LegalCustomerPostAddressInfo(BaseAbstractModel):
         db_table = 'customer_legal_post_address'
 
 
-class LegalCustomerDeliveryAddress(BaseAbstractModel):
+class LegalCustomerDeliveryAddressModel(BaseAbstractModel):
     legal_customer = models.ForeignKey(
         to=CustomerLegalModel,
         on_delete=models.CASCADE,
@@ -132,7 +132,7 @@ class LegalCustomerDeliveryAddress(BaseAbstractModel):
         db_table = 'customer_legal_delivery_address'
 
 
-class CustomerLegalTelephone(BaseAbstractModel):
+class CustomerLegalTelephoneModel(BaseAbstractModel):
     legal_customer = models.ForeignKey(CustomerLegalModel, on_delete=models.CASCADE)
     telephone = models.CharField(
         max_length=16,
