@@ -218,6 +218,7 @@ class CustomerIpLeaseModel(models.Model):
             street_id,
             *others,
         ) = res
+        # TODO: check is street_id is exists
         return Customer(
             pk=baseaccount_id,
             balance=balance,
