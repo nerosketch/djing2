@@ -10,6 +10,8 @@ services:
     stop_grace_period: 1m
     ports:
       - 5432:5432
+    stdin_open: true
+    tty: true
     restart: on-failure
     volumes:
       - postgresql-data:/var/lib/postgresql/data
@@ -28,6 +30,8 @@ services:
       - postgres
     ports:
       - 8000:8000
+    stdin_open: true
+    tty: true
     secrets:
       - POSTGRES_PASSWORD
       - DJANGO_SECRET_KEY
@@ -53,6 +57,8 @@ services:
     user: node
     ports:
       - 8080:8080
+    stdin_open: true
+    tty: true
     volumes:
       - ../../djing2-elui:/home/node/app
       - /tmp:/tmp
