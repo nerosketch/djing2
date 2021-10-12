@@ -28,23 +28,36 @@ class CustomerLegalModel(BaseAccount):
     tax_number = models.CharField(
         _('Tax number'),
         max_length=32,
+        validators=validators.integer_validator,
     )
 
+    post_index = models.CharField(
+        _('Post number'),
+        help_text="почтовый индекс адреса абонента",
+        max_length=32,
+        null=True, blank=True, default=None,
+    )
+
+    legal_address = models.ForeignKey(
+        to=AddressModel,
+        verbose_name=_('Legal address'),
+        on_delete=models.SET_DEFAULT,
+        null=True, blank=True, default=None,
+    )
+
+    actual_start_time = models.DateTimeField(
+        _('Actual start time'),
+        help_text="дата начала интервала, на котором актуальна информация",
+    )
+    actual_end_time = models.DateTimeField(
+        _('Actual end time'),
+        help_text="дата окончания интервала, на котором актуальна информация",
+        null=True, blank=True, default=None,
+    )
 
     title = models.CharField(_('Title'), max_length=256)
 
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
-
-    # TODO: im not sure about this fields here
-    # inn = models.CharField('ИНН', max_length=32, validators=[
-    #     validators.integer_validator
-    # ])
-    # address_post_index = models.CharField(_('Address post index'), max_length=6, validators=[
-    #     validators.integer_validator
-    # ])
-    # legal_office_addr = models.CharField(_('Legal office address'), max_length=32, validators=[
-    #     validators.integer_validator
-    # ])
 
     def get_telephones(self):
         return CustomerLegalTelephone.objects.filter(legal_customer=self).defer('legal_customer')
@@ -54,6 +67,69 @@ class CustomerLegalModel(BaseAccount):
 
     class Meta:
         db_table = 'customers_legal'
+
+
+class LegalCustomerBank(BaseAbstractModel):
+    legal_customer = models.OneToOneField(
+        to=CustomerLegalModel,
+        on_delete=models.CASCADE,
+    )
+    title = models.CharField(
+        _('Title'),
+        max_length=64,
+    )
+    post_index = models.CharField(
+        _('Post number'),
+        help_text="Почтовый индекс почтового адреса абонента",
+        max_length=32,
+        null=True, blank=True, default=None,
+    )
+    number = models.CharField(
+        _('Bank account number'),
+        max_length=64
+    )
+
+    class Meta:
+        db_table = 'customer_legal_bank'
+
+
+class LegalCustomerPostAddressInfo(BaseAbstractModel):
+    legal_customer = models.ForeignKey(
+        to=CustomerLegalModel,
+        on_delete=models.CASCADE,
+    )
+    post_index = models.CharField(
+        _('Post number'),
+        max_length=32,
+        null=True, blank=True, default=None,
+    )
+    office_num = models.CharField(
+        _('Office number'),
+        max_length=32,
+    )
+    address = models.ForeignKey(
+        to=AddressModel,
+        on_delete=models.CASCADE,
+        verbose_name=_('Address')
+    )
+
+    class Meta:
+        db_table = 'customer_legal_post_address'
+
+
+class LegalCustomerDeliveryAddress(BaseAbstractModel):
+    legal_customer = models.ForeignKey(
+        to=CustomerLegalModel,
+        on_delete=models.CASCADE,
+    )
+    address = models.ForeignKey(
+        to=AddressModel,
+        on_delete=models.CASCADE,
+        verbose_name=_('Address')
+    )
+
+    class Meta:
+        db_table = 'customer_legal_delivery_address'
 
 
 class CustomerLegalTelephone(BaseAbstractModel):

@@ -30,8 +30,7 @@ set clipboard=unnamed                       " use system clipboard
 
 " My key bindings
 nnoremap <F12> onull=True, blank=True, default=None,<esc>
-
-
+nnoremap <C-r> :redo<cr>
 
 
 " Install nerd fonts
