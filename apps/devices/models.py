@@ -13,8 +13,6 @@ from devices.device_config.base import (
     Vlans,
     Macs,
     DeviceConfigurationError,
-    DeviceImplementationError,
-    Vlan,
     OptionalScriptCallResult,
 )
 from devices.device_config.base_device_strategy import BaseDeviceStrategyContext

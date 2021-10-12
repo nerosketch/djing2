@@ -23,7 +23,6 @@ from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
     UnsupportedReadingVlan,
-    DeviceConsoleError,
 )
 from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
