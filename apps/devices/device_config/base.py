@@ -1,23 +1,16 @@
 from dataclasses import dataclass
-from typing import Generator, Optional, Dict, Iterable
+from typing import Generator, Optional, Dict, Iterable, Union, Any
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.exceptions import APIException
 
 
-OptionalScriptCallResult = Optional[Dict[int, str]]
+OptionalScriptCallResult = Optional[Dict[str, Union[str, Any]]]
 
 
 class DeviceImplementationError(APIException):
     status_code = status.HTTP_400_BAD_REQUEST
     default_detail = _("Device implementation error")
-    _detail = None
-
-    @property
-    def detail(self):
-        if self._detail is None:
-            return self.default_detail
-        return self._detail
 
 
 class DeviceConfigurationError(DeviceImplementationError):
