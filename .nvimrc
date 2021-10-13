@@ -86,7 +86,8 @@ call plug#begin('~/.vim/plugged')
     Plug 'Asheq/close-buffers.vim'            " Close buffers
     Plug 'airblade/vim-gitgutter'             " Plugin which shows a git diff in the sign column
 
-    Plug 'crispgm/nvim-tabline'
+    " Bottom line
+    Plug 'hoob3rt/lualine.nvim'
 
 call plug#end()
 
@@ -126,9 +127,42 @@ vim.o.completeopt = 'menuone,noselect'
 local luasnip = require 'luasnip'
 
 
+-- Bottom line
+local status, lualine = pcall(require, "lualine")
+if (not status) then return end
 
-
-
+lualine.setup {
+  options = {
+    icons_enabled = true,
+    theme = 'solarized_dark',
+    section_separators = {'', ''},
+    component_separators = {'', ''},
+    disabled_filetypes = {}
+  },
+  sections = {
+    lualine_a = {'mode'},
+    lualine_b = {'branch'},
+    lualine_c = {'filename'},
+    lualine_x = {
+      { 'diagnostics', sources = {"nvim_lsp"}, symbols = {error = ' ', warn = ' ', info = ' ', hint = ' '} },
+      'encoding',
+      'filetype'
+    },
+    lualine_y = {'progress'},
+    lualine_z = {'location'}
+  },
+  inactive_sections = {
+    lualine_a = {},
+    lualine_b = {},
+    lualine_c = {'filename'},
+    lualine_x = {'location'},
+    lualine_y = {},
+    lualine_z = {}
+  },
+  tabline = {},
+  extensions = {'fugitive'}
+}
+-- End bottom line
 
 -- nvim-cmp setup
 local cmp = require 'cmp'
@@ -182,12 +216,6 @@ EOF
 
 
 lua << EOF
-  require('tabline').setup({
-    show_index = true,    -- show tab index
-    show_modify = true,   -- show buffer modification indicator
-    no_name = '[Unnamed]', -- no name buffer name
-  })
-
   local nvim_lsp = require('lspconfig')
 
   -- Use an on_attach function to only map the following keys
@@ -333,8 +361,8 @@ map gw :Bclose<cr>
 
 
 " close buffers
-"nmap <silent> <leader>q :SyntasticCheck # <CR> :bp <BAR> bd #<CR>
-"nnoremap <silent> Q     :Bdelete menu<CR>
+nmap <silent> <leader>q :SyntasticCheck # <CR> :bp <BAR> bd #<CR>
+nnoremap <silent> Q     :Bdelete menu<CR>
 
 
 "=====================================================
