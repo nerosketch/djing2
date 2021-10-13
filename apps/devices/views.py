@@ -58,7 +58,7 @@ def catch_dev_manager_err(fn):
 
 
 class DevicePONViewSet(DjingModelViewSet):
-    queryset = Device.objects.select_related("parent_dev")
+    queryset = Device.objects.select_related("parent_dev").order_by('comment')
     serializer_class = dev_serializers.DevicePONModelSerializer
     filterset_fields = ("group", "dev_type", "status", "is_noticeable")
     filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend]
