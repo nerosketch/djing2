@@ -1,7 +1,7 @@
 from typing import Optional
 
 from django.db import models, connection
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from djing2.models import BaseAbstractModel
 from .interfaces import IAddressObject
 from .fias_socrbase import AddressFIASInfo, AddressFIASLevelType

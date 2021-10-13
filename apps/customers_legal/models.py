@@ -28,20 +28,13 @@ class CustomerLegalModel(BaseAccount):
     tax_number = models.CharField(
         _('Tax number'),
         max_length=32,
-        validators=validators.integer_validator,
+        validators=[validators.integer_validator],
     )
 
     post_index = models.CharField(
         _('Post number'),
         help_text="почтовый индекс адреса абонента",
         max_length=32,
-        null=True, blank=True, default=None,
-    )
-
-    legal_address = models.ForeignKey(
-        to=AddressModel,
-        verbose_name=_('Legal address'),
-        on_delete=models.SET_DEFAULT,
         null=True, blank=True, default=None,
     )
 

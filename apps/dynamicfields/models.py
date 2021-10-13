@@ -92,7 +92,7 @@ class FieldModel(models.Model):
         default=None
     )
     groups = models.ManyToManyField(
-        Group, related_name='+',
+        Group, related_name='fields',
         verbose_name=_('Groups'),
         db_table='dynamic_fields_groups'
     )
