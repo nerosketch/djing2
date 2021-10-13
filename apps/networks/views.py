@@ -55,7 +55,7 @@ class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
 
 
 class VlanIfModelViewSet(SitesFilterMixin, DjingModelViewSet):
-    queryset = VlanIf.objects.all()
+    queryset = VlanIf.objects.all().order_by('vid')
     serializer_class = VlanIfModelSerializer
     filter_backends = (CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter)
     ordering_fields = ("title", "vid")
