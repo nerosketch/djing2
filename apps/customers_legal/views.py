@@ -44,3 +44,14 @@ class LegalCustomerBankModelViewSet(DjingModelViewSet):
 class LegalCustomerPostAddressModelViewSet(DjingModelViewSet):
     queryset = models.LegalCustomerPostAddressModel.objects.all()
     serializer_class = serializers.LegalCustomerPostAddressModelSerializer
+
+
+class LegalCustomerDeliveryAddressModelViewSet(DjingModelViewSet):
+    queryset = models.LegalCustomerDeliveryAddressModel.objects.all()
+    serializer_class = serializers.LegalCustomerDeliveryAddressModelSerializer
+
+
+class CustomerLegalTelephoneModelViewSet(DjingModelViewSet):
+    queryset = models.CustomerLegalTelephoneModel.objects.all()
+    serializer_class = serializers.CustomerLegalTelephoneModelSerializer
+

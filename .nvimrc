@@ -11,9 +11,12 @@ set tabstop=4
 set softtabstop=4
 set shiftwidth=4
 set smarttab                                " set tabs for a shifttabs logic
+set showtabline=2
 set expandtab
+set smartindent
 set autoindent
 set fileformat=unix
+set t_Co=256
 
 set showmatch                               " shows matching part of bracket pairs (), [], {}
 
@@ -83,7 +86,7 @@ call plug#begin('~/.vim/plugged')
     Plug 'Asheq/close-buffers.vim'            " Close buffers
     Plug 'airblade/vim-gitgutter'             " Plugin which shows a git diff in the sign column
 
-    Plug 'pacha/vem-tabline'
+    Plug 'crispgm/nvim-tabline'
 
 call plug#end()
 
@@ -179,11 +182,17 @@ EOF
 
 
 lua << EOF
-local nvim_lsp = require('lspconfig')
+  require('tabline').setup({
+    show_index = true,    -- show tab index
+    show_modify = true,   -- show buffer modification indicator
+    no_name = '[Unnamed]', -- no name buffer name
+  })
 
--- Use an on_attach function to only map the following keys
--- after the language server attaches to the current buffer
-local on_attach = function(client, bufnr)
+  local nvim_lsp = require('lspconfig')
+
+  -- Use an on_attach function to only map the following keys
+  -- after the language server attaches to the current buffer
+  local on_attach = function(client, bufnr)
 
   local function buf_set_keymap(...) vim.api.nvim_buf_set_keymap(bufnr, ...) end
   local function buf_set_option(...) vim.api.nvim_buf_set_option(bufnr, ...) end
@@ -304,10 +313,6 @@ command! -bang -complete=buffer -nargs=? Bclose call <SID>Bclose(<q-bang>, <q-ar
 nnoremap <silent> <Leader>bd :Bclose<CR>
 
 
-map gn :bn<cr>
-map gp :bp<cr>
-map gw :Bclose<cr>
-
 set colorcolumn=79
 setlocal textwidth=79
 
@@ -319,11 +324,17 @@ tab sball
 set switchbuf=useopen
 set laststatus=2
 " switch buffers
-nmap <F8> :bprev<CR>
-nmap <F9> :bnext<CR>
+nmap <F8> :bn<cr>
+nmap <F9> :bp<cr>
+
+" Close current opened buffer
+map gw :Bclose<cr>
+
+
+
 " close buffers
-nmap <silent> <leader>q :SyntasticCheck # <CR> :bp <BAR> bd #<CR>
-nnoremap <silent> Q     :Bdelete menu<CR>
+"nmap <silent> <leader>q :SyntasticCheck # <CR> :bp <BAR> bd #<CR>
+"nnoremap <silent> Q     :Bdelete menu<CR>
 
 
 "=====================================================
