@@ -8,7 +8,7 @@ class CustomerLegalModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CustomerLegalModel
-        fields = '__all__'
+        exclude = ['password']
 
 
 class LegalCustomerBankModelSerializer(serializers.ModelSerializer):
