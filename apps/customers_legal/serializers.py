@@ -4,6 +4,8 @@ from customers_legal import models
 
 
 class CustomerLegalModelSerializer(serializers.ModelSerializer):
+    balance = serializers.FloatField(read_only=True)
+
     class Meta:
         model = models.CustomerLegalModel
         fields = '__all__'
