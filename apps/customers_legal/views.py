@@ -1,4 +1,6 @@
 from rest_framework.generics import get_object_or_404
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from customers_legal import models
 from customers_legal import serializers
@@ -34,6 +36,11 @@ class CustomerLegalDynamicFieldContentModelViewSet(AbstractDynamicFieldContentMo
 class CustomerLegalModelViewSet(DjingModelViewSet):
     queryset = models.CustomerLegalModel.objects.all()
     serializer_class = serializers.CustomerLegalModelSerializer
+
+    @action(methods=['get'], detail=False)
+    def get_legal_types(self, request):
+        res = {k: v for k, v in models.CustomerLegalIntegerChoices.choices}
+        return Response(res)
 
 
 class LegalCustomerBankModelViewSet(DjingModelViewSet):
