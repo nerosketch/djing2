@@ -42,6 +42,7 @@ class CustomerLegalModel(BaseAccount):
     # ИНН, налоговый номер
     tax_number = models.CharField(
         _('Tax number'),
+        unique=True,
         max_length=32,
         validators=[validators.integer_validator],
     )
@@ -71,7 +72,7 @@ class CustomerLegalModel(BaseAccount):
         null=True, blank=True, default=None,
     )
 
-    title = models.CharField(_('Title'), max_length=256)
+    title = models.CharField(_('Title'), max_length=256, unique=True)
 
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
 
@@ -131,10 +132,6 @@ class LegalCustomerPostAddressModel(BaseAbstractModel):
         _('Post number'),
         max_length=32,
         null=True, blank=True, default=None,
-    )
-    office_num = models.CharField(
-        _('Office number'),
-        max_length=32,
     )
     address = models.ForeignKey(
         to=AddressModel,

@@ -1,33 +1,15 @@
 import re
-from string import digits
 from datetime import datetime
 
 from django.contrib.auth.hashers import make_password
-from django.core import validators
-from django.utils.crypto import get_random_string
 from django.utils.translation import gettext as _
-from drf_queryfields import QueryFieldsMixin
 from rest_framework import serializers
 
-from addresses.serializers import AddressModelSerializer
 from profiles.models import split_fio
+from profiles.serializers import BaseAccountSerializer, generate_random_password
 from customers import models
-from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
 from services.serializers import ServiceModelSerializer
-
-
-def generate_random_username():
-    username = get_random_string(length=6, allowed_chars=digits)
-    try:
-        models.Customer.objects.get(username=username)
-        return generate_random_username()
-    except models.Customer.DoesNotExist:
-        return str(safe_int(username))
-
-
-def generate_random_password():
-    return get_random_string(length=8, allowed_chars=digits)
 
 
 class CustomerServiceModelSerializer(BaseCustomModelSerializer):
@@ -62,10 +44,7 @@ def update_passw(acc, raw_password):
             models.CustomerRawPassword.objects.create(customer=acc, passw_text=raw_password)
 
 
-class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
-    username = serializers.CharField(initial=generate_random_username)
-    is_active = serializers.BooleanField(initial=True)
-    full_name = serializers.CharField(source="get_full_name", read_only=True)
+class CustomerModelSerializer(BaseAccountSerializer):
     group_title = serializers.CharField(source="group.title", read_only=True)
     address_title = serializers.CharField(source='get_address', read_only=True)
     # gateway_title = serializers.CharField(source="gateway.title", read_only=True)
@@ -73,9 +52,6 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     last_connected_service_title = serializers.CharField(source="last_connected_service.title", read_only=True)
     current_service_title = serializers.CharField(source="current_service.service.title", read_only=True)
     service_id = serializers.IntegerField(source="current_service.service.id", read_only=True)
-    password = serializers.CharField(
-        write_only=True, required=False, initial=generate_random_password, validators=[validators.integer_validator]
-    )
     raw_password = serializers.CharField(source="customerrawpassword.passw_text", read_only=True)
     balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
     create_date = serializers.CharField(read_only=True)
@@ -119,6 +95,7 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         def _is_chunk_ok(v: str, rgxp=re.compile(r"^[A-Za-zА-Яа-яЁё-]{1,250}$")):
             r = rgxp.search(v)
             return bool(r)
+
         err_text = _('Credentials must be without spaces or any special symbols, only letters and "-"')
 
         res = split_fio(full_fio)
@@ -138,7 +115,6 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     class Meta:
         model = models.Customer
         # depth = 1
-        # TODO: remove pk
         exclude = [
             'groups',
             'user_permissions',
