@@ -39,7 +39,7 @@ class CustomerLegalModelViewSet(DjingModelViewSet):
 
     @action(methods=['get'], detail=False)
     def get_legal_types(self, request):
-        res = {k: v for k, v in models.CustomerLegalIntegerChoices.choices}
+        res = ({'value': k, 'label': v} for k, v in models.CustomerLegalIntegerChoices.choices)
         return Response(res)
 
 
