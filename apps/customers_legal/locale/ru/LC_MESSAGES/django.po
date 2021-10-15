@@ -32,3 +32,15 @@ msgstr "Филиалы"
 #: apps/customers_legal/models.py:17
 msgid "Comment"
 msgstr "Памятка"
+
+msgid "Bank identify code"
+msgstr "БИК"
+
+msgid "Correspondent account"
+msgstr "Корреспондентский счёт"
+
+msgid "Settlement account"
+msgstr "Расчётный счёт"
+
+msgid "State-level registration number"
+msgstr "ОГРН"

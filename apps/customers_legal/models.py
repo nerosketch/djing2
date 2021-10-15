@@ -11,17 +11,32 @@ from groupapp.models import Group
 from customers.models import Customer
 
 
+class CustomerLegalIntegerChoices(models.IntegerChoices):
+    NOT_CHOSEN = 0, _('Not chosen')
+    LEGAL = 1, _('Legal customer')
+    INDIVIDUAL = 2, _('Individual businessman')
+    SELF_EMPLOYED = 3, _('Self employed')
+
+
 class CustomerLegalModel(BaseAccount):
     group = models.ForeignKey(
         Group, on_delete=models.SET_NULL, blank=True, null=True, default=None, verbose_name=_("Legal customer group")
     )
     branches = models.ManyToManyField(Customer, blank=True, verbose_name=_('Branches'))
     balance = models.FloatField(default=0.0)
+
+    # Юридический адрес
     address = models.ForeignKey(
         AddressModel,
         on_delete=models.SET_DEFAULT,
         null=True, blank=True, default=None,
         verbose_name=_("Address")
+    )
+
+    legal_type = models.PositiveSmallIntegerField(
+        _('Legal type'),
+        choices=CustomerLegalIntegerChoices.choices,
+        default=CustomerLegalIntegerChoices.NOT_CHOSEN,
     )
 
     # ИНН, налоговый номер
@@ -30,6 +45,14 @@ class CustomerLegalModel(BaseAccount):
         max_length=32,
         validators=[validators.integer_validator],
     )
+
+    # ОГРН
+    state_level_reg_number = models.CharField(
+        _('State-level registration number'),
+        max_length=64
+    )
+
+    # КПП при необходимости выставлять в динамическом поле
 
     post_index = models.CharField(
         _('Post number'),
@@ -69,6 +92,7 @@ class LegalCustomerBankModel(BaseAbstractModel):
     )
     title = models.CharField(
         _('Title'),
+        help_text="Название банка",
         max_length=64,
     )
     post_index = models.CharField(
@@ -79,6 +103,18 @@ class LegalCustomerBankModel(BaseAbstractModel):
     )
     number = models.CharField(
         _('Bank account number'),
+        max_length=64
+    )
+    bank_code = models.CharField(
+        _('Bank identify code'),  # БИК
+        max_length=64
+    )
+    correspondent_account = models.CharField(
+        _('Correspondent account'),  # корреспондентский счёт
+        max_length=64
+    )
+    settlement_account = models.CharField(
+        _('Settlement account'),  # расчётный счёт
         max_length=64
     )
 
