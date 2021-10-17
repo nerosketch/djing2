@@ -16,7 +16,7 @@ set expandtab
 set smartindent
 set autoindent
 set fileformat=unix
-set t_Co=256
+"set t_Co=256
 
 set showmatch                               " shows matching part of bracket pairs (), [], {}
 
@@ -33,6 +33,7 @@ set clipboard+=unnamedplus                  " use system clipboard
 
 " My key bindings
 nnoremap <F12> onull=True, blank=True, default=None,<esc>
+let mapleader="\<space>"
 
 
 " Install nerd fonts
@@ -89,6 +90,11 @@ call plug#begin('~/.vim/plugged')
     " Bottom line
     Plug 'akinsho/bufferline.nvim'
 
+    " Telescope requirements
+    Plug 'nvim-lua/plenary.nvim'
+    Plug 'nvim-telescope/telescope.nvim'
+    Plug 'nvim-telescope/telescope-fzy-native.nvim'
+
 call plug#end()
 
 
@@ -127,6 +133,8 @@ vim.o.completeopt = 'menuone,noselect'
 local luasnip = require 'luasnip'
 
 require("bufferline").setup{}
+
+require("telescope").load_extension("fzy_native")
 
 -- Bottom line
 local status, lualine = pcall(require, "lualine")
@@ -362,7 +370,6 @@ map gw :Bclose<cr>
 
 
 " close buffers
-nmap <silent> <leader>q :SyntasticCheck # <CR> :bp <BAR> bd #<CR>
 nnoremap <silent> Q     :Bdelete menu<CR>
 
 
@@ -380,8 +387,14 @@ let g:bookmark_highlight_lines = 1
 "=====================================================
 set incsearch	                            " incremental search
 set hlsearch	                            " highlight search results
-noremap <F3> :execute "vimgrep /" . expand("<cword>") . "/j **" <Bar> cw<CR>
-noremap <F4> :execute "/" . expand("<cword>") <CR>
+
+" Find files using Telescope command-line sugar.
+nnoremap <leader>ff <cmd>Telescope find_files<cr>
+nnoremap <leader>fg <cmd>Telescope live_grep<cr>
+nnoremap <leader>fb <cmd>Telescope buffers<cr>
+nnoremap <leader>fh <cmd>Telescope help_tags<cr>
+
+
 
 
 "=====================================================
