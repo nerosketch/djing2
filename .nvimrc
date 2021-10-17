@@ -87,7 +87,7 @@ call plug#begin('~/.vim/plugged')
     Plug 'airblade/vim-gitgutter'             " Plugin which shows a git diff in the sign column
 
     " Bottom line
-    Plug 'hoob3rt/lualine.nvim'
+    Plug 'akinsho/bufferline.nvim'
 
 call plug#end()
 
@@ -126,6 +126,7 @@ vim.o.completeopt = 'menuone,noselect'
 -- luasnip setup
 local luasnip = require 'luasnip'
 
+require("bufferline").setup{}
 
 -- Bottom line
 local status, lualine = pcall(require, "lualine")
