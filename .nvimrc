@@ -33,7 +33,7 @@ set clipboard+=unnamedplus                  " use system clipboard
 
 " My key bindings
 nnoremap <F12> onull=True, blank=True, default=None,<esc>
-let mapleader="\<space>"
+" let mapleader="\<space>"
 
 
 " Install nerd fonts

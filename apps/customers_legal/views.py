@@ -2,6 +2,8 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from customers.serializers import CustomerModelSerializer
+from customers.models import Customer
 from customers_legal import models
 from customers_legal import serializers
 from djing2.viewsets import DjingModelViewSet
@@ -41,6 +43,16 @@ class CustomerLegalModelViewSet(DjingModelViewSet):
     def get_legal_types(self, request):
         res = ({'value': k, 'label': v} for k, v in models.CustomerLegalIntegerChoices.choices)
         return Response(res)
+
+    @action(methods=['get'], detail=True)
+    def get_branches(self, request, pk=True):
+        qs = Customer.objects.filter(customerlegalmodel=pk)
+        ser = CustomerModelSerializer(instance=qs, many=True, context={
+            'request': request
+        })
+        return Response(ser.data)
+
+
 
 
 class LegalCustomerBankModelViewSet(DjingModelViewSet):
