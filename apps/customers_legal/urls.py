@@ -8,8 +8,6 @@ app_name = 'customers_legal'
 router = DefaultRouter()
 router.register('dynamic', views.CustomerLegalDynamicFieldContentModelViewSet)
 router.register('bank', views.LegalCustomerBankModelViewSet)
-router.register('post', views.LegalCustomerPostAddressModelViewSet)
-router.register('delivery', views.LegalCustomerDeliveryAddressModelViewSet)
 router.register('telephone', views.CustomerLegalTelephoneModelViewSet)
 router.register('', views.CustomerLegalModelViewSet)
 
