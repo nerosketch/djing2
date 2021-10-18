@@ -58,6 +58,7 @@ class LegalCustomerPostAddressModelViewSet(DjingModelViewSet):
 class LegalCustomerDeliveryAddressModelViewSet(DjingModelViewSet):
     queryset = models.LegalCustomerDeliveryAddressModel.objects.all()
     serializer_class = serializers.LegalCustomerDeliveryAddressModelSerializer
+    filterset_fields = ('legal_customer',)
 
 
 class CustomerLegalTelephoneModelViewSet(DjingModelViewSet):

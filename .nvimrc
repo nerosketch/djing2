@@ -361,8 +361,8 @@ tab sball
 set switchbuf=useopen
 set laststatus=2
 " switch buffers
-nmap <F8> :bn<cr>
-nmap <F9> :bp<cr>
+nmap <F8> :bp<cr>
+nmap <F9> :bn<cr>
 
 " Close current opened buffer
 map gw :Bclose<cr>
