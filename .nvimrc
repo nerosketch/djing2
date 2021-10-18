@@ -33,7 +33,7 @@ set clipboard+=unnamedplus                  " use system clipboard
 
 " My key bindings
 nnoremap <F12> onull=True, blank=True, default=None,<esc>
-" let mapleader="\<space>"
+let mapleader=","
 
 
 " Install nerd fonts
@@ -98,7 +98,7 @@ call plug#begin('~/.vim/plugged')
 call plug#end()
 
 
-colorscheme gruvbox
+"colorscheme gruvbox
 " colorscheme OceanicNext
 "let g:material_terminal_italics = 1
 " variants: default, palenight, ocean, lighter, darker, default-community,
