@@ -19,18 +19,6 @@ class LegalCustomerBankModelSerializer(BaseCustomModelSerializer):
         fields = '__all__'
 
 
-class LegalCustomerPostAddressModelSerializer(BaseCustomModelSerializer):
-    class Meta:
-        model = models.LegalCustomerPostAddressModel
-        fields = '__all__'
-
-
-class LegalCustomerDeliveryAddressModelSerializer(BaseCustomModelSerializer):
-    class Meta:
-        model = models.LegalCustomerDeliveryAddressModel
-        fields = '__all__'
-
-
 class CustomerLegalTelephoneModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerLegalTelephoneModel

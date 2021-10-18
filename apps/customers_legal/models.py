@@ -29,8 +29,42 @@ class CustomerLegalModel(BaseAccount):
     address = models.ForeignKey(
         AddressModel,
         on_delete=models.SET_DEFAULT,
+        related_name='legal_customer',
         null=True, blank=True, default=None,
-        verbose_name=_("Address")
+        verbose_name=_("Legal address")
+    )
+    post_index = models.CharField(
+        _('Post number'),
+        help_text="почтовый индекс юридического адреса абонента",
+        max_length=32,
+        null=True, blank=True, default=None,
+    )
+
+    delivery_address = models.ForeignKey(
+        to=AddressModel,
+        related_name='delivery_customer_legal',
+        on_delete=models.SET_DEFAULT,
+        null=True, blank=True, default=None,
+        verbose_name=_('Delivery address')
+    )
+    delivery_address_post_index = models.CharField(
+        _('Delivery address post index'),
+        max_length=32,
+        null=True, blank=True, default=None,
+    )
+
+    # Post address info
+    post_post_index = models.CharField(
+        _('Post number'),
+        max_length=32,
+        null=True, blank=True, default=None,
+    )
+    post_address = models.ForeignKey(
+        to=AddressModel,
+        related_name='post_customer_legal',
+        on_delete=models.SET_DEFAULT,
+        null=True, blank=True, default=None,
+        verbose_name=_('Address')
     )
 
     legal_type = models.PositiveSmallIntegerField(
@@ -54,13 +88,6 @@ class CustomerLegalModel(BaseAccount):
     )
 
     # КПП при необходимости выставлять в динамическом поле
-
-    post_index = models.CharField(
-        _('Post number'),
-        help_text="почтовый индекс адреса абонента",
-        max_length=32,
-        null=True, blank=True, default=None,
-    )
 
     actual_start_time = models.DateTimeField(
         _('Actual start time'),
@@ -96,15 +123,10 @@ class LegalCustomerBankModel(BaseAbstractModel):
         help_text="Название банка",
         max_length=64,
     )
-    post_index = models.CharField(
-        _('Post number'),
-        help_text="Почтовый индекс почтового адреса абонента",
-        max_length=32,
-        null=True, blank=True, default=None,
-    )
     number = models.CharField(
         _('Bank account number'),
-        max_length=64
+        max_length=64,
+        null=True, blank=True, default=None,
     )
     bank_code = models.CharField(
         _('Bank identify code'),  # БИК
@@ -121,41 +143,6 @@ class LegalCustomerBankModel(BaseAbstractModel):
 
     class Meta:
         db_table = 'customer_legal_bank'
-
-
-class LegalCustomerPostAddressModel(BaseAbstractModel):
-    legal_customer = models.ForeignKey(
-        to=CustomerLegalModel,
-        on_delete=models.CASCADE,
-    )
-    post_index = models.CharField(
-        _('Post number'),
-        max_length=32,
-        null=True, blank=True, default=None,
-    )
-    address = models.ForeignKey(
-        to=AddressModel,
-        on_delete=models.CASCADE,
-        verbose_name=_('Address')
-    )
-
-    class Meta:
-        db_table = 'customer_legal_post_address'
-
-
-class LegalCustomerDeliveryAddressModel(BaseAbstractModel):
-    legal_customer = models.ForeignKey(
-        to=CustomerLegalModel,
-        on_delete=models.CASCADE,
-    )
-    address = models.ForeignKey(
-        to=AddressModel,
-        on_delete=models.CASCADE,
-        verbose_name=_('Address')
-    )
-
-    class Meta:
-        db_table = 'customer_legal_delivery_address'
 
 
 class CustomerLegalTelephoneModel(BaseAbstractModel):

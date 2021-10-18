@@ -49,18 +49,6 @@ class LegalCustomerBankModelViewSet(DjingModelViewSet):
     filterset_fields = ('legal_customer',)
 
 
-class LegalCustomerPostAddressModelViewSet(DjingModelViewSet):
-    queryset = models.LegalCustomerPostAddressModel.objects.all()
-    serializer_class = serializers.LegalCustomerPostAddressModelSerializer
-    filterset_fields = ('legal_customer',)
-
-
-class LegalCustomerDeliveryAddressModelViewSet(DjingModelViewSet):
-    queryset = models.LegalCustomerDeliveryAddressModel.objects.all()
-    serializer_class = serializers.LegalCustomerDeliveryAddressModelSerializer
-    filterset_fields = ('legal_customer',)
-
-
 class CustomerLegalTelephoneModelViewSet(DjingModelViewSet):
     queryset = models.CustomerLegalTelephoneModel.objects.all()
     serializer_class = serializers.CustomerLegalTelephoneModelSerializer
