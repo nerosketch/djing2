@@ -44,3 +44,13 @@ msgstr "Расчётный счёт"
 
 msgid "State-level registration number"
 msgstr "ОГРН"
+
+msgid "Legal customer"
+msgstr "Юридическое лицо"
+
+msgid "Individual businessman"
+msgstr "ИП (индивидуальный предприниматель)"
+
+msgid "Self employed"
+msgstr "Самозанятый"
+
