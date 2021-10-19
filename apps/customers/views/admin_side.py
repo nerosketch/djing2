@@ -8,13 +8,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
-from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.filters import OrderingFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 
+from djing2.lib.filters import CustomSearchFilter
 from customers import models, serializers
 from customers.models import CustomerQuerySet
 from customers.views.view_decorators import catch_customers_errs
@@ -53,7 +54,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         "current_service", "current_service__service", "gateway"
     )
     serializer_class = serializers.CustomerModelSerializer
-    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
+    filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter, CustomSearchFilter]
     search_fields = ("username", "fio", "telephone", "description")
     filterset_fields = ("group", "device", "dev_port", "current_service__service", "address")
     ordering_fields = ("username", "fio", "house", "balance", "current_service__service__title")
