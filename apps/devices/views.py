@@ -11,10 +11,10 @@ from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from rest_framework.utils.encoders import JSONEncoder
 
+from djing2.lib.filters import CustomSearchFilter
 from devices import serializers as dev_serializers
 from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
@@ -82,7 +82,7 @@ class DevicePONViewSet(FilterQuerySetMixin, DjingModelViewSet):
     queryset = Device.objects.select_related("parent_dev")
     serializer_class = dev_serializers.DevicePONModelSerializer
     filterset_fields = ("group", "dev_type", "status", "is_noticeable")
-    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend]
+    filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, CustomSearchFilter]
     search_fields = ("comment", "ip_address", "mac_addr")
     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
 
@@ -268,7 +268,7 @@ class DeviceModelViewSet(FilterQuerySetMixin, DjingModelViewSet):
     queryset = Device.objects.select_related("parent_dev")
     serializer_class = dev_serializers.DeviceModelSerializer
     filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
-    filter_backends = (CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend)
+    filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)
     search_fields = ("comment", "ip_address", "mac_addr")
     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
 
