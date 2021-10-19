@@ -46,7 +46,10 @@ def update_passw(acc, raw_password):
 
 class CustomerModelSerializer(BaseAccountSerializer):
     group_title = serializers.CharField(source="group.title", read_only=True)
-    address_title = serializers.CharField(source='get_address', read_only=True)
+
+    # TODO: optimize it
+    address_title = serializers.CharField(source='full_address', read_only=True)
+
     # gateway_title = serializers.CharField(source="gateway.title", read_only=True)
     device_comment = serializers.CharField(source="device.comment", read_only=True)
     last_connected_service_title = serializers.CharField(source="last_connected_service.title", read_only=True)
