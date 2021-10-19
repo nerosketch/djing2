@@ -215,7 +215,6 @@ class CustomerIpLeaseModel(models.Model):
             gw_id,
             grp_id,
             last_srv_id,
-            street_id,
             *others,
         ) = res
         # TODO: check is street_id is exists
@@ -233,7 +232,6 @@ class CustomerIpLeaseModel(models.Model):
             gateway_id=gw_id,
             group_id=grp_id,
             last_connected_service_id=last_srv_id,
-            street_id=street_id,
         )
 
     @staticmethod
