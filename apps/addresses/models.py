@@ -1,7 +1,9 @@
+from __future__ import annotations
 from typing import Optional
-
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
+
+from djing2.lib import safe_int
 from djing2.models import BaseAbstractModel
 from .interfaces import IAddressObject
 from .fias_socrbase import AddressFIASInfo, AddressFIASLevelType
@@ -11,8 +13,10 @@ class AddressModelTypes(models.IntegerChoices):
     UNKNOWN = 0, _('Unknown')
     LOCALITY = 4, _('Locality')
     STREET = 8, _('Street')
-    # HOUSE = 12, _('House')
-    # BUILDING = 16, _('Building')
+    HOUSE = 12, _('House')
+    OFFICE_NUM = 16, _('Office number')
+    BUILDING = 20, _('Building')
+    CORPUS = 24, 'Корпус'
     OTHER = 64, _('Other')
 
 
@@ -69,6 +73,13 @@ class AddressModelManager(models.Manager):
             "SELECT id FROM chain WHERE id IS NOT NULL"
         )
         return models.expressions.RawSQL(sql=query, params=[addr_id])
+
+    def get_address_by_type(self, addr_id: int, addr_type: AddressModelTypes):
+        ids_tree_query = AddressModelManager.get_address_recursive_ids(
+            addr_id=addr_id,
+            direction_down=False
+        )
+        return self.filter(pk__in=ids_tree_query, address_type=addr_type)
 
     @staticmethod
     def get_address_full_title(addr_id: int) -> str:
@@ -140,13 +151,30 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         return self.address_type == AddressModelTypes.LOCALITY
 
     def str_representation(self):
-        return self.title
+        return self.full_title()
 
     def full_title(self):
+        """
+        Для текущего адреса получаем иерархию вверх, до страны.
+        И возвращаем строковую интерпретацию этого полного адреса.
+        """
         addr_id = int(self.pk)
         return AddressModelManager.get_address_full_title(
             addr_id=addr_id
         )
+
+    def get_address_item_by_type(self, addr_type: AddressModelTypes) -> Optional[AddressModel]:
+        """
+        :param addr_type: Id нижнего адресного объекта.
+
+        Для текущего адреса получаем иерархию вверх, до страны.
+        Из этой иерархии берём только первый попавшийся элемент
+        с AddressModel.address_type = addr_type
+        """
+        return AddressModel.objects.get_address_by_type(
+            addr_id=safe_int(self.pk),
+            addr_type=addr_type
+        ).first()
 
     # @staticmethod
     # def get_streets_as_addr_objects():
