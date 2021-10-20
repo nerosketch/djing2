@@ -26,9 +26,9 @@ class Migration(migrations.Migration):
             fields=[
                 ('baseaccount_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='profiles.baseaccount')),
                 ('balance', models.FloatField(default=0.0)),
-                ('post_index', models.CharField(blank=True, default=None, help_text='почтовый индекс юридического адреса абонента', max_length=32, null=True, verbose_name='Post number')),
-                ('delivery_address_post_index', models.CharField(blank=True, default=None, max_length=32, null=True, verbose_name='Delivery address post index')),
-                ('post_post_index', models.CharField(blank=True, default=None, max_length=32, null=True, verbose_name='Post number')),
+                ('post_index', models.CharField(blank=True, default=None, help_text='почтовый индекс юридического адреса абонента', max_length=6, null=True, verbose_name='Post number')),
+                ('delivery_address_post_index', models.CharField(blank=True, default=None, max_length=6, null=True, verbose_name='Delivery address post index')),
+                ('post_post_index', models.CharField(blank=True, default=None, max_length=6, null=True, verbose_name='Post number')),
                 ('legal_type', models.PositiveSmallIntegerField(choices=[(0, 'Not chosen'), (1, 'Legal customer'), (2, 'Individual businessman'), (3, 'Self employed')], default=0, verbose_name='Legal type')),
                 ('tax_number', models.CharField(max_length=32, unique=True, validators=[django.core.validators.RegexValidator(re.compile('^-?\\d+\\Z'), code='invalid', message='Enter a valid integer.')], verbose_name='Tax number')),
                 ('state_level_reg_number', models.CharField(max_length=64, verbose_name='State-level registration number')),
