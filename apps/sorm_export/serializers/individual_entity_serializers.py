@@ -402,6 +402,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         label='офис юридического адреса, содержит только цифры офиса',
         max_length=32,
         required=False,
+        allow_blank=True,
         default='',
     )
     # №6
@@ -433,6 +434,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text='содержит только номер или букву здания, без типа а/о',
         max_length=32,
         default='',
+        allow_blank=True,
         required=False
     )
     # №13
@@ -441,6 +443,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text='содержит только номер корпуса',
         max_length=32,
         default='',
+        allow_blank=True,
         required=False
     )
     # №14
@@ -486,6 +489,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         max_length=32,
         validators=[validators.integer_validator],
         default='',
+        allow_blank=True,
         required=False
     )
     # №20
@@ -509,6 +513,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text="содержит только номер дома, без типа а/о",
         max_length=32,
         default='',
+        allow_blank=True,
         required=False,
     )
     # №26
@@ -517,6 +522,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text='содержит только номер или букву здания, без типа а/о',
         max_length=32,
         default='',
+        allow_blank=True,
         required=False
     )
     # №27
@@ -525,6 +531,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text='содержит только номер корпуса',
         max_length=32,
         default='',
+        allow_blank=True,
         required=False
     )
     # №28
@@ -548,6 +555,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         validators=[validators.integer_validator],
         max_length=32,
         default='',
+        allow_blank=True,
         required=False
     )
     # №31
@@ -571,6 +579,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text="содержит только номер дома, без типа а/о",
         max_length=32,
         default='',
+        allow_blank=True,
         required=False,
     )
     # №37
@@ -579,6 +588,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text='содержит только номер или букву здания, без типа а/о',
         max_length=32,
         default='',
+        allow_blank=True,
         required=False
     )
     # №38
@@ -587,6 +597,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text='содержит только номер корпуса',
         max_length=32,
         default='',
+        allow_blank=True,
         required=False
     )
     # №39

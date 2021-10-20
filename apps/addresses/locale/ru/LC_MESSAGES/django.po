@@ -29,6 +29,15 @@ msgstr "Населённый пункт"
 msgid "Street"
 msgstr "Улица"
 
+msgid "House"
+msgstr "Дом"
+
+msgid "Office number"
+msgstr "Номер Офиса"
+
+msgid "Building"
+msgstr "Здание"
+
 msgid "Other"
 msgstr "Другое"
 
