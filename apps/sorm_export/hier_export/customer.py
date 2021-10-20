@@ -1,7 +1,8 @@
 import logging
 from datetime import datetime
-from typing import Iterable
+from typing import Iterable, Optional
 
+from addresses.models import AddressModelTypes, AddressModel
 from customers_legal.models import CustomerLegalModel
 from customers.models import Customer
 from sorm_export.models import (
@@ -174,9 +175,17 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
     Файл выгрузки данных о юридическом лице версия 5.
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
     """
+
+    def _addr2str(addr: Optional[AddressModel]) -> str:
+        if not addr:
+            return ''
+        return str(addr.title)
+
     def gen(legal: CustomerLegalModel):
         for customer in legal.branches.all():
-            addr = legal.address
+            addr: AddressModel = legal.address
+            if not addr:
+                continue
 
             if not legal.post_address:
                 post_addr = addr
@@ -193,28 +202,51 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
                 'legal_title': legal.title,
                 'inn': legal.tax_number,
                 'post_index': legal.post_index,
-                #'office_addr': '',
+                'office_addr': _addr2str(addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.OFFICE_NUM
+                )),
                 'parent_id_ao': legal.address_id,
-                #'house': '',
-                #'building': '',
-                #'building_corpus': '',
+                'house': _addr2str(addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.HOUSE
+                )),
+                'building': _addr2str(addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.BUILDING
+                )),
+                'building_corpus': _addr2str(addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.CORPUS
+                )),
                 'full_description': addr.full_title(),
                 #'contact_telephones': '',
                 'post_post_index': legal.post_post_index or legal.post_index,
-                #'office_post_addr': '',
+                'office_post_addr': _addr2str(post_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.OFFICE_NUM
+                )),
                 'post_parent_id_ao': post_addr.pk,
-                #'post_house': '',
-                #'post_building': '',
-                #'post_building_corpus': '',
+                'post_house': _addr2str(post_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.HOUSE
+                )),
+                'post_building': _addr2str(post_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.BUILDING
+                )),
+                'post_building_corpus': _addr2str(post_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.BUILDING
+                )),
                 'post_full_description': post_addr.full_title(),
                 'post_delivery_index': legal.delivery_address_post_index or legal.post_index,
-                #'office_delivery_address': '',
+                'office_delivery_address': _addr2str(delivery_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.OFFICE_NUM
+                )),
                 'parent_office_delivery_address_id': delivery_addr.pk,
-                #'office_delivery_address_house': '',
-                #'office_delivery_address_building': '',
-                #'office_delivery_address_building_corpus': '',
+                'office_delivery_address_house': _addr2str(delivery_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.HOUSE
+                )),
+                'office_delivery_address_building': _addr2str(delivery_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.BUILDING
+                )),
+                'office_delivery_address_building_corpus': _addr2str(delivery_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.CORPUS
+                )),
                 'office_delivery_address_full_description': delivery_addr.full_title(),
-                # 'actual_start_time': legal.actual_start_time,
                 'actual_start_time': datetime.combine(customer.create_date, datetime.min.time()),
                 #'actual_end_time': '',
                 'customer_id': customer.pk,
