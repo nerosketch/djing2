@@ -98,7 +98,7 @@ call plug#begin('~/.vim/plugged')
 call plug#end()
 
 
-"colorscheme gruvbox
+colorscheme gruvbox
 " colorscheme OceanicNext
 "let g:material_terminal_italics = 1
 " variants: default, palenight, ocean, lighter, darker, default-community,
@@ -121,7 +121,7 @@ endif
 
 
 " turn off search highlight
-nnoremap ,<space> :nohlsearch<CR>
+"nnoremap ,<space> :nohlsearch<CR>
 
 
 
@@ -393,7 +393,6 @@ nnoremap <leader>ff <cmd>Telescope find_files<cr>
 nnoremap <leader>fg <cmd>Telescope live_grep<cr>
 nnoremap <leader>fb <cmd>Telescope buffers<cr>
 nnoremap <leader>fh <cmd>Telescope help_tags<cr>
-
 
 
 
