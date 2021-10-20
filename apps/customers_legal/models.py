@@ -36,7 +36,7 @@ class CustomerLegalModel(BaseAccount):
     post_index = models.CharField(
         _('Post number'),
         help_text="почтовый индекс юридического адреса абонента",
-        max_length=32,
+        max_length=6,
         null=True, blank=True, default=None,
     )
 
@@ -49,14 +49,14 @@ class CustomerLegalModel(BaseAccount):
     )
     delivery_address_post_index = models.CharField(
         _('Delivery address post index'),
-        max_length=32,
+        max_length=6,
         null=True, blank=True, default=None,
     )
 
     # Post address info
     post_post_index = models.CharField(
         _('Post number'),
-        max_length=32,
+        max_length=6,
         null=True, blank=True, default=None,
     )
     post_address = models.ForeignKey(

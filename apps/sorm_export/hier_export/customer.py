@@ -176,6 +176,18 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
     """
     def gen(legal: CustomerLegalModel):
         for customer in legal.branches.all():
+            addr = legal.address
+
+            if not legal.post_address:
+                post_addr = addr
+            else:
+                post_addr = legal.post_address
+
+            if not legal.delivery_address:
+                delivery_addr = legal.address
+            else:
+                delivery_addr = legal.delivery_address
+
             res = {
                 'legal_id': legal.pk,
                 'legal_title': legal.title,
@@ -186,19 +198,22 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
                 #'house': '',
                 #'building': '',
                 #'building_corpus': '',
+                'full_description': addr.full_title(),
                 #'contact_telephones': '',
-                'post_addr_index': legal.post_post_index,
+                'post_post_index': legal.post_post_index or legal.post_index,
                 #'office_post_addr': '',
-                'post_parent_id_ao': legal.post_address_id,
+                'post_parent_id_ao': post_addr.pk,
                 #'post_house': '',
                 #'post_building': '',
                 #'post_building_corpus': '',
-                'post_post_index': legal.post_post_index,
+                'post_full_description': post_addr.full_title(),
+                'post_delivery_index': legal.delivery_address_post_index or legal.post_index,
                 #'office_delivery_address': '',
-                'parent_office_delivery_address_id': legal.delivery_address_id,
+                'parent_office_delivery_address_id': delivery_addr.pk,
                 #'office_delivery_address_house': '',
                 #'office_delivery_address_building': '',
                 #'office_delivery_address_building_corpus': '',
+                'office_delivery_address_full_description': delivery_addr.full_title(),
                 # 'actual_start_time': legal.actual_start_time,
                 'actual_start_time': datetime.combine(customer.create_date, datetime.min.time()),
                 #'actual_end_time': '',
@@ -214,7 +229,7 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
 
     return (
         individual_entity_serializers.CustomerLegalObjectFormat,
-        gen, customers,
+        gen, customers.select_related('address', 'delivery_address', 'delivery_address'),
         f'ISP/abonents/jur_v5_{format_fname(event_time)}.txt'
     )
 

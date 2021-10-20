@@ -472,7 +472,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         required=False
     )
     # №18
-    post_addr_index = serializers.CharField(
+    post_post_index = serializers.CharField(
         label='почтовый индекс почтового адреса абонента',
         max_length=6,
         validators=[validators.integer_validator],
@@ -534,8 +534,8 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         required=False,
     )  # reserved
     # №29
-    post_post_index = serializers.CharField(
-        label='почтовый индекс почтового адреса абонента',
+    post_delivery_index = serializers.CharField(
+        label='почтовый индекс адреса доставки',
         max_length=6,
         validators=[validators.integer_validator],
         default='',
