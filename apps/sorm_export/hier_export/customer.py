@@ -2,14 +2,15 @@ import logging
 from datetime import datetime
 from typing import Iterable
 
+from customers_legal.models import CustomerLegalModel
 from customers.models import Customer
 from sorm_export.models import (
     CommunicationStandardChoices,
     CustomerDocumentTypeChoices,
-    ExportFailedStatus,
 )
 from sorm_export.serializers import individual_entity_serializers
-from .base import iterable_export_decorator, simple_export_decorator, format_fname
+from .base import iterable_export_decorator, simple_export_decorator, format_fname, iterable_gen_export_decorator
+
 
 
 @iterable_export_decorator
@@ -167,22 +168,54 @@ def export_individual_customer(customers_queryset, event_time=None):
     )
 
 
-@iterable_export_decorator
-def export_legal_customer(customers: Iterable[Customer], event_time=None):
+@iterable_gen_export_decorator
+def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=None):
     """
-    Файл выгрузки данных о юридическом лице версия 4.
+    Файл выгрузки данных о юридическом лице версия 5.
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
     """
-    raise ExportFailedStatus("Not implemented")
-    # def gen(customer: Customer):
-    #     return {
-    #         ''
-    #     }
-    # return (
-    #     individual_entity_serializers.CustomerLegalObjectFormat,
-    #     gen, customers,
-    #     f'ISP/abonents/jur_v4_{format_fname(event_time)}.txt'
-    # )
+    def gen(legal: CustomerLegalModel):
+        for customer in legal.branches.all():
+            res = {
+                'legal_id': legal.pk,
+                'legal_title': legal.title,
+                'inn': legal.tax_number,
+                'post_index': legal.post_index,
+                'office_addr': '',
+                'parent_id_ao': legal.address_id,
+                'house': '',
+                'building': '',
+                'building_corpus': '',
+                'contact_telephones': '',
+                'post_addr_index': legal.post_post_index,
+                'office_post_addr': '',
+                'post_parent_id_ao': legal.post_address,
+                'post_house': '',
+                'post_building': '',
+                'post_building_corpus': '',
+                'post_post_index': legal.post_post_index,
+                'office_delivery_address': '',
+                'parent_office_delivery_address_id': legal.delivery_address,
+                'office_delivery_address_house': '',
+                'office_delivery_address_building': '',
+                'office_delivery_address_building_corpus': '',
+                'actual_start_time': '',
+                #'actual_end_time': '',
+                'customer_id': customer.pk,
+            }
+            bank_info = legal.legalcustomerbankmodel
+            if bank_info:
+                res.update({
+                    'customer_bank': bank_info.title,
+                    'customer_bank_num': bank_info.number,
+                })
+            yield res
+
+    return (
+        individual_entity_serializers.CustomerLegalObjectFormat,
+        gen, customers,
+        f'ISP/abonents/jur_v5_{format_fname(event_time)}.txt'
+    )
 
 
 @simple_export_decorator

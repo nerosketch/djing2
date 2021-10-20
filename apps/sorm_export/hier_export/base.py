@@ -1,3 +1,4 @@
+from typing import Tuple, Any
 from datetime import datetime
 from functools import wraps
 
@@ -26,7 +27,7 @@ def simple_export_decorator(fn):
 
 def iterable_export_decorator(fn):
     @wraps(fn)
-    def _wrapped(event_time=None, *args, **kwargs):
+    def _wrapped(event_time=None, *args, **kwargs) -> Tuple[Any, str]:
         if event_time is None:
             event_time = datetime.now()
         elif isinstance(event_time, str):
@@ -44,3 +45,27 @@ def iterable_export_decorator(fn):
 
         return res_data, fname
     return _wrapped
+
+
+def iterable_gen_export_decorator(fn):
+    @wraps(fn)
+    def _wrapped(event_time=None, *args, **kwargs) -> Tuple[Any, str]:
+        if event_time is None:
+            event_time = datetime.now()
+        elif isinstance(event_time, str):
+            event_time = datetime.fromisoformat(event_time)
+
+        serializer_class, gen_fn, qs, fname = fn(event_time=event_time, *args, **kwargs)
+
+        def _val_fn(dat):
+            ser = serializer_class(data=dat)
+            ser.is_valid(raise_exception=True)
+            return ser.data
+
+        # res_data = map(gen_fn, qs.iterator())
+        res_gen = (i for e in qs.iterator() for i in gen_fn(e))
+        res_data = (_val_fn(r) for r in res_gen if r)
+
+        return res_data, fname
+    return _wrapped
+

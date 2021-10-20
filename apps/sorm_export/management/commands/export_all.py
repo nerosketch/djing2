@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 
 from addresses.models import AddressModel
 from customers.models import Customer, CustomerService, AdditionalTelephone
+from customers_legal.models import CustomerLegalModel
 from devices.device_config.device_type_collection import DEVICE_TYPES
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
 from services.models import Service
@@ -78,7 +79,7 @@ def export_all_individual_customers():
 
 
 def export_all_legal_customers():
-    customers = Customer.objects.filter(is_active=True)
+    customers = CustomerLegalModel.objects.all()
     data, fname = export_legal_customer(customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_LEGAL)
 
@@ -161,21 +162,21 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any):
         funcs = (
-            (export_customer_lease_binds, "Customer lease binds"),
-            (export_all_address_objects, "Address objects export"),
-            (export_all_root_customers, "Customers root export"),
-            (export_all_customer_contracts, "Customer contracts export"),
-            # (export_all_access_point_addresses, 'Customer ap export'),
-            (export_all_individual_customers, "Customer individual export"),
-            # (export_all_legal_customers, 'Customer legal export'),
-            (export_all_customer_contacts, "Customer contacts export"),
-            (export_all_ip_leases, "Network static leases export"),
-            (export_all_service_nomenclature, "Services export status"),
-            (export_all_customer_services, "Customer services export status"),
-            (export_special_numbers, "Special numbers export status"),
-            (export_all_switches, "Switches export status"),
-            (export_all_ip_numbering, "Ip numbering export status"),
-            (export_all_gateways, "Gateways export status"),
+            # (export_customer_lease_binds, "Customer lease binds"),
+            # (export_all_address_objects, "Address objects export"),
+            # (export_all_root_customers, "Customers root export"),
+            # (export_all_customer_contracts, "Customer contracts export"),
+            # # (export_all_access_point_addresses, 'Customer ap export'),
+            # (export_all_individual_customers, "Customer individual export"),
+            (export_all_legal_customers, 'Customer legal export'),
+            # (export_all_customer_contacts, "Customer contacts export"),
+            # (export_all_ip_leases, "Network static leases export"),
+            # (export_all_service_nomenclature, "Services export status"),
+            # (export_all_customer_services, "Customer services export status"),
+            # (export_special_numbers, "Special numbers export status"),
+            # (export_all_switches, "Switches export status"),
+            # (export_all_ip_numbering, "Ip numbering export status"),
+            # (export_all_gateways, "Gateways export status"),
         )
         for fn, msg in funcs:
             try:
