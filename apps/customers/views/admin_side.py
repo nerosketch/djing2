@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
@@ -56,7 +56,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     serializer_class = serializers.CustomerModelSerializer
     filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter, CustomSearchFilter]
     search_fields = ("username", "fio", "telephone", "description")
-    filterset_fields = ("group", "device", "dev_port", "current_service__service", "address")
+    filterset_fields = ("group", "device", "dev_port", "current_service__service", "address", "is_active")
     ordering_fields = ("username", "fio", "house", "balance", "current_service_title")
 
     def get_queryset(self):
@@ -487,3 +487,12 @@ class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelVi
         return {
             'customer_id': field_data.get('customer')
         }
+
+
+@api_view(['get'])
+def groups_with_customers(request):
+    # TODO: Also filter by address
+    grps = Group.objects.annotate(customer_count=Count('customer')).filter(customer_count__gt=0)
+    ser = serializers.GroupsWithCustomersSerializer(instance=grps, many=True)
+    return Response(ser.data)
+

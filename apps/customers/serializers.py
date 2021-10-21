@@ -5,6 +5,7 @@ from django.contrib.auth.hashers import make_password
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from groupapp.models import Group
 from profiles.models import split_fio
 from profiles.serializers import BaseAccountSerializer, generate_random_password
 from customers import models
@@ -210,3 +211,12 @@ class CustomerAttachmentSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerAttachment
         fields = "__all__"
+
+
+class GroupsWithCustomersSerializer(serializers.ModelSerializer):
+    customer_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Group
+        fields = ("id", "title", "customer_count")
+
