@@ -13,6 +13,11 @@ from sorm_export.serializers import individual_entity_serializers
 from .base import iterable_export_decorator, simple_export_decorator, format_fname, iterable_gen_export_decorator
 
 
+def _addr2str(addr: Optional[AddressModel]) -> str:
+    if not addr:
+        return ''
+    return str(addr.title)
+
 
 @iterable_export_decorator
 def export_customer_root(customers: Iterable[Customer], event_time=None):
@@ -85,16 +90,24 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
         if not hasattr(customer, "address"):
             return
         addr = customer.address
-        if not addr.parent_addr:
+        if not addr:
+            logging.warning('Customer "%s" has no address' % customer)
             return
+        if not addr.parent_addr:
+            logging.warning('Customer "%s" has address without parent address object' % customer)
+            return
+        create_date = customer.create_date
+        addr_house = _addr2str(addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.HOUSE
+        ))
         return {
             "ap_id": addr.pk,
             "customer_id": customer.pk,
             "house": addr.title,
             "full_address": addr.full_title(),
             "parent_id_ao": addr.parent_addr_id,
-            "house_num": customer.house,
-            "actual_start_time": customer.create_date,
+            "house_num": addr_house,
+            "actual_start_time": datetime(create_date.year, create_date.month, create_date.day),
             # TODO: указывать дату конца, когда абонент выключается или удаляется
             # 'actual_end_time':
         }
@@ -103,7 +116,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
         individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
         gen,
         customers.select_related(
-            "address"
+            "address", "address__parent_addr"
         ),
         f"ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt",
     )
@@ -175,11 +188,6 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
     Файл выгрузки данных о юридическом лице версия 5.
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
     """
-
-    def _addr2str(addr: Optional[AddressModel]) -> str:
-        if not addr:
-            return ''
-        return str(addr.title)
 
     def gen(legal: CustomerLegalModel):
         for customer in legal.branches.all():
