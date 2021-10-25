@@ -91,8 +91,7 @@ class AddressModelManager(models.Manager):
                 "UNION "
                 "SELECT a.id, a.parent_addr_id, a.fias_address_type, a.title "
                 "FROM chain c "
-                "LEFT JOIN addresses a ON "
-                "a.id = c.parent_addr_id"
+                "LEFT JOIN addresses a ON a.id = c.parent_addr_id"
             ")"
             "SELECT id, fias_address_type, title FROM chain WHERE id IS NOT NULL"
         )
@@ -105,6 +104,8 @@ class AddressModelManager(models.Manager):
                 while r is not None:
                     r_addr_id, addr_type, title = r
                     addr = addr_type_map.get(addr_type)
+                    if addr is None:
+                        raise ValueError('address type %d does not have a corresponding address object' % addr_type)
                     type_code_short_title = addr.addr_short_name
                     yield r_addr_id, type_code_short_title, title
                     r = cur.fetchone()
@@ -115,6 +116,8 @@ class AddressModelManager(models.Manager):
 
 
 class AddressModel(IAddressObject, BaseAbstractModel):
+    _addr_full_title_cache = None
+
     parent_addr = models.ForeignKey(
         'self', verbose_name=_('Parent address'),
         on_delete=models.SET_DEFAULT,
@@ -158,6 +161,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         Для текущего адреса получаем иерархию вверх, до страны.
         И возвращаем строковую интерпретацию этого полного адреса.
         """
+
         addr_id = int(self.pk)
         return AddressModelManager.get_address_full_title(
             addr_id=addr_id
@@ -171,10 +175,12 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         Из этой иерархии берём только первый попавшийся элемент
         с AddressModel.address_type = addr_type
         """
-        return AddressModel.objects.get_address_by_type(
-            addr_id=safe_int(self.pk),
-            addr_type=addr_type
-        ).first()
+        if self._addr_full_title_cache is None:
+            self._addr_full_title_cache = AddressModel.objects.get_address_by_type(
+                addr_id=safe_int(self.pk),
+                addr_type=addr_type
+            ).first()
+        return self._addr_full_title_cache
 
     # @staticmethod
     # def get_streets_as_addr_objects():
