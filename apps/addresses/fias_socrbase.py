@@ -523,20 +523,26 @@ class AddressFIASInfo:
 
     @staticmethod
     def get_address(addr_code: int) -> Optional[IAddressFIASType]:
-        levels = (level for level, name in AddressFIASInfo.get_levels())
+        levels = (level for level, _ in AddressFIASInfo.get_levels())
         r = (a for level in levels for a in AddressFIASInfo.get_address_types_by_level(level=level) if a.addr_code == addr_code)
         return next(r, None)
 
     @staticmethod
     def get_address_types_map() -> Dict[int, IAddressFIASType]:
-        levels = (level for level, name in AddressFIASInfo.get_levels())
+        levels = (level for level, _ in AddressFIASInfo.get_levels())
         return {
             a.addr_code: a for level in levels for a in AddressFIASInfo.get_address_types_by_level(level=level)
         }
 
     @staticmethod
     def get_address_type_choices():
-        for lev, inf in _address_fias_info.items():
+        for _, inf in _address_fias_info.items():
             children = inf.get('children')
             for child_num, (child_short_name, child_long_name) in children.items():
                 yield child_num, "%s (%s)" % (child_short_name, child_long_name)
+
+    @staticmethod
+    def get_level_name(level: int) -> Optional[str]:
+        lev = _address_fias_info.get(level, None)
+        if lev is not None:
+            return lev.get('name', None)
