@@ -492,7 +492,7 @@ class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelVi
 @api_view(['get'])
 def groups_with_customers(request):
     # TODO: Also filter by address
-    grps = Group.objects.annotate(customer_count=Count('customer')).filter(customer_count__gt=0)
+    grps = Group.objects.annotate(customer_count=Count('customer')).filter(customer_count__gt=0).order_by('title')
     ser = serializers.GroupsWithCustomersSerializer(instance=grps, many=True)
     return Response(ser.data)
 
