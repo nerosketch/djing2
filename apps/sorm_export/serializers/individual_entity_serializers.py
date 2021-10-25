@@ -157,7 +157,10 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
     house_num = serializers.CharField(
         label=_('House'),
         max_length=32,
-        required=False
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
     building = serializers.CharField(
         label=_('Building'),
