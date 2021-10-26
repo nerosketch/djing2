@@ -539,7 +539,8 @@ class AddressFIASInfo:
         for _, inf in _address_fias_info.items():
             children = inf.get('children')
             for child_num, (child_short_name, child_long_name) in children.items():
-                yield child_num, "%s (%s)" % (child_short_name, child_long_name)
+                # yield child_num, "%s (%s)" % (child_short_name, child_long_name)
+                yield child_num, child_short_name
 
     @staticmethod
     def get_level_name(level: int) -> Optional[str]:
