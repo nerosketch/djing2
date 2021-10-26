@@ -61,7 +61,12 @@ class SearchApiView(DjingListAPIView):
         limit_count = 100
 
         if s:
-            customers = get_objects_for_user(request.user, "customers.view_customer", klass=Customer)
+            customers = get_objects_for_user(
+                request.user,
+                "customers.view_customer",
+                klass=Customer,
+                accept_global_perms=False
+            )
             if re.match(IP_ADDR_REGEX, s):
                 customers = customers.filter(customeripleasemodel__ip_address__icontains=s)
             else:
@@ -74,7 +79,12 @@ class SearchApiView(DjingListAPIView):
                 )
             customers = customers.select_related("group")[:limit_count]
 
-            devices = get_objects_for_user(request.user, "devices.view_device", klass=Device)
+            devices = get_objects_for_user(
+                request.user,
+                "devices.view_device",
+                klass=Device,
+                accept_global_perms=False
+            )
             if re.match(MAC_ADDR_REGEX, s):
                 devices = devices.filter(mac_addr=s)[:limit_count]
             else:
