@@ -20,6 +20,8 @@ def export_devices(devices: Iterable[Device], event_time: datetime):
 
     def _gen(device: Device):
         addr = device.address
+        if not addr:
+            return
         return {
             'title': "switch_%d" % device.pk,
             'switch_type': _calc_switch_type(device),
