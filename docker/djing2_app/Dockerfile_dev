@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.9
 
 LABEL maintainer="nerosketch@gmail.com"
 
@@ -15,7 +15,7 @@ RUN useradd -ms /bin/bash -g users user
 
 WORKDIR /var/www/djing2
 
-RUN git clone --depth=1 git://pbx.tiko82.ru/djing2.git -b legal_customers_recursive_addr /var/www/djing2
+RUN git clone --depth=1 git://pbx.tiko82.ru/djing2.git -b devel /var/www/djing2
 
 RUN pip install --no-cache-dir -r /var/www/djing2/requirements.txt
 
