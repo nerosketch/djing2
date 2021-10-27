@@ -2,7 +2,7 @@ import re
 from ipaddress import ip_address, AddressValueError
 from django.db.models import Q
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -45,7 +45,7 @@ def dev_format(device: Device) -> dict:
 class SearchApiView(DjingListAPIView):
     # pagination_class = QueryPageNumberPagination
     serializer_class = SearchSerializer
-    __doc__ = _(
+    __doc__ = gettext(
         "Search customers and devices globally entire all system. "
         "Customer search provides by username, fio, and telephone. "
         "Devices search provides by ip address, mac address, "
@@ -65,8 +65,11 @@ class SearchApiView(DjingListAPIView):
                 request.user,
                 "customers.view_customer",
                 klass=Customer,
-                accept_global_perms=False
             )
+            # FIXME: move site filter to filter module
+            if not request.user.is_superuser:
+                customers = customers.filter(sites__in=[self.request.site])
+
             if re.match(IP_ADDR_REGEX, s):
                 customers = customers.filter(customeripleasemodel__ip_address__icontains=s)
             else:
@@ -83,8 +86,11 @@ class SearchApiView(DjingListAPIView):
                 request.user,
                 "devices.view_device",
                 klass=Device,
-                accept_global_perms=False
             )
+            # FIXME: move site filter to filter module
+            if not request.user.is_superuser:
+                devices = devices.filter(sites__in=[self.request.site])
+
             if re.match(MAC_ADDR_REGEX, s):
                 devices = devices.filter(mac_addr=s)[:limit_count]
             else:
