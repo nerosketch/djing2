@@ -45,13 +45,15 @@ DEBUG = bool(DEBUG)
 
 ALLOWED_HOSTS = get_env("ALLOWED_HOSTS")
 if ALLOWED_HOSTS:
-    ALLOWED_HOSTS = ALLOWED_HOSTS.split()
+    ALLOWED_HOSTS = ALLOWED_HOSTS.split('|')
 
 DEFAULT_FROM_EMAIL = get_env("DEFAULT_EMAIL")
 
-ADMINS = get_env("ADMINS")
-if isinstance(ADMINS, str):
-    ADMINS = json.loads(ADMINS)
+#ADMINS = get_env("ADMINS")
+#if isinstance(ADMINS, str):
+#    ADMINS = json.loads(ADMINS)
+#else:
+ADMINS = [("Admin", "admin@localhost")]
 
 # Application definition
 
@@ -249,8 +251,8 @@ API_AUTH_SECRET = get_secret("API_AUTH_SECRET")
 
 # Allowed subnet for api
 API_AUTH_SUBNET = get_env("API_AUTH_SUBNET", ("127.0.0.0/8", "10.0.0.0/8"))
-if API_AUTH_SUBNET and isinstance(API_AUTH_SUBNET, str) and ' ' in API_AUTH_SUBNET:
-    API_AUTH_SUBNET = API_AUTH_SUBNET.split()
+if API_AUTH_SUBNET and isinstance(API_AUTH_SUBNET, str) and '|' in API_AUTH_SUBNET:
+    API_AUTH_SUBNET = API_AUTH_SUBNET.split('|')
 
 
 # public url for messenger bot
