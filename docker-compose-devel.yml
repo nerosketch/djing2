@@ -22,10 +22,8 @@ services:
     #networks: app_net_backend
   app:
     build:
-      context: djing2_app/
-      dockerfile: Dockerfile_dev
+      context: .
     hostname: app
-    user: user
     depends_on:
       - postgres
     ports:
@@ -40,12 +38,14 @@ services:
       - FIELD_ENCRYPTION_KEY
       - API_AUTH_SECRET
       - RADIUS_SECRET
+    environment:
+      - PORT=8000
     env_file:
       - .env_djing2_app
       - .env_db_credentials
       - .env_radiusapp
     volumes:
-      - ..:/var/www/djing2
+      - .:/var/www/djing2
       - media-data:/var/www/djing2/media
       - /tmp:/tmp
       - /etc/localtime:/etc/localtime
