@@ -41,9 +41,23 @@ services:
       - FIELD_ENCRYPTION_KEY
       - API_AUTH_SECRET
       - RADIUS_SECRET
+      - SORM_EXPORT_FTP_PASSWORD
+      - RADIUS_APP_SECRET
     environment:
       - PORT=8000
       - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
+      - APP_DEBUG
+      - RADIUS_APP_HOST
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_HOST
+      - API_AUTH_SUBNET
+      - MESSENGER_BOT_PUBLIC_URL
+      - ARPING_COMMAND
+      - ARPING_ENABLED
+      - SORM_EXPORT_FTP_HOST
+      - SORM_EXPORT_FTP_USERNAME
+      - ALLOWED_HOSTS
     volumes:
       - .:/var/www/djing2
       - media-data:/var/www/djing2/media
@@ -98,6 +112,10 @@ secrets:
     file: ./secrets/VAPID_PRIVATE_KEY
   RADIUS_SECRET:
     file: ./secrets/RADIUS_SECRET
+  SORM_EXPORT_FTP_PASSWORD:
+    file: ./secrets/SORM_EXPORT_FTP_PASSWORD
+  RADIUS_APP_SECRET:
+    file: ./secrets/RADIUS_APP_SECRET
 
 #networks:
 #  app_net_frontend:
