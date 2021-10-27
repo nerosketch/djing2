@@ -19,3 +19,4 @@ apps/devices/device_config/custom/*.py
 docker/secrets/
 docker/docker-compose.yml
 create_initial_user.py
+secrets/
