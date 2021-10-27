@@ -17,8 +17,11 @@ services:
       - postgresql-data:/var/lib/postgresql/data
       - /tmp:/tmp
       - /etc/localtime:/etc/localtime
-    env_file:
-      - .env_db_credentials
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_HOST
     #networks: app_net_backend
   app:
     build:
@@ -40,10 +43,7 @@ services:
       - RADIUS_SECRET
     environment:
       - PORT=8000
-    env_file:
-      - .env_djing2_app
-      - .env_db_credentials
-      - .env_radiusapp
+      - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
     volumes:
       - .:/var/www/djing2
       - media-data:/var/www/djing2/media
@@ -51,18 +51,20 @@ services:
       - /etc/localtime:/etc/localtime
       - ~/.gitconfig:/root/.gitconfig
     #networks: app_net_backend
-  ui:
-    build: djing2-ui/
-    stop_grace_period: 1m
-    user: node
-    ports:
-      - 8080:8080
-    stdin_open: true
-    tty: true
-    volumes:
-      - ../../djing2-elui:/home/node/app
-      - /tmp:/tmp
-      - /etc/localtime:/etc/localtime
+
+#   ui:
+#     build: djing2-ui/
+#     stop_grace_period: 1m
+#     user: node
+#     ports:
+#       - 8080:8080
+#     stdin_open: true
+#     tty: true
+#     volumes:
+#       - ../../djing2-elui:/home/node/app
+#       - /tmp:/tmp
+#       - /etc/localtime:/etc/localtime
+
 #  ws:
 #    build: ws/
 #    ports:
@@ -75,8 +77,6 @@ services:
 #      - 1812:1812
 #      - 1813:1813
 #      - 67:67
-#    env_file:
-#      - .env_radiusapp
 #    secrets:
 #      - RADIUS_SECRET
 volumes:
