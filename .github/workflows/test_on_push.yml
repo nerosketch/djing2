@@ -25,4 +25,4 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run tests
         #run: coverage run src/tests.py
-        run: manage.py test
+        run: ./manage.py test
