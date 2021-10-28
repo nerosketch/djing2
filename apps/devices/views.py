@@ -265,7 +265,7 @@ class DevicePONViewSet(FilterQuerySetMixin, DjingModelViewSet):
 
 
 class DeviceModelViewSet(FilterQuerySetMixin, DjingModelViewSet):
-    queryset = Device.objects.select_related("parent_dev")
+    queryset = Device.objects.select_related("parent_dev").order_by('comment')
     serializer_class = dev_serializers.DeviceModelSerializer
     filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
     filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)

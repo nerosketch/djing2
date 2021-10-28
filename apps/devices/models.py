@@ -22,7 +22,7 @@ from devices.device_config.switch.switch_device_strategy import SwitchDeviceStra
 from groupapp.models import Group
 from networks.models import VlanIf
 from addresses.interfaces import IAddressContaining
-from addresses.models import AddressModel
+from addresses.models import AddressModel, AddressModelTypes
 
 
 class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
@@ -30,8 +30,11 @@ class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
         # Получить все устройства для населённого пункта.
         # Get all devices in specified location by their address_id.
 
-        addr_ids_raw_query = AddressModel.objects.get_address_recursive_ids(addr_id=addr_id)
-        return self.remove_filter('address_id').filter(address_id__in=addr_ids_raw_query)
+        addr_query = AddressModel.objects.get_address_by_type(
+            addr_id=addr_id,
+            addr_type=AddressModelTypes.LOCALITY
+        )
+        return self.remove_filter('address_id').filter(address__in=addr_query)
 
 
 class Device(IAddressContaining, BaseAbstractModel):
