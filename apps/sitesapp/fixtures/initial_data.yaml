@@ -1,4 +1,7 @@
 - model: sites.site
   fields:
+    domain: 127.0.0.1
+    name: 127.0.0.1
+  fields:
     domain: localhost
     name: localhost
