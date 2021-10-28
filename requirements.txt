@@ -32,7 +32,7 @@ uwsgi_tasks==0.7.3
 # redis==3.5.3
 
 django-cors-headers==3.7.0
-git+https://gitlab.com/slei99/django-encrypted-model-fields.git#egg=django-encrypted-model-fields
+django-encrypted-model-fields
 django-netfields==1.2.2
 
 # pexpect
@@ -47,11 +47,11 @@ djangorestframework-guardian
 django-webpush==0.3.3
 
 # linters, and pre commit hook
-flake8==3.9.0
-pre-commit==2.11.1
-autoflake==1.4
-black==20.8b1
-pyupgrade==2.11.0
+#flake8==3.9.0
+#pre-commit==2.11.1
+#autoflake==1.4
+#black==20.8b1
+#pyupgrade==2.11.0
 
 pyTelegramBotAPI
 
@@ -59,3 +59,5 @@ pyTelegramBotAPI
 git+https://github.com/pyradius/pyrad.git#egg=pyrad
 
 drf-orjson-renderer==1.1.5
+
+pyyaml

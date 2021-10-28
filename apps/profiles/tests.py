@@ -8,10 +8,10 @@ from profiles.models import UserProfile
 
 class ProfileApiTestCase(APITestCase):
     def get(self, *args, **kwargs):
-        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
+        return self.client.get(SERVER_NAME="localhost", *args, **kwargs)
 
     def post(self, *args, **kwargs):
-        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+        return self.client.post(SERVER_NAME="localhost", *args, **kwargs)
 
     def setUp(self):
         self.admin = UserProfile.objects.create_superuser(
@@ -55,6 +55,6 @@ class ProfileApiTestCase(APITestCase):
         r = self.client.put(
             "/api/profiles/admin/change_password/",
             {"old_passw": "new password", "new_passw": "new password"},
-            SERVER_NAME="example.com",
+            SERVER_NAME="localhost",
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK)
