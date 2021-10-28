@@ -201,4 +201,4 @@ class AddressModel(IAddressObject, BaseAbstractModel):
 
     class Meta:
         db_table = 'addresses'
-        unique_together = ('parent_addr', 'address_type', 'title')
+        unique_together = ('parent_addr', 'address_type', 'fias_address_type', 'title')
