@@ -16,11 +16,11 @@ class Command(BaseCommand):
         house = customer.house
         addr = customer.address
         if not house:
-            self.stdout.write('')
+            self.stdout.write()
             self.stdout.write("Customer {} not have value in house field. {}".format(customer, self.style.ERROR("Failed")))
             return
         if not addr:
-            self.stdout.write('')
+            self.stdout.write()
             self.stdout.write("Customer {} not have address. {}".format(customer, self.style.ERROR("Failed")))
             return
         new_house_addr, created = AddressModel.objects.get_or_create(
@@ -32,6 +32,7 @@ class Command(BaseCommand):
         )
         r = Customer.objects.filter(pk=customer.pk).update(address=new_house_addr)
         self.stdout.write("." if r > 0 else '!', ending='')
+        self.stdout.flush()
 
     def handle(self, *args: Any, **options: Any):
         for c in Customer.objects.all().iterator():
