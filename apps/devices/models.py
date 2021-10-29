@@ -5,6 +5,7 @@ from netfields import MACAddressField
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import APIException
 
 from djing2.lib import MyChoicesAdapter
 from djing2.lib.mixins import RemoveFilterQuerySetMixin
@@ -30,11 +31,26 @@ class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
         # Получить все устройства для населённого пункта.
         # Get all devices in specified location by their address_id.
 
-        addr_query = AddressModel.objects.get_address_by_type(
+        # get locality from addr
+        addr_locality = AddressModel.objects.get_address_by_type(
             addr_id=addr_id,
             addr_type=AddressModelTypes.LOCALITY
+        ).first()
+
+        if addr_locality is None:
+            addr_query = AddressModel.objects.get_address_by_type(
+                addr_type=AddressModelTypes.LOCALITY
+            )
+        else:
+            addr_query = AddressModel.objects.get_address_by_type(
+                addr_id=addr_locality.pk,
+                addr_type=AddressModelTypes.LOCALITY
+            )
+        if not addr_query.exists():
+            raise APIException('Addr locality filter is empty')
+        return self.remove_filter('address_id').filter(
+            address__in=AddressModel.objects.get_address_recursive_ids(addr_query.first().pk)
         )
-        return self.remove_filter('address_id').filter(address__in=addr_query)
 
 
 class Device(IAddressContaining, BaseAbstractModel):
