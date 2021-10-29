@@ -58,6 +58,9 @@ msgstr "Название"
 msgid "Field type"
 msgstr "Тип поля"
 
+msgid "Datetime field"
+msgstr "Поле даты времени"
+
 #: apps/dynamicfields/models.py:66
 msgid "Groups"
 msgstr "Группы"

@@ -59,15 +59,16 @@ class AbstractDynamicFieldContentModelViewSet(ABC, DjingModelViewSet):
         field_content_models_map = {fcm['field_id']: fcm for fcm in field_content_models}
 
         res = []
+        serializer_class = self.get_serializer_class()
         for fm in field_models:
-            serializer_class = self.get_serializer_class()
             ser = serializer_class(data={
                 'field': fm.get('id'),
             })
             ser.is_valid()
             content_field_data = ser.data
             content_field_data.update({
-                'title': fm.get('title')
+                'title': fm.get('title'),
+                'field_type': fm.get('field_type'),
             })
 
             content_field = field_content_models_map.get(fm.get('id'))

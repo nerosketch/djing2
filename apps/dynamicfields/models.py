@@ -54,6 +54,8 @@ class FieldModelTypeChoices(models.IntegerChoices):
     IP_FIELD = 3, _('Ip Field')
     FLOAT_FIELD = 4, _('Float Field')
     SLUG_FIELD = 5, _('Slug Field')
+    DATETIME_FIELD = 6, _('Datetime field')
+    # BOOLEAN_FIELD
 
 
 class FieldModelTagChoices(models.IntegerChoices):
