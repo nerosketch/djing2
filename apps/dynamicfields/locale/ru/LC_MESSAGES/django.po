@@ -61,6 +61,9 @@ msgstr "Тип поля"
 msgid "Datetime field"
 msgstr "Поле даты времени"
 
+msgid "Boolean field"
+msgstr "Флаг"
+
 #: apps/dynamicfields/models.py:66
 msgid "Groups"
 msgstr "Группы"
