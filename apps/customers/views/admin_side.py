@@ -478,7 +478,7 @@ class CustomerAttachmentViewSet(DjingModelViewSet):
 
 
 class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelViewSet):
-    queryset = models.CustomerDynamicFieldContentModel.objects.all()
+    queryset = models.CustomerDynamicFieldContentModel.objects.select_related('field')
 
     def get_group_id(self) -> int:
         customer_id = self.request.query_params.get('customer')
