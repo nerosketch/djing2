@@ -219,4 +219,3 @@ class GroupsWithCustomersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ("id", "title", "customer_count")
-
