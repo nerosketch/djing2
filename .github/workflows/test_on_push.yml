@@ -31,8 +31,7 @@ jobs:
         # Чекаутим код
       - uses: actions/checkout@master
       - name: Make secrets
-        run: mkdir -p secrets \
-          && openssl rand -base64 20 > ./secrets/API_AUTH_SECRET \
+        run: openssl rand -base64 20 > ./secrets/API_AUTH_SECRET \
           && openssl rand -base64 50 > ./secrets/DJANGO_SECRET_KEY \
           && openssl rand -base64 32 > ./secrets/FIELD_ENCRYPTION_KEY \
           && openssl rand -base64 20 > ./secrets/RADIUS_APP_SECRET \
@@ -44,4 +43,4 @@ jobs:
       - name: Build docker containers
         run: docker-compose build
       - name: Run tests
-        run: docker exec djing2_app ./manage.py test
+        run: docker exec djing2_app ./manage.py test --noinput

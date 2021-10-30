@@ -11,13 +11,11 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-import json
-
-from django.utils.translation import gettext_lazy as _
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # from django.urls import reverse_lazy
+
 
 def get_secret(fname: str) -> str:
     secrets_dir_path = os.environ.get("SECRETS_DIR_PATH", "/run/secrets")
@@ -49,10 +47,10 @@ if ALLOWED_HOSTS:
 
 DEFAULT_FROM_EMAIL = get_env("DEFAULT_EMAIL")
 
-#ADMINS = get_env("ADMINS")
-#if isinstance(ADMINS, str):
+# ADMINS = get_env("ADMINS")
+# if isinstance(ADMINS, str):
 #    ADMINS = json.loads(ADMINS)
-#else:
+# else:
 ADMINS = [("Admin", "admin@localhost")]
 
 # Application definition
@@ -193,7 +191,7 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "ru"
 
 LANGUAGES = (
-    ("ru", _("Russian")),
+    ("ru", "Russian"),
     # ('en', _('English'))
 )
 
