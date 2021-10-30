@@ -34,7 +34,7 @@ jobs:
         run: python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/API_AUTH_SECRET \
           && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(50)).decode())" > ./secrets/DJANGO_SECRET_KEY \
           && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(32)).decode())" > ./secrets/FIELD_ENCRYPTION_KEY \
-          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/RADIUS_APP_SECRET \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/RADIUS_SECRET \
           && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/SORM_EXPORT_FTP_PASSWORD \
           && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/VAPID_PUBLIC_KEY \
           && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/VAPID_PRIVATE_KEY \

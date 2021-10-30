@@ -43,7 +43,6 @@ services:
       - API_AUTH_SECRET
       - RADIUS_SECRET
       - SORM_EXPORT_FTP_PASSWORD
-      - RADIUS_APP_SECRET
     environment:
       - PORT=8000
       - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
@@ -116,8 +115,6 @@ secrets:
     file: ./secrets/RADIUS_SECRET
   SORM_EXPORT_FTP_PASSWORD:
     file: ./secrets/SORM_EXPORT_FTP_PASSWORD
-  RADIUS_APP_SECRET:
-    file: ./secrets/RADIUS_APP_SECRET
 
 #networks:
 #  app_net_frontend:
