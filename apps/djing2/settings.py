@@ -346,6 +346,6 @@ DEFAULT_FTP_CREDENTIALS = {
 
 RADIUSAPP_OPTIONS = {
     'server_host': get_env("RADIUS_APP_HOST"),
-    'secret': get_secret("RADIUS_APP_SECRET").encode()
+    'secret': get_secret("RADIUS_SECRET").encode()
 }
 
