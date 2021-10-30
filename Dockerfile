@@ -31,4 +31,4 @@ CMD ./manage.py migrate \
     # && ./manage.py compilemessages -l ru \
     # && ./manage.py shell -c "from create_initial_user import *; make_initial_user()" \
     #&& exec uwsgi --ini /var/www/djing2/uwsgi_djing2.ini
-    && ./manage.py runserver
+    && exec ./manage.py runserver 0.0.0.0:8000
