@@ -12,15 +12,15 @@ jobs:
 
     env:
       APP_DEBUG: y
-      ALLOWED_HOSTS: '127.0.0.1|localhost'
+      ALLOWED_HOSTS: '*'
       DEFAULT_EMAIL: nerosketch@gmail.com
       ADMINS: '[["Dmitry Novikov", "nerosketch@gmail.com"]]'
       POSTGRES_DB: djing2
-      POSTGRES_USER: djing2_usr
+      POSTGRES_USER: djing2usr
       POSTGRES_HOST: postgres
       API_AUTH_SUBNET: '127.0.0.0/8'
       MESSENGER_BOT_PUBLIC_URL: 'http://localhost'
-      ARPING_ENABLED: y
+#     ARPING_ENABLED: y
       ARPING_COMMAND: echo
       SORM_EXPORT_FTP_HOST: localhost
       SORM_EXPORT_FTP_USERNAME: cdr
@@ -31,15 +31,15 @@ jobs:
         # Чекаутим код
       - uses: actions/checkout@master
       - name: Make secrets
-        run: openssl rand -base64 20 > ./secrets/API_AUTH_SECRET \
-          && openssl rand -base64 50 > ./secrets/DJANGO_SECRET_KEY \
-          && openssl rand -base64 32 > ./secrets/FIELD_ENCRYPTION_KEY \
-          && openssl rand -base64 20 > ./secrets/RADIUS_APP_SECRET \
-          && openssl rand -base64 20 > ./secrets/SORM_EXPORT_FTP_PASSWORD \
-          && openssl rand -base64 20 > ./secrets/VAPID_PUBLIC_KEY \
-          && openssl rand -base64 20 > ./secrets/VAPID_PRIVATE_KEY \
-          && openssl rand -base64 20 > ./secrets/POSTGRES_PASSWORD \
-          && openssl rand -base64 20 > ./secrets/RADIUS_SECRET
+        run: base64 /dev/urandom | head -c20 > ./secrets/API_AUTH_SECRET \
+          && base64 /dev/urandom | head -c50 > ./secrets/DJANGO_SECRET_KEY \
+          && base64 /dev/urandom | head -c32 > ./secrets/FIELD_ENCRYPTION_KEY \
+          && base64 /dev/urandom | head -c20 > ./secrets/RADIUS_APP_SECRET \
+          && base64 /dev/urandom | head -c20 > ./secrets/SORM_EXPORT_FTP_PASSWORD \
+          && base64 /dev/urandom | head -c20 > ./secrets/VAPID_PUBLIC_KEY \
+          && base64 /dev/urandom | head -c20 > ./secrets/VAPID_PRIVATE_KEY \
+          && base64 /dev/urandom | head -c20 > ./secrets/POSTGRES_PASSWORD \
+          && base64 /dev/urandom | head -c20 > ./secrets/RADIUS_SECRET
       - name: Build docker containers
         run: docker-compose build
       - name: Run tests
