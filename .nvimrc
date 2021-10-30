@@ -115,16 +115,6 @@ endif
 "colorscheme ayu
 
 
-
-
-
-
-
-" turn off search highlight
-"nnoremap ,<space> :nohlsearch<CR>
-
-
-
 lua << EOF
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
@@ -408,6 +398,11 @@ nmap " :NERDTreeToggle<CR>
 
 
 
+"=====================================================
+"" Git Gutter settings
+"=====================================================
+nnoremap <leader>gu :GitGutterUndoHunk<cr>
+
 
 "=====================================================
 "" DevIcon Settings
@@ -452,4 +447,3 @@ let g:DevIconsEnableFolderPatternMatching = 1
 
 " enable file extension pattern matching glyphs on folder/directory (disabled by default with 0)
 let g:DevIconsEnableFolderExtensionPatternMatching = 0
-
