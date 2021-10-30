@@ -196,7 +196,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         srv = cust_srv.service
         if srv is None:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response("Custom service has not service (Look at customers.views.admin_site)", status=status.HTTP_400_BAD_REQUEST)
 
         # if customer.gateway:
         #     customer_gw_remove.delay(
@@ -239,7 +239,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         cost = safe_float(request.data.get("cost"))
         if cost == 0.0:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response("Passed invalid cost parameter", status=status.HTTP_400_BAD_REQUEST)
 
         if cost > 0.0:
             self.check_permission_code(
@@ -256,7 +256,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         comment = request.data.get("comment")
         if comment and len(comment) > 128:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response("comment parameter is too long", status=status.HTTP_400_BAD_REQUEST)
 
         customer.add_balance(
             profile=request.user,
