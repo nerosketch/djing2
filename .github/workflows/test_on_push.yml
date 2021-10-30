@@ -41,6 +41,6 @@ jobs:
           && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/POSTGRES_PASSWORD \
           && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/RADIUS_SECRET
       - name: Build docker containers
-        run: docker-compose build
+        run: docker-compose up --build -d
       - name: Run tests
         run: docker exec djing2_app ./manage.py test --noinput
