@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from ipaddress import AddressValueError, IPv4Address
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 from bitfield import BitField
 from django.conf import settings

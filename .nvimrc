@@ -115,63 +115,12 @@ endif
 "colorscheme ayu
 
 
-
-
-
-
-
-" turn off search highlight
-"nnoremap ,<space> :nohlsearch<CR>
-
-
-
 lua << EOF
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
 
 -- luasnip setup
 local luasnip = require 'luasnip'
-
-require("bufferline").setup{}
-
-require("telescope").load_extension("fzy_native")
-
--- Bottom line
-local status, lualine = pcall(require, "lualine")
-if (not status) then return end
-
-lualine.setup {
-  options = {
-    icons_enabled = true,
-    theme = 'solarized_dark',
-    section_separators = {'', ''},
-    component_separators = {'', ''},
-    disabled_filetypes = {}
-  },
-  sections = {
-    lualine_a = {'mode'},
-    lualine_b = {'branch'},
-    lualine_c = {'filename'},
-    lualine_x = {
-      { 'diagnostics', sources = {"nvim_lsp"}, symbols = {error = ' ', warn = ' ', info = ' ', hint = ' '} },
-      'encoding',
-      'filetype'
-    },
-    lualine_y = {'progress'},
-    lualine_z = {'location'}
-  },
-  inactive_sections = {
-    lualine_a = {},
-    lualine_b = {},
-    lualine_c = {'filename'},
-    lualine_x = {'location'},
-    lualine_y = {},
-    lualine_z = {}
-  },
-  tabline = {},
-  extensions = {'fugitive'}
-}
--- End bottom line
 
 -- nvim-cmp setup
 local cmp = require 'cmp'
@@ -274,6 +223,50 @@ for _, lsp in ipairs(servers) do
 end
 EOF
 
+
+
+lua << EOF
+require("bufferline").setup{}
+
+require("telescope").load_extension("fzy_native")
+
+-- Bottom line
+local status, lualine = pcall(require, "lualine")
+if (not status) then return end
+
+lualine.setup {
+  options = {
+    icons_enabled = true,
+    theme = 'solarized_dark',
+    section_separators = {'', ''},
+    component_separators = {'', ''},
+    disabled_filetypes = {}
+  },
+  sections = {
+    lualine_a = {'mode'},
+    lualine_b = {'branch'},
+    lualine_c = {'filename'},
+    lualine_x = {
+      { 'diagnostics', sources = {"nvim_lsp"}, symbols = {error = ' ', warn = ' ', info = ' ', hint = ' '} },
+      'encoding',
+      'filetype'
+    },
+    lualine_y = {'progress'},
+    lualine_z = {'location'}
+  },
+  inactive_sections = {
+    lualine_a = {},
+    lualine_b = {},
+    lualine_c = {'filename'},
+    lualine_x = {'location'},
+    lualine_y = {},
+    lualine_z = {}
+  },
+  tabline = {},
+  extensions = {'fugitive'}
+}
+-- End bottom line
+EOF
 
 
 " Delete buffer while keeping window layout (don't close buffer's windows).
@@ -405,6 +398,11 @@ nmap " :NERDTreeToggle<CR>
 
 
 
+"=====================================================
+"" Git Gutter settings
+"=====================================================
+nnoremap <leader>gu :GitGutterUndoHunk<cr>
+
 
 "=====================================================
 "" DevIcon Settings
@@ -449,5 +447,3 @@ let g:DevIconsEnableFolderPatternMatching = 1
 
 " enable file extension pattern matching glyphs on folder/directory (disabled by default with 0)
 let g:DevIconsEnableFolderExtensionPatternMatching = 0
-
-

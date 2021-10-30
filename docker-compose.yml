@@ -17,15 +17,17 @@ services:
       - postgresql-data:/var/lib/postgresql/data
       - /tmp:/tmp
       - /etc/localtime:/etc/localtime
-    env_file:
-      - .env_db_credentials
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_HOST
     #networks: app_net_backend
   app:
     build:
-      context: djing2_app/
-      dockerfile: Dockerfile_dev
+      context: .
+    container_name: djing2_app
     hostname: app
-    user: user
     depends_on:
       - postgres
     ports:
@@ -40,29 +42,44 @@ services:
       - FIELD_ENCRYPTION_KEY
       - API_AUTH_SECRET
       - RADIUS_SECRET
-    env_file:
-      - .env_djing2_app
-      - .env_db_credentials
-      - .env_radiusapp
+      - SORM_EXPORT_FTP_PASSWORD
+    environment:
+      - PORT=8000
+      - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
+      - APP_DEBUG
+      - RADIUS_APP_HOST
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_HOST
+      - API_AUTH_SUBNET
+      - MESSENGER_BOT_PUBLIC_URL
+      - ARPING_COMMAND
+      - ARPING_ENABLED
+      - SORM_EXPORT_FTP_HOST
+      - SORM_EXPORT_FTP_USERNAME
+      - SORM_EXPORT_FTP_DISABLE
+      - ALLOWED_HOSTS
     volumes:
-      - ..:/var/www/djing2
+      - .:/var/www/djing2
       - media-data:/var/www/djing2/media
       - /tmp:/tmp
       - /etc/localtime:/etc/localtime
       - ~/.gitconfig:/root/.gitconfig
     #networks: app_net_backend
-  ui:
-    build: djing2-ui/
-    stop_grace_period: 1m
-    user: node
-    ports:
-      - 8080:8080
-    stdin_open: true
-    tty: true
-    volumes:
-      - ../../djing2-elui:/home/node/app
-      - /tmp:/tmp
-      - /etc/localtime:/etc/localtime
+
+#   ui:
+#     build: djing2-ui/
+#     stop_grace_period: 1m
+#     user: node
+#     ports:
+#       - 8080:8080
+#     stdin_open: true
+#     tty: true
+#     volumes:
+#       - ../../djing2-elui:/home/node/app
+#       - /tmp:/tmp
+#       - /etc/localtime:/etc/localtime
+
 #  ws:
 #    build: ws/
 #    ports:
@@ -75,8 +92,6 @@ services:
 #      - 1812:1812
 #      - 1813:1813
 #      - 67:67
-#    env_file:
-#      - .env_radiusapp
 #    secrets:
 #      - RADIUS_SECRET
 volumes:
@@ -98,6 +113,8 @@ secrets:
     file: ./secrets/VAPID_PRIVATE_KEY
   RADIUS_SECRET:
     file: ./secrets/RADIUS_SECRET
+  SORM_EXPORT_FTP_PASSWORD:
+    file: ./secrets/SORM_EXPORT_FTP_PASSWORD
 
 #networks:
 #  app_net_frontend:
