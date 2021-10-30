@@ -31,15 +31,15 @@ jobs:
         # Чекаутим код
       - uses: actions/checkout@master
       - name: Make secrets
-        run: base64 /dev/urandom | head -c20 > ./secrets/API_AUTH_SECRET \
-          && base64 /dev/urandom | head -c50 > ./secrets/DJANGO_SECRET_KEY \
-          && base64 /dev/urandom | head -c32 > ./secrets/FIELD_ENCRYPTION_KEY \
-          && base64 /dev/urandom | head -c20 > ./secrets/RADIUS_APP_SECRET \
-          && base64 /dev/urandom | head -c20 > ./secrets/SORM_EXPORT_FTP_PASSWORD \
-          && base64 /dev/urandom | head -c20 > ./secrets/VAPID_PUBLIC_KEY \
-          && base64 /dev/urandom | head -c20 > ./secrets/VAPID_PRIVATE_KEY \
-          && base64 /dev/urandom | head -c20 > ./secrets/POSTGRES_PASSWORD \
-          && base64 /dev/urandom | head -c20 > ./secrets/RADIUS_SECRET
+        run: python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/API_AUTH_SECRET \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(50)).decode())" > ./secrets/DJANGO_SECRET_KEY \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(32)).decode())" > ./secrets/FIELD_ENCRYPTION_KEY \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/RADIUS_APP_SECRET \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/SORM_EXPORT_FTP_PASSWORD \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/VAPID_PUBLIC_KEY \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/VAPID_PRIVATE_KEY \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/POSTGRES_PASSWORD \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/RADIUS_SECRET
       - name: Build docker containers
         run: docker-compose build
       - name: Run tests
