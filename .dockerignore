@@ -1,0 +1,7 @@
+**/media
+**/secrets
+**/spooler
+**/static
+**/venv
+**/__pycache__
+*.pyc
