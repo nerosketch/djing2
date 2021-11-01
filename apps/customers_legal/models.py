@@ -123,6 +123,7 @@ class LegalCustomerBankModel(BaseAbstractModel):
         help_text="Название банка",
         max_length=64,
     )
+    # deprecated. Remove it
     number = models.CharField(
         _('Bank account number'),
         max_length=64,

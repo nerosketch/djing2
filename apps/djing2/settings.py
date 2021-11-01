@@ -12,30 +12,46 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 
-try:
-    from djing2 import local_settings
-except ImportError as err:
-    raise ImportError("You must create config file local_settings.py from template") from err
-
-from django.utils.translation import gettext_lazy as _
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # from django.urls import reverse_lazy
+
+
+def get_secret(fname: str) -> str:
+    secrets_dir_path = os.environ.get("SECRETS_DIR_PATH", "/run/secrets")
+    with open(os.path.join(secrets_dir_path, fname)) as f:
+        val = f.read().strip()
+    return val
+
+
+def get_env(name: str, default=None):
+    return os.environ.get(name, default)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = local_settings.SECRET_KEY
+SECRET_KEY = get_secret("DJANGO_SECRET_KEY")
+if SECRET_KEY is None:
+    raise OSError("DJANGO_SECRET_KEY secret not found")
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = getattr(local_settings, "DEBUG", False)
+DEBUG = get_env("APP_DEBUG", False)
+DEBUG = bool(DEBUG)
 
-ALLOWED_HOSTS = getattr(local_settings, "ALLOWED_HOSTS", ["*"])
+ALLOWED_HOSTS = get_env("ALLOWED_HOSTS")
+if ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ALLOWED_HOSTS.split('|')
 
-ADMINS = getattr(local_settings, "ADMINS", ())
+DEFAULT_FROM_EMAIL = get_env("DEFAULT_EMAIL")
+
+# ADMINS = get_env("ADMINS")
+# if isinstance(ADMINS, str):
+#    ADMINS = json.loads(ADMINS)
+# else:
+ADMINS = [("Admin", "admin@localhost")]
 
 # Application definition
 
@@ -122,18 +138,17 @@ WSGI_APPLICATION = "djing2.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
-DATABASES = getattr(
-    local_settings,
-    "DATABASES",
-    {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
-        }
-    },
-)
-if not DATABASES["default"].get("CONN_MAX_AGE"):
-    DATABASES["default"]["CONN_MAX_AGE"] = 300
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "CONN_MAX_AGE": get_env('CONN_MAX_AGE', 300),
+        "NAME": get_env("POSTGRES_DB", "djing2"),
+        "USER": get_env("POSTGRES_USER", "postgres"),
+        "PASSWORD": get_secret("POSTGRES_PASSWORD"),
+        "HOST": get_env("POSTGRES_HOST", "postgres"),
+        "PORT": get_env("POSTGRES_PORT", 5432),
+    }
+}
 
 
 # if DEBUG:
@@ -176,7 +191,7 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "ru"
 
 LANGUAGES = (
-    ("ru", _("Russian")),
+    ("ru", "Russian"),
     # ('en', _('English'))
 )
 
@@ -185,7 +200,7 @@ PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
 LOCALE_PATHS = (os.path.join(PROJECT_PATH, "../locale"),)
 
 
-TIME_ZONE = "Europe/Simferopol"
+TIME_ZONE = get_env("TIME_ZONE", "Europe/Simferopol")
 
 USE_I18N = True
 
@@ -194,7 +209,7 @@ USE_L10N = False
 USE_TZ = False
 
 # Maximum file size is 50Mb
-FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800
+FILE_UPLOAD_MAX_MEMORY_SIZE = get_env("FILE_UPLOAD_MAX_MEMORY_SIZE", 52428800)
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
 
@@ -227,16 +242,19 @@ AUTH_USER_MODEL = "profiles.BaseAccount"
 # LOGIN_REDIRECT_URL = reverse_lazy('acc_app:setup_info')
 # LOGOUT_URL = reverse_lazy('acc_app:logout')
 
-TELEPHONE_REGEXP = getattr(local_settings, "TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
+TELEPHONE_REGEXP = get_env("TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
 
 # Secret word for auth to api views by hash
-API_AUTH_SECRET = getattr(local_settings, "API_AUTH_SECRET", "secret")
+API_AUTH_SECRET = get_secret("API_AUTH_SECRET")
 
 # Allowed subnet for api
-API_AUTH_SUBNET = getattr(local_settings, "API_AUTH_SUBNET", ("127.0.0.0/8", "10.0.0.0/8"))
+API_AUTH_SUBNET = get_env("API_AUTH_SUBNET", ("127.0.0.0/8", "10.0.0.0/8"))
+if API_AUTH_SUBNET and isinstance(API_AUTH_SUBNET, str) and '|' in API_AUTH_SUBNET:
+    API_AUTH_SUBNET = API_AUTH_SUBNET.split('|')
+
 
 # public url for messenger bot
-MESSENGER_BOT_PUBLIC_URL = getattr(local_settings, 'MESSENGER_BOT_PUBLIC_URL', "https://localhost.name")
+MESSENGER_BOT_PUBLIC_URL = get_env("MESSENGER_BOT_PUBLIC_URL")
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "djing2.lib.paginator.QueryPageNumberPagination",
@@ -286,7 +304,9 @@ if DEBUG:
 
 # Encrypted fields
 # https://pypi.org/project/django-encrypted-model-fields/
-FIELD_ENCRYPTION_KEY = getattr(local_settings, "FIELD_ENCRYPTION_KEY", "vZpDlDPQyU6Ha7NyUGj9uYMuPigejtEPMOZfkYXIQRw=")
+FIELD_ENCRYPTION_KEY = get_secret("FIELD_ENCRYPTION_KEY")
+if not FIELD_ENCRYPTION_KEY:
+    raise OSError("FIELD_ENCRYPTION_KEY secret not found")
 
 
 DIAL_RECORDS_PATH = "/var/spool/asterisk/monitor/"
@@ -300,21 +320,32 @@ if DEBUG:
 DHCP_DEFAULT_LEASE_TIME = 86400
 
 # Default radius session time
-RADIUS_SESSION_TIME = getattr(local_settings, "RADIUS_SESSION_TIME", 3600)
+RADIUS_SESSION_TIME = get_env("RADIUS_SESSION_TIME", 3600)
 
 # Address to websocket transmitter
-WS_ADDR = "127.0.0.1:3211"
+WS_ADDR = get_env("WS_ADDR", "127.0.0.1:3211")
 
 # absolute path to arping command
-ARPING_COMMAND = getattr(local_settings, "ARPING_COMMAND", "/usr/sbin/arping")
-ARPING_ENABLED = getattr(local_settings, "ARPING_ENABLED", False)
+ARPING_COMMAND = get_env("ARPING_COMMAND", "/usr/sbin/arping")
+ARPING_ENABLED = get_env("ARPING_ENABLED", False)
+ARPING_ENABLED = bool(ARPING_ENABLED)
 
 # SITE_ID = 1
 
-WEBPUSH_SETTINGS = getattr(local_settings, "WEBPUSH_SETTINGS")
+WEBPUSH_SETTINGS = {
+    "VAPID_PUBLIC_KEY": get_secret("VAPID_PUBLIC_KEY"),
+    "VAPID_PRIVATE_KEY": get_secret("VAPID_PRIVATE_KEY"),
+    "VAPID_ADMIN_EMAIL": get_env("VAPID_ADMIN_EMAIL", DEFAULT_FROM_EMAIL),
+}
 
-DEFAULT_FTP_CREDENTIALS = getattr(
-    local_settings, "DEFAULT_FTP_CREDENTIALS", {"host": "localhost", "uname": "user", "password": "******"}
-)
+DEFAULT_FTP_CREDENTIALS = {
+    "host": get_env("SORM_EXPORT_FTP_HOST"),
+    "uname": get_env("SORM_EXPORT_FTP_USERNAME"),
+    "password": get_secret("SORM_EXPORT_FTP_PASSWORD")
+}
 
-RADIUSAPP_OPTIONS = getattr(local_settings, 'RADIUSAPP_OPTIONS', None)
+RADIUSAPP_OPTIONS = {
+    'server_host': get_env("RADIUS_APP_HOST"),
+    'secret': get_secret("RADIUS_SECRET").encode()
+}
+
