@@ -467,6 +467,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         label=_('Bank receipt number'),
         max_length=128,
         default='',
+        allow_blank=True,
         required=False
     )
     # №17
