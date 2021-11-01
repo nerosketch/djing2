@@ -1,4 +1,4 @@
-set mouse=a  " enable mouse
+"set mouse=a   enable mouse
 set encoding=utf-8
 set number
 set nobackup
