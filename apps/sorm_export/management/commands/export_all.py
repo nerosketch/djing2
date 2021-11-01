@@ -4,7 +4,7 @@ from typing import Any
 import logging
 from django.core.management.base import BaseCommand
 
-from addresses.models import AddressModel
+from addresses.models import AddressModel, AddressModelTypes
 from customers.models import Customer, CustomerService, AdditionalTelephone
 from customers_legal.models import CustomerLegalModel
 from devices.device_config.device_type_collection import DEVICE_TYPES
@@ -49,7 +49,17 @@ def export_all_customer_contracts():
 
 
 def export_all_address_objects():
-    addr_objects = AddressModel.objects.order_by("fias_address_level")
+    addr_objects = AddressModel.objects.exclude(
+        address_type__in=[
+            AddressModelTypes.HOUSE,
+            AddressModelTypes.OFFICE_NUM,
+            AddressModelTypes.BUILDING,
+            AddressModelTypes.CORPUS,
+        ]
+    ).order_by(
+        "fias_address_level",
+        "fias_address_type"
+    )
     et = datetime.now()
     fname = get_remote_export_filename(event_time=et)
 

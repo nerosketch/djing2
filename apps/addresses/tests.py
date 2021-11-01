@@ -15,20 +15,20 @@ class AddressesAPITestCase(APITestCase):
         # Make addr hierarchy
         country = AddressModel.objects.get(
             address_type=AddressModelTypes.OTHER,
-            fias_address_level='1',
+            fias_address_level=1,
             fias_address_type=1
         )
         state = AddressModel.objects.create(
             parent_addr=country,
             address_type=AddressModelTypes.OTHER,
-            fias_address_level='1',
+            fias_address_level=1,
             fias_address_type=106,
             title="Some state"
         )
         region = AddressModel.objects.create(
             parent_addr=state,
             address_type=AddressModelTypes.OTHER,
-            fias_address_level='3',
+            fias_address_level=3,
             fias_address_type=301,
             title="Area51"
         )
@@ -36,7 +36,7 @@ class AddressesAPITestCase(APITestCase):
         city = AddressModel.objects.create(
             parent_addr=region,
             address_type=AddressModelTypes.LOCALITY,
-            fias_address_level='4',
+            fias_address_level=4,
             fias_address_type=401,
             title="Some region city"
         )
@@ -44,35 +44,35 @@ class AddressesAPITestCase(APITestCase):
         street = AddressModel.objects.create(
             parent_addr=city,
             address_type=AddressModelTypes.STREET,
-            fias_address_level='7',
+            fias_address_level=7,
             fias_address_type=729,
             title="Street12"
         )
         house = AddressModel.objects.create(
             parent_addr=street,
             address_type=AddressModelTypes.HOUSE,
-            fias_address_level='8',
+            fias_address_level=8,
             fias_address_type=803,
             title="1"
         )
         building = AddressModel.objects.create(
             parent_addr=house,
             address_type=AddressModelTypes.BUILDING,
-            fias_address_level='8',
+            fias_address_level=8,
             fias_address_type=805,
             title="a"
         )
         corp = AddressModel.objects.create(
             parent_addr=building,
             address_type=AddressModelTypes.CORPUS,
-            fias_address_level='8',
+            fias_address_level=8,
             fias_address_type=806,
             title="II"
         )
         office = AddressModel.objects.create(
             parent_addr=corp,
             address_type=AddressModelTypes.OFFICE_NUM,
-            fias_address_level='9',
+            fias_address_level=9,
             fias_address_type=904,
             title="7"
         )
@@ -88,7 +88,7 @@ class AddressesAPITestCase(APITestCase):
         r = self.post("/api/addrs/", {
             'parent_addr': self.office_addr.pk,
             'address_type': 64,
-            'fias_address_level': '9',
+            'fias_address_level': 9,
             'fias_address_type': 905,
             'title': 'винный подвал'
         })
@@ -97,7 +97,7 @@ class AddressesAPITestCase(APITestCase):
         self.assertEqual(r.data['fias_address_level_name'], 'Помещение в пределах здания, сооружения')
         self.assertEqual(r.data['fias_address_type_name'], 'п-б')
         self.assertEqual(r.data['address_type'], 64)
-        self.assertEqual(r.data['fias_address_level'], '9')
+        self.assertEqual(r.data['fias_address_level'], 9)
         self.assertEqual(r.data['fias_address_type'], 905)
         self.assertEqual(r.data['title'], 'винный подвал')
         self.assertEqual(r.data['parent_addr'], self.office_addr.pk)
@@ -123,7 +123,7 @@ class AddressesAPITestCase(APITestCase):
         self.assertEqual(len(res), 1)
         street = res[0]
         self.assertEqual(street['address_type'], 8)
-        self.assertEqual(street['fias_address_level'], '7')
+        self.assertEqual(street['fias_address_level'], 7)
         self.assertEqual(street['fias_address_type'], 729)
         self.assertEqual(street['title'], 'Street12')
 

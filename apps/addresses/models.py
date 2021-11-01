@@ -131,10 +131,9 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         default=AddressModelTypes.UNKNOWN
     )
 
-    fias_address_level = models.CharField(
+    fias_address_level = models.IntegerField(
         _('Address Level'),
-        max_length=8,
-        choices=((str(num), name) for num, name in AddressFIASInfo.get_levels()),
+        choices=((num, name) for num, name in AddressFIASInfo.get_levels()),
         null=True, blank=True, default=None,
     )
     fias_address_type = models.IntegerField(
