@@ -17,6 +17,7 @@ class LegalCustomerBankModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.LegalCustomerBankModel
         fields = '__all__'
+        exclude = ('number',)
 
 
 class CustomerLegalTelephoneModelSerializer(BaseCustomModelSerializer):
