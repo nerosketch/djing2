@@ -148,6 +148,16 @@ def export_individual_customer(customers_queryset, event_time=None):
             logging.warning("Address '%s' has no parent object" % addr)
             return
 
+        addr_house = addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.HOUSE
+        )
+        addr_building = addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.BUILDING
+        )
+        addr_corp = addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.BUILDING
+        )
+
         r = {
             "contract_id": customer.pk,
             "name": full_fname,
@@ -161,6 +171,9 @@ def export_individual_customer(customers_queryset, event_time=None):
             "passport_date": passport.date_of_acceptance,
             "house": addr.title,
             "parent_id_ao": parent_addr_id,
+            "house_num": addr_house.title if addr_house else None,
+            "building": addr_building.title if addr_building else None,
+            "building_corpus": addr_corp.title if addr_corp else None,
             "actual_start_time": datetime(create_date.year, create_date.month, create_date.day),
             # 'actual_end_time':
             "customer_id": customer.pk,

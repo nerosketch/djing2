@@ -318,6 +318,8 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         label=_('House number'),
         max_length=32,
         required=False,
+        allow_null=True,
+        allow_blank=True,
         default=''
     )
     # 20
@@ -325,6 +327,8 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         label=_('Building'),
         max_length=32,
         required=False,
+        allow_null=True,
+        allow_blank=True,
         default=''
     )
     # 21
@@ -332,12 +336,16 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         label=_('Building corpus'),
         max_length=32,
         required=False,
+        allow_null=True,
+        allow_blank=True,
         default=''
     )
     # 22
     full_description = serializers.CharField(
         label=_('Full description'),
         required=False,
+        allow_null=True,
+        allow_blank=True,
         default=''
     )  # reserved
     # 23
@@ -467,6 +475,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         label=_('Bank receipt number'),
         max_length=128,
         default='',
+        allow_blank=True,
         required=False
     )
     # №17

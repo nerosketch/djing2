@@ -2,27 +2,44 @@ name: Run test on push
 
 on:
   push:
-    tags:
-      - '!refs/tags/*'
     branches:
       - devel
       - master
 jobs:
   run_tests:
     runs-on: [ubuntu-latest]
+
+    env:
+      APP_DEBUG: y
+      ALLOWED_HOSTS: '*'
+      DEFAULT_EMAIL: nerosketch@gmail.com
+      ADMINS: '[["Dmitry Novikov", "nerosketch@gmail.com"]]'
+      POSTGRES_DB: djing2
+      POSTGRES_USER: djing2usr
+      POSTGRES_HOST: postgres
+      API_AUTH_SUBNET: '127.0.0.0/8'
+      MESSENGER_BOT_PUBLIC_URL: 'http://localhost'
+#     ARPING_ENABLED: y
+      ARPING_COMMAND: echo
+      SORM_EXPORT_FTP_HOST: localhost
+      SORM_EXPORT_FTP_USERNAME: cdr
+      SORM_EXPORT_FTP_DISABLE: y
+      RADIUS_APP_HOST: localhost
+
     steps:
         # Чекаутим код
       - uses: actions/checkout@master
-        # Устанавливаем python нужной версии
-      - uses: actions/setup-python@v1
-        with:
-          python-version: '3.8'
-          architecture: 'x64'
-      - name: Install os requirements
-        run: sudo apt-get install -y libmemcached-dev python3-psycopg2 postgresql-server-dev-12 libsnmp-dev
-      - name: Install requirements
-        # Устанавливаем зависимости
-        run: pip install -r requirements.txt
+      - name: Make secrets
+        run: python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/API_AUTH_SECRET \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(50)).decode())" > ./secrets/DJANGO_SECRET_KEY \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(32)).decode())" > ./secrets/FIELD_ENCRYPTION_KEY \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/RADIUS_SECRET \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/SORM_EXPORT_FTP_PASSWORD \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/VAPID_PUBLIC_KEY \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/VAPID_PRIVATE_KEY \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/POSTGRES_PASSWORD \
+          && python3 -c "from secrets import token_bytes; from base64 import b64encode; print(b64encode(token_bytes(20)).decode())" > ./secrets/RADIUS_SECRET
+      - name: Build docker containers
+        run: docker-compose up --build -d
       - name: Run tests
-        #run: coverage run src/tests.py
-        run: ./manage.py test
+        run: docker exec djing2_app ./manage.py test --failfast --noinput
