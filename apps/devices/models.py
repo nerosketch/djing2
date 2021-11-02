@@ -39,6 +39,7 @@ class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
 
         if addr_locality is None:
             addr_query = AddressModel.objects.get_address_by_type(
+                addr_id=addr_id,
                 addr_type=AddressModelTypes.LOCALITY
             )
         else:
