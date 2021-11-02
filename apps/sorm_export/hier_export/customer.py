@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from typing import Iterable, Optional
 
+from django.db.models import Subquery, OuterRef
 from addresses.models import AddressModelTypes, AddressModel
 from customers_legal.models import CustomerLegalModel
 from customers.models import Customer
@@ -19,7 +20,7 @@ def _addr2str(addr: Optional[AddressModel]) -> str:
     return str(addr.title)
 
 
-@iterable_export_decorator
+@iterable_gen_export_decorator
 def export_customer_root(customers: Iterable[Customer], event_time=None):
     """
     Файл данных по абонентам v1.
@@ -29,19 +30,20 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
     :return: data, filename
     """
 
-    def gen(customer: Customer):
-        return {
-            "customer_id": customer.pk,
-            "legal_customer_id": customer.pk,
-            "contract_start_date": customer.create_date,
-            "customer_login": customer.username,
-            "communication_standard": CommunicationStandardChoices.ETHERNET.value,
-        }
+    def _gen():
+        lgl_sb = CustomerLegalModel.objects.filter(branches__id=OuterRef('pk')).values('pk')
+        for customer in customers.annotate(legal_id=Subquery(lgl_sb)):
+            yield {
+                "customer_id": customer.pk,
+                "legal_customer_id": customer.legal_id if customer.legal_id is not None else customer.pk,
+                "contract_start_date": customer.create_date,
+                "customer_login": customer.username,
+                "communication_standard": CommunicationStandardChoices.ETHERNET.value,
+            }
 
     return (
         individual_entity_serializers.CustomerRootObjectFormat,
-        gen,
-        customers,
+        _gen,
         f"ISP/abonents/abonents_v1_{format_fname(event_time)}.txt",
     )
 
@@ -202,7 +204,7 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
     """
 
-    def gen(legal: CustomerLegalModel):
+    def _iter_customers(legal):
         for customer in legal.branches.all():
             addr: AddressModel = legal.address
             if not addr:
@@ -280,9 +282,14 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
                 })
             yield res
 
+    def _gen():
+        legals = customers.select_related('address', 'delivery_address', 'delivery_address')
+        for l in legals:
+            yield from _iter_customers(l)
+
     return (
         individual_entity_serializers.CustomerLegalObjectFormat,
-        gen, customers.select_related('address', 'delivery_address', 'delivery_address'),
+        _gen,
         f'ISP/abonents/jur_v5_{format_fname(event_time)}.txt'
     )
 
