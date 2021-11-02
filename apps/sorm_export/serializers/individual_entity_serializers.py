@@ -123,27 +123,18 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
         label=_('Access point id'),
         max_length=128,
         required=True,
-        allow_blank=True,
-        allow_null=True,
-        default=''
     )
     # 2
     customer_id = serializers.CharField(
         label=_('Customer id'),
         max_length=64,
         required=True,
-        allow_blank=True,
-        allow_null=True,
-        default=''
     )
     # 3
     house = serializers.CharField(
         label=_('House'),
         max_length=32,
         required=True,
-        allow_blank=True,
-        allow_null=True,
-        default=''
     )
     # 4
     full_address = serializers.CharField(
