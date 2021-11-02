@@ -55,7 +55,7 @@ def iterable_gen_export_decorator(fn):
         elif isinstance(event_time, str):
             event_time = datetime.fromisoformat(event_time)
 
-        serializer_class, gen_fn, qs, fname = fn(event_time=event_time, *args, **kwargs)
+        serializer_class, gen_fn, fname = fn(event_time=event_time, *args, **kwargs)
 
         def _val_fn(dat):
             ser = serializer_class(data=dat)
@@ -63,8 +63,7 @@ def iterable_gen_export_decorator(fn):
             return ser.data
 
         # res_data = map(gen_fn, qs.iterator())
-        res_gen = (i for e in qs.iterator() for i in gen_fn(e))
-        res_data = (_val_fn(r) for r in res_gen if r)
+        res_data = (_val_fn(r) for r in gen_fn() if r)
 
         return res_data, fname
     return _wrapped
