@@ -11,7 +11,7 @@ netaddr==0.8.0
 # db client for Postgres
 psycopg2-binary==2.8.6
 
-git+git://github.com/nerosketch/easysnmp.git#egg=easysnmp
+git+https://github.com/nerosketch/easysnmp.git#egg=easysnmp
 # pid==3.0.4
 
 transliterate==1.10.2
@@ -20,13 +20,13 @@ transliterate==1.10.2
 djangorestframework-xml==2.0.0
 
 # django-bitfield
-git+git://github.com/disqus/django-bitfield.git#egg=django-bitfield
+git+https://github.com/disqus/django-bitfield.git#egg=django-bitfield
 
 # for clean unused media
 django-cleanup==5.1.0
 
 # viberbot
-git+git://github.com/Viber/viber-bot-python.git#egg=viberbot
+git+https://github.com/Viber/viber-bot-python.git#egg=viberbot
 
 uwsgi_tasks==0.7.3
 # redis==3.5.3
@@ -36,7 +36,7 @@ django-encrypted-model-fields
 django-netfields==1.2.2
 
 # pexpect
-git+git://github.com/pexpect/pexpect.git#egg=pexpect
+git+https://github.com/pexpect/pexpect.git#egg=pexpect
 
 django-filter==2.4.0
 #pylibmc==1.6.1
