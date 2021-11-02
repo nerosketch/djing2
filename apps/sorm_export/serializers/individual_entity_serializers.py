@@ -118,42 +118,66 @@ class AddressObjectFormat(serializers.Serializer):
 
 
 class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
+    # 1
     ap_id = serializers.CharField(
         label=_('Access point id'),
         max_length=128,
-        required=True
+        required=True,
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
+    # 2
     customer_id = serializers.CharField(
         label=_('Customer id'),
         max_length=64,
         required=True,
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
+    # 3
     house = serializers.CharField(
         label=_('House'),
         max_length=32,
         required=True,
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
+    # 4
     full_address = serializers.CharField(
         label=_('Full address'),
         max_length=512,
-        required=False
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
+    # 5
     internal_address = serializers.CharField(
         label=_('Internal address'),
         required=False,
+        allow_blank=True,
         default=''
     )  # reserved
 
+    # 6
     # reserved, ao - address object
     id_ao = serializers.CharField(default='', required=False)
+    # 7
     parent_id_ao = serializers.CharField(
         label=_('Parent ao id'),
         max_length=128,
         required=True
     )  # AddressObjectFormat.address_id
+    # 8
     type_id = serializers.CharField(default='', required=False)  # reserved
+    # 9
     type_ao = serializers.CharField(default='', required=False)  # reserved
+    # 10
     title = serializers.CharField(default='', required=False)  # reserved
+    # 11
     house_num = serializers.CharField(
         label=_('House'),
         max_length=32,
@@ -162,20 +186,27 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
         allow_null=True,
         default=''
     )
+    # 12
     building = serializers.CharField(
         label=_('Building'),
         max_length=32,
-        required=False
+        required=False,
+        default=''
     )
+    # 13
     building_corpus = serializers.CharField(
         label=_('Building corpus'),
         max_length=32,
-        required=False
+        required=False,
+        default=''
     )
+    # 14
     full_description = serializers.CharField(
         label=_('Full description'),
         required=False,
+        default=''
     )  # reserved
+    # 15
     actual_start_time = serializers.DateTimeField(
         label=_('Actual start time'),
         help_text="для первой записи должна быть равна дате заключения договора с "
@@ -185,6 +216,7 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
         format=datetime_format,
         allow_null=False
     )
+    # 16
     actual_end_time = serializers.DateTimeField(
         label=_('Actual end time'),
         help_text="Должна быть меньше или равна дате расторжения "
