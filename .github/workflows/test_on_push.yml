@@ -26,6 +26,10 @@ jobs:
       SORM_EXPORT_FTP_DISABLE: y
       RADIUS_APP_HOST: localhost
 
+      SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+      SERVER_HOST: ${{secrets.SERVER_HOST}}
+      SERVER_USER: ${{secrets.SERVER_USER}}
+
     steps:
         # Чекаутим код
       - uses: actions/checkout@master
@@ -43,3 +47,20 @@ jobs:
         run: docker-compose up --build -d
       - name: Run tests
         run: docker exec djing2_app ./manage.py test --failfast --noinput
+      - name: Create SSH key
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/staging.key
+          chmod 600 ~/.ssh/staging.key
+          cat >>~/.ssh/config <<END
+          Host staging
+            HostName $SERVER_HOST
+            User $SERVER_USER
+            IdentityFile ~/.ssh/staging.key
+            StrictHostKeyChecking no
+          END
+        shell: bash
+      - name: Deploy to server
+        run: |
+          ssh staging "sudo -u www-data -g www-data /bin/bash /var/www/.bin/apply_djing_app.sh"
+        shell: bash
