@@ -37,7 +37,7 @@ from networks.models import CustomerIpLeaseModel, NetworkIpPool
 
 
 def export_all_root_customers():
-    customers = Customer.objects.all()
+    customers = Customer.objects.filter(is_active=True)
     data, fname = export_customer_root(customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ROOT)
 
