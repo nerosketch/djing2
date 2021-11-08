@@ -13,6 +13,8 @@ from djing2.models import BaseAbstractModel
 
 
 class PayAllTimeGateway(BaseAbstractModel):
+    pay_system_title = "24 All Time"
+
     title = models.CharField(_("Title"), max_length=64)
     secret = EncryptedCharField(verbose_name=_("Secret"), max_length=64)
     service_id = models.CharField(_("Service id"), max_length=64)
