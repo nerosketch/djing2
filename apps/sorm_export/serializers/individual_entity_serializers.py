@@ -499,6 +499,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         max_length=128,
         default='',
         allow_blank=True,
+        allow_null=True,
         required=False
     )
     # №17
@@ -525,6 +526,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         validators=[validators.integer_validator],
         default='',
         allow_blank=True,
+        allow_null=True,
         required=False
     )
     # №20
