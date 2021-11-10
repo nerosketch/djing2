@@ -58,7 +58,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('OK'))
 
         if send2ftp:
-            now = datetime.now()
+            now = datetime.utcnow()
             send_file2ftp(fname=fname, remote_fname=f"ISP/aaa/aaa_v1_{format_fname(now)}.txt")
             self.stdout.write('FTP Store ', ending='')
             self.stdout.write(self.style.SUCCESS('OK'))
