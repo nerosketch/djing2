@@ -3,6 +3,7 @@ from netfields.mac import mac_unix_common
 from datetime import datetime
 
 from django.core.management.base import BaseCommand, no_translations
+from djing2.lib import time2utctime
 from radiusapp.models import CustomerRadiusSession
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
 from sorm_export.ftp_worker.func import send_file2ftp
@@ -30,7 +31,7 @@ class Command(BaseCommand):
         ).select_related('customer', 'ip_lease').iterator()
 
         dat = [{
-            "event_time": ses.assign_time,
+            "event_time": time2utctime(ses.assign_time),
             "event_type": AAAEventType.RADIUS_AUTH_START,
             "session_id": str(ses.session_id),
             "customer_ip": ses.ip_lease.ip_address,
@@ -58,7 +59,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('OK'))
 
         if send2ftp:
-            now = datetime.utcnow()
+            now = datetime.now()
             send_file2ftp(fname=fname, remote_fname=f"ISP/aaa/aaa_v1_{format_fname(now)}.txt")
             self.stdout.write('FTP Store ', ending='')
             self.stdout.write(self.style.SUCCESS('OK'))

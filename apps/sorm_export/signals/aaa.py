@@ -3,6 +3,7 @@ from netaddr import EUI
 from netfields.mac import mac_unix_common
 from radiusapp import custom_signals
 from django.dispatch.dispatcher import receiver
+from djing2.lib import time2utctime
 from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendors import IVendorSpecific
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
@@ -11,7 +12,7 @@ from sorm_export.tasks.aaa import save_radius_acct
 
 def _save_aaa_log(event_time: datetime, **serializer_keys):
     serializer_keys.update({
-        "event_time": event_time,
+        "event_time": time2utctime(event_time),
     })
     ser = AAAExportSerializer(
         data=serializer_keys
