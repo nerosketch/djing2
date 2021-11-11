@@ -353,6 +353,7 @@ setlocal textwidth=79
 tab sball
 set switchbuf=useopen
 set laststatus=2
+set hidden
 " switch buffers
 nmap <F8> :bp<cr>
 nmap <F9> :bn<cr>

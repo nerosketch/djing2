@@ -232,7 +232,7 @@ class ProfileAuthLog(models.Model):
     user_agent = models.CharField(_("Details"), max_length=256)
 
     def __str__(self):
-        return self.profile
+        return str(self.profile)
 
     class Meta:
         db_table = "profiles_auth_log"
