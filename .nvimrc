@@ -95,6 +95,8 @@ call plug#begin('~/.vim/plugged')
     Plug 'nvim-telescope/telescope.nvim'
     Plug 'nvim-telescope/telescope-fzy-native.nvim'
 
+    Plug 'roxma/vim-tmux-clipboard'             " nvim -. tmux clipboard
+
 call plug#end()
 
 
