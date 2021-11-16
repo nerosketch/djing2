@@ -5,7 +5,6 @@ from netfields import MACAddressField
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import APIException
 
 from djing2.lib import MyChoicesAdapter
 from djing2.lib.mixins import RemoveFilterQuerySetMixin
@@ -23,7 +22,7 @@ from devices.device_config.switch.switch_device_strategy import SwitchDeviceStra
 from groupapp.models import Group
 from networks.models import VlanIf
 from addresses.interfaces import IAddressContaining
-from addresses.models import AddressModel, AddressModelTypes
+from addresses.models import AddressModel
 
 
 class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
@@ -31,27 +30,8 @@ class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
         # Получить все устройства для населённого пункта.
         # Get all devices in specified location by their address_id.
 
-        # get locality from addr
-        addr_locality = AddressModel.objects.get_address_by_type(
-            addr_id=addr_id,
-            addr_type=AddressModelTypes.LOCALITY
-        ).first()
-
-        if addr_locality is None:
-            addr_query = AddressModel.objects.get_address_by_type(
-                addr_id=addr_id,
-                addr_type=AddressModelTypes.LOCALITY
-            )
-        else:
-            addr_query = AddressModel.objects.get_address_by_type(
-                addr_id=addr_locality.pk,
-                addr_type=AddressModelTypes.LOCALITY
-            )
-        if not addr_query.exists():
-            raise APIException('Addr locality filter is empty')
-        return self.remove_filter('address_id').filter(
-            address__in=AddressModel.objects.get_address_recursive_ids(addr_query.first().pk)
-        )
+        addr_ids_raw_query = AddressModel.objects.get_address_recursive_ids(addr_id=addr_id)
+        return self.remove_filter('address_id').filter(address_id__in=addr_ids_raw_query)
 
 
 class Device(IAddressContaining, BaseAbstractModel):
