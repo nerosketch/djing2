@@ -166,6 +166,14 @@ class AddressModel(IAddressObject, BaseAbstractModel):
             addr_id=addr_id
         )
 
+    def get_id_hierarchy_gen(self):
+        ids_tree_query = AddressModelManager.get_address_recursive_ids(
+            addr_id=self.pk,
+            direction_down=False
+        )
+        for addr in AddressModel.objects.filter(pk__in=ids_tree_query):
+            yield addr.pk
+
     def get_address_item_by_type(self, addr_type: AddressModelTypes) -> Optional[AddressModel]:
         """
         :param addr_type: Id нижнего адресного объекта.

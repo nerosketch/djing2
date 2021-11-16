@@ -75,3 +75,9 @@ class AddressModelViewSet(DjingModelViewSet):
             addr_id=safe_int(pk)
         )
         return Response(full_title)
+
+    @action(methods=['get'], detail=True)
+    def get_id_hierarchy(self, request, pk=True):
+        obj = self.get_object()
+        ids_hierarchy = tuple(i for i in obj.get_id_hierarchy_gen())
+        return Response(ids_hierarchy)
