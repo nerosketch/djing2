@@ -112,7 +112,7 @@ class AddressModelManager(models.Manager):
 
         title_hierarchy = list(_accumulate_addrs_hierarchy())
         title_hierarchy.reverse()
-        return ', '.join(f'{short_title}. {title}' for _, short_title, title in title_hierarchy)
+        return ', '.join('%s %s' % (short_title, title) for _, short_title, title in title_hierarchy)
 
 
 class AddressModel(IAddressObject, BaseAbstractModel):
