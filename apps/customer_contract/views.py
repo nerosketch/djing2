@@ -5,9 +5,9 @@ from djing2.viewsets import DjingModelViewSet
 
 class CustomerContractModelViewSet(DjingModelViewSet):
     queryset = models.CustomerContractModel.objects.all()
-    serialzier_class = serializers.CustomerContractModelSerializer
+    serializer_class = serializers.CustomerContractModelSerializer
 
 
 class CustomerContractAttachmentModelViewSet(DjingModelViewSet):
     queryset = models.CustomerContractAttachmentModel.objects.all()
-    serialzier_class = serializers.CustomerContractAttachmentModelSerializer
+    serializer_class = serializers.CustomerContractAttachmentModelSerializer

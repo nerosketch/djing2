@@ -58,16 +58,17 @@ class CustomerContractAttachmentModel(BaseAbstractModel):
         CustomerContractModel,
         on_delete=models.CASCADE
     )
+    author = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_DEFAULT,
+        null=True, blank=True, default=None,
+    )
     title = models.CharField(max_length=64)
     doc_file = models.FileField(
         upload_to="contract_attachments/%Y/%m/",
         max_length=128
     )
     create_time = models.DateTimeField(auto_now_add=True)
-    author = models.ForeignKey(
-        UserProfile,
-        on_delete=models.CASCADE
-    )
 
     def __str__(self):
         return self.title
