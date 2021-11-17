@@ -33,6 +33,12 @@ class CustomerContractModel(BaseAbstractModel):
     contract_number = models.CharField(
         _('Contract number'),
         max_length=64,
+        unique=True
+    )
+    title = models.CharField(
+        _('Title'),
+        max_length=64,
+        null=True, blank=True, default=None,
     )
     note = models.CharField(
         _('Note'),
