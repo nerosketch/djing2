@@ -4,7 +4,6 @@ from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core import validators
 from django.utils.crypto import get_random_string
 
 from guardian.models import GroupObjectPermission, UserObjectPermission
@@ -35,7 +34,7 @@ class BaseAccountSerializer(BaseCustomModelSerializer):
     is_active = serializers.BooleanField(initial=True, default=True)
     username = serializers.CharField(initial=generate_random_username)
     password = serializers.CharField(
-        write_only=True, required=False, initial=generate_random_password, validators=[validators.integer_validator]
+        write_only=True, required=False, initial=generate_random_password
     )
     full_name = serializers.CharField(source="get_full_name", read_only=True)
 
