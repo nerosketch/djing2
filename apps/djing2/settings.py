@@ -95,6 +95,7 @@ INSTALLED_APPS = [
     "customer_comments.apps.CustomerCommentsConfig",
     "dynamicfields.apps.DynamicfieldsConfig",
     "customers_legal.apps.CustomersLegalConfig",
+    "customer_contract.apps.CustomerContractConfig",
 ]
 
 if DEBUG:
