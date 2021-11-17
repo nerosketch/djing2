@@ -122,7 +122,9 @@ class CustomerModelSerializer(BaseAccountSerializer):
         exclude = [
             'groups',
             'user_permissions',
-            'markers'
+            'markers',
+            'is_superuser',
+            'is_admin'
         ]
 
 

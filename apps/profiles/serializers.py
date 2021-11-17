@@ -39,13 +39,19 @@ class BaseAccountSerializer(BaseCustomModelSerializer):
     )
     full_name = serializers.CharField(source="get_full_name", read_only=True)
 
+    def update(self, instance, validated_data):
+        if not self.context['request'].user.is_superuser:
+            validated_data.pop('is_superuser', None)
+            validated_data.pop('groups', None)
+            validated_data.pop('user_permissions', None)
+        instance = super().update(instance, validated_data)
+        return instance
+
     class Meta:
         model = BaseAccount
 
 
-class UserProfileSerializer(BaseCustomModelSerializer):
-    full_name = serializers.CharField(source="get_full_name", read_only=True)
-    password = serializers.CharField(write_only=True)
+class UserProfileSerializer(BaseAccountSerializer):
     create_date = serializers.CharField(read_only=True)
     access_level = serializers.IntegerField(source="calc_access_level_percent", read_only=True)
 
