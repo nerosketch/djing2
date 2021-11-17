@@ -70,7 +70,6 @@ class FilterQuerySetMixin:
         queryset = super().filter_queryset(queryset=queryset)
 
         street = safe_int(self.request.query_params.get('street'))
-        print('Street:', street)
         if street > 0:
             return queryset.filter_devices_by_addr(
                 addr_id=street,
