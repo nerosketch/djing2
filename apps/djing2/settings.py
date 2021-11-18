@@ -11,17 +11,21 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+from typing import Optional
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # from django.urls import reverse_lazy
 
 
-def get_secret(fname: str) -> str:
-    secrets_dir_path = os.environ.get("SECRETS_DIR_PATH", "/run/secrets")
-    with open(os.path.join(secrets_dir_path, fname)) as f:
-        val = f.read().strip()
-    return val
+def get_secret(fname: str, default=None) -> Optional[str]:
+    try:
+        secrets_dir_path = os.environ.get("SECRETS_DIR_PATH", "/run/secrets")
+        with open(os.path.join(secrets_dir_path, fname)) as f:
+            val = f.read().strip()
+        return val
+    except FileNotFoundError:
+        return default
 
 
 def get_env(name: str, default=None):
@@ -91,6 +95,7 @@ INSTALLED_APPS = [
     "customer_comments.apps.CustomerCommentsConfig",
     "dynamicfields.apps.DynamicfieldsConfig",
     "customers_legal.apps.CustomersLegalConfig",
+    "customer_contract.apps.CustomerContractConfig",
 ]
 
 if DEBUG:

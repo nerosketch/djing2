@@ -499,6 +499,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         max_length=128,
         default='',
         allow_blank=True,
+        allow_null=True,
         required=False
     )
     # №17
@@ -522,9 +523,10 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         label='Почтовый адрес офиса',
         help_text='содержит только цифры офиса',
         max_length=32,
-        validators=[validators.integer_validator],
+        #validators=[validators.integer_validator],
         default='',
         allow_blank=True,
+        allow_null=True,
         required=False
     )
     # №20
@@ -587,7 +589,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
     office_delivery_address = serializers.CharField(
         label='Адрес офиса доставки счёта',
         help_text='содержит только цифры офиса',
-        validators=[validators.integer_validator],
+        #validators=[validators.integer_validator],
         max_length=32,
         default='',
         allow_blank=True,

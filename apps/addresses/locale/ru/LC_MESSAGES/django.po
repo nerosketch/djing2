@@ -52,3 +52,7 @@ msgstr "Тип адреса"
 #: models.py:55
 msgid "Title"
 msgstr "Название"
+
+msgid "House and office can be only number"
+msgstr "Дом и офис могут быть только номерами"
+

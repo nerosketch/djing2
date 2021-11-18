@@ -3,8 +3,9 @@ from collections import OrderedDict
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
-from devices.models import Device, Port, PortVlanMemberModel
 from djing2.lib.mixins import BaseCustomModelSerializer
+from devices.models import Device, Port, PortVlanMemberModel
+from groupapp.models import Group
 
 
 class AttachedUserSerializer(serializers.Serializer):
@@ -79,3 +80,11 @@ class DeviceOnuConfigTemplate(serializers.Serializer):
             raise serializers.ValidationError("vlanConfig can not be empty")
         # TODO: Add validations
         return data
+
+
+class GroupsWithDevicesSerializer(serializers.ModelSerializer):
+    device_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Group
+        fields = ("id", "title", "device_count")

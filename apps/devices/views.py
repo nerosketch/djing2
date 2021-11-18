@@ -10,7 +10,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.utils.encoders import JSONEncoder
 
@@ -68,6 +68,12 @@ class FilterQuerySetMixin:
 
     def filter_queryset(self, queryset: DeviceModelQuerySet):
         queryset = super().filter_queryset(queryset=queryset)
+
+        street = safe_int(self.request.query_params.get('street'))
+        if street > 0:
+            return queryset.filter_devices_by_addr(
+                addr_id=street,
+            )
 
         address = safe_int(self.request.query_params.get('address'))
         if address > 0:
@@ -488,3 +494,11 @@ class PortVlanMemberModelViewSet(DjingModelViewSet):
     queryset = PortVlanMemberModel.objects.all()
     serializer_class = dev_serializers.PortVlanMemberModelSerializer
     filterset_fields = ("vlanif", "port")
+
+
+@api_view(['get'])
+def groups_with_devices(request):
+    grps = Group.objects.annotate(device_count=Count('device')).filter(device_count__gt=0).order_by('title')
+    ser = dev_serializers.GroupsWithDevicesSerializer(instance=grps, many=True)
+    return Response(ser.data)
+

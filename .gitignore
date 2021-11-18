@@ -6,7 +6,6 @@
 media/
 .idea/
 apps/djing2/local_settings.py
-*.json
 *.bak
 *.mo
 *.csv

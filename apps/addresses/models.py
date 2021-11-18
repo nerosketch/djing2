@@ -112,7 +112,7 @@ class AddressModelManager(models.Manager):
 
         title_hierarchy = list(_accumulate_addrs_hierarchy())
         title_hierarchy.reverse()
-        return ', '.join(f'{short_title}. {title}' for _, short_title, title in title_hierarchy)
+        return ', '.join('%s %s' % (short_title, title) for _, short_title, title in title_hierarchy)
 
 
 class AddressModel(IAddressObject, BaseAbstractModel):
@@ -165,6 +165,14 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         return AddressModelManager.get_address_full_title(
             addr_id=addr_id
         )
+
+    def get_id_hierarchy_gen(self):
+        ids_tree_query = AddressModelManager.get_address_recursive_ids(
+            addr_id=self.pk,
+            direction_down=False
+        )
+        for addr in AddressModel.objects.filter(pk__in=ids_tree_query):
+            yield addr.pk
 
     def get_address_item_by_type(self, addr_type: AddressModelTypes) -> Optional[AddressModel]:
         """

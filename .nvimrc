@@ -95,6 +95,8 @@ call plug#begin('~/.vim/plugged')
     Plug 'nvim-telescope/telescope.nvim'
     Plug 'nvim-telescope/telescope-fzy-native.nvim'
 
+    Plug 'roxma/vim-tmux-clipboard'             " nvim -. tmux clipboard
+
 call plug#end()
 
 
@@ -353,6 +355,7 @@ setlocal textwidth=79
 tab sball
 set switchbuf=useopen
 set laststatus=2
+set hidden
 " switch buffers
 nmap <F8> :bp<cr>
 nmap <F9> :bn<cr>

@@ -735,8 +735,8 @@ class CustomerDynamicFieldContentModel(AbstractDynamicFieldContentModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
 
     class Meta:
-        # TODO: rename to customers_dynamic_content
         db_table = 'dynamic_field_content'
+        unique_together = ('customer', 'field')
 
 
 class InvoiceForPayment(BaseAbstractModel):
