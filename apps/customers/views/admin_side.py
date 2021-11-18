@@ -5,23 +5,25 @@ from django.db.models import Count, Q, Sum
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
-from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.decorators import action
-from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.decorators import action, api_view
+from rest_framework.filters import OrderingFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 
+from djing2.lib.filters import CustomSearchFilter
 from customers import models, serializers
+from customers.models import CustomerQuerySet
 from customers.views.view_decorators import catch_customers_errs
 from djing2.lib import safe_float, safe_int
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.mixins import SitesFilterMixin
-from djing2.viewsets import DjingListAPIView, DjingModelViewSet
+from djing2.viewsets import DjingModelViewSet
+from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 from groupapp.models import Group
 from profiles.models import UserProfileLogActionType
 from services.models import OneShotPay, PeriodicPay, Service
@@ -38,14 +40,8 @@ class CustomerServiceModelViewSet(DjingModelViewSet):
         )
 
 
-class CustomerStreetModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerStreet.objects.select_related("group")
-    serializer_class = serializers.CustomerStreetModelSerializer
-    filterset_fields = ("group",)
-
-
 class CustomerLogModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerLog.objects.select_related("customer", "author")
+    queryset = models.CustomerLog.objects.select_related("customer", "author").order_by('-id')
     serializer_class = serializers.CustomerLogModelSerializer
     filterset_fields = ("customer",)
 
@@ -55,13 +51,13 @@ class CustomerLogModelViewSet(DjingModelViewSet):
 
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = models.Customer.objects.select_related(
-        "current_service", "current_service__service", "gateway", "street"
+        "current_service", "current_service__service", "gateway"
     )
     serializer_class = serializers.CustomerModelSerializer
-    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend, OrderingFilter]
+    filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter, CustomSearchFilter]
     search_fields = ("username", "fio", "telephone", "description")
-    filterset_fields = ("group", "street", "device", "dev_port", "current_service__service")
-    ordering_fields = ("username", "fio", "house", "balance", "current_service__service__title")
+    filterset_fields = ("group", "device", "dev_port", "current_service__service", "address", "is_active")
+    ordering_fields = ("username", "fio", "house", "balance", "current_service_title")
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -71,6 +67,23 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
                 "traf_cache__octets", filter=Q(traf_cache__event_time__gt=datetime.now() - timedelta(minutes=5))
             ),
         )
+
+    def filter_queryset(self, queryset: CustomerQuerySet):
+        queryset = super().filter_queryset(queryset=queryset)
+
+        street = safe_int(self.request.query_params.get('street'))
+        if street > 0:
+            return queryset.filter_customers_by_addr(
+                addr_id=street,
+            )
+
+        address = safe_int(self.request.query_params.get('address'))
+        if address > 0:
+            return queryset.filter_customers_by_addr(
+                addr_id=address,
+            )
+
+        return queryset
 
     def perform_create(self, serializer, *args, **kwargs):
         customer_instance = super().perform_create(serializer=serializer, sites=[self.request.site])
@@ -183,7 +196,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         srv = cust_srv.service
         if srv is None:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response("Custom service has not service (Look at customers.views.admin_site)", status=status.HTTP_400_BAD_REQUEST)
 
         # if customer.gateway:
         #     customer_gw_remove.delay(
@@ -226,7 +239,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         cost = safe_float(request.data.get("cost"))
         if cost == 0.0:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response("Passed invalid cost parameter", status=status.HTTP_400_BAD_REQUEST)
 
         if cost > 0.0:
             self.check_permission_code(
@@ -243,7 +256,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         comment = request.data.get("comment")
         if comment and len(comment) > 128:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response("comment parameter is too long", status=status.HTTP_400_BAD_REQUEST)
 
         customer.add_balance(
             profile=request.user,
@@ -338,19 +351,47 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         customer.set_markers(flag_names=flag_names)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @action(methods=['get'], detail=False)
+    def get_afk(self, request):
+        date_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
 
-class CustomersGroupsListAPIView(DjingListAPIView):
-    serializer_class = serializers.CustomerGroupSerializer
-    # filter_backends = (OrderingFilter,)
-    # ordering_fields = ('title', 'usercount')
+        date_limit = request.query_params.get('date_limit')
+        if date_limit is not None:
+            date_limit = datetime.strptime(date_limit, date_fmt)
 
-    def get_queryset(self):
-        qs = get_objects_for_user(self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
-        if self.request.user.is_superuser:
-            return qs.annotate(usercount=Count("customer"))
-        return qs.filter(sites__in=[self.request.site]).annotate(
-            usercount=Count("customer", filter=Q(customer__sites__in=[self.request.site]))
+        out_limit = request.query_params.get('out_limit')
+        out_limit = safe_int(out_limit, 50)
+
+        afk = models.Customer.objects.filter_afk(
+            date_limit=date_limit,
+            out_limit=out_limit
         )
+        res_afk = [{
+            'timediff': str(r['timediff']),
+            'last_date': r['last_date'].strftime(date_fmt),
+            'customer_id': r['customer_id'],
+            'customer_uname': r['customer_uname'],
+            'customer_fio': r['customer_fio']
+        } for r in afk]
+        return Response({
+            'count': 1,
+            'next': None,
+            'previous': None,
+            'results': res_afk
+        })
+
+    @action(methods=['get'], detail=False)
+    def bums(self, request):
+        qs = self.get_queryset().filter(address=None)
+        queryset = self.filter_queryset(qs)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class InvoiceForPaymentModelViewSet(DjingModelViewSet):
@@ -434,3 +475,37 @@ class CustomerAttachmentViewSet(DjingModelViewSet):
 
     def perform_create(self, serializer, *args, **kwargs) -> None:
         serializer.save(author=self.request.user)
+
+
+class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelViewSet):
+    queryset = models.CustomerDynamicFieldContentModel.objects.select_related('field')
+
+    def get_group_id(self) -> int:
+        customer_id = self.request.query_params.get('customer')
+        self.customer_id = customer_id
+        customer = get_object_or_404(models.Customer.objects.only('group_id'), pk=customer_id)
+        self.customer = customer
+        return customer.group_id
+
+    def filter_content_fields_queryset(self):
+        return self.get_queryset().filter(
+            customer_id=self.customer_id,
+        )
+
+    def create_content_field_kwargs(self, field_data):
+        if hasattr(self, 'customer_id'):
+            return {
+                'customer_id': self.customer_id
+            }
+        return {
+            'customer_id': field_data.get('customer')
+        }
+
+
+@api_view(['get'])
+def groups_with_customers(request):
+    # TODO: Also filter by address
+    grps = Group.objects.annotate(customer_count=Count('customer')).filter(customer_count__gt=0).order_by('title')
+    ser = serializers.GroupsWithCustomersSerializer(instance=grps, many=True)
+    return Response(ser.data)
+

@@ -1,20 +1,27 @@
 from typing import Iterable
 
 from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock
-from .zte_utils import conv_zte_signal
-from ..epon import BDCOM_P3310C
 from devices.device_config.base import Vlans, Vlan
+from .zte_utils import conv_zte_signal
+from ..pon_device_strategy import PonOLTDeviceStrategyContext
+from ..epon.bdcom_p3310c import BDCOM_P3310C
+from ...base_device_strategy import SNMPWorker
+
+_DEVICE_UNIQUE_CODE = 5
 
 
 class ZTE_C320(BDCOM_P3310C):
     description = "OLT ZTE C320"
+    ports_len = 8
 
     def get_fibers(self):
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         fibers = (
             {
                 "fb_id": int(fiber_id),
                 "fb_name": fiber_name,
-                "fb_onu_num": safe_int(self.get_item(".1.3.6.1.4.1.3902.1012.3.13.1.1.13.%d" % int(fiber_id))),
+                "fb_onu_num": safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.13.1.1.13.%d" % int(fiber_id))),
                 # 'fb_active_onu': -1,
                 # Temperature GPON SFP module
                 # 'fb_temp': safe_float(self.get_item(
@@ -25,30 +32,37 @@ class ZTE_C320(BDCOM_P3310C):
                 #     '.1.3.6.1.4.1.3902.1015.3.1.13.1.9.%d' % safe_int(fiber_id)
                 # )) / 1000.0
             }
-            for fiber_name, fiber_id in self.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.13.1.1.1")
+            for fiber_name, fiber_id in snmp.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.13.1.1.1")
         )
         return fibers
 
     def get_details(self) -> dict:
-        details = {
-            "disk_total": self.get_item(".1.3.6.1.4.1.3902.1015.14.1.1.1.7.1.1.4.0.5.102.108.97.115.104.1"),
-            "disk_free": self.get_item(".1.3.6.1.4.1.3902.1015.14.1.1.1.8.1.1.4.0.5.102.108.97.115.104.1"),
-            "fname": self.get_item(".1.3.6.1.4.1.3902.1015.2.1.2.2.1.2.1.1.1"),
-            "fver": self.get_item(".1.3.6.1.4.1.3902.1015.2.1.2.2.1.4.1.1.1"),
-        }
+        dev = self.model_instance
+        parent = dev.parent_dev
+        if not parent:
+            return {}
+        with SNMPWorker(hostname=parent.ip_address, community=str(parent.man_passw)) as snmp:
+            details = {
+                "disk_total": snmp.get_item(".1.3.6.1.4.1.3902.1015.14.1.1.1.7.1.1.4.0.5.102.108.97.115.104.1"),
+                "disk_free": snmp.get_item(".1.3.6.1.4.1.3902.1015.14.1.1.1.8.1.1.4.0.5.102.108.97.115.104.1"),
+                "fname": snmp.get_item(".1.3.6.1.4.1.3902.1015.2.1.2.2.1.2.1.1.1"),
+                "fver": snmp.get_item(".1.3.6.1.4.1.3902.1015.2.1.2.2.1.4.1.1.1"),
+            }
         details.update(super().get_details())
         return details
 
     @process_lock()
     def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
-        onu_types = self.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.28.1.1.1.%d" % fiber_num)
-        onu_ports = self.get_list(".1.3.6.1.4.1.3902.1012.3.28.1.1.2.%d" % fiber_num)
-        onu_signals = self.get_list(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%d" % fiber_num)
-        onu_states = self.get_list(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%d" % fiber_num)
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
+        onu_types = snmp.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.28.1.1.1.%d" % fiber_num)
+        onu_ports = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.28.1.1.2.%d" % fiber_num)
+        # onu_signals = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%d" % fiber_num)
+        onu_states = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%d" % fiber_num)
 
         # Real sn in last 3 octets
-        onu_sns = self.get_list(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%d" % fiber_num)
-        onu_prefixs = self.get_list(".1.3.6.1.4.1.3902.1012.3.50.11.2.1.1.%d" % fiber_num)
+        onu_sns = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%d" % fiber_num)
+        onu_prefixs = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.50.11.2.1.1.%d" % fiber_num)
 
         status_map = {1: "ok", 2: "down"}
 
@@ -56,23 +70,25 @@ class ZTE_C320(BDCOM_P3310C):
             {
                 "onu_type": onu_type_num[0],
                 "onu_port": onu_port,
-                "onu_signal": conv_zte_signal(onu_signal),
+                "onu_signal": 0,  # conv_zte_signal(onu_signal),
                 "onu_sn": onu_prefix.decode() + "".join("%.2X" % i for i in onu_sn[-4:]),  # Real sn in last 4 octets,
                 "snmp_extra": "%d.%d" % (fiber_num, safe_int(onu_type_num[1])),
                 "onu_state": status_map.get(safe_int(onu_state), "unknown"),
             }
-            for onu_type_num, onu_port, onu_signal, onu_sn, onu_prefix, onu_state in zip(
-                onu_types, onu_ports, onu_signals, onu_sns, onu_prefixs, onu_states
+            for onu_type_num, onu_port, onu_sn, onu_prefix, onu_state in zip(
+                onu_types, onu_ports, onu_sns, onu_prefixs, onu_states
             )
         )
 
         return onu_list
 
-    def get_units_unregistered(self, fiber_num: int) -> Iterable:
-        sn_num_list = self.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.13.3.1.2.%d" % fiber_num)
-        firmware_ver = self.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.11.%d" % fiber_num)
-        loid_passws = self.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.9.%d" % fiber_num)
-        loids = self.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.8.%d" % fiber_num)
+    def get_units_unregistered(self, fiber_num: int):
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
+        sn_num_list = snmp.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.13.3.1.2.%d" % fiber_num)
+        firmware_ver = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.11.%d" % fiber_num)
+        loid_passws = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.9.%d" % fiber_num)
+        loids = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.8.%d" % fiber_num)
 
         return (
             {
@@ -86,15 +102,21 @@ class ZTE_C320(BDCOM_P3310C):
         )
 
     def get_uptime(self):
-        up_timestamp = safe_int(self.get_item(".1.3.6.1.2.1.1.3.0"))
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            up_timestamp = safe_int(snmp.get_item(".1.3.6.1.2.1.1.3.0"))
         tm = RuTimedelta(seconds=up_timestamp / 100)
         return str(tm)
 
     def get_long_description(self):
-        return self.get_item(".1.3.6.1.2.1.1.1.0")
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            return snmp.get_item(".1.3.6.1.2.1.1.1.0")
 
     def get_hostname(self):
-        return self.get_item(".1.3.6.1.2.1.1.5.0")
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            return snmp.get_item(".1.3.6.1.2.1.1.5.0")
 
     #############################
     #      Telnet access
@@ -112,24 +134,10 @@ class ZTE_C320(BDCOM_P3310C):
 
     @process_lock()
     def read_all_vlan_info(self) -> Vlans:
-        for vid, vname in self.get_list_keyval(".1.3.6.1.4.1.3902.1015.20.2.1.2"):
-            yield Vlan(vid=int(vid), title=vname)
-
-    # def create_vlans(self, vlan_list: Vlans) -> bool:
-    #     for v in vlan_list:
-    #         self.write('vlan %d' % v.vid)
-    #         self.read_until('(config-vlan)#')
-    #         self.write('name %s' % self._normalize_name(v.title))
-    #         self.read_until('(config-vlan)#')
-    #         self.write('exit')
-    #         self.read_until('(config)#')
-    #     return True
-
-    # def delete_vlans(self, vlan_list: Vlans) -> bool:
-    #     for v in vlan_list:
-    #         self.write('no vlan %d' % v.vid)
-    #         self.read_until('(config)#')
-    #     return True
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            for vid, vname in snmp.get_list_keyval(".1.3.6.1.4.1.3902.1015.20.2.1.2"):
+                yield Vlan(vid=int(vid), title=vname)
 
     # def attach_vlans_to_uplink(self, vids: Iterable[int], stack_num: int,
     #                            rack_num: int, port_num: int) -> None:
@@ -142,48 +150,51 @@ class ZTE_C320(BDCOM_P3310C):
     #     self.read_until('(config)#')
 
 
-class OLT_ZTE_C320_ONU:
-    def __init__(self, bt: ZTE_C320, stack_num: int, rack_num: int, fiber_num: int, onu_num: int):
-        self.bt: ZTE_C320 = bt
-        self.stack_num = stack_num
-        self.rack_num = rack_num
-        self.fiber_num = fiber_num
-        self.onu_num = onu_num
+# class OLT_ZTE_C320_ONU:
+#     def __init__(self, bt: ZTE_C320, stack_num: int, rack_num: int, fiber_num: int, onu_num: int):
+#         self.bt: ZTE_C320 = bt
+#         self.stack_num = stack_num
+#         self.rack_num = rack_num
+#         self.fiber_num = fiber_num
+#         self.onu_num = onu_num
+#
+#     def __enter__(self):
+#         self.bt.write("int gpon-onu_%d/%d/%d:%d" % (self.stack_num, self.rack_num, self.fiber_num, self.onu_num))
+#         self._read_until_if()
+#
+#     def _read_until_if(self) -> bytes:
+#         return self.bt.read_until("(config-if)#")
+#
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         self.bt.write("exit")
+#         self.bt.read_until("(config)#")
 
-    def __enter__(self):
-        self.bt.write("int gpon-onu_%d/%d/%d:%d" % (self.stack_num, self.rack_num, self.fiber_num, self.onu_num))
-        self._read_until_if()
 
-    def _read_until_if(self) -> bytes:
-        return self.bt.read_until("(config-if)#")
+# class OLT_ZTE_C320_Fiber:
+#     def __init__(self, bt: ZTE_C320, stack_num: int, rack_num: int, fiber_num):
+#         self.bt: ZTE_C320 = bt
+#         self.stack_num = stack_num
+#         self.rack_num = rack_num
+#         self.fiber_num = fiber_num
+#
+#     def __enter__(self):
+#         self.bt.write("int gpon-olt_%d/%d/%d" % (self.stack_num, self.rack_num, self.fiber_num))
+#         self._read_until_if()
+#
+#     def _read_until_if(self) -> bytes:
+#         return self.bt.read_until("(config-if)#")
+#
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         self.bt.write("exit")
+#         self.bt.read_until("(config)#")
+#
+#     def remove_onu(self, onu_num: int) -> None:
+#         self.bt.write("no onu %d" % onu_num)
+#         self._read_until_if()
+#
+#     def custom_command(self, cmd: str, expect_after: str) -> None:
+#         self.bt.write(cmd)
+#         self.bt.read_until(expect_after)
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.bt.write("exit")
-        self.bt.read_until("(config)#")
 
-
-class OLT_ZTE_C320_Fiber:
-    def __init__(self, bt: ZTE_C320, stack_num: int, rack_num: int, fiber_num):
-        self.bt: ZTE_C320 = bt
-        self.stack_num = stack_num
-        self.rack_num = rack_num
-        self.fiber_num = fiber_num
-
-    def __enter__(self):
-        self.bt.write("int gpon-olt_%d/%d/%d" % (self.stack_num, self.rack_num, self.fiber_num))
-        self._read_until_if()
-
-    def _read_until_if(self) -> bytes:
-        return self.bt.read_until("(config-if)#")
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.bt.write("exit")
-        self.bt.read_until("(config)#")
-
-    def remove_onu(self, onu_num: int) -> None:
-        self.bt.write("no onu %d" % onu_num)
-        self._read_until_if()
-
-    def custom_command(self, cmd: str, expect_after: str) -> None:
-        self.bt.write(cmd)
-        self.bt.read_until(expect_after)
+PonOLTDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, ZTE_C320)

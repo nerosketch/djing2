@@ -1,5 +1,5 @@
 import os
-
+from typing import Tuple, Optional
 from bitfield.models import BitField
 from django.conf import settings
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin, Permission
@@ -11,6 +11,25 @@ from djing2.lib.validators import latinValidator, telephoneValidator
 from djing2.models import BaseAbstractModel, BaseAbstractModelMixin
 from groupapp.models import Group
 from profiles.tasks import resize_profile_avatar
+
+
+def split_fio(fio: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Try to split name, last_name, and surname."""
+    full_fname = str(fio)
+    full_name_list = full_fname.split()
+    surname, name, last_name = (None,) * 3
+    name_len = len(full_name_list)
+    if name_len > 0:
+        if name_len > 3:
+            surname, name, *last_name = full_name_list
+            last_name = '-'.join(last_name)
+        elif name_len == 3:
+            surname, name, last_name = full_name_list
+        elif name_len == 2:
+            surname, name = full_name_list
+        elif name_len == 1:
+            name = full_fname
+    return surname, name, last_name
 
 
 class MyUserManager(BaseUserManager):
@@ -77,6 +96,10 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
     def auth_log(self, user_agent: str, remote_ip: str):
         ProfileAuthLog.objects.create(profile=self, user_agent=user_agent, remote_ip=remote_ip)
 
+    def split_fio(self):
+        """Try to split name, last_name, and surname."""
+        return split_fio(str(self.fio))
+
     # Use UserManager to get the create_user method, etc.
     objects = MyUserManager()
 
@@ -91,7 +114,6 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = "base_accounts"
-        ordering = ("username",)
 
 
 class UserProfileLogActionType(models.IntegerChoices):
@@ -119,7 +141,6 @@ class UserProfileLog(BaseAbstractModel):
         return self.get_do_type_display()
 
     class Meta:
-        ordering = ("-action_date",)
         verbose_name = _("User profile log")
         verbose_name_plural = _("User profile logs")
         db_table = "profiles_userprofilelog"
@@ -170,7 +191,6 @@ class UserProfile(BaseAccount):
     class Meta:
         verbose_name = _("Staff account profile")
         verbose_name_plural = _("Staff account profiles")
-        ordering = ("fio",)
         db_table = "profiles_userprofile"
 
     def save(self, *args, **kwargs):
@@ -212,8 +232,7 @@ class ProfileAuthLog(models.Model):
     user_agent = models.CharField(_("Details"), max_length=256)
 
     def __str__(self):
-        return self.profile
+        return str(self.profile)
 
     class Meta:
         db_table = "profiles_auth_log"
-        ordering = ("-id",)

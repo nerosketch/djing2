@@ -1,7 +1,7 @@
 from uwsgi_tasks import task
 
 from devices.models import Device
-from devices.device_config import DEVICE_ONU_TYPES
+from devices.device_config.device_type_collection import DEVICE_ONU_TYPES
 
 
 @task()

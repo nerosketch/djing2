@@ -61,8 +61,8 @@ class Gateway(BaseAbstractModel):
                 )
                 setattr(self, "_gw_mngr", o)
             return o
-        except ConnectionResetError:
-            raise GatewayNetworkError("ConnectionResetError")
+        except ConnectionResetError as ce:
+            raise GatewayNetworkError("ConnectionResetError") from ce
 
     @staticmethod
     def get_user_credentials_by_gw(gw_id: int):
@@ -84,4 +84,3 @@ class Gateway(BaseAbstractModel):
         db_table = "gateways"
         verbose_name = _("Network access server. Gateway")
         verbose_name_plural = _("Network access servers. Gateways")
-        ordering = ("ip_address",)

@@ -15,10 +15,14 @@ from rest_framework_xml.renderers import XMLRenderer
 try:
     from customers.models import Customer
     from customers.tasks import customer_check_service_for_expiration
-except ImportError:
+except ImportError as imperr:
     from django.core.exceptions import ImproperlyConfigured
 
-    raise ImproperlyConfigured('"fin_app" application depends on "customers" application. Check if it installed')
+    raise ImproperlyConfigured(
+        '"fin_app" application depends on "customers" '
+        'application. Check if it installed'
+    ) from imperr
+
 from djing2.lib import safe_int, safe_float
 from djing2.viewsets import DjingModelViewSet
 from fin_app.serializers import alltime as alltime_serializers
@@ -35,7 +39,8 @@ class AllTimeGatewayModelViewSet(DjingModelViewSet):
         ser.is_valid(raise_exception=True)
         dat = ser.data
         r = report_by_pays(
-            from_date=dat.get('from_date'),
+            from_time=dat.get('from_time'),
+            to_time=dat.get('to_time'),
             pay_gw_id=dat.get('pay_gw'),
             group_by=dat.get('group_by', 0),
         )

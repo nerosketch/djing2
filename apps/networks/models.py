@@ -5,7 +5,6 @@ from netaddr import EUI
 
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.core import validators
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, connection, InternalError
@@ -40,7 +39,6 @@ class VlanIf(BaseAbstractModel):
 
     class Meta:
         db_table = "networks_vlan"
-        ordering = ("vid",)
         verbose_name = _("Vlan")
         verbose_name_plural = _("Vlan list")
 
@@ -96,7 +94,7 @@ class NetworkIpPool(BaseAbstractModel):
             net = ip_network("%s" % self.network)
         except ValueError as err:
             errs["network"] = ValidationError(message=str(err), code="invalid")
-            raise ValidationError(errs)
+            raise ValidationError(errs) from err
 
         if self.ip_start is None:
             errs["ip_start"] = ValidationError(_("Ip start is invalid"), code="invalid")
@@ -137,8 +135,8 @@ class NetworkIpPool(BaseAbstractModel):
         """
         with connection.cursor() as cur:
             cur.execute(
-                "SELECT find_new_ip_pool_lease(%s, %s::boolean, 0::smallint, %s::smallint)"
-                % (self.pk, 1 if self.is_dynamic else 0, self.kind)
+                "SELECT find_new_ip_pool_lease(%s, %s::boolean, 0::smallint, %s::smallint)",
+                (self.pk, 1 if self.is_dynamic else 0, self.kind)
             )
             free_ip = cur.fetchone()
         return ip_address(free_ip[0]) if free_ip and free_ip[0] else None
@@ -166,7 +164,6 @@ class NetworkIpPool(BaseAbstractModel):
         db_table = "networks_ip_pool"
         verbose_name = _("Network ip pool")
         verbose_name_plural = _("Network ip pools")
-        ordering = ("network",)
 
 
 class CustomerIpLeaseModelQuerySet(models.QuerySet):
@@ -217,7 +214,6 @@ class CustomerIpLeaseModel(models.Model):
             gw_id,
             grp_id,
             last_srv_id,
-            street_id,
             *others,
         ) = res
         return Customer(
@@ -234,7 +230,6 @@ class CustomerIpLeaseModel(models.Model):
             gateway_id=gw_id,
             group_id=grp_id,
             last_connected_service_id=last_srv_id,
-            street_id=street_id,
         )
 
     @staticmethod
@@ -272,14 +267,13 @@ class CustomerIpLeaseModel(models.Model):
             # lease_id, ip_addr, pool_id, lease_time, mac_addr, customer_id, is_dynamic, last_update = res
             return res
         except InternalError as err:
-            raise LogicError(str(err))
+            raise LogicError(str(err)) from err
 
     class Meta:
         db_table = "networks_ip_leases"
         verbose_name = _("IP lease")
         verbose_name_plural = _("IP leases")
         unique_together = ("ip_address", "mac_address", "pool", "customer")
-        ordering = ("id",)
 
 
 class CustomerIpLeaseLog(models.Model):

@@ -1,3 +1,4 @@
+import logging
 from typing import List
 from datetime import datetime
 from uwsgi_tasks import task
@@ -17,7 +18,7 @@ def export_static_ip_leases_task(customer_lease_id_list: List[int], event_time=N
         data, fname = export_ip_leases(leases=leases, event_time=event_time)
         task_export(data, fname, ExportStampTypeEnum.NETWORK_STATIC_IP)
     except ExportFailedStatus as err:
-        print("Error: %s" % err)
+        logging.error(err)
 
 
 @task()

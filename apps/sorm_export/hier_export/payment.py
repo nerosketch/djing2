@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from fin_app.models.alltime import AllTimePayLog
+from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway
 from sorm_export.hier_export.base import iterable_export_decorator, format_fname
 from sorm_export.serializers.payment import UnknownPaymentExportFormat
 
@@ -15,7 +15,8 @@ def export_customer_unknown_payment(pays: Iterable[AllTimePayLog], event_time=No
     за время, прошедшее с последней выгрузки.
     """
     def _gen(pay: AllTimePayLog):
-        params = "Идентификатор торговой точки: '%s'. Номер чека, выдаваемого клиенту: '%d'." % (
+        params = "платежная система '%s', Идентификатор торговой точки: '%s'. Номер чека, выдаваемого клиенту: '%d'." % (
+            PayAllTimeGateway.pay_system_title,
             pay.trade_point,
             pay.receipt_num
         )

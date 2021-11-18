@@ -4,6 +4,9 @@ from django.conf import settings
 
 from .dgs_3120_24sc import DlinkDGS_3120_24SCSwitchInterface
 from devices.device_config.base import DeviceConfigurationError
+from ..switch_device_strategy import SwitchDeviceStrategyContext
+
+DEVICE_UNIQUE_CODE = 1
 
 
 def _ex_expect(filename, params=()):
@@ -32,7 +35,7 @@ class DlinkDGS1100_10ME(DlinkDGS_3120_24SCSwitchInterface):
     ports_len = 10
 
     def reboot(self, save_before_reboot=False):
-        dat = self.dev_instance.extra_data
+        dat = self.model_instance.extra_data
         if dat is None:
             raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
         login = dat.get("login")
@@ -41,7 +44,10 @@ class DlinkDGS1100_10ME(DlinkDGS_3120_24SCSwitchInterface):
             return (
                 _ex_expect(
                     "dlink_DGS1100_reboot.exp",
-                    (self.dev_instance.ip_address, login, passw, 1 if save_before_reboot else 0),
+                    (self.model_instance.ip_address, login, passw, 1 if save_before_reboot else 0),
                 ),
                 None,
             )
+
+
+SwitchDeviceStrategyContext.add_device_type(DEVICE_UNIQUE_CODE, DlinkDGS1100_10ME)

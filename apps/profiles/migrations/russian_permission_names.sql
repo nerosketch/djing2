@@ -72,10 +72,6 @@ execute _tp('customers', 'change_passportinfo', 'Может изменять п�
 execute _tp('customers', 'view_passportinfo', 'Может видеть паспортные данные');
 execute _tp('customers', 'add_invoiceforpayment', 'Может добавлять долг для абонента');
 execute _tp('customers', 'delete_invoiceforpayment', 'Может удалять долг для абонента');
-execute _tp('customers', 'add_customerstreet', 'Может добавлять улицы');
-execute _tp('customers', 'change_customerstreet', 'Может изменять улицы');
-execute _tp('customers', 'delete_customerstreet', 'Может удалять улицы');
-execute _tp('customers', 'view_customerstreet', 'Может видеть улицы');
 execute _tp('customers', 'add_customerrawpassword', 'Может добавлять абонентский пароль');
 execute _tp('customers', 'change_customerrawpassword', 'Может изменять абонентский пароль');
 execute _tp('customers', 'add_customerservice', 'Может создавать абонентскую услугу');
@@ -155,6 +151,11 @@ execute _tp('networks', 'view_networkippool', 'Может видеть подс�
 -- execute _tp('admin', 'change_logentry', 'Может добавлять логи');
 -- execute _tp('admin', 'delete_logentry', 'Может удалять логи');
 -- execute _tp('admin', 'view_logentry', 'Может видеть логи');
+
+execute _tp('addresses', 'add_addressmodel', 'Может добавлять адреса');
+execute _tp('addresses', 'change_addressmodel', 'Может изменять адреса');
+execute _tp('addresses', 'delete_addressmodel', 'Может удалять адреса');
+execute _tp('addresses', 'view_addressmodel', 'Может видеть адреса');
 
 
 deallocate _tp;

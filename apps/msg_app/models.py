@@ -58,7 +58,6 @@ class Message(BaseAbstractModel):
 
     class Meta:
         db_table = "messages"
-        ordering = ("-id",)
         verbose_name = _("Message")
         verbose_name_plural = _("Messages")
 
@@ -88,8 +87,8 @@ class ConversationManager(models.Manager):
                 return acc
             try:
                 return UserProfile.objects.get(pk=acc)
-            except UserProfile.DoesNotExist:
-                raise MessageError(_("Participant profile does not found"))
+            except UserProfile.DoesNotExist as err:
+                raise MessageError(_("Participant profile does not found")) from err
 
         other_participants = tuple(id_to_userprofile(acc) for acc in other_participants)
         if not title:
@@ -229,4 +228,3 @@ class Conversation(BaseAbstractModel):
         db_table = "conversations"
         verbose_name = _("Conversation")
         verbose_name_plural = _("Conversations")
-        ordering = ("title",)

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from django.contrib.sites.models import Site
 from django.utils.translation import gettext_lazy as _
 from django.db import models, connection
@@ -12,6 +13,8 @@ from djing2.models import BaseAbstractModel
 
 
 class PayAllTimeGateway(BaseAbstractModel):
+    pay_system_title = "24 All Time"
+
     title = models.CharField(_("Title"), max_length=64)
     secret = EncryptedCharField(verbose_name=_("Secret"), max_length=64)
     service_id = models.CharField(_("Service id"), max_length=64)
@@ -24,15 +27,14 @@ class PayAllTimeGateway(BaseAbstractModel):
     class Meta:
         db_table = "pay_all_time_gateways"
         verbose_name = _("All time gateway")
-        ordering = ("title",)
 
 
-def report_by_pays(from_date: datetime, pay_gw_id=None, group_by=0):
+def report_by_pays(from_time: datetime, to_time: Optional[datetime] = None, pay_gw_id=None, group_by=0):
     group_by = safe_int(group_by)
-    if group_by == 0:
+    if group_by not in [1, 2, 3]:
         raise ParseError('Bad value in "group_by" param')
 
-    params = [from_date]
+    params = [from_time]
     query = [
         "SELECT"
     ]
@@ -53,7 +55,7 @@ def report_by_pays(from_date: datetime, pay_gw_id=None, group_by=0):
     query.extend((
         'sum("sum") AS alsum,',
         'count("sum") as alcnt',
-        "FROM  all_time_pay_log",
+        "FROM all_time_pay_log",
         "where date_add >= %s::date",
     ))
 
@@ -63,9 +65,13 @@ def report_by_pays(from_date: datetime, pay_gw_id=None, group_by=0):
             query.append("and pay_gw_id = %s::integer")
             params.append(pay_gw_id)
 
+    if to_time is not None:
+        query.append("and date_add <= %s::date")
+        params.append(to_time)
+
     query.extend((
         "group by 1",
-        "order by 1;",
+        "order by 1",
     ))
     cur = connection.cursor()
     cur.execute(' '.join(query), params)
@@ -96,4 +102,3 @@ class AllTimePayLog(BaseAbstractModel):
 
     class Meta:
         db_table = "all_time_pay_log"
-        ordering = ("-date_add",)

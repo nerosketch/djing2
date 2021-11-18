@@ -112,5 +112,4 @@ class TrafficCache(BaseAbstractModel):
     class Meta:
         db_table = "traf_cache"
         # db_tablespace = 'ram'
-        ordering = ("-event_time",)
         unique_together = ["customer", "ip_addr"]

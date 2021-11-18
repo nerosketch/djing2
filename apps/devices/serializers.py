@@ -2,13 +2,14 @@ from collections import OrderedDict
 
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
-from devices.models import Device, Port, PortVlanMemberModel
+
 from djing2.lib.mixins import BaseCustomModelSerializer
+from devices.models import Device, Port, PortVlanMemberModel
 from groupapp.models import Group
 
 
 class AttachedUserSerializer(serializers.Serializer):
-    pk = serializers.PrimaryKeyRelatedField(read_only=True)
+    id = serializers.PrimaryKeyRelatedField(read_only=True)
     full_name = serializers.CharField(source="get_full_name", read_only=True)
 
 
@@ -17,7 +18,7 @@ class DeviceModelSerializer(BaseCustomModelSerializer):
     iface_name = serializers.CharField(source="get_if_name", read_only=True)
     parent_dev_name = serializers.CharField(source="parent_dev", allow_null=True, read_only=True)
     parent_dev_group = serializers.IntegerField(source="parent_dev.group_pk", allow_null=True, read_only=True)
-
+    address_title = serializers.CharField(source='get_address', read_only=True)
     attached_users = serializers.ListField(source="customer_set.all", read_only=True, child=AttachedUserSerializer())
 
     class Meta:
@@ -35,19 +36,14 @@ class DevicePONModelSerializer(DeviceModelSerializer):
 class DeviceWithoutGroupModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = Device
-        fields = (
-            "pk",
-            "ip_address",
-            "mac_addr",
-            "comment",
-            "dev_type",
-            "man_passw",
-            "parent_dev",
-            "snmp_extra",
-            "status",
-            "is_noticeable",
-            "sites",
-        )
+        exclude = [
+            'group',
+            'extra_data',
+            'vlans',
+            'code',
+            'create_time',
+            'place'
+        ]
 
 
 class PortModelSerializer(BaseCustomModelSerializer):
@@ -55,27 +51,7 @@ class PortModelSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = Port
-        fields = ("pk", "device", "num", "descr", "user_count")
-
-
-class PortVlanConfigMemberSerializer(serializers.Serializer):
-    vid = serializers.IntegerField(min_value=1, max_value=4095, required=True)
-    title = serializers.CharField(max_length=128, required=True)
-    is_management = serializers.BooleanField(default=False, initial=False, allow_null=True)
-    native = serializers.BooleanField(default=False, initial=False)
-
-
-class PortVlanConfigSerializer(serializers.Serializer):
-    port_num = serializers.IntegerField(min_value=1, max_value=28)
-    vlans = serializers.ListField(child=PortVlanConfigMemberSerializer())
-
-
-class DeviceGroupsModelSerializer(BaseCustomModelSerializer):
-    device_count = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = Group
-        fields = ("pk", "title", "code", "device_count")
+        fields = ("id", "device", "num", "descr", "user_count")
 
 
 class PortVlanMemberModelSerializer(BaseCustomModelSerializer):
@@ -91,7 +67,7 @@ class DevOnuVlan(serializers.Serializer):
 
 class DevOnuVlanInfoTemplate(serializers.Serializer):
     port = serializers.IntegerField(default=1)
-    vids = serializers.ListField(child=DevOnuVlan())
+    vids = DevOnuVlan(many=True)
 
 
 class DeviceOnuConfigTemplate(serializers.Serializer):
@@ -104,3 +80,11 @@ class DeviceOnuConfigTemplate(serializers.Serializer):
             raise serializers.ValidationError("vlanConfig can not be empty")
         # TODO: Add validations
         return data
+
+
+class GroupsWithDevicesSerializer(serializers.ModelSerializer):
+    device_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Group
+        fields = ("id", "title", "device_count")

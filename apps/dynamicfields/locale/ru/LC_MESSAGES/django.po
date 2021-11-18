@@ -1,0 +1,84 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Dmitry Novikov nerosketch@gmail.com, 2021.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
+"POT-Creation-Date: 2021-09-07 15:41+0300\n"
+"Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+#: apps/dynamicfields/models.py:15
+#, python-format
+msgid "'%(value)s' value must be a float."
+msgstr "'%(value)s' значение должно быть числом с плавающей точкой."
+
+#: apps/dynamicfields/models.py:22
+#, python-format
+msgid "Dynamic content field (up to %(max_length)s)"
+msgstr "Динамическое поле с контентом (up to %(max_length)s)"
+
+#: apps/dynamicfields/models.py:49
+msgid "Char Field"
+msgstr "Строковое поле"
+
+#: apps/dynamicfields/models.py:50
+msgid "Integer Field"
+msgstr "Числовое поле"
+
+#: apps/dynamicfields/models.py:51
+msgid "Email Field"
+msgstr "Поле почты"
+
+#: apps/dynamicfields/models.py:52
+msgid "Ip Field"
+msgstr "Поле ip адрес"
+
+#: apps/dynamicfields/models.py:53
+msgid "Float Field"
+msgstr "Поле дробного числа"
+
+#: apps/dynamicfields/models.py:54
+msgid "Slug Field"
+msgstr ""
+
+#: apps/dynamicfields/models.py:58
+msgid "Title"
+msgstr "Название"
+
+#: apps/dynamicfields/models.py:60
+msgid "Field type"
+msgstr "Тип поля"
+
+msgid "Datetime field"
+msgstr "Поле даты времени"
+
+msgid "Boolean field"
+msgstr "Флаг"
+
+#: apps/dynamicfields/models.py:66
+msgid "Groups"
+msgstr "Группы"
+
+msgid "Tags must contain only word characters (equivalent to [a-zA-Z0-9_]). And separated by comma."
+msgstr "Тэги должны содержать только буквы, цифры и знак подчёркивания (как [a-zA-Z0-9_]). И могут быть разделены запятой."
+
+msgid "Default tag"
+msgstr "Тэг по умолчанию"
+
+msgid "Uses IPTV"
+msgstr "Использует IPTV"
+
+msgid "System tag"
+msgstr "Системный тэг"
+
+msgid "User tag"
+msgstr "Пользовательский тэг"

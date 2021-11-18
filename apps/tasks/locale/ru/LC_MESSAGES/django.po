@@ -6,8 +6,8 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-04-20 15:17+0300\n"
+"Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
+"POT-Creation-Date: 2021-09-07 15:41+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: apps/tasks/handle.py:21 apps/tasks/models.py:254
+#: apps/tasks/handle.py:21 apps/tasks/models.py:269
 msgid "Task"
 msgstr "Задача"
 
@@ -25,209 +25,213 @@ msgstr "Задача"
 msgid "Task completed"
 msgstr "Задача завершена"
 
-#: apps/tasks/models.py:34
+#: apps/tasks/models.py:47
 msgid "State change data"
 msgstr "Состояние изменения задачи"
 
-#: apps/tasks/models.py:41
+#: apps/tasks/models.py:54
 msgid "Task change."
 msgstr "Изменение задачи."
 
-#: apps/tasks/models.py:42
+#: apps/tasks/models.py:55
 #, python-format
 msgid "\"%(field_name)s\" from \"%(from)s\" -> \"%(to)s\""
 msgstr "\"%(field_name)s\" с \"%(from)s\" -> \"%(to)s\""
 
-#: apps/tasks/models.py:72
+#: apps/tasks/models.py:84
 msgid "Completing task"
 msgstr "Завершение задачи"
 
-#: apps/tasks/models.py:74
+#: apps/tasks/models.py:86
 msgid "Failing task"
 msgstr "Изменение задачи"
 
-#: apps/tasks/models.py:77
+#: apps/tasks/models.py:89
 msgid "Restore state from confused to new"
 msgstr "Восстановление состояния с провеленного в новое"
 
-#: apps/tasks/models.py:79
+#: apps/tasks/models.py:91
 msgid "Change state from confused to completed"
 msgstr "Изменение состояния с проваленного в завершённое"
 
-#: apps/tasks/models.py:82
+#: apps/tasks/models.py:94
 msgid "Restore state from completed to new"
 msgstr "Восстановление состояния с завершённого в новое"
 
-#: apps/tasks/models.py:84
+#: apps/tasks/models.py:96
 msgid "Change state from completed to confused"
 msgstr "Изменение состояния с завершённого в проваленное"
 
-#: apps/tasks/models.py:85
+#: apps/tasks/models.py:97
 msgid "Unknown change action"
 msgstr "Не определённое действие"
 
-#: apps/tasks/models.py:107
+#: apps/tasks/models.py:119
 msgid "Change log"
 msgstr "Лог задач"
 
-#: apps/tasks/models.py:108
+#: apps/tasks/models.py:120
 msgid "Change logs"
 msgstr "Логи задач"
 
-#: apps/tasks/models.py:144
+#: apps/tasks/models.py:156
 msgid "Description"
 msgstr "Описание"
 
-#: apps/tasks/models.py:145
+#: apps/tasks/models.py:157
 msgid "Recipients"
 msgstr "Исполнители"
 
-#: apps/tasks/models.py:147
+#: apps/tasks/models.py:159
 msgid "Task author"
 msgstr "Автор задачи"
 
-#: apps/tasks/models.py:153
+#: apps/tasks/models.py:165
 msgid "Low"
 msgstr "Низкий"
 
-#: apps/tasks/models.py:154
+#: apps/tasks/models.py:166
 msgid "Average"
 msgstr "Средний"
 
-#: apps/tasks/models.py:155
+#: apps/tasks/models.py:167
 msgid "Higher"
 msgstr "Высший"
 
-#: apps/tasks/models.py:157
+#: apps/tasks/models.py:169
 msgid "A priority"
 msgstr "Приоритет"
 
-#: apps/tasks/models.py:158
+#: apps/tasks/models.py:170
 msgid "Reality"
 msgstr "Актуальность (дата, до которой нужно завершить задачу)"
 
-#: apps/tasks/models.py:159
+#: apps/tasks/models.py:171
 msgid "Date of create"
 msgstr "Дата создания"
 
-#: apps/tasks/models.py:164
+#: apps/tasks/models.py:176
 msgid "New"
 msgstr "Новая"
 
-#: apps/tasks/models.py:165
+#: apps/tasks/models.py:177
 msgid "Confused"
 msgstr "Провалена"
 
-#: apps/tasks/models.py:166
+#: apps/tasks/models.py:178
 msgid "Completed"
 msgstr "Выполнена"
 
-#: apps/tasks/models.py:168
+#: apps/tasks/models.py:180
 msgid "Condition"
 msgstr "Состояние"
 
-#: apps/tasks/models.py:183
+#: apps/tasks/models.py:195
 msgid "not chosen"
 msgstr "не выбрано"
 
-#: apps/tasks/models.py:184
+#: apps/tasks/models.py:196
 msgid "ip conflict"
 msgstr "Ip конфликт"
 
-#: apps/tasks/models.py:185
+#: apps/tasks/models.py:197
 msgid "yellow triangle"
 msgstr "жёлтый треугольник"
 
-#: apps/tasks/models.py:186
+#: apps/tasks/models.py:198
 msgid "red cross"
 msgstr "красный крестик"
 
-#: apps/tasks/models.py:187
+#: apps/tasks/models.py:199
 msgid "weak speed"
 msgstr "слабая скорость"
 
-#: apps/tasks/models.py:188
+#: apps/tasks/models.py:200
 msgid "cable break"
 msgstr "обрыв кабеля"
 
-#: apps/tasks/models.py:189
+#: apps/tasks/models.py:201
 msgid "connection"
 msgstr "подключение"
 
-#: apps/tasks/models.py:190
+#: apps/tasks/models.py:202
 msgid "periodic disappearance"
 msgstr "переодическое пропадание"
 
-#: apps/tasks/models.py:191
+#: apps/tasks/models.py:203
 msgid "router setup"
 msgstr "настройка роутера"
 
-#: apps/tasks/models.py:192
+#: apps/tasks/models.py:204
 msgid "configure onu"
 msgstr "настроить onu"
 
-#: apps/tasks/models.py:193
+#: apps/tasks/models.py:205
 msgid "crimp cable"
 msgstr "обжать кабель"
 
-#: apps/tasks/models.py:194
+#: apps/tasks/models.py:206
 msgid "Internet crash"
 msgstr "Нет интернета"
 
-#: apps/tasks/models.py:195
+#: apps/tasks/models.py:207
 msgid "other"
 msgstr "другое"
 
-#: apps/tasks/models.py:198
+#: apps/tasks/models.py:210
 msgid "The nature of the damage"
 msgstr "Характер поломки"
 
-#: apps/tasks/models.py:200
+#: apps/tasks/models.py:212
 msgid "Customer"
 msgstr "Абонент"
 
-#: apps/tasks/models.py:239
+#: apps/tasks/models.py:251
 msgid "Out date not specified"
 msgstr "Дата окончания не указана"
 
-#: apps/tasks/models.py:241
+#: apps/tasks/models.py:253
 msgid "time left"
 msgstr "осталось"
 
-#: apps/tasks/models.py:243
+#: apps/tasks/models.py:255
 #, python-format
 msgid "Expired timeout -%(time_left)s"
 msgstr "Время вышло -%(time_left)s"
 
-#: apps/tasks/models.py:249 apps/tasks/signals.py:29
+#: apps/tasks/models.py:262
 msgid "Reminders of tasks"
 msgstr "Напоминания о задачах"
 
-#: apps/tasks/models.py:253
+#: apps/tasks/models.py:263
+msgid "Can view task mode report"
+msgstr "Может видеть отчёт по частоте использования характеров задач"
+
+#: apps/tasks/models.py:268
 msgid "Text of comment"
 msgstr "Текст комментария"
 
-#: apps/tasks/models.py:255
+#: apps/tasks/models.py:270
 msgid "Author"
 msgstr "Автор"
 
-#: apps/tasks/models.py:256
+#: apps/tasks/models.py:271
 msgid "Time of create"
 msgstr "Дата создания"
 
-#: apps/tasks/models.py:263
+#: apps/tasks/models.py:278
 msgid "Extra comment"
 msgstr "Комментарий"
 
-#: apps/tasks/models.py:264
+#: apps/tasks/models.py:279
 msgid "Extra comments"
 msgstr "Комментарии"
 
-#: apps/tasks/signals.py:14
+#: apps/tasks/signals.py:13
 msgid "High priority task was created"
 msgstr "Создана высокоприоритетная задача"
 
-#: apps/tasks/signals.py:16
+#: apps/tasks/signals.py:15
 msgid "High priority task was updated"
 msgstr "Высокоприоритетная задача обновлена"
 
@@ -259,9 +263,6 @@ msgstr "Вы не можете удалять назначенные на вас
 #: apps/tasks/views.py:39 apps/tasks/views.py:95
 msgid "New task with this customer already exists."
 msgstr "Заявка для этого абонента уже создана."
-
-msgid "Can view task mode report"
-msgstr "Может видеть отчёт по частоте использования характеров задач"
 
 #~ msgid "Create task"
 #~ msgstr "Создание задачи"
