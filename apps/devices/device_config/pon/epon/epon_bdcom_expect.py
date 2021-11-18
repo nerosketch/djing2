@@ -14,8 +14,8 @@ def remove_from_olt(ip_addr: str, telnet_login: str, telnet_passw: str, telnet_p
     try:
         fiber_num, onu_num = int_name.split("/")[1].split(":")
         fiber_num, onu_num = safe_int(fiber_num), safe_int(onu_num)
-    except (IndexError, ValueError):
-        raise DeviceImplementationError("Device interface unexpected")
+    except (IndexError, ValueError) as err:
+        raise DeviceImplementationError("Device interface unexpected") from err
 
     if onu_num < 1 or onu_num > 64:
         raise DeviceImplementationError("Onu num must be in range 1-64")

@@ -20,6 +20,7 @@ class TaskModelSerializer(BaseCustomModelSerializer):
     mode_str = serializers.CharField(source="get_mode_display", read_only=True)
     time_of_create = serializers.DateTimeField(read_only=True)
     is_expired = serializers.BooleanField(read_only=True)
+    doc_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = models.Task

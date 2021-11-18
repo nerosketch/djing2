@@ -82,7 +82,7 @@ class RadiusInteract:
             res = self.client.SendPacket(request)
             if res.code in (packet.CoAACK, packet.AccessAccept, packet.DisconnectACK):
                 # ok
-                return
+                return 'ok'
             res_keys = res.keys()
             exception = None
             if 'Error-Cause' in res_keys:
@@ -102,7 +102,7 @@ class RadiusInteract:
                 raise exception(res_text)
             return res_text
         except Timeout as e:
-            raise RadiusTimeoutException(e)
+            raise RadiusTimeoutException(e) from e
 
 
 _rad_interact_instance = RadiusInteract()

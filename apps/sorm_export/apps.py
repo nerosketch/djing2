@@ -6,3 +6,4 @@ class SormExportConfig(AppConfig):
 
     def ready(self):
         from sorm_export import signals  # noqa
+        from sorm_export import tasks  # noqa

@@ -1,32 +1,24 @@
-from typing import Optional, Dict, Generator
+from typing import Generator
 from collections import namedtuple
 from easysnmp import EasySNMPTimeoutError
-from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy as _
 
-# from netaddr import EUI, mac_cisco
-
+from devices.device_config.base_device_strategy import SNMPWorker
 from djing2.lib import safe_int, RuTimedelta, safe_float, macbin2str
-from devices.device_config.utils import plain_ip_device_mon_template
-from devices.device_config.base import BasePONInterface, DeviceImplementationError
+from ...base import Vlans, Vlan
+from ...pon.pon_device_strategy import PonOltDeviceStrategy, PonOLTDeviceStrategyContext
 
 
 ONUdevPort = namedtuple("ONUdevPort", "num name status mac signal uptime fiberid")
 
+_DEVICE_UNIQUE_CODE = 2
 
-class BDCOM_P3310C(BasePONInterface):
+
+class BDCOM_P3310C(PonOltDeviceStrategy):
     has_attachable_to_customer = False
     description = "PON OLT"
     is_use_device_port = False
     ports_len = 4
-
-    def __init__(self, dev_instance, *args, **kwargs):
-        if not dev_instance.ip_address:
-            raise DeviceImplementationError(gettext("Ip address required"))
-        dev_ip_addr = dev_instance.ip_address
-
-        if not dev_instance.man_passw:
-            raise DeviceImplementationError(gettext("For fetch additional device info, snmp community required"))
-        super().__init__(dev_instance=dev_instance, host=dev_ip_addr, snmp_community=str(dev_instance.man_passw))
 
     def scan_onu_list(self) -> Generator[ONUdevPort, None, None]:
         """
@@ -34,13 +26,15 @@ class BDCOM_P3310C(BasePONInterface):
         If long operation then return the generator of ports count first,
         then max chunk size, and ports in next in generations
         """
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         # numbers
         # fiber_nums = (safe_int(i) for i in self.get_list('.1.3.6.1.4.1.3320.101.6.1.1.1'))
         # numbers
-        fiber_onu_counts = self.get_list(".1.3.6.1.4.1.3320.101.6.1.1.2")
+        fiber_onu_counts = snmp.get_list(".1.3.6.1.4.1.3320.101.6.1.1.2")
 
         # comma separated strings, remember to remove empty elements
-        fiber_onu_id_nums = self.get_list_keyval(".1.3.6.1.4.1.3320.101.6.1.1.23")
+        fiber_onu_id_nums = snmp.get_list_keyval(".1.3.6.1.4.1.3320.101.6.1.1.23")
 
         # All onu's count
         yield sum(safe_int(i) for i in fiber_onu_counts)
@@ -56,54 +50,58 @@ class BDCOM_P3310C(BasePONInterface):
                     onu_num = safe_int(onu_num)
                     if onu_num == 0:
                         continue
-                    status = safe_int(self.get_item(".1.3.6.1.4.1.3320.101.10.1.1.26.%d" % onu_num))
-                    signal = safe_float(self.get_item(".1.3.6.1.4.1.3320.101.10.5.1.5.%d" % onu_num))
-                    mac = self.get(".1.3.6.1.4.1.3320.101.10.1.1.3.%d" % onu_num)
+                    status = safe_int(snmp.get_item(".1.3.6.1.4.1.3320.101.10.1.1.26.%d" % onu_num))
+                    signal = safe_float(snmp.get_item(".1.3.6.1.4.1.3320.101.10.5.1.5.%d" % onu_num))
+                    mac = snmp.get(".1.3.6.1.4.1.3320.101.10.1.1.3.%d" % onu_num)
                     yield ONUdevPort(
                         num=onu_num,
-                        name=self.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % onu_num),
+                        name=snmp.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % onu_num),
                         status=status == 3,
                         mac=macbin2str(mac.value),
                         signal=signal / 10 if signal else "—",
-                        uptime=safe_int(self.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % onu_num)),
+                        uptime=safe_int(snmp.get_item(".1.3.6.1.2.1.2.2.1.9.%d" % onu_num)),
                         fiberid=safe_int(fiber_id),
                     )
         except EasySNMPTimeoutError as e:
-            raise EasySNMPTimeoutError("{} ({})".format(gettext("wait for a reply from the SNMP Timeout"), e))
+            raise EasySNMPTimeoutError("{} ({})".format(_("wait for a reply from the SNMP Timeout"), e)) from e
 
     def get_fibers(self):
+        dev = self.model_instance
+        snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         fibers = tuple(
             {
                 "fb_id": int(fiber_id),
                 "fb_name": "EPON0/%d" % fiber_num,
-                "fb_active_onu": safe_int(self.get_item(".1.3.6.1.4.1.3320.101.6.1.1.21.%d" % int(fiber_id))),
+                "fb_active_onu": safe_int(snmp.get_item(".1.3.6.1.4.1.3320.101.6.1.1.21.%d" % int(fiber_id))),
                 # 'fb_onu_ids': tuple(int(i) for i in self.get_item_plain(
                 #     '.1.3.6.1.4.1.3320.101.6.1.1.23.%d' % int(fiber_id)).split(',') if i
                 # ),
                 "fb_onu_num": safe_int(registered_onu_count),
             }
             for fiber_num, (registered_onu_count, fiber_id) in enumerate(
-                self.get_list_keyval(".1.3.6.1.4.1.3320.101.6.1.1.2"), 1
+                snmp.get_list_keyval(".1.3.6.1.4.1.3320.101.6.1.1.2"), 1
             )
         )
         return fibers
 
     def get_device_name(self):
-        return self.get_item(".1.3.6.1.2.1.1.5.0")
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            return snmp.get_item(".1.3.6.1.2.1.1.5.0")
 
     def get_uptime(self):
-        up_timestamp = safe_int(self.get_item(".1.3.6.1.2.1.1.9.1.4.1"))
-        tm = RuTimedelta(seconds=up_timestamp / 100)
-        return tm
+        dev = self.model_instance
+        with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
+            up_timestamp = safe_int(snmp.get_item(".1.3.6.1.2.1.1.9.1.4.1"))
+            tm = RuTimedelta(seconds=up_timestamp / 100)
+            return tm
 
-    @staticmethod
-    def validate_extra_snmp_info(v: str) -> None:
+    def validate_extra_snmp_info(self, v: str) -> None:
         # Olt has no require snmp info
         pass
 
-    def monitoring_template(self, *args, **kwargs) -> Optional[str]:
-        device = self.dev_instance
-        return plain_ip_device_mon_template(device)
+    def read_all_vlan_info(self) -> Vlans:
+        yield Vlan(vid=1, title='Default')
 
     #############################
     #      Telnet access
@@ -192,32 +190,6 @@ class BDCOM_P3310C(BasePONInterface):
     #         except (ValueError, IndexError):
     #             pass
 
-    # def create_vlans(self, vlan_list: Vlans) -> bool:
-    #     self.write('conf')
-    #     self.read_until('_config#')
-    #     for vlan in vlan_list:
-    #         self.write('vlan %d' % vlan.vid)
-    #         self.read_until('config_vlan%d#' % vlan.vid)
-    #         self.write('name %s' % self._normalize_name(vlan.title))
-    #         self.read_until('config_vlan%d#' % vlan.vid)
-    #         self.write('ex')
-    #         self.read_until('_config#')
-    #     self.write('exit')
-    #     self.read_until(self.prompt)
-    #     return True
-
-    # def delete_vlans(self, vlan_list: Vlans) -> bool:
-    #     self.write('conf')
-    #     self.read_until('_config#')
-    #     for vlan in vlan_list:
-    #         self.write('no vlan %d' % vlan.vid)
-    #         res = self.read_until('_config#')
-    #         if b'OK!' not in res:
-    #             return False
-    #     self.write('exit')
-    #     self.read_until(self.prompt)
-    #     return True
-
     # def attach_vlan_to_port(self, vid: int, port: int, tag: bool = True) -> bool:
     #     return self.attach_vlan_to_eport(vid, port, tag)
 
@@ -261,39 +233,6 @@ class BDCOM_P3310C(BasePONInterface):
     # def attach_vlans_to_uplink(self, vlans: Vlans, port: int, tag: bool = True) -> None:
     #     self.attach_vlan_to_gport(vids, port, tag)
 
-    # def detach_vlan_from_port(self, vlan: Vlan, port: int, tag: bool = True) -> bool:
-    #     return self.detach_vlan_from_eport(vlan, port, tag)
-
-    # def detach_vlan_from_eport(self, vid: int, port: int, tag: bool = True) -> bool:
-    #     self.write('conf')
-    #     self.read_until('_config#')
-    #     self.write('int EPON0/%d' % port)
-    #     self.read_until('_epon0/%d#' % port)
-    #     if tag:
-    #         self.write('switch trunk vlan-allowed remove %d' % vid)
-    #     else:
-    #         self.write('switchport trunk vlan-untagged remove %d' % vid)
-    #     self.read_until('_epon0/%d#' % port)
-    #     self._exit_fiber()
-    #     self.write('exit')
-    #     self.read_until(self.prompt)
-    #     return True
-
-    # def detach_vlan_from_gport(self, vid: int, port: int, tag: bool = True) -> bool:
-    #     self.write('conf')
-    #     self.read_until('_config#')
-    #     self.write('int g0/%d' % port)
-    #     self.read_until('_g0/%d#' % port)
-    #     if tag:
-    #         self.write('switch trunk vlan-allowed remove %d' % vid)
-    #     else:
-    #         self.write('switchport trunk vlan-untagged remove %d' % vid)
-    #     self.read_until('_g0/%d#' % port)
-    #     self._exit_fiber()
-    #     self.write('exit')
-    #     self.read_until(self.prompt)
-    #     return True
-
     # def _enter_fiber(self, fiber_num: int):
     #     self.write('conf')
     #     self.read_until('_config#')
@@ -321,15 +260,12 @@ class BDCOM_P3310C(BasePONInterface):
     #     self._exit_fiber()
     #     return True
 
-    def remove_from_olt(self, extra_data: Dict) -> None:
-        pass
 
-
-class OLT_BDCOM_P33C_ONU:
-    def __init__(self, bt: BDCOM_P3310C, fiber_num: int, onu_num: int):
-        self.bt: BDCOM_P3310C = bt
-        self.fiber_num = fiber_num
-        self.onu_num = onu_num
+# class OLT_BDCOM_P33C_ONU:
+#     def __init__(self, bt: BDCOM_P3310C, fiber_num: int, onu_num: int):
+#         self.bt: BDCOM_P3310C = bt
+#         self.fiber_num = fiber_num
+#         self.onu_num = onu_num
 
     # def __enter__(self):
     #     self.bt.write('int EPON0/%d:%d' % (self.fiber_num, self.onu_num))
@@ -360,3 +296,5 @@ class OLT_BDCOM_P33C_ONU:
     #         native_vid, tag_vids
     #     ))
     #     self._read_until_onu_int()
+
+PonOLTDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, BDCOM_P3310C)

@@ -10,8 +10,8 @@ class CustomTokenAuthentication(TokenAuthentication):
         token_model = self.get_model()
         try:
             token = token_model.objects.select_related("user").get(key=key)
-        except token_model.DoesNotExist:
-            raise exceptions.AuthenticationFailed(_("Invalid token."))
+        except token_model.DoesNotExist as err:
+            raise exceptions.AuthenticationFailed(_("Invalid token.")) from err
 
         if not token.user.is_active:
             raise exceptions.AuthenticationFailed(_("User inactive or deleted."))

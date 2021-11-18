@@ -1,31 +1,32 @@
 import re
+from functools import wraps
 from json import dumps as json_dumps
+from dataclasses import asdict
 
 from django.db.models import Count
 from django.http.response import StreamingHttpResponse
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
-from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError, EasySNMPConnectionError
+from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
-from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
+from rest_framework.utils.encoders import JSONEncoder
 
+from djing2.lib.filters import CustomSearchFilter
 from devices import serializers as dev_serializers
-from devices.models import Device, Port, PortVlanMemberModel
+from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
+from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
+from devices.models import Device, Port, PortVlanMemberModel, DeviceModelQuerySet
 from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
-    BaseSwitchInterface,
-    BasePONInterface,
-    BasePON_ONU_Interface,
     UnsupportedReadingVlan,
-    DeviceConsoleError,
 )
 from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
-from djing2.lib import ProcessLocked, safe_int, ws_connector, RuTimedelta, JSONBytesEncoder
+from djing2.lib import ProcessLocked, safe_int, RuTimedelta
 from djing2.lib.custom_signals import notification_signal
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -34,7 +35,8 @@ from profiles.models import UserProfile, UserProfileLogActionType
 
 
 def catch_dev_manager_err(fn):
-    def wrapper(self, *args, **kwargs):
+    @wraps(fn)
+    def _wrapper(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
         except (DeviceImplementationError, ExpectValidationError) as err:
@@ -46,26 +48,16 @@ def catch_dev_manager_err(fn):
             ConnectionRefusedError,
             OSError,
             DeviceConnectionError,
-            EasySNMPConnectionError,
             EasySNMPError,
         ) as err:
             return Response(str(err), status=452)
-        except (SystemError, DeviceConsoleError) as err:
+        except SystemError as err:
             return Response(str(err), status=453)
 
-    # Hack for decorator @action
-    wrapper.__name__ = fn.__name__
-    return wrapper
+    return _wrapper
 
 
-class DevicePONViewSet(DjingModelViewSet):
-    queryset = Device.objects.select_related("parent_dev")
-    serializer_class = dev_serializers.DevicePONModelSerializer
-    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
-    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend]
-    search_fields = ("comment", "ip_address", "mac_addr")
-    ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
+class FilterQuerySetMixin:
     def get_queryset(self):
         qs = super().get_queryset()
         if self.request.user.is_superuser:
@@ -74,11 +66,37 @@ class DevicePONViewSet(DjingModelViewSet):
         grps = get_objects_for_user(user=self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
         return qs.filter(group__in=grps)
 
+    def filter_queryset(self, queryset: DeviceModelQuerySet):
+        queryset = super().filter_queryset(queryset=queryset)
+
+        street = safe_int(self.request.query_params.get('street'))
+        if street > 0:
+            return queryset.filter_devices_by_addr(
+                addr_id=street,
+            )
+
+        address = safe_int(self.request.query_params.get('address'))
+        if address > 0:
+            return queryset.filter_devices_by_addr(
+                addr_id=address,
+            )
+
+        return queryset
+
+
+class DevicePONViewSet(FilterQuerySetMixin, DjingModelViewSet):
+    queryset = Device.objects.select_related("parent_dev").order_by('comment')
+    serializer_class = dev_serializers.DevicePONModelSerializer
+    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
+    filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, CustomSearchFilter]
+    search_fields = ("comment", "ip_address", "mac_addr")
+    ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
+
     @action(detail=True)
     @catch_dev_manager_err
     def scan_units_unregistered(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_olt()
+        manager = device.get_pon_olt_device_manager()
         if hasattr(manager, "get_fibers"):
             unregistered = []
             for fb in manager.get_fibers():
@@ -91,12 +109,12 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_onu_list(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_olt()
-        if not issubclass(manager.__class__, BasePONInterface):
-            raise DeviceImplementationError("Expected BasePONInterface subclass")
+        manager = device.get_pon_olt_device_manager()
+        if not isinstance(manager, PonOLTDeviceStrategyContext):
+            raise DeviceImplementationError("Expected PonOLTDeviceStrategyContext instance")
 
         def chunk_cook(chunk: dict) -> bytes:
-            chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONBytesEncoder)
+            chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONEncoder)
             chunk_json = "%s\n" % chunk_json
             format_string = "{:%ds}" % chunk_max_len
             dat = format_string.format(chunk_json)
@@ -134,7 +152,7 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_olt_fibers(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_olt()
+        manager = device.get_pon_olt_device_manager()
         if hasattr(manager, "get_fibers"):
             fb = manager.get_fibers()
             return Response(tuple(fb))
@@ -148,7 +166,7 @@ class DevicePONViewSet(DjingModelViewSet):
             return Response('"fiber_num" number param required', status=status.HTTP_400_BAD_REQUEST)
         fiber_num = safe_int(fiber_num)
         device = self.get_object()
-        manager = device.get_manager_object_olt()
+        manager = device.get_pon_olt_device_manager()
         if hasattr(manager, "get_ports_on_fiber"):
             try:
                 onu_list = tuple(manager.get_ports_on_fiber(fiber_num=fiber_num))
@@ -171,10 +189,10 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def apply_device_onu_config_template(self, request, pk=None):
         self.check_permission_code(request, "devices.can_apply_onu_config")
-        device = self.get_object()
-        mng = device.get_manager_object_onu()
-        if not issubclass(mng.__class__, BasePON_ONU_Interface):
-            return Response("device must be PON ONU type", status=status.HTTP_400_BAD_REQUEST)
+
+        # mng = device.get_manager_object_onu()
+        # if not isinstance(mng, BasePON_ONU_Interface):
+        #     return Response("device must be PON ONU type", status=status.HTTP_400_BAD_REQUEST)
 
         # TODO: Describe this as TypedDict from python3.8
         # apply config
@@ -200,18 +218,17 @@ class DevicePONViewSet(DjingModelViewSet):
         device_config_serializer = dev_serializers.DeviceOnuConfigTemplate(data=request.data)
         device_config_serializer.is_valid(raise_exception=True)
 
-        try:
-            res = device.apply_onu_config(config=device_config_serializer.data)
-            return Response(res)
-        except DeviceConsoleError as err:
-            return Response(str(err), status=453)
+        device = self.get_object()
+        res = device.apply_onu_config(config=device_config_serializer.data)
+        return Response(res)
 
-    @action(detail=True)
+    @action(detail=True, methods=['get'])
     @catch_dev_manager_err
     def remove_from_olt(self, request, pk=None):
         self.check_permission_code(request, "devices.can_remove_from_olt")
         device = self.get_object()
-        if device.remove_from_olt():
+        args = request.query_params
+        if device.remove_from_olt(**args):
             return Response({"text": _("Deleted"), "status": 1})
         return Response({"text": _("Failed"), "status": 2})
 
@@ -219,8 +236,8 @@ class DevicePONViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_pon_details(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_olt()
-        data = manager.get_details()
+        pon_manager = device.get_pon_onu_device_manager()
+        data = pon_manager.get_details()
         return Response(data)
 
     @action(detail=True)
@@ -243,7 +260,7 @@ class DevicePONViewSet(DjingModelViewSet):
     def read_onu_vlan_info(self, request, pk=None):
         try:
             dev = self.get_object()
-            if dev.is_onu_registered():
+            if dev.is_onu_registered:
                 vlans = tuple(dev.read_onu_vlan_info())
             else:
                 vlans = dev.default_vlan_info()
@@ -253,21 +270,13 @@ class DevicePONViewSet(DjingModelViewSet):
             return Response(())
 
 
-class DeviceModelViewSet(DjingModelViewSet):
-    queryset = Device.objects.select_related("parent_dev")
+class DeviceModelViewSet(FilterQuerySetMixin, DjingModelViewSet):
+    queryset = Device.objects.select_related("parent_dev").order_by('comment')
     serializer_class = dev_serializers.DeviceModelSerializer
-    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
-    filter_backends = (CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend)
+    filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
+    filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)
     search_fields = ("comment", "ip_address", "mac_addr")
     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if self.request.user.is_superuser:
-            return qs
-        # TODO: May optimize
-        grps = get_objects_for_user(user=self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
-        return qs.filter(group__in=grps)
 
     def perform_create(self, serializer, *args, **kwargs):
         device_instance = super().perform_create(serializer=serializer, sites=[self.request.site])
@@ -292,12 +301,12 @@ class DeviceModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def scan_ports(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_switch()
-        if not issubclass(manager.__class__, BaseSwitchInterface):
-            raise DeviceImplementationError("Expected BaseSwitchInterface subclass")
+        manager = device.get_switch_device_manager()
+        if not isinstance(manager, SwitchDeviceStrategyContext):
+            raise DeviceImplementationError("Expected SwitchDeviceStrategyContext instance")
         try:
-            ports = [p.to_dict() for p in manager.get_ports()]
-            return Response(data=ports)
+            ports = [p.as_dict() for p in manager.get_ports()]
+            return Response({"text": '', "status": 1, "ports": ports})
         except StopIteration:
             return Response({"text": _("Device port count error"), "status": 2})
 
@@ -305,7 +314,7 @@ class DeviceModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def send_reboot(self, request, pk=None):
         device = self.get_object()
-        manager = device.get_manager_object_switch()
+        manager = device.get_switch_device_manager()
         manager.reboot(save_before_reboot=False)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -313,7 +322,6 @@ class DeviceModelViewSet(DjingModelViewSet):
     @catch_dev_manager_err
     def zbx_monitoring_event(self, request):
         dat = request.data
-        # print('DAT:', dat)
         dev_ip = dat.get("dev_ip")
         dev_status = dat.get("status")
         message = dat.get('message')
@@ -341,7 +349,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             1: Device.NETWORK_STATE_DOWN,
         }
         status_text_map = {
-            0: "Device %(device_name)s is up",
+            0: "Device %(device_name)s is ok",
             1: "Device %(device_name)s has problem",
         }
         device.status = status_map.get(dev_status, Device.NETWORK_STATE_UNDEFINED)
@@ -398,15 +406,24 @@ class DeviceModelViewSet(DjingModelViewSet):
         if vid == 0:
             return Response("Valid vid required", status=status.HTTP_400_BAD_REQUEST)
         macs = dev.dev_read_mac_address_vlan(vid=vid)
-        return Response([m._asdict() for m in macs])
+        return Response([asdict(m) for m in macs])
 
     @action(detail=True)
     @catch_dev_manager_err
     def scan_all_vlan_list(self, request, pk=None):
         dev = self.get_object()
         vlan_list = dev.dev_get_all_vlan_list()
-        res = (i._asdict() for i in vlan_list)
+        res = (asdict(i) for i in vlan_list)
         return Response(res)
+
+    @action(methods=['get'], detail=False)
+    def device_types(self, request):
+        dev_types = SwitchDeviceStrategyContext.get_device_types()
+        result_dev_types = ({
+            'v': uint,
+            'nm': str(klass.description)
+        } for uint, klass in dev_types.items())
+        return Response(result_dev_types)
 
 
 class DeviceWithoutGroupListAPIView(DjingListAPIView):
@@ -434,7 +451,7 @@ class PortModelViewSet(DjingModelViewSet):
             port_num = port_snmp_num
         else:
             port_num = int(port.num)
-        manager = port.device.get_manager_object_switch()
+        manager = port.device.get_switch_device_manager()
         if port_state == "up":
             manager.port_enable(port_num=port_num)
         elif port_state == "down":
@@ -463,23 +480,14 @@ class PortModelViewSet(DjingModelViewSet):
         if dev is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         macs = tuple(dev.dev_switch_get_mac_address_port(device_port_num=port.num))
-        return Response(m._asdict() for m in macs)
+        return Response(asdict(m) for m in macs)
 
     @action(detail=True)
     @catch_dev_manager_err
     def scan_vlan(self, request, pk=None):
         port = self.get_object()
         port_vlans = port.get_port_vlan_list()
-        return Response(p._asdict() for p in port_vlans)
-
-    @action(methods=["post"], detail=True)
-    @catch_dev_manager_err
-    def vlan_config_apply(self, request, pk=None):
-        port = self.get_object()
-        serializer = dev_serializers.PortVlanConfigSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        port.apply_vlan_config(serializer=serializer)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(asdict(p) for p in port_vlans)
 
 
 class PortVlanMemberModelViewSet(DjingModelViewSet):
@@ -488,14 +496,9 @@ class PortVlanMemberModelViewSet(DjingModelViewSet):
     filterset_fields = ("vlanif", "port")
 
 
-class DeviceGroupsList(DjingListAPIView):
-    serializer_class = dev_serializers.DeviceGroupsModelSerializer
-    filter_backends = (
-        CustomObjectPermissionsFilter,
-        OrderingFilter,
-    )
-    ordering_fields = ("title", "code")
+@api_view(['get'])
+def groups_with_devices(request):
+    grps = Group.objects.annotate(device_count=Count('device')).filter(device_count__gt=0).order_by('title')
+    ser = dev_serializers.GroupsWithDevicesSerializer(instance=grps, many=True)
+    return Response(ser.data)
 
-    def get_queryset(self):
-        qs = get_objects_for_user(self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
-        return qs.annotate(device_count=Count("device"))

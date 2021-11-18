@@ -1,18 +1,26 @@
+import logging
 from datetime import datetime
-from typing import Iterable
+from typing import Iterable, Optional
 
+from django.db.models import Subquery, OuterRef
+from addresses.models import AddressModelTypes, AddressModel
+from customers_legal.models import CustomerLegalModel
 from customers.models import Customer
 from sorm_export.models import (
     CommunicationStandardChoices,
     CustomerDocumentTypeChoices,
-    ExportFailedStatus,
-    FiasRecursiveAddressModel,
 )
 from sorm_export.serializers import individual_entity_serializers
-from .base import iterable_export_decorator, simple_export_decorator, format_fname
+from .base import iterable_export_decorator, simple_export_decorator, format_fname, iterable_gen_export_decorator
 
 
-@iterable_export_decorator
+def _addr2str(addr: Optional[AddressModel]) -> str:
+    if not addr:
+        return ''
+    return str(addr.title)
+
+
+@iterable_gen_export_decorator
 def export_customer_root(customers: Iterable[Customer], event_time=None):
     """
     Файл данных по абонентам v1.
@@ -22,19 +30,20 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
     :return: data, filename
     """
 
-    def gen(customer: Customer):
-        return {
-            "customer_id": customer.pk,
-            "legal_customer_id": customer.pk,
-            "contract_start_date": customer.create_date,
-            "customer_login": customer.username,
-            "communication_standard": CommunicationStandardChoices.ETHERNET.value,
-        }
+    def _gen():
+        lgl_sb = CustomerLegalModel.objects.filter(branches__id=OuterRef('pk')).values('pk')
+        for customer in customers.annotate(legal_id=Subquery(lgl_sb)):
+            yield {
+                "customer_id": customer.pk,
+                "legal_customer_id": customer.legal_id if customer.legal_id is not None else customer.pk,
+                "contract_start_date": customer.create_date,
+                "customer_login": customer.username,
+                "communication_standard": CommunicationStandardChoices.ETHERNET.value,
+            }
 
     return (
         individual_entity_serializers.CustomerRootObjectFormat,
-        gen,
-        customers,
+        _gen,
         f"ISP/abonents/abonents_v1_{format_fname(event_time)}.txt",
     )
 
@@ -56,7 +65,7 @@ def export_contract(customers: Iterable[Customer], event_time=None):
             # 'contract_end_date': customer.create_date + timedelta(days=3650),
             "contract_number": customer.username,
             # TODO: Название контракта а не имя абонента
-            "contract_title": customer.get_full_name(),
+            "contract_title": "Договор на оказание услуг связи" # customer.get_full_name(),
         }
 
     return (
@@ -65,51 +74,6 @@ def export_contract(customers: Iterable[Customer], event_time=None):
         customers,
         f"ISP/abonents/contracts_{format_fname(event_time)}.txt",
     )
-
-
-@simple_export_decorator
-def export_address_object(fias_addr: FiasRecursiveAddressModel, event_time=None):
-    """
-    Файл выгрузки адресных объектов.
-    В этом файле выгружается иерархия адресных объектов, которые фигурируют
-    в адресах прописки и точек подключения оборудования.
-    За один вызов этой процедуры выгружается адресная
-    инфа по одному адресному объекту. Чтобы выгрузить несколько адресных объектов -
-    можно вызвать её в цикле.
-    """
-
-    dat = {
-        "address_id": str(fias_addr.pk),
-        "parent_id": str(fias_addr.parent_ao_id) if fias_addr.parent_ao_id is not None else "",
-        "type_id": fias_addr.ao_type,
-        "region_type": fias_addr.get_ao_type_display(),
-        "title": fias_addr.title,
-        "full_title": f"{fias_addr.get_ao_type_display()} {fias_addr.title}",
-    }
-
-    ser = individual_entity_serializers.AddressObjectFormat(data=dat)
-    return ser, f"ISP/abonents/regions_{format_fname(event_time)}.txt"
-
-
-def make_address_street_objects():
-    """
-    Тут формируется формат выгрузки улицы в дополение в выгрузкам адресных объектов.
-    """
-    streets = FiasRecursiveAddressModel.objects.get_streets_as_addr_objects()
-    for street in streets:
-        # FIXME: расчитывать код улицы.
-        street_id, parent_ao_id, parent_ao_type, street_name = street
-        dat = {
-            "address_id": str(street_id),
-            "parent_id": str(parent_ao_id),
-            "type_id": 6576,
-            "region_type": "ул.",
-            "title": street_name,
-            "full_title": "ул. %s" % street_name,
-        }
-        ser = individual_entity_serializers.AddressObjectFormat(data=dat)
-        ser.is_valid(raise_exception=True)
-        yield ser.data
 
 
 @iterable_export_decorator
@@ -125,25 +89,27 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
     """
 
     def gen(customer: Customer):
-        if not hasattr(customer, "group"):
+        if not hasattr(customer, "address"):
             return
-        group = customer.group
-        if not hasattr(group, "fiasrecursiveaddressmodel"):
+        addr = customer.address
+        if not addr:
+            logging.warning('Customer "%s" has no address' % customer)
             return
-        if not hasattr(group.fiasrecursiveaddressmodel, "fias_recursive_address"):
+        if not addr.parent_addr:
+            logging.warning('Customer "%s" has address without parent address object' % customer)
             return
-        addr_group = group.fiasrecursiveaddressmodel.fias_recursive_address
-        if not addr_group.parent_ao:
-            return
-        parent_id_ao = addr_group.parent_ao_id
+        create_date = customer.create_date
+        addr_house = _addr2str(addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.HOUSE
+        ))
         return {
-            "ap_id": addr_group.pk,
+            "ap_id": addr.pk,
             "customer_id": customer.pk,
-            "house": customer.house,
-            "full_address": customer.full_address,
-            "parent_id_ao": parent_id_ao,
-            "house_num": customer.house,
-            "actual_start_time": customer.create_date,
+            "house": addr.title,
+            "full_address": addr.full_title(),
+            "parent_id_ao": addr.parent_addr_id,
+            "house_num": addr_house,
+            "actual_start_time": datetime(create_date.year, create_date.month, create_date.day),
             # TODO: указывать дату конца, когда абонент выключается или удаляется
             # 'actual_end_time':
         }
@@ -152,7 +118,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
         individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
         gen,
         customers.select_related(
-            "group", "group__fiasrecursiveaddressmodel", "group__fiasrecursiveaddressmodel__fias_recursive_address"
+            "address", "address__parent_addr"
         ),
         f"ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt",
     )
@@ -168,21 +134,36 @@ def export_individual_customer(customers_queryset, event_time=None):
 
     def gen(customer: Customer):
         if not hasattr(customer, "passportinfo"):
-            print('Customer "%s" has no passport info' % customer)
+            logging.warning('Customer "%s" has no passport info' % customer)
             return
-        if not hasattr(customer, "group"):
+        addr = customer.address
+        if not addr:
+            logging.warning('Customer "%s" has no address info' % customer)
             return
-        group = customer.group
 
-        addr_group = group.fiasrecursiveaddressmodel_set.first()
-        if addr_group is None:
-            return
         passport = customer.passportinfo
         create_date = customer.create_date
-        return {
+        full_fname = customer.get_full_name()
+
+        parent_addr_id = addr.parent_addr_id
+        if not parent_addr_id:
+            logging.warning("Address '%s' has no parent object" % addr)
+            return
+
+        addr_house = addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.HOUSE
+        )
+        addr_building = addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.BUILDING
+        )
+        addr_corp = addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.BUILDING
+        )
+
+        r = {
             "contract_id": customer.pk,
-            "name": customer.fio,
-            "surname": customer.get_full_name(),
+            "name": full_fname,
+            "surname": full_fname,
             "birthday": customer.birth_day,
             "document_type": CustomerDocumentTypeChoices.PASSPORT_RF,
             "document_serial": passport.series,
@@ -190,12 +171,23 @@ def export_individual_customer(customers_queryset, event_time=None):
             "document_distributor": passport.distributor,
             "passport_code": passport.division_code or "",
             "passport_date": passport.date_of_acceptance,
-            "house": customer.house,
-            "parent_id_ao": addr_group.pk,
+            "house": addr.title,
+            "parent_id_ao": parent_addr_id,
+            "house_num": addr_house.title if addr_house else None,
+            "building": addr_building.title if addr_building else None,
+            "building_corpus": addr_corp.title if addr_corp else None,
             "actual_start_time": datetime(create_date.year, create_date.month, create_date.day),
             # 'actual_end_time':
             "customer_id": customer.pk,
         }
+        surname, name, last_name = customer.split_fio()
+        if surname is not None:
+            r['surname'] = surname
+        if name is not None:
+            r['name'] = name
+        if last_name is not None:
+            r['last_name'] = last_name
+        return r
 
     return (
         individual_entity_serializers.CustomerIndividualObjectFormat,
@@ -205,22 +197,101 @@ def export_individual_customer(customers_queryset, event_time=None):
     )
 
 
-@iterable_export_decorator
-def export_legal_customer(customers: Iterable[Customer], event_time=None):
+@iterable_gen_export_decorator
+def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=None):
     """
-    Файл выгрузки данных о юридическом лице версия 4.
+    Файл выгрузки данных о юридическом лице версия 5.
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
     """
-    raise ExportFailedStatus("Not implemented")
-    # def gen(customer: Customer):
-    #     return {
-    #         ''
-    #     }
-    # return (
-    #     individual_entity_serializers.CustomerLegalObjectFormat,
-    #     gen, customers,
-    #     f'ISP/abonents/jur_v4_{format_fname(event_time)}.txt'
-    # )
+
+    def _iter_customers(legal):
+        for customer in legal.branches.all():
+            addr: AddressModel = legal.address
+            if not addr:
+                continue
+
+            if not legal.post_address:
+                post_addr = addr
+            else:
+                post_addr = legal.post_address
+
+            if not legal.delivery_address:
+                delivery_addr = legal.address
+            else:
+                delivery_addr = legal.delivery_address
+
+            res = {
+                'legal_id': legal.pk,
+                'legal_title': legal.title,
+                'inn': legal.tax_number,
+                'post_index': legal.post_index,
+                'office_addr': _addr2str(addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.OFFICE_NUM
+                )),
+                'parent_id_ao': legal.address_id,
+                'house': _addr2str(addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.HOUSE
+                )),
+                'building': _addr2str(addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.BUILDING
+                )),
+                'building_corpus': _addr2str(addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.CORPUS
+                )),
+                'full_description': addr.full_title(),
+                #'contact_telephones': '',
+                'post_post_index': legal.post_post_index or legal.post_index,
+                'office_post_addr': _addr2str(post_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.OFFICE_NUM
+                )),
+                'post_parent_id_ao': post_addr.pk,
+                'post_house': _addr2str(post_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.HOUSE
+                )),
+                'post_building': _addr2str(post_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.BUILDING
+                )),
+                'post_building_corpus': _addr2str(post_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.BUILDING
+                )),
+                'post_full_description': post_addr.full_title(),
+                'post_delivery_index': legal.delivery_address_post_index or legal.post_index,
+                'office_delivery_address': _addr2str(delivery_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.OFFICE_NUM
+                )),
+                'parent_office_delivery_address_id': delivery_addr.pk,
+                'office_delivery_address_house': _addr2str(delivery_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.HOUSE
+                )),
+                'office_delivery_address_building': _addr2str(delivery_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.BUILDING
+                )),
+                'office_delivery_address_building_corpus': _addr2str(delivery_addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.CORPUS
+                )),
+                'office_delivery_address_full_description': delivery_addr.full_title(),
+                'actual_start_time': datetime.combine(customer.create_date, datetime.min.time()),
+                #'actual_end_time': '',
+                'customer_id': customer.pk,
+            }
+            bank_info = legal.legalcustomerbankmodel
+            if bank_info:
+                res.update({
+                    'customer_bank': bank_info.title,
+                    'customer_bank_num': bank_info.number,
+                })
+            yield res
+
+    def _gen():
+        legals = customers.select_related('address', 'delivery_address', 'delivery_address')
+        for l in legals:
+            yield from _iter_customers(l)
+
+    return (
+        individual_entity_serializers.CustomerLegalObjectFormat,
+        _gen,
+        f'ISP/abonents/jur_v5_{format_fname(event_time)}.txt'
+    )
 
 
 @simple_export_decorator

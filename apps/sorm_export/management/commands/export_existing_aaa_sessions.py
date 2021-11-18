@@ -3,6 +3,7 @@ from netfields.mac import mac_unix_common
 from datetime import datetime
 
 from django.core.management.base import BaseCommand, no_translations
+from djing2.lib import time2utctime
 from radiusapp.models import CustomerRadiusSession
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
 from sorm_export.ftp_worker.func import send_file2ftp
@@ -30,7 +31,7 @@ class Command(BaseCommand):
         ).select_related('customer', 'ip_lease').iterator()
 
         dat = [{
-            "event_time": ses.assign_time,
+            "event_time": time2utctime(ses.assign_time),
             "event_type": AAAEventType.RADIUS_AUTH_START,
             "session_id": str(ses.session_id),
             "customer_ip": ses.ip_lease.ip_address,
@@ -43,7 +44,7 @@ class Command(BaseCommand):
         ser = AAAExportSerializer(data=dat, many=True)
         ser.is_valid(raise_exception=True)
 
-        lines_gen = ((v for k,v in i.items()) for i in ser.data)
+        lines_gen = ((v for k, v in i.items()) for i in ser.data)
 
         if fname is None:
             csv_writer = csv.writer(self.stdout, dialect="unix", delimiter=";")

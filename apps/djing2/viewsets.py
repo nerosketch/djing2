@@ -26,19 +26,19 @@ class DjingModelViewSet(ModelViewSet):
                 inst.assign_rights2new_obj(self.request)
                 return inst
         except IntegrityError as e:
-            raise UniqueConstraintIntegrityError(str(e))
+            raise UniqueConstraintIntegrityError(str(e)) from e
 
     def perform_update(self, serializer):
         try:
             return serializer.save()
         except IntegrityError as e:
-            raise UniqueConstraintIntegrityError(str(e))
+            raise UniqueConstraintIntegrityError(str(e)) from e
 
     def perform_destroy(self, instance) -> None:
         try:
             super().perform_destroy(instance)
         except IntegrityError as e:
-            raise UniqueConstraintIntegrityError(str(e))
+            raise UniqueConstraintIntegrityError(str(e)) from e
 
     @action(detail=False)
     def get_initial(self, request):

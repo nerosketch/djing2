@@ -17,12 +17,12 @@ class_map = {}
 
 
 def get_messenger_model_by_name(name: str) -> Optional[ModelBase]:
-    uint, model_class = class_map.get(name, None)
+    _, model_class = class_map.get(name, None)
     return model_class
 
 
 def get_messenger_model_by_uint(uint: int) -> Optional[ModelBase]:
-    fg = (int_class[1] for type_name, int_class in class_map.items() if int_class[0] == uint)
+    fg = (int_class[1] for _, int_class in class_map.items() if int_class[0] == uint)
     return next(fg, None)
 
 
@@ -106,7 +106,6 @@ class MessengerModel(BaseAbstractModel):
         db_table = "messengers"
         verbose_name = _("Messenger")
         verbose_name_plural = _("Messengers")
-        ordering = ("title",)
 
 
 class MessengerSubscriberModel(BaseAbstractModel):
@@ -126,4 +125,3 @@ class MessengerSubscriberModel(BaseAbstractModel):
         db_table = "messenger_subscriber"
         verbose_name = _("Subscriber")
         verbose_name_plural = _("Subscribers")
-        ordering = ("name",)
