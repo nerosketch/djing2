@@ -5,16 +5,16 @@ from netfields import MACAddressField
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import APIException
 
 from djing2.lib import MyChoicesAdapter
+from djing2.lib.mixins import RemoveFilterQuerySetMixin
 from djing2.models import BaseAbstractModel
 from devices.device_config.device_type_collection import DEVICE_TYPE_UNKNOWN, DEVICE_TYPES
 from devices.device_config.base import (
     Vlans,
     Macs,
     DeviceConfigurationError,
-    DeviceImplementationError,
-    Vlan,
     OptionalScriptCallResult,
 )
 from devices.device_config.base_device_strategy import BaseDeviceStrategyContext
@@ -24,8 +24,39 @@ from groupapp.models import Group
 from networks.models import VlanIf
 from messenger.models.base_messenger import NotificationProfileOptionsModel
 
+from addresses.interfaces import IAddressContaining
+from addresses.models import AddressModel, AddressModelTypes
 
-class Device(BaseAbstractModel):
+
+class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
+    def filter_devices_by_addr(self, addr_id: int):
+        # Получить все устройства для населённого пункта.
+        # Get all devices in specified location by their address_id.
+
+        # get locality from addr
+        addr_locality = AddressModel.objects.get_address_by_type(
+            addr_id=addr_id,
+            addr_type=AddressModelTypes.LOCALITY
+        ).first()
+
+        if addr_locality is None:
+            addr_query = AddressModel.objects.get_address_by_type(
+                addr_id=addr_id,
+                addr_type=AddressModelTypes.LOCALITY
+            )
+        else:
+            addr_query = AddressModel.objects.get_address_by_type(
+                addr_id=addr_locality.pk,
+                addr_type=AddressModelTypes.LOCALITY
+            )
+        if not addr_query.exists():
+            raise APIException('Addr locality filter is empty')
+        return self.remove_filter('address_id').filter(
+            address__in=AddressModel.objects.get_address_recursive_ids(addr_query.first().pk)
+        )
+
+
+class Device(IAddressContaining, BaseAbstractModel):
     ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     mac_addr = MACAddressField(verbose_name=_("Mac address"), unique=True)
     comment = models.CharField(_("Comment"), max_length=256)
@@ -70,6 +101,11 @@ class Device(BaseAbstractModel):
         default=datetime.now,
     )
 
+    address = models.ForeignKey(
+        AddressModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
+    )
+
+    # deprecated
     place = models.CharField(
         _("Device place address"),
         max_length=256,
@@ -80,16 +116,20 @@ class Device(BaseAbstractModel):
 
     sites = models.ManyToManyField(Site, blank=True)
 
+    objects = DeviceModelQuerySet.as_manager()
+
     class Meta:
         db_table = "device"
         verbose_name = _("Device")
         verbose_name_plural = _("Devices")
-        ordering = ("id",)
         permissions = [
             ("can_remove_from_olt", _("Can remove from OLT")),
             ("can_fix_onu", _("Can fix onu")),
             ("can_apply_onu_config", _("Can apply onu config")),
         ]
+
+    def get_address(self):
+        return self.address
 
     # def get_manager_klass(self):
     #     try:
@@ -283,7 +323,6 @@ class Port(BaseAbstractModel):
         ]
         verbose_name = _("Port")
         verbose_name_plural = _("Ports")
-        ordering = ("num",)
 
 
 NotificationProfileOptionsModel.add_notification_type('devices', _('Notify about device events'))

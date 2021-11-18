@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             sql=read_all_file("0002_auto_20210609_1511.sql", __file__),
-            reverse_sql="ALTER TABLE sorm_address_groups drop CONSTRAINT "
+            reverse_sql="ALTER TABLE sorm_address_groups DROP CONSTRAINT "
                         "sorm_address_groups_groupsid_uniq;"
                         "DROP VIEW get_streets_as_addr_objects;"
         ),

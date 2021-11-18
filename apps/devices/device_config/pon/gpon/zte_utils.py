@@ -5,8 +5,7 @@ from devices.device_config.base import DeviceConsoleError, DeviceConfigurationEr
 
 
 class ZteOltConsoleError(DeviceConsoleError):
-    def __init__(self, message=None):
-        self.message = message or "ZTE OLT Console error"
+    default_detail = "ZTE OLT Console error"
 
 
 class OnuZteRegisterError(ZteOltConsoleError):
@@ -14,13 +13,11 @@ class OnuZteRegisterError(ZteOltConsoleError):
 
 
 class ZTEFiberIsFull(ZteOltConsoleError):
-    def __init__(self, message=None):
-        super().__init__(message=message or "ZTE OLT fiber is full")
+    default_detail = "ZTE OLT fiber is full"
 
 
 class ZteOltLoginFailed(ZteOltConsoleError):
-    def __init__(self, message=None):
-        super().__init__(message=message or _("Wrong login or password for telnet access"))
+    default_detail = _("Wrong login or password for telnet access")
 
 
 def parse_onu_name(onu_name: str, name_regexp=re.compile("[/:_]")):
@@ -39,11 +36,12 @@ def get_unregistered_onu(lines, serial):
 
 
 def split_snmp_extra(snmp_extra: str):
+    err_text = _("Zte onu snmp field must be two dot separated integers")
     if "." not in snmp_extra:
-        raise DeviceConfigurationError(_("Zte onu snmp field must be two dot separated integers"))
+        raise DeviceConfigurationError(err_text)
     chunks = snmp_extra.split(".")
     if len(chunks) != 2:
-        raise DeviceConfigurationError(_("Zte onu snmp field must be two dot separated integers"))
+        raise DeviceConfigurationError(err_text)
     fiber_num, onu_num = chunks
     return int(fiber_num), int(onu_num)
 

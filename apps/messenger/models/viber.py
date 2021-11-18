@@ -1,3 +1,4 @@
+import logging
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from viberbot import Api, BotConfiguration
@@ -88,7 +89,7 @@ class ViberMessengerModel(MessengerModel):
         elif isinstance(vr, ViberSubscribedRequest):
             self._make_subscriber(vr.user)
         elif isinstance(vr, ViberFailedRequest):
-            print(f"client failed receiving message. failure: {vr}")
+            logging.error(f"client failed receiving message. failure: {vr}")
         elif isinstance(vr, ViberUnsubscribedRequest):
             ViberMessengerSubscriberModel.objects.filter(uid=vr.user_id).delete()
         return None
@@ -142,8 +143,8 @@ class ViberMessengerModel(MessengerModel):
 
     class Meta:
         db_table = "messengers_viber"
-        verbose_name = "Viber"
-        ordering = ("title",)
+        verbose_name = _("Viber messenger")
+        verbose_name_plural = _("Viber messengers")
 
 
 MessengerModel.add_child_classes(
@@ -167,4 +168,3 @@ class ViberMessengerSubscriberModel(MessengerSubscriberModel):
         db_table = "messengers_viber_subscriber"
         verbose_name = _("Subscriber")
         verbose_name_plural = _("Subscribers")
-        ordering = ("name",)

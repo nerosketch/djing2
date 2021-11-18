@@ -22,13 +22,13 @@ class PortType(object):
     speed: int = 0
 
     def __init__(self, uptime: int = 0, mac: bytes = b'', num=0, snmp_num=None, name='', status=False, speed=0):
-        self.uptime = uptime
-        self.mac = mac
-        self.num = num
-        self.snmp_num = int(num) if snmp_num is None else int(snmp_num)
-        self.name = name
-        self.status = status
-        self.speed = speed
+        self.uptime = uptime or 0
+        self.mac = mac or b''
+        self.num = num or 0
+        self.snmp_num = int(num or 0) if snmp_num is None else int(snmp_num or 0)
+        self.name = name or ''
+        self.status = bool(status)
+        self.speed = speed or 0
 
     @property
     def mac(self) -> str:

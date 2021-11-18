@@ -6,7 +6,6 @@
 media/
 .idea/
 apps/djing2/local_settings.py
-*.json
 *.bak
 *.mo
 *.csv
@@ -18,4 +17,5 @@ apps/devices/device_config/custom/*.py
 !apps/devices/device_config/custom/__init__.py
 docker/secrets/
 docker/docker-compose.yml
-create_initial_user.py
+secrets/
+.env

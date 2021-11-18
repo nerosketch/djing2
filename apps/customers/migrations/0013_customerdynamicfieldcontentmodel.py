@@ -2,7 +2,7 @@
 
 from django.db import migrations, models
 import django.db.models.deletion
-import dynamicfields.models
+from dynamicfields.models import DynamicField
 
 
 class Migration(migrations.Migration):
@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             name='CustomerDynamicFieldContentModel',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('content', dynamicfields.models._DynamicField(blank=True, max_length=512, null=True)),
+                ('content', DynamicField(blank=True, max_length=512, null=True)),
                 ('customer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='customers.customer')),
                 ('field', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='field_contents', to='dynamicfields.fieldmodel')),
             ],

@@ -20,17 +20,8 @@ def _float_validator(value: float):
         ) from err
 
 
-class _DynamicField(models.CharField):
+class DynamicField(models.JSONField):
     description = _("Dynamic content field (up to %(max_length)s)")
-
-    def get_prep_value(self, value):
-        # python -> db
-        return str(value) if value else 'null'
-
-    @staticmethod
-    def from_db_value(value, expression, connection):
-        # db -> python
-        return str(value) if value else None
 
     def clean(self, value, model_instance):
         type_validators = {
@@ -54,11 +45,16 @@ class FieldModelTypeChoices(models.IntegerChoices):
     IP_FIELD = 3, _('Ip Field')
     FLOAT_FIELD = 4, _('Float Field')
     SLUG_FIELD = 5, _('Slug Field')
+    DATETIME_FIELD = 6, _('Datetime field')
+    BOOLEAN_FIELD = 7, _('Boolean field')
 
 
 class FieldModelTagChoices(models.IntegerChoices):
     DEFAULT = 0, _('Default tag')
     IPTV = 1, _('Uses IPTV')
+    # POST_INDEX = 2, _('Post index')
+    # CUSTOMER_BANK_TITLE = 3, _('Customer bank title')
+    # CUSTOMER_BANK_ACCOUNT = 4, _('Customer bank account number')
 
 
 validate_tags = RegexValidator(
@@ -99,7 +95,6 @@ class FieldModel(models.Model):
 
     class Meta:
         db_table = 'dynamic_fields'
-        ordering = ('title',)
 
 
 # class FieldContentQuerySet(models.QuerySet):
@@ -122,8 +117,8 @@ class FieldModel(models.Model):
 
 
 class AbstractDynamicFieldContentModel(models.Model):
-    content = _DynamicField(max_length=512, null=True, blank=True)
-    field = models.ForeignKey(FieldModel, on_delete=models.CASCADE, related_name='field_contents')
+    content = DynamicField(max_length=512, null=True, blank=True)
+    field = models.ForeignKey(FieldModel, on_delete=models.CASCADE, related_name='+')
 
     # objects = FieldContentModelManager()
 

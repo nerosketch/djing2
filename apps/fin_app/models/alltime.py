@@ -13,6 +13,8 @@ from djing2.models import BaseAbstractModel
 
 
 class PayAllTimeGateway(BaseAbstractModel):
+    pay_system_title = "24 All Time"
+
     title = models.CharField(_("Title"), max_length=64)
     secret = EncryptedCharField(verbose_name=_("Secret"), max_length=64)
     service_id = models.CharField(_("Service id"), max_length=64)
@@ -25,7 +27,6 @@ class PayAllTimeGateway(BaseAbstractModel):
     class Meta:
         db_table = "pay_all_time_gateways"
         verbose_name = _("All time gateway")
-        ordering = ("title",)
 
 
 def report_by_pays(from_time: datetime, to_time: Optional[datetime] = None, pay_gw_id=None, group_by=0):
@@ -101,4 +102,3 @@ class AllTimePayLog(BaseAbstractModel):
 
     class Meta:
         db_table = "all_time_pay_log"
-        ordering = ("-date_add",)

@@ -3,8 +3,8 @@ from collections import OrderedDict
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
-from devices.models import Device, Port, PortVlanMemberModel
 from djing2.lib.mixins import BaseCustomModelSerializer
+from devices.models import Device, Port, PortVlanMemberModel
 from groupapp.models import Group
 
 
@@ -18,7 +18,7 @@ class DeviceModelSerializer(BaseCustomModelSerializer):
     iface_name = serializers.CharField(source="get_if_name", read_only=True)
     parent_dev_name = serializers.CharField(source="parent_dev", allow_null=True, read_only=True)
     parent_dev_group = serializers.IntegerField(source="parent_dev.group_pk", allow_null=True, read_only=True)
-
+    address_title = serializers.CharField(source='get_address', read_only=True)
     attached_users = serializers.ListField(source="customer_set.all", read_only=True, child=AttachedUserSerializer())
 
     class Meta:
@@ -54,14 +54,6 @@ class PortModelSerializer(BaseCustomModelSerializer):
         fields = ("id", "device", "num", "descr", "user_count")
 
 
-class DeviceGroupsModelSerializer(BaseCustomModelSerializer):
-    device_count = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = Group
-        fields = ("id", "title", "code", "device_count")
-
-
 class PortVlanMemberModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = PortVlanMemberModel
@@ -88,3 +80,11 @@ class DeviceOnuConfigTemplate(serializers.Serializer):
             raise serializers.ValidationError("vlanConfig can not be empty")
         # TODO: Add validations
         return data
+
+
+class GroupsWithDevicesSerializer(serializers.ModelSerializer):
+    device_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Group
+        fields = ("id", "title", "device_count")

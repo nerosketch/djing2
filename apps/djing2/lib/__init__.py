@@ -1,17 +1,20 @@
 import socket
+import pytz
 from collections.abc import Iterator
-from datetime import timedelta
+from datetime import timedelta, datetime
 from functools import wraps
 from hashlib import sha256
-from json import JSONEncoder
 from typing import Any, Union
 
 from django.conf import settings
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ParseError, APIException
 
 
 def safe_float(fl: Any, default=0.0) -> float:
+    if isinstance(fl, float):
+        return fl
     try:
         return default if not fl else float(fl or 0)
     except (ValueError, OverflowError):
@@ -19,6 +22,8 @@ def safe_float(fl: Any, default=0.0) -> float:
 
 
 def safe_int(i: Any, default=0) -> int:
+    if isinstance(i, int):
+        return i
     try:
         return default if not i else int(i)
     except (ValueError, OverflowError):
@@ -150,8 +155,7 @@ def macbin2str(bin_mac: bytes) -> str:
     return ":".join("%.2x" % ord(i) for i in bin_mac) if bin_mac else None
 
 
-class JSONBytesEncoder(JSONEncoder):
-    def default(self, o):
-        if isinstance(o, bytes):
-            return o.decode()
-        return o
+def time2utctime(src_datetime) -> datetime:
+    """Convert datetime from local tz to UTC"""
+    tz = timezone.get_current_timezone()
+    return tz.localize(src_datetime, is_dst=None).astimezone(pytz.utc)

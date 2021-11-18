@@ -13,7 +13,7 @@ router.register("pon", views.DevicePONViewSet)
 router.register("all", views.DeviceModelViewSet)
 
 urlpatterns = [
-    path("groups/", views.DeviceGroupsList.as_view()),
     path("without_groups/", views.DeviceWithoutGroupListAPIView.as_view()),
+    path("groups_with_devices/", views.groups_with_devices),
     path("", include(router.urls)),
 ]

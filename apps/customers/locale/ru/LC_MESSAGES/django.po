@@ -25,14 +25,6 @@ msgstr "Услуга абонента"
 msgid "Customer services"
 msgstr "Услуги абонента"
 
-#: apps/customers/models.py:185 apps/customers/models.py:387
-msgid "Street"
-msgstr "Улица"
-
-#: apps/customers/models.py:186
-msgid "Streets"
-msgstr "Улицы"
-
 #: apps/customers/models.py:193
 msgid "From balance"
 msgstr "Было"

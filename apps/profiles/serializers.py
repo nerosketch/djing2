@@ -1,21 +1,56 @@
+from string import digits
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils.crypto import get_random_string
+
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.exceptions import ValidationError
 
+from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
-from profiles.models import UserProfile, UserProfileLog, ProfileAuthLog
+from profiles.models import BaseAccount, UserProfile, UserProfileLog, ProfileAuthLog
 
 
-class UserProfileSerializer(BaseCustomModelSerializer):
+def generate_random_username():
+    username = get_random_string(length=6, allowed_chars=digits)
+    try:
+        BaseAccount.objects.get(username=username)
+        return generate_random_username()
+    except BaseAccount.DoesNotExist:
+        return str(safe_int(username))
+
+
+def generate_random_password():
+    return get_random_string(length=8, allowed_chars=digits)
+
+
+class BaseAccountSerializer(BaseCustomModelSerializer):
+    is_active = serializers.BooleanField(initial=True, default=True)
+    username = serializers.CharField(initial=generate_random_username)
+    password = serializers.CharField(
+        write_only=True, required=False, initial=generate_random_password
+    )
     full_name = serializers.CharField(source="get_full_name", read_only=True)
-    password = serializers.CharField(write_only=True)
+
+    def update(self, instance, validated_data):
+        if not self.context['request'].user.is_superuser:
+            validated_data.pop('is_superuser', None)
+            validated_data.pop('groups', None)
+            validated_data.pop('user_permissions', None)
+        instance = super().update(instance, validated_data)
+        return instance
+
+    class Meta:
+        model = BaseAccount
+
+
+class UserProfileSerializer(BaseAccountSerializer):
     create_date = serializers.CharField(read_only=True)
     access_level = serializers.IntegerField(source="calc_access_level_percent", read_only=True)
 

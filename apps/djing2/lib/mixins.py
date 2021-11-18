@@ -5,6 +5,7 @@ from django.contrib.sites.middleware import CurrentSiteMiddleware
 from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 from django.http import JsonResponse
+from django.db.models import Q
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -112,3 +113,17 @@ class CustomCurrentSiteMiddleware(CurrentSiteMiddleware):
             return super().process_request(request=request)
         except Site.DoesNotExist:
             return JsonResponseForbidden("Bad Request (400). Unknown site.")
+
+
+class RemoveFilterQuerySetMixin:
+    def remove_filter(self, lookup):
+        """Remove filter lookup in queryset"""
+        query = self.query
+        q = Q(**{lookup: None})
+        clause, _ = query._add_q(q, query.used_aliases)
+
+        def _filter_lookups(child):
+            return child.lhs.target != clause.children[0].lhs.target
+
+        query.where.children = list(filter(_filter_lookups, query.where.children))
+        return self

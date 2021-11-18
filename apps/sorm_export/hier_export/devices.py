@@ -10,21 +10,24 @@ from sorm_export.models import CommunicationStandardChoices
 def export_devices(devices: Iterable[Device], event_time: datetime):
     """В этом файле выгружаются все коммутаторы, установленные у оператора связи."""
 
-    def _calc_switch_type(device):
+    def _calc_switch_type(device: Device):
         # TODO: calc it
         return DeviceSwitchTypeChoices.INTERNAL
 
-    def _calc_net_type(device):
+    def _calc_net_type(device: Device):
         # TODO: calc it
         return CommunicationStandardChoices.ETHERNET.label
 
     def _gen(device: Device):
+        addr = device.address
+        if not addr:
+            return
         return {
             'title': "switch_%d" % device.pk,
             'switch_type': _calc_switch_type(device),
             'network_type': _calc_net_type(device),
             'description': device.comment,
-            'place': device.place,
+            'place': addr.full_title(),
             'start_usage_time': device.create_time,
         }
 

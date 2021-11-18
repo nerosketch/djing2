@@ -10,23 +10,23 @@ from django_filters.rest_framework import DjangoFilterBackend
 from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
-from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
+from rest_framework.utils.encoders import JSONEncoder
 
+from djing2.lib.filters import CustomSearchFilter
 from devices import serializers as dev_serializers
 from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
-from devices.models import Device, Port, PortVlanMemberModel
+from devices.models import Device, Port, PortVlanMemberModel, DeviceModelQuerySet
 from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
     UnsupportedReadingVlan,
-    DeviceConsoleError,
 )
 from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
-from djing2.lib import ProcessLocked, safe_int, RuTimedelta, JSONBytesEncoder
+from djing2.lib import ProcessLocked, safe_int, RuTimedelta
 from djing2.lib.custom_signals import notification_signal
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
@@ -51,20 +51,13 @@ def catch_dev_manager_err(fn):
             EasySNMPError,
         ) as err:
             return Response(str(err), status=452)
-        except (SystemError, DeviceConsoleError) as err:
+        except SystemError as err:
             return Response(str(err), status=453)
 
     return _wrapper
 
 
-class DevicePONViewSet(DjingModelViewSet):
-    queryset = Device.objects.select_related("parent_dev")
-    serializer_class = dev_serializers.DevicePONModelSerializer
-    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
-    filter_backends = [CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend]
-    search_fields = ("comment", "ip_address", "mac_addr")
-    ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
+class FilterQuerySetMixin:
     def get_queryset(self):
         qs = super().get_queryset()
         if self.request.user.is_superuser:
@@ -72,6 +65,32 @@ class DevicePONViewSet(DjingModelViewSet):
         # TODO: May optimize
         grps = get_objects_for_user(user=self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
         return qs.filter(group__in=grps)
+
+    def filter_queryset(self, queryset: DeviceModelQuerySet):
+        queryset = super().filter_queryset(queryset=queryset)
+
+        street = safe_int(self.request.query_params.get('street'))
+        if street > 0:
+            return queryset.filter_devices_by_addr(
+                addr_id=street,
+            )
+
+        address = safe_int(self.request.query_params.get('address'))
+        if address > 0:
+            return queryset.filter_devices_by_addr(
+                addr_id=address,
+            )
+
+        return queryset
+
+
+class DevicePONViewSet(FilterQuerySetMixin, DjingModelViewSet):
+    queryset = Device.objects.select_related("parent_dev").order_by('comment')
+    serializer_class = dev_serializers.DevicePONModelSerializer
+    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
+    filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, CustomSearchFilter]
+    search_fields = ("comment", "ip_address", "mac_addr")
+    ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -95,7 +114,7 @@ class DevicePONViewSet(DjingModelViewSet):
             raise DeviceImplementationError("Expected PonOLTDeviceStrategyContext instance")
 
         def chunk_cook(chunk: dict) -> bytes:
-            chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONBytesEncoder)
+            chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONEncoder)
             chunk_json = "%s\n" % chunk_json
             format_string = "{:%ds}" % chunk_max_len
             dat = format_string.format(chunk_json)
@@ -199,12 +218,9 @@ class DevicePONViewSet(DjingModelViewSet):
         device_config_serializer = dev_serializers.DeviceOnuConfigTemplate(data=request.data)
         device_config_serializer.is_valid(raise_exception=True)
 
-        try:
-            device = self.get_object()
-            res = device.apply_onu_config(config=device_config_serializer.data)
-            return Response(res)
-        except DeviceConsoleError as err:
-            return Response(str(err), status=453)
+        device = self.get_object()
+        res = device.apply_onu_config(config=device_config_serializer.data)
+        return Response(res)
 
     @action(detail=True, methods=['get'])
     @catch_dev_manager_err
@@ -254,21 +270,13 @@ class DevicePONViewSet(DjingModelViewSet):
             return Response(())
 
 
-class DeviceModelViewSet(DjingModelViewSet):
-    queryset = Device.objects.select_related("parent_dev")
+class DeviceModelViewSet(FilterQuerySetMixin, DjingModelViewSet):
+    queryset = Device.objects.select_related("parent_dev").order_by('comment')
     serializer_class = dev_serializers.DeviceModelSerializer
-    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
-    filter_backends = (CustomObjectPermissionsFilter, SearchFilter, DjangoFilterBackend)
+    filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
+    filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)
     search_fields = ("comment", "ip_address", "mac_addr")
     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if self.request.user.is_superuser:
-            return qs
-        # TODO: May optimize
-        grps = get_objects_for_user(user=self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
-        return qs.filter(group__in=grps)
 
     def perform_create(self, serializer, *args, **kwargs):
         device_instance = super().perform_create(serializer=serializer, sites=[self.request.site])
@@ -298,7 +306,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             raise DeviceImplementationError("Expected SwitchDeviceStrategyContext instance")
         try:
             ports = [p.as_dict() for p in manager.get_ports()]
-            return Response(data=ports)
+            return Response({"text": '', "status": 1, "ports": ports})
         except StopIteration:
             return Response({"text": _("Device port count error"), "status": 2})
 
@@ -408,6 +416,15 @@ class DeviceModelViewSet(DjingModelViewSet):
         res = (asdict(i) for i in vlan_list)
         return Response(res)
 
+    @action(methods=['get'], detail=False)
+    def device_types(self, request):
+        dev_types = SwitchDeviceStrategyContext.get_device_types()
+        result_dev_types = ({
+            'v': uint,
+            'nm': str(klass.description)
+        } for uint, klass in dev_types.items())
+        return Response(result_dev_types)
+
 
 class DeviceWithoutGroupListAPIView(DjingListAPIView):
     serializer_class = dev_serializers.DeviceWithoutGroupModelSerializer
@@ -479,14 +496,9 @@ class PortVlanMemberModelViewSet(DjingModelViewSet):
     filterset_fields = ("vlanif", "port")
 
 
-class DeviceGroupsList(DjingListAPIView):
-    serializer_class = dev_serializers.DeviceGroupsModelSerializer
-    filter_backends = (
-        CustomObjectPermissionsFilter,
-        OrderingFilter,
-    )
-    ordering_fields = ("title", "code")
+@api_view(['get'])
+def groups_with_devices(request):
+    grps = Group.objects.annotate(device_count=Count('device')).filter(device_count__gt=0).order_by('title')
+    ser = dev_serializers.GroupsWithDevicesSerializer(instance=grps, many=True)
+    return Response(ser.data)
 
-    def get_queryset(self):
-        qs = get_objects_for_user(self.request.user, perms="groupapp.view_group", klass=Group).order_by("title")
-        return qs.annotate(device_count=Count("device"))
