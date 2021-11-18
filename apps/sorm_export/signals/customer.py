@@ -51,6 +51,13 @@ def customer_pre_save_signal(sender, instance: Customer, update_fields=None, **k
             customer_root_export_task(customer_id=instance.pk, event_time=now)
 
 
+@receiver(post_save, sender=Customer)
+def customer_post_save_signal(sender, instance: Customer, created=False, **kwrargs):
+    if created:
+        # export customer root record
+        customer_root_export_task(customer_id=instance.pk, event_time=datetime.now())
+
+
 @receiver(customer_service_post_pick, sender=Customer)
 def customer_post_pick_service_signal_handler(sender, customer: Customer, service, **kwargs):
     if not customer.current_service_id:
@@ -103,13 +110,13 @@ def customer_passport_info_post_save_signal(sender, instance: Optional[PassportI
 @receiver(pre_delete, sender=CustomerService)
 def customer_service_deleted(sender, instance: CustomerService, **kwargs):
     # customer service end of life
-    srv = instance.service
+    # srv = instance.service
     if hasattr(instance, "customer"):
         dat = [
             {
-                "service_id": srv.pk,
+                "service_id": 1,  # srv.pk,
                 "idents": instance.customer.pk,
-                "parameter": srv.descr or str(srv),
+                "parameter": "Услуга высокоскоростного доступа в интернет",  # srv.descr or str(srv),
                 "begin_time": instance.start_time,
                 "end_time": datetime.now(),
             }

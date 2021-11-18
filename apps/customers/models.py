@@ -10,12 +10,16 @@ from django.db import connection, models, transaction
 from django.utils.translation import gettext as _
 from encrypted_model_fields.fields import EncryptedCharField
 
+from addresses.interfaces import IAddressContaining
 from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked
+from djing2.lib.mixins import RemoveFilterQuerySetMixin
 from djing2.models import BaseAbstractModel
+from dynamicfields.models import AbstractDynamicFieldContentModel
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from services.custom_logic import SERVICE_CHOICES
 from services.models import OneShotPay, PeriodicPay, Service
+from addresses.models import AddressModel
 
 from . import custom_signals
 
@@ -169,9 +173,9 @@ class CustomerService(BaseAbstractModel):
         db_table = "customer_service"
         verbose_name = _("Customer service")
         verbose_name_plural = _("Customer services")
-        ordering = ("start_time",)
 
 
+# Deprecated. Will be removed in future versions.
 class CustomerStreet(BaseAbstractModel):
     name = models.CharField(max_length=64)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
@@ -183,22 +187,31 @@ class CustomerStreet(BaseAbstractModel):
         db_table = "customer_street"
         verbose_name = _("Street")
         verbose_name_plural = _("Streets")
-        ordering = ("name",)
 
 
 class CustomerLog(BaseAbstractModel):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
+    from_balance = models.FloatField(_('From balance'), default=0.0)
+    to_balance = models.FloatField(_('To balance'), default=0.0)
     author = models.ForeignKey(BaseAccount, on_delete=models.SET_NULL, related_name="+", blank=True, null=True)
     comment = models.CharField(max_length=128)
     date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "customer_log"
-        ordering = ("-date",)
 
     def __str__(self):
         return self.comment
+
+
+class CustomerQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
+    def filter_customers_by_addr(self, addr_id: int):
+        # Получить всех абонентов для населённого пункта.
+        # Get all customers in specified location by their address_id.
+
+        addr_ids_raw_query = AddressModel.objects.get_address_recursive_ids(addr_id=addr_id)
+        return self.remove_filter('address_id').filter(address_id__in=addr_ids_raw_query)
 
 
 class CustomerManager(MyUserManager):
@@ -249,15 +262,15 @@ class CustomerManager(MyUserManager):
 
         active_count = (
             qs.annotate(ips=models.Count("customeripleasemodel"))
-            .filter(is_active=True, ips__gt=0)
-            .exclude(current_service=None)
-            .count()
+                .filter(is_active=True, ips__gt=0)
+                .exclude(current_service=None)
+                .count()
         )
 
         commercial_customers = (
             qs.filter(is_active=True, current_service__service__is_admin=False, current_service__service__cost__gt=0)
-            .exclude(current_service=None)
-            .count()
+                .exclude(current_service=None)
+                .count()
         )
 
         return {
@@ -267,6 +280,27 @@ class CustomerManager(MyUserManager):
             "active_count": active_count,
             "commercial_customers": commercial_customers,
         }
+
+    @staticmethod
+    def filter_afk(date_limit: Optional[datetime] = None, out_limit=50):
+        # TODO: кто продолжительное время не пользуется услугой
+        if date_limit is None or not isinstance(date_limit, datetime):
+            date_limit = datetime.now() - timedelta(days=60)
+        with connection.cursor() as cur:
+            cur.execute("select * from fetch_customers_by_not_activity(%s, %s);", [
+                date_limit, int(out_limit)
+            ])
+            res = cur.fetchone()
+            while res is not None:
+                timediff, last_date, customer_id, customer_uname, customer_fio = res
+                yield {
+                    'timediff': timediff,
+                    'last_date': last_date,
+                    'customer_id': customer_id,
+                    'customer_uname': customer_uname,
+                    'customer_fio': customer_fio
+                }
+                res = cur.fetchone()
 
     @staticmethod
     def finish_services_if_expired(profile: Optional[UserProfile] = None, comment=None, customer=None) -> None:
@@ -298,7 +332,8 @@ class CustomerManager(MyUserManager):
                         cost=0,
                         author=profile if isinstance(profile, UserProfile) else None,
                         comment=comment
-                        % {"customer_name": exp_srv_customer.get_short_name(), "service_name": exp_srv.service.title},
+                                % {"customer_name": exp_srv_customer.get_short_name(),
+                                   "service_name": exp_srv.service.title},
                     )
             custom_signals.customer_service_batch_pre_stop.send(
                 sender=CustomerService, expired_services=expired_service
@@ -319,7 +354,10 @@ class CustomerManager(MyUserManager):
         :return: nothing
         """
         now = datetime.now()
-        expired_services = CustomerService.objects.filter(deadline__lt=now, customer__auto_renewal_service=True)
+        expired_services = CustomerService.objects.select_related('customer', 'service').filter(
+            deadline__lt=now,
+            customer__auto_renewal_service=True
+        )
         if customer is not None and isinstance(customer, Customer):
             expired_services = expired_services.filter(customer=customer)
         if not expired_services.exists():
@@ -331,6 +369,7 @@ class CustomerManager(MyUserManager):
             service = expired_service.service
             cost = round(service.cost, 3)
             if expired_service_customer.balance >= cost:
+                old_balance = expired_service_customer.balance
                 # can continue service
                 with transaction.atomic():
                     expired_service_customer.balance -= cost
@@ -344,8 +383,10 @@ class CustomerManager(MyUserManager):
                     CustomerLog.objects.create(
                         customer=expired_service_customer,
                         cost=-cost,
+                        from_balance=old_balance,
+                        to_balance=old_balance - cost,
                         comment=_("Automatic connect new service %(service_name)s for %(customer_name)s")
-                        % {"service_name": service.title, "customer_name": uname},
+                                % {"service_name": service.title, "customer_name": uname},
                     )
             else:
                 # finish service otherwise
@@ -362,22 +403,25 @@ class CustomerManager(MyUserManager):
                     )
 
 
-class Customer(BaseAccount):
+class Customer(IAddressContaining, BaseAccount):
     current_service = models.OneToOneField(
         CustomerService, null=True, blank=True, on_delete=models.SET_NULL, default=None
     )
     group = models.ForeignKey(
         Group, on_delete=models.SET_NULL, blank=True, null=True, default=None, verbose_name=_("Customer group")
     )
+    address = models.ForeignKey(
+        AddressModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
+    )
     balance = models.FloatField(default=0.0)
 
     # ip_address deprecated, marked for remove
-    ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
+    # ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
-    street = models.ForeignKey(
-        CustomerStreet, on_delete=models.SET_NULL, null=True, blank=True, default=None, verbose_name=_("Street")
-    )
+
+    # deprecated
     house = models.CharField(_("House"), max_length=12, null=True, blank=True, default=None)
+
     device = models.ForeignKey("devices.Device", null=True, blank=True, default=None, on_delete=models.SET_NULL)
     dev_port = models.ForeignKey("devices.Port", null=True, blank=True, default=None, on_delete=models.SET_NULL)
     is_dynamic_ip = models.BooleanField(_("Is dynamic ip"), default=False)
@@ -409,10 +453,12 @@ class Customer(BaseAccount):
         ("icon_dollar", _("Dollar")),
         ("icon_service", _("Service")),
         ("icon_mrk", _("Marker")),
+        ("icon_red_tel", _("Red phone")),
+        ("icon_green_tel", _("Green phone")),
     )
     markers = BitField(flags=MARKER_FLAGS, default=0)
 
-    objects = CustomerManager()
+    objects = CustomerManager.from_queryset(CustomerQuerySet)()
 
     def get_flag_icons(self) -> tuple:
         """
@@ -437,13 +483,19 @@ class Customer(BaseAccount):
         return self.current_service
 
     def add_balance(self, profile: UserProfile, cost: float, comment: str) -> None:
+        old_balance = self.balance
         CustomerLog.objects.create(
             customer=self,
             cost=cost,
+            from_balance=old_balance,
+            to_balance=old_balance + cost,
             author=profile if isinstance(profile, UserProfile) else None,
             comment=re.sub(r"\W{1,128}", " ", comment),
         )
         self.balance += cost
+
+    def get_address(self):
+        return self.address
 
     def pick_service(
         self, service, author: Optional[UserProfile], comment=None, deadline=None, allow_negative=False
@@ -487,6 +539,7 @@ class Customer(BaseAccount):
             )
 
         custom_signals.customer_service_pre_pick.send(sender=Customer, customer=self, service=service)
+        old_balance = self.balance
         with transaction.atomic():
             self.current_service = CustomerService.objects.create(deadline=deadline, service=service)
             updated_fields = ["balance", "current_service"]
@@ -502,7 +555,12 @@ class Customer(BaseAccount):
             # make log about it
             # TODO: move it to db trigger
             CustomerLog.objects.create(
-                customer=self, cost=-cost, author=author, comment=comment or _("Buy service default log")
+                customer=self,
+                cost=-cost,
+                from_balance=old_balance,
+                to_balance=old_balance - cost,
+                author=author,
+                comment=comment or _("Buy service default log")
             )
         custom_signals.customer_service_post_pick.send(sender=Customer, customer=self, service=service)
 
@@ -544,6 +602,7 @@ class Customer(BaseAccount):
                 _("%(uname)s not enough money for service %(srv_name)s")
                 % {"uname": self.username, "srv_name": shot.name}
             )
+        old_balance = self.balance
         with transaction.atomic():
             # charge for the service
             self.balance -= cost
@@ -553,6 +612,8 @@ class Customer(BaseAccount):
             CustomerLog.objects.create(
                 customer=self,
                 cost=-cost,
+                from_balance=old_balance,
+                to_balance=old_balance - cost,
                 author=request.user,
                 comment=comment or _('Buy one-shot service for "%(title)s"') % {"title": shot.name},
             )
@@ -616,8 +677,9 @@ class Customer(BaseAccount):
             comment=_("Automatic connect service '%(service_name)s'") % {"service_name": srv.title},
         )
 
-    def get_address(self):
-        return f"{self.group}. {self.street} {self.house}"
+    @property
+    def full_address(self):
+        return str(self.address.full_title())
 
     @staticmethod
     def set_service_group_accessory(group, wanted_service_ids: list, request):
@@ -638,7 +700,7 @@ class Customer(BaseAccount):
 
     def ping_all_leases(self):
         leases = self.customeripleasemodel_set.all()
-        if leases.count() < 1:
+        if not leases.exists():
             return _("Customer has not ips"), False
         try:
             for lease in leases:
@@ -662,11 +724,19 @@ class Customer(BaseAccount):
             ("can_add_negative_balance", _("Fill account balance on negative cost")),
             ("can_ping", _("Can ping")),
             ("can_complete_service", _("Can complete service")),
+            ("can_view_activity_report", _("Can view activity_report")),
+            ("can_view_service_type_report", _('Can view service type report'))
         ]
         verbose_name = _("Customer")
         verbose_name_plural = _("Customers")
-        ordering = ("fio",)
-        unique_together = ("ip_address", "gateway")
+
+
+class CustomerDynamicFieldContentModel(AbstractDynamicFieldContentModel):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'dynamic_field_content'
+        unique_together = ('customer', 'field')
 
 
 class InvoiceForPayment(BaseAbstractModel):
@@ -688,7 +758,6 @@ class InvoiceForPayment(BaseAbstractModel):
         self.date_pay = datetime.now()
 
     class Meta:
-        ordering = ("id",)
         db_table = "customer_inv_pay"
         verbose_name = _("Debt")
         verbose_name_plural = _("Debts")
@@ -706,7 +775,6 @@ class PassportInfo(BaseAbstractModel):
         db_table = "passport_info"
         verbose_name = _("Passport Info")
         verbose_name_plural = _("Passport Info")
-        ordering = ("id",)
 
     def __str__(self):
         return f"{self.series} {self.number}"
@@ -739,7 +807,6 @@ class AdditionalTelephone(BaseAbstractModel):
 
     class Meta:
         db_table = "additional_telephones"
-        ordering = ("id",)
         verbose_name = _("Additional telephone")
         verbose_name_plural = _("Additional telephones")
 
@@ -777,7 +844,6 @@ class PeriodicPayForId(BaseAbstractModel):
 
     class Meta:
         db_table = "periodic_pay_for_id"
-        ordering = ("last_pay",)
 
 
 class CustomerAttachment(BaseAbstractModel):
@@ -792,4 +858,3 @@ class CustomerAttachment(BaseAbstractModel):
 
     class Meta:
         db_table = "customer_attachments"
-        ordering = ("id",)

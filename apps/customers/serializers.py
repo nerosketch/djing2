@@ -1,35 +1,22 @@
-from string import digits
+import re
+from datetime import datetime
 
 from django.contrib.auth.hashers import make_password
-from django.core import validators
-from django.utils.crypto import get_random_string
-from drf_queryfields import QueryFieldsMixin
+from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from groupapp.models import Group
+from profiles.models import split_fio
+from profiles.serializers import BaseAccountSerializer, generate_random_password
 from customers import models
-from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
-from groupapp.serializers import GroupsSerializer
 from services.serializers import ServiceModelSerializer
-
-
-def generate_random_username():
-    username = get_random_string(length=6, allowed_chars=digits)
-    try:
-        models.Customer.objects.get(username=username)
-        return generate_random_username()
-    except models.Customer.DoesNotExist:
-        return str(safe_int(username))
-
-
-def generate_random_password():
-    return get_random_string(length=8, allowed_chars=digits)
 
 
 class CustomerServiceModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerService
-        fields = ("service", "start_time", "deadline")
+        fields = '__all__'
 
 
 class DetailedCustomerServiceModelSerializer(BaseCustomModelSerializer):
@@ -37,22 +24,18 @@ class DetailedCustomerServiceModelSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = models.CustomerService
-        fields = ("service", "start_time", "deadline")
-
-
-class CustomerStreetModelSerializer(BaseCustomModelSerializer):
-    class Meta:
-        model = models.CustomerStreet
-        fields = ("pk", "name", "group")
+        fields = '__all__'
 
 
 class CustomerLogModelSerializer(BaseCustomModelSerializer):
-    author_name = serializers.CharField(source="author.get_short_name", read_only=True)
+    author_name = serializers.CharField(source="author.get_full_name", read_only=True)
     cost = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
+    from_balance = serializers.DecimalField(max_digits=12, decimal_places=3, coerce_to_string=False, required=False)
+    to_balance = serializers.DecimalField(max_digits=12, decimal_places=3, coerce_to_string=False, required=False)
 
     class Meta:
         model = models.CustomerLog
-        fields = ("customer", "cost", "author", "author_name", "comment", "date")
+        fields = '__all__'
 
 
 def update_passw(acc, raw_password):
@@ -62,20 +45,17 @@ def update_passw(acc, raw_password):
             models.CustomerRawPassword.objects.create(customer=acc, passw_text=raw_password)
 
 
-class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
-    username = serializers.CharField(initial=generate_random_username)
-    is_active = serializers.BooleanField(initial=True)
-    full_name = serializers.CharField(source="get_full_name", read_only=True)
+class CustomerModelSerializer(BaseAccountSerializer):
     group_title = serializers.CharField(source="group.title", read_only=True)
-    street_name = serializers.CharField(source="street.name", read_only=True)
-    gateway_title = serializers.CharField(source="gateway.title", read_only=True)
+
+    # TODO: optimize it
+    address_title = serializers.CharField(source='full_address', read_only=True)
+
+    # gateway_title = serializers.CharField(source="gateway.title", read_only=True)
     device_comment = serializers.CharField(source="device.comment", read_only=True)
     last_connected_service_title = serializers.CharField(source="last_connected_service.title", read_only=True)
-    current_service__service__title = serializers.CharField(source="current_service.service.title", read_only=True)
+    current_service_title = serializers.CharField(source="current_service.service.title", read_only=True)
     service_id = serializers.IntegerField(source="current_service.service.id", read_only=True)
-    password = serializers.CharField(
-        write_only=True, required=False, initial=generate_random_password, validators=[validators.integer_validator]
-    )
     raw_password = serializers.CharField(source="customerrawpassword.passw_text", read_only=True)
     balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
     create_date = serializers.CharField(read_only=True)
@@ -114,54 +94,50 @@ class CustomerModelSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
         return instance
 
+    @staticmethod
+    def validate_fio(full_fio: str) -> str:
+        def _is_chunk_ok(v: str, rgxp=re.compile(r"^[A-Za-zА-Яа-яЁё-]{1,250}$")):
+            r = rgxp.search(v)
+            return bool(r)
+
+        err_text = _('Credentials must be without spaces or any special symbols, only letters and "-"')
+
+        res = split_fio(full_fio)
+        if len(res) == 3:
+            surname, name, last_name = res
+            if surname is not None and not _is_chunk_ok(surname):
+                raise serializers.ValidationError(err_text)
+            if name is not None and not _is_chunk_ok(name):
+                raise serializers.ValidationError(err_text)
+            if last_name is not None and not _is_chunk_ok(last_name):
+                raise serializers.ValidationError(err_text)
+
+            return f"{surname} {name} {last_name or ''}"
+        else:
+            raise serializers.ValidationError(_('3 words required: surname, name and last_name without spaces'))
+
     class Meta:
         model = models.Customer
         # depth = 1
-        fields = (
-            "pk",
-            "username",
-            "telephone",
-            "fio",
-            "group",
-            "group_title",
-            "balance",
-            "description",
-            "street",
-            "street_name",
-            "house",
-            "is_active",
-            "gateway",
-            "gateway_title",
-            "auto_renewal_service",
-            "device",
-            "device_comment",
-            "dev_port",
-            "last_connected_service",
-            "last_connected_service_title",
-            "current_service",
-            "current_service__service__title",
-            "service_id",
-            "is_dynamic_ip",
-            "full_name",
-            "password",
-            "raw_password",
-            "create_date",
-            "birth_day",
-            "lease_count",
-            "sites",
-            "traf_octs",
-            "marker_icons",
-        )
-
-
-class CustomerGroupSerializer(GroupsSerializer):
-    usercount = serializers.IntegerField(read_only=True)
-
-    class Meta(GroupsSerializer.Meta):
-        fields = ("pk", "title", "code", "usercount")
+        exclude = [
+            'groups',
+            'user_permissions',
+            'markers',
+            'is_superuser',
+            'is_admin'
+        ]
 
 
 class PassportInfoModelSerializer(BaseCustomModelSerializer):
+    @staticmethod
+    def validate_date_of_acceptance(value):
+        now = datetime.now().date()
+        if value >= now:
+            raise serializers.ValidationError(_("You can't specify the future"))
+        elif value <= datetime(1900, 1, 1).date():
+            raise serializers.ValidationError(_("Too old date. Must be newer than 1900-01-01 00:00:00"))
+        return value
+
     class Meta:
         model = models.PassportInfo
         exclude = ("customer",)
@@ -237,3 +213,11 @@ class CustomerAttachmentSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerAttachment
         fields = "__all__"
+
+
+class GroupsWithCustomersSerializer(serializers.ModelSerializer):
+    customer_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Group
+        fields = ("id", "title", "customer_count")

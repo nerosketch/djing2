@@ -72,10 +72,6 @@ execute _tp('customers', 'change_passportinfo', 'Может изменять п�
 execute _tp('customers', 'view_passportinfo', 'Может видеть паспортные данные');
 execute _tp('customers', 'add_invoiceforpayment', 'Может добавлять долг для абонента');
 execute _tp('customers', 'delete_invoiceforpayment', 'Может удалять долг для абонента');
-execute _tp('customers', 'add_customerstreet', 'Может добавлять улицы');
-execute _tp('customers', 'change_customerstreet', 'Может изменять улицы');
-execute _tp('customers', 'delete_customerstreet', 'Может удалять улицы');
-execute _tp('customers', 'view_customerstreet', 'Может видеть улицы');
 execute _tp('customers', 'add_customerrawpassword', 'Может добавлять абонентский пароль');
 execute _tp('customers', 'change_customerrawpassword', 'Может изменять абонентский пароль');
 execute _tp('customers', 'add_customerservice', 'Может создавать абонентскую услугу');
@@ -94,6 +90,8 @@ execute _tp('customers', 'delete_passportinfo', 'Может удалять па�
 execute _tp('customers', 'change_invoiceforpayment', 'Может изменять долг для абонента');
 execute _tp('customers', 'view_invoiceforpayment', 'Может видеть долг для абонента');
 execute _tp('customers', 'can_complete_service', 'Может завершать услугу абонента');
+execute _tp('customers', 'can_view_activity_report', 'Может просматривать отчёт об активности абонентов');
+execute _tp('customers', 'can_view_service_type_report', 'Может просматривать отчёт о распределении использования услуг абонентами');
 execute _tp('customers', 'delete_customerrawpassword', 'Может удалять абонентский пароль');
 execute _tp('customers', 'add_additionaltelephone', 'Может добавлять дополнительный номер телефона для абонента');
 execute _tp('customers', 'delete_additionaltelephone', 'Может удалять дополнительный номер телефона для абонента');
@@ -123,6 +121,7 @@ execute _tp('tasks', 'view_taskdocumentattachment', 'Может видеть п�
 execute _tp('tasks', 'add_task', 'Может добавлять задачи');
 execute _tp('tasks', 'view_task', 'Может видеть задачи');
 execute _tp('tasks', 'can_remind', 'Может напоминать о задачах их исполнителям');
+execute _tp('tasks', 'can_view_task_mode_report', 'Может видеть отчёт по частоте использования характеров задач');
 execute _tp('tasks', 'delete_extracomment', 'Может удалять комментарии к задачам');
 execute _tp('fin_app', 'change_payalltimegateway', 'Может изменять платёжный шлюз AllTime');
 execute _tp('fin_app', 'delete_payalltimegateway', 'Может удалять платёжный шлюз AllTime');
@@ -152,6 +151,11 @@ execute _tp('networks', 'view_networkippool', 'Может видеть подс�
 -- execute _tp('admin', 'change_logentry', 'Может добавлять логи');
 -- execute _tp('admin', 'delete_logentry', 'Может удалять логи');
 -- execute _tp('admin', 'view_logentry', 'Может видеть логи');
+
+execute _tp('addresses', 'add_addressmodel', 'Может добавлять адреса');
+execute _tp('addresses', 'change_addressmodel', 'Может изменять адреса');
+execute _tp('addresses', 'delete_addressmodel', 'Может удалять адреса');
+execute _tp('addresses', 'view_addressmodel', 'Может видеть адреса');
 
 
 deallocate _tp;

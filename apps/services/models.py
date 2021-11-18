@@ -98,7 +98,6 @@ class Service(BaseAbstractModel):
 
     class Meta:
         db_table = "services"
-        ordering = ("title",)
         verbose_name = _("Service")
         verbose_name_plural = _("Services")
         unique_together = ("speed_in", "speed_out", "cost", "calc_type")
@@ -156,7 +155,6 @@ class PeriodicPay(BaseAbstractModel):
         db_table = "periodic_pay"
         verbose_name = _("Periodic pay")
         verbose_name_plural = _("Periodic pays")
-        ordering = ("-id",)
 
 
 class OneShotPay(BaseAbstractModel):
@@ -204,4 +202,3 @@ class OneShotPay(BaseAbstractModel):
 
     class Meta:
         db_table = "service_one_shot"
-        ordering = ("name",)

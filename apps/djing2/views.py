@@ -2,7 +2,7 @@ import re
 from ipaddress import ip_address, AddressValueError
 from django.db.models import Q
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -45,7 +45,7 @@ def dev_format(device: Device) -> dict:
 class SearchApiView(DjingListAPIView):
     # pagination_class = QueryPageNumberPagination
     serializer_class = SearchSerializer
-    __doc__ = _(
+    __doc__ = gettext(
         "Search customers and devices globally entire all system. "
         "Customer search provides by username, fio, and telephone. "
         "Devices search provides by ip address, mac address, "
@@ -61,7 +61,15 @@ class SearchApiView(DjingListAPIView):
         limit_count = 100
 
         if s:
-            customers = get_objects_for_user(request.user, "customers.view_customer", klass=Customer)
+            customers = get_objects_for_user(
+                request.user,
+                "customers.view_customer",
+                klass=Customer,
+            )
+            # FIXME: move site filter to filter module
+            if not request.user.is_superuser:
+                customers = customers.filter(sites__in=[self.request.site])
+
             if re.match(IP_ADDR_REGEX, s):
                 customers = customers.filter(customeripleasemodel__ip_address__icontains=s)
             else:
@@ -70,10 +78,19 @@ class SearchApiView(DjingListAPIView):
                     | Q(username__icontains=s)
                     | Q(telephone__icontains=s)
                     | Q(additional_telephones__telephone__icontains=s)
+                    | Q(description__icontains=s)
                 )
             customers = customers.select_related("group")[:limit_count]
 
-            devices = get_objects_for_user(request.user, "devices.view_device", klass=Device)
+            devices = get_objects_for_user(
+                request.user,
+                "devices.view_device",
+                klass=Device,
+            )
+            # FIXME: move site filter to filter module
+            if not request.user.is_superuser:
+                devices = devices.filter(sites__in=[self.request.site])
+
             if re.match(MAC_ADDR_REGEX, s):
                 devices = devices.filter(mac_addr=s)[:limit_count]
             else:
@@ -96,12 +113,8 @@ def can_login_by_location(request):
         remote_ip = ip_address(request.META.get("REMOTE_ADDR"))
         if remote_ip.version == 4:
             ips_exists = CustomerIpLeaseModel.objects.filter(ip_address=str(remote_ip)).exists()
-            if ips_exists:
-                return Response(True)
+            return Response(ips_exists)
 
-            # deprecated: marked to removal
-            has_exist = Customer.objects.filter(ip_address=str(remote_ip), is_active=True).exists()
-            return Response(has_exist)
     except AddressValueError:
         pass
     return Response(False)

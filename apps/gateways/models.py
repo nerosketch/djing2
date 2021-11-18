@@ -8,6 +8,19 @@ from djing2.models import BaseAbstractModel
 from .gw_facade import GATEWAY_TYPES, GatewayFacade, GatewayNetworkError
 
 
+class GatewayClassChoices(models.IntegerChoices):
+    UNKNOWN = 0, 'unknown'
+    SGSN = 1, 'sgsn'       # узел обслуживания абонентов GPRS
+    GGSN = 2, 'ggsn'       # узел обеспечивающий маршрутизацию данных между GPRS Core network (GTP) и внешними IP сетями
+    SMSC = 3, 'smsc'       # SMS-центр
+    GMSC = 4, 'gmsc'       # базовая сеть GSM
+    HSS = 5, 'hss'         # сервер домашних абонентов
+    PSTN = 6, 'pstn'       # телефонная сеть общего пользования
+    VOIP_GW = 7, 'voip-gw' # VOIP-шлюз
+    AAA = 8, 'aaa'         # AAA-сервер(RADIUS сервер)
+    NAT = 9, 'nat'         # NAT-сервер
+
+
 class Gateway(BaseAbstractModel):
     title = models.CharField(_("Title"), max_length=127, unique=True)
     ip_address = models.GenericIPAddressField(_("Ip address"), unique=True)
@@ -15,8 +28,22 @@ class Gateway(BaseAbstractModel):
     auth_login = models.CharField(_("Auth login"), max_length=64)
     auth_passw = EncryptedCharField(_("Auth password"), max_length=127)
     gw_type = models.PositiveSmallIntegerField(_("Type"), choices=MyChoicesAdapter(GATEWAY_TYPES), default=0)
+    gw_class = models.PositiveSmallIntegerField(
+        _("Gateway class"),
+        choices=GatewayClassChoices.choices,
+        default=GatewayClassChoices.UNKNOWN
+    )
     is_default = models.BooleanField(_("Is default"), default=False)
     enabled = models.BooleanField(_("Enabled"), default=True)
+    create_time = models.DateTimeField(_("Create time"), auto_now_add=True)
+    place = models.CharField(
+        _("Device place address"),
+        max_length=256,
+        null=True,
+        blank=True,
+        default=None
+    )
+
     sites = models.ManyToManyField(Site, blank=True)
 
     def get_gw_manager(self) -> GatewayFacade:
@@ -34,8 +61,8 @@ class Gateway(BaseAbstractModel):
                 )
                 setattr(self, "_gw_mngr", o)
             return o
-        except ConnectionResetError:
-            raise GatewayNetworkError("ConnectionResetError")
+        except ConnectionResetError as ce:
+            raise GatewayNetworkError("ConnectionResetError") from ce
 
     @staticmethod
     def get_user_credentials_by_gw(gw_id: int):
@@ -57,4 +84,3 @@ class Gateway(BaseAbstractModel):
         db_table = "gateways"
         verbose_name = _("Network access server. Gateway")
         verbose_name_plural = _("Network access servers. Gateways")
-        ordering = ("ip_address",)

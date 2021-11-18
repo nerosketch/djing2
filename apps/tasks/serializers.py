@@ -10,7 +10,7 @@ class TaskModelSerializer(BaseCustomModelSerializer):
     author_uname = serializers.CharField(source="author.username", read_only=True)
     priority_name = serializers.CharField(source="get_priority_display", read_only=True)
     time_diff = serializers.CharField(source="get_time_diff", read_only=True)
-    customer_address = serializers.CharField(source="customer.get_address", read_only=True)
+    customer_address = serializers.CharField(source="customer.full_address", read_only=True)
     customer_full_name = serializers.CharField(source="customer.get_full_name", read_only=True)
     customer_uname = serializers.CharField(source="customer.username", read_only=True)
     customer_group = serializers.IntegerField(source="customer.group_id", read_only=True)
@@ -20,6 +20,7 @@ class TaskModelSerializer(BaseCustomModelSerializer):
     mode_str = serializers.CharField(source="get_mode_display", read_only=True)
     time_of_create = serializers.DateTimeField(read_only=True)
     is_expired = serializers.BooleanField(read_only=True)
+    doc_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = models.Task

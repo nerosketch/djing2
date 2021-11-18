@@ -55,14 +55,11 @@ class LocationAuthBackend(DjingAuthBackend):
             return
         try:
             remote_ip = ip_address(request.META.get("REMOTE_ADDR"))
-            user = Customer.objects.filter(ip_address=str(remote_ip), is_active=True).first()
-            if user is None:
-                ip_users = CustomerIpLeaseModel.objects.filter(ip_address=str(remote_ip))
-                if ip_users.count() == 1:
-                    usr = ip_users.first()
-                    if usr and usr.customer:
-                        return usr.customer
-            if self.user_can_authenticate(user):
-                return user
+            ip_users = CustomerIpLeaseModel.objects.filter(ip_address=str(remote_ip)).select_related('customer')
+            if ip_users.exists():
+                ip_user = ip_users.first()
+                if ip_user and ip_user.customer:
+                    if self.user_can_authenticate(ip_user.customer):
+                        return ip_user.customer
         except AddressValueError:
             return None

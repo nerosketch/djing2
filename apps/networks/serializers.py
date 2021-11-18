@@ -22,7 +22,7 @@ class NetworkIpPoolModelSerializer(BaseCustomModelSerializer):
             net = ip_network(value, strict=False)
             return net.compressed
         except ValueError as e:
-            raise serializers.ValidationError(e, code="invalid")
+            raise serializers.ValidationError(e, code="invalid") from e
 
     class Meta:
         model = NetworkIpPool
@@ -36,6 +36,8 @@ class VlanIfModelSerializer(BaseCustomModelSerializer):
 
 
 class CustomerIpLeaseModelSerializer(BaseCustomModelSerializer):
+    is_dynamic = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = CustomerIpLeaseModel
         fields = "__all__"

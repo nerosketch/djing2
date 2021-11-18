@@ -1,37 +1,60 @@
+from datetime import datetime
 from typing import Optional, Tuple
 
+from netfields import MACAddressField
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from netfields import MACAddressField
+from rest_framework.exceptions import APIException
 
-from devices.device_config import DEVICE_TYPES, DEVICE_TYPE_UNKNOWN
+from djing2.lib import MyChoicesAdapter
+from djing2.lib.mixins import RemoveFilterQuerySetMixin
+from djing2.models import BaseAbstractModel
+from devices.device_config.device_type_collection import DEVICE_TYPE_UNKNOWN, DEVICE_TYPES
 from devices.device_config.base import (
     Vlans,
     Macs,
-    BaseSwitchInterface,
-    BasePONInterface,
-    BasePON_ONU_Interface,
-    ListDeviceConfigType,
     DeviceConfigurationError,
-    DeviceImplementationError,
-    Vlan,
     OptionalScriptCallResult,
 )
-from devices.device_config.device_config_util import get_all_device_config_types
-from djing2.lib import MyChoicesAdapter, safe_int, macbin2str
-from djing2.models import BaseAbstractModel
+from devices.device_config.base_device_strategy import BaseDeviceStrategyContext
+from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext, PonONUDeviceStrategyContext
+from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
 from groupapp.models import Group
 from networks.models import VlanIf
+from addresses.interfaces import IAddressContaining
+from addresses.models import AddressModel, AddressModelTypes
 
 
-def _make_device_code_config_choices():
-    return tuple({(dtype.short_code, dtype.title) for dtype in get_all_device_config_types()})
+class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
+    def filter_devices_by_addr(self, addr_id: int):
+        # Получить все устройства для населённого пункта.
+        # Get all devices in specified location by their address_id.
+
+        # get locality from addr
+        addr_locality = AddressModel.objects.get_address_by_type(
+            addr_id=addr_id,
+            addr_type=AddressModelTypes.LOCALITY
+        ).first()
+
+        if addr_locality is None:
+            addr_query = AddressModel.objects.get_address_by_type(
+                addr_id=addr_id,
+                addr_type=AddressModelTypes.LOCALITY
+            )
+        else:
+            addr_query = AddressModel.objects.get_address_by_type(
+                addr_id=addr_locality.pk,
+                addr_type=AddressModelTypes.LOCALITY
+            )
+        if not addr_query.exists():
+            raise APIException('Addr locality filter is empty')
+        return self.remove_filter('address_id').filter(
+            address__in=AddressModel.objects.get_address_recursive_ids(addr_query.first().pk)
+        )
 
 
-class Device(BaseAbstractModel):
-    _cached_manager = None
-
+class Device(IAddressContaining, BaseAbstractModel):
     ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     mac_addr = MACAddressField(verbose_name=_("Mac address"), unique=True)
     comment = models.CharField(_("Comment"), max_length=256)
@@ -67,105 +90,122 @@ class Device(BaseAbstractModel):
     is_noticeable = models.BooleanField(_("Send notify when monitoring state changed"), default=False)
 
     code = models.CharField(
-        _("Code"), max_length=64, blank=True, null=True, default=None, choices=_make_device_code_config_choices()
+        _("Code"), max_length=64, blank=True,
+        null=True, default=None
+    )
+
+    create_time = models.DateTimeField(
+        _("Create time"),
+        default=datetime.now,
+    )
+
+    address = models.ForeignKey(
+        AddressModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
+    )
+
+    # deprecated
+    place = models.CharField(
+        _("Device place address"),
+        max_length=256,
+        null=True,
+        blank=True,
+        default=None
     )
 
     sites = models.ManyToManyField(Site, blank=True)
+
+    objects = DeviceModelQuerySet.as_manager()
 
     class Meta:
         db_table = "device"
         verbose_name = _("Device")
         verbose_name_plural = _("Devices")
-        ordering = ("id",)
         permissions = [
             ("can_remove_from_olt", _("Can remove from OLT")),
             ("can_fix_onu", _("Can fix onu")),
             ("can_apply_onu_config", _("Can apply onu config")),
         ]
 
-    def get_manager_klass(self):
-        try:
-            return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
-        except StopIteration:
-            raise TypeError(
-                "one of types is not subclass of BaseDeviceInterface. "
-                "Or implementation of that device type is not found"
-            )
+    def get_address(self):
+        return self.address
 
-    def get_manager_object_switch(self) -> BaseSwitchInterface:
-        man_klass = self.get_manager_klass()
-        if self._cached_manager is None:
-            self._cached_manager = man_klass(
-                dev_instance=self, host=str(self.ip_address), snmp_community=str(self.man_passw)
-            )
-        return self._cached_manager
+    # def get_manager_klass(self):
+    #     try:
+    #         return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
+    #     except StopIteration:
+    #         raise TypeError(
+    #             "one of types is not subclass of BaseDeviceInterface. "
+    #             "Or implementation of that device type is not found"
+    #         )
+    #
+    # def get_manager_object_switch(self) -> BaseSwitchInterface:
+    #     man_klass = self.get_manager_klass()
+    #     if self._cached_manager is None:
+    #         self._cached_manager = man_klass(
+    #             dev_instance=self, host=str(self.ip_address), snmp_community=str(self.man_passw)
+    #         )
+    #     return self._cached_manager
+    #
+    # def get_manager_object_olt(self) -> BasePONInterface:
+    #     man_klass = self.get_manager_klass()
+    #     if self._cached_manager is None:
+    #         self._cached_manager = man_klass(dev_instance=self)
+    #     return self._cached_manager
+    #
+    # def get_manager_object_onu(self) -> BasePON_ONU_Interface:
+    #     man_klass = self.get_manager_klass()
+    #     if self._cached_manager is None:
+    #         self._cached_manager = man_klass(dev_instance=self)
+    #     return self._cached_manager
 
-    def get_manager_object_olt(self) -> BasePONInterface:
-        man_klass = self.get_manager_klass()
-        if self._cached_manager is None:
-            self._cached_manager = man_klass(dev_instance=self)
-        return self._cached_manager
+    def get_pon_olt_device_manager(self) -> PonOLTDeviceStrategyContext:
+        return PonOLTDeviceStrategyContext(model_instance=self)
 
-    def get_manager_object_onu(self) -> BasePON_ONU_Interface:
-        man_klass = self.get_manager_klass()
-        if self._cached_manager is None:
-            self._cached_manager = man_klass(dev_instance=self)
-        return self._cached_manager
+    def get_pon_onu_device_manager(self) -> PonONUDeviceStrategyContext:
+        return PonONUDeviceStrategyContext(model_instance=self)
+
+    def get_switch_device_manager(self) -> SwitchDeviceStrategyContext:
+        return SwitchDeviceStrategyContext(model_instance=self)
+
+    def get_general_device_manager(self) -> BaseDeviceStrategyContext:
+        return BaseDeviceStrategyContext(model_instance=self)
 
     # Can attach device to customer in customer page
-    def has_attachable_to_customer(self) -> bool:
-        mngr = self.get_manager_klass()
-        return mngr.has_attachable_to_customer
+    # def has_attachable_to_customer(self) -> bool:
+    #     return self.device_strategy_context.has_attachable_to_customer
 
     def __str__(self):
         return "{} {}".format(self.ip_address or "", self.comment)
 
-    def generate_config_template(self):
-        mng = self.get_manager_object_switch()
-        return mng.monitoring_template()
-
-    def remove_from_olt(self):
-        pdev = self.parent_dev
-        if not pdev:
-            raise DeviceConfigurationError(_("You should config parent OLT device for ONU"))
-        if not pdev.extra_data:
-            raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
-        mng = self.get_manager_object_olt()
-        r = mng.remove_from_olt(dict(pdev.extra_data))
+    def remove_from_olt(self, extra_data=None, **kwargs) -> bool:
+        if extra_data is None:
+            pdev = self.parent_dev
+            if not pdev:
+                raise DeviceConfigurationError(_("You should config parent OLT device for ONU"))
+            if not pdev.extra_data:
+                raise DeviceConfigurationError(_("You have not info in extra_data field, please fill it in JSON"))
+            extra_data = dict(pdev.extra_data)
+        mng = self.get_pon_onu_device_manager()
+        r = mng.remove_from_olt(extra_data=extra_data, **kwargs)
         if r:
             Device.objects.filter(pk=self.pk).update(snmp_extra=None)
         return r
 
-    def onu_find_sn_by_mac(self) -> Tuple[Optional[int], Optional[str]]:
-        parent = self.parent_dev
-        if parent is not None:
-            manager = parent.get_manager_object_olt()
-            mac = self.mac_addr
-            ports = manager.get_list_keyval(".1.3.6.1.4.1.3320.101.10.1.1.3")
-            for srcmac, snmpnum in ports:
-                # convert bytes mac address to str presentation mac address
-                real_mac = macbin2str(srcmac)
-                if mac == real_mac:
-                    return safe_int(snmpnum), None
-            return None, _('Onu with mac "%(onu_mac)s" not found on OLT') % {"onu_mac": mac}
-        return None, _("Parent device not found")
-
-    def fix_onu(self):
-        onu_sn, err_text = self.onu_find_sn_by_mac()
+    def fix_onu(self) -> Tuple[Optional[int], Optional[str]]:
+        mng = self.get_pon_onu_device_manager()
+        onu_sn, err_text = mng.find_onu()
         if onu_sn is not None:
             Device.objects.filter(pk=self.pk).update(snmp_extra=str(onu_sn))
             return True, _("Fixed")
         return False, err_text
 
     def get_if_name(self):
-        mng = self.get_manager_object_olt()
-        if hasattr(mng, "get_fiber_str"):
-            return mng.get_fiber_str()
-        return r"¯ \ _ (ツ) _ / ¯"
+        mng = self.get_pon_onu_device_manager()
+        return mng.get_fiber_str()
 
-    def get_config_types(self) -> ListDeviceConfigType:
-        mng_klass = self.get_manager_klass()
-        return mng_klass.get_config_types()
+    def get_config_types(self):
+        mng = self.get_pon_onu_device_manager()
+        return mng.get_config_types()
 
     def apply_onu_config(self, config: dict) -> OptionalScriptCallResult:
         self.code = config.get("configTypeCode")
@@ -183,32 +223,23 @@ class Device(BaseAbstractModel):
     #############################
 
     def dev_get_all_vlan_list(self) -> Vlans:
-        mng = self.get_manager_object_switch()
+        mng = self.get_general_device_manager()
         return mng.read_all_vlan_info()
 
     def read_onu_vlan_info(self) -> Vlans:
-        mng = self.get_manager_object_onu()
+        mng = self.get_pon_onu_device_manager()
         return mng.read_onu_vlan_info()
 
     def default_vlan_info(self) -> Vlans:
-        mng = self.get_manager_object_onu()
+        mng = self.get_pon_onu_device_manager()
         return mng.default_vlan_info()
 
+    @property
     def is_onu_registered(self) -> bool:
         return self.snmp_extra is not None
 
-    # @_telnet_methods_wrapper
-    # def dev_create_vlans(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
-    #     if not tln.create_vlans(vids):
-    #         raise DeviceConsoleError(_('Failed while create vlans'))
-
-    # @_telnet_methods_wrapper
-    # def dev_delete_vlan(self, tln: BaseDeviceInterface, vids: Vlans) -> None:
-    #     if not tln.delete_vlans(vlan_list=vids):
-    #         raise DeviceConsoleError(_('Failed while removing vlan'))
-
     def dev_read_mac_address_vlan(self, vid: int) -> Macs:
-        mng = self.get_manager_object_switch()
+        mng = self.get_switch_device_manager()
         return mng.read_mac_address_vlan(vid=vid)
 
     ##############################
@@ -220,12 +251,8 @@ class Device(BaseAbstractModel):
     #                                       port: int, tag: bool = True) -> bool:
     #     return tln.attach_vlan_to_port(vid=vid, port=port, tag=tag)
 
-    # @_telnet_methods_wrapper
-    # def telnet_switch_detach_vlan_from_port(self, tln: BaseSwitchInterface, vid: int, port: int) -> bool:
-    #     return tln.detach_vlan_from_port(vid=vid, port=port)
-
     def dev_switch_get_mac_address_port(self, device_port_num: int) -> Macs:
-        mng = self.get_manager_object_switch()
+        mng = self.get_switch_device_manager()
         return mng.read_mac_address_port(port_num=device_port_num)
 
     ##############################
@@ -252,9 +279,6 @@ class PortVlanMemberModel(BaseAbstractModel):
         _("Operating mode"), default=PortVlanMemberMode.NOT_CHOSEN, choices=PortVlanMemberMode.choices
     )
 
-    class Meta:
-        abstract = False
-
 
 class PortOperatingMode(models.IntegerChoices):
     NOT_CHOSEN = 0, _("Not chosen")
@@ -274,6 +298,10 @@ class Port(BaseAbstractModel):
     vlans = models.ManyToManyField(
         VlanIf, through=PortVlanMemberModel, verbose_name=_("VLan list"), through_fields=("port", "vlanif")
     )
+    create_time = models.DateTimeField(
+        _("Create time"),
+        default=datetime.now,
+    )
 
     # config_type = models.PositiveSmallIntegerField
 
@@ -281,26 +309,9 @@ class Port(BaseAbstractModel):
         return "%d: %s" % (self.num, self.descr)
 
     def get_port_vlan_list(self) -> Vlans:
-        mng = self.device.get_manager_object_switch()
+        dev: Device = self.device
+        mng = dev.get_switch_device_manager()
         yield from mng.read_port_vlan_info(port=int(self.num))
-
-    def apply_vlan_config(self, serializer):
-        device = self.device
-        if not device:
-            raise DeviceImplementationError("device could not found")
-        port_num = serializer.data.get("port_num")
-        if not port_num:
-            raise DeviceImplementationError("port_num field required")
-
-        mng = device.get_manager_object_switch()
-
-        vlans_data = serializer.data.get("vlans")
-        if not vlans_data:
-            raise DeviceImplementationError("vlans field required")
-
-        vlans_gen = (Vlan(**v) for v in vlans_data)
-
-        mng.attach_vlans_to_port(vlan_list=vlans_gen, port_num=port_num)
 
     class Meta:
         db_table = "device_port"
@@ -310,4 +321,3 @@ class Port(BaseAbstractModel):
         ]
         verbose_name = _("Port")
         verbose_name_plural = _("Ports")
-        ordering = ("num",)

@@ -118,61 +118,86 @@ class AddressObjectFormat(serializers.Serializer):
 
 
 class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
+    # 1
     ap_id = serializers.CharField(
         label=_('Access point id'),
         max_length=128,
-        required=True
+        required=True,
     )
+    # 2
     customer_id = serializers.CharField(
         label=_('Customer id'),
         max_length=64,
         required=True,
     )
+    # 3
     house = serializers.CharField(
         label=_('House'),
         max_length=32,
         required=True,
     )
+    # 4
     full_address = serializers.CharField(
         label=_('Full address'),
         max_length=512,
-        required=False
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
+    # 5
     internal_address = serializers.CharField(
         label=_('Internal address'),
         required=False,
+        allow_blank=True,
         default=''
     )  # reserved
 
+    # 6
     # reserved, ao - address object
     id_ao = serializers.CharField(default='', required=False)
+    # 7
     parent_id_ao = serializers.CharField(
         label=_('Parent ao id'),
         max_length=128,
         required=True
     )  # AddressObjectFormat.address_id
+    # 8
     type_id = serializers.CharField(default='', required=False)  # reserved
+    # 9
     type_ao = serializers.CharField(default='', required=False)  # reserved
+    # 10
     title = serializers.CharField(default='', required=False)  # reserved
+    # 11
     house_num = serializers.CharField(
         label=_('House'),
         max_length=32,
-        required=False
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
+    # 12
     building = serializers.CharField(
         label=_('Building'),
         max_length=32,
-        required=False
+        required=False,
+        default=''
     )
+    # 13
     building_corpus = serializers.CharField(
         label=_('Building corpus'),
         max_length=32,
-        required=False
+        required=False,
+        default=''
     )
+    # 14
     full_description = serializers.CharField(
         label=_('Full description'),
         required=False,
+        default=''
     )  # reserved
+    # 15
     actual_start_time = serializers.DateTimeField(
         label=_('Actual start time'),
         help_text="для первой записи должна быть равна дате заключения договора с "
@@ -182,6 +207,7 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
         format=datetime_format,
         allow_null=False
     )
+    # 16
     actual_end_time = serializers.DateTimeField(
         label=_('Actual end time'),
         help_text="Должна быть меньше или равна дате расторжения "
@@ -210,42 +236,49 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         label=_('Last name'),
         required=False,
         max_length=64,
+        default=''
     )
     # 4
     surname = serializers.CharField(
         label=_('Surname'),
         max_length=64,
         required=False,
-        allow_blank=True
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
     # 5
     birthday = serializers.DateField(
         label=_('Birthday'),
         required=False,
         format=date_format,
-        allow_null=True
+        allow_null=True,
+        default=''
     )  # format DD.mm.YYYY
     # 6
     document_type = serializers.ChoiceField(
         label=_('Document document type'),
         required=False,
         choices=CustomerDocumentTypeChoices.choices,
+        default=CustomerDocumentTypeChoices.EMPTY,
+        allow_blank=True,
         allow_null=True,
-        allow_blank=True
     )
     # 7
     document_serial = serializers.CharField(
         label=_('Document serial'),
         max_length=32,
         validators=[validators.integer_validator],
-        required=False
+        required=False,
+        default=''
     )
     # 8
     document_number = serializers.CharField(
         label=_('Document number'),
         max_length=64,
         validators=[validators.integer_validator],
-        required=False
+        required=False,
+        default=''
     )
     # 9
     document_distributor = serializers.CharField(
@@ -254,20 +287,24 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
                   "выдавшего документ, например, "
                   "«35 о/м Приморского р-на, г. Санкт-Петербург»",
         max_length=128,
-        required=False
+        required=False,
+        default=''
     )
     # 10
     passport_code = serializers.CharField(
         label="Код подразделения",
         max_length=16,
         required=False,
-        allow_blank=True
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
     # 11
     passport_date = serializers.DateField(
         label="Дата выдачи документа",
         format=date_format,
-        required=False
+        required=False,
+        default=''
     )
     # 12
     reserved = serializers.CharField(default='', required=False)
@@ -277,7 +314,9 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         help_text="квартира адреса прописки",
         max_length=32,
         required=False,
-        allow_null=True
+        allow_blank=True,
+        allow_null=True,
+        default=''
     )
     # 14
     ao_id = serializers.CharField(default='', required=False)  # reserved
@@ -287,9 +326,9 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
         label=_('Parent ao id'),
         max_length=128,
         required=False,
-        allow_null=True,
         allow_blank=True,
-        default=None
+        allow_null=True,
+        default=''
     )  # AddressObjectFormat.address_id
     # 16
     ao_type_id = serializers.CharField(default='', required=False)  # reserved
@@ -301,24 +340,36 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
     house_num = serializers.CharField(
         label=_('House number'),
         max_length=32,
-        required=False
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        default=''
     )
     # 20
     building = serializers.CharField(
         label=_('Building'),
         max_length=32,
-        required=False
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        default=''
     )
     # 21
     building_corpus = serializers.CharField(
         label=_('Building corpus'),
         max_length=32,
-        required=False
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        default=''
     )
     # 22
     full_description = serializers.CharField(
         label=_('Full description'),
         required=False,
+        allow_null=True,
+        allow_blank=True,
+        default=''
     )  # reserved
     # 23
     actual_start_time = serializers.DateTimeField(
@@ -337,7 +388,8 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
                   "договора с абонентом и превышать дату начала интервала",
         required=False,
         format=datetime_format,
-        allow_null=True
+        allow_null=True,
+        default=''
     )
     # 25
     customer_id = serializers.CharField(
@@ -348,11 +400,13 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
 
 
 class CustomerLegalObjectFormat(serializers.Serializer):
-    customer_id = serializers.CharField(
+    # №1
+    legal_id = serializers.CharField(
         label=_('Legal customer id'),
         max_length=64,
         required=True
     )  # CustomerRootObjectFormat.legal_customer_id
+    # №2
     legal_title = serializers.CharField(
         label=_('Legal title'),
         help_text="название ЮЛ, содержит организационно-правовую форму в "
@@ -362,161 +416,234 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         max_length=256,
         required=True
     )
+    # №3
     inn = serializers.CharField(
         label='ИНН',
         max_length=32,
+        default='',
         required=False
     )
+    # №4
     post_index = serializers.CharField(
         label='почтовый индекс адреса абонента',
         max_length=6,
         validators=[validators.integer_validator],
+        default='',
         required=False
     )
+    # №5
     office_addr = serializers.CharField(
         label='офис юридического адреса, содержит только цифры офиса',
         max_length=32,
-        required=False
+        required=False,
+        allow_blank=True,
+        default='',
     )
+    # №6
     ao_id = serializers.CharField(default='', required=False)  # reserved
+    # №7
     parent_id_ao = serializers.CharField(
         label=_('Parent ao id'),
         max_length=128,
         required=True
     )  # AddressObjectFormat.address_id
+    # №8
     ao_type_id = serializers.CharField(default='', required=False)  # reserved
+    # №9
     ao_type = serializers.CharField(default='', required=False)  # reserved
+    # №10
     ao_title = serializers.CharField(default='', required=False)  # reserved
+    # №11
     house = serializers.CharField(
         label='Номер дома',
         help_text="содержит только номер дома, без типа а/о",
         max_length=32,
         required=False,
+        allow_blank=True,
+        default='',
     )
+    # №12
     building = serializers.CharField(
         label=_('Building'),
         help_text='содержит только номер или букву здания, без типа а/о',
         max_length=32,
+        default='',
+        allow_blank=True,
         required=False
     )
+    # №13
     building_corpus = serializers.CharField(
         label=_('Building corpus'),
         help_text='содержит только номер корпуса',
         max_length=32,
+        default='',
+        allow_blank=True,
         required=False
     )
+    # №14
     full_description = serializers.CharField(
         label=_('Full description'),
+        default='',
         required=False,
     )  # reserved
+    # №15
     customer_bank = serializers.CharField(
         label=_('Customer bank'),
         max_length=256,
-        allow_blank=True,
+        default='',
         required=False
     )
+    # №16
     customer_bank_num = serializers.CharField(
         label=_('Bank receipt number'),
         max_length=128,
+        default='',
         allow_blank=True,
+        allow_null=True,
         required=False
     )
+    # №17
     contact_telephones = serializers.CharField(
         label=_('Contact telephones'),
         max_length=128,
         help_text='содержит телефоны контактного лица',
+        default='',
         required=False
     )
-    post_addr_index = serializers.CharField(
+    # №18
+    post_post_index = serializers.CharField(
         label='почтовый индекс почтового адреса абонента',
         max_length=6,
         validators=[validators.integer_validator],
+        default='',
         required=False
     )
+    # №19
     office_post_addr = serializers.CharField(
         label='Почтовый адрес офиса',
         help_text='содержит только цифры офиса',
         max_length=32,
-        validators=[validators.integer_validator],
+        #validators=[validators.integer_validator],
+        default='',
+        allow_blank=True,
+        allow_null=True,
         required=False
     )
+    # №20
     ao_id2 = serializers.CharField(default='', required=False)  # reserved
+    # №21
     post_parent_id_ao = serializers.CharField(
         label='ID родительского а/о в regions для почтового адреса',
         help_text='соответствует полю 1 в «Файле выгрузки адресных объектов»',
         max_length=128,
         required=True
     )  # AddressObjectFormat.address_id
+    # №22
     post_ao_type_id = serializers.CharField(default='', required=False)  # reserved
+    # №23
     post_ao_type = serializers.CharField(default='', required=False)  # reserved
+    # №24
     post_ao_title = serializers.CharField(default='', required=False)  # reserved
+    # №25
     post_house = serializers.CharField(
         label='номер дома почтового адреса',
         help_text="содержит только номер дома, без типа а/о",
         max_length=32,
+        default='',
+        allow_blank=True,
         required=False,
     )
+    # №26
     post_building = serializers.CharField(
         label='здание почтового адреса',
         help_text='содержит только номер или букву здания, без типа а/о',
         max_length=32,
+        default='',
+        allow_blank=True,
         required=False
     )
+    # №27
     post_building_corpus = serializers.CharField(
         label='корпус почтового адреса',
         help_text='содержит только номер корпуса',
         max_length=32,
+        default='',
+        allow_blank=True,
         required=False
     )
+    # №28
     post_full_description = serializers.CharField(
         label=_('Full description'),
+        default='',
         required=False,
     )  # reserved
-    post_index2 = serializers.CharField(
-        label='почтовый индекс адреса абонента',
+    # №29
+    post_delivery_index = serializers.CharField(
+        label='почтовый индекс адреса доставки',
         max_length=6,
         validators=[validators.integer_validator],
+        default='',
         required=False
     )
+    # №30
     office_delivery_address = serializers.CharField(
         label='Адрес офиса доставки счёта',
         help_text='содержит только цифры офиса',
-        validators=[validators.integer_validator],
+        #validators=[validators.integer_validator],
         max_length=32,
+        default='',
+        allow_blank=True,
         required=False
     )
+    # №31
     office_delivery_address_id = serializers.CharField(default='', required=False)  # reserved
+    # №32
     parent_office_delivery_address_id = serializers.CharField(
         label='ID родительского а/о в regions для адреса доставки счёта',
         help_text='соответствует полю 1 в «Файле выгрузки адресных объектов»',
         max_length=128,
         required=True
     )  # AddressObjectFormat.address_id
+    # №33
     office_delivery_address_type_id = serializers.CharField(default='', required=False)  # reserved
+    # №34
     office_delivery_address_ao_type = serializers.CharField(default='', required=False)  # reserved
+    # №35
     office_delivery_address_ao_title = serializers.CharField(default='', required=False)  # reserved
+    # №36
     office_delivery_address_house = serializers.CharField(
         label='Номер дома адреса доставки счёта, строка',
         help_text="содержит только номер дома, без типа а/о",
         max_length=32,
+        default='',
+        allow_blank=True,
         required=False,
     )
+    # №37
     office_delivery_address_building = serializers.CharField(
         label=_('Building'),
         help_text='содержит только номер или букву здания, без типа а/о',
         max_length=32,
+        default='',
+        allow_blank=True,
         required=False
     )
+    # №38
     office_delivery_address_building_corpus = serializers.CharField(
         label=_('Building corpus'),
         help_text='содержит только номер корпуса',
         max_length=32,
+        default='',
+        allow_blank=True,
         required=False
     )
+    # №39
     office_delivery_address_full_description = serializers.CharField(
         label='полное наименование а/о доставки счёта',
+        default='',
         required=False,
     )  # reserved
+    # №40
     actual_start_time = serializers.DateTimeField(
         label=_('Actual start time'),
         help_text="для первой записи должна быть равна дате заключения договора с "
@@ -526,6 +653,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         format=datetime_format,
         allow_null=False
     )
+    # №41
     actual_end_time = serializers.DateTimeField(
         label=_('Actual end time'),
         help_text="Должна быть меньше или равна дате расторжения "
@@ -533,6 +661,12 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         required=False,
         format=datetime_format,
         allow_null=True
+    )
+    # №42
+    customer_id = serializers.CharField(
+        label=_('Customer ID'),
+        max_length=64,
+        required=True
     )
 
 

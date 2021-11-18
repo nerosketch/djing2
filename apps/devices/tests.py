@@ -1,8 +1,9 @@
 from django.test import SimpleTestCase, TestCase
 
+from devices.device_config.pon.gpon.onu_zte_f601 import DEVICE_UNIQUE_CODE as OnuZTE_F601_code
+from devices.device_config.switch.dlink.dgs_1100_10me import DEVICE_UNIQUE_CODE as Dlink_dgs1100_10me_code
 from devices.models import Device, Port
-from devices.device_config import DEVICE_TYPE_DlinkDGS1100_10ME, DEVICE_TYPE_OnuZTE_F601
-from devices.device_config.switch.eltex import EltexSwitch
+from devices.device_config.switch.eltex.general import EltexSwitch
 
 
 class DeviceTestCase(TestCase):
@@ -11,10 +12,10 @@ class DeviceTestCase(TestCase):
             ip_address="192.168.2.3",
             mac_addr="12:13:14:15:16:17",
             comment="test",
-            dev_type=DEVICE_TYPE_DlinkDGS1100_10ME,
+            dev_type=Dlink_dgs1100_10me_code,
         )
         self.device_onu = Device.objects.create(
-            mac_addr="11:13:14:15:16:18", comment="test2", dev_type=DEVICE_TYPE_OnuZTE_F601
+            mac_addr="11:13:14:15:16:18", comment="test2", dev_type=OnuZTE_F601_code
         )
 
         ports = (Port(device=self.device_switch, num=n, descr="test %d" % n) for n in range(1, 3))

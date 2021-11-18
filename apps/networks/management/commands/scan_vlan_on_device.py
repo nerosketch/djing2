@@ -4,10 +4,13 @@ from django.core.management.base import BaseCommand, CommandError, no_translatio
 
 try:
     from devices.models import Device
-except ImportError:
+except ImportError as err:
     from django.core.exceptions import ImproperlyConfigured
 
-    raise ImproperlyConfigured('"networks" application depends on "devices" application. Check if it installed')
+    raise ImproperlyConfigured(
+        '"networks" application depends on "devices" '
+        'application. Check if it installed'
+    ) from err
 
 from networks.models import VlanIf
 
@@ -30,7 +33,7 @@ class Command(BaseCommand):
         try:
             ip_addr = ip_address(ip_addr)
         except ValueError as err:
-            raise CommandError(err)
+            raise CommandError(err) from err
 
         device = Device.objects.filter(ip_address=str(ip_addr)).first()
         if device is None:

@@ -24,7 +24,7 @@ class SingleListObjMixin:
 
 
 class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
-    queryset = models.Customer.objects.select_related("group", "street", "gateway", "device", "current_service")
+    queryset = models.Customer.objects.select_related("group", "gateway", "device", "current_service")
     serializer_class = serializers.CustomerModelSerializer
 
     def get_queryset(self):
@@ -40,7 +40,7 @@ class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNo
 
         customer.pick_service(
             service=srv,
-            author=None,
+            author=request.user,
             comment=_("Buy the service via user side, service '%s'") % srv,
             allow_negative=False,
         )
