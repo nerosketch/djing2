@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from django.db.models import Count
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -11,7 +12,9 @@ from addresses.fias_socrbase import AddressFIASInfo
 
 
 class AddressModelViewSet(DjingModelViewSet):
-    queryset = AddressModel.objects.order_by('title')
+    queryset = AddressModel.objects.annotate(
+        children_count=Count('addressmodel'),
+    ).order_by('title')
     serializer_class = AddressModelSerializer
     filterset_fields = ['address_type', 'parent_addr', 'fias_address_type']
 
