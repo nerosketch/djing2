@@ -131,9 +131,8 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
         required=True,
     )
     # 3
-    house = serializers.CharField(
+    house = serializers.IntegerField(
         label=_('House'),
-        max_length=32,
         required=True,
     )
     # 4
@@ -169,27 +168,23 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
     # 10
     title = serializers.CharField(default='', required=False)  # reserved
     # 11
-    house_num = serializers.CharField(
+    house_num = serializers.IntegerField(
         label=_('House'),
-        max_length=32,
         required=False,
-        allow_blank=True,
         allow_null=True,
-        default=''
+        default=None
     )
     # 12
-    building = serializers.CharField(
+    building = serializers.IntegerField(
         label=_('Building'),
-        max_length=32,
         required=False,
-        default=''
+        default=None
     )
     # 13
-    building_corpus = serializers.CharField(
+    building_corpus = serializers.IntegerField(
         label=_('Building corpus'),
-        max_length=32,
         required=False,
-        default=''
+        default=None
     )
     # 14
     full_description = serializers.CharField(

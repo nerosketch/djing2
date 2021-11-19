@@ -3,6 +3,7 @@ from typing import Any
 
 import logging
 from django.core.management.base import BaseCommand
+from rest_framework.exceptions import ValidationError
 
 from addresses.models import AddressModel, AddressModelTypes
 from customers.models import Customer, CustomerService, AdditionalTelephone
@@ -194,4 +195,6 @@ class Command(BaseCommand):
                 fn()
                 self.stdout.write(self.style.SUCCESS("OK"))
             except (ExportFailedStatus, FileNotFoundError) as err:
-                self.stdout.write("{} {}".format(err, self.style.ERROR("FAILED")))
+                self.stderr.write("{} {}".format(err, self.style.ERROR("FAILED")))
+            except ValidationError as e:
+                self.stderr.write("{} {}".format(e, self.style.ERROR('ERROR format')))
