@@ -197,4 +197,4 @@ class Command(BaseCommand):
             except (ExportFailedStatus, FileNotFoundError) as err:
                 self.stderr.write(str(err))
             except ValidationError as e:
-                self.stderr.write(str(e))
+                self.stderr.write(str(e.detail))
