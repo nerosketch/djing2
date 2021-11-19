@@ -195,6 +195,6 @@ class Command(BaseCommand):
                 fn()
                 self.stdout.write(self.style.SUCCESS("OK"))
             except (ExportFailedStatus, FileNotFoundError) as err:
-                self.stderr.write("{} {}".format(err, self.style.ERROR("FAILED")))
+                self.stderr.write(str(err))
             except ValidationError as e:
-                self.stderr.write("{} {}".format(e, self.style.ERROR('ERROR format')))
+                self.stderr.write(str(e))
