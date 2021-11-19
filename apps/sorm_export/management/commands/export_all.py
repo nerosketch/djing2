@@ -11,6 +11,8 @@ from devices.device_config.device_type_collection import DEVICE_TYPES
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
 from services.models import Service
 from devices.models import Device
+from networks.models import CustomerIpLeaseModel, NetworkIpPool
+from customer_contract.models import CustomerContractModel
 from sorm_export.hier_export.addresses import (
     export_address_object, get_remote_export_filename
 )
@@ -33,8 +35,6 @@ from sorm_export.management.commands._general_func import export_customer_lease_
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
 from sorm_export.tasks.task_export import task_export
 
-from networks.models import CustomerIpLeaseModel, NetworkIpPool
-
 
 def export_all_root_customers():
     customers = Customer.objects.filter(is_active=True)
@@ -43,8 +43,8 @@ def export_all_root_customers():
 
 
 def export_all_customer_contracts():
-    customers = Customer.objects.filter(is_active=True)
-    data, fname = export_contract(customers=customers, event_time=datetime.now())
+    contracts = CustomerContractModel.objects.select_related('customer').filter(customer__is_active=True)
+    data, fname = export_contract(contracts=contracts, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTRACT)
 
 

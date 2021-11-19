@@ -36,6 +36,7 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
             yield {
                 "customer_id": customer.pk,
                 "legal_customer_id": customer.legal_id if customer.legal_id is not None else customer.pk,
+                # TODO: Upload contract date from contracts
                 "contract_start_date": customer.create_date,
                 "customer_login": customer.username,
                 "communication_standard": CommunicationStandardChoices.ETHERNET.value,
@@ -49,29 +50,28 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
 
 
 @iterable_export_decorator
-def export_contract(customers: Iterable[Customer], event_time=None):
+def export_contract(contracts, event_time=None):
     """
     Файл данных по договорам.
     В этом файле выгружаются данные по договорам абонентов.
     :return:
     """
 
-    def gen(customer: Customer):
+    def gen(contract):
         return {
-            "contract_id": customer.pk,
-            "customer_id": customer.pk,
-            "contract_start_date": customer.create_date,
-            # TODO: contract_end_date заполняем когда контракт закончился
-            # 'contract_end_date': customer.create_date + timedelta(days=3650),
-            "contract_number": customer.username,
-            # TODO: Название контракта а не имя абонента
-            "contract_title": "Договор на оказание услуг связи" # customer.get_full_name(),
+            "contract_id": contract.pk,
+            "customer_id": contract.customer_id,
+            "contract_start_date": contract.start_service_time.date(),
+            'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
+            "contract_number": contract.contract_number,
+            "contract_title": "Договор на оказание услуг связи",
+            #"contract_title": contract.title,
         }
 
     return (
         individual_entity_serializers.CustomerContractObjectFormat,
         gen,
-        customers,
+        contracts,
         f"ISP/abonents/contracts_{format_fname(event_time)}.txt",
     )
 
