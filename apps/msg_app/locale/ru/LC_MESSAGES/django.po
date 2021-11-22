@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-09-07 15:41+0300\n"
+"POT-Creation-Date: 2021-11-22 16:06+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -45,64 +45,64 @@ msgstr "Тело сообщения"
 msgid "sent at"
 msgstr "просмотрено в"
 
-#: apps/msg_app/models.py:34 apps/msg_app/models.py:230
+#: apps/msg_app/models.py:34 apps/msg_app/models.py:229
 msgid "Conversation"
 msgstr "Беседа"
 
-#: apps/msg_app/models.py:62
+#: apps/msg_app/models.py:61
 msgid "Message"
 msgstr "Сообщение"
 
-#: apps/msg_app/models.py:63
+#: apps/msg_app/models.py:62
 msgid "Messages"
 msgstr "Сообщения"
 
-#: apps/msg_app/models.py:69
+#: apps/msg_app/models.py:68
 msgid "Admin"
 msgstr "Админ"
 
-#: apps/msg_app/models.py:69
+#: apps/msg_app/models.py:68
 msgid "Guest"
 msgstr "Гость"
 
-#: apps/msg_app/models.py:69
+#: apps/msg_app/models.py:68
 msgid "Banned user"
 msgstr "Заблокированный"
 
-#: apps/msg_app/models.py:69
+#: apps/msg_app/models.py:68
 msgid "Inviter"
 msgstr "Тот кто пригласил"
 
-#: apps/msg_app/models.py:80
+#: apps/msg_app/models.py:79
 msgid "Conversation membership"
 msgstr "Членство в беседе"
 
-#: apps/msg_app/models.py:81
+#: apps/msg_app/models.py:80
 msgid "Conversation memberships"
 msgstr "Членства в беседах"
 
-#: apps/msg_app/models.py:92
+#: apps/msg_app/models.py:91
 msgid "Participant profile does not found"
 msgstr "Учётки адресата нет"
 
-#: apps/msg_app/models.py:98
+#: apps/msg_app/models.py:97
 msgid "No name"
 msgstr "Нет имени"
 
-#: apps/msg_app/models.py:125
+#: apps/msg_app/models.py:124
 msgid "Title"
 msgstr "Название"
 
-#: apps/msg_app/models.py:129
+#: apps/msg_app/models.py:128
 msgid "Participants"
 msgstr "Адресаты"
 
-#: apps/msg_app/models.py:132
+#: apps/msg_app/models.py:131
 msgid "for select multiple press ctrl and click on field"
 msgstr ""
 "для того чтобы выделить несколько вариантов нажмите ctrl и кликните нужный "
 "вариант"
 
-#: apps/msg_app/models.py:231
+#: apps/msg_app/models.py:230
 msgid "Conversations"
 msgstr "Беседы"

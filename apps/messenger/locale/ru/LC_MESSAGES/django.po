@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-09-07 15:41+0300\n"
+"POT-Creation-Date: 2021-11-22 16:06+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -41,31 +41,31 @@ msgstr "Мэссенджэр"
 msgid "Messengers"
 msgstr "Мэссенджэры"
 
-#: apps/messenger/models/base_messenger.py:113
+#: apps/messenger/models/base_messenger.py:112
 msgid "Name"
 msgstr "Имя"
 
-#: apps/messenger/models/base_messenger.py:114
-#: apps/messenger/models/telegram.py:11 apps/messenger/models/viber.py:28
+#: apps/messenger/models/base_messenger.py:113
+#: apps/messenger/models/telegram.py:11 apps/messenger/models/viber.py:29
 msgid "Avatar"
 msgstr "Аватар"
 
-#: apps/messenger/models/base_messenger.py:116
+#: apps/messenger/models/base_messenger.py:115
 msgid "System account"
 msgstr "Системная учётная запись"
 
-#: apps/messenger/models/base_messenger.py:127
+#: apps/messenger/models/base_messenger.py:126
 #: apps/messenger/models/viber.py:156
 msgid "Subscriber"
 msgstr "Подписчик"
 
-#: apps/messenger/models/base_messenger.py:128
+#: apps/messenger/models/base_messenger.py:127
 #: apps/messenger/models/viber.py:157
 msgid "Subscribers"
 msgstr "Подписчики"
 
 #: apps/messenger/models/telegram.py:79 apps/messenger/models/telegram.py:151
-#: apps/messenger/models/viber.py:101
+#: apps/messenger/models/viber.py:102
 msgid "My telephone number"
 msgstr "Мой номер телефона"
 
@@ -77,7 +77,7 @@ msgstr "Нужен номер телефона"
 msgid "Unknown choice"
 msgstr "Не понятный вариант"
 
-#: apps/messenger/models/telegram.py:144 apps/messenger/models/viber.py:123
+#: apps/messenger/models/telegram.py:144 apps/messenger/models/viber.py:124
 msgid ""
 "Your account is attached. Now you will be receive notifications from billing"
 msgstr ""
@@ -88,35 +88,29 @@ msgstr ""
 msgid "Subscription does not exists. Send your contact."
 msgstr "Подписка не найдена. Отправьте ваш контакт."
 
-#: apps/messenger/models/telegram.py:158 apps/messenger/models/viber.py:127
+#: apps/messenger/models/telegram.py:158 apps/messenger/models/viber.py:128
 msgid ""
 "Telephone not found, please specify telephone number in account in billing"
 msgstr ""
 "Номер телефона не найден. Укажите свой номер телефона в учётке в биллинге"
 
 #: apps/messenger/models/telegram.py:188
-#, fuzzy
-#| msgid "User unique id in viber"
 msgid "User unique id in telegram"
-msgstr "Уникальный id viber"
+msgstr "Уникальный id telegram"
 
 #: apps/messenger/models/telegram.py:199
-#, fuzzy
-#| msgid "Viber subscriber"
 msgid "Telegram subscriber"
-msgstr "Подписчик viber"
+msgstr "Подписчик telegram"
 
 #: apps/messenger/models/telegram.py:200
-#, fuzzy
-#| msgid "Viber subscribers"
 msgid "Telegram subscribers"
-msgstr "Подписчики viber"
+msgstr "Подписчики telegram"
 
-#: apps/messenger/models/viber.py:135
+#: apps/messenger/models/viber.py:136
 msgid "Viber messenger"
 msgstr "Viber мэссенджэр"
 
-#: apps/messenger/models/viber.py:136
+#: apps/messenger/models/viber.py:137
 msgid "Viber messengers"
 msgstr "Viber мэссенджэры"
 

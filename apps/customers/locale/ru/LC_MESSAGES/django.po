@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-09-07 15:41+0300\n"
+"POT-Creation-Date: 2021-11-22 16:06+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,320 +17,344 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: apps/customers/models.py:171
+#: apps/customers/models.py:174
 msgid "Customer service"
 msgstr "Услуга абонента"
 
-#: apps/customers/models.py:172
+#: apps/customers/models.py:175
 msgid "Customer services"
 msgstr "Услуги абонента"
 
-#: apps/customers/models.py:193
+#: apps/customers/models.py:188
+msgid "Street"
+msgstr "Улица"
+
+#: apps/customers/models.py:189
+msgid "Streets"
+msgstr "Улицы"
+
+#: apps/customers/models.py:195
 msgid "From balance"
 msgstr "Было"
 
-#: apps/customers/models.py:194
+#: apps/customers/models.py:196
 msgid "To balance"
 msgstr "Стало"
 
-#: apps/customers/models.py:217
+#: apps/customers/models.py:227
 msgid "Users must have an telephone number"
 msgstr "Пользователь должен иметь телефонный номер"
 
-#: apps/customers/models.py:286
+#: apps/customers/models.py:317
 #, python-format
 msgid ""
 "Service for customer %(customer_name)s with name '%(service_name)s' has "
 "expired"
 msgstr "Срок действия услуги '%(service_name)s' для '%(customer_name)s' истёк"
 
-#: apps/customers/models.py:356
+#: apps/customers/models.py:388
 #, python-format
 msgid "Automatic connect new service %(service_name)s for %(customer_name)s"
 msgstr ""
 "Автоматическое продление услуги '%(service_name)s' для %(customer_name)s"
 
-#: apps/customers/models.py:367
+#: apps/customers/models.py:399
 #, python-format
 msgid "Service '%(service_name)s' has expired"
 msgstr "Срок действия услуги '%(service_name)s' истёк"
 
-#: apps/customers/models.py:379
+#: apps/customers/models.py:411
 msgid "Customer group"
 msgstr "Группа абонента"
 
-#: apps/customers/models.py:385
+#: apps/customers/models.py:420
 msgid "Comment"
 msgstr "Описание"
 
-#: apps/customers/models.py:389
+#: apps/customers/models.py:423
 msgid "House"
 msgstr "Дом"
 
-#: apps/customers/models.py:392
+#: apps/customers/models.py:427
 msgid "Is dynamic ip"
 msgstr "Динамический ip"
 
-#: apps/customers/models.py:398
+#: apps/customers/models.py:433
 msgid "Gateway"
 msgstr "Шлюз"
 
-#: apps/customers/models.py:399
+#: apps/customers/models.py:434
 msgid "Network access server"
 msgstr "Сервер доступа в интернет"
 
-#: apps/customers/models.py:402
+#: apps/customers/models.py:437
 msgid "Automatically connect next service"
 msgstr "Автоматическое подключение следующей услуги"
 
-#: apps/customers/models.py:405
+#: apps/customers/models.py:440
 msgid "Last connected service"
 msgstr "Последняя подключённая услуга"
 
-#: apps/customers/models.py:412
+#: apps/customers/models.py:447
 msgid "Donkey"
 msgstr "Ослик"
 
-#: apps/customers/models.py:413
+#: apps/customers/models.py:448
 msgid "Fire"
 msgstr "Огонь"
 
-#: apps/customers/models.py:414
+#: apps/customers/models.py:449
 msgid "Ok"
 msgstr ""
 
-#: apps/customers/models.py:415
+#: apps/customers/models.py:450
 msgid "King"
 msgstr "Король"
 
-#: apps/customers/models.py:416
+#: apps/customers/models.py:451
 msgid "TV"
 msgstr "ТВ"
 
-#: apps/customers/models.py:417
+#: apps/customers/models.py:452
 msgid "Smile"
 msgstr "Улыбка"
 
-#: apps/customers/models.py:418
+#: apps/customers/models.py:453
 msgid "Dollar"
 msgstr "Долар"
 
-#: apps/customers/models.py:419
+#: apps/customers/models.py:454
 msgid "Service"
 msgstr "Услуга"
 
-#: apps/customers/models.py:420
+#: apps/customers/models.py:455
 msgid "Marker"
 msgstr "Маркер"
 
-#: apps/customers/models.py:481
+#: apps/customers/models.py:456
+msgid "Red phone"
+msgstr "Красный телефон"
+
+#: apps/customers/models.py:457
+msgid "Green phone"
+msgstr "Зелёный телефон"
+
+#: apps/customers/models.py:521
 msgid "User who is no staff can not buy admin services"
 msgstr ""
 "Этот пользователь не является сотрудником и не может назначать "
 "административные услуги"
 
-#: apps/customers/models.py:486
+#: apps/customers/models.py:526
 msgid "That service already activated"
 msgstr "Эта услуга уже подключена"
 
-#: apps/customers/models.py:489
+#: apps/customers/models.py:529
 msgid "Service already activated"
 msgstr "Услуга уже подключена"
 
-#: apps/customers/models.py:492
+#: apps/customers/models.py:532
 msgid "User, who is no staff, can not be buy services on credit"
 msgstr ""
 "Пользователь, который не является сотрудником, не может покупать услуги в "
 "долг"
 
-#: apps/customers/models.py:497 apps/customers/models.py:562
+#: apps/customers/models.py:537 apps/customers/models.py:602
 #, python-format
 msgid "%(uname)s not enough money for service %(srv_name)s"
 msgstr ""
 "У абонента %(uname)s не достаточно денег на счету для услуги %(srv_name)s"
 
-#: apps/customers/models.py:523
+#: apps/customers/models.py:563
 msgid "Buy service default log"
 msgstr "Покупка тарифного плана через админку"
 
-#: apps/customers/models.py:538
+#: apps/customers/models.py:578
 msgid "End of service, refund of balance"
 msgstr "Завершение услуги, возврат остатка на счёт"
 
-#: apps/customers/models.py:541
+#: apps/customers/models.py:581
 msgid "End of service"
 msgstr "Завершение услуги"
 
-#: apps/customers/models.py:578
+#: apps/customers/models.py:618
 #, python-format
 msgid "Buy one-shot service for \"%(title)s\""
 msgstr "Купить одноразовую услуга \"%(title)s\""
 
-#: apps/customers/models.py:637
+#: apps/customers/models.py:677
 #, python-format
 msgid "Automatic connect service '%(service_name)s'"
 msgstr "Автоматическое включение услуги '%(service_name)s'"
 
-#: apps/customers/models.py:664
+#: apps/customers/models.py:704
 msgid "Customer has not ips"
 msgstr "У абонента нет ip адресов"
 
-#: apps/customers/models.py:668
+#: apps/customers/models.py:708
 msgid "Ping ok"
 msgstr "Пингуется ok"
 
-#: apps/customers/models.py:672
+#: apps/customers/models.py:712
 msgid "arp ping ok"
 msgstr "Пингуется по ARP"
 
-#: apps/customers/models.py:673
+#: apps/customers/models.py:713
 msgid "no ping"
 msgstr "не пингуется"
 
-#: apps/customers/models.py:675
+#: apps/customers/models.py:715
 msgid "Process locked by another process"
 msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
 
-#: apps/customers/models.py:699
+#: apps/customers/models.py:722
 msgid "Buy service perm"
 msgstr "Покупка тарифа абоненту"
 
-#: apps/customers/models.py:700
+#: apps/customers/models.py:723
 msgid "fill account"
 msgstr "Пополнение счёта"
 
-#: apps/customers/models.py:701
+#: apps/customers/models.py:724
 msgid "Fill account balance on negative cost"
 msgstr "Пополнение счёта на отрицательную сумму"
 
-#: apps/customers/models.py:702
+#: apps/customers/models.py:725
 msgid "Can ping"
 msgstr "Может пинговать"
 
-#: apps/customers/models.py:703
-#, fuzzy
-#| msgid "Last connected service"
+#: apps/customers/models.py:726
 msgid "Can complete service"
-msgstr "Последняя подключённая услуга"
+msgstr "Может завершать услугу"
 
-#: apps/customers/models.py:704
+#: apps/customers/models.py:727
 msgid "Can view activity_report"
 msgstr "Может просматривать отчёт об активности абонентов"
 
-#: apps/customers/models.py:705
+#: apps/customers/models.py:728
 msgid "Can view service type report"
 msgstr ""
 "Может просматривать отчёт о распределении использования услуг абонентами"
 
-#: apps/customers/models.py:707
+#: apps/customers/models.py:730
 msgid "Customer"
 msgstr "Абонент"
 
-#: apps/customers/models.py:708
+#: apps/customers/models.py:731
 msgid "Customers"
 msgstr "Абоненты"
 
-#: apps/customers/models.py:740
+#: apps/customers/models.py:762
 msgid "Debt"
 msgstr "Квитанция (долг)"
 
-#: apps/customers/models.py:741
+#: apps/customers/models.py:763
 msgid "Debts"
 msgstr "Квитанции (долги)"
 
-#: apps/customers/models.py:745
+#: apps/customers/models.py:767
 msgid "Passport serial"
 msgstr "Серия пас."
 
-#: apps/customers/models.py:746
+#: apps/customers/models.py:768
 msgid "Passport number"
 msgstr "Номер пас."
 
-#: apps/customers/models.py:747
+#: apps/customers/models.py:769
 msgid "Distributor"
 msgstr "Кем выдан"
 
-#: apps/customers/models.py:748
+#: apps/customers/models.py:770
 msgid "Date of acceptance"
 msgstr "Дата выдачи"
 
-#: apps/customers/models.py:749
+#: apps/customers/models.py:771
 msgid "Division code"
 msgstr "Код подразделения"
 
-#: apps/customers/models.py:754 apps/customers/models.py:755
+#: apps/customers/models.py:776 apps/customers/models.py:777
 msgid "Passport Info"
 msgstr "Паспортные данные"
 
-#: apps/customers/models.py:777
+#: apps/customers/models.py:798
 msgid "Telephone"
 msgstr "Номер телефона"
 
-#: apps/customers/models.py:790
+#: apps/customers/models.py:810
 msgid "Additional telephone"
 msgstr "Дополнительный телефон"
 
-#: apps/customers/models.py:791
+#: apps/customers/models.py:811
 msgid "Additional telephones"
 msgstr "Дополнительные телефоны"
 
-#: apps/customers/models.py:795
+#: apps/customers/models.py:815
 msgid "Periodic pay"
 msgstr "Периодический платёж"
 
-#: apps/customers/models.py:796
+#: apps/customers/models.py:816
 msgid "Last pay time"
 msgstr "Последний платёж"
 
-#: apps/customers/models.py:797
+#: apps/customers/models.py:817
 msgid "Next time to pay"
 msgstr "Следующий платёж"
 
-#: apps/customers/models.py:798
+#: apps/customers/models.py:818
 msgid "Account"
 msgstr "Учётная запись"
 
-#: apps/customers/models.py:815
+#: apps/customers/models.py:835
 #, python-format
 msgid "Charge for \"%(service)s\""
 msgstr "Плата за \"%(service)s\""
 
-#: apps/customers/serializers.py:174
+#: apps/customers/serializers.py:103
+msgid ""
+"Credentials must be without spaces or any special symbols, only letters and "
+"\"-\""
+msgstr "ФИО должно быть без пробелов и спец знаков, только буквы и \"-\""
+
+#: apps/customers/serializers.py:117
+msgid "3 words required: surname, name and last_name without spaces"
+msgstr "3 слова необходимо: фамилия, имя и отчество без пробелов"
+
+#: apps/customers/serializers.py:136
 msgid "You can't specify the future"
 msgstr "Нельзя указывать будущее время"
 
-#: apps/customers/serializers.py:176
+#: apps/customers/serializers.py:138
 msgid "Too old date. Must be newer than 1900-01-01 00:00:00"
 msgstr "Слишком старая дата. Должно быть новее чем 1900-01-01 00:00:00"
 
-#: apps/customers/views/admin_side.py:37
+#: apps/customers/views/admin_side.py:38
 msgid "Not allowed to direct create Customer service, use 'pick_service' url"
 msgstr ""
 "Запрещено прямое создание привязанных к абоненту услуг, используйте "
 "'pick_service' url"
 
-#: apps/customers/views/admin_side.py:54
+#: apps/customers/views/admin_side.py:49
 msgid "Not allowed to direct create Customer log"
 msgstr "Запрещено прямое создание логов абонента"
 
-#: apps/customers/views/admin_side.py:119
+#: apps/customers/views/admin_side.py:131
 #, python-format
 msgid "Service '%(service_name)s' has connected via admin until %(deadline)s"
 msgstr "Услуга '%(service_name)s' подключена администратором до %(deadline)s"
 
-#: apps/customers/views/admin_side.py:183
+#: apps/customers/views/admin_side.py:195
 msgid "Service not connected"
 msgstr "Услуга не подключена"
 
-#: apps/customers/views/admin_side.py:234
+#: apps/customers/views/admin_side.py:246
 msgid "You can't top up an account with a positive amount"
 msgstr "Вы не можете пополнять счёт учётной записи"
 
-#: apps/customers/views/admin_side.py:240
+#: apps/customers/views/admin_side.py:252
 msgid "You can't top up an account with a negative amount"
 msgstr "Вы не можете снимать средства с баланса учётной записи"
 
-#: apps/customers/views/admin_side.py:252
+#: apps/customers/views/admin_side.py:264
 msgid "fill account through admin side"
 msgstr "Пополнение счёта сотрудником"
 
@@ -359,12 +383,6 @@ msgstr "%(username)s заплатил долг в размере %(amount).2f"
 
 #~ msgid "Ip address"
 #~ msgstr "Ip адрес"
-
-msgid "3 words required: surname, name and last_name without spaces"
-msgstr "3 слова необходимо: фамилия, имя и отчество без пробелов"
-
-msgid "Credentials must be without spaces or any special symbols, only letters and \"-\""
-msgstr "ФИО должно быть без пробелов и спец знаков, только буквы и \"-\""
 
 #~ msgid "finish service perm"
 #~ msgstr "Завершение услуги"
