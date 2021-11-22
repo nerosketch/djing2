@@ -114,7 +114,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             addr_type=AddressModelTypes.STREET
         )
         if not addr_parent_region:
-            logging.error(_('Customer "%s" address has no parent street element') % customer)
+            logging.error(_('Customer "%s" with login "%s" address has no parent street element') % (customer, customer.username))
             return
         addr_building = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
@@ -161,7 +161,7 @@ def export_individual_customer(customers_queryset, event_time=None):
             return
         addr = customer.address
         if not addr:
-            logging.error('Customer "%s" has no address info' % customer)
+            logging.error(_('Customer "%s" has no address') % customer)
             return
 
         passport = customer.passportinfo
@@ -181,7 +181,7 @@ def export_individual_customer(customers_queryset, event_time=None):
             addr_type=AddressModelTypes.STREET
         )
         if not addr_parent_region:
-            logging.error(_('Customer "%s" address has no parent street element') % customer)
+            logging.error(_('Customer "%s" with login "%s" address has no parent street element') % (customer, customer.username))
             return
 
         r = {

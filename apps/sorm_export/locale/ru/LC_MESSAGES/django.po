@@ -21,23 +21,23 @@ msgstr ""
 #: apps/sorm_export/hier_export/customer.py:98
 #, python-format
 msgid "Customer \"%s\" has no address"
-msgstr "Абонент \"%s\" не имеет адрес"
+msgstr "Абонент не имеет адрес; \"%s\" "
 
 #: apps/sorm_export/hier_export/customer.py:101
 #, python-format
 msgid "Customer \"%s\" has address without parent address object"
-msgstr "Пользовател \"%s\" не имеет в адресе родительского объекта"
+msgstr "Абонент не имеет в адресе родительского объекта; \"%s\""
 
 #: apps/sorm_export/hier_export/customer.py:111
 #, python-format
 msgid "Customer \"%s\" has no house nor office in address \"%s\""
-msgstr "Пользователь \"%s\" не имеет ни офиса ни номера дома в адресе \"%s\""
+msgstr "Абонент не имеет ни офиса ни номера дома в адресе; \"%s\" \"%s\""
 
 #: apps/sorm_export/hier_export/customer.py:117
 #: apps/sorm_export/hier_export/customer.py:184
 #, python-format
-msgid "Customer \"%s\" address has no parent street element"
-msgstr "Пользователь \"%s\" не имеет улицы в адресе"
+msgid "Customer \"%s\" with login \"%s\" address has no parent street element"
+msgstr "Абонент не имеет улицы в адресе; \"%s\" \"%s\""
 
 #: apps/sorm_export/models.py:34
 msgid "Not exported"
