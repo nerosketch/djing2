@@ -1,3 +1,4 @@
+import logging
 from typing import Tuple, Any
 from datetime import datetime
 from functools import wraps
@@ -43,16 +44,11 @@ def iterable_export_decorator(fn):
                 ser.is_valid(raise_exception=True)
                 return ser.data
             except ValidationError as e:
-                e.detail.update({
-                    'data': dat
-                })
-                raise ValidationError(
-                    detail=e.detail,
-                    code=e.default_code
-                ) from e
+                logging.error("%s | %s" % (e.detail, dat))
 
         res_data = map(gen_fn, qs.iterator())
         res_data = (_val_fn(r) for r in res_data if r)
+        res_data = (r for r in res_data if r)
 
         return res_data, fname
     return _wrapped
@@ -74,11 +70,11 @@ def iterable_gen_export_decorator(fn):
                 ser.is_valid(raise_exception=True)
                 return ser.data
             except ValidationError as e:
-                setattr(e, 'data', dat)
-                raise ValidationError(e) from e
+                logging.error("%s | %s" % (e.detail, dat))
 
         # res_data = map(gen_fn, qs.iterator())
         res_data = (_val_fn(r) for r in gen_fn() if r)
+        res_data = (r for r in res_data if r)
 
         return res_data, fname
     return _wrapped

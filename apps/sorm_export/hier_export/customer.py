@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Iterable, Optional
 
 from django.db.models import Subquery, OuterRef
+from django.utils.translation import gettext_lazy as _
 from addresses.models import AddressModelTypes, AddressModel
 from customers_legal.models import CustomerLegalModel
 from customers.models import Customer
@@ -90,25 +91,47 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
 
     def gen(customer: Customer):
         if not hasattr(customer, "address"):
+            logging.error(_('Customer "%s" has no address') % customer)
             return
         addr = customer.address
         if not addr:
-            logging.warning('Customer "%s" has no address' % customer)
+            logging.error(_('Customer "%s" has no address') % customer)
             return
         if not addr.parent_addr:
-            logging.warning('Customer "%s" has address without parent address object' % customer)
+            logging.error(_('Customer "%s" has address without parent address object') % customer)
             return
         create_date = customer.create_date
         addr_house = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.HOUSE
         ))
+        addr_office = _addr2str(addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.OFFICE_NUM
+        ))
+        if not addr_house and not addr_office:
+            logging.error(_('Customer "%s" has no house nor office in address "%s"') % (customer, addr))
+            return
+        addr_parent_region = addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.STREET
+        )
+        if not addr_parent_region:
+            logging.error(_('Customer "%s" address has no parent street element') % customer)
+            return
+        addr_building = _addr2str(addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.BUILDING
+        ))
+        addr_corpus = _addr2str(addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.CORPUS
+        ))
+
         return {
             "ap_id": addr.pk,
             "customer_id": customer.pk,
-            "house": addr.title,
+            "house": addr_house or addr_office,
+            "parent_id_ao": addr_parent_region.pk,
+            "house_num": addr_house or None,
+            "builing": addr_building,
+            "building_corpus": addr_corpus or None,
             "full_address": addr.full_title(),
-            "parent_id_ao": addr.parent_addr_id,
-            "house_num": addr_house,
             "actual_start_time": datetime(create_date.year, create_date.month, create_date.day),
             # TODO: указывать дату конца, когда абонент выключается или удаляется
             # 'actual_end_time':
@@ -134,11 +157,11 @@ def export_individual_customer(customers_queryset, event_time=None):
 
     def gen(customer: Customer):
         if not hasattr(customer, "passportinfo"):
-            logging.warning('Customer "%s" has no passport info' % customer)
+            logging.error('Customer "%s" has no passport info' % customer)
             return
         addr = customer.address
         if not addr:
-            logging.warning('Customer "%s" has no address info' % customer)
+            logging.error('Customer "%s" has no address info' % customer)
             return
 
         passport = customer.passportinfo
@@ -147,7 +170,7 @@ def export_individual_customer(customers_queryset, event_time=None):
 
         parent_addr_id = addr.parent_addr_id
         if not parent_addr_id:
-            logging.warning("Address '%s' has no parent object" % addr)
+            logging.error("Address '%s' has no parent object" % addr)
             return
 
         addr_house = addr.get_address_item_by_type(

@@ -118,6 +118,11 @@ class AddressObjectFormat(serializers.Serializer):
 
 
 class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
+    """
+     https://wiki.vasexperts.ru/doku.php?id=sorm:sorm3:sorm3_subs_dump:sorm3_subs_hier:start
+     #файл_выгрузки_адресов_точек_подключения_версия_1
+    """
+
     # 1
     ap_id = serializers.CharField(
         label=_('Access point id'),
@@ -178,18 +183,23 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
     building = serializers.IntegerField(
         label=_('Building'),
         required=False,
+        allow_null=True,
         default=None
     )
     # 13
-    building_corpus = serializers.IntegerField(
+    building_corpus = serializers.CharField(
         label=_('Building corpus'),
+        max_length=32,
         required=False,
-        default=None
+        allow_null=True,
+        allow_blank=True,
+        default=''
     )
     # 14
     full_description = serializers.CharField(
         label=_('Full description'),
         required=False,
+        allow_null=True,
         default=''
     )  # reserved
     # 15

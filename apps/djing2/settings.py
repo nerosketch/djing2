@@ -354,3 +354,4 @@ RADIUSAPP_OPTIONS = {
     'secret': get_secret("RADIUS_SECRET").encode()
 }
 
+SORM_REPORTING_EMAILS = []

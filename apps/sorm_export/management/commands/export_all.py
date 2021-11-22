@@ -1,8 +1,11 @@
+import os
 from datetime import datetime
 from typing import Any
 
 import logging
 from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.mail import send_mail
 from rest_framework.exceptions import ValidationError
 
 from addresses.models import AddressModel, AddressModelTypes
@@ -189,12 +192,36 @@ class Command(BaseCommand):
             (export_all_ip_numbering, "Ip numbering export status"),
             (export_all_gateways, "Gateways export status"),
         )
+        fname = f"/tmp/export{datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')}.log"
+        logging.basicConfig(
+            filename=fname,
+            filemode='w',
+            level=logging.INFO
+        )
+        logging.info("Starting full export")
         for fn, msg in funcs:
             try:
-                self.stdout.write(msg, ending=' ')
+                logging.info(msg)
+                #self.stdout.write(msg, ending=' ')
                 fn()
-                self.stdout.write(self.style.SUCCESS("OK"))
+                #self.stdout.write(self.style.SUCCESS("OK"))
             except (ExportFailedStatus, FileNotFoundError) as err:
-                self.stderr.write(str(err))
+                logging.error(str(err))
+                #self.stderr.write(str(err))
             except ValidationError as e:
-                self.stderr.write(str(e.detail))
+                logging.error(str(e.detail))
+                #self.stderr.write(str(e.detail))
+        logging.info("Finished full export")
+        sorm_reporting_emails = getattr(settings, 'SORM_REPORTING_EMAILS', None)
+        if sorm_reporting_emails is None:
+            return
+        with open(fname, 'r') as f:
+            content = f.read()
+            if 'ERROR' in content:
+                send_mail(
+                    'Отчёт выгрузки',
+                    content,
+                    getattr(settings, 'DEFAULT_FROM_EMAIL'),
+                    sorm_reporting_emails
+                )
+        os.remove(fname)
