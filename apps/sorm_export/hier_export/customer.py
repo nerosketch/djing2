@@ -168,11 +168,6 @@ def export_individual_customer(customers_queryset, event_time=None):
         create_date = customer.create_date
         full_fname = customer.get_full_name()
 
-        parent_addr_id = addr.parent_addr_id
-        if not parent_addr_id:
-            logging.error("Address '%s' has no parent object" % addr)
-            return
-
         addr_house = addr.get_address_item_by_type(
             addr_type=AddressModelTypes.HOUSE
         )
@@ -182,6 +177,12 @@ def export_individual_customer(customers_queryset, event_time=None):
         addr_corp = addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
         )
+        addr_parent_region = addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.STREET
+        )
+        if not addr_parent_region:
+            logging.error(_('Customer "%s" address has no parent street element') % customer)
+            return
 
         r = {
             "contract_id": customer.pk,
@@ -195,7 +196,7 @@ def export_individual_customer(customers_queryset, event_time=None):
             "passport_code": passport.division_code or "",
             "passport_date": passport.date_of_acceptance,
             "house": addr.title,
-            "parent_id_ao": parent_addr_id,
+            "parent_id_ao": addr_parent_region.pk,
             "house_num": addr_house.title if addr_house else None,
             "building": addr_building.title if addr_building else None,
             "building_corpus": addr_corp.title if addr_corp else None,
@@ -254,10 +255,10 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
                 'parent_id_ao': legal.address_id,
                 'house': _addr2str(addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.HOUSE
-                )),
+                )) or None,
                 'building': _addr2str(addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.BUILDING
-                )),
+                )) or None,
                 'building_corpus': _addr2str(addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.CORPUS
                 )),
@@ -270,10 +271,10 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
                 'post_parent_id_ao': post_addr.pk,
                 'post_house': _addr2str(post_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.HOUSE
-                )),
+                )) or None,
                 'post_building': _addr2str(post_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.BUILDING
-                )),
+                )) or None,
                 'post_building_corpus': _addr2str(post_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.BUILDING
                 )),
@@ -285,10 +286,10 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
                 'parent_office_delivery_address_id': delivery_addr.pk,
                 'office_delivery_address_house': _addr2str(delivery_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.HOUSE
-                )),
+                )) or None,
                 'office_delivery_address_building': _addr2str(delivery_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.BUILDING
-                )),
+                )) or None,
                 'office_delivery_address_building_corpus': _addr2str(delivery_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.CORPUS
                 )),
