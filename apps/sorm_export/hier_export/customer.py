@@ -331,7 +331,7 @@ def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_t
                 )),
                 'office_delivery_address_full_description': delivery_addr.full_title(),
                 'actual_start_time': datetime.combine(customer.create_date, datetime.min.time()),
-                #'actual_end_time': '',
+                # 'actual_end_time': '',
                 'customer_id': customer.pk,
             }
             bank_info = legal.legalcustomerbankmodel
