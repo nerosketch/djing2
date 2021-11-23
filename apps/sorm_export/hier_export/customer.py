@@ -77,7 +77,7 @@ def export_contract(contracts, event_time=None):
     )
 
 
-def _addr_get_parent(addr: AddressModel, err_msg=None):
+def _addr_get_parent(addr: AddressModel, err_msg=None) -> Optional[AddressModel]:
     # TODO: Cache address hierarchy
     addr_parent_region = addr.get_address_item_by_type(
         addr_type=AddressModelTypes.STREET
@@ -129,6 +129,8 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
                 customer.username
             )
         )
+        if not addr_parent_region:
+            return
         addr_building = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
         ))
@@ -140,7 +142,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             "ap_id": addr.pk,
             "customer_id": customer.pk,
             "house": addr_house or addr_office,
-            "parent_id_ao": addr_parent_region.pk,
+            "parent_id_ao": addr_parent_region.pk if addr_parent_region else None,
             "house_num": addr_house or None,
             "builing": addr_building,
             "building_corpus": addr_corpus or None,
@@ -177,6 +179,16 @@ def export_individual_customer(customers_queryset, event_time=None):
             logging.error(_('Customer "%s" has no address') % customer)
             return
 
+        addr_parent_region = _addr_get_parent(
+            addr,
+            _('Customer "%s" with login "%s" address has no parent street element') % (
+                customer,
+                customer.username
+            )
+        )
+        if not addr_parent_region:
+            return
+
         passport = customer.passportinfo
         create_date = customer.create_date
         full_fname = customer.get_full_name()
@@ -190,14 +202,6 @@ def export_individual_customer(customers_queryset, event_time=None):
         addr_corp = addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
         )
-        addr_parent_region = _addr_get_parent(
-            addr,
-            _('Customer "%s" with login "%s" address has no parent street element') % (
-                customer,
-                customer.username
-            )
-        )
-
         r = {
             "contract_id": customer.pk,
             "name": full_fname,
@@ -265,6 +269,8 @@ def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_t
                     legal.username
                 )
             )
+            if not addr_parent_region:
+                return
             post_addr_parent_region = _addr_get_parent(
                 post_addr,
                 _('Legal customer "%s" with login "%s" post address has no parent street element') % (
@@ -304,7 +310,7 @@ def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_t
                 'office_post_addr': _addr2str(post_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.OFFICE_NUM
                 )),
-                'post_parent_id_ao': post_addr_parent_region.pk,
+                'post_parent_id_ao': post_addr_parent_region.pk if post_addr_parent_region else addr_parent_region.pk,
                 'post_house': _addr2str(post_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.HOUSE
                 )) or None,
@@ -319,7 +325,7 @@ def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_t
                 'office_delivery_address': _addr2str(delivery_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.OFFICE_NUM
                 )),
-                'parent_office_delivery_address_id': delivery_addr_parent_region.pk,
+                'parent_office_delivery_address_id': delivery_addr_parent_region.pk if delivery_addr_parent_region else addr_parent_region.pk,
                 'office_delivery_address_house': _addr2str(delivery_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.HOUSE
                 )) or None,
