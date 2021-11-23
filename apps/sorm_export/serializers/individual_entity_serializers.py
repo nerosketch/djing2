@@ -156,7 +156,6 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
         allow_blank=True,
         default=''
     )  # reserved
-
     # 6
     # reserved, ao - address object
     id_ao = serializers.CharField(default='', required=False)

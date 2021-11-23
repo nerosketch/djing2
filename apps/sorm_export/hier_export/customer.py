@@ -66,7 +66,7 @@ def export_contract(contracts, event_time=None):
             'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
             "contract_number": contract.contract_number,
             "contract_title": "Договор на оказание услуг связи",
-            #"contract_title": contract.title,
+            # "contract_title": contract.title,
         }
 
     return (
@@ -75,6 +75,18 @@ def export_contract(contracts, event_time=None):
         contracts,
         f"ISP/abonents/contracts_{format_fname(event_time)}.txt",
     )
+
+
+def _addr_get_parent(addr: AddressModel, err_msg=None):
+    # TODO: Cache address hierarchy
+    addr_parent_region = addr.get_address_item_by_type(
+        addr_type=AddressModelTypes.STREET
+    )
+    if not addr_parent_region:
+        if err_msg is not None:
+            logging.error(err_msg)
+        return
+    return addr_parent_region
 
 
 @iterable_export_decorator
@@ -110,12 +122,13 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
         if not addr_house and not addr_office:
             logging.error(_('Customer "%s" has no house nor office in address "%s"') % (customer, addr))
             return
-        addr_parent_region = addr.get_address_item_by_type(
-            addr_type=AddressModelTypes.STREET
+        addr_parent_region = _addr_get_parent(
+            addr,
+            _('Customer "%s" with login "%s" address has no parent street element') % (
+                customer,
+                customer.username
+            )
         )
-        if not addr_parent_region:
-            logging.error(_('Customer "%s" with login "%s" address has no parent street element') % (customer, customer.username))
-            return
         addr_building = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
         ))
@@ -177,12 +190,13 @@ def export_individual_customer(customers_queryset, event_time=None):
         addr_corp = addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
         )
-        addr_parent_region = addr.get_address_item_by_type(
-            addr_type=AddressModelTypes.STREET
+        addr_parent_region = _addr_get_parent(
+            addr,
+            _('Customer "%s" with login "%s" address has no parent street element') % (
+                customer,
+                customer.username
+            )
         )
-        if not addr_parent_region:
-            logging.error(_('Customer "%s" with login "%s" address has no parent street element') % (customer, customer.username))
-            return
 
         r = {
             "contract_id": customer.pk,
@@ -222,7 +236,7 @@ def export_individual_customer(customers_queryset, event_time=None):
 
 
 @iterable_gen_export_decorator
-def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=None):
+def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_time=None):
     """
     Файл выгрузки данных о юридическом лице версия 5.
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
@@ -244,6 +258,27 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
             else:
                 delivery_addr = legal.delivery_address
 
+            addr_parent_region = _addr_get_parent(
+                addr,
+                _('Legal customer "%s" with login "%s" address has no parent street element') % (
+                    legal,
+                    legal.username
+                )
+            )
+            post_addr_parent_region = _addr_get_parent(
+                post_addr,
+                _('Legal customer "%s" with login "%s" post address has no parent street element') % (
+                    legal,
+                    legal.username
+                )
+            )
+            delivery_addr_parent_region = _addr_get_parent(
+                delivery_addr,
+                _('Legal customer "%s" with login "%s" delivery address has no parent street element') % (
+                    legal,
+                    legal.username
+                )
+            )
             res = {
                 'legal_id': legal.pk,
                 'legal_title': legal.title,
@@ -252,7 +287,7 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
                 'office_addr': _addr2str(addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.OFFICE_NUM
                 )),
-                'parent_id_ao': legal.address_id,
+                'parent_id_ao': addr_parent_region.pk,
                 'house': _addr2str(addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.HOUSE
                 )) or None,
@@ -263,12 +298,13 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
                     addr_type=AddressModelTypes.CORPUS
                 )),
                 'full_description': addr.full_title(),
-                #'contact_telephones': '',
+                # TODO: fill contact_telephones
+                # 'contact_telephones': '',
                 'post_post_index': legal.post_post_index or legal.post_index,
                 'office_post_addr': _addr2str(post_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.OFFICE_NUM
                 )),
-                'post_parent_id_ao': post_addr.pk,
+                'post_parent_id_ao': post_addr_parent_region.pk,
                 'post_house': _addr2str(post_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.HOUSE
                 )) or None,
@@ -283,7 +319,7 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
                 'office_delivery_address': _addr2str(delivery_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.OFFICE_NUM
                 )),
-                'parent_office_delivery_address_id': delivery_addr.pk,
+                'parent_office_delivery_address_id': delivery_addr_parent_region.pk,
                 'office_delivery_address_house': _addr2str(delivery_addr.get_address_item_by_type(
                     addr_type=AddressModelTypes.HOUSE
                 )) or None,
@@ -307,7 +343,7 @@ def export_legal_customer(customers: Iterable[CustomerLegalModel], event_time=No
             yield res
 
     def _gen():
-        legals = customers.select_related('address', 'delivery_address', 'delivery_address')
+        legals = legal_customers.select_related('address', 'delivery_address', 'post_address')
         for l in legals:
             yield from _iter_customers(l)
 
