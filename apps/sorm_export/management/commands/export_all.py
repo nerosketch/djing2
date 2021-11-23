@@ -94,7 +94,7 @@ def export_all_individual_customers():
 
 def export_all_legal_customers():
     customers = CustomerLegalModel.objects.all()
-    data, fname = export_legal_customer(customers=customers, event_time=datetime.now())
+    data, fname = export_legal_customer(legal_customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_LEGAL)
 
 

@@ -261,7 +261,7 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
     )  # format DD.mm.YYYY
     # 6
     document_type = serializers.ChoiceField(
-        label=_('Document document type'),
+        label=_('Document type'),
         required=False,
         choices=CustomerDocumentTypeChoices.choices,
         default=CustomerDocumentTypeChoices.EMPTY,

@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-11-22 16:06+0300\n"
+"POT-Creation-Date: 2021-11-23 16:10+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,27 +17,48 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: apps/sorm_export/hier_export/customer.py:94
-#: apps/sorm_export/hier_export/customer.py:98
+#: apps/sorm_export/hier_export/customer.py:106
+#: apps/sorm_export/hier_export/customer.py:110
+#: apps/sorm_export/hier_export/customer.py:179
 #, python-format
 msgid "Customer \"%s\" has no address"
 msgstr "Абонент не имеет адрес; \"%s\" "
 
-#: apps/sorm_export/hier_export/customer.py:101
+#: apps/sorm_export/hier_export/customer.py:113
 #, python-format
 msgid "Customer \"%s\" has address without parent address object"
 msgstr "Абонент не имеет в адресе родительского объекта; \"%s\""
 
-#: apps/sorm_export/hier_export/customer.py:111
+#: apps/sorm_export/hier_export/customer.py:123
 #, python-format
 msgid "Customer \"%s\" has no house nor office in address \"%s\""
 msgstr "Абонент не имеет ни офиса ни номера дома в адресе; \"%s\" \"%s\""
 
-#: apps/sorm_export/hier_export/customer.py:117
+#: apps/sorm_export/hier_export/customer.py:127
 #: apps/sorm_export/hier_export/customer.py:184
 #, python-format
 msgid "Customer \"%s\" with login \"%s\" address has no parent street element"
 msgstr "Абонент не имеет улицы в адресе; \"%s\" \"%s\""
+
+#: apps/sorm_export/hier_export/customer.py:267
+#, fuzzy, python-format
+msgid ""
+"Legal customer \"%s\" with login \"%s\" address has no parent street element"
+msgstr "Юридический абонент не имеет улицы в адресе; \"%s\" \"%s\""
+
+#: apps/sorm_export/hier_export/customer.py:276
+#, python-format
+msgid ""
+"Legal customer \"%s\" with login \"%s\" post address has no parent street "
+"element"
+msgstr "Юридический абонент не имеет улицы в адресе; \"%s\" \"%s\""
+
+#: apps/sorm_export/hier_export/customer.py:283
+#, python-format
+msgid ""
+"Legal customer \"%s\" with login \"%s\" delivery address has no parent "
+"street element"
+msgstr "Юридический абонент не имеет улицы в адресе доставки счёта; \"%s\" \"%s\""
 
 #: apps/sorm_export/models.py:34
 msgid "Not exported"
@@ -100,12 +121,12 @@ msgid "Military ticket"
 msgstr "Военный билет"
 
 #: apps/sorm_export/serializers/aaa.py:19
-msgid "Ouput voip dial"
-msgstr ""
+msgid "Output voip dial"
+msgstr "Исходящий звонок voip"
 
 #: apps/sorm_export/serializers/aaa.py:20
 msgid "Input voip dial"
-msgstr ""
+msgstr "Входящий звонок voip"
 
 #: apps/sorm_export/serializers/customer_service_serializer.py:10
 #: apps/sorm_export/serializers/service_serializer.py:10
@@ -116,146 +137,62 @@ msgstr "ID Услуги"
 #: apps/sorm_export/serializers/individual_entity_serializers.py:14
 #: apps/sorm_export/serializers/individual_entity_serializers.py:48
 #: apps/sorm_export/serializers/individual_entity_serializers.py:134
-#: apps/sorm_export/serializers/individual_entity_serializers.py:397
-#: apps/sorm_export/serializers/individual_entity_serializers.py:673
+#: apps/sorm_export/serializers/individual_entity_serializers.py:396
+#: apps/sorm_export/serializers/individual_entity_serializers.py:672
 #: apps/sorm_export/serializers/networks.py:18
 #: apps/sorm_export/serializers/payment.py:10
 msgid "Customer id"
 msgstr "ID Абонента"
 
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:19
-msgid "Communication standard"
-msgstr ""
+#: apps/sorm_export/serializers/individual_entity_serializers.py:19
+#: apps/sorm_export/serializers/individual_entity_serializers.py:405
+msgid "Legal customer id"
+msgstr "ID абонента"
 
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:29
-#: apps/sorm_export/serializers/individual_entity_serializers.py:29
-msgid "Customer login"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:35
-#: apps/sorm_export/serializers/individual_entity_serializers.py:65
-msgid "Contract number"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:40
-msgid "Current state"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:45
 #: apps/sorm_export/serializers/individual_entity_serializers.py:24
 #: apps/sorm_export/serializers/individual_entity_serializers.py:54
 msgid "Date of conclusion of the contract"
 msgstr "Дата заключения контракта"
 
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:50
+#: apps/sorm_export/serializers/individual_entity_serializers.py:29
+msgid "Customer login"
+msgstr "Логин абонента"
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:35
+msgid "Communication_standard"
+msgstr "Стандарт связи"
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:43
+msgid "Contract ID"
+msgstr "ID Договора"
+
 #: apps/sorm_export/serializers/individual_entity_serializers.py:59
 msgid "Contract completion date"
 msgstr "Дата завершения контракта"
 
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:55
-msgid "Customer type"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:60
-msgid "Name structured type"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:65
-msgid "Name"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:71
-#: apps/sorm_export/serializers/individual_entity_serializers.py:248
-msgid "Surname"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:77
-msgid "Second name"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:83
-msgid "Not structured name"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:85
-msgid "Fio from customer model"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:90
-#: apps/sorm_export/serializers/individual_entity_serializers.py:257
-msgid "Birthday"
-msgstr "Дата рождения"
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:95
-msgid "Is structured data"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:100
-msgid "Passport serial"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:106
-msgid "Passport number"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:112
-msgid "Passport date"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:117
-msgid "Passport distributor"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:123
-msgid "Passport document type"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:128
-#: apps/sorm_export/serializers/individual_entity_serializers.py:491
-msgid "Customer bank"
-msgstr "Банк абонента"
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:134
-#: apps/sorm_export/serializers/individual_entity_serializers.py:498
-msgid "Bank receipt number"
-msgstr "Банковский расчётный счёт"
-
-#: apps/sorm_export/serializers/individual_entity_plain_serializers.py:140
-msgid "Legal entity title"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_serializers.py:19
-#: apps/sorm_export/serializers/individual_entity_serializers.py:406
-msgid "Legal customer id"
-msgstr "ID абонента"
-
-#: apps/sorm_export/serializers/individual_entity_serializers.py:35
-msgid "Communication_standard"
-msgstr ""
-
-#: apps/sorm_export/serializers/individual_entity_serializers.py:43
-msgid "Contract ID"
-msgstr ""
+#: apps/sorm_export/serializers/individual_entity_serializers.py:65
+msgid "Contract number"
+msgstr "Номер договора"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:70
 msgid "Contract title"
-msgstr ""
+msgstr "Название договора"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:78
 msgid "Address id"
-msgstr ""
+msgstr "ID адреса"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:84
 msgid "Parent address id"
-msgstr ""
+msgstr "ID родительского адреса"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:91
 msgid "Address type id"
-msgstr ""
+msgstr " ID типа адреса"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:98
 msgid "Region type"
-msgstr ""
+msgstr "Тип региона"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:105
 msgid "Title"
@@ -263,140 +200,150 @@ msgstr "Название"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:114
 msgid "Full address title"
-msgstr ""
+msgstr "Полноый название адреса"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:128
 msgid "Access point id"
-msgstr ""
+msgstr "ID точки подключения"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:140
-#: apps/sorm_export/serializers/individual_entity_serializers.py:177
-#: apps/sorm_export/serializers/individual_entity_serializers.py:318
+#: apps/sorm_export/serializers/individual_entity_serializers.py:176
+#: apps/sorm_export/serializers/individual_entity_serializers.py:317
 msgid "House"
-msgstr ""
+msgstr "Дом"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:145
 msgid "Full address"
-msgstr ""
+msgstr "Полный адрес"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:154
 msgid "Internal address"
-msgstr ""
+msgstr "Внутренний адрес"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:165
-#: apps/sorm_export/serializers/individual_entity_serializers.py:331
-#: apps/sorm_export/serializers/individual_entity_serializers.py:447
+#: apps/sorm_export/serializers/individual_entity_serializers.py:164
+#: apps/sorm_export/serializers/individual_entity_serializers.py:330
+#: apps/sorm_export/serializers/individual_entity_serializers.py:446
 msgid "Parent ao id"
-msgstr ""
+msgstr "ID родительского адреса"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:184
-#: apps/sorm_export/serializers/individual_entity_serializers.py:353
-#: apps/sorm_export/serializers/individual_entity_serializers.py:467
-#: apps/sorm_export/serializers/individual_entity_serializers.py:622
+#: apps/sorm_export/serializers/individual_entity_serializers.py:183
+#: apps/sorm_export/serializers/individual_entity_serializers.py:352
+#: apps/sorm_export/serializers/individual_entity_serializers.py:466
+#: apps/sorm_export/serializers/individual_entity_serializers.py:621
 msgid "Building"
-msgstr ""
+msgstr "Здание"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:191
-#: apps/sorm_export/serializers/individual_entity_serializers.py:360
-#: apps/sorm_export/serializers/individual_entity_serializers.py:475
-#: apps/sorm_export/serializers/individual_entity_serializers.py:630
+#: apps/sorm_export/serializers/individual_entity_serializers.py:190
+#: apps/sorm_export/serializers/individual_entity_serializers.py:359
+#: apps/sorm_export/serializers/individual_entity_serializers.py:474
+#: apps/sorm_export/serializers/individual_entity_serializers.py:629
 msgid "Building corpus"
-msgstr ""
+msgstr "Корпус"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:200
-#: apps/sorm_export/serializers/individual_entity_serializers.py:369
-#: apps/sorm_export/serializers/individual_entity_serializers.py:485
-#: apps/sorm_export/serializers/individual_entity_serializers.py:575
+#: apps/sorm_export/serializers/individual_entity_serializers.py:199
+#: apps/sorm_export/serializers/individual_entity_serializers.py:368
+#: apps/sorm_export/serializers/individual_entity_serializers.py:484
+#: apps/sorm_export/serializers/individual_entity_serializers.py:574
 msgid "Full description"
-msgstr ""
+msgstr "Полное описание"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:207
-#: apps/sorm_export/serializers/individual_entity_serializers.py:377
-#: apps/sorm_export/serializers/individual_entity_serializers.py:646
-#: apps/sorm_export/serializers/individual_entity_serializers.py:687
+#: apps/sorm_export/serializers/individual_entity_serializers.py:206
+#: apps/sorm_export/serializers/individual_entity_serializers.py:376
+#: apps/sorm_export/serializers/individual_entity_serializers.py:645
+#: apps/sorm_export/serializers/individual_entity_serializers.py:686
 msgid "Actual start time"
-msgstr ""
+msgstr "Дата начала интервала, на котором инфорация актуальна"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:217
-#: apps/sorm_export/serializers/individual_entity_serializers.py:387
-#: apps/sorm_export/serializers/individual_entity_serializers.py:656
-#: apps/sorm_export/serializers/individual_entity_serializers.py:696
+#: apps/sorm_export/serializers/individual_entity_serializers.py:216
+#: apps/sorm_export/serializers/individual_entity_serializers.py:386
+#: apps/sorm_export/serializers/individual_entity_serializers.py:655
+#: apps/sorm_export/serializers/individual_entity_serializers.py:695
 msgid "Actual end time"
-msgstr ""
+msgstr "Дата конца интервала, на котором инфорация актуальна"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:235
+#: apps/sorm_export/serializers/individual_entity_serializers.py:234
 msgid "Individual customer name"
-msgstr ""
+msgstr "Имя абонента"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:241
+#: apps/sorm_export/serializers/individual_entity_serializers.py:240
 msgid "Last name"
 msgstr ""
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:265
-msgid "Document document type"
+#: apps/sorm_export/serializers/individual_entity_serializers.py:247
+msgid "Surname"
 msgstr ""
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:274
+#: apps/sorm_export/serializers/individual_entity_serializers.py:256
+msgid "Birthday"
+msgstr "Дата рождения"
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:264
+msgid "Document type"
+msgstr "Тип документа"
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:273
 msgid "Document serial"
-msgstr ""
+msgstr "Серия документа"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:282
+#: apps/sorm_export/serializers/individual_entity_serializers.py:281
 msgid "Document number"
-msgstr ""
+msgstr "Номер документа"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:290
+#: apps/sorm_export/serializers/individual_entity_serializers.py:289
 msgid "Document distributor"
-msgstr ""
+msgstr "Кем выдан документ"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:346
+#: apps/sorm_export/serializers/individual_entity_serializers.py:345
 msgid "House number"
-msgstr ""
+msgstr "Номер дома"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:412
+#: apps/sorm_export/serializers/individual_entity_serializers.py:411
 msgid "Legal title"
-msgstr ""
+msgstr "Название юридического лица"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:507
+#: apps/sorm_export/serializers/individual_entity_serializers.py:490
+msgid "Customer bank"
+msgstr "Банк абонента"
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:497
+msgid "Bank receipt number"
+msgstr "Банковский расчётный счёт"
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:506
 msgid "Contact telephones"
-msgstr ""
+msgstr "Контактный телефоны"
 
-#: apps/sorm_export/serializers/individual_entity_serializers.py:665
-#, fuzzy
-#| msgid "Customer id"
-msgid "Customer ID"
-msgstr "ID Абонента"
-
-#: apps/sorm_export/serializers/individual_entity_serializers.py:678
+#: apps/sorm_export/serializers/individual_entity_serializers.py:677
 msgid "Contact info"
-msgstr ""
+msgstr "Контактная информация"
 
 #: apps/sorm_export/serializers/networks.py:10
 msgid "Gray addr"
-msgstr ""
+msgstr "Серый адрес"
 
 #: apps/sorm_export/serializers/networks.py:11
 msgid "White addr"
-msgstr ""
+msgstr "Белый адрес"
 
 #: apps/sorm_export/serializers/networks.py:12
 msgid "VPN addr"
-msgstr ""
+msgstr "VPN адрес"
 
 #: apps/sorm_export/serializers/payment.py:16
 msgid "Payment time"
-msgstr ""
+msgstr "Время платежа"
 
 #: apps/sorm_export/serializers/payment.py:21
 msgid "Pay amount"
-msgstr ""
+msgstr "Сумма платежа"
 
 #: apps/sorm_export/serializers/service_serializer.py:21
 msgid "Service description"
-msgstr ""
+msgstr "Описание тарифа"
 
 #: apps/sorm_export/serializers/service_serializer.py:38
 msgid "Operator type id"
-msgstr ""
+msgstr "Тип оператора"
 
 #~ msgid "Parent AO"
 #~ msgstr "Родительский адресный объект"

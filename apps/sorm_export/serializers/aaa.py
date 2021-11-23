@@ -16,7 +16,7 @@ class AAAEventType(IntegerChoices):
 
 class AAAConnectionType(IntegerChoices):
     BROADBAND_ACCESS = 0, "ШПД соединение"
-    OUT_DIAL = 1, _("Ouput voip dial")
+    OUT_DIAL = 1, _("Output voip dial")
     INPUT_DIAL = 2, _("Input voip dial")
 
 
