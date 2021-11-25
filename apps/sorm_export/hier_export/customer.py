@@ -107,11 +107,11 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
 
     def gen(customer: Customer):
         if not hasattr(customer, "address"):
-            logging.error(_('Customer "%s" has no address') % customer)
+            logging.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
             return
         addr = customer.address
         if not addr:
-            logging.error(_('Customer "%s" has no address') % customer)
+            logging.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
             return
         if not addr.parent_addr:
             logging.error(_('Customer "%s" has address without parent address object') % customer)
@@ -123,7 +123,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             addr_type=AddressModelTypes.OFFICE_NUM
         ))
         if not addr_house and not addr_office:
-            logging.error(_('Customer "%s" has no house nor office in address "%s"') % (customer, addr))
+            logging.error(_('Customer "%s" [%s] has no house nor office in address "%s"') % (customer, customer.username, addr))
             return
         addr_parent_region = _addr_get_parent(
             addr,
@@ -209,7 +209,7 @@ def export_individual_customer(customers_queryset, event_time=None):
             return
         addr = customer.address
         if not addr:
-            logging.error(_('Customer "%s" has no address') % customer)
+            logging.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
             return
 
         addr_parent_region = _addr_get_parent(
