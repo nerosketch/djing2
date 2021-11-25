@@ -679,7 +679,9 @@ class Customer(IAddressContaining, BaseAccount):
 
     @property
     def full_address(self):
-        return str(self.address.full_title())
+        if self.address:
+            return str(self.address.full_title())
+        return '-'
 
     @staticmethod
     def set_service_group_accessory(group, wanted_service_ids: list, request):
