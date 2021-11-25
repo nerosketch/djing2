@@ -53,13 +53,10 @@ def export_all_customer_contracts():
 
 
 def export_all_address_objects():
-    addr_objects = AddressModel.objects.exclude(
-        address_type__in=[
-            AddressModelTypes.HOUSE,
-            AddressModelTypes.OFFICE_NUM,
-            AddressModelTypes.BUILDING,
-            AddressModelTypes.CORPUS,
-        ]
+    addr_objects = AddressModel.objects.filter(
+        address_type__lte=AddressModelTypes.STREET,
+    ).exclude(
+        address_type=AddressModelTypes.UNKNOWN
     ).order_by(
         "fias_address_level",
         "fias_address_type"
