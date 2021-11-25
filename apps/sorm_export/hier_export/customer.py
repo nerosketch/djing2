@@ -150,7 +150,11 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             "builing": addr_building,
             "building_corpus": addr_corpus or None,
             "full_address": addr.full_title(),
-            "actual_start_time": customer.contract_date if customer.contract_date else customer.create_date,
+            "actual_start_time": customer.contract_date if customer.contract_date else datetime(
+                customer.create_date.year,
+                customer.create_date.month,
+                customer.create_date.day
+            ),
             # TODO: указывать дату конца, когда абонент выключается или удаляется
             # 'actual_end_time':
         }
@@ -382,8 +386,8 @@ def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_t
                 'actual_end_time': legal.actual_end_time,
                 'customer_id': customer.pk,
             }
-            bank_info = legal.legalcustomerbankmodel
-            if bank_info:
+            if hasattr(legal, 'legalcustomerbankmodel'):
+                bank_info = getattr(legal, 'legalcustomerbankmodel')
                 res.update({
                     'customer_bank': bank_info.title,
                     'customer_bank_num': bank_info.number,
