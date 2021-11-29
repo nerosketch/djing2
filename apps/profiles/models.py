@@ -1,6 +1,8 @@
 import os
 from typing import Tuple, Optional
+from datetime import datetime, date, timedelta
 from bitfield.models import BitField
+from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin, Permission
 from django.contrib.sites.models import Site
@@ -66,10 +68,21 @@ class MyUserManager(BaseUserManager):
         return user
 
 
+def birth_day_18yo_validator(val: date) -> None:
+    now = datetime.now().date()
+    min_bd = now - timedelta(days=18*365)
+    if val > min_bd:
+        raise ValidationError(_('Account is too young, birth_day "%s" less than 18 yo') % val)
+
+
 class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
     username = models.CharField(_("profile username"), max_length=127, unique=True, validators=(latinValidator,))
     fio = models.CharField(_("fio"), max_length=256)
-    birth_day = models.DateField(_("birth day"), null=True, blank=True, default=None)
+    birth_day = models.DateField(
+        _("birth day"),
+        null=True, blank=True, default=None,
+        validators=[birth_day_18yo_validator]
+    )
     create_date = models.DateField(_("Create date"), auto_now_add=True)
     last_update_time = models.DateTimeField(_("Last update time"), default=None, null=True, blank=True)
     is_active = models.BooleanField(_("Is active"), default=True)
