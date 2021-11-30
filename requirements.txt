@@ -61,3 +61,5 @@ git+https://github.com/pyradius/pyrad.git#egg=pyrad
 drf-orjson-renderer==1.1.5
 
 pyyaml
+
+requests
