@@ -26,9 +26,9 @@ def _send_notify(url: str, notification_type: int, ct: ContentType, model_class,
             'model': ct.model
         },
         'inst': _model_instance_to_dict(instance=instance, model_class=model_class) if instance else None,
-        'time': datetime.now()
+        'time': datetime.now().strftime('%Y.%m.%dT%H:%M:%s')
     }
-    r = requests.post(url, json=data,)
+    r = requests.post(url, data=data)
     return r.content
 
 
@@ -62,7 +62,7 @@ def send_update2observers(notification_type: int, instance_id, app_label: str, m
             'model_class': model_class,
             'ct': ct,
         }
-        thr = Thread(target=_send_notify, args=args)
+        thr = Thread(target=_send_notify, kwargs=args)
         thr.start()
         thrs.append(thr)
     for thr in thrs:
