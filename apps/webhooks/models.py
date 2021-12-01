@@ -28,3 +28,8 @@ class HookObserver(models.Model):
 
     class Meta:
         db_table = 'hook_observer'
+        unique_together = (
+            'notification_type',
+            'client_url',
+            'content_type'
+        )

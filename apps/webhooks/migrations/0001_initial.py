@@ -23,6 +23,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 'db_table': 'hook_observer',
+                "unique_together": {("notification_type", "client_url", "content_type")},
             },
         ),
     ]
