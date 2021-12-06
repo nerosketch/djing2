@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.auth.hashers import make_password
 from django.utils.translation import gettext as _
@@ -129,13 +129,16 @@ class CustomerModelSerializer(BaseAccountSerializer):
 
 
 class PassportInfoModelSerializer(BaseCustomModelSerializer):
+    registration_address_title = serializers.CharField(source='full_address', read_only=True)
+
     @staticmethod
     def validate_date_of_acceptance(value):
         now = datetime.now().date()
+        old_date = datetime.now() - timedelta(days=365 * 100)
         if value >= now:
             raise serializers.ValidationError(_("You can't specify the future"))
-        elif value <= datetime(1900, 1, 1).date():
-            raise serializers.ValidationError(_("Too old date. Must be newer than 1900-01-01 00:00:00"))
+        elif value <= old_date.date():
+            raise serializers.ValidationError(_("Too old date. Must be newer than %s") % old_date.strftime('%Y-%m-%d %H:%M:%S'))
         return value
 
     class Meta:

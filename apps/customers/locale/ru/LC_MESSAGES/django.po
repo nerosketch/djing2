@@ -324,8 +324,8 @@ msgid "You can't specify the future"
 msgstr "Нельзя указывать будущее время"
 
 #: apps/customers/serializers.py:138
-msgid "Too old date. Must be newer than 1900-01-01 00:00:00"
-msgstr "Слишком старая дата. Должно быть новее чем 1900-01-01 00:00:00"
+msgid "Too old date. Must be newer than %s"
+msgstr "Слишком старая дата. Должно быть новее чем %s"
 
 #: apps/customers/views/admin_side.py:38
 msgid "Not allowed to direct create Customer service, use 'pick_service' url"

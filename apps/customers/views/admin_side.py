@@ -291,7 +291,8 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     @action(methods=["put"], detail=True)
     @catch_customers_errs
     def passport(self, request, pk=None):
-        passport_obj = models.PassportInfo.objects.filter(customer__id=pk).first()
+        self.serializer_class = serializers.PassportInfoModelSerializer
+        passport_obj = models.PassportInfo.objects.filter(customer_id=pk).first()
 
         if passport_obj is None:
             # create passport info for customer
@@ -306,13 +307,14 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             serializer.update(instance=passport_obj, validated_data=serializer.validated_data)
             res_stat = status.HTTP_200_OK
 
-        return Response(serializer.validated_data, status=res_stat)
+        return Response(serializer.data, status=res_stat)
 
     @passport.mapping.get
     def passport_get(self, request, pk=None):
-        passport_obj = models.PassportInfo.objects.filter(customer__id=pk).first()
-        serializer = serializers.PassportInfoModelSerializer(instance=passport_obj)
-        return Response(serializer.data)
+        self.serializer_class = serializers.PassportInfoModelSerializer
+        passport_obj = models.PassportInfo.objects.filter(customer_id=pk).first()
+        ser = serializers.PassportInfoModelSerializer(instance=passport_obj)
+        return Response(ser.data)
 
     @action(detail=False)
     def service_type_report(self, request):
