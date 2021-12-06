@@ -207,14 +207,15 @@ def export_individual_customer(customers_queryset, event_time=None):
         if not hasattr(customer, "passportinfo"):
             logging.error('Customer "%s" has no passport info' % customer)
             return
-        addr = customer.address
+        passport = customer.passportinfo
+        addr = passport.registration_address
         if not addr:
-            logging.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
+            logging.error(_('Customer "%s" [%s] has no address in passport') % (customer, customer.username))
             return
 
         addr_parent_region = _addr_get_parent(
             addr,
-            _('Customer "%s" with login "%s" address has no parent street element') % (
+            _('Customer "%s" with login "%s" passport registration address has no parent street element') % (
                 customer,
                 customer.username
             )
@@ -222,7 +223,6 @@ def export_individual_customer(customers_queryset, event_time=None):
         if not addr_parent_region:
             return
 
-        passport = customer.passportinfo
         actual_start_date = customer.contract_date if customer.contract_date else datetime(
             customer.create_date.year,
             customer.create_date.month,
@@ -275,7 +275,9 @@ def export_individual_customer(customers_queryset, event_time=None):
     return (
         individual_entity_serializers.CustomerIndividualObjectFormat,
         gen,
-        customers_queryset.exclude(passportinfo=None).select_related("group", "passportinfo").annotate(
+        customers_queryset.exclude(passportinfo=None).select_related(
+            "group", "passportinfo"
+        ).annotate(
             contract_date=Subquery(contracts_q)
         ),
         f"ISP/abonents/fiz_v2_{format_fname(event_time)}.txt",

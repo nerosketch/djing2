@@ -187,124 +187,124 @@ msgstr "Купить одноразовую услуга \"%(title)s\""
 msgid "Automatic connect service '%(service_name)s'"
 msgstr "Автоматическое включение услуги '%(service_name)s'"
 
-#: apps/customers/models.py:704
+#: apps/customers/models.py:706
 msgid "Customer has not ips"
 msgstr "У абонента нет ip адресов"
 
-#: apps/customers/models.py:708
+#: apps/customers/models.py:710
 msgid "Ping ok"
 msgstr "Пингуется ok"
 
-#: apps/customers/models.py:712
+#: apps/customers/models.py:714
 msgid "arp ping ok"
 msgstr "Пингуется по ARP"
 
-#: apps/customers/models.py:713
+#: apps/customers/models.py:715
 msgid "no ping"
 msgstr "не пингуется"
 
-#: apps/customers/models.py:715
+#: apps/customers/models.py:717
 msgid "Process locked by another process"
 msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
 
-#: apps/customers/models.py:722
+#: apps/customers/models.py:724
 msgid "Buy service perm"
 msgstr "Покупка тарифа абоненту"
 
-#: apps/customers/models.py:723
+#: apps/customers/models.py:725
 msgid "fill account"
 msgstr "Пополнение счёта"
 
-#: apps/customers/models.py:724
+#: apps/customers/models.py:726
 msgid "Fill account balance on negative cost"
 msgstr "Пополнение счёта на отрицательную сумму"
 
-#: apps/customers/models.py:725
+#: apps/customers/models.py:727
 msgid "Can ping"
 msgstr "Может пинговать"
 
-#: apps/customers/models.py:726
+#: apps/customers/models.py:728
 msgid "Can complete service"
 msgstr "Может завершать услугу"
 
-#: apps/customers/models.py:727
+#: apps/customers/models.py:729
 msgid "Can view activity_report"
 msgstr "Может просматривать отчёт об активности абонентов"
 
-#: apps/customers/models.py:728
+#: apps/customers/models.py:730
 msgid "Can view service type report"
 msgstr ""
 "Может просматривать отчёт о распределении использования услуг абонентами"
 
-#: apps/customers/models.py:730
+#: apps/customers/models.py:732
 msgid "Customer"
 msgstr "Абонент"
 
-#: apps/customers/models.py:731
+#: apps/customers/models.py:733
 msgid "Customers"
 msgstr "Абоненты"
 
-#: apps/customers/models.py:762
+#: apps/customers/models.py:764
 msgid "Debt"
 msgstr "Квитанция (долг)"
 
-#: apps/customers/models.py:763
+#: apps/customers/models.py:765
 msgid "Debts"
 msgstr "Квитанции (долги)"
 
-#: apps/customers/models.py:767
+#: apps/customers/models.py:769
 msgid "Passport serial"
 msgstr "Серия пас."
 
-#: apps/customers/models.py:768
+#: apps/customers/models.py:770
 msgid "Passport number"
 msgstr "Номер пас."
 
-#: apps/customers/models.py:769
+#: apps/customers/models.py:771
 msgid "Distributor"
 msgstr "Кем выдан"
 
-#: apps/customers/models.py:770
+#: apps/customers/models.py:772
 msgid "Date of acceptance"
 msgstr "Дата выдачи"
 
-#: apps/customers/models.py:771
+#: apps/customers/models.py:773
 msgid "Division code"
 msgstr "Код подразделения"
 
-#: apps/customers/models.py:776 apps/customers/models.py:777
+#: apps/customers/models.py:789 apps/customers/models.py:790
 msgid "Passport Info"
 msgstr "Паспортные данные"
 
-#: apps/customers/models.py:798
+#: apps/customers/models.py:811
 msgid "Telephone"
 msgstr "Номер телефона"
 
-#: apps/customers/models.py:810
+#: apps/customers/models.py:823
 msgid "Additional telephone"
 msgstr "Дополнительный телефон"
 
-#: apps/customers/models.py:811
+#: apps/customers/models.py:824
 msgid "Additional telephones"
 msgstr "Дополнительные телефоны"
 
-#: apps/customers/models.py:815
+#: apps/customers/models.py:828
 msgid "Periodic pay"
 msgstr "Периодический платёж"
 
-#: apps/customers/models.py:816
+#: apps/customers/models.py:829
 msgid "Last pay time"
 msgstr "Последний платёж"
 
-#: apps/customers/models.py:817
+#: apps/customers/models.py:830
 msgid "Next time to pay"
 msgstr "Следующий платёж"
 
-#: apps/customers/models.py:818
+#: apps/customers/models.py:831
 msgid "Account"
 msgstr "Учётная запись"
 
-#: apps/customers/models.py:835
+#: apps/customers/models.py:848
 #, python-format
 msgid "Charge for \"%(service)s\""
 msgstr "Плата за \"%(service)s\""
@@ -319,11 +319,12 @@ msgstr "ФИО должно быть без пробелов и спец зна�
 msgid "3 words required: surname, name and last_name without spaces"
 msgstr "3 слова необходимо: фамилия, имя и отчество без пробелов"
 
-#: apps/customers/serializers.py:136
+#: apps/customers/serializers.py:139
 msgid "You can't specify the future"
 msgstr "Нельзя указывать будущее время"
 
-#: apps/customers/serializers.py:138
+#: apps/customers/serializers.py:141
+#, python-format
 msgid "Too old date. Must be newer than %s"
 msgstr "Слишком старая дата. Должно быть новее чем %s"
 
