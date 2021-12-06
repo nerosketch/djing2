@@ -135,7 +135,7 @@ class AllTimePay(GenericAPIView):
 
     def _fetch_user_info(self, data: dict) -> Response:
         pay_account = data.get("PAY_ACCOUNT")
-        customer = Customer.objects.get(username=pay_account, sites__in=[self.request.site])
+        customer = Customer.objects.get(username=pay_account, sites__in=[self.request.site], is_active=True)
         return Response(
             {
                 "balance": round(customer.balance, 2),
@@ -155,7 +155,7 @@ class AllTimePay(GenericAPIView):
         pay_account = data.get("PAY_ACCOUNT")
         pay_id = data.get("PAY_ID")
         pay_amount = safe_float(data.get("PAY_AMOUNT"))
-        customer = Customer.objects.get(username=pay_account, sites__in=[self.request.site])
+        customer = Customer.objects.get(username=pay_account, sites__in=[self.request.site], is_active=True)
         pays = AllTimePayLog.objects.filter(pay_id=pay_id)
         if pays.exists():
             return self._bad_ret(-100, "Pay already exists")
