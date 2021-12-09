@@ -11,19 +11,18 @@ from customers.views.view_decorators import catch_customers_errs
 
 from djing2.lib import LogicError, safe_int
 from djing2.lib.mixins import SitesFilterMixin
-from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet
+from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet, BaseNonAdminModelViewSet
 from services.models import Service
 
 
 class SingleListObjMixin:
     def list(self, *args, **kwargs):
-        del args, kwargs
         qs = self.get_queryset().first()
         sr = self.get_serializer(qs, many=False)
         return Response(sr.data)
 
 
-class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
+class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNonAdminModelViewSet):
     queryset = models.Customer.objects.select_related("group", "gateway", "device", "current_service")
     serializer_class = serializers.CustomerModelSerializer
 

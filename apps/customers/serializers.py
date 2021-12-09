@@ -56,8 +56,8 @@ class CustomerModelSerializer(BaseAccountSerializer):
     last_connected_service_title = serializers.CharField(source="last_connected_service.title", read_only=True)
     current_service_title = serializers.CharField(source="current_service.service.title", read_only=True)
     service_id = serializers.IntegerField(source="current_service.service.id", read_only=True)
-    raw_password = serializers.CharField(source="customerrawpassword.passw_text", read_only=True)
-    balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
+    # raw_password = serializers.CharField(source="customerrawpassword.passw_text", read_only=True)
+    balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False, read_only=True)
     create_date = serializers.CharField(read_only=True)
     lease_count = serializers.IntegerField(read_only=True)
 
@@ -119,13 +119,27 @@ class CustomerModelSerializer(BaseAccountSerializer):
     class Meta:
         model = models.Customer
         # depth = 1
-        exclude = [
+        exclude = (
             'groups',
             'user_permissions',
             'markers',
             'is_superuser',
-            'is_admin'
-        ]
+            'is_admin',
+            'description',
+            'is_active',
+            'sites'
+        )
+        read_only_fields = (
+            'current_service',
+            'group',
+            'balance',
+            'device',
+            'dev_port'
+            'is_dynamic_ip',
+            'gateway',
+            'markers',
+            'last_update_time'
+        )
 
 
 class PassportInfoModelSerializer(BaseCustomModelSerializer):
