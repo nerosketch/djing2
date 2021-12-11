@@ -130,6 +130,9 @@ class CustomerModelSerializer(BaseAccountSerializer):
 
 class UserCustomerModelSerializer(CustomerModelSerializer):
     marker_icons = None
+    group_title = None
+    full_name = None
+    raw_password = None
 
     class Meta:
         model = models.Customer
@@ -142,9 +145,6 @@ class UserCustomerModelSerializer(CustomerModelSerializer):
             'is_admin',
             'description',
             'sites',
-            'group_title',
-            'full_name',
-            'raw_password',
         )
         read_only_fields = (
             'current_service',
