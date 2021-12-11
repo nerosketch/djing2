@@ -125,7 +125,6 @@ class CustomerModelSerializer(BaseAccountSerializer):
             'markers',
             'is_superuser',
             'is_admin',
-            'is_active',
         )
 
 
