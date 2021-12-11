@@ -139,7 +139,6 @@ class UserCustomerModelSerializer(CustomerModelSerializer):
             'is_superuser',
             'is_admin',
             'description',
-            'is_active',
             'sites',
             'marker_icons',
             'group_title',
@@ -152,6 +151,7 @@ class UserCustomerModelSerializer(CustomerModelSerializer):
             'balance',
             'device',
             'dev_port'
+            'is_active',
             'is_dynamic_ip',
             'gateway',
             'markers',
