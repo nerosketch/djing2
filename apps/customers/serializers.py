@@ -129,6 +129,8 @@ class CustomerModelSerializer(BaseAccountSerializer):
 
 
 class UserCustomerModelSerializer(CustomerModelSerializer):
+    marker_icons = None
+
     class Meta:
         model = models.Customer
         # depth = 1
@@ -140,7 +142,6 @@ class UserCustomerModelSerializer(CustomerModelSerializer):
             'is_admin',
             'description',
             'sites',
-            'marker_icons',
             'group_title',
             'full_name',
             'raw_password',
