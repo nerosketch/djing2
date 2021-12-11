@@ -24,11 +24,15 @@ class SingleListObjMixin:
 
 class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNonAdminModelViewSet):
     queryset = models.Customer.objects.select_related("group", "gateway", "device", "current_service")
-    serializer_class = serializers.CustomerModelSerializer
+    serializer_class = serializers.UserCustomerModelSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.filter(username=self.request.user.username)
+
+    def get_object(self):
+        qs = self.get_queryset()
+        return qs.first()
 
     @action(methods=["post"], detail=False)
     @catch_customers_errs
