@@ -12,7 +12,7 @@ from customers.serializers import RadiusCustomerServiceRequestSerializer
 from djing2.lib import LogicError, safe_int
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from djing2.lib.mixins import AllowedSubnetMixin
-from networks.models import NetworkIpPoolKind, CustomerIpLeaseModel
+from networks.models import NetworkIpPoolKind, CustomerIpLeaseModel, NetworkIpPool
 from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
@@ -121,7 +121,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             if not dev_mac:
                 return _bad_ret("Failed to parse option82")
 
-            customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+            customer = NetworkIpPool.find_customer_by_device_credentials(
                 device_mac=dev_mac, device_port=dev_port
             )
         else:
@@ -317,7 +317,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                         agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
                     )
                     if dev_mac is not None:
-                        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                        customer = NetworkIpPool.find_customer_by_device_credentials(
                             device_mac=dev_mac, device_port=dev_port
                         )
                         if (

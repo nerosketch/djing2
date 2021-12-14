@@ -6,6 +6,7 @@ from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -15,7 +16,8 @@ from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SecureApiViewMixin, SitesGroupFilterMixin, SitesFilterMixin
 from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
-from networks.serializers import NetworkIpPoolModelSerializer, VlanIfModelSerializer, CustomerIpLeaseModelSerializer
+from networks import serializers
+from customers.serializers import CustomerModelSerializer
 
 
 def _update_lease_send_ws_signal(customer_id: int, s2ws=None):
@@ -26,7 +28,7 @@ def _update_lease_send_ws_signal(customer_id: int, s2ws=None):
 
 class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
     queryset = NetworkIpPool.objects.select_related("vlan_if")
-    serializer_class = NetworkIpPoolModelSerializer
+    serializer_class = serializers.NetworkIpPoolModelSerializer
     filter_backends = (CustomObjectPermissionsFilter, OrderingFilter, DjangoFilterBackend)
     ordering_fields = ("network", "ip_start", "ip_end", "gateway")
     filterset_fields = ("groups",)
@@ -55,9 +57,31 @@ class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
         return super().perform_create(serializer=serializer, sites=[self.request.site])
 
 
+class FindCustomerByCredentials(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    http_method_names = ('get',)
+
+    def get(self, request, format=None):
+        request_serializer = serializers.FindCustomerByDeviceCredentialsParams(
+            data=request.query_params,
+            context={'request': request}
+        )
+        request_serializer.is_valid(raise_exception=True)
+        customer = NetworkIpPool.find_customer_by_device_credentials(
+            device_mac=request_serializer.data.get('mac'),
+            device_port=request_serializer.data.get('dev_port')
+        )
+        if not customer:
+            return Response('Not found', status=status.HTTP_404_NOT_FOUND)
+        ser = CustomerModelSerializer(instance=customer, context={
+            'request': request
+        })
+        return Response(ser.data)
+
+
 class VlanIfModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = VlanIf.objects.all().order_by('vid')
-    serializer_class = VlanIfModelSerializer
+    serializer_class = serializers.VlanIfModelSerializer
     filter_backends = (CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter)
     ordering_fields = ("title", "vid")
     filterset_fields = ("device",)
@@ -68,7 +92,7 @@ class VlanIfModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
 class CustomerIpLeaseModelViewSet(DjingModelViewSet):
     queryset = CustomerIpLeaseModel.objects.all()
-    serializer_class = CustomerIpLeaseModelSerializer
+    serializer_class = serializers.CustomerIpLeaseModelSerializer
     filter_backends = (CustomObjectPermissionsFilter, OrderingFilter, DjangoFilterBackend)
     filterset_fields = ("customer",)
     ordering_fields = ("ip_address", "lease_time", "mac_address")

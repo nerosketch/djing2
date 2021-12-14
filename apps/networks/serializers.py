@@ -2,6 +2,7 @@ from ipaddress import ip_network
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
+from netfields.rest_framework import MACAddressField
 
 from djing2.lib.mixins import BaseCustomModelSerializer
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
@@ -41,3 +42,8 @@ class CustomerIpLeaseModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = CustomerIpLeaseModel
         fields = "__all__"
+
+
+class FindCustomerByDeviceCredentialsParams(serializers.Serializer):
+    mac = MACAddressField()
+    dev_port = serializers.IntegerField(default=0)

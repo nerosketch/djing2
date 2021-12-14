@@ -160,36 +160,6 @@ class NetworkIpPool(BaseAbstractModel):
             )
         return None
 
-    class Meta:
-        db_table = "networks_ip_pool"
-        verbose_name = _("Network ip pool")
-        verbose_name_plural = _("Network ip pools")
-
-
-class CustomerIpLeaseModelQuerySet(models.QuerySet):
-    def active_leases(self) -> models.QuerySet:
-        """
-        Filter by time, where lease time does not expired
-        :return: new QuerySet
-        """
-        expire_time = datetime.now() - timedelta(seconds=DHCP_DEFAULT_LEASE_TIME)
-        return self.filter(lease_time__lt=expire_time)
-
-
-class CustomerIpLeaseModel(models.Model):
-    ip_address = models.GenericIPAddressField(_("Ip address"), unique=True)
-    pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
-    lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
-    mac_address = MACAddressField(verbose_name=_("Mac address"), null=True, default=None)
-    is_dynamic = models.BooleanField(_("Is dynamic"), default=False)
-    last_update = models.DateTimeField(_("Last update"), blank=True, null=True, default=None)
-
-    objects = CustomerIpLeaseModelQuerySet.as_manager()
-
-    def __str__(self):
-        return f"{self.ip_address} [{self.mac_address}]"
-
     @staticmethod
     def find_customer_by_device_credentials(device_mac: EUI, device_port: int = 0) -> Optional[Customer]:
         with connection.cursor() as cur:
@@ -231,6 +201,36 @@ class CustomerIpLeaseModel(models.Model):
             group_id=grp_id,
             last_connected_service_id=last_srv_id,
         )
+
+    class Meta:
+        db_table = "networks_ip_pool"
+        verbose_name = _("Network ip pool")
+        verbose_name_plural = _("Network ip pools")
+
+
+class CustomerIpLeaseModelQuerySet(models.QuerySet):
+    def active_leases(self) -> models.QuerySet:
+        """
+        Filter by time, where lease time does not expired
+        :return: new QuerySet
+        """
+        expire_time = datetime.now() - timedelta(seconds=DHCP_DEFAULT_LEASE_TIME)
+        return self.filter(lease_time__lt=expire_time)
+
+
+class CustomerIpLeaseModel(models.Model):
+    ip_address = models.GenericIPAddressField(_("Ip address"), unique=True)
+    pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
+    lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
+    mac_address = MACAddressField(verbose_name=_("Mac address"), null=True, default=None)
+    is_dynamic = models.BooleanField(_("Is dynamic"), default=False)
+    last_update = models.DateTimeField(_("Last update"), blank=True, null=True, default=None)
+
+    objects = CustomerIpLeaseModelQuerySet.as_manager()
+
+    def __str__(self):
+        return f"{self.ip_address} [{self.mac_address}]"
 
     @staticmethod
     def get_service_permit_by_ip(ip_addr: str) -> bool:
