@@ -164,7 +164,7 @@ msgid "Mac address"
 msgstr "MAC адрес"
 
 #: apps/networks/models.py:185 apps/networks/models.py:285
-msgid "Is synamic"
+msgid "Is dynamic"
 msgstr "Динамический"
 
 #: apps/networks/models.py:186 apps/networks/models.py:283
