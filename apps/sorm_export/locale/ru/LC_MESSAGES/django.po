@@ -17,48 +17,59 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: apps/sorm_export/hier_export/customer.py:106
 #: apps/sorm_export/hier_export/customer.py:110
-#: apps/sorm_export/hier_export/customer.py:179
+#: apps/sorm_export/hier_export/customer.py:114
 #, python-format
 msgid "Customer \"%s\" [%s] has no address"
 msgstr "Абонент не имеет адрес; \"%s\" [%s]"
 
-#: apps/sorm_export/hier_export/customer.py:113
+#: apps/sorm_export/hier_export/customer.py:117
 #, python-format
 msgid "Customer \"%s\" has address without parent address object"
 msgstr "Абонент не имеет в адресе родительского объекта; \"%s\""
 
-#: apps/sorm_export/hier_export/customer.py:123
+#: apps/sorm_export/hier_export/customer.py:126
 #, python-format
 msgid "Customer \"%s\" [%s] has no house nor office in address \"%s\""
 msgstr "Абонент не имеет ни офиса ни номера дома в адресе; \"%s\" [%s] \"%s\""
 
-#: apps/sorm_export/hier_export/customer.py:127
-#: apps/sorm_export/hier_export/customer.py:184
+#: apps/sorm_export/hier_export/customer.py:130
 #, python-format
 msgid "Customer \"%s\" with login \"%s\" address has no parent street element"
 msgstr "Абонент не имеет улицы в адресе; \"%s\" \"%s\""
 
-#: apps/sorm_export/hier_export/customer.py:267
+#: apps/sorm_export/hier_export/customer.py:213
+#, fuzzy, python-format
+msgid "Customer \"%s\" [%s] has no address in passport"
+msgstr "Абонент не имеет адреса регистрации; \"%s\" [%s]"
+
+#: apps/sorm_export/hier_export/customer.py:218
+#, fuzzy, python-format
+msgid ""
+"Customer \"%s\" with login \"%s\" passport registration address has no "
+"parent street element"
+msgstr "Абонент не имеет улицы в адресе регистрации; \"%s\" \"%s\""
+
+#: apps/sorm_export/hier_export/customer.py:315
 #, fuzzy, python-format
 msgid ""
 "Legal customer \"%s\" with login \"%s\" address has no parent street element"
 msgstr "Юридический абонент не имеет улицы в адресе; \"%s\" \"%s\""
 
-#: apps/sorm_export/hier_export/customer.py:276
+#: apps/sorm_export/hier_export/customer.py:324
 #, python-format
 msgid ""
 "Legal customer \"%s\" with login \"%s\" post address has no parent street "
 "element"
 msgstr "Юридический абонент не имеет улицы в адресе; \"%s\" \"%s\""
 
-#: apps/sorm_export/hier_export/customer.py:283
+#: apps/sorm_export/hier_export/customer.py:331
 #, python-format
 msgid ""
 "Legal customer \"%s\" with login \"%s\" delivery address has no parent "
 "street element"
-msgstr "Юридический абонент не имеет улицы в адресе доставки счёта; \"%s\" \"%s\""
+msgstr ""
+"Юридический абонент не имеет улицы в адресе доставки счёта; \"%s\" \"%s\""
 
 #: apps/sorm_export/models.py:34
 msgid "Not exported"
@@ -312,6 +323,12 @@ msgstr "Банковский расчётный счёт"
 #: apps/sorm_export/serializers/individual_entity_serializers.py:506
 msgid "Contact telephones"
 msgstr "Контактный телефоны"
+
+#: apps/sorm_export/serializers/individual_entity_serializers.py:664
+#, fuzzy
+#| msgid "Customer id"
+msgid "Customer ID"
+msgstr "ID Абонента"
 
 #: apps/sorm_export/serializers/individual_entity_serializers.py:677
 msgid "Contact info"

@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.auth.hashers import make_password
 from django.utils.translation import gettext as _
@@ -57,7 +57,7 @@ class CustomerModelSerializer(BaseAccountSerializer):
     current_service_title = serializers.CharField(source="current_service.service.title", read_only=True)
     service_id = serializers.IntegerField(source="current_service.service.id", read_only=True)
     raw_password = serializers.CharField(source="customerrawpassword.passw_text", read_only=True)
-    balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
+    balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False, read_only=True)
     create_date = serializers.CharField(read_only=True)
     lease_count = serializers.IntegerField(read_only=True)
 
@@ -119,23 +119,58 @@ class CustomerModelSerializer(BaseAccountSerializer):
     class Meta:
         model = models.Customer
         # depth = 1
-        exclude = [
+        exclude = (
             'groups',
             'user_permissions',
             'markers',
             'is_superuser',
-            'is_admin'
-        ]
+            'is_admin',
+        )
+
+
+class UserCustomerModelSerializer(CustomerModelSerializer):
+    marker_icons = None
+    group_title = None
+    full_name = None
+    raw_password = None
+
+    class Meta:
+        model = models.Customer
+        # depth = 1
+        exclude = (
+            'groups',
+            'user_permissions',
+            'markers',
+            'is_superuser',
+            'is_admin',
+            'description',
+            'sites',
+        )
+        read_only_fields = (
+            'current_service',
+            'group',
+            'balance',
+            'device',
+            'dev_port'
+            'is_active',
+            'is_dynamic_ip',
+            'gateway',
+            'markers',
+            'last_update_time'
+        )
 
 
 class PassportInfoModelSerializer(BaseCustomModelSerializer):
+    registration_address_title = serializers.CharField(source='full_address', read_only=True)
+
     @staticmethod
     def validate_date_of_acceptance(value):
         now = datetime.now().date()
+        old_date = datetime.now() - timedelta(days=365 * 100)
         if value >= now:
             raise serializers.ValidationError(_("You can't specify the future"))
-        elif value <= datetime(1900, 1, 1).date():
-            raise serializers.ValidationError(_("Too old date. Must be newer than 1900-01-01 00:00:00"))
+        elif value <= old_date.date():
+            raise serializers.ValidationError(_("Too old date. Must be newer than %s") % old_date.strftime('%Y-%m-%d %H:%M:%S'))
         return value
 
     class Meta:
