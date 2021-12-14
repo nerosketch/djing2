@@ -41,7 +41,7 @@ class Migration(migrations.Migration):
                             "customer",
                             models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="customers.Customer"),
                         ),
-                        ("is_dynamic", models.BooleanField("Is synamic", default=False)),
+                        ("is_dynamic", models.BooleanField("Is dynamic", default=False)),
                     ],
                     options={
                         "verbose_name": "IP lease",
