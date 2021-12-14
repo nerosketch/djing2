@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED 1
 ENV PYTHONOPTIMIZE 1
 #ENV APP_DEBUG ${APP_DEBUG}
 
-EXPOSE ${PORT}
+EXPOSE 8000
 
 RUN apt-get update
 RUN apt-get install -y python3-psycopg2 libsnmp-dev arping gcc gettext telnet uwsgi uwsgi-plugin-python3 --no-install-recommends
