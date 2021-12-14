@@ -18,9 +18,9 @@ COPY requirements.txt /var/www/djing2
 RUN pip install --no-cache-dir -r /var/www/djing2/requirements.txt
 #RUN apt-get purge -y --auto-remove gcc
 
-RUN chown -R www-data. /var/www/djing2
+RUN chown -R www-data. /var/www
 
-#USER www-data
+USER www-data
 
 WORKDIR /var/www/djing2
 
