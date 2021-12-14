@@ -21,7 +21,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def get_secret(fname: str, default=None) -> Optional[str]:
     try:
         secrets_dir_path = os.environ.get("SECRETS_DIR_PATH", "/run/secrets")
-        with open(os.path.join(secrets_dir_path, fname)) as f:
+        with open(os.path.join(secrets_dir_path, fname), 'r') as f:
             val = f.read().strip()
         return val
     except FileNotFoundError:
