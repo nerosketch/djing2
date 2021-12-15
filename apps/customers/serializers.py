@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import datetime, timedelta
 
@@ -176,6 +177,11 @@ class PassportInfoModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.PassportInfo
         exclude = ("customer",)
+        extra_kwargs = {
+            'distributor': {
+                'initial': os.getenv('CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR')
+            }
+        }
 
 
 class InvoiceForPaymentModelSerializer(BaseCustomModelSerializer):
