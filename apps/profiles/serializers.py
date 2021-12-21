@@ -10,7 +10,7 @@ from guardian.models import GroupObjectPermission, UserObjectPermission
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 
 from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
@@ -39,12 +39,14 @@ class BaseAccountSerializer(BaseCustomModelSerializer):
     full_name = serializers.CharField(source="get_full_name", read_only=True)
 
     def update(self, instance, validated_data):
-        if not self.context['request'].user.is_superuser:
+        request = self.context.get('request')
+        if not request.user.is_superuser:
             validated_data.pop('is_superuser', None)
             validated_data.pop('groups', None)
             validated_data.pop('user_permissions', None)
-        instance = super().update(instance, validated_data)
-        return instance
+        if request.user.is_superuser or request.user.pk == instance.pk:
+            return super().update(instance, validated_data)
+        raise PermissionDenied
 
     class Meta:
         model = BaseAccount
