@@ -112,7 +112,7 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
         ser = UserProfilePasswordSerializer()
         return Response(ser.data)
 
-    @action(detail=False, methods=('get',) permission_classes=[IsAuthenticated, IsAdminUser])
+    @action(detail=False, methods=('get',), permission_classes=[IsAuthenticated, IsAdminUser])
     def get_current_auth_permissions(self, request):
         return Response(list(request.user.get_all_permissions()))
 
