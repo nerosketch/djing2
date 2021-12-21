@@ -43,7 +43,7 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
         if self.request.user.is_superuser:
             return super().get_queryset()
         filter_kwargs = {
-            self.lookup_field: self.request.user.username
+            'sites': self.request.site
         }
         return queryset.filter(**filter_kwargs)
 
