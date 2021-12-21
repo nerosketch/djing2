@@ -39,14 +39,11 @@ class BaseAccountSerializer(BaseCustomModelSerializer):
     full_name = serializers.CharField(source="get_full_name", read_only=True)
 
     def update(self, instance, validated_data):
-        request = self.context.get('request')
-        if not request.user.is_superuser:
+        if not self.context['request'].user.is_superuser:
             validated_data.pop('is_superuser', None)
             validated_data.pop('groups', None)
             validated_data.pop('user_permissions', None)
-        if request.user.is_superuser or request.user.pk == instance.pk:
-            return super().update(instance, validated_data)
-        raise PermissionDenied
+        return super().update(instance, validated_data)
 
     class Meta:
         model = BaseAccount
@@ -71,6 +68,12 @@ class UserProfileSerializer(BaseAccountSerializer):
             birth_day=validated_data.get("birth_day"),
         )
         # return UserProfile.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        request = self.context.get('request')
+        if request.user.is_superuser or request.user.pk == instance.pk:
+            return super().update(instance, validated_data)
+        raise PermissionDenied
 
     def validate_password(self, value):
         try:
