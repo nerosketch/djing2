@@ -182,7 +182,7 @@ class CustomerIpLeaseModel(models.Model):
     lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
     mac_address = MACAddressField(verbose_name=_("Mac address"), null=True, default=None)
-    is_dynamic = models.BooleanField(_("Is synamic"), default=False)
+    is_dynamic = models.BooleanField(_("Is dynamic"), default=False)
     last_update = models.DateTimeField(_("Last update"), blank=True, null=True, default=None)
 
     objects = CustomerIpLeaseModelQuerySet.as_manager()
@@ -282,7 +282,7 @@ class CustomerIpLeaseLog(models.Model):
     lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)
     last_update = models.DateTimeField(_("Last update"), blank=True, null=True, default=None)
     mac_address = MACAddressField(verbose_name=_("Mac address"), null=True, default=None)
-    is_dynamic = models.BooleanField(_("Is synamic"), default=False)
+    is_dynamic = models.BooleanField(_("Is dynamic"), default=False)
     event_time = models.DateTimeField(_("Event time"), auto_now_add=True)
     end_use_time = models.DateTimeField(_("Lease end use time"), null=True, blank=True, default=None)
 

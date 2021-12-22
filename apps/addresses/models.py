@@ -116,8 +116,6 @@ class AddressModelManager(models.Manager):
 
 
 class AddressModel(IAddressObject, BaseAbstractModel):
-    _addr_full_title_cache = None
-
     parent_addr = models.ForeignKey(
         'self', verbose_name=_('Parent address'),
         on_delete=models.SET_DEFAULT,
@@ -182,12 +180,10 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         Из этой иерархии берём только первый попавшийся элемент
         с AddressModel.address_type = addr_type
         """
-        if self._addr_full_title_cache is None:
-            self._addr_full_title_cache = AddressModel.objects.get_address_by_type(
-                addr_id=safe_int(self.pk),
-                addr_type=addr_type
-            ).first()
-        return self._addr_full_title_cache
+        return AddressModel.objects.get_address_by_type(
+            addr_id=safe_int(self.pk),
+            addr_type=addr_type
+        ).order_by('-address_type').first()
 
     # @staticmethod
     # def get_streets_as_addr_objects():

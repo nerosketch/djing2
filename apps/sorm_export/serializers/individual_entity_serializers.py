@@ -118,6 +118,11 @@ class AddressObjectFormat(serializers.Serializer):
 
 
 class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
+    """
+     https://wiki.vasexperts.ru/doku.php?id=sorm:sorm3:sorm3_subs_dump:sorm3_subs_hier:start
+     #файл_выгрузки_адресов_точек_подключения_версия_1
+    """
+
     # 1
     ap_id = serializers.CharField(
         label=_('Access point id'),
@@ -131,9 +136,8 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
         required=True,
     )
     # 3
-    house = serializers.CharField(
+    house = serializers.IntegerField(
         label=_('House'),
-        max_length=32,
         required=True,
     )
     # 4
@@ -152,7 +156,6 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
         allow_blank=True,
         default=''
     )  # reserved
-
     # 6
     # reserved, ao - address object
     id_ao = serializers.CharField(default='', required=False)
@@ -169,32 +172,33 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
     # 10
     title = serializers.CharField(default='', required=False)  # reserved
     # 11
-    house_num = serializers.CharField(
+    house_num = serializers.IntegerField(
         label=_('House'),
-        max_length=32,
         required=False,
-        allow_blank=True,
         allow_null=True,
-        default=''
+        default=None
     )
     # 12
-    building = serializers.CharField(
+    building = serializers.IntegerField(
         label=_('Building'),
-        max_length=32,
         required=False,
-        default=''
+        allow_null=True,
+        default=None
     )
     # 13
     building_corpus = serializers.CharField(
         label=_('Building corpus'),
         max_length=32,
         required=False,
+        allow_null=True,
+        allow_blank=True,
         default=''
     )
     # 14
     full_description = serializers.CharField(
         label=_('Full description'),
         required=False,
+        allow_null=True,
         default=''
     )  # reserved
     # 15
@@ -257,7 +261,7 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
     )  # format DD.mm.YYYY
     # 6
     document_type = serializers.ChoiceField(
-        label=_('Document document type'),
+        label=_('Document type'),
         required=False,
         choices=CustomerDocumentTypeChoices.choices,
         default=CustomerDocumentTypeChoices.EMPTY,
@@ -337,22 +341,18 @@ class CustomerIndividualObjectFormat(serializers.Serializer):
     # 18
     ao_title = serializers.CharField(default='', required=False)  # reserved
     # 19
-    house_num = serializers.CharField(
+    house_num = serializers.IntegerField(
         label=_('House number'),
-        max_length=32,
         required=False,
         allow_null=True,
-        allow_blank=True,
-        default=''
+        default=None
     )
     # 20
-    building = serializers.CharField(
+    building = serializers.IntegerField(
         label=_('Building'),
-        max_length=32,
         required=False,
         allow_null=True,
-        allow_blank=True,
-        default=''
+        default=None
     )
     # 21
     building_corpus = serializers.CharField(
@@ -454,21 +454,19 @@ class CustomerLegalObjectFormat(serializers.Serializer):
     # №10
     ao_title = serializers.CharField(default='', required=False)  # reserved
     # №11
-    house = serializers.CharField(
+    house = serializers.IntegerField(
         label='Номер дома',
         help_text="содержит только номер дома, без типа а/о",
-        max_length=32,
+        default=None,
         required=False,
-        allow_blank=True,
-        default='',
+        allow_null=True,
     )
     # №12
-    building = serializers.CharField(
+    building = serializers.IntegerField(
         label=_('Building'),
         help_text='содержит только номер или букву здания, без типа а/о',
-        max_length=32,
-        default='',
-        allow_blank=True,
+        default=None,
+        allow_null=True,
         required=False
     )
     # №13
@@ -477,6 +475,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text='содержит только номер корпуса',
         max_length=32,
         default='',
+        allow_null=True,
         allow_blank=True,
         required=False
     )
@@ -545,21 +544,19 @@ class CustomerLegalObjectFormat(serializers.Serializer):
     # №24
     post_ao_title = serializers.CharField(default='', required=False)  # reserved
     # №25
-    post_house = serializers.CharField(
+    post_house = serializers.IntegerField(
         label='номер дома почтового адреса',
         help_text="содержит только номер дома, без типа а/о",
-        max_length=32,
-        default='',
-        allow_blank=True,
+        default=None,
+        allow_null=True,
         required=False,
     )
     # №26
-    post_building = serializers.CharField(
+    post_building = serializers.IntegerField(
         label='здание почтового адреса',
         help_text='содержит только номер или букву здания, без типа а/о',
-        max_length=32,
-        default='',
-        allow_blank=True,
+        default=None,
+        allow_null=True,
         required=False
     )
     # №27
@@ -568,6 +565,7 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         help_text='содержит только номер корпуса',
         max_length=32,
         default='',
+        allow_null=True,
         allow_blank=True,
         required=False
     )
@@ -611,21 +609,19 @@ class CustomerLegalObjectFormat(serializers.Serializer):
     # №35
     office_delivery_address_ao_title = serializers.CharField(default='', required=False)  # reserved
     # №36
-    office_delivery_address_house = serializers.CharField(
+    office_delivery_address_house = serializers.IntegerField(
         label='Номер дома адреса доставки счёта, строка',
         help_text="содержит только номер дома, без типа а/о",
-        max_length=32,
-        default='',
-        allow_blank=True,
+        default=None,
+        allow_null=True,
         required=False,
     )
     # №37
-    office_delivery_address_building = serializers.CharField(
+    office_delivery_address_building = serializers.IntegerField(
         label=_('Building'),
         help_text='содержит только номер или букву здания, без типа а/о',
-        max_length=32,
-        default='',
-        allow_blank=True,
+        default=None,
+        allow_null=True,
         required=False
     )
     # №38
@@ -633,7 +629,8 @@ class CustomerLegalObjectFormat(serializers.Serializer):
         label=_('Building corpus'),
         help_text='содержит только номер корпуса',
         max_length=32,
-        default='',
+        default=None,
+        allow_null=True,
         allow_blank=True,
         required=False
     )

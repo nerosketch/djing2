@@ -1,8 +1,12 @@
+import os
 from datetime import datetime
 from typing import Any
 
 import logging
 from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.mail import send_mail
+from rest_framework.exceptions import ValidationError
 
 from addresses.models import AddressModel, AddressModelTypes
 from customers.models import Customer, CustomerService, AdditionalTelephone
@@ -11,6 +15,8 @@ from devices.device_config.device_type_collection import DEVICE_TYPES
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
 from services.models import Service
 from devices.models import Device
+from networks.models import CustomerIpLeaseModel, NetworkIpPool
+from customer_contract.models import CustomerContractModel
 from sorm_export.hier_export.addresses import (
     export_address_object, get_remote_export_filename
 )
@@ -33,8 +39,6 @@ from sorm_export.management.commands._general_func import export_customer_lease_
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
 from sorm_export.tasks.task_export import task_export
 
-from networks.models import CustomerIpLeaseModel, NetworkIpPool
-
 
 def export_all_root_customers():
     customers = Customer.objects.filter(is_active=True)
@@ -43,19 +47,16 @@ def export_all_root_customers():
 
 
 def export_all_customer_contracts():
-    customers = Customer.objects.filter(is_active=True)
-    data, fname = export_contract(customers=customers, event_time=datetime.now())
+    contracts = CustomerContractModel.objects.select_related('customer').filter(customer__is_active=True)
+    data, fname = export_contract(contracts=contracts, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTRACT)
 
 
 def export_all_address_objects():
-    addr_objects = AddressModel.objects.exclude(
-        address_type__in=[
-            AddressModelTypes.HOUSE,
-            AddressModelTypes.OFFICE_NUM,
-            AddressModelTypes.BUILDING,
-            AddressModelTypes.CORPUS,
-        ]
+    addr_objects = AddressModel.objects.filter(
+        address_type__lte=AddressModelTypes.STREET,
+    ).exclude(
+        address_type=AddressModelTypes.UNKNOWN
     ).order_by(
         "fias_address_level",
         "fias_address_type"
@@ -90,7 +91,7 @@ def export_all_individual_customers():
 
 def export_all_legal_customers():
     customers = CustomerLegalModel.objects.all()
-    data, fname = export_legal_customer(customers=customers, event_time=datetime.now())
+    data, fname = export_legal_customer(legal_customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_LEGAL)
 
 
@@ -172,9 +173,9 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any):
         funcs = (
+            (export_all_root_customers, "Customers root export"),
             (export_customer_lease_binds, "Customer lease binds"),
             (export_all_address_objects, "Address objects export"),
-            (export_all_root_customers, "Customers root export"),
             (export_all_customer_contracts, "Customer contracts export"),
             (export_all_access_point_addresses, 'Customer ap export'),
             (export_all_individual_customers, "Customer individual export"),
@@ -188,10 +189,36 @@ class Command(BaseCommand):
             (export_all_ip_numbering, "Ip numbering export status"),
             (export_all_gateways, "Gateways export status"),
         )
+        fname = f"/tmp/export{datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')}.log"
+        logging.basicConfig(
+            filename=fname,
+            filemode='w',
+            level=logging.INFO
+        )
+        logging.info("Starting full export")
         for fn, msg in funcs:
             try:
-                self.stdout.write(msg, ending=' ')
+                logging.info(msg)
+                #self.stdout.write(msg, ending=' ')
                 fn()
-                self.stdout.write(self.style.SUCCESS("OK"))
+                #self.stdout.write(self.style.SUCCESS("OK"))
             except (ExportFailedStatus, FileNotFoundError) as err:
-                self.stdout.write("{} {}".format(err, self.style.ERROR("FAILED")))
+                logging.error(str(err))
+                #self.stderr.write(str(err))
+            except ValidationError as e:
+                logging.error(str(e.detail))
+                #self.stderr.write(str(e.detail))
+        logging.info("Finished full export")
+        sorm_reporting_emails = getattr(settings, 'SORM_REPORTING_EMAILS', None)
+        if sorm_reporting_emails is None:
+            return
+        with open(fname, 'r') as f:
+            content = f.read()
+            if 'ERROR' in content:
+                send_mail(
+                    'Отчёт выгрузки',
+                    content,
+                    getattr(settings, 'DEFAULT_FROM_EMAIL'),
+                    sorm_reporting_emails
+                )
+        os.remove(fname)
