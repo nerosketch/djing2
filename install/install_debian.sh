@@ -8,26 +8,13 @@ if [ ! -f /etc/debian_version ]; then
   exit 0
 fi
 
-
-ask_var() {
-  exec 3>&1
-  local answer=$(dialog --title " $1 " --clear --inputbox "$2:" 16 51 2>&1 1>&3)
-  if [ -n "$answer" ]; then
-    eval "$3='$answer'"
-    return 0
-  fi
-  echo 'password is required'
-  exit 1
-}
+source funcs.sh
 
 
 passw=''
 ask_var "Пароль" "Введите пароль" passw
 
 echo "Мой парль $passw"
-
-
-exit
 
 
 #while [ -n "$1" ]
@@ -85,6 +72,8 @@ sed -i "s/'PASSWORD': 'password',/'PASSWORD': '${dbpassw}',/" djing2/local_setti
 chmod +x ./manage.py
 ./manage.py migrate
 ./manage.py compilemessages -l ru
+
+
 secret_key=`./manage.py shell -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key().replace(\"&\", \"@\"))"`
 sed -i -r "s/^SECRET_KEY = '.+'$/SECRET_KEY = '${secret_key}'/" djing2/local_settings.py
 ./manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('+79781234567', 'admin', 'admin')"
