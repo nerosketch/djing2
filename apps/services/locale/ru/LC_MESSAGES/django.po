@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-09-07 15:41+0300\n"
+"POT-Creation-Date: 2021-11-22 16:06+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -87,54 +87,54 @@ msgstr "Группы"
 msgid "Create time"
 msgstr ""
 
-#: apps/services/models.py:102
+#: apps/services/models.py:101
 msgid "Service"
 msgstr "Услуга"
 
-#: apps/services/models.py:103
+#: apps/services/models.py:102
 msgid "Services"
 msgstr "Тарифы"
 
-#: apps/services/models.py:108
+#: apps/services/models.py:107
 msgid "Periodic pay name"
 msgstr "Название"
 
-#: apps/services/models.py:109
+#: apps/services/models.py:108
 msgid "When pay created"
 msgstr "Когда создан"
 
-#: apps/services/models.py:111
+#: apps/services/models.py:110
 msgid "Script type for calculations"
 msgstr "Алгоритм расчёта"
 
-#: apps/services/models.py:113
+#: apps/services/models.py:112
 msgid "Total amount"
 msgstr "Стоимость"
 
-#: apps/services/models.py:114
+#: apps/services/models.py:113
 msgid "Extra info"
 msgstr ""
 
-#: apps/services/models.py:157
+#: apps/services/models.py:156
 msgid "Periodic pay"
 msgstr "Периодический платёж"
 
-#: apps/services/models.py:158
+#: apps/services/models.py:157
 msgid "Periodic pays"
 msgstr "Периодические платежи"
 
-#: apps/services/models.py:163
+#: apps/services/models.py:161
 msgid "Shot pay name"
 msgstr "Название платежа"
 
-#: apps/services/models.py:164
+#: apps/services/models.py:162
 msgid "Total cost"
 msgstr "Общая стоимость"
 
-#: apps/services/models.py:166
+#: apps/services/models.py:164
 msgid "One shot pay type"
 msgstr "Тип одноразового платежа"
 
-#: apps/services/models.py:167
+#: apps/services/models.py:165
 msgid "Uses for callbacks before pay and after pay"
 msgstr "Используется для настраиваемых хуков перед и после платежа"

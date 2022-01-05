@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-09-07 15:41+0300\n"
+"POT-Creation-Date: 2021-11-22 16:06+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -16,69 +16,81 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
-#: apps/dynamicfields/models.py:15
+
+#: apps/dynamicfields/models.py:17
 #, python-format
 msgid "'%(value)s' value must be a float."
 msgstr "'%(value)s' значение должно быть числом с плавающей точкой."
 
-#: apps/dynamicfields/models.py:22
+#: apps/dynamicfields/models.py:24
 #, python-format
 msgid "Dynamic content field (up to %(max_length)s)"
 msgstr "Динамическое поле с контентом (up to %(max_length)s)"
 
-#: apps/dynamicfields/models.py:49
+#: apps/dynamicfields/models.py:42
 msgid "Char Field"
 msgstr "Строковое поле"
 
-#: apps/dynamicfields/models.py:50
+#: apps/dynamicfields/models.py:43
 msgid "Integer Field"
 msgstr "Числовое поле"
 
-#: apps/dynamicfields/models.py:51
+#: apps/dynamicfields/models.py:44
 msgid "Email Field"
 msgstr "Поле почты"
 
-#: apps/dynamicfields/models.py:52
+#: apps/dynamicfields/models.py:45
 msgid "Ip Field"
 msgstr "Поле ip адрес"
 
-#: apps/dynamicfields/models.py:53
+#: apps/dynamicfields/models.py:46
 msgid "Float Field"
 msgstr "Поле дробного числа"
 
-#: apps/dynamicfields/models.py:54
+#: apps/dynamicfields/models.py:47
 msgid "Slug Field"
 msgstr ""
 
-#: apps/dynamicfields/models.py:58
-msgid "Title"
-msgstr "Название"
-
-#: apps/dynamicfields/models.py:60
-msgid "Field type"
-msgstr "Тип поля"
-
+#: apps/dynamicfields/models.py:48
 msgid "Datetime field"
 msgstr "Поле даты времени"
 
+#: apps/dynamicfields/models.py:49
 msgid "Boolean field"
 msgstr "Флаг"
 
-#: apps/dynamicfields/models.py:66
-msgid "Groups"
-msgstr "Группы"
-
-msgid "Tags must contain only word characters (equivalent to [a-zA-Z0-9_]). And separated by comma."
-msgstr "Тэги должны содержать только буквы, цифры и знак подчёркивания (как [a-zA-Z0-9_]). И могут быть разделены запятой."
-
+#: apps/dynamicfields/models.py:53
 msgid "Default tag"
 msgstr "Тэг по умолчанию"
 
+#: apps/dynamicfields/models.py:54
 msgid "Uses IPTV"
 msgstr "Использует IPTV"
 
+#: apps/dynamicfields/models.py:62
+msgid ""
+"Tags must contain only word characters (equivalent to [a-zA-Z0-9_]). And "
+"separated by comma."
+msgstr ""
+"Тэги должны содержать только буквы, цифры и знак подчёркивания (как [a-zA-"
+"Z0-9_]). И могут быть разделены запятой."
+
+#: apps/dynamicfields/models.py:68
+msgid "Title"
+msgstr "Название"
+
+#: apps/dynamicfields/models.py:70
+msgid "Field type"
+msgstr "Тип поля"
+
+#: apps/dynamicfields/models.py:75
 msgid "System tag"
 msgstr "Системный тэг"
 
+#: apps/dynamicfields/models.py:80
 msgid "User tag"
 msgstr "Пользовательский тэг"
+
+#: apps/dynamicfields/models.py:89
+msgid "Groups"
+msgstr "Группы"

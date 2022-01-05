@@ -16,7 +16,7 @@ set expandtab
 set smartindent
 set autoindent
 set fileformat=unix
-"set t_Co=256
+set t_Co=256
 
 set showmatch                               " shows matching part of bracket pairs (), [], {}
 

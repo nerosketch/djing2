@@ -679,7 +679,9 @@ class Customer(IAddressContaining, BaseAccount):
 
     @property
     def full_address(self):
-        return str(self.address.full_title())
+        if self.address:
+            return str(self.address.full_title())
+        return '-'
 
     @staticmethod
     def set_service_group_accessory(group, wanted_service_ids: list, request):
@@ -763,13 +765,24 @@ class InvoiceForPayment(BaseAbstractModel):
         verbose_name_plural = _("Debts")
 
 
-class PassportInfo(BaseAbstractModel):
+class PassportInfo(IAddressContaining, BaseAbstractModel):
     series = models.CharField(_("Passport serial"), max_length=4, validators=(validators.integer_validator,))
     number = models.CharField(_("Passport number"), max_length=6, validators=(validators.integer_validator,))
     distributor = models.CharField(_("Distributor"), max_length=64)
     date_of_acceptance = models.DateField(_("Date of acceptance"))
     division_code = models.CharField(_("Division code"), max_length=64, null=True, blank=True, default=None)
     customer = models.OneToOneField(Customer, on_delete=models.CASCADE, blank=True, null=True, default=None)
+    registration_address = models.ForeignKey(
+        AddressModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
+    )
+
+    def get_address(self):
+        return self.registration_address
+
+    def full_address(self):
+        if self.get_address():
+            return str(self.get_address().full_title())
+        return '-'
 
     class Meta:
         db_table = "passport_info"

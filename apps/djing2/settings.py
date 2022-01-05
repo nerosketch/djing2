@@ -12,16 +12,16 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 from typing import Optional
+from pathlib import Path
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# from django.urls import reverse_lazy
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def get_secret(fname: str, default=None) -> Optional[str]:
     try:
         secrets_dir_path = os.environ.get("SECRETS_DIR_PATH", "/run/secrets")
-        with open(os.path.join(secrets_dir_path, fname)) as f:
+        with open(os.path.join(secrets_dir_path, fname), 'r') as f:
             val = f.read().strip()
         return val
     except FileNotFoundError:
@@ -354,3 +354,4 @@ RADIUSAPP_OPTIONS = {
     'secret': get_secret("RADIUS_SECRET").encode()
 }
 
+SORM_REPORTING_EMAILS = []
