@@ -192,9 +192,9 @@ authorize {
 authenticate {
     #python
 
-	Auth-Type PAP {
-		pap
-	}
+	#Auth-Type PAP {
+	#	pap
+	#}
 
 	#
 	#digest
@@ -207,32 +207,32 @@ authenticate {
 	#  Allow EAP authentication.
 	#eap
 
-    Auth-Type rest {
-        rest {
-            updated = 1
-        }
-        if (updated) {
-            ok
-        } else {
-            reject
-        }
-    }
+    #Auth-Type rest {
+    #    rest {
+    #        updated = 1
+    #    }
+    #    if (updated) {
+    #        ok
+    #    } else {
+    #        reject
+    #    }
+    #}
 }
 
 
 preacct {
-	preprocess
+	#preprocess
 
 	#acct_counters64
 
-	update request {
-	  	&FreeRADIUS-Acct-Session-Start-Time = "%{expr: %l - %{%{Acct-Session-Time}:-0} - %{%{Acct-Delay-Time}:-0}}"
-	}
+	#update request {
+	#  	&FreeRADIUS-Acct-Session-Start-Time = "%{expr: %l - %{%{Acct-Session-Time}:-0} - %{%{Acct-Delay-Time}:-0}}"
+	#}
 
 	acct_unique
 
 #	IPASS
-	suffix
+	#suffix
 #	ntdomain
 
 	#
@@ -264,7 +264,7 @@ accounting {
 	#exec
 
 	#  Filter attributes from the accounting response.
-	attr_filter.accounting_response
+	#attr_filter.accounting_response
 
 	#
 	#  See "Autz-Type Status-Server" for how this works.
