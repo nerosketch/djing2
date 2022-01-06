@@ -21,13 +21,6 @@ class JuniperVendorSpecific(IVendorSpecific):
             return int(param.split(":")[1].split("-")[1])
         return param
 
-    def get_auth_guest_session_response(self, guest_lease, data):
-        return {
-            "Framed-IP-Address": guest_lease.ip_addr,
-            # 'Acct-Interim-Interval': 300,
-            "User-Password": "SERVICE-GUEST",
-        }
-
     def get_auth_session_response(self, subscriber_lease, customer_service, customer, request_data):
         if not customer_service or not customer_service.service:
             service_option = "SERVICE-GUEST"

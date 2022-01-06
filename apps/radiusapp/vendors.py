@@ -67,10 +67,6 @@ class VendorManager:
         if self.vendor_class:
             return self.vendor_class.get_radius_unique_id(data)
 
-    def get_auth_guest_session_response(self, guest_lease: FetchSubscriberLeaseResponse, data) -> dict:
-        if self.vendor_class:
-            return self.vendor_class.get_auth_guest_session_response(guest_lease, data)
-
     def get_auth_session_response(
         self,
         subscriber_lease: FetchSubscriberLeaseResponse,
