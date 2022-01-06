@@ -33,9 +33,12 @@ class JuniperVendorSpecific(IVendorSpecific):
             service_option = f"SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})"
 
         res = {
-            "Framed-IP-Address": subscriber_lease.ip_addr,
             # 'Framed-IP-Netmask': '255.255.0.0',
             # User-Password - it is a crutch, for config in freeradius
             "User-Password": service_option,
         }
+        if subscriber_lease:
+            res.update({
+                "Framed-IP-Address": subscriber_lease.ip_addr,
+            })
         return res
