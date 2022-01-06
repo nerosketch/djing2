@@ -36,9 +36,8 @@ listen {
 listen {
 	type = auth
 
-	# ipv4addr = *
+	ipv4addr = 127.0.0.1
 	# ipv6addr = *
-	ipaddr = *
 	port = 0
 	interface = lo
 #	clients = per_socket_clients
@@ -75,7 +74,7 @@ listen {
 }
 
 listen {
-	ipaddr = *
+	ipaddr = 127.0.0.1
 	port = 0
 	type = acct
 	interface = lo
@@ -88,9 +87,6 @@ listen {
 
 
 authorize {
-
-	#python3
-
 	#filter_username
 
 	#filter_password
@@ -161,37 +157,46 @@ authorize {
     #    &REST-HTTP-Header := "${...api_token_header}"
         &REST-HTTP-Header := "Content-Type: application/json"
     }
-    rest
+    #rest
 
-    if (updated) {
-        ok
-    }
+    #if (updated) {
+    #    ok
+    #}
 
-    if (ok) {
+    #if (ok) {
         update control {
             Auth-Type := Accept
         }
         update reply {
-            &Acct-Interim-Interval := 19200
-            #&Service-Interim-Acct-Interval := 3600
-            #&Session-Timeout := 700 # - Not supported for dhcp, from juniper docs
-            #&Port-Limit := 1
+            # Juniper
+
+            &Acct-Interim-Interval := 7200
+            ##&Port-Limit := 1
             &ERX-Primary-DNS := 10.12.1.9
             &ERX-Secondary-DNS = 77.88.8.8
-            &ERX-Service-Activate:1 += "%{reply:User-Password}"
+            #&ERX-Service-Activate:1 += "%{reply:User-Password}"
+
+            # Mikrotik
+            &Mikrotik-Rate-Limit := "100M/100M"
+            #&Mikrotik-Host-IP = 172.16.3.8
+            #&Framed-IP-Address = 172.16.3.198
+            #&Framed-IP-Netmask = 255.255.255.0
+            &ERX-Primary-DNS := 10.12.1.9
+            &Mikrotik-Address-List := DjingUsersAllowed
+            &DHCP-NTP-Servers := 10.12.1.9
 
             User-Password !* ANY
         }
 
         if (!&reply:Session-Timeout) {
             update reply {
-                Session-Timeout := 7200
+                Session-Timeout := 21600 # 6h
             }
         }
 
-    } else {
-        reject
-    }
+    #} else {
+    #    reject
+    #}
 
     if (reject) {
         update control {
@@ -345,7 +350,7 @@ accounting {
 #	pgsql-voip
 
 	# For Exec-Program and Exec-Program-Wait
-	exec
+	#exec
 
 	#  Filter attributes from the accounting response.
 	attr_filter.accounting_response
@@ -362,25 +367,25 @@ accounting {
         &REST-HTTP-Header := "Content-Type: application/json"
     }
     #redis
-    rest
+    #rest
 
-    if (updated) {
-        ok
-    }
+    #if (updated) {
+    #    ok
+    #}
 
-    if (ok) {
-        update control {
-            Auth-Type := Accept
-        }
-    } else {
-        reject
-    }
+    #if (ok) {
+    #    update control {
+    #        Auth-Type := Accept
+    #    }
+    #} else {
+    #    reject
+    #}
 
-    if (reject) {
-        update control {
-            Auth-Type := Reject
-        }
-    }
+    #if (reject) {
+    #    update control {
+    #        Auth-Type := Reject
+    #    }
+    #}
 }
 
 
@@ -420,13 +425,20 @@ post-auth {
 	#  The session-state attributes are automatically deleted after
 	#  an Access-Reject or Access-Accept is sent.
 	#
-	update {
-		&reply: += &session-state:
+	#update {
+	#	&reply: += &session-state:
+	#}
+
+	update control {
+	    &Pool-Name := "v1757_10_152_52_80_28"
+	    #Pool-Name = "guest"
 	}
 
-	#  Get an address from the IP Pool.
-#	main_pool
+	# Calc pool by vlan if it exists
+	#python3
 
+    #  Get an address from the IP Pool.
+    main_pool
 
 	#  Create the CUI value and add the attribute to Access-Accept.
 	#  Uncomment the line below if *returning* the CUI.
@@ -451,10 +463,10 @@ post-auth {
 #	ldap
 
 	# For Exec-Program and Exec-Program-Wait
-	exec
+	#exec
 
 	#  Remove reply message if the response contains an EAP-Message
-	remove_reply_message_if_eap
+	#remove_reply_message_if_eap
 
 	#
 	#  Access-Reject packets are sent through the REJECT sub-section of the
@@ -465,7 +477,7 @@ post-auth {
 	#
 	#  The "session-state" attributes are not available here.
 	#
-	Post-Auth-Type REJECT {
+	#Post-Auth-Type REJECT {
 		# log failed authentications in SQL, too.
 		#-sql
 		#attr_filter.access_reject
@@ -476,16 +488,16 @@ post-auth {
 		#eap
 
 		#  Remove reply message if the response contains an EAP-Message
-		remove_reply_message_if_eap
-	}
+		#remove_reply_message_if_eap
+	#}
 
 	#
 	#  Filter access challenges.
 	#
-	Post-Auth-Type Challenge {
+#	Post-Auth-Type Challenge {
 #		remove_reply_message_if_eap
 #		attr_filter.access_challenge.post-auth
-	}
+#	}
 
 }
 }
