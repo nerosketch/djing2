@@ -70,14 +70,14 @@ def post_auth(p):
     if isinstance(p, (dict, OrderedDict)):
         vid = p.get('NAS-Port-Id')
         if vid is None:
-            radiusd.radlog(radiusd.L_INFO, '*** Empty vid ***')
+            radiusd.radlog(radiusd.L_WARN, '*** Empty vid ***')
             update_dict = guest_ret_dict
         else:
             vid = int(vid)
             pool_names = pools.pool_dict.get(vid)
 
             if pool_names is None or len(pool_names) < 1:
-                radiusd.radlog(radiusd.L_INFO, '*** Empty pool names ***')
+                radiusd.radlog(radiusd.L_WARN, '*** Empty pool names ***')
                 update_dict = guest_ret_dict
             else:
                 # FIXME: multiple names for vid
