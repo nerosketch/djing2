@@ -69,17 +69,17 @@ class VendorManager:
 
     def get_auth_session_response(
         self,
-        subscriber_lease: FetchSubscriberLeaseResponse,
         customer_service: Optional[CustomerService],
         customer: Customer,
         request_data,
+        subscriber_lease: Optional[FetchSubscriberLeaseResponse] = None,
     ) -> dict:
         if vendor_classes:
             return self.vendor_class.get_auth_session_response(
-                subscriber_lease=subscriber_lease,
                 customer_service=customer_service,
                 customer=customer,
                 request_data=request_data,
+                subscriber_lease=subscriber_lease,
             )
 
     def get_acct_status_type(self, request):

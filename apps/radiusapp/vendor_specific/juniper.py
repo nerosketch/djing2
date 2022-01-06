@@ -21,7 +21,7 @@ class JuniperVendorSpecific(IVendorSpecific):
             return int(param.split(":")[1].split("-")[1])
         return param
 
-    def get_auth_session_response(self, subscriber_lease, customer_service, customer, request_data):
+    def get_auth_session_response(self, customer_service, customer, request_data, subscriber_lease=None):
         if not customer_service or not customer_service.service:
             service_option = "SERVICE-GUEST"
         else:

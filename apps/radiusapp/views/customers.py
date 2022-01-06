@@ -1,6 +1,4 @@
-from typing import Optional
 from datetime import datetime
-from netaddr import EUI
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -73,36 +71,9 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         serializer = self.get_serializer()
         return Response(serializer.data)
 
-    def assign_guest(self, customer_mac: EUI, data: dict, customer_id: Optional[int] = None):
-        """
-        Assign no service session.
-
-        :param customer_mac: Customer device MAC address.
-        :param data: Other data from RADIUS server.
-        :param customer_id: customers.models.Customer model id.
-        :return: rest_framework Response.
-        """
-        if customer_id is None:
-            lease = CustomerRadiusSession.objects.assign_guest_session(customer_mac=customer_mac)
-        else:
-            customer_id = safe_int(customer_id)
-            if customer_id == 0:
-                return _bad_ret('Bad "customer_id" arg.')
-            lease = CustomerRadiusSession.objects.assign_guest_customer_session(
-                customer_id=customer_id, customer_mac=customer_mac
-            )
-        if lease is None:
-            # Not possible to assign guest ip, it's bad
-            return Response(
-                {"Reply-Message": "Not possible to assign guest ip, it's bad"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        # Creating guest session
-        r = self.vendor_manager.get_auth_guest_session_response(guest_lease=lease, data=data)
-        return Response(r)
-
     @action(methods=["post"], detail=False, url_path=r"auth/(?P<vendor_name>\w{1,32})")
     def auth(self, request, vendor_name=None):
+        # Just find customer by credentials from request
         vendor_manager = VendorManager(vendor_name=vendor_name)
         self.vendor_manager = vendor_manager
 
@@ -113,6 +84,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             return _bad_ret("Customer mac is required")
 
         customer = None
+        subscriber_lease = None
 
         if all([agent_remote_id, agent_circuit_id]):
             dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
@@ -125,43 +97,28 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 device_mac=dev_mac, device_port=dev_port
             )
         else:
-            # return _bad_ret("Bad opt82")
-            leases = CustomerIpLeaseModel.objects.filter(mac_address=str(customer_mac))
+            leases = CustomerIpLeaseModel.objects.filter(
+                mac_address=str(customer_mac)
+            ).select_related(
+                'customer',
+                'customer__current_service',
+                'customer__current_service__service',
+            )
             if leases.exists():
-                lease = leases.first()
-                customer = lease.customer if lease else None
+                subscriber_lease = leases.first()
+                customer = subscriber_lease.customer if subscriber_lease else None
             del leases
 
         if customer is None:
-            # If customer not found then assign guest session
-            return self.assign_guest(customer_mac=customer_mac, data=request.data)
+            return _bad_ret('Customer not found', custom_status=status.HTTP_404_NOT_FOUND)
 
-        vid = vendor_manager.get_vlan_id(request.data)
-
+        # Return response
         try:
-            subscriber_lease = CustomerRadiusSession.objects.fetch_subscriber_lease(
-                customer_mac=customer_mac,
-                customer_id=customer.pk,
-                customer_group=customer.group_id,
-                is_dynamic=True,
-                vid=vid,
-                pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
-            )
-            if subscriber_lease is None:
-                r = self.assign_guest(
-                    customer_mac=customer_mac,
-                    data=request.data,
-                    customer_id=customer.pk,
-                )
-                _update_lease_send_ws_signal(customer.pk)
-                return r
-
             response = vendor_manager.get_auth_session_response(
-                subscriber_lease=subscriber_lease,
-                # TODO: customer.active_service() - hit to db
                 customer_service=customer.active_service(),
                 customer=customer,
                 request_data=request.data,
+                subscriber_lease=subscriber_lease,
             )
             _update_lease_send_ws_signal(customer.pk)
             return Response(response)

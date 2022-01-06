@@ -19,7 +19,8 @@ class MikrotikVendorSpecific(IVendorSpecific):
     def get_vlan_id(self, data):
         return 0
 
-    def get_auth_session_response(self, subscriber_lease, customer_service, customer, request_data):
+    def get_auth_session_response(self, customer_service, customer, request_data, subscriber_lease=None):
+        # TODO: Make it
         return {
             "Framed-IP-Address": subscriber_lease.ip_addr,
             # 'Acct-Interim-Interval': 300,
