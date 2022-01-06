@@ -16,7 +16,7 @@ python3 {
 #        python_path="/path/to/python/files:/another_path/to/python_files/"
 	python_path="/usr/lib/python38.zip:/usr/lib/python3.8:/usr/lib/python3.8/lib-dynload:/usr/lib/python3.8/site-packages:/etc/raddb/mods-config/python3"
 
-	module = example
+	module = pymod
 
 	# Pass all VPS lists as a 6-tuple to the callbacks
 	# (request, reply, config, state, proxy_req, proxy_reply)

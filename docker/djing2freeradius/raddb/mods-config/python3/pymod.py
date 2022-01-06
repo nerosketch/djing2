@@ -5,6 +5,7 @@
 #
 # $Id: 5d437f446e8938beb1d458dc332e4081bf3d5144 $
 
+from collections import OrderedDict
 import radiusd
 import pools
 
@@ -54,49 +55,38 @@ def post_proxy(p):
     return radiusd.RLM_MODULE_OK
 
 
+guest_pool_name = pools.guest_net.get('name', 'DEFAULT')
+guest_ret_dict = {
+    'config': (('Pool-Name', guest_pool_name),)
+}
+
+
 def post_auth(p):
-    print("*** post_auth ***")
-    radiusd.radlog(radiusd.L_INFO, '*** post_auth ***')
-    update_dict = {
-        'config': (('Pool-Name', 'v104_10_152_2_0_23'),)
-    }
+    # print("*** post_auth ***")
 
-    return radiusd.RLM_MODULE_OK, update_dict
+    if isinstance(p, tuple):
+        p = OrderedDict(p)
 
-    if isinstance(p, dict):
+    if isinstance(p, (dict, OrderedDict)):
         vid = p.get('NAS-Port-Id')
         if vid is None:
-            guest_net_name = pools.guest_net.get('name', 'DEFAULT')
-            update_dict = {
-                'config': (('Pool-Name', guest_net_name),)
-            }
+            radiusd.radlog(radiusd.L_INFO, '*** Empty vid ***')
+            update_dict = guest_ret_dict
         else:
-            pool_net = pools.pool_dict.get(vid)
-            if pool_net is None:
-                update_dict = pools.guest_net
+            vid = int(vid)
+            pool_names = pools.pool_dict.get(vid)
+
+            if pool_names is None or len(pool_names) < 1:
+                radiusd.radlog(radiusd.L_INFO, '*** Empty pool names ***')
+                update_dict = guest_ret_dict
             else:
-                pool_net_name = pool_net.get('name')
-                if pool_net_name is None:
-                    guest_net_name = pools.guest_net.get('name', 'DEFAULT')
-                    update_dict = {
-                        'config': (('Pool-Name', guest_net_name),)
-                    }
-                else:
-                    update_dict = {
-                        'config': (('Pool-Name', pool_net_name),)
-                    }
-
-    # This is true when using pass_all_vps_dict
-    if isinstance(p, dict):
-        print("Request:", p["request"])
-        print("Reply:", p["reply"])
-        print("Config:", p["config"])
-        print("State:", p["session-state"])
-        print("Proxy-Request:", p["proxy-request"])
-        print("Proxy-Reply:", p["proxy-reply"])
-
+                # FIXME: multiple names for vid
+                update_dict = {
+                    'config': (('Pool-Name', pool_names[0]),)
+                }
     else:
-        print(p)
+        radiusd.radlog(radiusd.L_DBG_ERR_REQ, 'p Type='+str(type(p)))
+        return radiusd.RLM_MODULE_FAIL
 
     # Dictionary representing changes we want to make to the different VPS
     # update_dict = {
@@ -107,9 +97,6 @@ def post_auth(p):
     # }
 
     return radiusd.RLM_MODULE_OK, update_dict
-    # Alternatively, you could use the legacy 3-tuple output
-    # (only reply and config can be updated)
-    # return radiusd.RLM_MODULE_OK, update_dict["reply"], update_dict["config"]
 
 
 def recv_coa(p):

@@ -66,18 +66,4 @@ ippool main_pool {
 #	key = "%{NAS-IP-Address} %{NAS-Port}"
 }
 
-ippool guest {
-    filename = ${localstatedir}/pool/guest.ippool
-
-    range_start = 10.255.0.2
-    range_stop  = 10.255.0.254
-    netmask = 255.255.0.0
-
-    cache_size = 254
-    ip_index = ${localstatedir}/pool/guest.ipindex
-
-    override = no
-    #maximum_timeout = 0
-}
-
-
+$INCLUDE ippool.d/

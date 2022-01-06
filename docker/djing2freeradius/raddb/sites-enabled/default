@@ -429,16 +429,19 @@ post-auth {
 	#	&reply: += &session-state:
 	#}
 
-	update control {
-	    &Pool-Name := "v1757_10_152_52_80_28"
-	    #Pool-Name = "guest"
-	}
+	#update control {
+	#    &Pool-Name := "v152_10_152_32_0_20"
+	#    #Pool-Name = "guest"
+	#}
+	#update request {
+	#    &NAS-Port-Id := 145
+	#}
 
 	# Calc pool by vlan if it exists
-	#python3
+	python3
 
     #  Get an address from the IP Pool.
-    main_pool
+    $INCLUDE ../mods-enabled/pool_list.conf
 
 	#  Create the CUI value and add the attribute to Access-Accept.
 	#  Uncomment the line below if *returning* the CUI.
