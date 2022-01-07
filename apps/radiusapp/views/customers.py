@@ -96,6 +96,11 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
                 device_mac=dev_mac, device_port=dev_port
             )
+            # TODO: Optimize
+            subscriber_lease = CustomerIpLeaseModel.objects.filter(
+                customer=customer,
+                mac_address=customer_mac
+            ).first()
         else:
             leases = CustomerIpLeaseModel.objects.filter(
                 mac_address=str(customer_mac)
@@ -104,6 +109,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 'customer__current_service',
                 'customer__current_service__service',
             )
+            # TODO: Optimize
             if leases.exists():
                 subscriber_lease = leases.first()
                 customer = subscriber_lease.customer if subscriber_lease else None
@@ -114,14 +120,17 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
         # Return response
         try:
-            response = vendor_manager.get_auth_session_response(
+            r = vendor_manager.get_auth_session_response(
                 customer_service=customer.active_service(),
                 customer=customer,
                 request_data=request.data,
                 subscriber_lease=subscriber_lease,
             )
+            if r is None:
+                return Response('Empty auth session response', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response, code = r
             _update_lease_send_ws_signal(customer.pk)
-            return Response(response)
+            return Response(response, status=code)
         except LogicError as err:
             return _bad_ret(str(err))
 
@@ -131,12 +140,16 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         self.vendor_manager = vendor_manager
 
         request_type = vendor_manager.get_acct_status_type(request)
+        if request_type is None:
+            return self._acct_unknown(request)
         acct_status_type_map = {
             AcctStatusType.START.value: self._acct_start,
             AcctStatusType.STOP.value: self._acct_stop,
             AcctStatusType.UPDATE.value: self._acct_update,
         }
         request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
+        if request_type_fn is None:
+            return self._acct_unknown(request)
         return request_type_fn(request)
 
     def _update_counters(self, sessions, data: dict, last_event_time=None, **update_kwargs):
@@ -296,4 +309,4 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
     @staticmethod
     def _acct_unknown(_):
-        return _bad_ret("Bad Acct-Status-Type")
+        return _bad_ret("Bad Acct-Status-Type", custom_status=status.HTTP_204_NO_CONTENT)

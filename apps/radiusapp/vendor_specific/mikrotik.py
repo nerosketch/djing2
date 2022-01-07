@@ -1,6 +1,7 @@
 from netaddr import EUI
 from netfields.mac import mac_unix_common
 from radiusapp.vendor_base import IVendorSpecific
+from rest_framework import status
 
 
 class MikrotikVendorSpecific(IVendorSpecific):
@@ -26,4 +27,4 @@ class MikrotikVendorSpecific(IVendorSpecific):
             # 'Acct-Interim-Interval': 300,
             "Mikrotik-Rate-Limit": "1M/1M",
             "Mikrotik-Address-List": "DjingUsersAllowed",
-        }
+        }, status.HTTP_200_OK

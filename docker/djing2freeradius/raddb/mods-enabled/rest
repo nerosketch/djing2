@@ -12,7 +12,7 @@ rest {
 	    # -- 1
 		uri = "${..connect_uri}/api/radius/customer/auth/juniper/"
 		method = 'post'
-		# data = '{"User-Name": "%{User-Name}", "ERX-Dhcp-Mac-Addr": "%{ERX-Dhcp-Mac-Addr}", "ADSL-Agent-Remote-Id": "%{ADSL-Agent-Remote-Id}", "ADSL-Agent-Circuit-Id": "%{ADSL-Agent-Circuit-Id}", "NAS-Port-Id": "%{NAS-Port-Id}"}'
+		data = '{"User-Name": "%{User-Name}", "ERX-Dhcp-Mac-Addr": "%{ERX-Dhcp-Mac-Addr}", "ADSL-Agent-Remote-Id": "%{ADSL-Agent-Remote-Id}", "ADSL-Agent-Circuit-Id": "%{ADSL-Agent-Circuit-Id}", "NAS-Port-Id": "%{NAS-Port-Id}"}'
 		body = 'json'
 		tls = ${..tls}
 	}
@@ -25,8 +25,8 @@ rest {
 	}
 
 	preacct {
-	    # -- 3 first in accounting
-		uri = "${..connect_uri}/api/radius/customer/preacct/"
+	    # -- 3 first in accounting (not used)
+		#uri = "${..connect_uri}/api/radius/customer/preacct/"
 		method = 'post'
 		body = 'json'
 		tls = ${..tls}
@@ -40,7 +40,7 @@ rest {
 		#tls = ${..tls}
 	}
 	post-auth {
-	    # -- 2 After customer authorized
+	    # -- 2 After customer authorized (not used)
 		uri = "${..connect_uri}/user/%{User-Name}/mac/%{Called-Station-ID}?action=post-auth"
 		method = 'post'
 		tls = ${..tls}

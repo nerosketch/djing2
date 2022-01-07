@@ -139,13 +139,23 @@ authorize {
     #    &REST-HTTP-Header := "${...api_token_header}"
         &REST-HTTP-Header := "Content-Type: application/json"
     }
-    #rest
 
-    #if (updated) {
-    #    ok
-    #}
+    # DEBUG
+    # Customer 151412
+    update request {
+        &ADSL-Agent-Remote-Id := 0x00061c8779142633
+        &ADSL-Agent-Circuit-Id := 0x000074000719
+        &ERX-Dhcp-Mac-Addr := "00:50:79:66:68:00"
+        &NAS-Port-Id := 111
+    }
 
-    #if (ok) {
+    rest
+
+    if (updated) {
+        ok
+    }
+
+    if (ok) {
         update control {
             Auth-Type := Accept
         }
@@ -155,7 +165,7 @@ authorize {
             ##&Port-Limit := 1
             #&ERX-Primary-DNS := 10.12.1.9
             #&ERX-Secondary-DNS = 77.88.8.8
-            #&ERX-Service-Activate:1 += "%{reply:User-Password}"
+            &ERX-Service-Activate:1 += "%{reply:User-Password}"
 
             # Mikrotik
             &Mikrotik-Rate-Limit := "100M/100M"
@@ -174,10 +184,15 @@ authorize {
                 Session-Timeout := 21600 # 6h
             }
         }
-
-    #} else {
-    #    reject
-    #}
+    } elsif (userlock) {
+        # Return guest poo name
+        update control {
+            Auth-Type := Accept
+            &Pool-Name := "guest"
+        }
+    } else {
+        reject
+    }
 
     if (reject) {
         update control {
@@ -278,7 +293,7 @@ accounting {
         &REST-HTTP-Header := "Content-Type: application/json"
     }
     #redis
-    #rest
+    rest
 
     #if (updated) {
     #    ok
@@ -297,6 +312,7 @@ accounting {
     #        Auth-Type := Reject
     #    }
     #}
+    ok
 }
 
 
@@ -329,10 +345,17 @@ post-auth {
 	#}
 
 	# Calc pool by vlan if it exists
-	python3
+	if (!control:Pool-Name && request:NAS-Port-Id) {
+	    python3
+	}
+
+	if (control:Pool-Name == 'guest') {
+	    guest
+	}
 
     #  Get an address from the IP Pool.
-    $INCLUDE ../mods-enabled/pool_list.conf
-
+    if (!&reply:Framed-IP-Address) {
+        $INCLUDE ../mods-enabled/pool_list.conf
+    }
 }
 }

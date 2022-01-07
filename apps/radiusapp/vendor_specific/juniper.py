@@ -1,5 +1,6 @@
 from netaddr import EUI
 from radiusapp.vendor_base import IVendorSpecific
+from rest_framework import status
 
 
 class JuniperVendorSpecific(IVendorSpecific):
@@ -22,8 +23,10 @@ class JuniperVendorSpecific(IVendorSpecific):
         return param
 
     def get_auth_session_response(self, customer_service, customer, request_data, subscriber_lease=None):
+        status_code = status.HTTP_200_OK
         if not customer_service or not customer_service.service:
             service_option = "SERVICE-GUEST"
+            status_code = status.HTTP_403_FORBIDDEN
         else:
             service = customer_service.service
 
@@ -39,6 +42,6 @@ class JuniperVendorSpecific(IVendorSpecific):
         }
         if subscriber_lease:
             res.update({
-                "Framed-IP-Address": subscriber_lease.ip_addr,
+                "Framed-IP-Address": subscriber_lease.ip_address,
             })
-        return res
+        return res, status_code
