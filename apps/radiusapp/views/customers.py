@@ -32,6 +32,23 @@ def _update_lease_send_ws_signal(customer_id: int):
     send_data2ws({"eventType": WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value, "data": {"customer_id": customer_id}})
 
 
+def _acct_signal(new_session, dat, ip, customer_mac, radius_username, lease, customer, radius_unique_id, event_time=None):
+    if event_time is None:
+        event_time = datetime.now()
+    custom_signals.radius_acct_start_signal.send(
+        sender=CustomerRadiusSession,
+        instance=new_session,
+        data=dat,
+        ip_addr=ip,
+        customer_mac=customer_mac,
+        radius_username=radius_username,
+        customer_ip_lease=lease,
+        customer=customer,
+        radius_unique_id=radius_unique_id,
+        event_time=event_time,
+    )
+
+
 # TODO: Also protect requests by hash
 class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
     serializer_class = RadiusCustomerServiceRequestSerializer
@@ -198,15 +215,39 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if not radius_username:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        leases = CustomerIpLeaseModel.objects.filter(ip_address=ip).only("pk", "ip_address", "pool_id", "customer_id")
-        if not leases.exists():
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        lease = leases.first()
-        if lease is None:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
+        event_time = datetime.now()
+        lease, created = CustomerIpLeaseModel.objects.get_or_create(
+            ip_address=ip,
+            defaults={
+                'pool': 0000000000000000000000,
+                'customer': customer,
+                'mac_address': '0000000000000',
+                'is_dynamic': True,
+                'last_update': event_time
+            }
+        )
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
+        if created:
+            new_session = CustomerRadiusSession.objects.create(
+                customer=customer,
+                ip_lease=lease,
+                last_event_time=event_time,
+                radius_username=radius_username,
+                session_id=radius_unique_id,
+            )
+            customer_mac = vendor_manager.get_customer_mac(dat)
+            _acct_signal(
+                new_session=new_session,
+                dat=dat,
+                ip=ip,
+                customer_mac=customer_mac,
+                radius_username=radius_username,
+                lease=lease,
+                customer=customer,
+                radius_unique_id=radius_unique_id,
+                event_time=event_time
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
         sessions = CustomerRadiusSession.objects.filter(ip_lease=lease)
         if sessions.exists():
@@ -220,29 +261,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        customer = lease.customer
-        event_time = datetime.now()
-        new_session = CustomerRadiusSession.objects.create(
-            customer=customer,
-            ip_lease=lease,
-            last_event_time=event_time,
-            radius_username=radius_username,
-            session_id=radius_unique_id,
-        )
-        customer_mac = vendor_manager.get_customer_mac(dat)
-        if customer:
-            custom_signals.radius_auth_start_signal.send(
-                sender=CustomerRadiusSession,
-                instance=new_session,
-                data=dat,
-                ip_addr=ip,
-                customer_mac=customer_mac,
-                radius_username=radius_username,
-                customer_ip_lease=lease,
-                customer=customer,
-                radius_unique_id=radius_unique_id,
-                event_time=event_time,
-            )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_stop(self, request):
