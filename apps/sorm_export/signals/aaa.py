@@ -21,7 +21,7 @@ def _save_aaa_log(event_time: datetime, **serializer_keys):
     return save_radius_acct(event_time=event_time, data=ser.data)
 
 
-@receiver(custom_signals.radius_auth_start_signal, sender=CustomerRadiusSession)
+@receiver(custom_signals.radius_acct_start_signal, sender=CustomerRadiusSession)
 def signal_radius_session_acc_start(
     sender,
     instance: CustomerRadiusSession,

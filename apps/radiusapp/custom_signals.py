@@ -13,7 +13,7 @@ from django.dispatch import Signal
 #    customer - customers.models.Customer instance
 #    radius_unique_id - obviously
 #    event_time - datetime.now() on fetch request time
-radius_auth_start_signal = Signal()
+radius_acct_start_signal = Signal()
 
 
 # Sends while radius finished session
