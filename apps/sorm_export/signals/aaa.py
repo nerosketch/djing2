@@ -48,7 +48,7 @@ def signal_radius_session_acc_start(
     )
 
 
-@receiver(custom_signals.radius_auth_stop_signal, sender=CustomerRadiusSession)
+@receiver(custom_signals.radius_acct_stop_signal, sender=CustomerRadiusSession)
 def signal_radius_session_acct_stop(
     sender, instance_queryset, data: dict, ip_addr: str, radius_unique_id: str, customer_mac: EUI, *args, **kwargs
 ):

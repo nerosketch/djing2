@@ -219,7 +219,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         lease, created = CustomerIpLeaseModel.objects.get_or_create(
             ip_address=ip,
             defaults={
-                'pool': 0000000000000000000000,
+                'pool': pool,
                 'customer': customer,
                 'mac_address': '0000000000000',
                 'is_dynamic': True,
@@ -271,7 +271,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
         customer_mac = vendor_manager.get_customer_mac(dat)
         sessions = CustomerRadiusSession.objects.filter(ip_lease__ip_address=ip)
-        custom_signals.radius_auth_stop_signal.send(
+        custom_signals.radius_acct_stop_signal.send(
             sender=CustomerRadiusSession,
             instance_queryset=sessions,
             data=dat,

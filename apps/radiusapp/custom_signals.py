@@ -24,7 +24,7 @@ radius_acct_start_signal = Signal()
 #    ip_addr - customer ip address from radius request
 #    radius_unique_id - obviously
 #    customer_mac: netaddr.EUI instance -  customer device mac address from radius request
-radius_auth_stop_signal = Signal()
+radius_acct_stop_signal = Signal()
 
 
 # Sends while radius send acct-update event
