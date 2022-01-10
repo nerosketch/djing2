@@ -32,7 +32,8 @@ def _update_lease_send_ws_signal(customer_id: int):
     send_data2ws({"eventType": WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value, "data": {"customer_id": customer_id}})
 
 
-def _acct_signal(new_session, dat, ip, customer_mac, radius_username, lease, customer, radius_unique_id, event_time=None):
+def _acct_signal(dat, ip, customer_mac, radius_username, customer, radius_unique_id,
+                 new_session=None, lease=None, event_time=None):
     if event_time is None:
         event_time = datetime.now()
     custom_signals.radius_acct_start_signal.send(
@@ -239,17 +240,15 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
         if created:
             _acct_signal(
-                new_session=new_session,
-                dat=dat,
-                ip=ip,
+                # new_session=new_session,
+                dat=dat, ip=ip,
                 customer_mac=customer_mac,
                 radius_username=radius_username,
-                lease=lease,
+                # lease=lease,
                 customer=customer,
                 radius_unique_id=radius_unique_id,
                 event_time=datetime.now()
             )
-            return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
