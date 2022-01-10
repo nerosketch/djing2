@@ -1,7 +1,7 @@
 """radiusapp models file."""
 from typing import Optional
 from netaddr import EUI
-from django.db import models
+from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
@@ -159,6 +159,16 @@ class CustomerRadiusSession(models.Model):
     def h_output_packets(self):
         """Human readable output packets."""
         return _human_readable_int(num=self.output_packets, u="p")
+
+    @staticmethod
+    def create_lease_w_auto_pool_n_session(ip: str, mac: str, customer_id: int,
+                                           radius_uname: str, radius_unique_id: str) -> bool:
+        with connection.cursor() as cur:
+            cur.execute("SELECT create_lease_w_auto_pool_n_session"
+                        "(%s::inet, %s::macaddr, %s::integer, %s, %s::uuid)",
+                        (ip, mac, customer_id, radius_uname, radius_unique_id))
+            created = cur.fetchone()
+        return created
 
     def __str__(self):
         return f"{self.customer}: ({self.radius_username}) {self.ip_lease}"

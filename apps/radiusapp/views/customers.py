@@ -215,27 +215,29 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if not radius_username:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        event_time = datetime.now()
-        lease, created = CustomerIpLeaseModel.objects.get_or_create(
-            ip_address=ip,
-            defaults={
-                'pool': pool,
-                'customer': customer,
-                'mac_address': '0000000000000',
-                'is_dynamic': True,
-                'last_update': event_time
-            }
-        )
-        radius_unique_id = vendor_manager.get_radius_unique_id(dat)
-        if created:
-            new_session = CustomerRadiusSession.objects.create(
-                customer=customer,
-                ip_lease=lease,
-                last_event_time=event_time,
-                radius_username=radius_username,
-                session_id=radius_unique_id,
+        agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=request.data)
+        if all([agent_remote_id, agent_circuit_id]):
+            dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+                agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
             )
-            customer_mac = vendor_manager.get_customer_mac(dat)
+            customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                device_mac=dev_mac, device_port=dev_port
+            )
+        else:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        radius_unique_id = vendor_manager.get_radius_unique_id(dat)
+        customer_mac = vendor_manager.get_customer_mac(dat)
+
+        created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+            ip=ip,
+            mac=customer_mac,
+            customer_id=customer.pk,
+            radius_uname=radius_username,
+            radius_unique_id=radius_unique_id
+        )
+
+        if created:
             _acct_signal(
                 new_session=new_session,
                 dat=dat,
@@ -245,19 +247,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 lease=lease,
                 customer=customer,
                 radius_unique_id=radius_unique_id,
-                event_time=event_time
-            )
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        sessions = CustomerRadiusSession.objects.filter(ip_lease=lease)
-        if sessions.exists():
-            self._update_counters(
-                sessions=sessions,
-                data=dat,
-                customer=lease.customer,
-                radius_username=radius_username,
-                session_id=radius_unique_id,
-                last_event_time=datetime.now(),
+                event_time=datetime.now()
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
 
