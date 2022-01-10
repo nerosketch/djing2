@@ -31,7 +31,7 @@ radius_acct_stop_signal = Signal()
 # attrs:
 #    sender - CustomerRadiusSession
 #    instance - CustomerRadiusSession instance or None, if instance_queryset is None
-#    instance_queryset - CustomerRadiusSession Queryset in instance is None
+#    instance_queryset - CustomerRadiusSession Queryset if instance is None
 #    data - all raw data from radius request
 #    input_octets - count of input octets from start session to now
 #    output_octets - count of output octets from start session to now
