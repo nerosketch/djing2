@@ -184,7 +184,7 @@ authorize {
                 Session-Timeout := 21600 # 6h
             }
         }
-    } elsif (userlock) {
+    } elsif (userlock || notfound) {
         # Return guest poo name
         update control {
             Auth-Type := Accept
