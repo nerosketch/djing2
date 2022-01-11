@@ -192,16 +192,16 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             output_packets=v_out_pkt,
             **update_kwargs,
         )
-        custom_signals.radius_auth_update_signal.send(
-            sender=CustomerRadiusSession,
-            instance=None,
-            instance_queryset=sessions,
-            data=data,
-            input_octets=v_in_pkt,
-            output_octets=v_out_oct,
-            input_packets=v_in_pkt,
-            output_packets=v_out_pkt,
-        )
+        # custom_signals.radius_auth_update_signal.send(
+        #     sender=CustomerRadiusSession,
+        #     instance=None,
+        #     instance_queryset=sessions,
+        #     data=data,
+        #     input_octets=v_in_pkt,
+        #     output_octets=v_out_oct,
+        #     input_packets=v_in_pkt,
+        #     output_packets=v_out_pkt,
+        # )
 
     def _acct_start(self, request):
         """Accounting start handler."""
@@ -281,31 +281,14 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         )
         event_time = datetime.now()
         CustomerIpLeaseModel.objects.filter(ip_address=ip).update(last_update=event_time)
+
         if sessions.exists():
-            self._update_counters(sessions=sessions, data=dat)
-
-            for single_session in sessions.iterator():
-                # single_customer = single_session.customer
-
-                # If session and customer not same then free session
-                agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=dat)
-                if all([agent_remote_id, agent_circuit_id]):
-                    dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
-                        agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
-                    )
-                    if dev_mac is not None:
-                        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
-                            device_mac=dev_mac, device_port=dev_port
-                        )
-                        if (
-                            customer is not None
-                            and single_session.customer_id is not None
-                            and int(customer.pk) != int(single_session.customer_id)
-                        ):
-                            tasks.async_finish_session_task(radius_uname=single_session.radius_username)
-                            single_session.delete()
-                            return Response(status=status.HTTP_204_NO_CONTENT)
-
+            self._update_counters(
+                sessions=sessions,
+                data=dat,
+                last_event_time=event_time,
+                ip_lease__last_update=event_time
+            )
         else:
             radius_username = vendor_manager.get_radius_username(dat)
             if radius_username:
