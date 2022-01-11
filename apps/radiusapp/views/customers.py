@@ -282,18 +282,11 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         event_time = datetime.now()
         CustomerIpLeaseModel.objects.filter(ip_address=ip).update(last_update=event_time)
 
-        if sessions.exists():
-            self._update_counters(
-                sessions=sessions,
-                data=dat,
-                last_event_time=event_time,
-                ip_lease__last_update=event_time
-            )
-        else:
-            radius_username = vendor_manager.get_radius_username(dat)
-            if radius_username:
-                tasks.async_finish_session_task(radius_uname=radius_username)
-            return _bad_ret("No session found", custom_status=status.HTTP_200_OK)
+        self._update_counters(
+            sessions=sessions,
+            data=dat,
+            last_event_time=event_time,
+        )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
