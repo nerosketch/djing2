@@ -36,13 +36,12 @@ class CustomerAuthTestCase(CustomAPITestCase):
 
         self.client.logout()
 
-    def _send_request(self, vlan_id: int, cid: str, arid: str, existing_ip="10.152.164.2", mac="18c0.4d51.dee2"):
+    def _send_request(self, vlan_id: int, cid: str, arid: str, mac="18c0.4d51.dee2"):
         """Help method 4 send request to endpoint."""
         return self.post(
             "/api/radius/customer/auth/juniper/",
             {
                 "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
-                "Framed-IP-Address": {"value": [existing_ip]},
                 "NAS-Port-Id": {"value": [vlan_id]},
                 "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
                 "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
@@ -70,7 +69,7 @@ class CustomerAuthTestCase(CustomAPITestCase):
         # self.assertEqual(r1.data["Framed-IP-Address"], "10.152.64.2")
         self.assertEqual(r1.data["User-Password"], self.service_inet_str)
         r2 = self._send_request(
-            vlan_id=12, cid="0004008B0002", arid="0006121314151617", mac="18c0.4d51.dee4", existing_ip="10.152.16473"
+            vlan_id=12, cid="0004008B0002", arid="0006121314151617", mac="18c0.4d51.dee4"
         )
         self.assertEqual(r2.status_code, status.HTTP_200_OK)
         # self.assertEqual(r2.data["Framed-IP-Address"], "10.152.64.3")

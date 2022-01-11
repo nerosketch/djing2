@@ -15,7 +15,6 @@ from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
 from radiusapp import custom_signals
-from radiusapp import tasks
 
 
 def _gigaword_imp(num: int, gwords: int) -> int:

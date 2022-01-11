@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-# from django.test import override_settings
 from rest_framework.settings import api_settings
 from rest_framework.test import APITestCase
 from rest_framework import status
@@ -10,7 +9,6 @@ from services.models import Service
 from profiles.models import UserProfile
 
 
-# @override_settings(DEFAULT_TABLESPACE="ram")
 class CustomAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
         return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
