@@ -231,8 +231,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         customer_mac = vendor_manager.get_customer_mac(dat)
 
         created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
-            ip=ip,
-            mac=customer_mac,
+            ip=str(ip),
+            mac=str(customer_mac),
             customer_id=customer.pk,
             radius_uname=radius_username,
             radius_unique_id=radius_unique_id
@@ -299,4 +299,4 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
     @staticmethod
     def _acct_unknown(_):
-        return _bad_ret("Bad Acct-Status-Type", custom_status=status.HTTP_204_NO_CONTENT)
+        return _bad_ret("Bad Acct-Status-Type", custom_status=status.HTTP_200_OK)
