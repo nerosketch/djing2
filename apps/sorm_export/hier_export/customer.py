@@ -196,8 +196,15 @@ def date_contract_or_native(native_date: Union[datetime, date], contract_date: U
 
 
 def _report_about_customers_no_have_passport(customers_without_passports_qs):
-    for customer in customers_without_passports_qs.iterator():
-        logging.error(_('Customer "%s" [%s] has no passport info') % (customer, customer.username))
+    for customer in customers_without_passports_qs.prefetch_related('sites'):
+        # FIXME: That is Very very shit code block, i'm sorry :(
+        sites = customer.sites.all()
+        logging.error(
+            "%s; %s" % (
+                _('Customer "%s" [%s] has no passport info') % (customer, customer.username),
+                ' '.join(s.name for s in sites)
+            )
+        )
 
 
 @iterable_export_decorator
