@@ -43,6 +43,9 @@ msgstr "Абонент не имеет улицы в адресе; \"%s\" \"%s\"
 msgid "Customer \"%s\" [%s] has no address in passport"
 msgstr "Абонент не имеет адреса регистрации; \"%s\" [%s]"
 
+msgid "Customer \"%s\" [%s] has no passport info"
+msgstr "Абонент не имеет паспортных данных; \"%s\" [%s]"
+
 #: apps/sorm_export/hier_export/customer.py:218
 #, fuzzy, python-format
 msgid ""
