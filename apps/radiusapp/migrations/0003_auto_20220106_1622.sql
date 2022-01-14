@@ -15,8 +15,6 @@ CREATE OR REPLACE FUNCTION create_lease_w_auto_pool_n_session(
 )
 RETURNS bool
 AS $$
-DECLARE
-    aff_rows int;
 BEGIN
     WITH updated_lease AS (
         UPDATE networks_ip_leases SET last_update = now() WHERE ip_address = v_ip RETURNING id
@@ -34,10 +32,10 @@ BEGIN
         now(),
         now(),
         v_radius_username,
-        v_rad_uniq_id::uuid,
+        v_rad_uniq_id,
         0, 0, 0, 0, false,
         v_customer_id,
-        updated_lease.id
+        id
     FROM updated_lease
         ON CONFLICT (ip_lease_id) DO UPDATE SET last_event_time=now();
 
@@ -73,13 +71,12 @@ BEGIN
         now(),
         now(),
         v_radius_username,
-        v_rad_uniq_id::uuid,
+        v_rad_uniq_id,
         0, 0, 0, 0, false,
         v_customer_id,
-        new_lease.id
+        id
     FROM new_lease;
 
-    GET DIAGNOSTICS aff_rows := ROW_COUNT;
-    RETURN aff_rows > 0;
+    RETURN FOUND;
 END
 $$ LANGUAGE plpgsql VOLATILE;

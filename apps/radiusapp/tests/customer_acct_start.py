@@ -1,15 +1,23 @@
 from django.test import override_settings
+from django.db.models import signals
 from rest_framework import status
 from customers.tests.customer import CustomAPITestCase
 from devices.tests import DeviceTestCase
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from services.models import Service
-from networks.models import VlanIf, NetworkIpPool, NetworkIpPoolKind
+from networks.models import (
+    VlanIf, NetworkIpPool,
+    NetworkIpPoolKind, CustomerIpLeaseModel
+)
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
 class CustomerAcctStartTestCase(CustomAPITestCase):
     def setUp(self):
+        signals.post_save.disconnect()
+        signals.post_delete.disconnect()
+        signals.pre_save.disconnect()
+        signals.pre_delete.disconnect()
         """Set up data for this tests."""
         super().setUp()
         # default_vlan = VlanIf.objects.filter(vid=1).first()
@@ -74,17 +82,31 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
             f"/api/radius/session/get_by_lease/{lease_id}/",
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertIsNotNone(r.data, msg=r.content)
         return r.data
 
-    def _create_acct_session(self):
+    def _create_acct_session(self, vid=12, cid="0004008B0002", arid="0006121314151617",
+                             ip="10.152.64.6", mac="1c:c0:4d:95:d0:30"):
         r = self._send_request(
-            vlan_id=12,
-            cid="0004008B0002",
-            arid="0006121314151617",
-            ip="10.152.64.6",
-            mac="1c:c0:4d:95:d0:30"
+            vlan_id=vid,
+            cid=cid,
+            arid=arid,
+            ip=ip,
+            mac=mac,
         )
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
+
+    def _create_static_lease(self, ip):
+        new_lease_r = self.post(
+            "/api/networks/lease/", {
+                "customer": self.customer.pk,
+                "ip_address": ip,
+                # "mac_address": "",
+                "pool": self.pool.pk
+            }
+        )
+        self.assertEqual(new_lease_r.status_code, status.HTTP_201_CREATED, new_lease_r.content)
+        return new_lease_r
 
     def test_normal_new_session(self):
         self._create_acct_session()
@@ -94,8 +116,38 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
         lease = leases[0]
         self.assertEqual(lease['ip_address'], '10.152.64.6')
         self.assertEqual(lease['mac_address'], '1c:c0:4d:95:d0:30')
+        self.assertEqual(lease['customer'], self.customer.pk)
         self.assertEqual(lease['pool'], self.pool.pk)
 
         rad_ses = self._get_rad_session_by_lease(lease['id'])
+        self.assertEqual(rad_ses['customer'], self.customer.pk)
         self.assertEqual(rad_ses['radius_username'], "18c0.4d51.dee2-ae0:12-0004008B0002-0006121314151617")
         self.assertEqual(rad_ses['session_id'], "2ea5a184-3334-573b-d11d-c15417426f36")
+
+    def test_get_fixed_ip_without_mac(self):
+        ip = '10.152.64.16'
+        # Создаём статический lease с ip и без мака
+        self._create_static_lease(ip=ip)
+
+        # делаем запрос от радиуса
+        self._create_acct_session(
+            ip=ip
+        )
+
+        # Пробуем получить этот ip по оборудованию, которое назначено на учётку абонента
+        leases = self._get_ip_leases()
+        # На выходе должны получить эту lease
+        self.assertEqual(len(leases), 1, msg=leases)
+        lease = leases[0]
+        self.assertEqual(lease['ip_address'], ip)
+        self.assertIsNone(lease['mac_address'])
+        self.assertEqual(lease['pool'], self.pool.pk)
+        self.assertEqual(lease['customer'], self.customer.pk)
+
+        # Проверяем CustomerRadiusSession, должен был создаться для этой lease
+        rad_ses = self._get_rad_session_by_lease(lease['id'])
+        self.assertIsNotNone(rad_ses['radius_username'])
+        self.assertIsNotNone(rad_ses['session_id'])
+        self.assertEqual(rad_ses['ip_lease'], lease['id'])
+        self.assertEqual(rad_ses['ip_lease_ip'], lease['ip_address'])
+        self.assertEqual(rad_ses['customer'], self.customer.pk)
