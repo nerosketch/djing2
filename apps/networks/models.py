@@ -130,7 +130,7 @@ class NetworkIpPool(BaseAbstractModel):
 
     def get_free_ip(self) -> Optional[Union[IPv4Address, IPv6Address]]:
         """
-        Finds unused ip
+        Find unused ip
         :return:
         """
         with connection.cursor() as cur:
@@ -178,7 +178,7 @@ class CustomerIpLeaseModelQuerySet(models.QuerySet):
 
 class CustomerIpLeaseModel(models.Model):
     ip_address = models.GenericIPAddressField(_("Ip address"), unique=True)
-    pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
+    pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE, null=True)
     lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
     mac_address = MACAddressField(verbose_name=_("Mac address"), null=True, default=None)

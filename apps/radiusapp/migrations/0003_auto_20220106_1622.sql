@@ -45,17 +45,12 @@ BEGIN
     END IF;
 
     WITH new_lease AS (
-        WITH find_pool AS (
-            SELECT id
-            FROM networks_ip_pool
-            WHERE
-                v_ip <<= network
-            LIMIT 1
-        )
         INSERT INTO networks_ip_leases(
             ip_address, pool_id, mac_address, customer_id, is_dynamic, last_update
         )
-        (SELECT v_ip, id, v_mac, v_customer_id, true, now() FROM find_pool)
+        VALUES (v_ip, (
+            SELECT id FROM networks_ip_pool WHERE v_ip <<= network LIMIT 1
+        ), v_mac, v_customer_id, true, now())
         ON CONFLICT (ip_address, mac_address, pool_id, customer_id) DO UPDATE SET last_update=now() RETURNING id
     )
     INSERT INTO radius_customer_session(

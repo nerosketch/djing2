@@ -151,3 +151,24 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
         self.assertEqual(rad_ses['ip_lease'], lease['id'])
         self.assertEqual(rad_ses['ip_lease_ip'], lease['ip_address'])
         self.assertEqual(rad_ses['customer'], self.customer.pk)
+
+    # Проверить что происходит когда запрашиваем ip у другого абонента, не у того, кому он выдан.
+
+    def test_get_ip_with_not_existed_pool(self):
+        # Если выделен ip из несуществующей подсети то в билинге нужно показать этот неправильный ip
+        ip = '172.16.3.2'
+        mac = '11:c3:6d:95:d9:33'
+        self._create_acct_session(
+            ip=ip,
+            mac=mac
+        )
+
+        # Пробуем получить этот ip по оборудованию, которое назначено на учётку абонента
+        leases = self._get_ip_leases()
+        # На выходе должны получить эту lease без ip pool
+        self.assertEqual(len(leases), 1, msg=leases)
+        lease = leases[0]
+        self.assertEqual(lease['ip_address'], ip)
+        self.assertEqual(lease['mac_address'], mac)
+        self.assertIsNone(lease['pool'])
+        self.assertEqual(lease['customer'], self.customer.pk)
