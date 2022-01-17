@@ -195,6 +195,18 @@ def date_contract_or_native(native_date: Union[datetime, date], contract_date: U
     return max([native_date, contract_date])
 
 
+def _report_about_customers_no_have_passport(customers_without_passports_qs):
+    for customer in customers_without_passports_qs.prefetch_related('sites'):
+        # FIXME: That is Very very shit code block, i'm sorry :(
+        sites = customer.sites.all()
+        logging.error(
+            "%s; %s" % (
+                _('Customer "%s" [%s] has no passport info') % (customer, customer.username),
+                ' '.join(s.name for s in sites)
+            )
+        )
+
+
 @iterable_export_decorator
 def export_individual_customer(customers_queryset, event_time=None):
     """
@@ -208,6 +220,9 @@ def export_individual_customer(customers_queryset, event_time=None):
             logging.error('Customer "%s" has no passport info' % customer)
             return
         passport = customer.passportinfo
+        if not passport:
+            logging.error(_('Customer "%s" [%s] has no passport info') % (customer, customer.username))
+            return
         addr = passport.registration_address
         if not addr:
             logging.error(_('Customer "%s" [%s] has no address in passport') % (customer, customer.username))
@@ -272,6 +287,11 @@ def export_individual_customer(customers_queryset, event_time=None):
         customer_id=OuterRef('pk'),
         is_active=True
     ).values('start_service_time')
+
+    _report_about_customers_no_have_passport(
+        customers_queryset.filter(passportinfo=None)
+    )
+
     return (
         individual_entity_serializers.CustomerIndividualObjectFormat,
         gen,
