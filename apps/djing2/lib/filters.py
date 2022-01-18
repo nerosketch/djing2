@@ -1,7 +1,7 @@
 from rest_framework_guardian.filters import ObjectPermissionsFilter
 from rest_framework.filters import SearchFilter
 
-from apps.djing2.lib import safe_int
+from djing2.lib import safe_int
 
 
 class CustomObjectPermissionsFilter(ObjectPermissionsFilter):
