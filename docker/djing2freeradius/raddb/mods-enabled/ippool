@@ -4,11 +4,11 @@ ippool main_pool {
 	filename = ${localstatedir}/pool/db.ippool
 
 	range_start = 172.16.3.2
-	range_stop = 172.16.3.254
+	range_stop = 172.16.3.6
 
-	netmask = 255.255.255.0
+	netmask = 255.255.255.248
 
-	cache_size = 254
+	cache_size = 4
 
 	ip_index = ${localstatedir}/pool/db.ipindex
 
