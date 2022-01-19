@@ -355,3 +355,7 @@ RADIUSAPP_OPTIONS = {
 }
 
 SORM_REPORTING_EMAILS = []
+
+CONTRACTS_OPTIONS = {
+    'DEFAULT_TITLE': get_env('CONTRACT_DEFAULT_TITLE', 'Contract default title')
+}
