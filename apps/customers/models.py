@@ -211,6 +211,7 @@ class CustomerQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
         # Get all customers in specified location by their address_id.
 
         addr_ids_raw_query = AddressModel.objects.get_address_recursive_ids(addr_id=addr_id)
+        # FIXME:  "Cannot filter a query once a slice has been taken."
         return self.remove_filter('address_id').filter(address_id__in=addr_ids_raw_query)
 
 
