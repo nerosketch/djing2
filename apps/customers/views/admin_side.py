@@ -57,7 +57,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter, CustomSearchFilter]
     search_fields = ("username", "fio", "telephone", "description")
     filterset_fields = ("group", "device", "dev_port", "current_service__service", "address", "is_active")
-    ordering_fields = ("username", "fio", "house", "balance", "current_service_title", "birth_day")
+    ordering_fields = ("username", "fio", "balance", "current_service_title", "birth_day")
 
     def get_queryset(self):
         qs = super().get_queryset()

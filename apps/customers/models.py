@@ -175,20 +175,6 @@ class CustomerService(BaseAbstractModel):
         verbose_name_plural = _("Customer services")
 
 
-# Deprecated. Will be removed in future versions.
-class CustomerStreet(BaseAbstractModel):
-    name = models.CharField(max_length=64)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = "customer_street"
-        verbose_name = _("Street")
-        verbose_name_plural = _("Streets")
-
-
 class CustomerLog(BaseAbstractModel):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
@@ -419,9 +405,6 @@ class Customer(IAddressContaining, BaseAccount):
     # ip_address deprecated, marked for remove
     # ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     description = models.TextField(_("Comment"), null=True, blank=True, default=None)
-
-    # deprecated
-    house = models.CharField(_("House"), max_length=12, null=True, blank=True, default=None)
 
     device = models.ForeignKey("devices.Device", null=True, blank=True, default=None, on_delete=models.SET_NULL)
     dev_port = models.ForeignKey("devices.Port", null=True, blank=True, default=None, on_delete=models.SET_NULL)
@@ -770,7 +753,7 @@ class InvoiceForPayment(BaseAbstractModel):
 class PassportInfo(IAddressContaining, BaseAbstractModel):
     series = models.CharField(_("Passport serial"), max_length=4, validators=(validators.integer_validator,))
     number = models.CharField(_("Passport number"), max_length=6, validators=(validators.integer_validator,))
-    distributor = models.CharField(_("Distributor"), max_length=64)
+    distributor = models.CharField(_("Distributor"), max_length=512)
     date_of_acceptance = models.DateField(_("Date of acceptance"))
     division_code = models.CharField(_("Division code"), max_length=64, null=True, blank=True, default=None)
     customer = models.OneToOneField(Customer, on_delete=models.CASCADE, blank=True, null=True, default=None)
