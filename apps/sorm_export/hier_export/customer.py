@@ -38,11 +38,20 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
             customer_id=OuterRef('pk'),
             is_active=True
         ).values('start_service_time')
-        for customer in customers.annotate(legal_id=Subquery(lgl_sb), contract_date=Subquery(contracts_q)):
+        # FIXME: Абоненты без договора не выгружаются.
+        #  Нужно выгружать только тех, у кого есть основной договор.
+        #  Нужно сделать типы договоров, чтоб проверять только по 'основному'.
+        #  Типы договоров, например: Основной, iptv, voip, доп оборудование, и.т.д.
+        for customer in customers.annotate(
+            legal_id=Subquery(lgl_sb),
+            contract_date=Subquery(contracts_q)
+        ).exclude(
+            contract_date=None
+        ):
             yield {
                 "customer_id": customer.pk,
                 "legal_customer_id": customer.legal_id if customer.legal_id is not None else customer.pk,
-                "contract_start_date": customer.contract_date.date() if customer.contract_date else customer.create_date,
+                "contract_start_date": customer.contract_date.date(),
                 "customer_login": customer.username,
                 "communication_standard": CommunicationStandardChoices.ETHERNET.value,
             }
@@ -418,8 +427,8 @@ def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_t
 
     def _gen():
         legals = legal_customers.select_related('address', 'delivery_address', 'post_address')
-        for l in legals:
-            yield from _iter_customers(l)
+        for legal in legals:
+            yield from _iter_customers(legal)
 
     return (
         individual_entity_serializers.CustomerLegalObjectFormat,
