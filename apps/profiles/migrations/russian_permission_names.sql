@@ -127,14 +127,6 @@ execute _tp('fin_app', 'change_payalltimegateway', 'Может изменять 
 execute _tp('fin_app', 'delete_payalltimegateway', 'Может удалять платёжный шлюз AllTime');
 execute _tp('fin_app', 'view_payalltimegateway', 'Может видеть платёжный шлюз AllTime');
 execute _tp('fin_app', 'add_payalltimegateway', 'Может добавлять платёжный шлюз AllTime');
-execute _tp('msg_app', 'add_message', 'Может добавлять сообщения');
-execute _tp('msg_app', 'change_message', 'Может изменять сообщения');
-execute _tp('msg_app', 'delete_message', 'Может удалять сообщения');
-execute _tp('msg_app', 'view_message', 'Может видеть сообщения');
-execute _tp('msg_app', 'change_conversation', 'Может изменять беседу');
-execute _tp('msg_app', 'delete_conversation', 'Может удалять беседу');
-execute _tp('msg_app', 'view_conversation', 'Может видеть беседы');
-execute _tp('msg_app', 'add_conversation', 'Может добавлять беседу');
 execute _tp('networks', 'add_vlanif', 'Может добавлять vlan');
 execute _tp('networks', 'change_vlanif', 'Может изменять vlan');
 execute _tp('networks', 'delete_vlanif', 'Может удалять vlan');

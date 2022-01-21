@@ -86,7 +86,6 @@ INSTALLED_APPS = [
     "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
-    "msg_app.apps.MsgAppConfig",
     "traf_stat.apps.TrafStatConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
