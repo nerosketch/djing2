@@ -1,5 +1,5 @@
 import csv
-from uwsgi_tasks import cron, TaskExecutor, task
+from uwsgi_tasks import cron, TaskExecutor
 from django.conf import settings
 from django.db.models import Count
 from django.core.mail import EmailMessage
@@ -14,7 +14,12 @@ def report_customer_without_contracts_task():
     if not sorm_reporting_emails:
         return
 
-    customers = Customer.objects.annotate(ccc=Count('customercontractmodel')).filter(ccc=0, is_active=True)
+    customers = Customer.objects.annotate(
+        ccc=Count('customercontractmodel')
+    ).filter(
+        ccc=0,
+        is_active=True
+    )
     csv_buffer = StringIO()
 
     writer = csv.DictWriter(csv_buffer, fieldnames=['id', 'логин', 'фио'])
