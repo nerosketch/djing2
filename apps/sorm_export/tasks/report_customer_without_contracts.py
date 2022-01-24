@@ -9,7 +9,7 @@ from io import StringIO
 
 # @task(executor=TaskExecutor.SPOOLER)
 @cron(minute=13, hour=0, executor=TaskExecutor.SPOOLER)
-def report_customer_without_contracts_task():
+def report_customer_without_contracts_task(signal_number):
     sorm_reporting_emails = getattr(settings, 'SORM_REPORTING_EMAILS', None)
     if not sorm_reporting_emails:
         return
