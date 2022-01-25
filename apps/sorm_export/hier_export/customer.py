@@ -13,7 +13,12 @@ from sorm_export.models import (
     CustomerDocumentTypeChoices,
 )
 from sorm_export.serializers import individual_entity_serializers
-from .base import iterable_export_decorator, simple_export_decorator, format_fname, iterable_gen_export_decorator
+from .base import (
+    iterable_export_decorator,
+    simple_export_decorator,
+    format_fname,
+    iterable_gen_export_decorator
+)
 
 
 def _addr2str(addr: Optional[AddressModel]) -> str:
@@ -132,7 +137,9 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             addr_type=AddressModelTypes.OFFICE_NUM
         ))
         if not addr_house and not addr_office:
-            logging.error(_('Customer "%s" [%s] has no house nor office in address "%s"') % (customer, customer.username, addr))
+            logging.error(_('Customer "%s" [%s] has no house nor office in address "%s"') % (
+                customer, customer.username, addr
+            ))
             return
         addr_parent_region = _addr_get_parent(
             addr,
