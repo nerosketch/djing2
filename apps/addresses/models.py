@@ -21,20 +21,6 @@ class AddressModelTypes(models.IntegerChoices):
 
 
 class AddressModelQuerySet(models.QuerySet):
-    def filter_streets(self, locality_id: Optional[int] = None):
-        return self.filter_from_parent(
-            AddressModelTypes.STREET,
-            parent_id=locality_id,
-            parent_type=AddressModelTypes.LOCALITY
-        )
-
-    def filter_houses(self, street_id: Optional[int] = None):
-        return self.filter_from_parent(
-            AddressModelTypes.HOUSE,
-            parent_id=street_id,
-            parent_type=AddressModelTypes.STREET
-        )
-
     def filter_from_parent(self, addr_type: AddressModelTypes, *,
                            parent_id: Optional[int] = None,
                            parent_type: Optional[AddressModelTypes] = None):
