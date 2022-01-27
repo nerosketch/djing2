@@ -210,7 +210,7 @@ class Command(BaseCommand):
                 #self.stderr.write(str(e.detail))
         logging.info("Finished full export")
         sorm_reporting_emails = getattr(settings, 'SORM_REPORTING_EMAILS', None)
-        if sorm_reporting_emails is None:
+        if not sorm_reporting_emails:
             return
         with open(fname, 'r') as f:
             content = f.read()

@@ -69,11 +69,18 @@ class FilterQuerySetMixin:
     def filter_queryset(self, queryset: DeviceModelQuerySet):
         queryset = super().filter_queryset(queryset=queryset)
 
-        street = safe_int(self.request.query_params.get('street'))
-        if street > 0:
+        house = safe_int(self.request.query_params.get('house'))
+        if house > 0:
             return queryset.filter_devices_by_addr(
-                addr_id=street,
+                addr_id=house,
             )
+        else:
+            street = safe_int(self.request.query_params.get('street'))
+            if street > 0:
+                print('Filter by street:', street)
+                return queryset.filter_devices_by_addr(
+                    addr_id=street,
+                )
 
         address = safe_int(self.request.query_params.get('address'))
         if address > 0:
