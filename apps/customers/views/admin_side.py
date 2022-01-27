@@ -84,7 +84,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         "username",
         "fio",
         "balance",
-        "current_service_title",
+        "current_service__service__title",
         "birth_day"
     )
 
