@@ -5,11 +5,16 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from djing2.lib import safe_int
-from djing2.viewsets import DjingModelViewSet
+from djing2.viewsets import DjingModelViewSet, DjingAuthorizedViewSet
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.serializers import AddressModelSerializer
 from addresses.fias_socrbase import AddressFIASInfo
 
+
+class AddressParentFilters(DjingAuthorizedViewSet):
+    serializer_class = ...
+
+    def
 
 class AddressModelViewSet(DjingModelViewSet):
     queryset = AddressModel.objects.annotate(
@@ -34,6 +39,14 @@ class AddressModelViewSet(DjingModelViewSet):
         qs = self.get_queryset()
         parent_addr = safe_int(request.query_params.get('parent_addr'), default=None)
         qs = qs.filter_streets(locality_id=parent_addr)
+        ser = self.get_serializer(qs, many=True)
+        return Response(ser.data)
+
+    @action(methods=['get'], detail=False)
+    def get_all_children(self, request):
+        qs = self.get_queryset()
+        parent_addr = safe_int(request.query_params.get('parent_addr'), default=None)
+        qs = qs.filter_houses(street_id=parent_addr)
         ser = self.get_serializer(qs, many=True)
         return Response(ser.data)
 

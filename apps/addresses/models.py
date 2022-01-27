@@ -22,11 +22,31 @@ class AddressModelTypes(models.IntegerChoices):
 
 class AddressModelQuerySet(models.QuerySet):
     def filter_streets(self, locality_id: Optional[int] = None):
-        qs = self.filter(address_type=AddressModelTypes.STREET)
-        if locality_id is not None:
-            return qs.filter(
-                parent_addr__address_type=AddressModelTypes.LOCALITY,
-                parent_addr__id=locality_id
+        return self.filter_from_parent(
+            AddressModelTypes.STREET,
+            parent_id=locality_id,
+            parent_type=AddressModelTypes.LOCALITY
+        )
+
+    def filter_houses(self, street_id: Optional[int] = None):
+        return self.filter_from_parent(
+            AddressModelTypes.HOUSE,
+            parent_id=street_id,
+            parent_type=AddressModelTypes.STREET
+        )
+
+    def filter_from_parent(self, addr_type: AddressModelTypes, *,
+                           parent_id: Optional[int] = None,
+                           parent_type: Optional[AddressModelTypes] = None):
+        """Filters all children addresses of parent_id, with optional specified type and id."""
+        qs = self.filter(address_type=addr_type)
+        if parent_id is not None:
+            qs = qs.filter(
+                parent_addr_id=parent_id
+            )
+        if parent_type is not None:
+            qs = qs.filter(
+                parent_addr__address_type=parent_type,
             )
         return qs
 
@@ -61,14 +81,14 @@ class AddressModelManager(models.Manager):
     def get_address_recursive_ids(addr_id: int, direction_down=True):
         query = (
             "WITH RECURSIVE chain(id, parent_addr_id) AS ("
-                "SELECT id, parent_addr_id "
-                "FROM addresses "
-                "WHERE id = %s "
-                "UNION "
-                "SELECT a.id, a.parent_addr_id "
-                "FROM chain c "
-                "LEFT JOIN addresses a ON "
-                f"{'a.parent_addr_id = c.id' if direction_down else 'a.id = c.parent_addr_id'}"
+            "    SELECT id, parent_addr_id "
+            "    FROM addresses "
+            "    WHERE id = %s "
+            "    UNION "
+            "    SELECT a.id, a.parent_addr_id "
+            "    FROM chain c "
+            "    LEFT JOIN addresses a ON "
+            f"   {'a.parent_addr_id = c.id' if direction_down else 'a.id = c.parent_addr_id'}"
             ")"
             "SELECT id FROM chain WHERE id IS NOT NULL"
         )
@@ -85,13 +105,13 @@ class AddressModelManager(models.Manager):
     def get_address_full_title(addr_id: int) -> str:
         query = (
             "WITH RECURSIVE chain(id, parent_addr_id) AS ("
-                "SELECT id, parent_addr_id, fias_address_type, title "
-                "FROM addresses "
-                "WHERE id = %s "
-                "UNION "
-                "SELECT a.id, a.parent_addr_id, a.fias_address_type, a.title "
-                "FROM chain c "
-                "LEFT JOIN addresses a ON a.id = c.parent_addr_id"
+            "    SELECT id, parent_addr_id, fias_address_type, title "
+            "    FROM addresses "
+            "    WHERE id = %s "
+            "    UNION "
+            "    SELECT a.id, a.parent_addr_id, a.fias_address_type, a.title "
+            "    FROM chain c "
+            "    LEFT JOIN addresses a ON a.id = c.parent_addr_id"
             ")"
             "SELECT id, fias_address_type, title FROM chain WHERE id IS NOT NULL"
         )
