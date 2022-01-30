@@ -41,12 +41,18 @@ class CustomerServiceModelViewSet(DjingModelViewSet):
 
 
 class CustomerLogModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerLog.objects.select_related("customer", "author").order_by('-id')
+    queryset = models.CustomerLog.objects.select_related(
+        "customer",
+        "author"
+    ).order_by('-id')
     serializer_class = serializers.CustomerLogModelSerializer
     filterset_fields = ("customer",)
 
     def create(self, request, *args, **kwargs):
-        return Response(gettext("Not allowed to direct create Customer log"), status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            gettext("Not allowed to direct create Customer log"),
+            status=status.HTTP_403_FORBIDDEN
+        )
 
 
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
@@ -54,28 +60,60 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         "current_service", "current_service__service", "gateway"
     )
     serializer_class = serializers.CustomerModelSerializer
-    filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter, CustomSearchFilter]
-    search_fields = ("username", "fio", "telephone", "description")
-    filterset_fields = ("group", "device", "dev_port", "current_service__service", "address", "is_active")
-    ordering_fields = ("username", "fio", "balance", "current_service_title", "birth_day")
+    filter_backends = [
+        CustomObjectPermissionsFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        CustomSearchFilter
+    ]
+    search_fields = (
+        "username",
+        "fio",
+        "telephone",
+        "description"
+    )
+    filterset_fields = (
+        "group",
+        "device",
+        "dev_port",
+        "current_service__service",
+        "address",
+        "is_active"
+    )
+    ordering_fields = (
+        "username",
+        "fio",
+        "balance",
+        "current_service__service__title",
+        "birth_day"
+    )
 
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.annotate(
             lease_count=Count("customeripleasemodel"),
             octsum=Sum(
-                "traf_cache__octets", filter=Q(traf_cache__event_time__gt=datetime.now() - timedelta(minutes=5))
+                "traf_cache__octets",
+                filter=Q(
+                    traf_cache__event_time__gt=datetime.now() - timedelta(minutes=5)
+                )
             ),
         )
 
     def filter_queryset(self, queryset: CustomerQuerySet):
         queryset = super().filter_queryset(queryset=queryset)
 
-        street = safe_int(self.request.query_params.get('street'))
-        if street > 0:
+        house = safe_int(self.request.query_params.get('house'))
+        if house > 0:
             return queryset.filter_customers_by_addr(
-                addr_id=street,
+                addr_id=house,
             )
+        else:
+            street = safe_int(self.request.query_params.get('street'))
+            if street > 0:
+                return queryset.filter_customers_by_addr(
+                    addr_id=street,
+                )
 
         address = safe_int(self.request.query_params.get('address'))
         if address > 0:
@@ -86,7 +124,10 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         return queryset
 
     def perform_create(self, serializer, *args, **kwargs):
-        customer_instance = super().perform_create(serializer=serializer, sites=[self.request.site])
+        customer_instance = super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
         if customer_instance is not None:
             # log about creating new customer
             self.request.user.log(
@@ -134,7 +175,11 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             }
         try:
             customer.pick_service(
-                service=srv, author=request.user, comment=log_comment, deadline=deadline, allow_negative=True
+                service=srv,
+                author=request.user,
+                comment=log_comment,
+                deadline=deadline,
+                allow_negative=True
             )
         except models.NotEnoughMoney as e:
             return Response(data=str(e), status=status.HTTP_402_PAYMENT_REQUIRED)
@@ -196,7 +241,10 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         srv = cust_srv.service
         if srv is None:
-            return Response("Custom service has not service (Look at customers.views.admin_site)", status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                "Custom service has not service (Look at customers.views.admin_site)",
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # if customer.gateway:
         #     customer_gw_remove.delay(
@@ -243,7 +291,9 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         if cost > 0.0:
             self.check_permission_code(
-                request, "customers.can_add_balance", _("You can't top up an account with a positive amount")
+                request,
+                "customers.can_add_balance",
+                _("You can't top up an account with a positive amount")
             )
         else:
             self.check_permission_code(
@@ -256,7 +306,10 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
         comment = request.data.get("comment")
         if comment and len(comment) > 128:
-            return Response("comment parameter is too long", status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                "comment parameter is too long",
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         customer.add_balance(
             profile=request.user,
@@ -272,10 +325,17 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         # customer = self.get_object()
         group_id = request.data.get("group_id")
         if not group_id:
-            return Response("group_id is required", status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                "group_id is required",
+                status=status.HTTP_400_BAD_REQUEST
+            )
         group = get_object_or_404(Group, pk=int(group_id))
         wanted_service_ids = request.data.get("services")
-        models.Customer.set_service_group_accessory(group, wanted_service_ids, request)
+        models.Customer.set_service_group_accessory(
+            group,
+            wanted_service_ids,
+            request
+        )
         return Response()
 
     @action(detail=False)
@@ -284,8 +344,14 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         dev_id = request.query_params.get("device_id")
         port_id = request.query_params.get("port_id")
         if not all([dev_id, port_id]):
-            return Response("Required paramemters: [dev_id, port_id]", status=status.HTTP_400_BAD_REQUEST)
-        customers = models.Customer.objects.filter(device_id=dev_id, dev_port_id=port_id)
+            return Response(
+                "Required paramemters: [dev_id, port_id]",
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        customers = models.Customer.objects.filter(
+            device_id=dev_id,
+            dev_port_id=port_id
+        )
         return Response(self.get_serializer(customers, many=True).data)
 
     @action(methods=["put"], detail=True)
@@ -298,13 +364,22 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             # create passport info for customer
             serializer = serializers.PassportInfoModelSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            models.PassportInfo.objects.create(customer=self.get_object(), **serializer.validated_data)
+            models.PassportInfo.objects.create(
+                customer=self.get_object(),
+                **serializer.validated_data
+            )
             res_stat = status.HTTP_201_CREATED
         else:
             # change passport info for customer
-            serializer = serializers.PassportInfoModelSerializer(instance=passport_obj, data=request.data)
+            serializer = serializers.PassportInfoModelSerializer(
+                instance=passport_obj,
+                data=request.data
+            )
             serializer.is_valid(raise_exception=True)
-            serializer.update(instance=passport_obj, validated_data=serializer.validated_data)
+            serializer.update(
+                instance=passport_obj,
+                validated_data=serializer.validated_data
+            )
             res_stat = status.HTTP_200_OK
 
         return Response(serializer.data, status=res_stat)
@@ -318,7 +393,10 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
     @action(detail=False)
     def service_type_report(self, request):
-        self.check_permission_code(request, "customers.can_view_service_type_report")
+        self.check_permission_code(
+            request,
+            "customers.can_view_service_type_report"
+        )
         r = models.Customer.objects.customer_service_type_report()
         return Response(r)
 
@@ -507,7 +585,10 @@ class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelVi
 @api_view(['get'])
 def groups_with_customers(request):
     # TODO: Also filter by address
-    grps = Group.objects.annotate(customer_count=Count('customer')).filter(customer_count__gt=0).order_by('title')
+    grps = Group.objects.annotate(
+        customer_count=Count('customer')
+    ).filter(
+        customer_count__gt=0
+    ).order_by('title')
     ser = serializers.GroupsWithCustomersSerializer(instance=grps, many=True)
     return Response(ser.data)
-
