@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-from typing import Dict, Generator
+import os
+#  from typing import Dict, Generator
 from ipaddress import ip_network, IPv4Network
 import requests
-import time
 
 
 domain = "http://next.internet-service.com.ru/api"
@@ -73,6 +73,6 @@ def main():
 
 if __name__ == '__main__':
     s.headers.update({
-        'Authorization': 'Token ***REMOVED***'
+        'Authorization': f"Token {os.environ['token']}"
     })
     main()
