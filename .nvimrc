@@ -55,8 +55,8 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'mhinz/vim-signify', { 'branch': 'legacy' }
   endif
   " Colorscheme
-  Plug 'arcticicestudio/nord-vim'
-  Plug 'folke/tokyonight.nvim'
+  " Plug 'arcticicestudio/nord-vim'
+  " Plug 'folke/tokyonight.nvim'
 
   " Close buffers
   Plug 'Asheq/close-buffers.vim'
@@ -159,7 +159,7 @@ let g:is_posix = 1
 set noswapfile
 set nojoinspaces
 set wrap
-set linebreak
+" set linebreak
 set number
 set ttyfast
 set laststatus=2
@@ -431,7 +431,7 @@ function! LightLineFilename()
 endfunction
 
 let g:lightline = {
-      \ 'colorscheme': 'tokyonight',
+      \ 'colorscheme': 'gruvbox',
       \ 'active': {
       \   'left': [ ['mode'], ['filename'] ],
       \   'right': [ [], ['cocstatus', 'lineinfo', 'icongitbranch'] ]
