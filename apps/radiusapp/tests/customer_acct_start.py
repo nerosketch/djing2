@@ -7,7 +7,7 @@ from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from services.models import Service
 from networks.models import (
     VlanIf, NetworkIpPool,
-    NetworkIpPoolKind, CustomerIpLeaseModel
+    NetworkIpPoolKind
 )
 
 
