@@ -43,7 +43,7 @@ call plug#begin('~/.local/share/nvim/plugged')
   Plug 'eugen0329/vim-esearch'
   Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --no-bash' }
   Plug 'junegunn/fzf.vim'
-  Plug 'RRethy/vim-hexokinase', { 'do': 'make hexokinase' }
+  "Plug 'RRethy/vim-hexokinase', { 'do': 'make hexokinase' }
   Plug 'mileszs/ack.vim'
   Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}  " We recommend updating the parsers on update
   " Plug 'SirVer/ultisnips'
@@ -192,7 +192,7 @@ set statusline^=%{coc#status()}%{StatusDiagnostic()}
 let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
 let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
 
-"colorscheme gruvbox
+colorscheme gruvbox
 " colorscheme OceanicNext
 "let g:material_terminal_italics = 1
 " variants: default, palenight, ocean, lighter, darker, default-community,
