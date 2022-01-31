@@ -5,7 +5,7 @@ from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
-from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
+from networks.models import CustomerIpLeaseModel
 
 from radiusapp.radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
 
