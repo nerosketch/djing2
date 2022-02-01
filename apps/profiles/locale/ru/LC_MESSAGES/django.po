@@ -163,8 +163,8 @@ msgid "Details"
 msgstr "Подробности"
 
 #: apps/profiles/serializers.py:162 apps/profiles/views.py:144
-msgid "Unable to log in with provided credentials."
-msgstr "Не получается войти с предоставленными учётными данными."
+msgid "Unable to log in with provided credentials"
+msgstr "Не получается войти с предоставленными учётными данными"
 
 #: apps/profiles/serializers.py:174
 msgid "Must include \"username\" and \"password\"."
