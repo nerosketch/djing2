@@ -34,6 +34,10 @@ call plug#begin('~/.local/share/nvim/plugged')
   Plug 'neoclide/coc.nvim', {'branch': 'release'}
   " Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
   Plug 'preservim/nerdtree'
+
+  " NerdTree git functionality
+  Plug 'Xuyuanp/nerdtree-git-plugin'
+
   Plug 'itchyny/lightline.vim'
   Plug 'ryanoasis/vim-devicons'
   Plug 'ntk148v/auto-pairs'
