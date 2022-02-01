@@ -29,8 +29,12 @@ def get_pools():
     return r.json()
 
 
+def make_name(net: IPv4Network):
+    return str(net.network_address).replace('.', '_')
+
+
 def template(*, ip_start: str, ip_end: str, net: IPv4Network, vid: int) -> str:
-    pool_name = str(net.network_address).replace('.', '_')
+    pool_name = make_name(net)
     return """
 ippool v%(vid)d_%(pool_name)s_%(pref)d {
 	filename = ${localstatedir}/pool/%(pool_name)s.ippool
@@ -52,6 +56,7 @@ ippool v%(vid)d_%(pool_name)s_%(pref)d {
 
 
 def main():
+    names = []
     for pool in get_pools():
         is_dynamic = pool['is_dynamic']
         if not is_dynamic:
@@ -62,6 +67,12 @@ def main():
         #  gateway = pool['gateway']
         vid = pool['vid']
         net = ip_network(net)
+        name = f"v%(vid)d_%(pool_name)s_%(pref)d" % {
+            'vid': vid,
+            'pool_name': make_name(net),
+            'pref': net.prefixlen
+        }
+        names.append(name)
         r = template(
             ip_start=ip_start,
             ip_end=ip_end,
@@ -69,6 +80,8 @@ def main():
             vid=int(vid)
         )
         print(r)
+    for name in names:
+        print(name)
 
 
 if __name__ == '__main__':
