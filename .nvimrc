@@ -1,5 +1,5 @@
-" File              : init.vim
-" Author            : Kien Nguyen-Tuan <kiennt2609@gmail.com>
+" File              : .nvimrc
+" Initial Author    : Kien Nguyen-Tuan <kiennt2609@gmail.com>
 
 " Install nerd fonts
 if !isdirectory(expand("~/.fonts/NerdFonts/"))
