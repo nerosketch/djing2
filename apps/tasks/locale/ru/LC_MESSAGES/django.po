@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-09-07 15:41+0300\n"
+"POT-Creation-Date: 2021-11-22 16:06+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -25,176 +25,176 @@ msgstr "Задача"
 msgid "Task completed"
 msgstr "Задача завершена"
 
-#: apps/tasks/models.py:47
+#: apps/tasks/models.py:49
 msgid "State change data"
 msgstr "Состояние изменения задачи"
 
-#: apps/tasks/models.py:54
+#: apps/tasks/models.py:56
 msgid "Task change."
 msgstr "Изменение задачи."
 
-#: apps/tasks/models.py:55
+#: apps/tasks/models.py:57
 #, python-format
 msgid "\"%(field_name)s\" from \"%(from)s\" -> \"%(to)s\""
 msgstr "\"%(field_name)s\" с \"%(from)s\" -> \"%(to)s\""
 
-#: apps/tasks/models.py:84
+#: apps/tasks/models.py:86
 msgid "Completing task"
 msgstr "Завершение задачи"
 
-#: apps/tasks/models.py:86
+#: apps/tasks/models.py:88
 msgid "Failing task"
 msgstr "Изменение задачи"
 
-#: apps/tasks/models.py:89
+#: apps/tasks/models.py:91
 msgid "Restore state from confused to new"
 msgstr "Восстановление состояния с провеленного в новое"
 
-#: apps/tasks/models.py:91
+#: apps/tasks/models.py:93
 msgid "Change state from confused to completed"
 msgstr "Изменение состояния с проваленного в завершённое"
 
-#: apps/tasks/models.py:94
+#: apps/tasks/models.py:96
 msgid "Restore state from completed to new"
 msgstr "Восстановление состояния с завершённого в новое"
 
-#: apps/tasks/models.py:96
+#: apps/tasks/models.py:98
 msgid "Change state from completed to confused"
 msgstr "Изменение состояния с завершённого в проваленное"
 
-#: apps/tasks/models.py:97
+#: apps/tasks/models.py:99
 msgid "Unknown change action"
 msgstr "Не определённое действие"
 
-#: apps/tasks/models.py:119
+#: apps/tasks/models.py:121
 msgid "Change log"
 msgstr "Лог задач"
 
-#: apps/tasks/models.py:120
+#: apps/tasks/models.py:122
 msgid "Change logs"
 msgstr "Логи задач"
 
-#: apps/tasks/models.py:156
+#: apps/tasks/models.py:157
 msgid "Description"
 msgstr "Описание"
 
-#: apps/tasks/models.py:157
+#: apps/tasks/models.py:158
 msgid "Recipients"
 msgstr "Исполнители"
 
-#: apps/tasks/models.py:159
+#: apps/tasks/models.py:160
 msgid "Task author"
 msgstr "Автор задачи"
 
-#: apps/tasks/models.py:165
+#: apps/tasks/models.py:166
 msgid "Low"
 msgstr "Низкий"
 
-#: apps/tasks/models.py:166
+#: apps/tasks/models.py:167
 msgid "Average"
 msgstr "Средний"
 
-#: apps/tasks/models.py:167
+#: apps/tasks/models.py:168
 msgid "Higher"
 msgstr "Высший"
 
-#: apps/tasks/models.py:169
+#: apps/tasks/models.py:170
 msgid "A priority"
 msgstr "Приоритет"
 
-#: apps/tasks/models.py:170
+#: apps/tasks/models.py:171
 msgid "Reality"
 msgstr "Актуальность (дата, до которой нужно завершить задачу)"
 
-#: apps/tasks/models.py:171
+#: apps/tasks/models.py:172
 msgid "Date of create"
 msgstr "Дата создания"
 
-#: apps/tasks/models.py:176
+#: apps/tasks/models.py:177
 msgid "New"
 msgstr "Новая"
 
-#: apps/tasks/models.py:177
+#: apps/tasks/models.py:178
 msgid "Confused"
 msgstr "Провалена"
 
-#: apps/tasks/models.py:178
+#: apps/tasks/models.py:179
 msgid "Completed"
 msgstr "Выполнена"
 
-#: apps/tasks/models.py:180
+#: apps/tasks/models.py:181
 msgid "Condition"
 msgstr "Состояние"
 
-#: apps/tasks/models.py:195
+#: apps/tasks/models.py:196
 msgid "not chosen"
 msgstr "не выбрано"
 
-#: apps/tasks/models.py:196
+#: apps/tasks/models.py:197
 msgid "ip conflict"
 msgstr "Ip конфликт"
 
-#: apps/tasks/models.py:197
+#: apps/tasks/models.py:198
 msgid "yellow triangle"
 msgstr "жёлтый треугольник"
 
-#: apps/tasks/models.py:198
+#: apps/tasks/models.py:199
 msgid "red cross"
 msgstr "красный крестик"
 
-#: apps/tasks/models.py:199
+#: apps/tasks/models.py:200
 msgid "weak speed"
 msgstr "слабая скорость"
 
-#: apps/tasks/models.py:200
+#: apps/tasks/models.py:201
 msgid "cable break"
 msgstr "обрыв кабеля"
 
-#: apps/tasks/models.py:201
+#: apps/tasks/models.py:202
 msgid "connection"
 msgstr "подключение"
 
-#: apps/tasks/models.py:202
+#: apps/tasks/models.py:203
 msgid "periodic disappearance"
 msgstr "переодическое пропадание"
 
-#: apps/tasks/models.py:203
+#: apps/tasks/models.py:204
 msgid "router setup"
 msgstr "настройка роутера"
 
-#: apps/tasks/models.py:204
+#: apps/tasks/models.py:205
 msgid "configure onu"
 msgstr "настроить onu"
 
-#: apps/tasks/models.py:205
+#: apps/tasks/models.py:206
 msgid "crimp cable"
 msgstr "обжать кабель"
 
-#: apps/tasks/models.py:206
+#: apps/tasks/models.py:207
 msgid "Internet crash"
 msgstr "Нет интернета"
 
-#: apps/tasks/models.py:207
+#: apps/tasks/models.py:208
 msgid "other"
 msgstr "другое"
 
-#: apps/tasks/models.py:210
+#: apps/tasks/models.py:211
 msgid "The nature of the damage"
 msgstr "Характер поломки"
 
-#: apps/tasks/models.py:212
+#: apps/tasks/models.py:213
 msgid "Customer"
 msgstr "Абонент"
 
-#: apps/tasks/models.py:251
+#: apps/tasks/models.py:252
 msgid "Out date not specified"
 msgstr "Дата окончания не указана"
 
-#: apps/tasks/models.py:253
+#: apps/tasks/models.py:254
 msgid "time left"
 msgstr "осталось"
 
-#: apps/tasks/models.py:255
+#: apps/tasks/models.py:256
 #, python-format
 msgid "Expired timeout -%(time_left)s"
 msgstr "Время вышло -%(time_left)s"

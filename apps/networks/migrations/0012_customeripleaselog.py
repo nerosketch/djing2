@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ("lease_time", models.DateTimeField(auto_now_add=True, verbose_name="Lease time")),
                 ("last_update", models.DateTimeField(blank=True, default=None, null=True, verbose_name="Last update")),
                 ("mac_address", netfields.fields.MACAddressField(default=None, null=True, verbose_name="Mac address")),
-                ("is_dynamic", models.BooleanField(default=False, verbose_name="Is synamic")),
+                ("is_dynamic", models.BooleanField(default=False, verbose_name="Is dynamic")),
                 ("event_time", models.DateTimeField(auto_now_add=True, verbose_name="Event time")),
                 ("customer", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="customers.Customer")),
             ],

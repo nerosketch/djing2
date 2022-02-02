@@ -22,4 +22,5 @@ def upload_aaa_2_ftp(signal_number):
         send_file2ftp(fname=AAA_EXPORT_FNAME, remote_fname=f"ISP/aaa/aaa_v1_{format_fname(now)}.txt")
 
     # Erase all content
-    open(AAA_EXPORT_FNAME, 'w').close()
+    with open(AAA_EXPORT_FNAME, 'w'):
+        pass

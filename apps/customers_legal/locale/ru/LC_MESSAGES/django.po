@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-09-13 17:05+0300\n"
+"POT-Creation-Date: 2021-11-22 16:06+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,40 +17,94 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: apps/customers_legal/models.py:11
-msgid "Title"
-msgstr "Название"
-
-#: apps/customers_legal/models.py:13
-msgid "Legal customer group"
-msgstr "Группа Юр лица"
-
 #: apps/customers_legal/models.py:15
-msgid "Branches"
-msgstr "Филиалы"
+msgid "Not chosen"
+msgstr "Не выбрано"
 
-#: apps/customers_legal/models.py:17
-msgid "Comment"
-msgstr "Памятка"
-
-msgid "Bank identify code"
-msgstr "БИК"
-
-msgid "Correspondent account"
-msgstr "Корреспондентский счёт"
-
-msgid "Settlement account"
-msgstr "Расчётный счёт"
-
-msgid "State-level registration number"
-msgstr "ОГРН"
-
+#: apps/customers_legal/models.py:16
 msgid "Legal customer"
 msgstr "Юридическое лицо"
 
+#: apps/customers_legal/models.py:17
 msgid "Individual businessman"
 msgstr "ИП (индивидуальный предприниматель)"
 
+#: apps/customers_legal/models.py:18
 msgid "Self employed"
 msgstr "Самозанятый"
 
+#: apps/customers_legal/models.py:23
+msgid "Legal customer group"
+msgstr "Группа Юр лица"
+
+#: apps/customers_legal/models.py:25
+msgid "Branches"
+msgstr "Филиалы"
+
+#: apps/customers_legal/models.py:34
+msgid "Legal address"
+msgstr ""
+
+#: apps/customers_legal/models.py:37 apps/customers_legal/models.py:58
+msgid "Post number"
+msgstr ""
+
+#: apps/customers_legal/models.py:48
+msgid "Delivery address"
+msgstr ""
+
+#: apps/customers_legal/models.py:51
+msgid "Delivery address post index"
+msgstr ""
+
+#: apps/customers_legal/models.py:67
+msgid "Address"
+msgstr ""
+
+#: apps/customers_legal/models.py:71
+msgid "Legal type"
+msgstr "Тип юридическоого лица"
+
+#: apps/customers_legal/models.py:78
+msgid "Tax number"
+msgstr "Налоговый номер"
+
+#: apps/customers_legal/models.py:86
+msgid "State-level registration number"
+msgstr "ОГРН"
+
+#: apps/customers_legal/models.py:93
+msgid "Actual start time"
+msgstr "дата начала интервала, на котором актуальна информация"
+
+#: apps/customers_legal/models.py:97
+msgid "Actual end time"
+msgstr "дата окончания интервала, на котором актуальна информация"
+
+#: apps/customers_legal/models.py:102 apps/customers_legal/models.py:122
+msgid "Title"
+msgstr "Название"
+
+#: apps/customers_legal/models.py:104
+msgid "Comment"
+msgstr "Памятка"
+
+#: apps/customers_legal/models.py:128
+msgid "Bank account number"
+msgstr ""
+
+#: apps/customers_legal/models.py:133
+msgid "Bank identify code"
+msgstr "БИК"
+
+#: apps/customers_legal/models.py:137
+msgid "Correspondent account"
+msgstr "Корреспондентский счёт"
+
+#: apps/customers_legal/models.py:141
+msgid "Settlement account"
+msgstr "Расчётный счёт"
+
+#: apps/customers_legal/models.py:153
+msgid "Telephone"
+msgstr "Телефон"
