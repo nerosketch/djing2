@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-09-07 15:41+0300\n"
+"POT-Creation-Date: 2021-11-22 16:06+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,197 +17,189 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: apps/networks/models.py:25
+#: apps/networks/models.py:24
 msgid "Vlan title"
 msgstr "Название vlan"
 
-#: apps/networks/models.py:27
+#: apps/networks/models.py:26
 msgid "VID"
 msgstr ""
 
-#: apps/networks/models.py:30
+#: apps/networks/models.py:29
 msgid "Vid could not be less then 2"
 msgstr "VID не может быть меньше чем 2"
 
-#: apps/networks/models.py:31
+#: apps/networks/models.py:30
 msgid "Vid could not be more than 4094"
 msgstr "VID не может быть больше чем 4094"
 
-#: apps/networks/models.py:35
+#: apps/networks/models.py:34
 msgid "Is management"
 msgstr "Управляемый"
 
-#: apps/networks/models.py:44
+#: apps/networks/models.py:42
 msgid "Vlan"
 msgstr ""
 
-#: apps/networks/models.py:45
+#: apps/networks/models.py:43
 msgid "Vlan list"
 msgstr "Список vlan"
 
-#: apps/networks/models.py:49
+#: apps/networks/models.py:47
 msgid "Not defined"
 msgstr "Не определённая"
 
-#: apps/networks/models.py:50
+#: apps/networks/models.py:48
 msgid "Internet"
 msgstr "Интернет"
 
-#: apps/networks/models.py:51
+#: apps/networks/models.py:49
 msgid "Guest"
 msgstr "Гостевая"
 
-#: apps/networks/models.py:52
+#: apps/networks/models.py:50
 msgid "Trusted"
 msgstr "Доверенная"
 
-#: apps/networks/models.py:53
+#: apps/networks/models.py:51
 msgid "Devices"
 msgstr "Устройства"
 
-#: apps/networks/models.py:54
+#: apps/networks/models.py:52
 msgid "Admin"
 msgstr "Административная"
 
-#: apps/networks/models.py:59
+#: apps/networks/models.py:57
 msgid "Ip network address"
 msgstr "IP адрес сети"
 
-#: apps/networks/models.py:60
+#: apps/networks/models.py:58
 msgid ""
 "Ip address of network. For example: 192.168.1.0/24 or fde8:6789:1234:1::/64"
 msgstr "IP адрес подсети. На пример: 192.168.1.0/24 or fde8:6789:1234:1::/64"
 
-#: apps/networks/models.py:64
+#: apps/networks/models.py:62
 msgid "Kind of network"
 msgstr "Тип сети"
 
-#: apps/networks/models.py:66
+#: apps/networks/models.py:64
 msgid "Description"
 msgstr "Описание"
 
-#: apps/networks/models.py:68
+#: apps/networks/models.py:66
 msgid "Member groups"
 msgstr "Группы"
 
-#: apps/networks/models.py:72
+#: apps/networks/models.py:70
 msgid "Start work ip range"
 msgstr "Начальный ip из диапазона"
 
-#: apps/networks/models.py:73
+#: apps/networks/models.py:71
 msgid "End work ip range"
 msgstr "Конечный ip из диапазона"
 
-#: apps/networks/models.py:76
+#: apps/networks/models.py:74
 msgid "Vlan interface"
 msgstr "Интерфейс vlan"
 
-#: apps/networks/models.py:79
+#: apps/networks/models.py:77
 msgid "Gateway ip address"
 msgstr "IP адрес шлюза"
 
-#: apps/networks/models.py:81
+#: apps/networks/models.py:79
 msgid "Is dynamic"
 msgstr "Динамичейский"
 
-#: apps/networks/models.py:93
+#: apps/networks/models.py:91
 msgid "Network is invalid"
 msgstr "Подсеть не правильная"
 
-#: apps/networks/models.py:102
+#: apps/networks/models.py:100
 msgid "Ip start is invalid"
 msgstr "Начальный ip из диапазона не верный"
 
-#: apps/networks/models.py:106
+#: apps/networks/models.py:104
 msgid "Start ip must be in subnet of specified network"
 msgstr "Начальный ip должен быть в указанной подсети"
 
-#: apps/networks/models.py:108
+#: apps/networks/models.py:106
 msgid "Ip end is invalid"
 msgstr "Конечный ip из диапазона не верный"
 
-#: apps/networks/models.py:112
+#: apps/networks/models.py:110
 msgid "End ip must be in subnet of specified network"
 msgstr "Конечный ip должен быть в указанной подсети"
 
-#: apps/networks/models.py:116
+#: apps/networks/models.py:114
 msgid "Gateway ip must be in subnet of specified network"
 msgstr "Шлюз должен принадлежать текущей подсети"
 
-#: apps/networks/models.py:118
+#: apps/networks/models.py:116
 msgid "Gateway must not be in the range of allowed ips"
 msgstr "Шлюз не должен быть в диапазоне доступных ip"
 
-#: apps/networks/models.py:129
+#: apps/networks/models.py:127
 #, python-format
 msgid "Network is overlaps with %(other_network)s"
 msgstr "Подсеть пересекается с сетью '%(other_network)s'"
 
-#: apps/networks/models.py:167
+#: apps/networks/models.py:165
 msgid "Network ip pool"
 msgstr "Подсеть"
 
-#: apps/networks/models.py:168
+#: apps/networks/models.py:166
 msgid "Network ip pools"
 msgstr "Подсети"
 
-#: apps/networks/models.py:183 apps/networks/models.py:287
+#: apps/networks/models.py:180 apps/networks/models.py:281
 msgid "Ip address"
 msgstr "IP адрес"
 
-#: apps/networks/models.py:185 apps/networks/models.py:288
+#: apps/networks/models.py:182 apps/networks/models.py:282
 msgid "Lease time"
 msgstr "Время аредны"
 
-#: apps/networks/models.py:187 apps/networks/models.py:290
+#: apps/networks/models.py:184 apps/networks/models.py:284
 msgid "Mac address"
 msgstr "MAC адрес"
 
-#: apps/networks/models.py:188 apps/networks/models.py:291
-msgid "Is synamic"
-msgstr "Динамический"
-
-#: apps/networks/models.py:189 apps/networks/models.py:289
+#: apps/networks/models.py:186 apps/networks/models.py:283
 msgid "Last update"
 msgstr ""
 
-#: apps/networks/models.py:279
+#: apps/networks/models.py:274
 msgid "IP lease"
 msgstr "IP аренда"
 
-#: apps/networks/models.py:280
+#: apps/networks/models.py:275
 msgid "IP leases"
 msgstr "IP аренды"
 
-#: apps/networks/models.py:292
-#, fuzzy
-#| msgid "Lease time"
+#: apps/networks/models.py:286
 msgid "Event time"
-msgstr "Время аредны"
+msgstr "Время аренды"
 
-#: apps/networks/models.py:293
-#, fuzzy
-#| msgid "Lease time"
+#: apps/networks/models.py:287
 msgid "Lease end use time"
-msgstr "Время аредны"
+msgstr "Время окончания использования аренды"
 
 #: apps/networks/serializers.py:20
 msgid "Network can not be empty"
 msgstr "Сеть не может быть пустой"
 
-#: apps/networks/views.py:78
+#: apps/networks/views.py:79
 msgid "Ping ok"
 msgstr "Пингуется OK"
 
-#: apps/networks/views.py:84
+#: apps/networks/views.py:85
 msgid "arp ping ok"
 msgstr "Пингуется по ARP"
 
-#: apps/networks/views.py:86
+#: apps/networks/views.py:87
 msgid "no ping"
 msgstr "не пингуется"
 
-#: apps/networks/views.py:88
+#: apps/networks/views.py:89
 msgid "Process locked by another process"
 msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
 

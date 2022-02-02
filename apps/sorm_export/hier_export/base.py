@@ -1,6 +1,9 @@
+import logging
 from typing import Tuple, Any
 from datetime import datetime
 from functools import wraps
+
+from rest_framework.exceptions import ValidationError
 
 
 _fname_date_format = '%d%m%Y%H%M%S'
@@ -36,12 +39,16 @@ def iterable_export_decorator(fn):
         serializer_class, gen_fn, qs, fname = fn(event_time=event_time, *args, **kwargs)
 
         def _val_fn(dat):
-            ser = serializer_class(data=dat)
-            ser.is_valid(raise_exception=True)
-            return ser.data
+            try:
+                ser = serializer_class(data=dat)
+                ser.is_valid(raise_exception=True)
+                return ser.data
+            except ValidationError as e:
+                logging.error("%s | %s" % (e.detail, dat))
 
         res_data = map(gen_fn, qs.iterator())
         res_data = (_val_fn(r) for r in res_data if r)
+        res_data = (r for r in res_data if r)
 
         return res_data, fname
     return _wrapped
@@ -58,12 +65,16 @@ def iterable_gen_export_decorator(fn):
         serializer_class, gen_fn, fname = fn(event_time=event_time, *args, **kwargs)
 
         def _val_fn(dat):
-            ser = serializer_class(data=dat)
-            ser.is_valid(raise_exception=True)
-            return ser.data
+            try:
+                ser = serializer_class(data=dat)
+                ser.is_valid(raise_exception=True)
+                return ser.data
+            except ValidationError as e:
+                logging.error("%s | %s" % (e.detail, dat))
 
         # res_data = map(gen_fn, qs.iterator())
         res_data = (_val_fn(r) for r in gen_fn() if r)
+        res_data = (r for r in res_data if r)
 
         return res_data, fname
     return _wrapped

@@ -52,7 +52,7 @@ def customer_pre_save_signal(sender, instance: Customer, update_fields=None, **k
 
 
 @receiver(post_save, sender=Customer)
-def customer_post_save_signal(sender, instance: Customer, created=False, **kwrargs):
+def customer_post_save_signal(sender, instance: Customer, created=False, **kwargs):
     if created:
         # export customer root record
         customer_root_export_task(customer_id=instance.pk, event_time=datetime.now())

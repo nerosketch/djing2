@@ -18,7 +18,6 @@ api_urls = [
     path("networks/", include("networks.urls", namespace="networks")),
     path("dynamicfields/", include("dynamicfields.urls", namespace="dynamicfields")),
     path("fin/", include("fin_app.urls", namespace="fin_app")),
-    path("dial/", include("dials.urls", namespace="dials")),
     path("sites/", include("sitesapp.urls", namespace="sitesapp")),
     path("radius/", include("radiusapp.urls", namespace="radiusapp")),
     # path("sorm/", include("sorm_export.urls", namespace="sorm_export")),

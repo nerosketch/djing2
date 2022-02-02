@@ -28,7 +28,7 @@ def export_address_object(fias_addr: AddressModel, event_time=None):
 
     dat = {
         "address_id": str(fias_addr.pk),
-        "parent_id": str(fias_addr.parent_addr_id) if fias_addr.parent_addr_id is not None else "",
+        "parent_id": str(fias_addr.parent_addr_id) if fias_addr.parent_addr_id else "",
         "type_id": fias_addr.fias_address_type,
         "region_type": addr.addr_short_name,
         "title": fias_addr.title,
