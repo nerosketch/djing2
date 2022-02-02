@@ -30,10 +30,19 @@ class AddressModelViewSet(DjingModelViewSet):
         return Response(types)
 
     @action(methods=['get'], detail=False)
-    def get_streets(self, request):
-        qs = self.get_queryset()
+    def get_all_children(self, request):
+        # TODO: Make serializer for it
+        addr_type = safe_int(request.query_params.get('addr_type'), default=None)
+        if not addr_type:
+            return Response('addr_type parameter is required', status=status.HTTP_400_BAD_REQUEST)
         parent_addr = safe_int(request.query_params.get('parent_addr'), default=None)
-        qs = qs.filter_streets(locality_id=parent_addr)
+        parent_type = safe_int(request.query_params.get('parent_type'), default=None)
+        qs = self.get_queryset()
+        qs = qs.filter_from_parent(
+            addr_type,
+            parent_id=parent_addr,
+            parent_type=parent_type
+        )
         ser = self.get_serializer(qs, many=True)
         return Response(ser.data)
 

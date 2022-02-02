@@ -86,8 +86,6 @@ INSTALLED_APPS = [
     "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
-    "dials.apps.DialsConfig",
-    "msg_app.apps.MsgAppConfig",
     "traf_stat.apps.TrafStatConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
@@ -314,9 +312,6 @@ if not FIELD_ENCRYPTION_KEY:
     raise OSError("FIELD_ENCRYPTION_KEY secret not found")
 
 
-DIAL_RECORDS_PATH = "/var/spool/asterisk/monitor/"
-DIAL_RECORDS_EXTENSION = "wav"
-
 # DEBUG TOOLBAR
 if DEBUG:
     INTERNAL_IPS = ["127.0.0.1"]
@@ -355,3 +350,7 @@ RADIUSAPP_OPTIONS = {
 }
 
 SORM_REPORTING_EMAILS = []
+
+CONTRACTS_OPTIONS = {
+    'DEFAULT_TITLE': get_env('CONTRACT_DEFAULT_TITLE', 'Contract default title')
+}
