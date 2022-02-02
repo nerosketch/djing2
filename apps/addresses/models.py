@@ -21,12 +21,18 @@ class AddressModelTypes(models.IntegerChoices):
 
 
 class AddressModelQuerySet(models.QuerySet):
-    def filter_streets(self, locality_id: Optional[int] = None):
-        qs = self.filter(address_type=AddressModelTypes.STREET)
-        if locality_id is not None:
-            return qs.filter(
-                parent_addr__address_type=AddressModelTypes.LOCALITY,
-                parent_addr__id=locality_id
+    def filter_from_parent(self, addr_type: AddressModelTypes, *,
+                           parent_id: Optional[int] = None,
+                           parent_type: Optional[AddressModelTypes] = None):
+        """Filters all children addresses of parent_id, with optional specified type and id."""
+        qs = self.filter(address_type=addr_type)
+        if parent_id is not None:
+            qs = qs.filter(
+                parent_addr_id=parent_id
+            )
+        if parent_type is not None:
+            qs = qs.filter(
+                parent_addr__address_type=parent_type,
             )
         return qs
 
@@ -61,14 +67,14 @@ class AddressModelManager(models.Manager):
     def get_address_recursive_ids(addr_id: int, direction_down=True):
         query = (
             "WITH RECURSIVE chain(id, parent_addr_id) AS ("
-                "SELECT id, parent_addr_id "
-                "FROM addresses "
-                "WHERE id = %s "
-                "UNION "
-                "SELECT a.id, a.parent_addr_id "
-                "FROM chain c "
-                "LEFT JOIN addresses a ON "
-                f"{'a.parent_addr_id = c.id' if direction_down else 'a.id = c.parent_addr_id'}"
+            "    SELECT id, parent_addr_id "
+            "    FROM addresses "
+            "    WHERE id = %s "
+            "    UNION "
+            "    SELECT a.id, a.parent_addr_id "
+            "    FROM chain c "
+            "    LEFT JOIN addresses a ON "
+            f"   {'a.parent_addr_id = c.id' if direction_down else 'a.id = c.parent_addr_id'}"
             ")"
             "SELECT id FROM chain WHERE id IS NOT NULL"
         )
@@ -85,13 +91,13 @@ class AddressModelManager(models.Manager):
     def get_address_full_title(addr_id: int) -> str:
         query = (
             "WITH RECURSIVE chain(id, parent_addr_id) AS ("
-                "SELECT id, parent_addr_id, fias_address_type, title "
-                "FROM addresses "
-                "WHERE id = %s "
-                "UNION "
-                "SELECT a.id, a.parent_addr_id, a.fias_address_type, a.title "
-                "FROM chain c "
-                "LEFT JOIN addresses a ON a.id = c.parent_addr_id"
+            "    SELECT id, parent_addr_id, fias_address_type, title "
+            "    FROM addresses "
+            "    WHERE id = %s "
+            "    UNION "
+            "    SELECT a.id, a.parent_addr_id, a.fias_address_type, a.title "
+            "    FROM chain c "
+            "    LEFT JOIN addresses a ON a.id = c.parent_addr_id"
             ")"
             "SELECT id, fias_address_type, title FROM chain WHERE id IS NOT NULL"
         )
@@ -112,12 +118,10 @@ class AddressModelManager(models.Manager):
 
         title_hierarchy = list(_accumulate_addrs_hierarchy())
         title_hierarchy.reverse()
-        return ', '.join(f'{short_title}. {title}' for _, short_title, title in title_hierarchy)
+        return ', '.join('%s %s' % (short_title, title) for _, short_title, title in title_hierarchy)
 
 
 class AddressModel(IAddressObject, BaseAbstractModel):
-    _addr_full_title_cache = None
-
     parent_addr = models.ForeignKey(
         'self', verbose_name=_('Parent address'),
         on_delete=models.SET_DEFAULT,
@@ -166,6 +170,14 @@ class AddressModel(IAddressObject, BaseAbstractModel):
             addr_id=addr_id
         )
 
+    def get_id_hierarchy_gen(self):
+        ids_tree_query = AddressModelManager.get_address_recursive_ids(
+            addr_id=self.pk,
+            direction_down=False
+        )
+        for addr in AddressModel.objects.filter(pk__in=ids_tree_query):
+            yield addr.pk
+
     def get_address_item_by_type(self, addr_type: AddressModelTypes) -> Optional[AddressModel]:
         """
         :param addr_type: Id нижнего адресного объекта.
@@ -174,12 +186,10 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         Из этой иерархии берём только первый попавшийся элемент
         с AddressModel.address_type = addr_type
         """
-        if self._addr_full_title_cache is None:
-            self._addr_full_title_cache = AddressModel.objects.get_address_by_type(
-                addr_id=safe_int(self.pk),
-                addr_type=addr_type
-            ).first()
-        return self._addr_full_title_cache
+        return AddressModel.objects.get_address_by_type(
+            addr_id=safe_int(self.pk),
+            addr_type=addr_type
+        ).order_by('-address_type').first()
 
     # @staticmethod
     # def get_streets_as_addr_objects():

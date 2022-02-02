@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from django.db.models import Count
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -11,7 +12,9 @@ from addresses.fias_socrbase import AddressFIASInfo
 
 
 class AddressModelViewSet(DjingModelViewSet):
-    queryset = AddressModel.objects.order_by('title')
+    queryset = AddressModel.objects.annotate(
+        children_count=Count('addressmodel'),
+    ).order_by('title')
     serializer_class = AddressModelSerializer
     filterset_fields = ['address_type', 'parent_addr', 'fias_address_type']
 
@@ -27,10 +30,19 @@ class AddressModelViewSet(DjingModelViewSet):
         return Response(types)
 
     @action(methods=['get'], detail=False)
-    def get_streets(self, request):
-        qs = self.get_queryset()
+    def get_all_children(self, request):
+        # TODO: Make serializer for it
+        addr_type = safe_int(request.query_params.get('addr_type'), default=None)
+        if not addr_type:
+            return Response('addr_type parameter is required', status=status.HTTP_400_BAD_REQUEST)
         parent_addr = safe_int(request.query_params.get('parent_addr'), default=None)
-        qs = qs.filter_streets(locality_id=parent_addr)
+        parent_type = safe_int(request.query_params.get('parent_type'), default=None)
+        qs = self.get_queryset()
+        qs = qs.filter_from_parent(
+            addr_type,
+            parent_id=parent_addr,
+            parent_type=parent_type
+        )
         ser = self.get_serializer(qs, many=True)
         return Response(ser.data)
 
@@ -75,3 +87,9 @@ class AddressModelViewSet(DjingModelViewSet):
             addr_id=safe_int(pk)
         )
         return Response(full_title)
+
+    @action(methods=['get'], detail=True)
+    def get_id_hierarchy(self, request, pk=True):
+        obj = self.get_object()
+        ids_hierarchy = tuple(i for i in obj.get_id_hierarchy_gen())
+        return Response(ids_hierarchy)

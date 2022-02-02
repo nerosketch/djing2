@@ -4,6 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from guardian.models import GroupObjectPermission, UserObjectPermission
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -32,10 +33,19 @@ from profiles.serializers import (
 )
 
 
-class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
+class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
     lookup_field = "username"
+
+    def filter_queryset(self, queryset):
+        if self.request.user.is_superuser:
+            return super().get_queryset()
+        filter_kwargs = {
+            'sites': self.request.site
+        }
+        return queryset.filter(**filter_kwargs)
 
     @action(detail=False, methods=["get"], url_path=r"get_profiles_by_group/(?P<group_id>\d{1,9})")
     def get_profiles_by_group(self, request, group_id: str):
@@ -85,6 +95,8 @@ class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
         profile = self.get_object()
 
         if not request.user.is_superuser:
+            if request.user.pk != profile.pk:
+                return Response(status=status.HTTP_403_FORBIDDEN)
             if old_passw != new_passw:
                 return Response(_("Passwords must be same"), status=status.HTTP_400_BAD_REQUEST)
             if not profile.check_password(old_passw):
@@ -100,7 +112,7 @@ class UserProfileViewSet(SitesFilterMixin, DjingSuperUserModelViewSet):
         ser = UserProfilePasswordSerializer()
         return Response(ser.data)
 
-    @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
+    @action(detail=False, methods=('get',), permission_classes=[IsAuthenticated, IsAdminUser])
     def get_current_auth_permissions(self, request):
         return Response(list(request.user.get_all_permissions()))
 
@@ -112,6 +124,12 @@ class UserProfileLogViewSet(DjingModelViewSet):
     queryset = UserProfileLog.objects.all()
     serializer_class = UserProfileLogSerializer
     filterset_fields = ("account",)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_superuser:
+            return qs
+        return qs.filter(account=self.request.user)
 
 
 class LocationAuth(APIView):
@@ -181,7 +199,14 @@ class SitesObtainAuthToken(ObtainAuthToken):
 
 
 class ProfileAuthLogViewSet(ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated, IsAdminUser]
     queryset = ProfileAuthLog.objects.all()
     serializer_class = ProfileAuthLogSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    filter_backends = [DjangoFilterBackend]
     filterset_fields = ("profile",)
+
+    def filter_queryset(self, queryset):
+        if self.request.user.is_superuser:
+            return super().filter_queryset(queryset)
+        return queryset.filter(profile=self.request.user)
+

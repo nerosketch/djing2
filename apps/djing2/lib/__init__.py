@@ -1,11 +1,13 @@
 import socket
+import pytz
 from collections.abc import Iterator
-from datetime import timedelta
+from datetime import timedelta, datetime
 from functools import wraps
 from hashlib import sha256
 from typing import Any, Union
 
 from django.conf import settings
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ParseError, APIException
 
@@ -151,3 +153,9 @@ def macbin2str(bin_mac: bytes) -> str:
     if isinstance(bin_mac, (bytes, bytearray)):
         return ":".join("%.2x" % i for i in bin_mac) if bin_mac else None
     return ":".join("%.2x" % ord(i) for i in bin_mac) if bin_mac else None
+
+
+def time2utctime(src_datetime) -> datetime:
+    """Convert datetime from local tz to UTC"""
+    tz = timezone.get_current_timezone()
+    return tz.localize(src_datetime, is_dst=None).astimezone(pytz.utc)
