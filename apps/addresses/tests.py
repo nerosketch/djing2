@@ -102,22 +102,23 @@ class AddressesAPITestCase(APITestCase):
         self.assertEqual(r.data['title'], 'винный подвал')
         self.assertEqual(r.data['parent_addr'], self.office_addr.pk)
 
-    def test_fetch_all_streets_from_region(self):
-        r = self.get("/api/addrs/get_streets/", {
-            'parent_addr': self.region.pk
+    def _all_children_request(self, parent_addr):
+        r = self.get("/api/addrs/get_all_children/", {
+            'addr_type': AddressModelTypes.STREET.value,
+            'parent_type': AddressModelTypes.LOCALITY.value,
+            'parent_addr': parent_addr
         })
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        res = r.data
+        return r.data
+
+    def test_fetch_all_streets_from_region(self):
+        res = self._all_children_request(self.region.pk)
         self.assertIsNotNone(res)
         self.assertIsInstance(res, list)
         self.assertEqual(len(res), 0)
 
     def test_fetch_all_streets(self):
-        r = self.get("/api/addrs/get_streets/", {
-            'parent_addr': self.city.pk
-        })
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-        res = r.data
+        res = self._all_children_request(self.city.pk)
         self.assertIsNotNone(res)
         self.assertIsInstance(res, list)
         self.assertEqual(len(res), 1)

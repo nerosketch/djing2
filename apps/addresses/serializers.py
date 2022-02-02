@@ -9,6 +9,7 @@ class AddressModelSerializer(BaseCustomModelSerializer):
     parent_addr_title = serializers.CharField(source='parent_addr.title', read_only=True)
     fias_address_level_name = serializers.CharField(source='get_fias_address_level_display', read_only=True)
     fias_address_type_name = serializers.CharField(source='get_fias_address_type_display', read_only=True)
+    children_count = serializers.IntegerField(read_only=True)
 
     def validate_title(self, value: str):
         address_type = self.initial_data.get('address_type')

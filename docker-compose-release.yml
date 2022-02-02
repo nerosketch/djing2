@@ -4,7 +4,7 @@ services:
     container_name: djing2_web
     hostname: djing2_web
     build:
-      context: djing2_nginx/
+      context: docker/djing2_nginx/
       dockerfile: Dockerfile_release
     depends_on:
       - app
@@ -27,6 +27,8 @@ services:
     container_name: postgres
     hostname: postgres
     image: postgres:13.4-alpine
+    user: postgres
+    working_dir: /var/lib/postgresql
     secrets:
       - POSTGRES_PASSWORD
       - DJANGO_SECRET_KEY
@@ -37,16 +39,19 @@ services:
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - /etc/localtime:/etc/localtime
-    env_file:
-      - .env_db_credentials
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_HOST
     #networks: app_net_backend
   ws:
-    build: ws/
+    build: docker/ws/
     ports:
       - 3211:3211
   app:
     build:
-      context: djing2_app/
+      context: .
       dockerfile: Dockerfile_release
     depends_on:
       - postgres
@@ -61,9 +66,24 @@ services:
       - FIELD_ENCRYPTION_KEY
       - API_AUTH_SECRET
       - RADIUS_SECRET
-    env_file:
-      - .env_djing2_app
-      - .env_db_credentials
+    environment:
+      - PORT=8000
+      - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
+      - APP_DEBUG
+      - RADIUS_APP_HOST
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_HOST
+      - API_AUTH_SUBNET
+      - MESSENGER_BOT_PUBLIC_URL
+      - ARPING_COMMAND
+      - ARPING_ENABLED
+      - SORM_EXPORT_FTP_HOST
+      - SORM_EXPORT_FTP_USERNAME
+      - SORM_EXPORT_FTP_DISABLE
+      - ALLOWED_HOSTS
+      - SECRETS_DIR_PATH
+      - CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR
     volumes:
       - media-data:/var/www/djing2/media
       - /etc/localtime:/etc/localtime

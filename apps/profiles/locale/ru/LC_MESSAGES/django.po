@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: nerosketch@gmail.com\n"
-"POT-Creation-Date: 2021-09-07 15:41+0300\n"
+"POT-Creation-Date: 2021-11-22 16:06+0300\n"
 "Last-Translator: Dmitry Novikov nerosketch@gmail.com\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -17,167 +17,172 @@ msgstr ""
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
 "%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: apps/profiles/models.py:23 apps/profiles/models.py:143
+#: apps/profiles/models.py:44 apps/profiles/models.py:177
 msgid "Users must have an telephone number"
 msgstr "Пользователи должны иметь номер телефона"
 
-#: apps/profiles/models.py:51
+#: apps/profiles/models.py:75
+#, python-format
+msgid "Account is too young, birth_day \"%s\" less than 18 yo"
+msgstr "Учётная запись слишком молода. Дата рождения \"%s\". Меньше 18ти лет"
+
+#: apps/profiles/models.py:79
 msgid "profile username"
 msgstr "Имя пользователя"
 
-#: apps/profiles/models.py:52
+#: apps/profiles/models.py:80
 msgid "fio"
 msgstr "ФИО"
 
-#: apps/profiles/models.py:53
+#: apps/profiles/models.py:82
 msgid "birth day"
 msgstr "День рождения"
 
-#: apps/profiles/models.py:54
+#: apps/profiles/models.py:86
 msgid "Create date"
 msgstr "Дата создания"
 
-#: apps/profiles/models.py:55
+#: apps/profiles/models.py:87
 msgid "Last update time"
 msgstr "Время последнего обновления"
 
-#: apps/profiles/models.py:56
+#: apps/profiles/models.py:88
 msgid "Is active"
 msgstr "Активность"
 
-#: apps/profiles/models.py:60
+#: apps/profiles/models.py:92
 msgid "Telephone"
 msgstr "Номер телефона"
 
-#: apps/profiles/models.py:98
+#: apps/profiles/models.py:133
 msgid "Undefined"
 msgstr "Не определён"
 
-#: apps/profiles/models.py:99
+#: apps/profiles/models.py:134
 msgid "Create user"
 msgstr "Создать пользователя"
 
-#: apps/profiles/models.py:100
+#: apps/profiles/models.py:135
 msgid "Delete user"
 msgstr "Удалить пользователя"
 
-#: apps/profiles/models.py:101
+#: apps/profiles/models.py:136
 msgid "Create device"
 msgstr "Создать устройство"
 
-#: apps/profiles/models.py:102
+#: apps/profiles/models.py:137
 msgid "Delete device"
 msgstr "Удалить устройство"
 
-#: apps/profiles/models.py:103
+#: apps/profiles/models.py:138
 msgid "Create NAS"
 msgstr "Создать NAS"
 
-#: apps/profiles/models.py:104
+#: apps/profiles/models.py:139
 msgid "Delete NAS"
 msgstr "Удалить NAS"
 
-#: apps/profiles/models.py:105
+#: apps/profiles/models.py:140
 msgid "Create service"
 msgstr "Создать услугу"
 
-#: apps/profiles/models.py:106
+#: apps/profiles/models.py:141
 msgid "Delete service"
 msgstr "Удалить услугу"
 
-#: apps/profiles/models.py:110
+#: apps/profiles/models.py:145
 msgid "Author"
 msgstr "Автор"
 
-#: apps/profiles/models.py:113
+#: apps/profiles/models.py:148
 msgid "Action type"
 msgstr "Тип действия"
 
-#: apps/profiles/models.py:115
+#: apps/profiles/models.py:150
 msgid "Additional info"
 msgstr "Дополнительная информация"
 
-#: apps/profiles/models.py:116
+#: apps/profiles/models.py:151
 msgid "Action date"
 msgstr "Врремя действия"
 
-#: apps/profiles/models.py:123
+#: apps/profiles/models.py:157
 msgid "User profile log"
 msgstr "Лог учётной записи"
 
-#: apps/profiles/models.py:124
+#: apps/profiles/models.py:158
 msgid "User profile logs"
 msgstr "Логи учётных записей"
 
-#: apps/profiles/models.py:157
+#: apps/profiles/models.py:191
 msgid "Avatar"
 msgstr "Аватар"
 
-#: apps/profiles/models.py:160
+#: apps/profiles/models.py:194
 msgid "Responsibility groups"
 msgstr "Ответственность за группы"
 
-#: apps/profiles/models.py:162
+#: apps/profiles/models.py:196
 msgid "Notification about tasks"
 msgstr "Оповещения о задачах"
 
-#: apps/profiles/models.py:163
+#: apps/profiles/models.py:197
 msgid "Notification about messages"
 msgstr "Оповещения о сообщениях"
 
-#: apps/profiles/models.py:164
+#: apps/profiles/models.py:198
 msgid "Notification from monitoring"
 msgstr "Оповещения из мониторинга"
 
-#: apps/profiles/models.py:166
+#: apps/profiles/models.py:200
 msgid "Settings flags"
 msgstr "Настройки флагов"
 
-#: apps/profiles/models.py:171
+#: apps/profiles/models.py:205
 msgid "Staff account profile"
 msgstr "Учётная запись сотрудника"
 
-#: apps/profiles/models.py:172
+#: apps/profiles/models.py:206
 msgid "Staff account profiles"
 msgstr "Учётные записи сотрудников"
 
-#: apps/profiles/models.py:209
+#: apps/profiles/models.py:242
 msgid "Auth time"
 msgstr "Время авторизации"
 
-#: apps/profiles/models.py:210
+#: apps/profiles/models.py:243
 msgid "Profile"
 msgstr "Профиль"
 
-#: apps/profiles/models.py:211
+#: apps/profiles/models.py:244
 msgid "Remote ip"
 msgstr "IP источника"
 
-#: apps/profiles/models.py:212
+#: apps/profiles/models.py:245
 msgid "Details"
 msgstr "Подробности"
 
-#: apps/profiles/serializers.py:146 apps/profiles/views.py:128
+#: apps/profiles/serializers.py:162 apps/profiles/views.py:144
 msgid "Unable to log in with provided credentials."
 msgstr "Не получается войти с предоставленными учётными данными."
 
-#: apps/profiles/serializers.py:158
+#: apps/profiles/serializers.py:174
 msgid "Must include \"username\" and \"password\"."
 msgstr "Должны быть \"username\" и \"password\"."
 
-#: apps/profiles/views.py:89
+#: apps/profiles/views.py:99
 msgid "Passwords must be same"
 msgstr "Пароли должны быть одинаковыми"
 
-#: apps/profiles/views.py:91
+#: apps/profiles/views.py:101
 msgid "Wrong old password"
 msgstr "Не правильный старый пароль"
 
-#: apps/profiles/views.py:121
+#: apps/profiles/views.py:137
 msgid "Login profile via customer's ip address"
 msgstr "Вход учётной записи через ip адрес"
 
-#: apps/profiles/views.py:132
+#: apps/profiles/views.py:148
 msgid "Incorrect provided credentials."
 msgstr "Авторизация с предоставленными учётными данными невозможна"
 

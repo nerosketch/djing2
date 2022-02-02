@@ -150,7 +150,7 @@ class BaseNonAdminReadOnlyModelViewSet(ReadOnlyModelViewSet):
 
 
 class BaseNonAdminModelViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsCustomer]
 
     def get_queryset(self):
         if isinstance(self.request.user, BaseAccount):
