@@ -59,6 +59,7 @@ services:
       - SORM_EXPORT_FTP_USERNAME
       - SORM_EXPORT_FTP_DISABLE
       - ALLOWED_HOSTS
+      - CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR
     volumes:
       - .:/var/www/djing2
       - media-data:/var/www/djing2/media

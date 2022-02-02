@@ -12,10 +12,10 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 from typing import Optional
+from pathlib import Path
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# from django.urls import reverse_lazy
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def get_secret(fname: str, default=None) -> Optional[str]:
@@ -86,8 +86,6 @@ INSTALLED_APPS = [
     "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
-    "dials.apps.DialsConfig",
-    "msg_app.apps.MsgAppConfig",
     "traf_stat.apps.TrafStatConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
@@ -315,9 +313,6 @@ if not FIELD_ENCRYPTION_KEY:
     raise OSError("FIELD_ENCRYPTION_KEY secret not found")
 
 
-DIAL_RECORDS_PATH = "/var/spool/asterisk/monitor/"
-DIAL_RECORDS_EXTENSION = "wav"
-
 # DEBUG TOOLBAR
 if DEBUG:
     INTERNAL_IPS = ["127.0.0.1"]
@@ -356,3 +351,7 @@ RADIUSAPP_OPTIONS = {
 }
 
 SORM_REPORTING_EMAILS = []
+
+CONTRACTS_OPTIONS = {
+    'DEFAULT_TITLE': get_env('CONTRACT_DEFAULT_TITLE', 'Contract default title')
+}

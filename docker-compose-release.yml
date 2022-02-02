@@ -83,6 +83,7 @@ services:
       - SORM_EXPORT_FTP_DISABLE
       - ALLOWED_HOSTS
       - SECRETS_DIR_PATH
+      - CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR
     volumes:
       - media-data:/var/www/djing2/media
       - /etc/localtime:/etc/localtime

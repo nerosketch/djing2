@@ -43,7 +43,7 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
         if self.request.user.is_superuser:
             return super().get_queryset()
         filter_kwargs = {
-            self.lookup_field: self.request.user.username
+            'sites': self.request.site
         }
         return queryset.filter(**filter_kwargs)
 
@@ -95,6 +95,8 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
         profile = self.get_object()
 
         if not request.user.is_superuser:
+            if request.user.pk != profile.pk:
+                return Response(status=status.HTTP_403_FORBIDDEN)
             if old_passw != new_passw:
                 return Response(_("Passwords must be same"), status=status.HTTP_400_BAD_REQUEST)
             if not profile.check_password(old_passw):
@@ -110,7 +112,7 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
         ser = UserProfilePasswordSerializer()
         return Response(ser.data)
 
-    @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
+    @action(detail=False, methods=('get',), permission_classes=[IsAuthenticated, IsAdminUser])
     def get_current_auth_permissions(self, request):
         return Response(list(request.user.get_all_permissions()))
 
