@@ -76,6 +76,9 @@ call plug#begin('~/.local/share/nvim/plugged')
   " nvim -. tmux clipboard
   Plug 'roxma/vim-tmux-clipboard'
 
+  " Bookmarks
+  Plug 'MattesGroeger/vim-bookmarks'
+
 call plug#end()
 
 filetype plugin indent on
@@ -323,7 +326,7 @@ endfunction
 
 " ------- Key binding ---------
 let mapleader=" "
-map mm <Plug>NERDCommenterToggle
+map cm <Plug>NERDCommenterToggle
 map /  <Plug>(incsearch-forward)
 map ?  <Plug>(incsearch-backward)
 map g/ <Plug>(incsearch-stay)
@@ -544,3 +547,18 @@ lua << EOF
     -- refer to the configuration section below
   }
 EOF
+
+
+"=====================================================
+" Bookmarks
+highlight BookmarkSign ctermbg=NONE ctermfg=160
+highlight BookmarkLine ctermbg=194 ctermfg=NONE
+let g:bookmark_sign = '♥'
+let g:bookmark_highlight_lines = 1
+"=====================================================
+
+
+" set a byte character marker (BOM) utf-8 symbol when retrieving file encoding
+" disabled by default with no value
+let g:WebDevIconsUnicodeByteOrderMarkerDefaultSymbol = ''
+
