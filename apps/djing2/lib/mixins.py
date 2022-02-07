@@ -109,8 +109,6 @@ class SitesGroupFilterMixin(SitesFilterMixin, GroupsFilterMixin):
 
 class CustomCurrentSiteMiddleware(CurrentSiteMiddleware):
     def process_request(self, request):
-        if not hasattr(request, 'site'):
-            return
         try:
             return super().process_request(request=request)
         except Site.DoesNotExist:

@@ -11,10 +11,10 @@ from profiles.models import UserProfile
 
 class CustomAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
-        return self.client.get(*args, **kwargs)
+        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
 
     def post(self, *args, **kwargs):
-        return self.client.post(*args, **kwargs)
+        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
 
     def setUp(self):
         self.group = Group.objects.create(title="test group", code="tst")

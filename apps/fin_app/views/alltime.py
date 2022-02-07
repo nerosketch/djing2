@@ -46,6 +46,9 @@ class AllTimeGatewayModelViewSet(DjingModelViewSet):
         )
         return Response(tuple(r))
 
+    def perform_create(self, serializer, *args, **kwargs):
+        return super().perform_create(serializer=serializer, sites=[self.request.site])
+
 
 class AllTimePayLogModelViewSet(DjingModelViewSet):
     queryset = AllTimePayLog.objects.all()
@@ -76,9 +79,7 @@ class AllTimePay(GenericAPIView):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if hasattr(self.request, 'site'):
-            return qs.filter(sites__in=[self.request.site])
-        return qs
+        return qs.filter(sites__in=[self.request.site])
 
     @staticmethod
     def _bad_ret(err_id: int, err_description: str = None) -> Response:
@@ -134,10 +135,7 @@ class AllTimePay(GenericAPIView):
 
     def _fetch_user_info(self, data: dict) -> Response:
         pay_account = data.get("PAY_ACCOUNT")
-        customer = Customer.objects.filter(username=pay_account, is_active=True)
-        if hasattr(self.request, 'site'):
-            customer = customer.filter(sites__in=[self.request.site])
-        customer = customer.get()
+        customer = Customer.objects.get(username=pay_account, sites__in=[self.request.site], is_active=True)
         return Response(
             {
                 "balance": round(customer.balance, 2),

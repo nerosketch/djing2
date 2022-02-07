@@ -20,10 +20,6 @@ from djing2.exceptions import UniqueConstraintIntegrityError
 
 class DjingModelViewSet(ModelViewSet):
     def perform_create(self, serializer, *args, **kwargs):
-        if hasattr(self.request, 'site'):
-            kwargs.update({
-                'sites': [self.request.site]
-            })
         try:
             inst = serializer.save(*args, **kwargs)
             if hasattr(inst, "assign_rights2new_obj"):
