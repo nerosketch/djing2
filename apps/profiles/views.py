@@ -116,9 +116,6 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
     def get_current_auth_permissions(self, request):
         return Response(list(request.user.get_all_permissions()))
 
-    def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(serializer=serializer, sites=[self.request.site])
-
 
 class UserProfileLogViewSet(DjingModelViewSet):
     queryset = UserProfileLog.objects.all()
@@ -209,4 +206,3 @@ class ProfileAuthLogViewSet(ReadOnlyModelViewSet):
         if self.request.user.is_superuser:
             return super().filter_queryset(queryset)
         return queryset.filter(profile=self.request.user)
-

@@ -11,10 +11,10 @@ from profiles.models import UserProfile
 
 class CustomAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
-        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
+        return self.client.get(*args, **kwargs)
 
     def post(self, *args, **kwargs):
-        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+        return self.client.post(*args, **kwargs)
 
     def setUp(self):
         self.group = Group.objects.create(title="test group", code="tst")
@@ -25,7 +25,8 @@ class CustomAPITestCase(APITestCase):
         self.client.login(username="admin", password="admin")
         # customer for tests
         custo1 = models.Customer.objects.create_user(
-            telephone="+79782345678", username="custo1", password="passw", is_dynamic_ip=True, group=self.group
+            telephone="+79782345678", username="custo1", password="passw",
+            is_dynamic_ip=True, group=self.group
         )
         custo1.refresh_from_db()
         self.customer = custo1

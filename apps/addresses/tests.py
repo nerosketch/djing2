@@ -6,10 +6,10 @@ from profiles.models import UserProfile
 
 class AddressesAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
-        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
+        return self.client.get(*args, **kwargs)
 
     def post(self, *args, **kwargs):
-        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+        return self.client.post(*args, **kwargs)
 
     def setUp(self):
         # Make addr hierarchy

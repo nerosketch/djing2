@@ -57,7 +57,8 @@ class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
         )
         hdrs = {"Api-Auth-Sign": calc_hash(request_data)}
         r = self.client.get(
-            "/api/networks/dhcp_lever/", data=request_data, SERVER_NAME="example.com", format="json", **hdrs
+            "/api/networks/dhcp_lever/", data=request_data,
+            format="json", **hdrs
         )
         self.assertEqual(r.status_code, status_code, msg=r.content)
         return r.data
