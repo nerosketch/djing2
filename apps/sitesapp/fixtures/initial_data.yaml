@@ -1,8 +1,5 @@
 - model: sites.site
   fields:
-    domain: example.com
-    name: example.com
-  fields:
     domain: 127.0.0.1
     name: 127.0.0.1
   fields:
