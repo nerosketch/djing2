@@ -41,17 +41,19 @@ ippool v%(vid)d_%(pool_name)s_%(pref)d {
 	range_start = %(ip_start)s
 	range_stop = %(ip_end)s
 	netmask = %(mask)s
-	cache_size = 4
+	cache_size = %(len)d
 	ip_index = ${localstatedir}/pool/%(pool_name)s.ipindex
 	override = no
 	maximum_timeout = 0
+	key = "%%{ERX-Dhcp-Mac-Addr} %%{NAS-Port-Id}"
 }""" % {
         'ip_start': ip_start,
         'ip_end': ip_end,
         'pref': net.prefixlen,
         'mask': str(net.netmask),
         'vid': vid,
-        'pool_name': pool_name
+        'pool_name': pool_name,
+        'len': net.num_addresses - 4
         }
 
 
