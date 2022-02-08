@@ -103,7 +103,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         customer = None
         subscriber_lease = None
 
-        if all([agent_remote_id, agent_circuit_id]):
+        if all((agent_remote_id, agent_circuit_id)):
             dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
                 agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
             )
@@ -113,11 +113,20 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
                 device_mac=dev_mac, device_port=dev_port
             )
+            if customer is None:
+                return _bad_ret('Customer not found', custom_status=status.HTTP_404_NOT_FOUND)
             # TODO: Optimize
             subscriber_lease = CustomerIpLeaseModel.objects.filter(
                 customer=customer,
-                mac_address=customer_mac
+                # mac_address=customer_mac
             ).first()
+            if subscriber_lease is not None and not subscriber_lease.is_dynamic and subscriber_lease.mac_address and str(
+                subscriber_lease.mac_address
+            ) != str(customer_mac):
+                return _bad_ret(
+                    text='Static session for this mac already exists',
+                    custom_status=status.HTTP_403_FORBIDDEN
+                )
         else:
             leases = CustomerIpLeaseModel.objects.filter(
                 mac_address=str(customer_mac)
@@ -279,12 +288,15 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             ip_lease__ip_address=ip,
         )
         event_time = datetime.now()
-        CustomerIpLeaseModel.objects.filter(ip_address=ip).update(last_update=event_time)
-
         self._update_counters(
             sessions=sessions,
             data=dat,
             last_event_time=event_time,
+        )
+        customer_mac = vendor_manager.get_customer_mac(dat)
+        CustomerIpLeaseModel.objects.filter(ip_address=ip).update(
+            last_update=event_time,
+            mac_address=customer_mac
         )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
