@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,6 +16,7 @@ from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
 from radiusapp import custom_signals
+from radiusapp.tasks import async_finish_session_task
 
 
 def _gigaword_imp(num: int, gwords: int) -> int:
@@ -116,10 +118,20 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             if customer is None:
                 return _bad_ret('Customer not found', custom_status=status.HTTP_404_NOT_FOUND)
             # TODO: Optimize
-            subscriber_lease = CustomerIpLeaseModel.objects.filter(
+
+            # Ищем по сущ сессиям
+            subscriber_session = CustomerRadiusSession.objects.filter(
                 customer=customer,
-                mac_address=customer_mac
-            ).first()
+                ip_lease__mac_address=customer_mac,
+            ).select_related('ip_lease')
+            if subscriber_session.exists():
+                subscriber_lease = subscriber_session.first().ip_lease
+            else:
+                subscriber_lease = CustomerIpLeaseModel.objects.filter(
+                    Q(mac_address=customer_mac) | Q(mac_address=None, is_dynamic=False),
+                    customer=customer,
+                    # mac_address=customer_mac
+                ).first()
         else:
             leases = CustomerIpLeaseModel.objects.filter(
                 mac_address=str(customer_mac)
@@ -270,10 +282,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
         customer_mac = vendor_manager.get_customer_mac(dat)
-        CustomerIpLeaseModel.objects.filter(ip_address=ip).update(
-            mac_address=None,
-            last_update=datetime.now()
-        )
         sessions = CustomerRadiusSession.objects.filter(ip_lease__ip_address=ip)
         custom_signals.radius_acct_stop_signal.send(
             sender=CustomerRadiusSession,
@@ -283,6 +291,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             radius_unique_id=radius_unique_id,
             customer_mac=customer_mac,
         )
+        for session in sessions:
+            async_finish_session_task(
+                radius_uname=str(session.radius_username)
+            )
         sessions.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
