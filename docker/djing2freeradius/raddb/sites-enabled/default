@@ -135,8 +135,6 @@ authorize {
     #}
 
     update control {
-    #    &Auth-Type := "Accept"
-    #    &REST-HTTP-Header := "${...api_token_header}"
         &REST-HTTP-Header := "Content-Type: application/json"
     }
 
