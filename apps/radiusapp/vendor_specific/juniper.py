@@ -26,7 +26,7 @@ class JuniperVendorSpecific(IVendorSpecific):
         status_code = status.HTTP_200_OK
         if not customer_service or not customer_service.service:
             service_option = "SERVICE-GUEST"
-            status_code = status.HTTP_403_FORBIDDEN
+            status_code = status.HTTP_200_OK
         else:
             service = customer_service.service
 
