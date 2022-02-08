@@ -142,12 +142,12 @@ authorize {
 
     # DEBUG
     # Customer 151412
-    update request {
-        &ADSL-Agent-Remote-Id := 0x00061c8779142633
-        &ADSL-Agent-Circuit-Id := 0x000074000719
-        &ERX-Dhcp-Mac-Addr := "00:50:79:66:68:00"
-        &NAS-Port-Id := 999
-    }
+    #update request {
+    #    &ADSL-Agent-Remote-Id := 0x00061c8779142633
+    #    &ADSL-Agent-Circuit-Id := 0x000074000719
+    #    &ERX-Dhcp-Mac-Addr := "00:50:79:66:68:00"
+    #    &NAS-Port-Id := 999
+    #}
 
     rest
 
@@ -161,14 +161,14 @@ authorize {
         }
         update reply {
             # Juniper
-            #&Acct-Interim-Interval := 7200
-            ##&Port-Limit := 1
-            #&ERX-Primary-DNS := 10.12.1.9
-            #&ERX-Secondary-DNS = 77.88.8.8
+            &Acct-Interim-Interval := 7200
+            &Port-Limit := 1
+            &ERX-Primary-DNS := 10.12.1.9
+            &ERX-Secondary-DNS = 77.88.8.8
             &ERX-Service-Activate:1 += "%{reply:User-Password}"
 
             # Mikrotik
-            &Mikrotik-Rate-Limit := "100M/100M"
+            # &Mikrotik-Rate-Limit := "100M/100M"
             #&Mikrotik-Host-IP = 172.16.3.8
             #&Framed-IP-Address = 172.16.3.198
             #&Framed-IP-Netmask = 255.255.255.0
@@ -290,12 +290,12 @@ accounting {
 
     # DEBUG
     # Customer 151412
-    update request {
-        &ADSL-Agent-Remote-Id := 0x00061c8779142633
-        &ADSL-Agent-Circuit-Id := 0x000074000719
-        &ERX-Dhcp-Mac-Addr := "00:50:79:66:68:00"
-        &NAS-Port-Id := 999
-    }
+    #update request {
+    #    &ADSL-Agent-Remote-Id := 0x00061c8779142633
+    #    &ADSL-Agent-Circuit-Id := 0x000074000719
+    #    &ERX-Dhcp-Mac-Addr := "00:50:79:66:68:00"
+    #    &NAS-Port-Id := 999
+    #}
 
     update control {
         #&Auth-Type := "Accept"
@@ -355,7 +355,7 @@ post-auth {
 
 	# Calc pool by vlan if it exists
 	if (!control:Pool-Name && request:NAS-Port-Id) {
-	    python3
+	    python
 	}
 
 	if (control:Pool-Name == 'guest') {
