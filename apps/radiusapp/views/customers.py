@@ -118,15 +118,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             # TODO: Optimize
             subscriber_lease = CustomerIpLeaseModel.objects.filter(
                 customer=customer,
-                # mac_address=customer_mac
+                mac_address=customer_mac
             ).first()
-            if subscriber_lease is not None and not subscriber_lease.is_dynamic and subscriber_lease.mac_address and str(
-                subscriber_lease.mac_address
-            ) != str(customer_mac):
-                return _bad_ret(
-                    text='Static session for this mac already exists',
-                    custom_status=status.HTTP_403_FORBIDDEN
-                )
         else:
             leases = CustomerIpLeaseModel.objects.filter(
                 mac_address=str(customer_mac)
@@ -215,6 +208,11 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         """Accounting start handler."""
         dat = request.data
         vendor_manager = self.vendor_manager
+        if not vendor_manager or not vendor_manager.vendor_class:
+            return _bad_ret(
+                'No vendor manager exists',
+                custom_status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
         if not ip:
@@ -232,6 +230,11 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
                 device_mac=dev_mac, device_port=dev_port
             )
+            if not customer:
+                return _bad_ret(
+                    'Customer with provided device credentials not found',
+                    custom_status=status.HTTP_404_NOT_FOUND
+                )
         else:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -267,6 +270,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         ip = vcls.get_rad_val(dat, "Framed-IP-Address")
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
         customer_mac = vendor_manager.get_customer_mac(dat)
+        CustomerIpLeaseModel.objects.filter(ip_address=ip).update(
+            mac_address=None,
+            last_update=datetime.now()
+        )
         sessions = CustomerRadiusSession.objects.filter(ip_lease__ip_address=ip)
         custom_signals.radius_acct_stop_signal.send(
             sender=CustomerRadiusSession,
