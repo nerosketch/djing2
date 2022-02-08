@@ -56,9 +56,7 @@ def post_proxy(p):
 
 
 guest_pool_name = pools.guest_net.get('name', 'DEFAULT')
-guest_ret_dict = {
-    'config': (('Pool-Name', guest_pool_name),)
-}
+guest_ret_tuple = (('Pool-Name', guest_pool_name), ('Auth-Type', 'Accept'))
 
 
 def post_auth(p):
@@ -71,19 +69,17 @@ def post_auth(p):
         vid = p.get('NAS-Port-Id')
         if vid is None:
             radiusd.radlog(radiusd.L_WARN, '*** Empty vid ***')
-            update_dict = guest_ret_dict
+            update_tup = guest_ret_tuple
         else:
-            vid = int(vid)
+            vid = int(vid.replace('ae0:1011-', ''))
             pool_names = pools.pool_dict.get(vid)
 
             if pool_names is None or len(pool_names) < 1:
                 radiusd.radlog(radiusd.L_WARN, '*** Empty pool names ***')
-                update_dict = guest_ret_dict
+                update_tup = guest_ret_tuple
             else:
                 # FIXME: multiple names for vid
-                update_dict = {
-                    'config': (('Pool-Name', pool_names[0]),)
-                }
+                update_tup = (('Pool-Name', pool_names[0]), ('Auth-Type', 'Accept'))
     else:
         radiusd.radlog(radiusd.L_DBG_ERR_REQ, 'p Type='+str(type(p)))
         return radiusd.RLM_MODULE_FAIL
@@ -96,7 +92,7 @@ def post_auth(p):
     #      "config": (("Cleartext-Password", "A new password"),),
     # }
 
-    return radiusd.RLM_MODULE_OK, update_dict
+    return radiusd.RLM_MODULE_OK, (), update_tup
 
 
 def recv_coa(p):
