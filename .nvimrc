@@ -189,9 +189,11 @@ nnoremap <ESC><ESC> :nohlsearch<CR>
 
 vnoremap p "_dP
 
+set scroll=5
 " Remap scrolling
-nnoremap <C-k> <C-u>
-nnoremap <C-j> <C-d>
+"nnoremap <C-k> <C-u>
+"nnoremap <C-j> <C-d>
+noremap <C-c> <C-u>
 
 " Add status line support, for integration with other plugin, checkout `:h coc-status`
 set statusline^=%{coc#status()}%{StatusDiagnostic()}
