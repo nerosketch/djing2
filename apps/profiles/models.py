@@ -12,7 +12,6 @@ from django.utils.translation import gettext_lazy as _
 from djing2.lib.validators import latinValidator, telephoneValidator
 from djing2.models import BaseAbstractModel, BaseAbstractModelMixin
 from groupapp.models import Group
-from profiles.tasks import resize_profile_avatar
 
 
 def split_fio(fio: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
@@ -205,12 +204,6 @@ class UserProfile(BaseAccount):
         verbose_name = _("Staff account profile")
         verbose_name_plural = _("Staff account profiles")
         db_table = "profiles_userprofile"
-
-    def save(self, *args, **kwargs):
-        r = super().save(*args, **kwargs)
-        if self.avatar and os.path.isfile(self.avatar.path):
-            resize_profile_avatar(self.avatar.path)
-        return r
 
     def log(self, do_type: UserProfileLogActionType, additional_text=None) -> None:
         """
