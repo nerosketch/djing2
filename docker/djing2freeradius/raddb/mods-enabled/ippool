@@ -1,0 +1,15 @@
+# -*- text -*-
+
+ippool main_pool {
+	filename = ${localstatedir}/pool/db.ippool
+	range_start = 172.16.3.2
+	range_stop = 172.16.3.6
+	netmask = 255.255.255.248
+	cache_size = 4
+	ip_index = ${localstatedir}/pool/db.ipindex
+	override = no
+	maximum_timeout = 0
+	key = "%{NAS-IP-Address} %{NAS-Port}"
+}
+
+$INCLUDE ippool.d/

@@ -130,8 +130,8 @@ class AllTimePay(GenericAPIView):
             return self._bad_ret(-90)
         except AllTimePayLog.DoesNotExist:
             return self._bad_ret(-10)
-        except AttributeError:
-            return self._bad_ret(-101)
+        except AttributeError as err:
+            return self._bad_ret(-101, str(err))
 
     def _fetch_user_info(self, data: dict) -> Response:
         pay_account = data.get("PAY_ACCOUNT")
@@ -155,7 +155,10 @@ class AllTimePay(GenericAPIView):
         pay_account = data.get("PAY_ACCOUNT")
         pay_id = data.get("PAY_ID")
         pay_amount = safe_float(data.get("PAY_AMOUNT"))
-        customer = Customer.objects.get(username=pay_account, sites__in=[self.request.site], is_active=True)
+        customer = Customer.objects.filter(username=pay_account, is_active=True)
+        if hasattr(self.request, 'site'):
+            customer = customer.filter(sites__in=[self.request.site])
+        customer = customer.get()
         pays = AllTimePayLog.objects.filter(pay_id=pay_id)
         if pays.exists():
             return self._bad_ret(-100, "Pay already exists")

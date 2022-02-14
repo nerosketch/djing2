@@ -1,0 +1,16 @@
+version: '3.5'
+services:
+  freeradius:
+    build:
+      context: .
+    container_name: freeradius-app
+    stop_grace_period: 1m
+    ports:
+      - 1812-1813:1812-1813/udp
+    stdin_open: true
+    tty: true
+    restart: on-failure
+    volumes:
+      - /tmp:/tmp
+      - ./pool:/opt/var/pool
+      - /etc/localtime:/etc/localtime

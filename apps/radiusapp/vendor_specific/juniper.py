@@ -1,5 +1,6 @@
 from netaddr import EUI
 from radiusapp.vendor_base import IVendorSpecific
+from rest_framework import status
 
 
 class JuniperVendorSpecific(IVendorSpecific):
@@ -21,16 +22,11 @@ class JuniperVendorSpecific(IVendorSpecific):
             return int(param.split(":")[1].split("-")[1])
         return param
 
-    def get_auth_guest_session_response(self, guest_lease, data):
-        return {
-            "Framed-IP-Address": guest_lease.ip_addr,
-            # 'Acct-Interim-Interval': 300,
-            "User-Password": "SERVICE-GUEST",
-        }
-
-    def get_auth_session_response(self, subscriber_lease, customer_service, customer, request_data):
+    def get_auth_session_response(self, customer_service, customer, request_data, subscriber_lease=None):
+        status_code = status.HTTP_200_OK
         if not customer_service or not customer_service.service:
             service_option = "SERVICE-GUEST"
+            status_code = status.HTTP_200_OK
         else:
             service = customer_service.service
 
@@ -40,9 +36,12 @@ class JuniperVendorSpecific(IVendorSpecific):
             service_option = f"SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})"
 
         res = {
-            "Framed-IP-Address": subscriber_lease.ip_addr,
             # 'Framed-IP-Netmask': '255.255.0.0',
             # User-Password - it is a crutch, for config in freeradius
             "User-Password": service_option,
         }
-        return res
+        if subscriber_lease:
+            res.update({
+                "Framed-IP-Address": subscriber_lease.ip_address,
+            })
+        return res, status_code

@@ -1,19 +1,6 @@
 server default {
 
 listen {
-	#  Type of packets to listen for.
-	#  Allowed values are:
-	#	auth	listen for authentication packets
-	#	acct	listen for accounting packets
-	#	proxy   IP to use for sending proxied packets
-	#	detail  Read from the detail file.  For examples, see
-	#               raddb/sites-available/copy-acct-to-home-server
-	#	status  listen for Status-Server packets.  For examples,
-	#		see raddb/sites-available/status
-	#	coa     listen for CoA-Request and Disconnect-Request
-	#		packets.  For examples, see the file
-	#		raddb/sites-available/coa
-	#
 	type = auth
 
 	# ipv4addr = *
@@ -26,31 +13,27 @@ listen {
 #	clients = per_socket_clients
 
 	limit {
-	      max_connections = 16
+		  max_connections = 16
 
-	      lifetime = 0
-	      idle_timeout = 30
+		  lifetime = 0
+		  idle_timeout = 30
 	}
 }
 
 listen {
 	type = auth
 
-	# ipv4addr = *
+	ipv4addr = 127.0.0.1
 	# ipv6addr = *
-	ipaddr = *
 	port = 0
 	interface = lo
 #	clients = per_socket_clients
 	limit {
-	      max_connections = 16
-	      lifetime = 0
-	      idle_timeout = 30
+		  max_connections = 16
+		  lifetime = 0
+		  idle_timeout = 30
 	}
 }
-
-
-
 
 
 #
@@ -75,7 +58,7 @@ listen {
 }
 
 listen {
-	ipaddr = *
+	ipaddr = 127.0.0.1
 	port = 0
 	type = acct
 	interface = lo
@@ -88,9 +71,6 @@ listen {
 
 
 authorize {
-
-	#python3
-
 	#filter_username
 
 	#filter_password
@@ -145,75 +125,91 @@ authorize {
 
 	#pap
 
-	#  Ensure that we have a semi-unique identifier for every
-	#  request, and many NAS boxes are broken.
 	acct_unique
 
 
-    #if (&User-Password) {
-    #    update control {
-    #        Auth-Type = rest
-    #    }
-    #}
+	#if (&User-Password) {
+	#	update control {
+	#		Auth-Type = rest
+	#	}
+	#}
 
-    update control {
-    #    &Auth-Type := "Accept"
-    #    &REST-HTTP-Header := "${...api_token_header}"
-        &REST-HTTP-Header := "Content-Type: application/json"
-    }
-    rest
+	update control {
+		&REST-HTTP-Header := "Content-Type: application/json"
+	}
 
-    if (updated) {
-        ok
-    }
+	# DEBUG
+	# Customer 151412
+	#update request {
+	#	&ADSL-Agent-Remote-Id := 0x00061c8779142633
+	#	&ADSL-Agent-Circuit-Id := 0x000074000719
+	#	&ERX-Dhcp-Mac-Addr := "00:50:79:66:68:00"
+	#	&NAS-Port-Id := 999
+	#}
 
-    if (ok) {
-        update control {
-            Auth-Type := Accept
-        }
-        update reply {
-            &Acct-Interim-Interval := 19200
-            #&Service-Interim-Acct-Interval := 3600
-            #&Session-Timeout := 700 # - Not supported for dhcp, from juniper docs
-            #&Port-Limit := 1
-            &ERX-Primary-DNS := 10.12.1.9
-            &ERX-Secondary-DNS = 77.88.8.8
-            &ERX-Service-Activate:1 += "%{reply:User-Password}"
+	rest
 
-            User-Password !* ANY
-        }
+	if (updated) {
+		ok
+	}
 
-        if (!&reply:Session-Timeout) {
-            update reply {
-                Session-Timeout := 7200
-            }
-        }
+	if (ok) {
+		update control {
+			Auth-Type := Accept
+		}
+		update reply {
+			# Juniper
+			&Acct-Interim-Interval := 7200
+			&Port-Limit := 1
+			&ERX-Primary-DNS := 10.12.1.9
+			&ERX-Secondary-DNS = 77.88.8.8
+			&ERX-Service-Activate:1 += "%{reply:User-Password}"
 
-    } else {
-        reject
-    }
+			# Mikrotik
+			# &Mikrotik-Rate-Limit := "100M/100M"
+			#&Mikrotik-Host-IP = 172.16.3.8
+			#&Framed-IP-Address = 172.16.3.198
+			#&Framed-IP-Netmask = 255.255.255.0
+			#&ERX-Primary-DNS := 10.12.1.9
+			#&Mikrotik-Address-List := DjingUsersAllowed
+			#&DHCP-NTP-Servers := 10.12.1.9
 
-    if (reject) {
-        update control {
-            Auth-Type := Reject
-        }
-    }
+			User-Password !* ANY
+		}
+
+		if (!&reply:Session-Timeout) {
+			update reply {
+				Session-Timeout := 21600 # 6h
+			}
+		}
+	} elsif (userlock || notfound) {
+		# Return guest poo name
+		update control {
+			Auth-Type := Accept
+			&Pool-Name := "guest"
+		}
+	} else {
+		reject
+	}
+
+	if (reject) {
+		update control {
+			Auth-Type := Reject
+		}
+	}
 }
 
 
 #  Authentication.
 #
 authenticate {
-    #python
+	#python
 
-	Auth-Type PAP {
-		pap
-	}
+	#Auth-Type PAP {
+	#	pap
+	#}
 
 	#
-	#  If you have a Cisco SIP server authenticating against
-	#  FreeRADIUS, uncomment the following line, and the 'digest'
-	#  line in the 'authorize' section.
 	#digest
 
 	#
@@ -224,65 +220,32 @@ authenticate {
 	#  Allow EAP authentication.
 	#eap
 
-    Auth-Type rest {
-        rest {
-            updated = 1
-        }
-        if (updated) {
-            ok
-        } else {
-            reject
-        }
-    }
+	#Auth-Type rest {
+	#	rest {
+	#		updated = 1
+	#	}
+	#	if (updated) {
+	#		ok
+	#	} else {
+	#		reject
+	#	}
+	#}
 }
 
 
-#
-#  Pre-accounting.  Decide which accounting type to use.
-#
 preacct {
-	preprocess
+	#preprocess
 
-	#
-	#  Merge Acct-[Input|Output]-Gigawords and Acct-[Input-Output]-Octets
-	#  into a single 64bit counter Acct-[Input|Output]-Octets64.
-	#
 	#acct_counters64
 
-	#
-	#  Session start times are *implied* in RADIUS.
-	#  The NAS never sends a "start time".  Instead, it sends
-	#  a start packet, *possibly* with an Acct-Delay-Time.
-	#  The server is supposed to conclude that the start time
-	#  was "Acct-Delay-Time" seconds in the past.
-	#
-	#  The code below creates an explicit start time, which can
-	#  then be used in other modules.  It will be *mostly* correct.
-	#  Any errors are due to the 1-second resolution of RADIUS,
-	#  and the possibility that the time on the NAS may be off.
-	#
-	#  The start time is: NOW - delay - session_length
-	#
+	#update request {
+	#  	&FreeRADIUS-Acct-Session-Start-Time = "%{expr: %l - %{%{Acct-Session-Time}:-0} - %{%{Acct-Delay-Time}:-0}}"
+	#}
 
-	update request {
-	  	&FreeRADIUS-Acct-Session-Start-Time = "%{expr: %l - %{%{Acct-Session-Time}:-0} - %{%{Acct-Delay-Time}:-0}}"
-	}
-
-
-	#
-	#  Ensure that we have a semi-unique identifier for every
-	#  request, and many NAS boxes are broken.
 	acct_unique
 
-	#
-	#  Look for IPASS-style 'realm/', and if not found, look for
-	#  '@realm', and decide whether or not to proxy, based on
-	#  that.
-	#
-	#  Accounting requests are generally proxied to the same
-	#  home server as authentication requests.
 #	IPASS
-	suffix
+	#suffix
 #	ntdomain
 
 	#
@@ -290,53 +253,19 @@ preacct {
 	#files
 }
 
-#
-#  Accounting.  Log the accounting data.
-#
 accounting {
-	#  Update accounting packet by adding the CUI attribute
-	#  recorded from the corresponding Access-Accept
-	#  use it only if your NAS boxes do not support CUI themselves
 #	cui
-	#
-	#  Create a 'detail'ed log of the packets.
-	#  Note that accounting requests which are proxied
-	#  are also logged in the detail file.
-	#detail
 #	daily
 
-	#  Update the wtmp file
-	#
-	#  If you don't use "radlast", you can delete this line.
 	#unix
 
-	#
-	#  For Simultaneous-Use tracking.
-	#
-	#  Due to packet losses in the network, the data here
-	#  may be incorrect.  There is little we can do about it.
 #	radutmp
 #	sradutmp
 
-	#  Return an address to the IP Pool when we see a stop record.
 #	main_pool
 
-	#
-	#  Log traffic to an SQL database.
-	#
-	#  See "Accounting queries" in mods-available/sql
 	#-sql
 
-	#
-	#  If you receive stop packets with zero session length,
-	#  they will NOT be logged in the database.  The SQL module
-	#  will print a message (only in debugging mode), and will
-	#  return "noop".
-	#
-	#  You can ignore these packets by uncommenting the following
-	#  three lines.  Otherwise, the server will not respond to the
-	#  accounting request, and the NAS will retransmit.
-	#
 	#if (noop) {
 	#	ok
 	#}
@@ -345,10 +274,10 @@ accounting {
 #	pgsql-voip
 
 	# For Exec-Program and Exec-Program-Wait
-	exec
+	#exec
 
 	#  Filter attributes from the accounting response.
-	attr_filter.accounting_response
+	#attr_filter.accounting_response
 
 	#
 	#  See "Autz-Type Status-Server" for how this works.
@@ -357,48 +286,50 @@ accounting {
 #
 #	}
 
-    update control {
-        #&Auth-Type := "Accept"
-        &REST-HTTP-Header := "Content-Type: application/json"
-    }
-    #redis
-    rest
+	# DEBUG
+	# Customer 151412
+	#update request {
+	#	&ADSL-Agent-Remote-Id := 0x00061c8779142633
+	#	&ADSL-Agent-Circuit-Id := 0x000074000719
+	#	&ERX-Dhcp-Mac-Addr := "00:50:79:66:68:00"
+	#	&NAS-Port-Id := 999
+	#}
 
-    if (updated) {
-        ok
-    }
+	update control {
+		#&Auth-Type := "Accept"
+		&REST-HTTP-Header := "Content-Type: application/json"
+	}
+	#redis
+	rest
 
-    if (ok) {
-        update control {
-            Auth-Type := Accept
-        }
-    } else {
-        reject
-    }
+	#if (updated) {
+	#	ok
+	#}
 
-    if (reject) {
-        update control {
-            Auth-Type := Reject
-        }
-    }
+	#if (ok) {
+	#	update control {
+	#		Auth-Type := Accept
+	#	}
+	#} else {
+	#	reject
+	#}
+
+	#if (reject) {
+	#	update control {
+	#		Auth-Type := Reject
+	#	}
+	#}
+	ok
 }
 
 
-#  Session database, used for checking Simultaneous-Use. Either the radutmp
-#  or rlm_sql module can handle this.
-#  The rlm_sql module is *much* faster
 session {
 #	radutmp
 
-	#
-	#  See "Simultaneous Use Checking Queries" in mods-available/sql
 #	sql
 }
 
 
-#  Post-Authentication
-#  Once we KNOW that the user has been authenticated, there are
-#  additional steps we can take.
 post-auth {
 	#
 	#  If you need to have a State attribute, you can
@@ -411,81 +342,30 @@ post-auth {
 #		}
 #	}
 
-	#
-	#  For EAP-TTLS and PEAP, add the cached attributes to the reply.
-	#  The "session-state" attributes are automatically cached when
-	#  an Access-Challenge is sent, and automatically retrieved
-	#  when an Access-Request is received.
-	#
-	#  The session-state attributes are automatically deleted after
-	#  an Access-Reject or Access-Accept is sent.
-	#
-	update {
-		&reply: += &session-state:
-	}
 
-	#  Get an address from the IP Pool.
-#	main_pool
-
-
-	#  Create the CUI value and add the attribute to Access-Accept.
-	#  Uncomment the line below if *returning* the CUI.
-#	cui
-
-	#
-	#  If you want to have a log of authentication replies,
-	#  un-comment the following line, and enable the
-	#  'detail reply_log' module.
-#	reply_log
-
-	#
-	#  After authenticating the user, do another SQL query.
-	#
-	#  See "Authentication Logging Queries" in mods-available/sql
-	#-sql
-
-	#
-	#  Un-comment the following if you want to modify the user's object
-	#  in LDAP after a successful login.
-	#
-#	ldap
-
-	# For Exec-Program and Exec-Program-Wait
-	exec
-
-	#  Remove reply message if the response contains an EAP-Message
-	remove_reply_message_if_eap
-
-	#
-	#  Access-Reject packets are sent through the REJECT sub-section of the
-	#  post-auth section.
-	#
-	#  Add the ldap module name (or instance) if you have set
-	#  'edir_account_policy_check = yes' in the ldap module configuration
-	#
-	#  The "session-state" attributes are not available here.
-	#
+	#update control {
+	#	&Pool-Name := "v152_10_152_32_0_20"
+	#	#Pool-Name = "guest"
+	#}
+	#update request {
+	#	&NAS-Port-Id := 145
+	#}
 	Post-Auth-Type REJECT {
-		# log failed authentications in SQL, too.
-		#-sql
-		#attr_filter.access_reject
-
-		# Insert EAP-Failure message if the request was
-		# rejected by policy instead of because of an
-		# authentication failure
-		#eap
-
-		#  Remove reply message if the response contains an EAP-Message
-		remove_reply_message_if_eap
+		update control {
+			Pool-Name = "guest"
+		}
+		ok
 	}
 
-	#
-	#  Filter access challenges.
-	#
-	Post-Auth-Type Challenge {
-#		remove_reply_message_if_eap
-#		attr_filter.access_challenge.post-auth
+	if (control:Pool-Name && control:Pool-Name == "guest") {
+		guest
+	} else {
+		# Calc pool by vlan if it exists
+		if (!control:Pool-Name && request:NAS-Port-Id) {
+			python
+		}
+		#  Get an address from the IP Pool.
+		$INCLUDE ../mods-enabled/pool_list.conf
 	}
-
 }
 }

@@ -5,7 +5,7 @@ from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
-from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
+from networks.models import CustomerIpLeaseModel
 
 from radiusapp.radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
 
@@ -89,79 +89,6 @@ class FetchSubscriberLeaseResponse:
         return self.__repr__()
 
 
-class CustomerRadiusSessionManager(models.Manager):
-    """Session manager 4 CustomerRadiusSession model."""
-
-    @staticmethod
-    def fetch_subscriber_lease(
-        customer_mac: EUI,
-        customer_id: Optional[int],
-        customer_group: Optional[int],
-        is_dynamic: bool,
-        vid: Optional[int],
-        pool_kind: NetworkIpPoolKind,
-    ) -> Optional[FetchSubscriberLeaseResponse]:
-        """Fetch lease 4 customer."""
-        if not isinstance(pool_kind, NetworkIpPoolKind):
-            raise TypeError("pool_kind must be choice from NetworkIpPoolKind")
-        with connection.cursor() as cur:
-            cur.execute(
-                "select * from fetch_subscriber_lease"
-                "(%s::macaddr, %s, %s, %s::boolean,"
-                "%s::smallint, %s::smallint)",
-                [str(customer_mac), customer_id, customer_group, is_dynamic, vid, pool_kind.value],
-            )
-            res = cur.fetchone()
-        (lease_id, ip_addr, pool_id, lease_time, lease_mac, customer_id, is_dynamic, is_assigned) = res
-        if lease_id is None:
-            return
-        return FetchSubscriberLeaseResponse(
-            lease_id=lease_id,
-            ip_addr=ip_addr,
-            pool_id=pool_id,
-            lease_time=lease_time,
-            customer_mac=lease_mac,
-            customer_id=customer_id,
-            is_dynamic=is_dynamic,
-            is_assigned=is_assigned,
-        )
-
-    def _assign_guest_session(
-        self, customer_mac: EUI, customer_id: Optional[int] = None
-    ) -> Optional[FetchSubscriberLeaseResponse]:
-        """Fetch guest lease."""
-        # Тут выделяем гостевой ip для этой сессии.
-        return self.fetch_subscriber_lease(
-            customer_mac=customer_mac,
-            customer_id=customer_id,
-            customer_group=None,
-            is_dynamic=True,
-            vid=None,
-            pool_kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
-        )
-
-    def assign_guest_session(
-        self,
-        customer_mac: EUI,
-    ) -> Optional[FetchSubscriberLeaseResponse]:
-        """Fetch guest lease 4 unknown customer."""
-        return self._assign_guest_session(customer_mac=customer_mac)
-
-    def assign_guest_customer_session(
-        self, customer_id: int, customer_mac: EUI
-    ) -> Optional[FetchSubscriberLeaseResponse]:
-        """
-        Fetch guest lease for known customer, but who hasn't access to service.
-
-        :param customer_id: customers.models.Customer model id.
-        :param customer_mac: Customer device MAC address.
-        :return: CustomerRadiusSession instance
-        """
-        # Тут создаём сессию и сразу выделяем гостевой ip для этой сессии,
-        #  с привязкой абонента.
-        return self._assign_guest_session(customer_mac=customer_mac, customer_id=customer_id)
-
-
 class CustomerRadiusSession(models.Model):
     """Model helper 4 RADIUS authentication."""
 
@@ -180,8 +107,6 @@ class CustomerRadiusSession(models.Model):
     input_packets = models.BigIntegerField(default=0)
     output_packets = models.BigIntegerField(default=0)
     closed = models.BooleanField(_("Is session finished"), default=False)
-
-    objects = CustomerRadiusSessionManager()
 
     def finish_session(self) -> Optional[str]:
         """Send radius disconnect packet to BRAS."""
@@ -234,6 +159,16 @@ class CustomerRadiusSession(models.Model):
     def h_output_packets(self):
         """Human readable output packets."""
         return _human_readable_int(num=self.output_packets, u="p")
+
+    @staticmethod
+    def create_lease_w_auto_pool_n_session(ip: str, mac: str, customer_id: int,
+                                           radius_uname: str, radius_unique_id: str) -> bool:
+        with connection.cursor() as cur:
+            cur.execute("SELECT create_lease_w_auto_pool_n_session"
+                        "(%s::inet, %s::macaddr, %s::integer, %s, %s::uuid)",
+                        (ip, mac, customer_id, radius_uname, radius_unique_id))
+            created = cur.fetchone()
+        return created
 
     def __str__(self):
         return f"{self.customer}: ({self.radius_username}) {self.ip_lease}"

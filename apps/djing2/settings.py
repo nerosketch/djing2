@@ -151,6 +151,7 @@ DATABASES = {
         "PASSWORD": get_secret("POSTGRES_PASSWORD"),
         "HOST": get_env("POSTGRES_HOST", "postgres"),
         "PORT": get_env("POSTGRES_PORT", 5432),
+        "DISABLE_SERVER_SIDE_CURSORS": bool(get_env("DISABLE_SERVER_SIDE_CURSORS", False)),
     }
 }
 

@@ -20,3 +20,7 @@ docker/secrets/
 docker/docker-compose.yml
 secrets/
 .env
+docker/djing2freeradius/pool/
+docker/djing2freeradius/raddb/mods-enabled/ippool.d/
+docker/djing2freeradius/raddb/mods-enabled/pool_list.conf
+touch_reload

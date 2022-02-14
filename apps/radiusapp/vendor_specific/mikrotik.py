@@ -1,6 +1,7 @@
 from netaddr import EUI
 from netfields.mac import mac_unix_common
 from radiusapp.vendor_base import IVendorSpecific
+from rest_framework import status
 
 
 class MikrotikVendorSpecific(IVendorSpecific):
@@ -19,17 +20,11 @@ class MikrotikVendorSpecific(IVendorSpecific):
     def get_vlan_id(self, data):
         return 0
 
-    def get_auth_guest_session_response(self, guest_session, data):
-        return {
-            # TODO: Optimize it, ip_lease.ip_address fetched from db
-            "Framed-IP-Address": guest_session.ip_lease.ip_address,
-            # 'Acct-Interim-Interval': 300,
-        }
-
-    def get_auth_session_response(self, subscriber_lease, customer_service, customer, request_data):
+    def get_auth_session_response(self, customer_service, customer, request_data, subscriber_lease=None):
+        # TODO: Make it
         return {
             "Framed-IP-Address": subscriber_lease.ip_addr,
             # 'Acct-Interim-Interval': 300,
             "Mikrotik-Rate-Limit": "1M/1M",
             "Mikrotik-Address-List": "DjingUsersAllowed",
-        }
+        }, status.HTTP_200_OK

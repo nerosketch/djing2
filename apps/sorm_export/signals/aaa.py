@@ -1,11 +1,15 @@
 from datetime import datetime
+
+from django.core.mail import send_mail
 from netaddr import EUI
 from netfields.mac import mac_unix_common
 from radiusapp import custom_signals
+from django.conf import settings
 from django.dispatch.dispatcher import receiver
 from djing2.lib import time2utctime
 from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendors import IVendorSpecific
+from rest_framework.exceptions import ValidationError
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
 from sorm_export.tasks.aaa import save_radius_acct
 
@@ -14,14 +18,23 @@ def _save_aaa_log(event_time: datetime, **serializer_keys):
     serializer_keys.update({
         "event_time": time2utctime(event_time),
     })
-    ser = AAAExportSerializer(
-        data=serializer_keys
-    )
-    ser.is_valid(raise_exception=True)
-    return save_radius_acct(event_time=event_time, data=ser.data)
+    try:
+        ser = AAAExportSerializer(
+            data=serializer_keys
+        )
+        ser.is_valid(raise_exception=True)
+        return save_radius_acct(event_time=event_time, data=ser.data)
+    except ValidationError as err:
+        sorm_reporting_emails = getattr(settings, 'SORM_REPORTING_EMAILS', None)
+        send_mail(
+            'AAA export log error',
+            str(err),
+            getattr(settings, 'DEFAULT_FROM_EMAIL'),
+            sorm_reporting_emails
+        )
 
 
-@receiver(custom_signals.radius_auth_start_signal, sender=CustomerRadiusSession)
+@receiver(custom_signals.radius_acct_start_signal, sender=CustomerRadiusSession)
 def signal_radius_session_acc_start(
     sender,
     instance: CustomerRadiusSession,
@@ -48,7 +61,7 @@ def signal_radius_session_acc_start(
     )
 
 
-@receiver(custom_signals.radius_auth_stop_signal, sender=CustomerRadiusSession)
+@receiver(custom_signals.radius_acct_stop_signal, sender=CustomerRadiusSession)
 def signal_radius_session_acct_stop(
     sender, instance_queryset, data: dict, ip_addr: str, radius_unique_id: str, customer_mac: EUI, *args, **kwargs
 ):
