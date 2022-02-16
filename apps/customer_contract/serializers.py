@@ -5,6 +5,9 @@ from customer_contract import models
 class CustomerContractModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.CustomerContractModel
+        extra_kwargs = {
+            'is_active': {'read_only': True}
+        }
         fields = '__all__'
 
 
