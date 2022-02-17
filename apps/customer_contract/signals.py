@@ -26,7 +26,7 @@ def customer_profile_disable_after_contract_stop(sender, instance: CustomerContr
         if not instance.is_active:
             raise ValidationError(_('Not allowed to create disabled contract'))
         return
-    Customer.objects.filter(customer=instance).update(is_active=False)
+    Customer.objects.filter(pk=instance.customer.pk).update(is_active=False)
 
 
 @receiver(pre_save, sender=Customer)

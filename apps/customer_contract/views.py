@@ -14,7 +14,8 @@ class CustomerContractModelViewSet(DjingModelViewSet):
     def finish(self, request, pk=None):
         contract = self.get_object()
         contract.finish()
-        return Response('ok')
+        ser = self.get_serializer(contract)
+        return Response(ser.data)
 
 
 class CustomerContractAttachmentModelViewSet(DjingModelViewSet):

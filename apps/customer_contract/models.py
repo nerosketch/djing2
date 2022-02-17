@@ -8,6 +8,10 @@ from customer_contract.custom_signals import finish_customer_contract_signal
 from rest_framework.exceptions import ValidationError
 
 
+def _datetime_now_time():
+    return datetime.now()
+
+
 class CustomerContractModel(BaseAbstractModel):
     """Customer contract info"""
     __before_is_active: bool
@@ -23,7 +27,7 @@ class CustomerContractModel(BaseAbstractModel):
     )
     start_service_time = models.DateTimeField(
         _('Start service time'),
-        default=lambda: datetime.now(),
+        default=_datetime_now_time,
     )
     end_service_time = models.DateTimeField(
         _('End service time'),
@@ -63,15 +67,17 @@ class CustomerContractModel(BaseAbstractModel):
             sender=self.__class__,
             instance=self
         )
+        setattr(self, '__from_finish', True)
         self.save(update_fields=['is_active', 'end_service_time'])
 
     def save(self, *args, **kwargs):
         if not self.__before_is_active and bool(self.is_active):
             # prevent restore contract from inactive
             raise ValidationError(_('Restoring from inactive is not allowed'))
-        if self.__before_is_active != self.is_active:
+        if not hasattr(self, '__from_finish') and self.__before_is_active != self.is_active:
             # prevent directly change is_active field
             raise ValidationError(_('Direct change is_active is not allowed'))
+        delattr(self, '__from_finish')
         return super().save(*args, **kwargs)
 
     class Meta:
