@@ -8,10 +8,6 @@ from customer_contract.custom_signals import finish_customer_contract_signal
 from rest_framework.exceptions import ValidationError
 
 
-def _datetime_now_time():
-    return datetime.now()
-
-
 class CustomerContractModel(BaseAbstractModel):
     """Customer contract info"""
     __before_is_active: bool
@@ -27,7 +23,7 @@ class CustomerContractModel(BaseAbstractModel):
     )
     start_service_time = models.DateTimeField(
         _('Start service time'),
-        default=_datetime_now_time,
+        default=lambda: datetime.now(),
     )
     end_service_time = models.DateTimeField(
         _('End service time'),
@@ -62,11 +58,12 @@ class CustomerContractModel(BaseAbstractModel):
 
     def finish(self):
         self.is_active = False
+        self.end_service_time = datetime.now()
         finish_customer_contract_signal.send(
             sender=self.__class__,
             instance=self
         )
-        self.save(update_fields=['is_active'])
+        self.save(update_fields=['is_active', 'end_service_time'])
 
     def save(self, *args, **kwargs):
         if not self.__before_is_active and bool(self.is_active):
