@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from rest_framework.exceptions import ValidationError
 
+from djing2.lib.logger import logger
 from addresses.models import AddressModel, AddressModelTypes
 from customers.models import Customer, CustomerService, AdditionalTelephone
 from customers_legal.models import CustomerLegalModel
@@ -71,7 +72,7 @@ def export_all_address_objects():
                 return
             return dat
         except ExportFailedStatus as err:
-            logging.error(str(err))
+            logger.error(str(err))
 
     data = (_make_exportable_object(a) for a in addr_objects.iterator())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ADDRESS)

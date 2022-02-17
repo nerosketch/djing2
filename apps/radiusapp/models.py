@@ -1,5 +1,4 @@
 """radiusapp models file."""
-import logging
 from typing import Optional
 from netaddr import EUI
 from django.db import models, connection
@@ -8,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from customers.models import Customer
 from networks.models import CustomerIpLeaseModel
 
+from djing2.lib.logger import logger
 from radiusapp.radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
 
 
@@ -171,7 +171,7 @@ class CustomerRadiusSession(models.Model):
             created = cur.fetchone()
         if isinstance(created, tuple) and len(created) == 1:
             return created[0]
-        logging.error('Unexpected result from create_lease_w_auto_pool_n_session sql func')
+        logger.error('Unexpected result from create_lease_w_auto_pool_n_session sql func')
         return False
 
     def __str__(self):
