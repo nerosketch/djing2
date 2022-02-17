@@ -1,4 +1,5 @@
 """radiusapp models file."""
+import logging
 from typing import Optional
 from netaddr import EUI
 from django.db import models, connection
@@ -168,7 +169,10 @@ class CustomerRadiusSession(models.Model):
                         "(%s::inet, %s::macaddr, %s::integer, %s, %s::uuid)",
                         (ip, mac, customer_id, radius_uname, radius_unique_id))
             created = cur.fetchone()
-        return created
+        if isinstance(created, tuple) and len(created) == 1:
+            return created[0]
+        logging.error('Unexpected result from create_lease_w_auto_pool_n_session sql func')
+        return False
 
     def __str__(self):
         return f"{self.customer}: ({self.radius_username}) {self.ip_lease}"
