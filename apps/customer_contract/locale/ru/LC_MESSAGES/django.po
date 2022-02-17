@@ -57,3 +57,9 @@ msgstr "Восстановление из завершённого догово�
 msgid "Direct change is_active is not allowed"
 msgstr "Прямое изменение поля is_active не допустимо"
 
+msgid "Not allowed to create disabled contract"
+msgstr "Нельзя создавать завершённые договоры"
+
+msgid "Prevent enable profile when it has inactive contracts"
+msgstr "Запрещено включать учётку абонента когда у него есть завершённые договора"
+

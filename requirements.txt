@@ -1,5 +1,5 @@
 Django==3.1.14
-djangorestframework==3.12.2
+djangorestframework==3.12.4
 Pillow>=8.2.0
 
 # permissions
@@ -61,3 +61,4 @@ git+https://github.com/pyradius/pyrad.git#egg=pyrad
 drf-orjson-renderer==1.1.5
 
 pyyaml
+uritemplate
