@@ -1,8 +1,8 @@
-import logging
 from typing import List
 from datetime import datetime
 from uwsgi_tasks import task
 
+from djing2.lib.logger import logger
 from networks.models import CustomerIpLeaseModel
 from sorm_export.hier_export.base import format_fname
 from sorm_export.hier_export.networks import export_ip_leases, get_addr_type
@@ -18,7 +18,7 @@ def export_static_ip_leases_task(customer_lease_id_list: List[int], event_time=N
         data, fname = export_ip_leases(leases=leases, event_time=event_time)
         task_export(data, fname, ExportStampTypeEnum.NETWORK_STATIC_IP)
     except ExportFailedStatus as err:
-        logging.error(err)
+        logger.error(err)
 
 
 @task()

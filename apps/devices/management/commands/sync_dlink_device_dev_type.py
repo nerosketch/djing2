@@ -1,7 +1,7 @@
-import logging
 from typing import Any
 
 from django.core.management.base import BaseCommand
+from djing2.lib.logger import logger
 from devices.models import Device
 from easysnmp import Session
 from easysnmp.exceptions import EasySNMPError
@@ -21,7 +21,7 @@ class Command(BaseCommand):
         )
         for dev in devs:
             try:
-                logging.info("Try to scan: %s" % str(dev))
+                logger.info("Try to scan: %s" % str(dev))
                 ses = Session(str(dev.ip_address), 2, str(dev.man_passw or "public"))
                 sys_name = ses.get(".1.3.6.1.2.1.1.1.0").value
                 if not sys_name or sys_name == "NOSUCHINSTANCE":
@@ -34,7 +34,7 @@ class Command(BaseCommand):
                     dev.dev_type = 9
                 else:
                     continue
-                logging.info("Set dev type to: %s" % sys_name)
+                logger.info("Set dev type to: %s" % sys_name)
                 dev.save(update_fields=["dev_type"])
             except (EasySNMPError, SystemError) as err:
-                logging.error("%s: %s" % (dev, err))
+                logger.error("%s: %s" % (dev, err))
