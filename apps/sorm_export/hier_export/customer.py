@@ -157,6 +157,10 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             addr_type=AddressModelTypes.CORPUS
         ))
 
+        # first available contract
+        # TODO: optimize
+        contract = customer.customercontractmodel_set.first()
+
         return {
             "ap_id": addr.pk,
             "customer_id": customer.pk,
@@ -166,26 +170,17 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             "builing": addr_building,
             "building_corpus": addr_corpus or None,
             "full_address": addr.full_title(),
-            "actual_start_time": customer.contract_date if customer.contract_date else datetime(
-                customer.create_date.year,
-                customer.create_date.month,
-                customer.create_date.day
-            ),
-            # TODO: указывать дату конца, когда абонент выключается или удаляется
-            # 'actual_end_time':
+            "actual_start_time": contract.start_service_time,
+            'actual_end_time': contract.end_service_time or None
         }
 
-    contracts_q = CustomerContractModel.objects.filter(
-        customer_id=OuterRef('pk'),
-        is_active=True
-    ).values('start_service_time')
     return (
         individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
         gen,
-        customers.select_related(
+        customers.filter(
+            customercontractmodel=None
+        ).select_related(
             "address", "address__parent_addr"
-        ).annotate(
-            contract_date=Subquery(contracts_q)
         ),
         f"ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt",
     )
