@@ -177,9 +177,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
     return (
         individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
         gen,
-        customers.filter(
-            customercontractmodel=None
-        ).select_related(
+        customers.select_related(
             "address", "address__parent_addr"
         ),
         f"ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt",
