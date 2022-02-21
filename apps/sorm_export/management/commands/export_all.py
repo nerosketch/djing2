@@ -45,7 +45,7 @@ from sorm_export.tasks.task_export import task_export
 def _general_customers_queryset_filter():
     return Customer.objects.filter(is_active=True).annotate(
         contr_count=Count('customercontractmodel')
-    ).exclude(contr_count__lt=0)
+    ).filter(contr_count__gt=0)
 
 
 def export_all_root_customers():
@@ -198,25 +198,26 @@ class Command(BaseCommand):
             (export_all_gateways, "Gateways export status"),
         )
         fname = f"/tmp/export{datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')}.log"
+        export_logger = logging.getLogger('djing2.sorm_logger')
         logging.basicConfig(
             filename=fname,
             filemode='w',
             level=logging.INFO
         )
-        logging.info("Starting full export")
+        export_logger.info("Starting full export")
         for fn, msg in funcs:
             try:
-                logging.info(msg)
+                export_logger.info(msg)
                 #self.stdout.write(msg, ending=' ')
                 fn()
                 #self.stdout.write(self.style.SUCCESS("OK"))
             except (ExportFailedStatus, FileNotFoundError) as err:
-                logging.error(str(err))
+                export_logger.error(str(err))
                 #self.stderr.write(str(err))
             except ValidationError as e:
-                logging.error(str(e.detail))
+                export_logger.error(str(e.detail))
                 #self.stderr.write(str(e.detail))
-        logging.info("Finished full export")
+        export_logger.info("Finished full export")
         sorm_reporting_emails = getattr(settings, 'SORM_REPORTING_EMAILS', None)
         if not sorm_reporting_emails:
             return
