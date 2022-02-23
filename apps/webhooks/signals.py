@@ -21,6 +21,7 @@ def _model_instance_to_dict(instance, model_class) -> dict:
 
 
 def _send2task(notify_type: HookObserverNotificationTypes, instance: Optional[Any], sender):
+    # TODO: Optimize it. It wll be execute every signal(many times)
     content_type = ContentType.objects.get_for_model(sender)
     app_label_str = str(content_type.app_label)
     model_str = str(content_type.model)
