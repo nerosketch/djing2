@@ -10,7 +10,7 @@ from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
 
 class NetworkIpPoolModelSerializer(BaseCustomModelSerializer):
     kind_name = serializers.CharField(source="get_kind_display", read_only=True)
-    # ToDO: optimize
+    # TODO: optimize
     usage_count = serializers.IntegerField(source="customeripleasemodel_set.count", read_only=True)
 
     vid = serializers.IntegerField(source="vlan_if.vid", read_only=True)
