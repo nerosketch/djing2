@@ -12,7 +12,8 @@ from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws, WebSocketSender
 from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SecureApiViewMixin, SitesGroupFilterMixin, SitesFilterMixin
-from djing2.lib import LogicError, DuplicateEntry, ProcessLocked, logger
+from djing2.lib.logger import logger
+from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
 from networks.serializers import NetworkIpPoolModelSerializer, VlanIfModelSerializer, CustomerIpLeaseModelSerializer
 
