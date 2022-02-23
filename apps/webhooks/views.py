@@ -5,6 +5,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from webhooks.models import HookObserver
 from webhooks.serializers import (
     HookObserverModelSerializer,
@@ -16,6 +17,7 @@ from webhooks.serializers import (
 class HookObserverModelViewSet(ModelViewSet):
     queryset = HookObserver.objects.all()
     serializer_class = HookObserverModelSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def find_hook_observer_model(self, request_data) -> Optional[dict]:
         ser = HookObserverSubscribeSerializer(data=request_data)
@@ -63,3 +65,4 @@ class HookObserverModelViewSet(ModelViewSet):
 class ContentTypeModelViewSet(ReadOnlyModelViewSet):
     queryset = ContentType.objects.all()
     serializer_class = ContentTypeModelSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
