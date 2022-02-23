@@ -1,4 +1,3 @@
-import logging
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.translation import gettext_lazy as _
 from django.db.utils import IntegrityError
@@ -14,7 +13,7 @@ from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws, WebSocketSender
 from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SecureApiViewMixin, SitesGroupFilterMixin, SitesFilterMixin
-from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
+from djing2.lib import LogicError, DuplicateEntry, ProcessLocked, logger
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
 from networks import serializers
 from customers.serializers import CustomerModelSerializer
@@ -178,5 +177,5 @@ class DhcpLever(SecureApiViewMixin, APIView):
             else:
                 return '"cmd" parameter is invalid: %s' % data_action
         except (LogicError, DuplicateEntry) as e:
-            logging.error("%s: %s" % (e.__class__.__name__, e))
+            logger.error("%s: %s" % (e.__class__.__name__, e))
             return str(e)

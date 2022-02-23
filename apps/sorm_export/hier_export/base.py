@@ -1,8 +1,8 @@
-import logging
 from typing import Tuple, Any
 from datetime import datetime
 from functools import wraps
 
+from djing2.lib.logger import logger
 from rest_framework.exceptions import ValidationError
 
 
@@ -44,7 +44,7 @@ def iterable_export_decorator(fn):
                 ser.is_valid(raise_exception=True)
                 return ser.data
             except ValidationError as e:
-                logging.error("%s | %s" % (e.detail, dat))
+                logger.error("%s | %s" % (e.detail, dat))
 
         res_data = map(gen_fn, qs.iterator())
         res_data = (_val_fn(r) for r in res_data if r)
@@ -70,7 +70,7 @@ def iterable_gen_export_decorator(fn):
                 ser.is_valid(raise_exception=True)
                 return ser.data
             except ValidationError as e:
-                logging.error("%s | %s" % (e.detail, dat))
+                logger.error("%s | %s" % (e.detail, dat))
 
         # res_data = map(gen_fn, qs.iterator())
         res_data = (_val_fn(r) for r in gen_fn() if r)

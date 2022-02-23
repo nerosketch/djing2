@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from customers.models import Customer
 from networks.models import CustomerIpLeaseModel
 
+from djing2.lib.logger import logger
 from radiusapp.radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
 
 
@@ -168,7 +169,10 @@ class CustomerRadiusSession(models.Model):
                         "(%s::inet, %s::macaddr, %s::integer, %s, %s::uuid)",
                         (ip, mac, customer_id, radius_uname, radius_unique_id))
             created = cur.fetchone()
-        return created
+        if isinstance(created, tuple) and len(created) == 1:
+            return created[0]
+        logger.error('Unexpected result from create_lease_w_auto_pool_n_session sql func')
+        return False
 
     def __str__(self):
         return f"{self.customer}: ({self.radius_username}) {self.ip_lease}"

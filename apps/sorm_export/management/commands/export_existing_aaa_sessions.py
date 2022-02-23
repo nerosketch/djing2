@@ -35,7 +35,7 @@ class Command(BaseCommand):
             "event_type": AAAEventType.RADIUS_AUTH_START,
             "session_id": str(ses.session_id),
             "customer_ip": ses.ip_lease.ip_address,
-            "customer_db_username": ses.customer.get_username(),
+            "customer_db_username": ses.customer.username,
             'input_octets': ses.input_octets,
             'output_octets': ses.output_octets,
             "customer_device_mac": ses.ip_lease.mac_address.format(dialect=mac_unix_common) if ses.ip_lease.mac_address else ''
