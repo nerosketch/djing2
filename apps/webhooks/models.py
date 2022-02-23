@@ -11,6 +11,7 @@ class HookObserverNotificationTypes(models.IntegerChoices):
     MODEL_PRE_DELETE = 4
 
 
+# Subs from PubSub
 class HookObserver(models.Model):
     notification_type = models.PositiveSmallIntegerField(
         _('Notification type'),
