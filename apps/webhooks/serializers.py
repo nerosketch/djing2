@@ -7,6 +7,7 @@ class HookObserverModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = HookObserver
         fields = '__all__'
+        exclude = ['HookObserver']
 
 
 class ContentTypeSerializer(serializers.Serializer):

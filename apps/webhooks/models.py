@@ -26,6 +26,11 @@ class HookObserver(models.Model):
         models.CASCADE,
         verbose_name=_('content type'),
     )
+    user = models.ForeignKey(
+        'profiles.UserProfile',
+        on_delete=models.CASCADE,
+        verbose_name=_('Subscription profile'),
+    )
 
     class Meta:
         db_table = 'hook_observer'

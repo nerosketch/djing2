@@ -19,6 +19,10 @@ class HookObserverModelViewSet(ModelViewSet):
     serializer_class = HookObserverModelSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(user=self.request.user)
+
     def find_hook_observer_model(self, request_data) -> Optional[dict]:
         ser = HookObserverSubscribeSerializer(data=request_data)
         ser.is_valid(raise_exception=True)
@@ -42,7 +46,9 @@ class HookObserverModelViewSet(ModelViewSet):
         find_kwargs = self.find_hook_observer_model(request.data)
         if not find_kwargs:
             return Response('Hook observer model not found', status=status.HTTP_404_NOT_FOUND)
-        ho, created = HookObserver.objects.get_or_create(**find_kwargs)
+        ho, created = HookObserver.objects.get_or_create(**find_kwargs, defaults={
+            'user': request.user
+        })
 
         serializer = self.serializer_class(instance=ho)
         headers = self.get_success_headers(serializer.data)
