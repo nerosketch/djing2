@@ -26,7 +26,7 @@ services:
   app:
     build:
       context: .
-    container_name: djing2_app
+    container_name: djing2_app_dev
     hostname: app
     depends_on:
       - postgres
@@ -59,6 +59,7 @@ services:
       - SORM_EXPORT_FTP_USERNAME
       - SORM_EXPORT_FTP_DISABLE
       - ALLOWED_HOSTS
+      - SECRETS_DIR_PATH
       - CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR
     volumes:
       - .:/var/www/djing2

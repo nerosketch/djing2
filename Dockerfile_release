@@ -4,8 +4,6 @@ LABEL maintainer="nerosketch@gmail.com"
 
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONOPTIMIZE 1
-ENV PYTHONPATH "/var/www/djing2/apps:/var/www/djing2:/usr/local/lib/python3.9/site-packages:/usr/local/lib/python3.9/lib-dynload:/usr/local/lib/python3.9"
-#ENV APP_DEBUG ${APP_DEBUG}
 
 EXPOSE ${PORT}
 
@@ -21,15 +19,16 @@ RUN pip install --no-cache-dir -r /var/www/djing2/requirements.txt
 
 RUN chown -R www-data. /var/www
 
-WORKDIR /var/www/djing2
-
 USER www-data
+
+WORKDIR /var/www/djing2
 
 COPY . .
 
+#CMD exec sleep 3600
 CMD ./manage.py migrate \
-    && ./manage.py loaddata initial_data \
-    && ./manage.py compilemessages -l ru \
+    #&& ./manage.py loaddata initial_data \
+    #&& ./manage.py compilemessages -l ru \
     # && ./manage.py shell -c "from create_initial_user import *; make_initial_user()" \
     && exec uwsgi --ini /var/www/djing2/uwsgi_djing2.ini
-
+    #&& exec sleep 3600
