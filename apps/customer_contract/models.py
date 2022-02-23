@@ -74,10 +74,11 @@ class CustomerContractModel(BaseAbstractModel):
         if not self.__before_is_active and bool(self.is_active):
             # prevent restore contract from inactive
             raise ValidationError(_('Restoring from inactive is not allowed'))
-        if not hasattr(self, '__from_finish') and self.__before_is_active != self.is_active:
+        if hasattr(self, '__from_finish'):
+            delattr(self, '__from_finish')
+        elif self.__before_is_active != self.is_active:
             # prevent directly change is_active field
             raise ValidationError(_('Direct change is_active is not allowed'))
-        delattr(self, '__from_finish')
         return super().save(*args, **kwargs)
 
     class Meta:
