@@ -7,7 +7,7 @@ class HookObserverModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = HookObserver
         fields = '__all__'
-        exclude = ['HookObserver']
+        exclude = ['user']
 
 
 class ContentTypeSerializer(serializers.Serializer):
@@ -19,7 +19,7 @@ class HookObserverSubscribeSerializer(serializers.Serializer):
     notification_type = serializers.ChoiceField(
         choices=HookObserverNotificationTypes.choices
     )
-    client_url = serializers.CharField()
+    client_url = serializers.URLField()
     content_type = ContentTypeSerializer()
 
 

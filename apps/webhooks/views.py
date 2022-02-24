@@ -58,6 +58,11 @@ class HookObserverModelViewSet(ModelViewSet):
             headers=headers
         )
 
+    @subscribe.mapping.get
+    def subscribe_get(self, request):
+        ser = HookObserverSubscribeSerializer()
+        return Response(ser.data)
+
     @action(methods=['put'], detail=False)
     def unsubscribe(self, request):
         find_kwargs = self.find_hook_observer_model(request.data)

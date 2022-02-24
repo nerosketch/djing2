@@ -1,22 +1,23 @@
+import requests
 from typing import Optional
 from threading import Thread
 from datetime import datetime
-import requests
 from uwsgi_tasks import task, TaskExecutor, SPOOL_OK
 
 from webhooks.models import HookObserver
 
 
 def _send_notify(url: str, notification_type: int, app_label: str, model_str: str, data: Optional[dict]=None):
-    data = {
+    res_data = {
         'nt': notification_type,
         'ct': {
             'app': app_label,
             'model': model_str
         },
-        'time': datetime.now().strftime('%Y.%m.%dT%H:%M:%s')
+        'time': datetime.now().strftime('%Y.%m.%dT%H:%M:%s'),
+        'data': data
     }
-    r = requests.post(url, data=data)
+    r = requests.post(url, json=res_data)
     return r.content
 
 
