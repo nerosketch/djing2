@@ -45,7 +45,7 @@ jobs:
       - name: Build docker containers
         run: docker-compose up --build -d
       - name: Run tests
-        run: docker exec djing2_app ./manage.py test --failfast --noinput
+        run: docker exec djing2_app_dev ./manage.py test --failfast --noinput
       - name: Create SSH key
         run: |
           mkdir -p ~/.ssh/

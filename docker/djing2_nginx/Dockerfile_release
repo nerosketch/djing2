@@ -5,5 +5,8 @@ LABEL maintainer="nerosketch@gmail.com"
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY static /usr/share/nginx/html
 COPY sites-enabled /etc/nginx/sites-enabled
+COPY bad_browser.html /usr/share/nginx/html/bad_browser.html
+COPY browsersupp.conf /etc/nginx/browsersupp.conf
+COPY expires-hdrs.conf /etc/nginx/expires-hdrs.conf
 
 EXPOSE 80 443
