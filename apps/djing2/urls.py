@@ -20,7 +20,7 @@ api_urls = [
     path("fin/", include("fin_app.urls", namespace="fin_app")),
     path("sites/", include("sitesapp.urls", namespace="sitesapp")),
     path("radius/", include("radiusapp.urls", namespace="radiusapp")),
-    # path("sorm/", include("sorm_export.urls", namespace="sorm_export")),
+    path("sorm/", include("sorm_export.urls", namespace="sorm_export")),
     path("traf_stat/", include("traf_stat.urls", namespace="traf_stat")),
     path("legal/", include("customers_legal.urls", namespace="customers_legal")),
     path("can_login_by_location/", can_login_by_location),
