@@ -1,11 +1,11 @@
 from django.contrib.auth.models import Permission, Group as ProfileGroup
 from rest_framework import serializers
-from drf_queryfields import QueryFieldsMixin
+from djing2.lib.mixins import BaseCustomModelSerializer
 
 from groupapp.models import Group
 
 
-class GroupsSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+class GroupsSerializer(BaseCustomModelSerializer):
     class Meta:
         model = Group
         fields = ("id", "title", "sites")
