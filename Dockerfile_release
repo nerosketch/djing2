@@ -10,9 +10,9 @@ EXPOSE ${PORT}
 
 RUN apt-get update
 RUN apt-get install -y python3-psycopg2 libsnmp-dev arping gcc gettext telnet uwsgi uwsgi-plugin-python3 --no-install-recommends
-RUN mkdir -p /var/www/djing2/spooler \
+RUN mkdir -p /var/www/djing2/spooler /var/www/djing2/media \
     && touch /var/www/djing2/touch_reload \
-    && chown -Rv www-data. /var/www/djing2/spooler /var/www/djing2/touch_reload
+    && chown -Rv www-data. /var/www/djing2/spooler /var/www/djing2/touch_reload /var/www/djing2/media
 
 COPY --chown=www-data:www-data requirements.txt /var/www/djing2
 RUN pip install --no-cache-dir -r /var/www/djing2/requirements.txt

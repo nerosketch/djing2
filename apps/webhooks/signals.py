@@ -4,9 +4,7 @@ from django.db.models.signals import (
     post_save, post_delete,
     pre_save, pre_delete
 )
-from django.contrib.contenttypes.models import ContentType
 from rest_framework.serializers import ModelSerializer
-from djing2.lib.logger import logger
 from webhooks.models import HookObserverNotificationTypes
 from webhooks.tasks import send_update2observers_task
 
@@ -21,18 +19,14 @@ def _model_instance_to_dict(instance, model_class) -> dict:
 
 
 def _send2task(notify_type: HookObserverNotificationTypes, instance: Optional[Any], sender):
-    # TODO: Optimize it. It wll be execute every signal(many times)
-    content_type = ContentType.objects.get_for_model(sender)
-    app_label_str = str(content_type.app_label)
-    model_str = str(content_type.model)
-
-    model_class = content_type.model_class()
-    if model_class is None:
-        logger.error('send_update2observers() model_class is None')
-        return
+    app_label_str = sender._meta.app_label
+    model_str = sender._meta.object_name
 
     if instance:
-        instance_data = _model_instance_to_dict(instance, model_class)
+        instance_data = _model_instance_to_dict(
+            instance=instance,
+            model_class=sender
+        )
     else:
         instance_data = None
 
