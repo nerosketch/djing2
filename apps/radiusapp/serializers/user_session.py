@@ -11,6 +11,7 @@ class CustomerRadiusSessionModelSerializer(serializers.ModelSerializer):
     ip_lease_ip = serializers.IPAddressField(source="ip_lease.ip_address", read_only=True)
     ip_lease_mac = serializers.IPAddressField(source="ip_lease.mac_address", read_only=True)
     # is_guest_session = serializers.BooleanField(read_only=True)
+    customer = serializers.IntegerField(read_only=True, source='customer_id')
 
     def create(self, validated_data):
         # readonly model
@@ -22,4 +23,4 @@ class CustomerRadiusSessionModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomerRadiusSession
-        exclude = ["customer"]
+        fields = '__all__'

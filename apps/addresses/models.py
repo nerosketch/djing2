@@ -132,7 +132,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
     address_type = models.PositiveSmallIntegerField(
         verbose_name=_('Address type'),
         choices=AddressModelTypes.choices,
-        default=AddressModelTypes.UNKNOWN
+        default=AddressModelTypes.UNKNOWN.value
     )
 
     fias_address_level = models.IntegerField(

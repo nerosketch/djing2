@@ -49,6 +49,7 @@ class RadiusInteract:
     # client.timeout = 30
 
     def coa_inet2guest(self, uname: str):
+        # FIXME: move params to radius config
         attrs = {
             'User-Name': uname,
             'ERX-Service-Deactivate': 'SERVICE-INET',

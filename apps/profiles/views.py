@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
@@ -136,21 +136,21 @@ class LocationAuth(APIView):
     throttle_classes = ()
     permission_classes = ()
     schema = AutoSchema()
-    __doc__ = _("Login profile via customer's ip address")
+    __doc__ = gettext("Login profile via customer's ip address")
 
     @staticmethod
     def get(request, *args, **kwargs):
         user = authenticate(request=request, byip=True)
 
         if not user:
-            msg = _("Unable to log in with provided credentials.")
+            msg = _("Unable to log in with provided credentials")
             raise ValidationError(msg, code="authorization")
 
         if not user.sites.filter(pk=request.site.pk).exists():
             msg = _("Incorrect provided credentials.")
             raise ValidationError(msg, code="authorization")
 
-        token, created = Token.objects.get_or_create(user=user)
+        token, _ = Token.objects.get_or_create(user=user)
         return Response({"token": token.key})
 
 
@@ -209,4 +209,3 @@ class ProfileAuthLogViewSet(ReadOnlyModelViewSet):
         if self.request.user.is_superuser:
             return super().filter_queryset(queryset)
         return queryset.filter(profile=self.request.user)
-

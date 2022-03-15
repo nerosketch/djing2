@@ -129,7 +129,7 @@ class DjingModelViewSet(ModelViewSet):
 
 
 class DjingSuperUserModelViewSet(DjingModelViewSet):
-    permission_classes = [IsAuthenticated, IsAdminUser, IsSuperUser]
+    permission_classes = [IsAuthenticated, IsSuperUser]
 
 
 class DjingListAPIView(ListAPIView):
