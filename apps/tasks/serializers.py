@@ -61,3 +61,16 @@ class TaskDocumentAttachmentSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.TaskDocumentAttachment
         fields = "__all__"
+
+
+class TaskFinishDocumentModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = models.TaskFinishDocumentModel
+        fields = '__all__'
+
+
+class TaskModeModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = models.TaskModeModel
+        fields = '__all__'
+

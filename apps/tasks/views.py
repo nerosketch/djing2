@@ -240,3 +240,14 @@ class TaskDocumentAttachmentViewSet(DjingModelViewSet):
 
     def perform_create(self, serializer, *args, **kwargs):
         serializer.save(author=self.request.user)
+
+
+class TaskModeModelViewSet(DjingModelViewSet):
+    queryset = models.TaskModeModel.objects.all()
+    serializer_class = serializers.TaskModeModelSerializer
+
+
+class TaskFinishDocumentModelViewSet(DjingModelViewSet):
+    queryset = models.TaskFinishDocumentModel.objects.all()
+    serializer_class = serializers.TaskFinishDocumentModelSerializer
+
