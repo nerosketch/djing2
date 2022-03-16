@@ -69,10 +69,13 @@ class TaskStateChangeLogModel(BaseAbstractModel):
                 # TODO: display UserProfile names instead of primary keys.
                 pass
             elif hasattr(field, "choices"):
-                setattr(self.task, field_name, field_from_val)
-                field_from_val = self.task._get_FIELD_display(field)
-                setattr(self.task, field_name, field_to_val)
-                field_to_val = self.task._get_FIELD_display(field)
+                try:
+                    setattr(self.task, field_name, field_from_val)
+                    field_from_val = self.task._get_FIELD_display(field)
+                    setattr(self.task, field_name, field_to_val)
+                    field_to_val = self.task._get_FIELD_display(field)
+                except:
+                    pass
             return text_item_tmpl % {"field_name": field_title, "from": field_from_val, "to": field_to_val}
 
         item_texts = (_format_item_text(*state_data_item) for state_data_item in self.state_data.items())

@@ -16,8 +16,12 @@ from tasks import serializers
 
 class TaskModelViewSet(DjingModelViewSet):
     queryset = models.Task.objects.select_related(
-        "author", "customer", "customer__group", "customer__address"
-    ).annotate(comment_count=Count("extracomment"), doc_count=Count('taskdocumentattachment'))
+        "author", "customer", "customer__group",
+        "customer__address", "task_mode"
+    ).annotate(
+        comment_count=Count("extracomment"),
+        doc_count=Count('taskdocumentattachment'),
+    )
     serializer_class = serializers.TaskModelSerializer
     filterset_fields = ("task_state", "recipients", "customer")
 
@@ -124,12 +128,10 @@ class TaskModelViewSet(DjingModelViewSet):
 
         report = models.Task.objects.task_mode_report()
 
+        task_types = {t.pk: t.title for t in TaskModeModel.objects.all()}
+
         def _get_display(val: int) -> str:
-            r = (str(ttext) for tval, ttext in models.Task.TASK_TYPES if tval == val)
-            try:
-                return next(r)
-            except StopIteration:
-                return ""
+            return str(task_types.get(val, 'Not Found'))
 
         res = [
             {"mode": _get_display(vals.get("mode")), "task_count": vals.get("task_count")}
