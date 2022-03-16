@@ -380,13 +380,13 @@ class TaskFinishDocumentModel(models.Model):
         verbose_name=_("Author"),
         on_delete=models.CASCADE
     )
-    task = models.ForeignKey(
+    task = models.OneToOneField(
         Task,
         verbose_name=_("Task"),
         on_delete=models.CASCADE
     )
     create_time = models.DateTimeField(_("Time of create"))
-    finish_date = models.DateTimeField(_('Finish time'))
+    finish_time = models.DateTimeField(_('Finish time'))
     cost = models.FloatField(_('Cost'))
     task_mode = models.ForeignKey(
         to=TaskModeModel,

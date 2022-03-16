@@ -81,11 +81,11 @@ class Migration(migrations.Migration):
                 ('code', models.CharField(max_length=64, verbose_name='Document code')),
                 ('act_num', models.CharField(blank=True, default=None, max_length=64, null=True, verbose_name='Act num')),
                 ('create_time', models.DateTimeField(verbose_name='Time of create')),
-                ('finish_date', models.DateTimeField(verbose_name='Finish time')),
+                ('finish_time', models.DateTimeField(verbose_name='Finish time')),
                 ('cost', models.FloatField(verbose_name='Cost')),
                 ('author', models.ForeignKey(on_delete=models.CASCADE, to='profiles.userprofile', verbose_name='Author')),
                 ('recipients', models.ManyToManyField(related_name='finish_docs', to='profiles.UserProfile', verbose_name='Recipients')),
-                ('task', models.ForeignKey(on_delete=models.CASCADE, to='tasks.task', verbose_name='Task')),
+                ('task', models.OneToOneField(on_delete=models.CASCADE, to='tasks.task', verbose_name='Task')),
                 ('task_mode', models.ForeignKey(blank=True, default=None, null=True, on_delete=models.SET_DEFAULT, to='tasks.taskmodemodel', verbose_name='Mode')),
             ],
             options={
