@@ -1,6 +1,7 @@
 from django.db.models import Count
 from django.utils.translation import gettext
 from django.forms.models import model_to_dict
+from django.http.response import Http404
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
@@ -252,4 +253,22 @@ class TaskModeModelViewSet(DjingModelViewSet):
 class TaskFinishDocumentModelViewSet(DjingModelViewSet):
     queryset = models.TaskFinishDocumentModel.objects.all()
     serializer_class = serializers.TaskFinishDocumentModelSerializer
+    filterset_fields = ['task']
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            return super().retrieve(request, *args, **kwargs)
+        except Http404:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def create(self, request, *args, **kwargs):
+        dat = {
+            'author': request.user
+        }
+        dat.update(request.data)
+        serializer = self.get_serializer(data=dat)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
