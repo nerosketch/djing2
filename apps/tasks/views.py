@@ -1,6 +1,7 @@
 from django.db.models import Count
 from django.utils.translation import gettext
 from django.forms.models import model_to_dict
+from django.http.response import Http404
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
@@ -16,8 +17,12 @@ from tasks import serializers
 
 class TaskModelViewSet(DjingModelViewSet):
     queryset = models.Task.objects.select_related(
-        "author", "customer", "customer__group", "customer__address"
-    ).annotate(comment_count=Count("extracomment"), doc_count=Count('taskdocumentattachment'))
+        "author", "customer", "customer__group",
+        "customer__address", "task_mode"
+    ).annotate(
+        comment_count=Count("extracomment"),
+        doc_count=Count('taskdocumentattachment'),
+    )
     serializer_class = serializers.TaskModelSerializer
     filterset_fields = ("task_state", "recipients", "customer")
 
@@ -124,12 +129,10 @@ class TaskModelViewSet(DjingModelViewSet):
 
         report = models.Task.objects.task_mode_report()
 
+        task_types = {t.pk: t.title for t in TaskModeModel.objects.all()}
+
         def _get_display(val: int) -> str:
-            r = (str(ttext) for tval, ttext in models.Task.TASK_TYPES if tval == val)
-            try:
-                return next(r)
-            except StopIteration:
-                return ""
+            return str(task_types.get(val, 'Not Found'))
 
         res = [
             {"mode": _get_display(vals.get("mode")), "task_count": vals.get("task_count")}
@@ -240,3 +243,32 @@ class TaskDocumentAttachmentViewSet(DjingModelViewSet):
 
     def perform_create(self, serializer, *args, **kwargs):
         serializer.save(author=self.request.user)
+
+
+class TaskModeModelViewSet(DjingModelViewSet):
+    queryset = models.TaskModeModel.objects.all()
+    serializer_class = serializers.TaskModeModelSerializer
+
+
+class TaskFinishDocumentModelViewSet(DjingModelViewSet):
+    queryset = models.TaskFinishDocumentModel.objects.all()
+    serializer_class = serializers.TaskFinishDocumentModelSerializer
+    filterset_fields = ['task']
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            return super().retrieve(request, *args, **kwargs)
+        except Http404:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def create(self, request, *args, **kwargs):
+        dat = {
+            'author': request.user
+        }
+        dat.update(request.data)
+        serializer = self.get_serializer(data=dat)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
