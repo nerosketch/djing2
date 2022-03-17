@@ -60,7 +60,7 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated, IsAdminUser])
     def get_active_profiles(self, request):
-        queryset = self.filter_queryset(self.get_queryset().filter(is_active=True))
+        queryset = self.filter_queryset(self.get_queryset()).filter(is_active=True)
 
         page = self.paginate_queryset(queryset)
         if page is not None:

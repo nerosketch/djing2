@@ -4,4 +4,7 @@
 **/static
 **/venv
 **/__pycache__
+.git/
+.vscode/
+.github/
 *.pyc
