@@ -143,14 +143,14 @@ class LocationAuth(APIView):
         user = authenticate(request=request, byip=True)
 
         if not user:
-            msg = _("Unable to log in with provided credentials")
+            msg = gettext("Unable to log in with provided credentials")
             raise ValidationError(msg, code="authorization")
 
         if not user.sites.filter(pk=request.site.pk).exists():
-            msg = _("Incorrect provided credentials.")
+            msg = gettext("Incorrect provided credentials.")
             raise ValidationError(msg, code="authorization")
 
-        token, _ = Token.objects.get_or_create(user=user)
+        token, created = Token.objects.get_or_create(user=user)
         return Response({"token": token.key})
 
 
