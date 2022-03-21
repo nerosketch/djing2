@@ -23,6 +23,7 @@ api_urls = [
     path("sorm/", include("sorm_export.urls", namespace="sorm_export")),
     path("traf_stat/", include("traf_stat.urls", namespace="traf_stat")),
     path("legal/", include("customers_legal.urls", namespace="customers_legal")),
+    path("hook/", include("webhooks.urls", namespace="webhooks")),
     path("can_login_by_location/", can_login_by_location),
     path("search/", SearchApiView.as_view()),
     path("webpush/", include("webpush.urls")),
