@@ -54,7 +54,11 @@ class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
         return Response(str(ip))
 
     def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(serializer=serializer, sites=[self.request.site])
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site],
+            *args, **kwargs
+        )
 
 
 class FindCustomerByCredentials(APIView):
