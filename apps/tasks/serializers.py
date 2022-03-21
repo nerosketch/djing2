@@ -17,7 +17,7 @@ class TaskModelSerializer(BaseCustomModelSerializer):
     comment_count = serializers.IntegerField(read_only=True)
     recipients = serializers.PrimaryKeyRelatedField(many=True, queryset=UserProfile.objects.only("pk"))
     state_str = serializers.CharField(source="get_task_state_display", read_only=True)
-    mode_str = serializers.CharField(source="get_mode_display", read_only=True)
+    mode_str = serializers.CharField(source="task_mode.title", read_only=True)
     time_of_create = serializers.DateTimeField(read_only=True)
     is_expired = serializers.BooleanField(read_only=True)
     doc_count = serializers.IntegerField(read_only=True)
@@ -61,3 +61,16 @@ class TaskDocumentAttachmentSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.TaskDocumentAttachment
         fields = "__all__"
+
+
+class TaskFinishDocumentModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = models.TaskFinishDocumentModel
+        fields = '__all__'
+
+
+class TaskModeModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = models.TaskModeModel
+        fields = '__all__'
+

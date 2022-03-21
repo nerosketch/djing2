@@ -192,42 +192,59 @@ class CustomerIpLeaseModel(models.Model):
 
     @staticmethod
     def find_customer_by_device_credentials(device_mac: EUI, device_port: int = 0) -> Optional[Customer]:
+        sql = (
+            "SELECT ba.id, ba.last_login, ba.is_superuser, ba.username, "
+            "ba.fio, ba.birth_day, ba.is_active, ba.is_admin, "
+            "ba.telephone, ba.create_date, ba.last_update_time, "
+            "cs.balance, cs.is_dynamic_ip, cs.auto_renewal_service, "
+            "cs.current_service_id, cs.dev_port_id, cs.device_id, "
+            "cs.gateway_id, cs.group_id, cs.last_connected_service_id, cs.address_id "
+            "FROM customers cs "
+            "LEFT JOIN device dv ON (dv.id = cs.device_id) "
+            "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
+            "LEFT JOIN device_dev_type_is_use_dev_port ddtiudptiu ON (ddtiudptiu.dev_type = dv.dev_type) "
+            "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+            "WHERE dv.mac_addr = %s::MACADDR "
+            "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = %s::SMALLINT) "
+            "LIMIT 1;"
+        )
         with connection.cursor() as cur:
             cur.execute(
-                "SELECT * FROM find_customer_by_device_credentials(%s::macaddr, %s::smallint)",
-                (str(device_mac), device_port),
+                sql, (str(device_mac), device_port),
             )
             res = cur.fetchone()
         if res is None or res[0] is None:
             return None
         (
-            baseaccount_id,
-            balance,
-            descr,
-            is_dyn_ip,
-            auto_renw_srv,
-            markers,
-            curr_srv_id,
-            dev_port_id,
-            dev_id,
-            gw_id,
-            grp_id,
-            last_srv_id,
-            *others,
+            bid, last_login, is_superuser, username,
+            fio, birth_day, is_active, is_admin,
+            telephone, create_date, last_update_time,
+            balance, is_dyn_ip, auto_renw_srv,
+            curr_srv_id, dev_port_id, dev_id,
+            gw_id, grp_id, last_srv_id, address_id,
         ) = res
         return Customer(
-            pk=baseaccount_id,
+            pk=bid,
+            last_login=last_login,
+            is_superuser=is_superuser,
+            username=username,
+            fio=fio,
+            birth_day=birth_day,
+            is_active=is_active,
+            is_admin=is_admin,
+            telephone=telephone,
+            create_date=create_date,
+            last_update_time=last_update_time,
             balance=balance,
-            description=descr,
             is_dynamic_ip=is_dyn_ip,
             auto_renewal_service=auto_renw_srv,
-            markers=markers,
             current_service_id=curr_srv_id,
-            device_id=dev_id,
             dev_port_id=dev_port_id,
+            device_id=dev_id,
             gateway_id=gw_id,
             group_id=grp_id,
             last_connected_service_id=last_srv_id,
+            address_id=address_id,
         )
 
     @staticmethod

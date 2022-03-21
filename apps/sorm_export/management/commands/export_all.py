@@ -55,16 +55,20 @@ def export_all_root_customers():
 
 
 def export_all_customer_contracts():
-    contracts = CustomerContractModel.objects.select_related('customer').filter(customer__is_active=True)
+    contracts = CustomerContractModel.objects.select_related('customer').filter(
+        customer__is_active=True
+    )
     data, fname = export_contract(contracts=contracts, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTRACT)
 
 
 def export_all_address_objects():
     addr_objects = AddressModel.objects.filter(
-        address_type__lte=AddressModelTypes.STREET,
-    ).exclude(
-        address_type=AddressModelTypes.UNKNOWN
+        address_type__in=[
+            AddressModelTypes.STREET,
+            AddressModelTypes.LOCALITY,
+            AddressModelTypes.OTHER,
+        ],
     ).order_by(
         "fias_address_level",
         "fias_address_type"
@@ -116,7 +120,7 @@ def export_all_customer_contacts():
     ]
 
     # export additional tels
-    tels = AdditionalTelephone.objects.filter(customer__is_active=True).select_related("customer")
+    tels = AdditionalTelephone.objects.filter(customer__in=customers).select_related("customer")
     customer_tels.extend(
         {
             "customer_id": t.customer_id,
@@ -139,13 +143,20 @@ def export_all_service_nomenclature():
 
 
 def export_all_ip_leases():
-    leases = CustomerIpLeaseModel.objects.exclude(customer=None).filter(customer__is_active=True, is_dynamic=False)
+    customers_qs = _general_customers_queryset_filter()
+    leases = CustomerIpLeaseModel.objects.filter(
+        customer__in=customers_qs,
+        is_dynamic=False
+    )
     data, fname = export_ip_leases(leases=leases, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.NETWORK_STATIC_IP)
 
 
 def export_all_customer_services():
-    csrv = CustomerService.objects.select_related("customer").exclude(customer=None).filter(customer__is_active=True)
+    customers_qs = _general_customers_queryset_filter()
+    csrv = CustomerService.objects.select_related("customer").filter(
+        customer__in=customers_qs
+    )
     data, fname = export_customer_service(cservices=csrv, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.SERVICE_CUSTOMER)
 
