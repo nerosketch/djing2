@@ -84,4 +84,5 @@ class CustomerAuthTestCase(CustomAPITestCase):
         self.test_auth_radius_session()
         self.customer.stop_service(self.admin)
         r = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617")
-        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertDictEqual(r.data, {"User-Password": "SERVICE-GUEST"})
