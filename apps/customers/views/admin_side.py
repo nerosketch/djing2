@@ -226,7 +226,7 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         qs = models.Customer.objects.filter(current_service__service_id=service_id)
         if not request.user.is_superuser:
             qs = qs.filter(sites__in=[self.request.site])
-        qs = qs.values("pk", "group_id", "username", "fio")
+        qs = qs.values("id", "group_id", "username", "fio")
         return Response(qs)
 
     @action(detail=True)
