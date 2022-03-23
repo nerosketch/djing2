@@ -17,5 +17,6 @@ __pycache__/
 apps/devices/device_config/custom/*.py
 !apps/devices/device_config/custom/__init__.py
 secrets/
+spooler/
 .env
 touch_reload

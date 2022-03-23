@@ -129,7 +129,7 @@ class TaskModelViewSet(DjingModelViewSet):
 
         report = models.Task.objects.task_mode_report()
 
-        task_types = {t.pk: t.title for t in TaskModeModel.objects.all()}
+        task_types = {t.pk: t.title for t in models.TaskModeModel.objects.all()}
 
         def _get_display(val: int) -> str:
             return str(task_types.get(val, 'Not Found'))
