@@ -8,7 +8,7 @@ ENV PYTHONPATH="/var/www/djing2/apps:/var/www/djing2:/usr/local/lib/python3.9/si
 
 RUN ["apt-get", "update"]
 RUN ["apt-get", "install", "-y", "python3-psycopg2", "libsnmp-dev", "arping", "gcc", "gettext", "telnet", "uwsgi", "uwsgi-plugin-python3", "--no-install-recommends"]
-RUN mkdir -p /var/www/djing2/spooler /var/www/djing2/media \
+RUN mkdir -p /var/www/djing2/media \
     && touch /var/www/djing2/touch_reload \
     && chown -R www-data. /var/www/djing2
 
