@@ -7,3 +7,6 @@
 .vscode/
 .github/
 *.pyc
+.git/
+.gitignore
+.gitmodules
