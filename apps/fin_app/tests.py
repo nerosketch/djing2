@@ -1,6 +1,5 @@
 from hashlib import md5
 
-# from django.test.utils import override_settings
 from django.contrib.sites.models import Site
 from django.utils import timezone
 from django.utils.html import escape
@@ -18,7 +17,6 @@ def _make_sign(act: int, pay_account: str, serv_id: str, pay_id, secret: str):
     return md.hexdigest()
 
 
-# @override_settings(DEFAULT_TABLESPACE='ram')
 class CustomAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
         return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
@@ -28,10 +26,16 @@ class CustomAPITestCase(APITestCase):
 
     def setUp(self):
         self.admin = UserProfile.objects.create_superuser(
-            username="admin", password="admin", telephone="+797812345678"
+            username="admin",
+            password="admin",
+            telephone="+797812345678"
         )
         # customer for tests
-        custo1 = Customer.objects.create_user(telephone="+79782345678", username="custo1", password="passw")
+        custo1 = Customer.objects.create_user(
+            telephone="+79782345678",
+            username="custo1",
+            password="passw"
+        )
         custo1.balance = -13.12
         custo1.fio = "Test Name"
         custo1.save(update_fields=("balance", "fio"))
@@ -40,7 +44,8 @@ class CustomAPITestCase(APITestCase):
 
         # Pay System
         pay_system = PayAllTimeGateway.objects.create(
-            title="Test pay system", secret="secret", service_id="service_id", slug="pay_gw_slug"
+            title="Test pay system", secret="secret",
+            service_id="service_id", slug="pay_gw_slug"
         )
         example_site = Site.objects.first()
         pay_system.sites.add(example_site)
@@ -60,7 +65,11 @@ class AllPayTestCase(CustomAPITestCase):
         service_id = self.pay_system.service_id
         r = self.get(
             self.url,
-            {"ACT": 1, "PAY_ACCOUNT": "custo1", "SIGN": _make_sign(1, "custo1", "", "", self.pay_system.secret)},
+            {
+                "ACT": 1,
+                "PAY_ACCOUNT": "custo1",
+                "SIGN": _make_sign(1, "custo1", "", "", self.pay_system.secret)
+            },
         )
         o = "".join(
             (
@@ -94,7 +103,9 @@ class AllPayTestCase(CustomAPITestCase):
                 "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
                 "TRADE_POINT": "term1",
                 "SIGN": _make_sign(
-                    4, "custo1", service_id, "840ab457-e7d1-4494-8197-9570da035170", self.pay_system.secret
+                    4, "custo1", service_id,
+                    "840ab457-e7d1-4494-8197-9570da035170",
+                    self.pay_system.secret
                 ),
             },
         )
@@ -124,7 +135,11 @@ class AllPayTestCase(CustomAPITestCase):
                 "ACT": 7,
                 "SERVICE_ID": service_id,
                 "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
-                "SIGN": _make_sign(7, "", service_id, "840ab457-e7d1-4494-8197-9570da035170", self.pay_system.secret),
+                "SIGN": _make_sign(
+                    7, "", service_id,
+                    "840ab457-e7d1-4494-8197-9570da035170",
+                    self.pay_system.secret
+                ),
             },
         )
         xml = "".join(
@@ -160,7 +175,11 @@ class SitesAllPayTestCase(CustomAPITestCase):
         current_date = timezone.now().strftime(time_format)
         r = self.get(
             self.url,
-            {"ACT": 1, "PAY_ACCOUNT": "custo1", "SIGN": _make_sign(1, "custo1", "", "", self.pay_system.secret)},
+            {
+                "ACT": 1,
+                "PAY_ACCOUNT": "custo1",
+                "SIGN": _make_sign(1, "custo1", "", "", self.pay_system.secret)
+            },
         )
         o = "".join(
             (
