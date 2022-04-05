@@ -7,12 +7,13 @@ from rest_framework.test import APITestCase
 
 from customers.models import Customer
 from fin_app.models.alltime import PayAllTimeGateway
+from fin_app.views.alltime import AllTimePayActEnum
 from profiles.models import UserProfile
 
 
-def _make_sign(act: int, pay_account: str, serv_id: str, pay_id, secret: str):
+def _make_sign(act: AllTimePayActEnum, pay_account: str, serv_id: str, pay_id, secret: str):
     md = md5()
-    s = "%d_%s_%s_%s_%s" % (act, pay_account, serv_id, pay_id, secret)
+    s = "%d_%s_%s_%s_%s" % (act.value, pay_account, serv_id, pay_id, secret)
     md.update(bytes(s, "utf-8"))
     return md.hexdigest()
 
@@ -66,9 +67,12 @@ class AllPayTestCase(CustomAPITestCase):
         r = self.get(
             self.url,
             {
-                "ACT": 1,
+                "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
                 "PAY_ACCOUNT": "custo1",
-                "SIGN": _make_sign(1, "custo1", "", "", self.pay_system.secret)
+                "SIGN": _make_sign(
+                    AllTimePayActEnum.ACT_VIEW_INFO,
+                    "custo1", "", "", self.pay_system.secret
+                )
             },
         )
         o = "".join(
@@ -95,7 +99,7 @@ class AllPayTestCase(CustomAPITestCase):
         r = self.get(
             self.url,
             {
-                "ACT": 4,
+                "ACT": AllTimePayActEnum.ACT_PAY_DO.value,
                 "PAY_ACCOUNT": "custo1",
                 "PAY_AMOUNT": 18.21,
                 "RECEIPT_NUM": 2126235,
@@ -103,7 +107,8 @@ class AllPayTestCase(CustomAPITestCase):
                 "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
                 "TRADE_POINT": "term1",
                 "SIGN": _make_sign(
-                    4, "custo1", service_id,
+                    AllTimePayActEnum.ACT_PAY_DO,
+                    "custo1", service_id,
                     "840ab457-e7d1-4494-8197-9570da035170",
                     self.pay_system.secret
                 ),
@@ -132,11 +137,12 @@ class AllPayTestCase(CustomAPITestCase):
         r = self.get(
             self.url,
             {
-                "ACT": 7,
+                "ACT": AllTimePayActEnum.ACT_PAY_CHECK.value,
                 "SERVICE_ID": service_id,
                 "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
                 "SIGN": _make_sign(
-                    7, "", service_id,
+                    AllTimePayActEnum.ACT_PAY_CHECK,
+                    "", service_id,
                     "840ab457-e7d1-4494-8197-9570da035170",
                     self.pay_system.secret
                 ),
@@ -176,9 +182,12 @@ class SitesAllPayTestCase(CustomAPITestCase):
         r = self.get(
             self.url,
             {
-                "ACT": 1,
+                "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
                 "PAY_ACCOUNT": "custo1",
-                "SIGN": _make_sign(1, "custo1", "", "", self.pay_system.secret)
+                "SIGN": _make_sign(
+                    AllTimePayActEnum.ACT_VIEW_INFO,
+                    "custo1", "", "", self.pay_system.secret
+                )
             },
         )
         o = "".join(
