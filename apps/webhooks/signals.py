@@ -1,3 +1,4 @@
+import sys
 from typing import Optional, Any
 from django.dispatch import receiver
 from django.db.models.signals import (
@@ -16,6 +17,15 @@ def _model_instance_to_dict(instance, model_class) -> dict:
             fields = '__all__'
     ser = _model_serializer(instance=instance)
     return ser.data
+
+
+def receiver_no_test(*args, **kwargs):
+    def _wrapper(fn):
+        if 'test' in sys.argv:
+            return fn
+        return receiver(*args, **kwargs)(fn)
+
+    return _wrapper
 
 
 def _send2task(notify_type: HookObserverNotificationTypes, instance: Optional[Any], sender):
@@ -38,7 +48,7 @@ def _send2task(notify_type: HookObserverNotificationTypes, instance: Optional[An
     )
 
 
-@receiver(post_save)
+@receiver_no_test(post_save)
 def _post_save_signal_handler(sender, instance, **kwargs):
     _send2task(
         notify_type=HookObserverNotificationTypes.MODEL_POST_SAVE,
@@ -47,7 +57,7 @@ def _post_save_signal_handler(sender, instance, **kwargs):
     )
 
 
-@receiver(post_delete)
+@receiver_no_test(post_delete)
 def _post_del_signal_handler(sender, instance, **kwargs):
     _send2task(
         notify_type=HookObserverNotificationTypes.MODEL_POST_DELETE,
@@ -61,7 +71,7 @@ def _post_del_signal_handler(sender, instance, **kwargs):
 #     print('_post_init_signal_handler', sender, kwargs)
 
 
-@receiver(pre_save)
+@receiver_no_test(pre_save)
 def _pre_save_signal_handler(sender, instance, **kwargs):
     _send2task(
         notify_type=HookObserverNotificationTypes.MODEL_PRE_SAVE,
@@ -70,7 +80,7 @@ def _pre_save_signal_handler(sender, instance, **kwargs):
     )
 
 
-@receiver(pre_delete)
+@receiver_no_test(pre_delete)
 def _pre_del_signal_handler(sender, instance, **kwargs):
     _send2task(
         notify_type=HookObserverNotificationTypes.MODEL_PRE_DELETE,
