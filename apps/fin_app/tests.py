@@ -7,8 +7,12 @@ from rest_framework.test import APITestCase
 
 from customers.models import Customer
 from fin_app.models.alltime import PayAllTimeGateway
-from fin_app.views.alltime import AllTimePayActEnum
 from profiles.models import UserProfile
+from fin_app.views.alltime import (
+    AllTimePayActEnum,
+    TRANSACTION_STATUS_PAYMENT_OK,
+    AllTimeStatusCodeEnum
+)
 
 
 def _make_sign(act: AllTimePayActEnum, pay_account: str, serv_id: str, pay_id, secret: str):
@@ -84,7 +88,7 @@ class AllPayTestCase(CustomAPITestCase):
                 "<service_id>%s</service_id>" % escape(service_id),
                 "<min_amount>10.0</min_amount>",
                 "<max_amount>15000</max_amount>",
-                "<status_code>21</status_code>",
+                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.PAYMENT_POSSIBLE.value,
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
                 "</pay-response>",
             )
@@ -120,7 +124,7 @@ class AllPayTestCase(CustomAPITestCase):
                 "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
                 "<service_id>%s</service_id>" % escape(service_id),
                 "<amount>18.21</amount>",
-                "<status_code>22</status_code>",
+                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.PAYMENT_OK.value,
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
                 "</pay-response>",
             )
@@ -151,13 +155,13 @@ class AllPayTestCase(CustomAPITestCase):
         xml = "".join(
             (
                 "<pay-response>",
-                "<status_code>11</status_code>",
+                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.TRANSACTION_STATUS_DETERMINED.value,
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
                 "<transaction>",
                 "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
                 "<service_id>%s</service_id>" % escape(service_id),
                 "<amount>18.21</amount>",
-                "<status>111</status>",
+                "<status>%d</status>" % TRANSACTION_STATUS_PAYMENT_OK,
                 "<time_stamp>%s</time_stamp>" % escape(test_pay_time),
                 "</transaction>",
                 "</pay-response>",
@@ -193,7 +197,7 @@ class SitesAllPayTestCase(CustomAPITestCase):
         o = "".join(
             (
                 "<pay-response>",
-                "<status_code>-40</status_code>",
+                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.BAD_REQUEST.value,
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
                 "<description>Pay gateway does not exist</description>",
                 "</pay-response>",
