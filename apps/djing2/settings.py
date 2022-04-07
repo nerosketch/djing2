@@ -345,6 +345,7 @@ DEFAULT_FTP_CREDENTIALS = {
     "port": get_env("SORM_EXPORT_FTP_PORT", default=21),
     "uname": get_env("SORM_EXPORT_FTP_USERNAME"),
     "password": get_secret("SORM_EXPORT_FTP_PASSWORD"),
+    "disabled": get_env("SORM_EXPORT_FTP_DISABLE", default=False)
 }
 
 RADIUSAPP_OPTIONS = {

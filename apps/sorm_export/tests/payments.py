@@ -10,13 +10,16 @@ from fin_app.views.alltime import AllTimePayActEnum
 from fin_app.tests import _make_sign
 
 
-@override_settings(DEFAULT_FTP_CREDENTIALS={
-    "host": '127.0.0.1',
-    "uname": 'testuname',
-    "password": 'testpassw',
-    "port": 2122
-})
-class PaymentsAPITestCase(CustomAPITestCase ,FtpTestCaseMixin):
+@override_settings(
+    DEFAULT_FTP_CREDENTIALS={
+        "host": '127.0.0.1',
+        "uname": 'testuname',
+        "password": 'testpassw',
+        "port": 2122
+    },
+    SORM_EXPORT_FTP_DISABLE=False
+)
+class PaymentsExportAPITestCase(CustomAPITestCase ,FtpTestCaseMixin):
     payment_url = "/api/fin/asd/pay/"
 
     def setUp(self):

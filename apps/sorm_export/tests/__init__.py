@@ -1,4 +1,4 @@
-from .payments import PaymentsAPITestCase
+from .payments import PaymentsExportAPITestCase
 
 
-__all__ = ['PaymentsAPITestCase']
+__all__ = ['PaymentsExportAPITestCase']

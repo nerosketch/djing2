@@ -1,4 +1,3 @@
-import os
 from io import TextIOWrapper
 from ftplib import FTP
 
@@ -10,9 +9,8 @@ def get_credentials():
     DEFAULT_FTP_CREDENTIALS = getattr(settings, "DEFAULT_FTP_CREDENTIALS")
     if DEFAULT_FTP_CREDENTIALS is None:
         raise ImproperlyConfigured("DEFAULT_FTP_CREDENTIALS not specified")
-    ftp_disable = os.environ.get("SORM_EXPORT_FTP_DISABLE", False)
     return {
-        'ftp_disable': bool(ftp_disable),
+        'ftp_disable': bool(DEFAULT_FTP_CREDENTIALS.get("disabled", False)),
         'ftp_host': DEFAULT_FTP_CREDENTIALS.get("host"),
         'ftp_uname': DEFAULT_FTP_CREDENTIALS.get("uname"),
         'ftp_passw': DEFAULT_FTP_CREDENTIALS.get("password"),
