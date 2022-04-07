@@ -40,7 +40,7 @@ call plug#begin('~/.local/share/nvim/plugged')
 
   Plug 'itchyny/lightline.vim'
   Plug 'ryanoasis/vim-devicons'
-  Plug 'ntk148v/auto-pairs'
+  " Plug 'ntk148v/auto-pairs'
   Plug 'haya14busa/incsearch.vim'
   Plug 'scrooloose/nerdcommenter'
   " Plug 'mg979/vim-visual-multi', {'branch': 'master'}
