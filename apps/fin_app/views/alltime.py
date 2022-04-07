@@ -205,7 +205,7 @@ class AllTimePay(GenericAPIView):
         )
 
     def _make_pay(self, data: dict) -> Response:
-        trade_point = safe_int(data.get("TRADE_POINT"))
+        trade_point = data.get("TRADE_POINT", '')
         receipt_num = safe_int(data.get("RECEIPT_NUM"))
         pay_account = data.get("PAY_ACCOUNT")
         pay_id = data.get("PAY_ID")
