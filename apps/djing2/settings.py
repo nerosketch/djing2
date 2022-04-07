@@ -342,8 +342,9 @@ WEBPUSH_SETTINGS = {
 
 DEFAULT_FTP_CREDENTIALS = {
     "host": get_env("SORM_EXPORT_FTP_HOST"),
+    "port": get_env("SORM_EXPORT_FTP_PORT", default=21),
     "uname": get_env("SORM_EXPORT_FTP_USERNAME"),
-    "password": get_secret("SORM_EXPORT_FTP_PASSWORD")
+    "password": get_secret("SORM_EXPORT_FTP_PASSWORD"),
 }
 
 RADIUSAPP_OPTIONS = {
