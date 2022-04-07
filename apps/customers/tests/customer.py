@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.contrib.sites.models import Site
 from rest_framework.settings import api_settings
 from rest_framework.test import APITestCase
 from rest_framework import status
@@ -28,6 +29,8 @@ class CustomAPITestCase(APITestCase):
             telephone="+79782345678", username="custo1", password="passw",
             is_dynamic_ip=True, group=self.group
         )
+        example_site = Site.objects.first()
+        custo1.sites.add(example_site)
         custo1.refresh_from_db()
         self.customer = custo1
 
