@@ -1,7 +1,7 @@
 import os
+from typing import Optional
 from collections import namedtuple
 from multiprocessing import Process
-from contextlib import contextmanager
 
 from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.handlers import FTPHandler
@@ -54,16 +54,29 @@ def _ftp_server():
         logger.error(str(e))
 
 
-@contextmanager
-def ftp_test():
-    p = Process(target=_ftp_server)
-    try:
+class FtpTest(object):
+    _p: Optional[Process] = None
+
+    def start(self):
+        self.release()
+        p = Process(target=_ftp_server)
         p.start()
-        yield p
-    finally:
-        if p is not None:
-            p.terminate()
-            p.join()
+        self._p = p
+        return self
+
+    def release(self):
+        if self._p is not None:
+            self._p.terminate()
+            self._p.join()
+
+    def __enter__(self):
+        return self.start()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
+
+    def __del__(self):
+        self.release()
 
 
 class FtpTestCaseMixin:

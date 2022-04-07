@@ -1,9 +1,10 @@
+import os
 from datetime import datetime
 from django.test import override_settings
 from django.contrib.sites.models import Site
 from fin_app.models.alltime import PayAllTimeGateway
 from customers.tests.customer import CustomAPITestCase
-from .test_ftp_server import ftp_test, FtpTestCaseMixin
+from .test_ftp_server import FtpTest, FtpTestCaseMixin
 from sorm_export.hier_export.base import format_fname
 from sorm_export.models import datetime_format
 from fin_app.views.alltime import AllTimePayActEnum
@@ -21,6 +22,18 @@ from fin_app.tests import _make_sign
 )
 class PaymentsExportAPITestCase(CustomAPITestCase ,FtpTestCaseMixin):
     payment_url = "/api/fin/asd/pay/"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        ftp_test = FtpTest()
+        ftp_test.start()
+        cls.ftp_test = ftp_test
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls.ftp_test.release()
 
     def setUp(self):
         super().setUp()
@@ -62,8 +75,7 @@ class PaymentsExportAPITestCase(CustomAPITestCase ,FtpTestCaseMixin):
         event_time = datetime.now()
         fname = f"/tmp/ISP/abonents/payments_v1_{format_fname(event_time)}.txt"
 
-        with ftp_test():
-            self._make_customer_pay()
+        self._make_customer_pay()
 
         pay_time_str = event_time.strftime(datetime_format)
         self.assertFtpFile(
@@ -75,4 +87,5 @@ class PaymentsExportAPITestCase(CustomAPITestCase ,FtpTestCaseMixin):
                 'выдаваемого клиенту: \'127468\'."'
             ))
         )
+        os.remove(fname)
 
