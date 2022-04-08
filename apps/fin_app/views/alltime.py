@@ -1,7 +1,7 @@
 from hashlib import md5
 from enum import IntEnum
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.utils import DatabaseError
 from django.db.models import Count
 from django.http import Http404
@@ -175,6 +175,10 @@ class AllTimePay(GenericAPIView):
             return self._bad_ret(
                 AllTimeStatusCodeEnum.BAD_REQUEST, "Pay gateway does not exist"
             )
+        except IntegrityError as err:
+            return self._bad_ret(
+              AllTimeStatusCodeEnum.MORE_THAN_ONE_PAYMENTS, "Pay already exists"
+            )
         except DatabaseError:
             return self._bad_ret(
                 AllTimeStatusCodeEnum.SERVICE_UNAVIALABLE
@@ -217,11 +221,6 @@ class AllTimePay(GenericAPIView):
         if pay_id is None:
             return self._bad_ret(
                 AllTimeStatusCodeEnum.BAD_REQUEST, "Bad PAY_ID"
-            )
-        pays = AllTimePayLog.objects.filter(pay_id=pay_id)
-        if pays.exists():
-            return self._bad_ret(
-                AllTimeStatusCodeEnum.MORE_THAN_ONE_PAYMENTS, "Pay already exists"
             )
 
         with transaction.atomic():
