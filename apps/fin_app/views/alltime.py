@@ -94,7 +94,7 @@ class AllTimeSpecifiedXMLRenderer(XMLRenderer):
 
 
 class AllTimePay(GenericAPIView):
-    http_method_names = ("get",)
+    http_method_names = ["get"]
     renderer_classes = (AllTimeSpecifiedXMLRenderer,)
     queryset = PayAllTimeGateway.objects.all()
     serializer_class = alltime_serializers.PayAllTimeGatewayModelSerializer
@@ -214,6 +214,10 @@ class AllTimePay(GenericAPIView):
         if hasattr(self.request, 'site'):
             customer = customer.filter(sites__in=[self.request.site])
         customer = customer.get()
+        if pay_id is None:
+            return self._bad_ret(
+                AllTimeStatusCodeEnum.BAD_REQUEST, "Bad PAY_ID"
+            )
         pays = AllTimePayLog.objects.filter(pay_id=pay_id)
         if pays.exists():
             return self._bad_ret(
