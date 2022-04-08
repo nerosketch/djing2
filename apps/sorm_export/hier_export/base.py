@@ -46,7 +46,7 @@ def iterable_export_decorator(fn):
             except ValidationError as e:
                 logger.error("%s | %s" % (e.detail, dat))
 
-        res_data = map(gen_fn, qs.iterator())
+        res_data = map(gen_fn, qs)
         res_data = (_val_fn(r) for r in res_data if r)
         res_data = (r for r in res_data if r)
 
