@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
@@ -60,7 +60,7 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated, IsAdminUser])
     def get_active_profiles(self, request):
-        queryset = self.filter_queryset(self.get_queryset().filter(is_active=True))
+        queryset = self.filter_queryset(self.get_queryset()).filter(is_active=True)
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -136,18 +136,18 @@ class LocationAuth(APIView):
     throttle_classes = ()
     permission_classes = ()
     schema = AutoSchema()
-    __doc__ = _("Login profile via customer's ip address")
+    __doc__ = gettext("Login profile via customer's ip address")
 
     @staticmethod
     def get(request, *args, **kwargs):
         user = authenticate(request=request, byip=True)
 
         if not user:
-            msg = _("Unable to log in with provided credentials.")
+            msg = gettext("Unable to log in with provided credentials")
             raise ValidationError(msg, code="authorization")
 
         if not user.sites.filter(pk=request.site.pk).exists():
-            msg = _("Incorrect provided credentials.")
+            msg = gettext("Incorrect provided credentials.")
             raise ValidationError(msg, code="authorization")
 
         token, created = Token.objects.get_or_create(user=user)
@@ -209,4 +209,3 @@ class ProfileAuthLogViewSet(ReadOnlyModelViewSet):
         if self.request.user.is_superuser:
             return super().filter_queryset(queryset)
         return queryset.filter(profile=self.request.user)
-

@@ -1,5 +1,4 @@
-import logging
-
+from djing2.lib.logger import logger
 from addresses.fias_socrbase import AddressFIASInfo
 from addresses.models import AddressModel
 from sorm_export.serializers import individual_entity_serializers
@@ -23,7 +22,7 @@ def export_address_object(fias_addr: AddressModel, event_time=None):
 
     addr = AddressFIASInfo.get_address(addr_code=fias_addr.fias_address_type)
     if addr is None:
-        logging.error('Fias address with code %d not found' % fias_addr.fias_address_type)
+        logger.error('Fias address with code %d not found' % fias_addr.fias_address_type)
         return None, None
 
     dat = {

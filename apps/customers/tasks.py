@@ -1,10 +1,10 @@
-import logging
 from datetime import datetime
 
 from uwsgi_tasks import cron, task
 
 from customers.models import Customer, PeriodicPayForId
 from djing2.lib import LogicError
+from djing2.lib.logger import logger
 
 
 @task()
@@ -27,7 +27,7 @@ def customer_check_service_for_expiration(customer_id: int):
     except Customer.DoesNotExist:
         pass
     except LogicError as err:
-        logging.error(str(err))
+        logger.error(str(err))
 
 
 def _manage_periodic_pays_run():

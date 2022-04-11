@@ -1,18 +1,18 @@
-" File              : init.vim
-" Author            : Kien Nguyen-Tuan <kiennt2609@gmail.com>
+" File              : .nvimrc
+" Initial Author    : Kien Nguyen-Tuan <kiennt2609@gmail.com>
 
 " Install nerd fonts
 if !isdirectory(expand("~/.fonts/NerdFonts/"))
-  silent !curl --create-dirs -o "${HOME}/.fonts/NerdFonts/mononoki Bold Italic Nerd Font Complete Mono.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Bold-Italic/complete/mononoki\%20Bold\%20Italic\%20Nerd\%20Font\%20Complete\%20Mono.ttf"
-  silent !curl -o "${HOME}/.fonts/NerdFonts/mononoki Bold Italic Nerd Font Complete.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Bold-Italic/complete/mononoki\%20Bold\%20Italic\%20Nerd\%20Font\%20Complete.ttf"
-  silent !curl -o "${HOME}/.fonts/NerdFonts/mononoki Bold Nerd Font Complete Mono.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Bold/complete/mononoki\%20Bold\%20Nerd\%20Font\%20Complete\%20Mono.ttf"
-  silent !curl -o "${HOME}/.fonts/NerdFonts/mononoki Bold Nerd Font Complete.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Bold/complete/mononoki\%20Bold\%20Nerd\%20Font\%20Complete.ttf"
-  silent !curl -o "${HOME}/.fonts/NerdFonts/mononoki Italic Nerd Font Complete Mono.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Italic/complete/mononoki\%20Italic\%20Nerd\%20Font\%20Complete\%20Mono.ttf"
-  silent !curl -o "${HOME}/.fonts/NerdFonts/mononoki Italic Nerd Font Complete.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Italic/complete/mononoki\%20Italic\%20Nerd\%20Font\%20Complete.ttf"
-  silent !curl -o "${HOME}/.fonts/NerdFonts/mononoki-Regular Nerd Font Complete Mono.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Regular/complete/mononoki-Regular\%20Nerd\%20Font\%20Complete\%20Mono.ttf"
-  silent !curl -o "${HOME}/.fonts/NerdFonts/mononoki-Regular Nerd Font Complete.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Regular/complete/mononoki-Regular\%20Nerd\%20Font\%20Complete.ttf"
-  silent !sh -c "cd ~/.fonts; for fontfile in ./NerdFonts/*.ttf; do ln -s \"\$fontfile\"; done"
-  silent !fc-cache -f -
+  !curl --create-dirs -o "${HOME}/.fonts/NerdFonts/mononoki Bold Italic Nerd Font Complete Mono.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Bold-Italic/complete/mononoki\%20Bold\%20Italic\%20Nerd\%20Font\%20Complete\%20Mono.ttf"
+  !curl -o "${HOME}/.fonts/NerdFonts/mononoki Bold Italic Nerd Font Complete.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Bold-Italic/complete/mononoki\%20Bold\%20Italic\%20Nerd\%20Font\%20Complete.ttf"
+  !curl -o "${HOME}/.fonts/NerdFonts/mononoki Bold Nerd Font Complete Mono.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Bold/complete/mononoki\%20Bold\%20Nerd\%20Font\%20Complete\%20Mono.ttf"
+  !curl -o "${HOME}/.fonts/NerdFonts/mononoki Bold Nerd Font Complete.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Bold/complete/mononoki\%20Bold\%20Nerd\%20Font\%20Complete.ttf"
+  !curl -o "${HOME}/.fonts/NerdFonts/mononoki Italic Nerd Font Complete Mono.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Italic/complete/mononoki\%20Italic\%20Nerd\%20Font\%20Complete\%20Mono.ttf"
+  !curl -o "${HOME}/.fonts/NerdFonts/mononoki Italic Nerd Font Complete.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Italic/complete/mononoki\%20Italic\%20Nerd\%20Font\%20Complete.ttf"
+  !curl -o "${HOME}/.fonts/NerdFonts/mononoki-Regular Nerd Font Complete Mono.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Regular/complete/mononoki-Regular\%20Nerd\%20Font\%20Complete\%20Mono.ttf"
+  !curl -o "${HOME}/.fonts/NerdFonts/mononoki-Regular Nerd Font Complete.ttf" "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/patched-fonts/Mononoki/Regular/complete/mononoki-Regular\%20Nerd\%20Font\%20Complete.ttf"
+  !sh -c "cd ~/.fonts; for fontfile in ./NerdFonts/*.ttf; do ln -s \"\$fontfile\"; done"
+  !fc-cache -f -
 
   " Reload vimrc
   source ~/.config/nvim/init.vim
@@ -21,7 +21,7 @@ endif
 
 " auto-install vim-plug
 if empty(glob('~/.config/nvim/autoload/plug.vim'))
-  silent !curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs
+  !curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs
     \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
   autocmd VimEnter * PlugInstall | source ~/.config/nvim/init.vim
 endif
@@ -34,9 +34,13 @@ call plug#begin('~/.local/share/nvim/plugged')
   Plug 'neoclide/coc.nvim', {'branch': 'release'}
   " Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
   Plug 'preservim/nerdtree'
+
+  " NerdTree git functionality
+  Plug 'Xuyuanp/nerdtree-git-plugin'
+
   Plug 'itchyny/lightline.vim'
   Plug 'ryanoasis/vim-devicons'
-  Plug 'ntk148v/auto-pairs'
+  " Plug 'ntk148v/auto-pairs'
   Plug 'haya14busa/incsearch.vim'
   Plug 'scrooloose/nerdcommenter'
   " Plug 'mg979/vim-visual-multi', {'branch': 'master'}
@@ -55,8 +59,8 @@ call plug#begin('~/.local/share/nvim/plugged')
     Plug 'mhinz/vim-signify', { 'branch': 'legacy' }
   endif
   " Colorscheme
-  Plug 'arcticicestudio/nord-vim'
-  Plug 'folke/tokyonight.nvim'
+  " Plug 'arcticicestudio/nord-vim'
+  " Plug 'folke/tokyonight.nvim'
 
   " Close buffers
   Plug 'Asheq/close-buffers.vim'
@@ -75,6 +79,9 @@ call plug#begin('~/.local/share/nvim/plugged')
 
   " nvim -. tmux clipboard
   Plug 'roxma/vim-tmux-clipboard'
+
+  " Bookmarks
+  Plug 'MattesGroeger/vim-bookmarks'
 
 call plug#end()
 
@@ -159,7 +166,7 @@ let g:is_posix = 1
 set noswapfile
 set nojoinspaces
 set wrap
-set linebreak
+" set linebreak
 set number
 set ttyfast
 set laststatus=2
@@ -182,9 +189,11 @@ nnoremap <ESC><ESC> :nohlsearch<CR>
 
 vnoremap p "_dP
 
+set scroll=5
 " Remap scrolling
-nnoremap <C-k> <C-u>
-nnoremap <C-j> <C-d>
+"nnoremap <C-k> <C-u>
+"nnoremap <C-j> <C-d>
+noremap <C-c> <C-u>
 
 " Add status line support, for integration with other plugin, checkout `:h coc-status`
 set statusline^=%{coc#status()}%{StatusDiagnostic()}
@@ -323,7 +332,7 @@ endfunction
 
 " ------- Key binding ---------
 let mapleader=" "
-map mm <Plug>NERDCommenterToggle
+map cm <Plug>NERDCommenterToggle
 map /  <Plug>(incsearch-forward)
 map ?  <Plug>(incsearch-backward)
 map g/ <Plug>(incsearch-stay)
@@ -394,6 +403,7 @@ nnoremap <silent> Q     :Bdelete menu<CR>
 " ------ NERDTree config ------
 let NERDTreeMinimalUI=1
 let g:NERDSpaceDelims = 1
+let NERDTreeIgnore=['__pycache__',]
 
 " ------ Lightline ------
 function! DeleteCurrentFileAndBuffer()
@@ -431,7 +441,7 @@ function! LightLineFilename()
 endfunction
 
 let g:lightline = {
-      \ 'colorscheme': 'tokyonight',
+      \ 'colorscheme': 'gruvbox',
       \ 'active': {
       \   'left': [ ['mode'], ['filename'] ],
       \   'right': [ [], ['cocstatus', 'lineinfo', 'icongitbranch'] ]
@@ -544,3 +554,18 @@ lua << EOF
     -- refer to the configuration section below
   }
 EOF
+
+
+"=====================================================
+" Bookmarks
+highlight BookmarkSign ctermbg=NONE ctermfg=160
+highlight BookmarkLine ctermbg=194 ctermfg=NONE
+let g:bookmark_sign = '♥'
+let g:bookmark_highlight_lines = 1
+"=====================================================
+
+
+" set a byte character marker (BOM) utf-8 symbol when retrieving file encoding
+" disabled by default with no value
+let g:WebDevIconsUnicodeByteOrderMarkerDefaultSymbol = ''
+

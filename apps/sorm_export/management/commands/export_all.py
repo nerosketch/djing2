@@ -6,8 +6,10 @@ import logging
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db.models import Count
 from rest_framework.exceptions import ValidationError
 
+from djing2.lib.logger import logger
 from addresses.models import AddressModel, AddressModelTypes
 from customers.models import Customer, CustomerService, AdditionalTelephone
 from customers_legal.models import CustomerLegalModel
@@ -40,23 +42,33 @@ from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
 from sorm_export.tasks.task_export import task_export
 
 
+def _general_customers_queryset_filter():
+    return Customer.objects.filter(is_active=True).annotate(
+        contr_count=Count('customercontractmodel')
+    ).filter(contr_count__gt=0)
+
+
 def export_all_root_customers():
-    customers = Customer.objects.filter(is_active=True)
+    customers = _general_customers_queryset_filter()
     data, fname = export_customer_root(customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ROOT)
 
 
 def export_all_customer_contracts():
-    contracts = CustomerContractModel.objects.select_related('customer').filter(customer__is_active=True)
+    contracts = CustomerContractModel.objects.select_related('customer').filter(
+        customer__is_active=True
+    )
     data, fname = export_contract(contracts=contracts, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTRACT)
 
 
 def export_all_address_objects():
     addr_objects = AddressModel.objects.filter(
-        address_type__lte=AddressModelTypes.STREET,
-    ).exclude(
-        address_type=AddressModelTypes.UNKNOWN
+        address_type__in=[
+            AddressModelTypes.STREET,
+            AddressModelTypes.LOCALITY,
+            AddressModelTypes.OTHER,
+        ],
     ).order_by(
         "fias_address_level",
         "fias_address_type"
@@ -71,20 +83,20 @@ def export_all_address_objects():
                 return
             return dat
         except ExportFailedStatus as err:
-            logging.error(str(err))
+            logger.error(str(err))
 
     data = (_make_exportable_object(a) for a in addr_objects.iterator())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ADDRESS)
 
 
 def export_all_access_point_addresses():
-    customers = Customer.objects.filter(is_active=True)
+    customers = _general_customers_queryset_filter()
     data, fname = export_access_point_address(customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_AP_ADDRESS)
 
 
 def export_all_individual_customers():
-    customers = Customer.objects.filter(is_active=True)
+    customers = _general_customers_queryset_filter()
     data, fname = export_individual_customer(customers_queryset=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_INDIVIDUAL)
 
@@ -96,7 +108,7 @@ def export_all_legal_customers():
 
 
 def export_all_customer_contacts():
-    customers = Customer.objects.filter(is_active=True).only("pk", "telephone", "username", "fio", "create_date")
+    customers = _general_customers_queryset_filter().only("pk", "telephone", "username", "fio", "create_date")
     customer_tels = [
         {
             "customer_id": c.pk,
@@ -108,7 +120,7 @@ def export_all_customer_contacts():
     ]
 
     # export additional tels
-    tels = AdditionalTelephone.objects.filter(customer__is_active=True).select_related("customer")
+    tels = AdditionalTelephone.objects.filter(customer__in=customers).select_related("customer")
     customer_tels.extend(
         {
             "customer_id": t.customer_id,
@@ -131,13 +143,20 @@ def export_all_service_nomenclature():
 
 
 def export_all_ip_leases():
-    leases = CustomerIpLeaseModel.objects.exclude(customer=None).filter(customer__is_active=True, is_dynamic=False)
+    customers_qs = _general_customers_queryset_filter()
+    leases = CustomerIpLeaseModel.objects.filter(
+        customer__in=customers_qs,
+        is_dynamic=False
+    )
     data, fname = export_ip_leases(leases=leases, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.NETWORK_STATIC_IP)
 
 
 def export_all_customer_services():
-    csrv = CustomerService.objects.select_related("customer").exclude(customer=None).filter(customer__is_active=True)
+    customers_qs = _general_customers_queryset_filter()
+    csrv = CustomerService.objects.select_related("customer").filter(
+        customer__in=customers_qs
+    )
     data, fname = export_customer_service(cservices=csrv, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.SERVICE_CUSTOMER)
 
@@ -190,25 +209,26 @@ class Command(BaseCommand):
             (export_all_gateways, "Gateways export status"),
         )
         fname = f"/tmp/export{datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')}.log"
+        export_logger = logging.getLogger('djing2.sorm_logger')
         logging.basicConfig(
             filename=fname,
             filemode='w',
             level=logging.INFO
         )
-        logging.info("Starting full export")
+        export_logger.info("Starting full export")
         for fn, msg in funcs:
             try:
-                logging.info(msg)
+                export_logger.info(msg)
                 #self.stdout.write(msg, ending=' ')
                 fn()
                 #self.stdout.write(self.style.SUCCESS("OK"))
             except (ExportFailedStatus, FileNotFoundError) as err:
-                logging.error(str(err))
+                export_logger.error(str(err))
                 #self.stderr.write(str(err))
             except ValidationError as e:
-                logging.error(str(e.detail))
+                export_logger.error(str(e.detail))
                 #self.stderr.write(str(e.detail))
-        logging.info("Finished full export")
+        export_logger.info("Finished full export")
         sorm_reporting_emails = getattr(settings, 'SORM_REPORTING_EMAILS', None)
         if not sorm_reporting_emails:
             return

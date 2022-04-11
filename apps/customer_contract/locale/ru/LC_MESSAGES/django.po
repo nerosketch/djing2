@@ -50,3 +50,16 @@ msgstr ""
 
 msgid "Contract default title"
 msgstr "Договор на оказание услуг связи"
+
+msgid "Restoring from inactive is not allowed"
+msgstr "Восстановление из завершённого договора не допустимо."
+
+msgid "Direct change is_active is not allowed"
+msgstr "Прямое изменение поля is_active не допустимо"
+
+msgid "Not allowed to create disabled contract"
+msgstr "Нельзя создавать завершённые договоры"
+
+msgid "Prevent enable profile when it has inactive contracts"
+msgstr "Запрещено включать учётку абонента когда у него есть завершённые договора"
+

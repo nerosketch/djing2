@@ -1,11 +1,9 @@
 """Async tasks for radiusapp."""
 from functools import wraps
-import logging
 from uwsgi_tasks import task, TaskExecutor, SPOOL_OK, SPOOL_RETRY
 
+from djing2.lib.logger import logger
 from radiusapp import radius_commands as rc
-
-logger = logging.getLogger(__name__)
 
 
 def _radius_task_error_wrapper(fn):

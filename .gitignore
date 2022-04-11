@@ -21,7 +21,6 @@ docs/_build/
 docs/_static/
 docs/_templates/
 
-docker/secrets/
-docker/docker-compose.yml
 secrets/
 .env
+touch_reload

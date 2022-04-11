@@ -80,7 +80,7 @@ sed -i -r "s/^SECRET_KEY = '.+'$/SECRET_KEY = '${secret_key}'/" djing2/local_set
 deactivate
 
 touch touch-reload
-mkdir spooler
+mkdir /tmp/spooler
 mkdir media
 mkdir static
 

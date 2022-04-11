@@ -117,7 +117,7 @@ class FieldModel(models.Model):
 
 
 class AbstractDynamicFieldContentModel(models.Model):
-    content = DynamicField(max_length=512, null=True, blank=True)
+    content = DynamicField(null=True, blank=True)
     field = models.ForeignKey(FieldModel, on_delete=models.CASCADE, related_name='+')
 
     # objects = FieldContentModelManager()

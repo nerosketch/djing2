@@ -4,4 +4,3 @@ from messenger.models import telegram
 
 
 __all__ = ['MessengerModel', 'MessengerSubscriberModel']
-

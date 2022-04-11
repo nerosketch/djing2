@@ -1,7 +1,12 @@
 **/media
 **/secrets
-**/spooler
 **/static
 **/venv
 **/__pycache__
+.git/
+.vscode/
+.github/
 *.pyc
+.git/
+.gitignore
+.gitmodules

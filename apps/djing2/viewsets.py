@@ -28,9 +28,9 @@ class DjingModelViewSet(ModelViewSet):
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(str(e)) from e
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer, *args, **kwargs):
         try:
-            return serializer.save()
+            return serializer.save(*args, **kwargs)
         except IntegrityError as e:
             raise UniqueConstraintIntegrityError(str(e)) from e
 
@@ -129,7 +129,7 @@ class DjingModelViewSet(ModelViewSet):
 
 
 class DjingSuperUserModelViewSet(DjingModelViewSet):
-    permission_classes = [IsAuthenticated, IsAdminUser, IsSuperUser]
+    permission_classes = [IsAuthenticated, IsSuperUser]
 
 
 class DjingListAPIView(ListAPIView):

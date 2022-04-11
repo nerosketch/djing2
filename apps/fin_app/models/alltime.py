@@ -29,10 +29,13 @@ class PayAllTimeGateway(BaseAbstractModel):
         verbose_name = _("All time gateway")
 
 
-def report_by_pays(from_time: datetime, to_time: Optional[datetime] = None, pay_gw_id=None, group_by=0):
+def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = None, pay_gw_id=None, group_by=0):
     group_by = safe_int(group_by)
     if group_by not in [1, 2, 3]:
         raise ParseError('Bad value in "group_by" param')
+
+    if not from_time:
+        raise ParseError('from_time is required')
 
     params = [from_time]
     query = [

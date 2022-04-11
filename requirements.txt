@@ -1,9 +1,10 @@
 Django==3.1.14
-djangorestframework==3.12.2
+django-stubs==1.10.1
+djangorestframework==3.12.4
 Pillow>=8.2.0
 
 # permissions
-django-guardian
+#django-guardian
 
 # for mac address field
 netaddr==0.8.0
@@ -64,3 +65,9 @@ git+https://github.com/pyradius/pyrad.git#egg=pyrad
 drf-orjson-renderer==1.1.5
 
 pyyaml
+uritemplate
+
+requests
+
+# Tests
+pyftpdlib==1.5.6
