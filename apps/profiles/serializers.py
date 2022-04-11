@@ -71,6 +71,8 @@ class UserProfileSerializer(BaseAccountSerializer):
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
+        if not request or not request.user:
+            raise PermissionDenied
         if request.user.is_superuser or request.user.pk == instance.pk:
             return super().update(instance, validated_data)
         raise PermissionDenied
@@ -164,7 +166,7 @@ class SitesAuthTokenSerializer(AuthTokenSerializer):
             # The authenticate call simply returns None for is_active=False
             # users. (Assuming the default ModelBackend authentication
             # backend.)
-            err_msg = _("Unable to log in with provided credentials.")
+            err_msg = _("Unable to log in with provided credentials")
             if not user:
                 raise serializers.ValidationError(err_msg, code="authorization")
 

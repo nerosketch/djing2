@@ -48,7 +48,11 @@ class TaskStateChangeLogModel(BaseAbstractModel):
     task = models.ForeignKey("Task", on_delete=models.CASCADE)
     state_data = models.JSONField(_("State change data"))
     when = models.DateTimeField(auto_now_add=True)
-    who = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="+")
+    who = models.ForeignKey(
+        UserProfile,
+        on_delete=models.CASCADE,
+        related_name="+"
+    )
 
     objects = TaskStateChangeLogModelManager()
 
@@ -65,10 +69,13 @@ class TaskStateChangeLogModel(BaseAbstractModel):
                 # TODO: display UserProfile names instead of primary keys.
                 pass
             elif hasattr(field, "choices"):
-                setattr(self.task, field_name, field_from_val)
-                field_from_val = self.task._get_FIELD_display(field)
-                setattr(self.task, field_name, field_to_val)
-                field_to_val = self.task._get_FIELD_display(field)
+                try:
+                    setattr(self.task, field_name, field_from_val)
+                    field_from_val = self.task._get_FIELD_display(field)
+                    setattr(self.task, field_name, field_to_val)
+                    field_to_val = self.task._get_FIELD_display(field)
+                except:
+                    pass
             return text_item_tmpl % {"field_name": field_title, "from": field_from_val, "to": field_to_val}
 
         item_texts = (_format_item_text(*state_data_item) for state_data_item in self.state_data.items())
@@ -153,11 +160,36 @@ class TaskQuerySet(models.QuerySet):
         return safe_int(state_count), safe_float(state_percent)
 
 
+class TaskModeModel(models.Model):
+    title = models.CharField(
+        _('Title'),
+        max_length=64,
+    )
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        db_table = 'task_modes'
+
+
 class Task(BaseAbstractModel):
-    descr = models.CharField(_("Description"), max_length=128, null=True, blank=True)
-    recipients = models.ManyToManyField(UserProfile, verbose_name=_("Recipients"), related_name="them_task")
+    descr = models.CharField(
+        _("Description"),
+        max_length=128, null=True, blank=True
+    )
+    recipients = models.ManyToManyField(
+        UserProfile,
+        verbose_name=_("Recipients"),
+        related_name="them_task"
+    )
     author = models.ForeignKey(
-        UserProfile, related_name="+", on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Task author")
+        UserProfile,
+        related_name="+",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_("Task author")
     )
     TASK_PRIORITY_LOW = 0
     TASK_PRIORITY_AVARAGE = 1
@@ -167,8 +199,17 @@ class Task(BaseAbstractModel):
         (TASK_PRIORITY_AVARAGE, _("Average")),
         (TASK_PRIORITY_HIGHER, _("Higher")),
     )
-    priority = models.PositiveSmallIntegerField(_("A priority"), choices=TASK_PRIORITIES, default=TASK_PRIORITY_LOW)
-    out_date = models.DateField(_("Reality"), null=True, blank=True, default=delta_add_days)
+    priority = models.PositiveSmallIntegerField(
+        _("A priority"),
+        choices=TASK_PRIORITIES,
+        default=TASK_PRIORITY_LOW
+    )
+    out_date = models.DateField(
+        _("Reality"),
+        null=True,
+        blank=True,
+        default=delta_add_days
+    )
     time_of_create = models.DateTimeField(_("Date of create"), auto_now_add=True)
     TASK_STATE_NEW = 0
     TASK_STATE_CONFUSED = 1
@@ -178,7 +219,11 @@ class Task(BaseAbstractModel):
         (TASK_STATE_CONFUSED, _("Confused")),
         (TASK_STATE_COMPLETED, _("Completed")),
     )
-    task_state = models.PositiveSmallIntegerField(_("Condition"), choices=TASK_STATES, default=TASK_STATE_NEW)
+    task_state = models.PositiveSmallIntegerField(
+        _("Condition"),
+        choices=TASK_STATES,
+        default=TASK_STATE_NEW
+    )
     TASK_TYPE_NOT_CHOSEN = 0
     TASK_TYPE_IP_CONFLICT = 1
     TASK_TYPE_YELLOW_TRIANGLE = 2
@@ -207,10 +252,23 @@ class Task(BaseAbstractModel):
         (TASK_TYPE_INTERNET_CRASH, _("Internet crash")),
         (TASK_TYPE_OTHER, _("other")),
     )
+    # TODO: mode field is deprecated
     mode = models.PositiveSmallIntegerField(
-        _("The nature of the damage"), choices=TASK_TYPES, default=TASK_TYPE_NOT_CHOSEN
+        _("The nature of the damage"),
+        choices=TASK_TYPES,
+        default=TASK_TYPE_NOT_CHOSEN
     )
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name=_("Customer"))
+    task_mode = models.ForeignKey(
+        to=TaskModeModel,
+        verbose_name=_('Mode'),
+        blank=True, null=True, default=None,
+        on_delete=models.SET_DEFAULT
+    )
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        verbose_name=_("Customer")
+    )
     site = models.ForeignKey(Site, blank=True, null=True, default=None, on_delete=models.CASCADE)
 
     objects = TaskQuerySet.as_manager()
@@ -251,9 +309,11 @@ class Task(BaseAbstractModel):
         if not self.out_date:
             return _("Out date not specified")
         if self.out_date > now_date:
-            time_diff = "{}: {}".format(_("time left"), (self.out_date - now_date))
+            time_diff = "{}: {}".format(_("time left"), self.out_date - now_date)
         else:
-            time_diff = _("Expired timeout -%(time_left)s") % {"time_left": (now_date - self.out_date)}
+            time_diff = _("Expired timeout -%(time_left)s") % {
+                "time_left": (now_date - self.out_date)
+            }
         return time_diff
 
     class Meta:
@@ -266,9 +326,19 @@ class Task(BaseAbstractModel):
 
 class ExtraComment(BaseAbstractModel):
     text = models.TextField(_("Text of comment"))
-    task = models.ForeignKey(Task, verbose_name=_("Task"), on_delete=models.CASCADE)
-    author = models.ForeignKey(UserProfile, verbose_name=_("Author"), on_delete=models.CASCADE)
-    date_create = models.DateTimeField(_("Time of create"), auto_now_add=True)
+    task = models.ForeignKey(
+        Task,
+        verbose_name=_("Task"),
+        on_delete=models.CASCADE
+    )
+    author = models.ForeignKey(
+        UserProfile,
+        verbose_name=_("Author"),
+        on_delete=models.CASCADE
+    )
+    date_create = models.DateTimeField(
+        _("Time of create"), auto_now_add=True
+    )
 
     def __str__(self):
         return self.text
@@ -291,3 +361,48 @@ class TaskDocumentAttachment(BaseAbstractModel):
 
     class Meta:
         db_table = "task_doc_attachments"
+
+
+class TaskFinishDocumentModel(models.Model):
+    code = models.CharField(
+        _('Document code'),
+        max_length=64,
+    )
+    act_num = models.CharField(
+        _('Act num'),
+        max_length=64,
+        null=True,
+        blank=True,
+        default=None
+    )
+    author = models.ForeignKey(
+        UserProfile,
+        verbose_name=_("Author"),
+        on_delete=models.CASCADE
+    )
+    task = models.OneToOneField(
+        Task,
+        verbose_name=_("Task"),
+        on_delete=models.CASCADE
+    )
+    create_time = models.DateTimeField(_("Time of create"))
+    finish_time = models.DateTimeField(_('Finish time'))
+    cost = models.FloatField(_('Cost'))
+    task_mode = models.ForeignKey(
+        to=TaskModeModel,
+        verbose_name=_('Mode'),
+        blank=True, null=True, default=None,
+        on_delete=models.SET_DEFAULT
+    )
+    recipients = models.ManyToManyField(
+        UserProfile,
+        verbose_name=_("Recipients"),
+        related_name='finish_docs'
+    )
+
+    def __str__(self):
+        return self.code
+
+    class Meta:
+        db_table = 'task_finish_docs'
+

@@ -1,6 +1,7 @@
 from hashlib import md5
+from enum import IntEnum
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.utils import DatabaseError
 from django.db.models import Count
 from django.http import Http404
@@ -29,6 +30,36 @@ from fin_app.serializers import alltime as alltime_serializers
 from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway, report_by_pays
 
 
+class CustomIntEnum(IntEnum):
+    @classmethod
+    def in_range(cls, value: int):
+        return value in cls._value2member_map_
+
+
+class AllTimePayActEnum(CustomIntEnum):
+    ACT_VIEW_INFO = 1
+    ACT_PAY_DO = 4
+    ACT_PAY_CHECK = 7
+
+
+class AllTimeStatusCodeEnum(CustomIntEnum):
+    PAYMENT_OK = 22
+    PAYMENT_POSSIBLE = 21
+    TRANSACTION_STATUS_DETERMINED = 11
+    TRANSACTION_NOT_FOUND = -10
+    CUSTOMER_NOT_FOUND = -40
+    PAYMENT_IS_DENIED_FOR_CUSTOMER = -41
+    PAYMENT_ON_THIS_SUM_FOR_CUSTOMER_IS_NOT_ALLOWED = -42
+    SERVICE_UNAVIALABLE = -90
+    MORE_THAN_ONE_PAYMENTS = -100
+    BAD_REQUEST = -101
+
+
+TRANSACTION_STATUS_PAYMENT_OK = 111
+# TRANSACTION_STATUS_PAYMENT_IN_PROCESS = 120
+# TRANSACTION_STATUS_PAYMENT_CANCELLED = 130
+
+
 class AllTimeGatewayModelViewSet(DjingModelViewSet):
     queryset = PayAllTimeGateway.objects.annotate(pay_count=Count("alltimepaylog"))
     serializer_class = alltime_serializers.AllTimeGatewayModelSerializer
@@ -47,7 +78,10 @@ class AllTimeGatewayModelViewSet(DjingModelViewSet):
         return Response(tuple(r))
 
     def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(serializer=serializer, sites=[self.request.site])
+        return super().perform_create(
+            serializer=serializer,
+            sites=[self.request.site]
+        )
 
 
 class AllTimePayLogModelViewSet(DjingModelViewSet):
@@ -60,7 +94,7 @@ class AllTimeSpecifiedXMLRenderer(XMLRenderer):
 
 
 class AllTimePay(GenericAPIView):
-    http_method_names = ("get",)
+    http_method_names = ["get"]
     renderer_classes = (AllTimeSpecifiedXMLRenderer,)
     queryset = PayAllTimeGateway.objects.all()
     serializer_class = alltime_serializers.PayAllTimeGatewayModelSerializer
@@ -82,9 +116,12 @@ class AllTimePay(GenericAPIView):
         return qs.filter(sites__in=[self.request.site])
 
     @staticmethod
-    def _bad_ret(err_id: int, err_description: str = None) -> Response:
+    def _bad_ret(err_id: AllTimeStatusCodeEnum, err_description: str = None) -> Response:
         now = timezone.now()
-        r = {"status_code": safe_int(err_id), "time_stamp": now.strftime("%d.%m.%Y %H:%M")}
+        r = {
+            "status_code": safe_int(err_id.value),
+            "time_stamp": now.strftime("%d.%m.%Y %H:%M")
+        }
         if err_description:
             r.update({"description": err_description})
         return Response(r)
@@ -104,34 +141,56 @@ class AllTimePay(GenericAPIView):
         act: int = safe_int(request.GET.get("ACT"))
         self.current_date = timezone.now().strftime("%d.%m.%Y %H:%M")
 
-        if act <= 0:
-            return self._bad_ret(-101, "ACT must be more than 0")
+        if not AllTimePayActEnum.in_range(act):
+            return self._bad_ret(
+                AllTimeStatusCodeEnum.BAD_REQUEST, "ACT has unexpected value"
+            )
 
         try:
             sign = request.GET.get("SIGN")
             if not sign:
-                return self._bad_ret(-101, "SIGN not passed")
+                return self._bad_ret(
+                    AllTimeStatusCodeEnum.BAD_REQUEST, "SIGN not passed"
+                )
             if not self.check_sign(request.GET, sign.lower()):
-                return self._bad_ret(-101, "Bad sign")
+                return self._bad_ret(
+                    AllTimeStatusCodeEnum.BAD_REQUEST, "Bad sign"
+                )
 
-            if act == 1:
+            if act == AllTimePayActEnum.ACT_VIEW_INFO.value:
                 return self._fetch_user_info(request.GET)
-            elif act == 4:
+            elif act == AllTimePayActEnum.ACT_PAY_DO.value:
                 return self._make_pay(request.GET)
-            elif act == 7:
+            elif act == AllTimePayActEnum.ACT_PAY_CHECK.value:
                 return self._check_pay(request.GET)
             else:
-                return self._bad_ret(-101, "ACT is not passed")
+                return self._bad_ret(
+                    AllTimeStatusCodeEnum.BAD_REQUEST, "ACT is not passed"
+                )
         except Customer.DoesNotExist:
-            return self._bad_ret(-40, "Account does not exist")
+            return self._bad_ret(
+                AllTimeStatusCodeEnum.CUSTOMER_NOT_FOUND, "Account does not exist"
+            )
         except (PayAllTimeGateway.DoesNotExist, Http404):
-            return self._bad_ret(-40, "Pay gateway does not exist")
+            return self._bad_ret(
+                AllTimeStatusCodeEnum.BAD_REQUEST, "Pay gateway does not exist"
+            )
+        except IntegrityError as err:
+            return self._bad_ret(
+              AllTimeStatusCodeEnum.MORE_THAN_ONE_PAYMENTS, "Pay already exists"
+            )
         except DatabaseError:
-            return self._bad_ret(-90)
+            return self._bad_ret(
+                AllTimeStatusCodeEnum.SERVICE_UNAVIALABLE
+            )
         except AllTimePayLog.DoesNotExist:
-            return self._bad_ret(-10)
-        except AttributeError:
-            return self._bad_ret(-101)
+            return self._bad_ret(
+                AllTimeStatusCodeEnum.TRANSACTION_NOT_FOUND
+            )
+        except AttributeError as err:
+            return self._bad_ret(
+                AllTimeStatusCodeEnum.BAD_REQUEST, str(err)
+            )
 
     def _fetch_user_info(self, data: dict) -> Response:
         pay_account = data.get("PAY_ACCOUNT")
@@ -144,21 +203,25 @@ class AllTimePay(GenericAPIView):
                 "service_id": self._lazy_object.service_id,
                 "min_amount": 10.0,
                 "max_amount": 15000,
-                "status_code": 21,
+                "status_code": AllTimeStatusCodeEnum.PAYMENT_POSSIBLE.value,
                 "time_stamp": self.current_date,
             }
         )
 
     def _make_pay(self, data: dict) -> Response:
-        trade_point = safe_int(data.get("TRADE_POINT"))
+        trade_point = data.get("TRADE_POINT", '')
         receipt_num = safe_int(data.get("RECEIPT_NUM"))
         pay_account = data.get("PAY_ACCOUNT")
         pay_id = data.get("PAY_ID")
         pay_amount = safe_float(data.get("PAY_AMOUNT"))
-        customer = Customer.objects.get(username=pay_account, sites__in=[self.request.site], is_active=True)
-        pays = AllTimePayLog.objects.filter(pay_id=pay_id)
-        if pays.exists():
-            return self._bad_ret(-100, "Pay already exists")
+        customer = Customer.objects.filter(username=pay_account, is_active=True)
+        if hasattr(self.request, 'site'):
+            customer = customer.filter(sites__in=[self.request.site])
+        customer = customer.get()
+        if pay_id is None:
+            return self._bad_ret(
+                AllTimeStatusCodeEnum.BAD_REQUEST, "Bad PAY_ID"
+            )
 
         with transaction.atomic():
             customer.add_balance(profile=None, cost=pay_amount, comment=f"{self._lazy_object.title} {pay_amount:.2f}")
@@ -178,7 +241,7 @@ class AllTimePay(GenericAPIView):
                 "pay_id": pay_id,
                 "service_id": data.get("SERVICE_ID"),
                 "amount": round(pay_amount, 2),
-                "status_code": 22,
+                "status_code": AllTimeStatusCodeEnum.PAYMENT_OK.value,
                 "time_stamp": self.current_date,
             }
         )
@@ -188,13 +251,13 @@ class AllTimePay(GenericAPIView):
         pay = AllTimePayLog.objects.get(pay_id=pay_id)
         return Response(
             {
-                "status_code": 11,
+                "status_code": AllTimeStatusCodeEnum.TRANSACTION_STATUS_DETERMINED.value,
                 "time_stamp": self.current_date,
                 "transaction": {
                     "pay_id": pay_id,
                     "service_id": data.get("SERVICE_ID"),
                     "amount": round(pay.sum, 2),
-                    "status": 111,
+                    "status": TRANSACTION_STATUS_PAYMENT_OK,
                     "time_stamp": pay.date_add.strftime("%d.%m.%Y %H:%M"),
                 },
             }

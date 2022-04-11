@@ -1,6 +1,7 @@
 from django.db.models import Count
 from django.utils.translation import gettext
 from django.forms.models import model_to_dict
+from django.http.response import Http404
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
@@ -14,10 +15,23 @@ from tasks import models
 from tasks import serializers
 
 
-class TaskModelViewSet(DjingModelViewSet):
+class TasksQuerysetFilterMixin:
+    def filter_queryset(self, queryset):
+        qs = super().filter_queryset(queryset=queryset)
+        req = self.request
+        if req.user.is_superuser:
+            return qs
+        return qs.filter(site=req.site)
+
+
+class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
     queryset = models.Task.objects.select_related(
-        "author", "customer", "customer__group", "customer__address"
-    ).annotate(comment_count=Count("extracomment"), doc_count=Count('taskdocumentattachment'))
+        "author", "customer", "customer__group",
+        "customer__address", "task_mode"
+    ).annotate(
+        comment_count=Count("extracomment"),
+        doc_count=Count('taskdocumentattachment'),
+    )
     serializer_class = serializers.TaskModelSerializer
     filterset_fields = ("task_state", "recipients", "customer")
 
@@ -27,21 +41,32 @@ class TaskModelViewSet(DjingModelViewSet):
             self.perform_destroy(task)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
-            return Response(gettext("You cannot delete task that assigned to you"), status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                gettext("You cannot delete task that assigned to you"),
+                status=status.HTTP_403_FORBIDDEN
+            )
 
     def create(self, request, *args, **kwargs):
         # check if new task with user already exists
         uname = request.query_params.get("uname")
         if uname:
-            exists_task = models.Task.objects.filter(customer__username=uname, task_state=models.Task.TASK_STATE_NEW)
+            exists_task = models.Task.objects.filter(
+                customer__username=uname,
+                task_state=models.Task.TASK_STATE_NEW
+            )
             if exists_task.exists():
                 return Response(
-                    gettext("New task with this customer already exists."), status=status.HTTP_409_CONFLICT
+                    gettext("New task with this customer already exists."),
+                    status=status.HTTP_409_CONFLICT
                 )
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(serializer=serializer, author=self.request.user, site=self.request.site)
+        return super().perform_create(
+            serializer=serializer,
+            author=self.request.user,
+            site=self.request.site
+        )
 
     def perform_update(self, serializer, *args, **kwargs) -> None:
         new_data = dict(serializer.validated_data)
@@ -58,7 +83,8 @@ class TaskModelViewSet(DjingModelViewSet):
         tasks_count = 0
         if isinstance(request.user, UserProfile):
             tasks_count = models.Task.objects.filter(
-                recipients__in=(request.user,), task_state=models.Task.TASK_STATE_NEW
+                recipients__in=(request.user,),
+                task_state=models.Task.TASK_STATE_NEW
             ).count()
         return Response(tasks_count)
 
@@ -83,10 +109,16 @@ class TaskModelViewSet(DjingModelViewSet):
 
     @action(detail=False, url_path=r"new_task_initial/(?P<group_id>\d{1,18})/(?P<customer_id>\d{1,18})")
     def new_task_initial(self, request, group_id: str, customer_id: str):
-        customer_id = safe_int(customer_id)
-        if customer_id == 0:
-            return Response("bad customer_id", status=status.HTTP_400_BAD_REQUEST)
-        exists_task = models.Task.objects.filter(customer__id=customer_id, task_state=models.Task.TASK_STATE_NEW)
+        customer_id_i = safe_int(customer_id)
+        if customer_id_i == 0:
+            return Response(
+                "bad customer_id",
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        exists_task = models.Task.objects.filter(
+            customer__id=customer_id_i,
+            task_state=models.Task.TASK_STATE_NEW
+        )
         if exists_task.exists():
             # Task with this customer already exists
             return Response(
@@ -97,13 +129,18 @@ class TaskModelViewSet(DjingModelViewSet):
                 }
             )
 
-        group_id = safe_int(group_id)
-        if group_id > 0:
+        group_id_i = safe_int(group_id)
+        if group_id_i > 0:
             recipients = (
-                UserProfile.objects.get_profiles_by_group(group_id=group_id).only("pk").values_list("pk", flat=True)
+                UserProfile.objects.get_profiles_by_group(
+                    group_id=group_id_i
+                ).only("pk").values_list("pk", flat=True)
             )
             return Response({"status": 1, "recipients": recipients})
-        return Response('"group_id" parameter is required', status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            '"group_id" parameter is required',
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     @action(detail=False)
     def state_percent_report(self, request):
@@ -112,7 +149,7 @@ class TaskModelViewSet(DjingModelViewSet):
             return {"num": num, "name": name, "count": state_count, "percent": state_percent}
 
         r = [
-            _build_format(task_state_num, task_state_name)
+            _build_format(task_state_num, str(task_state_name))
             for task_state_num, task_state_name in models.Task.TASK_STATES
         ]
 
@@ -124,12 +161,10 @@ class TaskModelViewSet(DjingModelViewSet):
 
         report = models.Task.objects.task_mode_report()
 
+        task_types = {t.pk: t.title for t in models.TaskModeModel.objects.all()}
+
         def _get_display(val: int) -> str:
-            r = (str(ttext) for tval, ttext in models.Task.TASK_TYPES if tval == val)
-            try:
-                return next(r)
-            except StopIteration:
-                return ""
+            return str(task_types.get(val, 'Not Found'))
 
         res = [
             {"mode": _get_display(vals.get("mode")), "task_count": vals.get("task_count")}
@@ -138,7 +173,7 @@ class TaskModelViewSet(DjingModelViewSet):
         return Response({"annotation": res})
 
 
-class AllTasksList(DjingListAPIView):
+class AllTasksList(TasksQuerysetFilterMixin, DjingListAPIView):
     serializer_class = serializers.TaskModelSerializer
 
     def get_queryset(self):
@@ -161,25 +196,38 @@ class NewTasksList(AllTasksList):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(recipients=self.request.user, task_state=models.Task.TASK_STATE_NEW)
+        return qs.filter(
+            recipients=self.request.user,
+            task_state=models.Task.TASK_STATE_NEW
+        )
 
 
 class FailedTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(recipients=self.request.user, task_state=models.Task.TASK_STATE_CONFUSED)
+        return qs.filter(
+            recipients=self.request.user,
+            task_state=models.Task.TASK_STATE_CONFUSED
+        )
 
 
 class FinishedTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(recipients=self.request.user, task_state=models.Task.TASK_STATE_COMPLETED)
+        return qs.filter(
+            recipients=self.request.user,
+            task_state=models.Task.TASK_STATE_COMPLETED
+        )
 
 
 class OwnTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(author=self.request.user).exclude(task_state=models.Task.TASK_STATE_COMPLETED)
+        return qs.filter(
+            author=self.request.user
+        ).exclude(
+            task_state=models.Task.TASK_STATE_COMPLETED
+        )
 
 
 class MyTasksList(AllTasksList):
@@ -209,7 +257,10 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
         if task_id == 0:
             return Response('"task" param is required', status=status.HTTP_400_BAD_REQUEST)
 
-        comments_list = self.get_serializer(self.get_queryset().filter(task_id=task_id).defer("task"), many=True).data
+        comments_list = self.get_serializer(
+            self.get_queryset().filter(task_id=task_id).defer("task"),
+            many=True
+        ).data
         for comment in comments_list:
             comment.update({"type": "comment"})
 
@@ -219,7 +270,11 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
         for log in logs_list:
             log.update({"type": "log"})
 
-        one_list = sorted(comments_list + logs_list, key=lambda i: i.get("when") or i.get("date_create"), reverse=True)
+        one_list = sorted(
+            comments_list + logs_list,
+            key=lambda i: i.get("when") or i.get("date_create"),
+            reverse=True
+        )
 
         return Response(one_list)
 
@@ -240,3 +295,36 @@ class TaskDocumentAttachmentViewSet(DjingModelViewSet):
 
     def perform_create(self, serializer, *args, **kwargs):
         serializer.save(author=self.request.user)
+
+
+class TaskModeModelViewSet(DjingModelViewSet):
+    queryset = models.TaskModeModel.objects.all()
+    serializer_class = serializers.TaskModeModelSerializer
+
+
+class TaskFinishDocumentModelViewSet(DjingModelViewSet):
+    queryset = models.TaskFinishDocumentModel.objects.all()
+    serializer_class = serializers.TaskFinishDocumentModelSerializer
+    filterset_fields = ['task']
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            return super().retrieve(request, *args, **kwargs)
+        except Http404:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def create(self, request, *args, **kwargs):
+        dat = {
+            'author': request.user
+        }
+        dat.update(request.data)
+        serializer = self.get_serializer(data=dat)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
+

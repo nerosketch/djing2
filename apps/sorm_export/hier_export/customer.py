@@ -1,9 +1,9 @@
-import logging
-from datetime import datetime, date
-from typing import Iterable, Optional, Union
+from datetime import datetime
+from typing import Iterable, Optional
 
-from django.db.models import Subquery, OuterRef
+from django.db.models import Subquery, OuterRef, Count
 from django.utils.translation import gettext_lazy as _
+from djing2.lib.logger import logger
 from addresses.models import AddressModelTypes, AddressModel
 from customer_contract.models import CustomerContractModel
 from customers_legal.models import CustomerLegalModel
@@ -39,24 +39,23 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
 
     def _gen():
         lgl_sb = CustomerLegalModel.objects.filter(branches__id=OuterRef('pk')).values('pk')
-        contracts_q = CustomerContractModel.objects.filter(
-            customer_id=OuterRef('pk'),
-            is_active=True
-        ).values('start_service_time')
         # FIXME: Абоненты без договора не выгружаются.
         #  Нужно выгружать только тех, у кого есть основной договор.
         #  Нужно сделать типы договоров, чтоб проверять только по 'основному'.
         #  Типы договоров, например: Основной, iptv, voip, доп оборудование, и.т.д.
+
         for customer in customers.annotate(
-            legal_id=Subquery(lgl_sb),
-            contract_date=Subquery(contracts_q)
-        ).exclude(
-            contract_date=None
+            legal_id=Subquery(lgl_sb)
         ):
+            # TODO: optimize
+            contract = customer.customercontractmodel_set.first()
+            if contract is None:
+                logger.error('Contract for customer: "%s" not found' % customer)
+                continue
             yield {
                 "customer_id": customer.pk,
-                "legal_customer_id": customer.legal_id if customer.legal_id is not None else customer.pk,
-                "contract_start_date": customer.contract_date.date(),
+                "legal_customer_id": customer.legal_id if customer.legal_id else customer.pk,
+                "contract_start_date": contract.start_service_time.date(),
                 "customer_login": customer.username,
                 "communication_standard": CommunicationStandardChoices.ETHERNET.value,
             }
@@ -102,7 +101,7 @@ def _addr_get_parent(addr: AddressModel, err_msg=None) -> Optional[AddressModel]
     )
     if not addr_parent_region:
         if err_msg is not None:
-            logging.error(err_msg)
+            logger.error(err_msg)
         return
     return addr_parent_region
 
@@ -121,14 +120,14 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
 
     def gen(customer: Customer):
         if not hasattr(customer, "address"):
-            logging.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
+            logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
             return
         addr = customer.address
         if not addr:
-            logging.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
+            logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
             return
         if not addr.parent_addr:
-            logging.error(_('Customer "%s" has address without parent address object') % customer)
+            logger.error(_('Customer "%s" has address without parent address object') % customer)
             return
         addr_house = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.HOUSE
@@ -137,7 +136,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             addr_type=AddressModelTypes.OFFICE_NUM
         ))
         if not addr_house and not addr_office:
-            logging.error(_('Customer "%s" [%s] has no house nor office in address "%s"') % (
+            logger.error(_('Customer "%s" [%s] has no house nor office in address "%s"') % (
                 customer, customer.username, addr
             ))
             return
@@ -157,6 +156,10 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             addr_type=AddressModelTypes.CORPUS
         ))
 
+        # first available contract
+        # TODO: optimize
+        contract = customer.customercontractmodel_set.first()
+
         return {
             "ap_id": addr.pk,
             "customer_id": customer.pk,
@@ -166,56 +169,25 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             "builing": addr_building,
             "building_corpus": addr_corpus or None,
             "full_address": addr.full_title(),
-            "actual_start_time": customer.contract_date if customer.contract_date else datetime(
-                customer.create_date.year,
-                customer.create_date.month,
-                customer.create_date.day
-            ),
-            # TODO: указывать дату конца, когда абонент выключается или удаляется
-            # 'actual_end_time':
+            "actual_start_time": contract.start_service_time,
+            'actual_end_time': contract.end_service_time or None
         }
 
-    contracts_q = CustomerContractModel.objects.filter(
-        customer_id=OuterRef('pk'),
-        is_active=True
-    ).values('start_service_time')
     return (
         individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
         gen,
         customers.select_related(
             "address", "address__parent_addr"
-        ).annotate(
-            contract_date=Subquery(contracts_q)
         ),
         f"ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt",
     )
-
-
-def date_contract_or_native(native_date: Union[datetime, date], contract_date: Union[datetime, date]) -> datetime:
-    if isinstance(native_date, date):
-        native_date = datetime(
-            native_date.year,
-            native_date.month,
-            native_date.day
-        )
-    elif not native_date:
-        return contract_date
-    if isinstance(contract_date, date):
-        contract_date = datetime(
-            contract_date.year,
-            contract_date.month,
-            contract_date.day
-        )
-    elif not contract_date:
-        return native_date
-    return max([native_date, contract_date])
 
 
 def _report_about_customers_no_have_passport(customers_without_passports_qs):
     for customer in customers_without_passports_qs.prefetch_related('sites'):
         # FIXME: That is Very very shit code block, i'm sorry :(
         sites = customer.sites.all()
-        logging.error(
+        logger.error(
             "%s; %s" % (
                 _('Customer "%s" [%s] has no passport info') % (customer, customer.username),
                 ' '.join(s.name for s in sites)
@@ -233,15 +205,15 @@ def export_individual_customer(customers_queryset, event_time=None):
 
     def gen(customer: Customer):
         if not hasattr(customer, "passportinfo"):
-            logging.error('Customer "%s" has no passport info' % customer)
+            logger.error('Customer "%s" has no passport info' % customer)
             return
         passport = customer.passportinfo
         if not passport:
-            logging.error(_('Customer "%s" [%s] has no passport info') % (customer, customer.username))
+            logger.error(_('Customer "%s" [%s] has no passport info') % (customer, customer.username))
             return
         addr = passport.registration_address
         if not addr:
-            logging.error(_('Customer "%s" [%s] has no address in passport') % (customer, customer.username))
+            logger.error(_('Customer "%s" [%s] has no address in passport') % (customer, customer.username))
             return
 
         addr_parent_region = _addr_get_parent(
@@ -331,7 +303,9 @@ def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_t
         # TODO: Optimize
         #  оптимизаровать запросы к бд
         #  Сейчас на каждый запрос адреса из иерархии адресов делается отдельный запрос в бд.
-        for customer in legal.branches.all():
+        for customer in legal.branches.annotate(
+            contr_count=Count('customercontractmodel')
+        ).filter(contr_count__gt=0, is_active=True):
             addr: AddressModel = legal.address
             if not addr:
                 continue
@@ -453,3 +427,4 @@ def export_contact(customer_tels, event_time=None):
     """
     ser = individual_entity_serializers.CustomerContactObjectFormat(data=customer_tels, many=True)
     return ser, f"ISP/abonents/contact_phones_v1_{format_fname(event_time)}.txt"
+

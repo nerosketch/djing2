@@ -13,5 +13,6 @@ router.register("vlan", views.VlanIfModelViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("find_customer_by_device_credentials/", views.FindCustomerByCredentials.as_view()),
     path("dhcp_lever/", views.DhcpLever.as_view()),
 ]

@@ -1,6 +1,5 @@
-from typing import Optional
 from datetime import datetime
-from netaddr import EUI
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,12 +11,12 @@ from customers.serializers import RadiusCustomerServiceRequestSerializer
 from djing2.lib import LogicError, safe_int
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from djing2.lib.mixins import AllowedSubnetMixin
-from networks.models import NetworkIpPoolKind, CustomerIpLeaseModel
+from networks.models import CustomerIpLeaseModel
 from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
 from radiusapp import custom_signals
-from radiusapp import tasks
+from radiusapp.tasks import async_finish_session_task
 
 
 def _gigaword_imp(num: int, gwords: int) -> int:
@@ -32,6 +31,24 @@ def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST):
 
 def _update_lease_send_ws_signal(customer_id: int):
     send_data2ws({"eventType": WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value, "data": {"customer_id": customer_id}})
+
+
+def _acct_signal(dat, ip, customer_mac, radius_username, customer, radius_unique_id,
+                 new_session=None, lease=None, event_time=None):
+    if event_time is None:
+        event_time = datetime.now()
+    custom_signals.radius_acct_start_signal.send(
+        sender=CustomerRadiusSession,
+        instance=new_session,
+        data=dat,
+        ip_addr=ip,
+        customer_mac=customer_mac,
+        radius_username=radius_username,
+        customer_ip_lease=lease,
+        customer=customer,
+        radius_unique_id=radius_unique_id,
+        event_time=event_time,
+    )
 
 
 # TODO: Also protect requests by hash
@@ -73,36 +90,9 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         serializer = self.get_serializer()
         return Response(serializer.data)
 
-    def assign_guest(self, customer_mac: EUI, data: dict, customer_id: Optional[int] = None):
-        """
-        Assign no service session.
-
-        :param customer_mac: Customer device MAC address.
-        :param data: Other data from RADIUS server.
-        :param customer_id: customers.models.Customer model id.
-        :return: rest_framework Response.
-        """
-        if customer_id is None:
-            lease = CustomerRadiusSession.objects.assign_guest_session(customer_mac=customer_mac)
-        else:
-            customer_id = safe_int(customer_id)
-            if customer_id == 0:
-                return _bad_ret('Bad "customer_id" arg.')
-            lease = CustomerRadiusSession.objects.assign_guest_customer_session(
-                customer_id=customer_id, customer_mac=customer_mac
-            )
-        if lease is None:
-            # Not possible to assign guest ip, it's bad
-            return Response(
-                {"Reply-Message": "Not possible to assign guest ip, it's bad"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        # Creating guest session
-        r = self.vendor_manager.get_auth_guest_session_response(guest_lease=lease, data=data)
-        return Response(r)
-
     @action(methods=["post"], detail=False, url_path=r"auth/(?P<vendor_name>\w{1,32})")
     def auth(self, request, vendor_name=None):
+        # Just find customer by credentials from request
         vendor_manager = VendorManager(vendor_name=vendor_name)
         self.vendor_manager = vendor_manager
 
@@ -113,8 +103,9 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             return _bad_ret("Customer mac is required")
 
         customer = None
+        subscriber_lease = None
 
-        if all([agent_remote_id, agent_circuit_id]):
+        if all((agent_remote_id, agent_circuit_id)):
             dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
                 agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
             )
@@ -124,47 +115,53 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
                 device_mac=dev_mac, device_port=dev_port
             )
+            if customer is None:
+                return _bad_ret('Customer not found', custom_status=status.HTTP_404_NOT_FOUND)
+            # TODO: Optimize
+
+            # Ищем по сущ сессиям
+            subscriber_session = CustomerRadiusSession.objects.filter(
+                customer=customer,
+                ip_lease__mac_address=customer_mac,
+            ).select_related('ip_lease')
+            if subscriber_session.exists():
+                subscriber_lease = subscriber_session.first().ip_lease
+            else:
+                subscriber_lease = CustomerIpLeaseModel.objects.filter(
+                    Q(mac_address=customer_mac) | Q(mac_address=None, is_dynamic=False),
+                    customer=customer,
+                    # mac_address=customer_mac
+                ).first()
         else:
-            # return _bad_ret("Bad opt82")
-            leases = CustomerIpLeaseModel.objects.filter(mac_address=str(customer_mac))
+            leases = CustomerIpLeaseModel.objects.filter(
+                mac_address=str(customer_mac)
+            ).select_related(
+                'customer',
+                'customer__current_service',
+                'customer__current_service__service',
+            )
+            # TODO: Optimize
             if leases.exists():
-                lease = leases.first()
-                customer = lease.customer if lease else None
+                subscriber_lease = leases.first()
+                customer = subscriber_lease.customer if subscriber_lease else None
             del leases
 
         if customer is None:
-            # If customer not found then assign guest session
-            return self.assign_guest(customer_mac=customer_mac, data=request.data)
+            return _bad_ret('Customer not found', custom_status=status.HTTP_404_NOT_FOUND)
 
-        vid = vendor_manager.get_vlan_id(request.data)
-
+        # Return response
         try:
-            subscriber_lease = CustomerRadiusSession.objects.fetch_subscriber_lease(
-                customer_mac=customer_mac,
-                customer_id=customer.pk,
-                customer_group=customer.group_id,
-                is_dynamic=True,
-                vid=vid,
-                pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
-            )
-            if subscriber_lease is None:
-                r = self.assign_guest(
-                    customer_mac=customer_mac,
-                    data=request.data,
-                    customer_id=customer.pk,
-                )
-                _update_lease_send_ws_signal(customer.pk)
-                return r
-
-            response = vendor_manager.get_auth_session_response(
-                subscriber_lease=subscriber_lease,
-                # TODO: customer.active_service() - hit to db
+            r = vendor_manager.get_auth_session_response(
                 customer_service=customer.active_service(),
                 customer=customer,
                 request_data=request.data,
+                subscriber_lease=subscriber_lease,
             )
+            if r is None:
+                return Response('Empty auth session response', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response, code = r
             _update_lease_send_ws_signal(customer.pk)
-            return Response(response)
+            return Response(response, status=code)
         except LogicError as err:
             return _bad_ret(str(err))
 
@@ -174,12 +171,16 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         self.vendor_manager = vendor_manager
 
         request_type = vendor_manager.get_acct_status_type(request)
+        if request_type is None:
+            return self._acct_unknown(request)
         acct_status_type_map = {
             AcctStatusType.START.value: self._acct_start,
             AcctStatusType.STOP.value: self._acct_stop,
             AcctStatusType.UPDATE.value: self._acct_update,
         }
         request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
+        if request_type_fn is None:
+            return self._acct_unknown(request)
         return request_type_fn(request)
 
     def _update_counters(self, sessions, data: dict, last_event_time=None, **update_kwargs):
@@ -204,21 +205,26 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             output_packets=v_out_pkt,
             **update_kwargs,
         )
-        custom_signals.radius_auth_update_signal.send(
-            sender=CustomerRadiusSession,
-            instance=None,
-            instance_queryset=sessions,
-            data=data,
-            input_octets=v_in_pkt,
-            output_octets=v_out_oct,
-            input_packets=v_in_pkt,
-            output_packets=v_out_pkt,
-        )
+        # custom_signals.radius_auth_update_signal.send(
+        #     sender=CustomerRadiusSession,
+        #     instance=None,
+        #     instance_queryset=sessions,
+        #     data=data,
+        #     input_octets=v_in_pkt,
+        #     output_octets=v_out_oct,
+        #     input_packets=v_in_pkt,
+        #     output_packets=v_out_pkt,
+        # )
 
     def _acct_start(self, request):
         """Accounting start handler."""
         dat = request.data
         vendor_manager = self.vendor_manager
+        if not vendor_manager or not vendor_manager.vendor_class:
+            return _bad_ret(
+                'No vendor manager exists',
+                custom_status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
         if not ip:
@@ -228,51 +234,45 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if not radius_username:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        leases = CustomerIpLeaseModel.objects.filter(ip_address=ip).only("pk", "ip_address", "pool_id", "customer_id")
-        if not leases.exists():
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        lease = leases.first()
-        if lease is None:
+        agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=request.data)
+        if all([agent_remote_id, agent_circuit_id]):
+            dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+                agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
+            )
+            customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                device_mac=dev_mac, device_port=dev_port
+            )
+            if not customer:
+                return _bad_ret(
+                    'Customer with provided device credentials not found',
+                    custom_status=status.HTTP_404_NOT_FOUND
+                )
+        else:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
-
-        sessions = CustomerRadiusSession.objects.filter(ip_lease=lease)
-        if sessions.exists():
-            self._update_counters(
-                sessions=sessions,
-                data=dat,
-                customer=lease.customer,
-                radius_username=radius_username,
-                session_id=radius_unique_id,
-                last_event_time=datetime.now(),
-            )
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        customer = lease.customer
-        event_time = datetime.now()
-        new_session = CustomerRadiusSession.objects.create(
-            customer=customer,
-            ip_lease=lease,
-            last_event_time=event_time,
-            radius_username=radius_username,
-            session_id=radius_unique_id,
-        )
         customer_mac = vendor_manager.get_customer_mac(dat)
-        if customer:
-            custom_signals.radius_auth_start_signal.send(
-                sender=CustomerRadiusSession,
-                instance=new_session,
-                data=dat,
-                ip_addr=ip,
+
+        created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+            ip=str(ip),
+            mac=str(customer_mac),
+            customer_id=customer.pk,
+            radius_uname=radius_username,
+            radius_unique_id=radius_unique_id
+        )
+
+        if created:
+            _acct_signal(
+                # new_session=new_session,
+                dat=dat, ip=ip,
                 customer_mac=customer_mac,
                 radius_username=radius_username,
-                customer_ip_lease=lease,
+                # lease=lease,
                 customer=customer,
                 radius_unique_id=radius_unique_id,
-                event_time=event_time,
+                event_time=datetime.now()
             )
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_stop(self, request):
@@ -283,7 +283,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
         customer_mac = vendor_manager.get_customer_mac(dat)
         sessions = CustomerRadiusSession.objects.filter(ip_lease__ip_address=ip)
-        custom_signals.radius_auth_stop_signal.send(
+        custom_signals.radius_acct_stop_signal.send(
             sender=CustomerRadiusSession,
             instance_queryset=sessions,
             data=dat,
@@ -291,6 +291,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             radius_unique_id=radius_unique_id,
             customer_mac=customer_mac,
         )
+        for session in sessions:
+            async_finish_session_task(
+                radius_uname=str(session.radius_username)
+            )
         sessions.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -303,40 +307,19 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             ip_lease__ip_address=ip,
         )
         event_time = datetime.now()
-        CustomerIpLeaseModel.objects.filter(ip_address=ip).update(last_update=event_time)
-        if sessions.exists():
-            self._update_counters(sessions=sessions, data=dat)
-
-            for single_session in sessions.iterator():
-                # single_customer = single_session.customer
-
-                # If session and customer not same then free session
-                agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=dat)
-                if all([agent_remote_id, agent_circuit_id]):
-                    dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
-                        agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
-                    )
-                    if dev_mac is not None:
-                        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
-                            device_mac=dev_mac, device_port=dev_port
-                        )
-                        if (
-                            customer is not None
-                            and single_session.customer_id is not None
-                            and int(customer.pk) != int(single_session.customer_id)
-                        ):
-                            tasks.async_finish_session_task(radius_uname=single_session.radius_username)
-                            single_session.delete()
-                            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        else:
-            radius_username = vendor_manager.get_radius_username(dat)
-            if radius_username:
-                tasks.async_finish_session_task(radius_uname=radius_username)
-            return _bad_ret("No session found", custom_status=status.HTTP_200_OK)
+        self._update_counters(
+            sessions=sessions,
+            data=dat,
+            last_event_time=event_time,
+        )
+        customer_mac = vendor_manager.get_customer_mac(dat)
+        CustomerIpLeaseModel.objects.filter(ip_address=ip).update(
+            last_update=event_time,
+            mac_address=customer_mac
+        )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @staticmethod
     def _acct_unknown(_):
-        return _bad_ret("Bad Acct-Status-Type")
+        return _bad_ret("Bad Acct-Status-Type", custom_status=status.HTTP_200_OK)

@@ -96,6 +96,7 @@ INSTALLED_APPS = [
     "dynamicfields.apps.DynamicfieldsConfig",
     "customers_legal.apps.CustomersLegalConfig",
     "customer_contract.apps.CustomerContractConfig",
+    "webhooks.apps.WebhooksConfig",
 ]
 
 if DEBUG:
@@ -152,6 +153,7 @@ DATABASES = {
         "PASSWORD": get_secret("POSTGRES_PASSWORD"),
         "HOST": get_env("POSTGRES_HOST", "postgres"),
         "PORT": get_env("POSTGRES_PORT", 5432),
+        "DISABLE_SERVER_SIDE_CURSORS": bool(get_env("DISABLE_SERVER_SIDE_CURSORS", False)),
     }
 }
 
@@ -342,8 +344,10 @@ WEBPUSH_SETTINGS = {
 
 DEFAULT_FTP_CREDENTIALS = {
     "host": get_env("SORM_EXPORT_FTP_HOST"),
+    "port": get_env("SORM_EXPORT_FTP_PORT", default=21),
     "uname": get_env("SORM_EXPORT_FTP_USERNAME"),
-    "password": get_secret("SORM_EXPORT_FTP_PASSWORD")
+    "password": get_secret("SORM_EXPORT_FTP_PASSWORD"),
+    "disabled": get_env("SORM_EXPORT_FTP_DISABLE", default=False)
 }
 
 RADIUSAPP_OPTIONS = {

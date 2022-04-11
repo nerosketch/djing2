@@ -1,6 +1,5 @@
 from hashlib import md5
 
-# from django.test.utils import override_settings
 from django.contrib.sites.models import Site
 from django.utils import timezone
 from django.utils.html import escape
@@ -9,16 +8,20 @@ from rest_framework.test import APITestCase
 from customers.models import Customer
 from fin_app.models.alltime import PayAllTimeGateway
 from profiles.models import UserProfile
+from fin_app.views.alltime import (
+    AllTimePayActEnum,
+    TRANSACTION_STATUS_PAYMENT_OK,
+    AllTimeStatusCodeEnum
+)
 
 
-def _make_sign(act: int, pay_account: str, serv_id: str, pay_id, secret: str):
+def _make_sign(act: AllTimePayActEnum, pay_account: str, serv_id: str, pay_id, secret: str):
     md = md5()
-    s = "%d_%s_%s_%s_%s" % (act, pay_account, serv_id, pay_id, secret)
+    s = "%d_%s_%s_%s_%s" % (act.value, pay_account, serv_id, pay_id, secret)
     md.update(bytes(s, "utf-8"))
     return md.hexdigest()
 
 
-# @override_settings(DEFAULT_TABLESPACE='ram')
 class CustomAPITestCase(APITestCase):
     def get(self, *args, **kwargs):
         return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
@@ -28,10 +31,16 @@ class CustomAPITestCase(APITestCase):
 
     def setUp(self):
         self.admin = UserProfile.objects.create_superuser(
-            username="admin", password="admin", telephone="+797812345678"
+            username="admin",
+            password="admin",
+            telephone="+797812345678"
         )
         # customer for tests
-        custo1 = Customer.objects.create_user(telephone="+79782345678", username="custo1", password="passw")
+        custo1 = Customer.objects.create_user(
+            telephone="+79782345678",
+            username="custo1",
+            password="passw"
+        )
         custo1.balance = -13.12
         custo1.fio = "Test Name"
         custo1.save(update_fields=("balance", "fio"))
@@ -40,7 +49,8 @@ class CustomAPITestCase(APITestCase):
 
         # Pay System
         pay_system = PayAllTimeGateway.objects.create(
-            title="Test pay system", secret="secret", service_id="service_id", slug="pay_gw_slug"
+            title="Test pay system", secret="secret",
+            service_id="service_id", slug="pay_gw_slug"
         )
         example_site = Site.objects.first()
         pay_system.sites.add(example_site)
@@ -60,7 +70,14 @@ class AllPayTestCase(CustomAPITestCase):
         service_id = self.pay_system.service_id
         r = self.get(
             self.url,
-            {"ACT": 1, "PAY_ACCOUNT": "custo1", "SIGN": _make_sign(1, "custo1", "", "", self.pay_system.secret)},
+            {
+                "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
+                "PAY_ACCOUNT": "custo1",
+                "SIGN": _make_sign(
+                    AllTimePayActEnum.ACT_VIEW_INFO,
+                    "custo1", "", "", self.pay_system.secret
+                )
+            },
         )
         o = "".join(
             (
@@ -71,7 +88,7 @@ class AllPayTestCase(CustomAPITestCase):
                 "<service_id>%s</service_id>" % escape(service_id),
                 "<min_amount>10.0</min_amount>",
                 "<max_amount>15000</max_amount>",
-                "<status_code>21</status_code>",
+                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.PAYMENT_POSSIBLE.value,
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
                 "</pay-response>",
             )
@@ -86,7 +103,7 @@ class AllPayTestCase(CustomAPITestCase):
         r = self.get(
             self.url,
             {
-                "ACT": 4,
+                "ACT": AllTimePayActEnum.ACT_PAY_DO.value,
                 "PAY_ACCOUNT": "custo1",
                 "PAY_AMOUNT": 18.21,
                 "RECEIPT_NUM": 2126235,
@@ -94,7 +111,10 @@ class AllPayTestCase(CustomAPITestCase):
                 "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
                 "TRADE_POINT": "term1",
                 "SIGN": _make_sign(
-                    4, "custo1", service_id, "840ab457-e7d1-4494-8197-9570da035170", self.pay_system.secret
+                    AllTimePayActEnum.ACT_PAY_DO,
+                    "custo1", service_id,
+                    "840ab457-e7d1-4494-8197-9570da035170",
+                    self.pay_system.secret
                 ),
             },
         )
@@ -104,7 +124,7 @@ class AllPayTestCase(CustomAPITestCase):
                 "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
                 "<service_id>%s</service_id>" % escape(service_id),
                 "<amount>18.21</amount>",
-                "<status_code>22</status_code>",
+                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.PAYMENT_OK.value,
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
                 "</pay-response>",
             )
@@ -121,22 +141,27 @@ class AllPayTestCase(CustomAPITestCase):
         r = self.get(
             self.url,
             {
-                "ACT": 7,
+                "ACT": AllTimePayActEnum.ACT_PAY_CHECK.value,
                 "SERVICE_ID": service_id,
                 "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
-                "SIGN": _make_sign(7, "", service_id, "840ab457-e7d1-4494-8197-9570da035170", self.pay_system.secret),
+                "SIGN": _make_sign(
+                    AllTimePayActEnum.ACT_PAY_CHECK,
+                    "", service_id,
+                    "840ab457-e7d1-4494-8197-9570da035170",
+                    self.pay_system.secret
+                ),
             },
         )
         xml = "".join(
             (
                 "<pay-response>",
-                "<status_code>11</status_code>",
+                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.TRANSACTION_STATUS_DETERMINED.value,
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
                 "<transaction>",
                 "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
                 "<service_id>%s</service_id>" % escape(service_id),
                 "<amount>18.21</amount>",
-                "<status>111</status>",
+                "<status>%d</status>" % TRANSACTION_STATUS_PAYMENT_OK,
                 "<time_stamp>%s</time_stamp>" % escape(test_pay_time),
                 "</transaction>",
                 "</pay-response>",
@@ -160,12 +185,19 @@ class SitesAllPayTestCase(CustomAPITestCase):
         current_date = timezone.now().strftime(time_format)
         r = self.get(
             self.url,
-            {"ACT": 1, "PAY_ACCOUNT": "custo1", "SIGN": _make_sign(1, "custo1", "", "", self.pay_system.secret)},
+            {
+                "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
+                "PAY_ACCOUNT": "custo1",
+                "SIGN": _make_sign(
+                    AllTimePayActEnum.ACT_VIEW_INFO,
+                    "custo1", "", "", self.pay_system.secret
+                )
+            },
         )
         o = "".join(
             (
                 "<pay-response>",
-                "<status_code>-40</status_code>",
+                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.BAD_REQUEST.value,
                 "<time_stamp>%s</time_stamp>" % escape(current_date),
                 "<description>Pay gateway does not exist</description>",
                 "</pay-response>",

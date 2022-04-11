@@ -49,16 +49,12 @@ class IVendorSpecific(abc.ABC):
         return self.get_rad_val(data, "Acct-Unique-Session-Id")
 
     @abc.abstractmethod
-    def get_auth_guest_session_response(self, guest_lease: FetchSubscriberLeaseResponse, data) -> dict:
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def get_auth_session_response(
         self,
-        subscriber_lease: FetchSubscriberLeaseResponse,
         customer_service: Optional[CustomerService],
         customer: Customer,
         request_data,
+        subscriber_lease: Optional[FetchSubscriberLeaseResponse] = None,
     ) -> dict:
         raise NotImplementedError
 
