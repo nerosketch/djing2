@@ -190,8 +190,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             **update_kwargs,
         )
         vendor_manager = self.vendor_manager
-        radius_unique_id = vendor_manager.get_radius_unique_id(dat)
-        ip = vcls.get_rad_val(dat, "Framed-IP-Address")
+        radius_unique_id = vendor_manager.get_radius_unique_id(data)
+        ip = vcls.get_rad_val(data, "Framed-IP-Address")
         custom_signals.radius_auth_update_signal.send(
             sender=CustomerRadiusSession,
             instance=None,
