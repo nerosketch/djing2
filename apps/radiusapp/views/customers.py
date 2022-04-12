@@ -205,16 +205,16 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             output_packets=v_out_pkt,
             **update_kwargs,
         )
-        # custom_signals.radius_auth_update_signal.send(
-        #     sender=CustomerRadiusSession,
-        #     instance=None,
-        #     instance_queryset=sessions,
-        #     data=data,
-        #     input_octets=v_in_pkt,
-        #     output_octets=v_out_oct,
-        #     input_packets=v_in_pkt,
-        #     output_packets=v_out_pkt,
-        # )
+        custom_signals.radius_auth_update_signal.send(
+            sender=CustomerRadiusSession,
+            instance=None,
+            instance_queryset=sessions,
+            data=data,
+            input_octets=v_in_pkt,
+            output_octets=v_out_oct,
+            input_packets=v_in_pkt,
+            output_packets=v_out_pkt,
+        )
 
     def _acct_start(self, request):
         """Accounting start handler."""
