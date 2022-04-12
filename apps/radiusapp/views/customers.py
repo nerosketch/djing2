@@ -1,4 +1,5 @@
 from datetime import datetime
+from netaddr import EUI
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import action
@@ -31,24 +32,6 @@ def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST):
 
 def _update_lease_send_ws_signal(customer_id: int):
     send_data2ws({"eventType": WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value, "data": {"customer_id": customer_id}})
-
-
-def _acct_signal(dat, ip, customer_mac, radius_username, customer, radius_unique_id,
-                 new_session=None, lease=None, event_time=None):
-    if event_time is None:
-        event_time = datetime.now()
-    custom_signals.radius_acct_start_signal.send(
-        sender=CustomerRadiusSession,
-        instance=new_session,
-        data=dat,
-        ip_addr=ip,
-        customer_mac=customer_mac,
-        radius_username=radius_username,
-        customer_ip_lease=lease,
-        customer=customer,
-        radius_unique_id=radius_unique_id,
-        event_time=event_time,
-    )
 
 
 # TODO: Also protect requests by hash
@@ -183,7 +166,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             return self._acct_unknown(request)
         return request_type_fn(request)
 
-    def _update_counters(self, sessions, data: dict, last_event_time=None, **update_kwargs):
+    def _update_counters(self, sessions, data: dict, customer_mac: EUI,
+                        last_event_time=None, **update_kwargs):
         if last_event_time is None:
             last_event_time = datetime.now()
         vcls = self.vendor_manager.vendor_class
@@ -205,6 +189,9 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             output_packets=v_out_pkt,
             **update_kwargs,
         )
+        vendor_manager = self.vendor_manager
+        radius_unique_id = vendor_manager.get_radius_unique_id(dat)
+        ip = vcls.get_rad_val(dat, "Framed-IP-Address")
         custom_signals.radius_auth_update_signal.send(
             sender=CustomerRadiusSession,
             instance=None,
@@ -214,6 +201,9 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             output_octets=v_out_oct,
             input_packets=v_in_pkt,
             output_packets=v_out_pkt,
+            radius_unique_id=radius_unique_id,
+            ip_addr=ip,
+            customer_mac=customer_mac
         )
 
     def _acct_start(self, request):
@@ -262,15 +252,17 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         )
 
         if created:
-            _acct_signal(
-                # new_session=new_session,
-                dat=dat, ip=ip,
+            custom_signals.radius_acct_start_signal.send(
+                sender=CustomerRadiusSession,
+                instance=None,
+                data=dat,
+                ip_addr=ip,
                 customer_mac=customer_mac,
                 radius_username=radius_username,
-                # lease=lease,
+                customer_ip_lease=None,
                 customer=customer,
                 radius_unique_id=radius_unique_id,
-                event_time=datetime.now()
+                event_time=datetime.now(),
             )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -306,13 +298,14 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         sessions = CustomerRadiusSession.objects.filter(
             ip_lease__ip_address=ip,
         )
+        customer_mac = vendor_manager.get_customer_mac(dat)
         event_time = datetime.now()
         self._update_counters(
             sessions=sessions,
             data=dat,
             last_event_time=event_time,
+            customer_mac=customer_mac
         )
-        customer_mac = vendor_manager.get_customer_mac(dat)
         CustomerIpLeaseModel.objects.filter(ip_address=ip).update(
             last_update=event_time,
             mac_address=customer_mac

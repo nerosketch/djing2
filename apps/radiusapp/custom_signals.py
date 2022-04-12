@@ -37,4 +37,7 @@ radius_acct_stop_signal = Signal()
 #    output_octets - count of output octets from start session to now
 #    input_packets - count of input packets from start session to now
 #    output_packets - count of output packets from start session to now
+#    radius_unique_id - obviously
+#    ip_addr - customer ip address from radius request
+#    customer_mac: netaddr.EUI instance -  customer device mac address from radius request
 radius_auth_update_signal = Signal()
