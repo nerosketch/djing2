@@ -6,12 +6,11 @@ import logging
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db.models import Count
 from rest_framework.exceptions import ValidationError
 
 from djing2.lib.logger import logger
 from addresses.models import AddressModel, AddressModelTypes
-from customers.models import Customer, CustomerService, AdditionalTelephone
+from customers.models import CustomerService, AdditionalTelephone
 from customers_legal.models import CustomerLegalModel
 from devices.device_config.device_type_collection import DEVICE_TYPES
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
@@ -29,6 +28,7 @@ from sorm_export.hier_export.customer import (
     export_individual_customer,
     export_legal_customer,
     export_contact,
+    general_customer_filter_queryset,
 )
 
 from sorm_export.hier_export.networks import export_ip_leases
@@ -42,14 +42,8 @@ from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
 from sorm_export.tasks.task_export import task_export
 
 
-def _general_customers_queryset_filter():
-    return Customer.objects.filter(is_active=True).annotate(
-        contr_count=Count('customercontractmodel')
-    ).filter(contr_count__gt=0)
-
-
 def export_all_root_customers():
-    customers = _general_customers_queryset_filter()
+    customers = general_customer_filter_queryset()
     data, fname = export_customer_root(customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ROOT)
 
@@ -90,13 +84,13 @@ def export_all_address_objects():
 
 
 def export_all_access_point_addresses():
-    customers = _general_customers_queryset_filter()
+    customers = general_customer_filter_queryset()
     data, fname = export_access_point_address(customers=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_AP_ADDRESS)
 
 
 def export_all_individual_customers():
-    customers = _general_customers_queryset_filter()
+    customers = general_customer_filter_queryset()
     data, fname = export_individual_customer(customers_queryset=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_INDIVIDUAL)
 
@@ -108,7 +102,7 @@ def export_all_legal_customers():
 
 
 def export_all_customer_contacts():
-    customers = _general_customers_queryset_filter().only("pk", "telephone", "username", "fio", "create_date")
+    customers = general_customer_filter_queryset().only("pk", "telephone", "username", "fio", "create_date")
     customer_tels = [
         {
             "customer_id": c.pk,
@@ -143,7 +137,7 @@ def export_all_service_nomenclature():
 
 
 def export_all_ip_leases():
-    customers_qs = _general_customers_queryset_filter()
+    customers_qs = general_customer_filter_queryset()
     leases = CustomerIpLeaseModel.objects.filter(
         customer__in=customers_qs,
         is_dynamic=False
@@ -153,7 +147,7 @@ def export_all_ip_leases():
 
 
 def export_all_customer_services():
-    customers_qs = _general_customers_queryset_filter()
+    customers_qs = general_customer_filter_queryset()
     csrv = CustomerService.objects.select_related("customer").filter(
         customer__in=customers_qs
     )

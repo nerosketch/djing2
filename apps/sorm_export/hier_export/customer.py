@@ -21,6 +21,12 @@ from .base import (
 )
 
 
+def general_customer_filter_queryset():
+    return Customer.objects.filter(is_active=True).annotate(
+        contr_count=Count('customercontractmodel')
+    ).filter(contr_count__gt=0)
+
+
 def _addr2str(addr: Optional[AddressModel]) -> str:
     if not addr:
         return ''
