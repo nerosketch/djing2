@@ -368,6 +368,10 @@ msgstr "Тип оператора"
 msgid "Prevent to remove customer profile due to sorm export"
 msgstr "Удаление профиля абонента запрещено. [СОРМ]"
 
+#, python-format
+msgid "Customer username changing is prevented due to SORM rules [%(url)s]"
+msgstr "Изменение логина абонента запрещено условиями СОРМ [%(url)s]"
+
 #~ msgid "Parent AO"
 #~ msgstr "Родительский адресный объект"
 

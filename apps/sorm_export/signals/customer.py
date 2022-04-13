@@ -15,6 +15,7 @@ from sorm_export.tasks.customer import (
     customer_contact_export_task,
     customer_root_export_task,
 )
+from sorm_export.tasks.customer_eol_export import customer_export_eol_task
 
 
 @receiver(pre_save, sender=Customer)
@@ -28,7 +29,8 @@ def customer_pre_save_signal(sender, instance: Customer, update_fields=None, **k
         if old_inst.telephone != instance.telephone:
             # Tel has updated, signal it
             old_start_time = old_inst.last_update_time or datetime.combine(
-                instance.create_date, datetime(year=now.year, month=1, minute=0, day=1, second=0, hour=0).time()
+                instance.create_date,
+                datetime(year=now.year, month=1, day=1, hour=0, minute=0, second=0).time()
             )
             customer_tels = [
                 {
@@ -48,8 +50,11 @@ def customer_pre_save_signal(sender, instance: Customer, update_fields=None, **k
 
         # export username if it changed
         if old_inst.username != instance.username:
-            # username changed
-            customer_root_export_task(customer_id=instance.pk, event_time=now)
+            # username changed, prevent it
+            url = 'https://wiki.vasexperts.ru/doku.php?id=sorm:sorm3:sorm3_subs_dump:sorm3_subs_hier:start'
+            raise ExportFailedStatus(
+                gettext("Customer username changing is prevented due to SORM rules [%(url)s]") % url
+            )
 
 
 @receiver(pre_delete, sender=Customer)
