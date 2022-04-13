@@ -365,6 +365,9 @@ msgstr "Описание тарифа"
 msgid "Operator type id"
 msgstr "Тип оператора"
 
+msgid "Prevent to remove customer profile due to sorm export"
+msgstr "Удаление профиля абонента запрещено. [СОРМ]"
+
 #~ msgid "Parent AO"
 #~ msgstr "Родительский адресный объект"
 

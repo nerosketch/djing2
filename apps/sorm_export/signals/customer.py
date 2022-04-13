@@ -3,6 +3,7 @@ from typing import Optional
 
 from django.db.models.signals import post_save, pre_save, pre_delete
 from django.dispatch.dispatcher import receiver
+from django.utils.translation import gettext
 
 from customers.custom_signals import customer_service_post_pick
 from customers.models import Customer, PassportInfo, CustomerService, AdditionalTelephone
@@ -49,6 +50,16 @@ def customer_pre_save_signal(sender, instance: Customer, update_fields=None, **k
         if old_inst.username != instance.username:
             # username changed
             customer_root_export_task(customer_id=instance.pk, event_time=now)
+
+
+@receiver(pre_delete, sender=Customer)
+def prevent_delete_customer_due2eol_export(sender, instance, **kwargs):
+    """Если удалить учётную запись абонента то по нему не выгрузятся
+       данные для СОРМ3."""
+
+    raise ExportFailedStatus(
+        gettext("Prevent to remove customer profile due to sorm export")
+    )
 
 
 @receiver(post_save, sender=Customer)
