@@ -18,43 +18,51 @@ from sorm_export.tasks.customer import (
 from sorm_export.tasks.customer_eol_export import customer_export_eol_task
 
 
+def on_customer_fields_change(sender, instance, old_inst):
+    """Если изменяются поля абонента, то запускаем по ним задачи эксопрта в сорм"""
+
+    now = datetime.now()
+    if old_inst.telephone != instance.telephone:
+        # Tel has updated, signal it
+        # TODO: Test it
+        old_start_time = old_inst.last_update_time or datetime.combine(
+            instance.create_date,
+            datetime(year=now.year, month=1, day=1, hour=0, minute=0, second=0).time()
+        )
+        customer_tels = [
+            {
+                "customer_id": instance.pk,
+                "contact": f"{old_inst.get_full_name()} {old_inst.telephone}",
+                "actual_start_time": old_start_time,
+                "actual_end_time": now,
+            },
+            {
+                "customer_id": instance.pk,
+                "contact": f"{instance.get_full_name()} {instance.telephone}",
+                "actual_start_time": now,
+                # 'actual_end_time':
+            },
+        ]
+        customer_contact_export_task(customer_tels=customer_tels, event_time=now)
+
+    # export username if it changed
+    if old_inst.username != instance.username:
+        # username changed, prevent it
+        # TODO: Test it
+        url = 'https://wiki.vasexperts.ru/doku.php?id=sorm:sorm3:sorm3_subs_dump:sorm3_subs_hier:start'
+        raise ExportFailedStatus(
+            gettext("Customer username changing is prevented due to SORM rules [%(url)s]") % url
+        )
+
+
 @receiver(pre_save, sender=Customer)
 def customer_pre_save_signal(sender, instance: Customer, update_fields=None, **kwargs):
     if update_fields is None or bool({"telephone", "fio", "username"}.intersection(update_fields)):
         # all fields updated, or one of used fields is updated
-        old_inst = sender.objects.filter(pk=instance.pk).first()
-        if old_inst is None:
+        old_instance = sender.objects.filter(pk=instance.pk).first()
+        if old_instance is None:
             return
-        now = datetime.now()
-        if old_inst.telephone != instance.telephone:
-            # Tel has updated, signal it
-            old_start_time = old_inst.last_update_time or datetime.combine(
-                instance.create_date,
-                datetime(year=now.year, month=1, day=1, hour=0, minute=0, second=0).time()
-            )
-            customer_tels = [
-                {
-                    "customer_id": instance.pk,
-                    "contact": f"{old_inst.get_full_name()} {old_inst.telephone}",
-                    "actual_start_time": old_start_time,
-                    "actual_end_time": now,
-                },
-                {
-                    "customer_id": instance.pk,
-                    "contact": f"{instance.get_full_name()} {instance.telephone}",
-                    "actual_start_time": now,
-                    # 'actual_end_time':
-                },
-            ]
-            customer_contact_export_task(customer_tels=customer_tels, event_time=now)
-
-        # export username if it changed
-        if old_inst.username != instance.username:
-            # username changed, prevent it
-            url = 'https://wiki.vasexperts.ru/doku.php?id=sorm:sorm3:sorm3_subs_dump:sorm3_subs_hier:start'
-            raise ExportFailedStatus(
-                gettext("Customer username changing is prevented due to SORM rules [%(url)s]") % url
-            )
+        on_customer_fields_change(sender=sender, instance=instance, old_inst=old_instance)
 
 
 @receiver(pre_delete, sender=Customer)
