@@ -10,10 +10,8 @@ from sorm_export.hier_export.base import format_fname
 from sorm_export.hier_export.customer import (
     export_customer_root,
     export_contract,
-    export_individual_customer_one,
     export_contact,
     general_customer_filter_queryset,
-    _addr_get_parent,
 )
 from sorm_export.serializers.individual_entity_serializers import CustomerIndividualObjectFormat
 from profiles.models import split_fio
@@ -102,7 +100,7 @@ def export_individual_customer_eol(customer_id: int,
         "document_serial": passport_series,
         "document_number": passport_number,
         "document_distributor": passport_distributor,
-        "passport_code": passport_division_code or "",
+        "passport_code": passport_division_code or '',
         "passport_date": passport_date_of_acceptance,
         "house": house_title,
         "parent_id_ao": addr_parent_street.pk,
@@ -127,7 +125,13 @@ def export_individual_customer_eol(customer_id: int,
     task_export(ser.data, fname, ExportStampTypeEnum.CUSTOMER_INDIVIDUAL)
 
 
-def export_customer_contact_eol(customer_id: int, curr_time: datetime):
+def export_customer_contact_eol(customer_id: int, actual_end_time: datetime, curr_time: datetime=None):
+    if curr_time is None:
+        curr_time = datetime.now()
+
+    if actual_end_time is None:
+        actual_end_time = curr_time
+
     customers_qs = _general_customers_queryset_filter(
         customer_id=customer_id
     ).only("pk", "telephone", "username", "fio", "create_date")
@@ -136,7 +140,7 @@ def export_customer_contact_eol(customer_id: int, curr_time: datetime):
             "customer_id": c.pk,
             "contact": f"{c.get_full_name()} {c.telephone}",
             "actual_start_time": datetime(c.create_date.year, c.create_date.month, c.create_date.day),
-            'actual_end_time': curr_time
+            'actual_end_time': actual_end_time
         }
         for c in customers_qs.iterator()
     ]
@@ -148,25 +152,37 @@ def export_customer_contact_eol(customer_id: int, curr_time: datetime):
             "customer_id": t.customer_id,
             "contact": f"{t.customer.get_full_name()} {t.telephone}",
             "actual_start_time": t.create_time,
-            'actual_end_time': curr_time
+            'actual_end_time': actual_end_time
         }
         for t in tels.iterator()
     )
 
-    data, fname = export_contact(customer_tels=customer_tels, event_time=datetime.now())
+    data, fname = export_contact(customer_tels=customer_tels, event_time=curr_time)
 
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTACT)
 
 
-def customer_export_eol(customer_id: int, curr_time: datetime):
-    funcs = (
-        export_root_customer_eol,
-        export_customer_contract_eol,
-        export_individual_customer_eol,
-        export_customer_contact_eol
+def customer_export_eol(customer_id: int, curr_time: Optional[datetime] = None):
+    if curr_time is None:
+        curr_time = datetime.now()
+    export_root_customer_eol(
+        customer_id=customer_id,
+        curr_time=curr_time
     )
-    for fn in funcs:
-        fn(customer_id=customer_id, curr_time=curr_time)
+    export_customer_contract_eol(
+        customer_id=customer_id,
+        curr_time=curr_time
+    )
+    export_individual_customer_eol(
+        customer_id=customer_id,
+        curr_time=curr_time
+    )
+
+    export_customer_contact_eol(
+        customer_id=customer_id,
+        curr_time=curr_time,
+        act
+    )
 
 
 @task(executor=TaskExecutor.SPOOLER)
