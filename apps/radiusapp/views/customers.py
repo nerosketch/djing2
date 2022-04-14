@@ -79,7 +79,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         vendor_manager = VendorManager(vendor_name=vendor_name)
         self.vendor_manager = vendor_manager
 
-        agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=request.data)
+        opt82 = vendor_manager.get_opt82(data=request.data)
+        if not opt82:
+            return _bad_ret("Failed fetch opt82 info")
+        agent_remote_id, agent_circuit_id = opt82
 
         customer_mac = vendor_manager.get_customer_mac(request.data)
         if not customer_mac:

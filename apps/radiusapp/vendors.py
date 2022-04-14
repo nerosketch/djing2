@@ -35,6 +35,8 @@ class VendorManager:
         vc = [v for v in vendor_classes if v.vendor == vendor_name]
         if len(vc) == 1:
             self.vendor_class = vc[0]
+        else:
+            raise RuntimeError('Something went wrong in assigning vendor class')
 
     def get_opt82(self, data):
         if self.vendor_class:
