@@ -202,7 +202,7 @@ def _report_about_customers_no_have_passport(customers_without_passports_qs):
 
 
 @iterable_export_decorator
-def export_individual_customer(customers_queryset, event_time=None):
+def export_individual_customers_queryset(customers_queryset, event_time=None):
     """
     Файл выгрузки данных о физическом лице, версия 2
     В этом файле выгружается информация об абонентах, у которых контракт заключён с физическим лицом.
@@ -232,11 +232,11 @@ def export_individual_customer(customers_queryset, event_time=None):
         if not addr_parent_region:
             return
 
-        actual_start_date = customer.contract_date if customer.contract_date else datetime(
-            customer.create_date.year,
-            customer.create_date.month,
-            customer.create_date.day
-        )
+        if not customer.contract_date:
+            logger.error(_('Customer contract has no date %s [%s]') % (customer, customer.username))
+            return
+        actual_start_date = customer.contract_date
+
         full_fname = customer.get_full_name()
 
         addr_house = addr.get_address_item_by_type(
@@ -246,7 +246,7 @@ def export_individual_customer(customers_queryset, event_time=None):
             addr_type=AddressModelTypes.BUILDING
         )
         addr_corp = addr.get_address_item_by_type(
-            addr_type=AddressModelTypes.BUILDING
+            addr_type=AddressModelTypes.CORPUS
         )
         r = {
             "contract_id": customer.pk,
@@ -265,7 +265,7 @@ def export_individual_customer(customers_queryset, event_time=None):
             "building": addr_building.title if addr_building else None,
             "building_corpus": addr_corp.title if addr_corp else None,
             "actual_start_time": actual_start_date,
-            # 'actual_end_time':
+            # TODO: "actual_end_time":
             "customer_id": customer.pk,
         }
         surname, name, last_name = customer.split_fio()
@@ -277,7 +277,7 @@ def export_individual_customer(customers_queryset, event_time=None):
             r['last_name'] = last_name
         return r
 
-    contracts_q = CustomerContractModel.objects.filter(
+    contract_start_service_time_q = CustomerContractModel.objects.filter(
         customer_id=OuterRef('pk'),
         is_active=True
     ).values('start_service_time')
@@ -292,7 +292,7 @@ def export_individual_customer(customers_queryset, event_time=None):
         customers_queryset.exclude(passportinfo=None).select_related(
             "group", "passportinfo"
         ).annotate(
-            contract_date=Subquery(contracts_q)
+            contract_date=Subquery(contract_start_service_time_q)
         ),
         f"ISP/abonents/fiz_v2_{format_fname(event_time)}.txt",
     )

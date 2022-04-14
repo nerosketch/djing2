@@ -25,7 +25,7 @@ from sorm_export.hier_export.customer import (
     export_customer_root,
     export_contract,
     export_access_point_address,
-    export_individual_customer,
+    export_individual_customers_queryset,
     export_legal_customer,
     export_contact,
     general_customer_filter_queryset,
@@ -91,7 +91,7 @@ def export_all_access_point_addresses():
 
 def export_all_individual_customers():
     customers = general_customer_filter_queryset()
-    data, fname = export_individual_customer(customers_queryset=customers, event_time=datetime.now())
+    data, fname = export_individual_customers_queryset(customers_queryset=customers, event_time=datetime.now())
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_INDIVIDUAL)
 
 

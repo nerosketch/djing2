@@ -7,7 +7,7 @@ from django.utils.translation import gettext
 
 from customers.custom_signals import customer_service_post_pick
 from customers.models import Customer, PassportInfo, CustomerService, AdditionalTelephone
-from sorm_export.hier_export.customer import export_individual_customer
+from sorm_export.hier_export.customer import export_individual_customers_queryset
 from sorm_export.models import ExportFailedStatus
 from sorm_export.tasks.customer import (
     customer_service_export_task,
@@ -97,7 +97,7 @@ def customer_post_pick_service_signal_handler(sender, customer: Customer, servic
 def customer_passport_info_post_save_signal(sender, instance: Optional[PassportInfo] = None, **kwargs):
     cs = Customer.objects.filter(passportinfo=instance)
     if cs.exists():
-        export_individual_customer(customers_queryset=cs)
+        export_individual_customers_queryset(customers_queryset=cs)
 
 
 # Called when customer extends his service
