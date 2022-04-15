@@ -1,11 +1,23 @@
 """Tests for fetching ip lease for customer."""
 from django.test import override_settings
+from django.db.models import signals
 from rest_framework import status
 
 from customers.tests.customer import CustomAPITestCase
 from devices.tests import DeviceTestCase
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from services.models import Service
+
+
+def radius_api_request(vlan_id: int, cid: str, arid: str, mac: str):
+    return {
+        "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
+        "NAS-Port-Id": {"value": [vlan_id]},
+        "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
+        "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
+        "ERX-Dhcp-Mac-Addr": {"value": [mac]},
+        "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]},
+    }
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
@@ -40,14 +52,7 @@ class CustomerAuthTestCase(CustomAPITestCase):
         """Help method 4 send request to endpoint."""
         return self.post(
             "/api/radius/customer/auth/juniper/",
-            {
-                "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
-                "NAS-Port-Id": {"value": [vlan_id]},
-                "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
-                "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
-                "ERX-Dhcp-Mac-Addr": {"value": [mac]},
-                "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]},
-            },
+            radius_api_request(vlan_id, cid, arid, mac)
         )
 
     def test_guest_radius_session(self):
@@ -86,3 +91,34 @@ class CustomerAuthTestCase(CustomAPITestCase):
         r = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617")
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         self.assertDictEqual(r.data, {"User-Password": "SERVICE-GUEST"})
+
+
+@override_settings(API_AUTH_SUBNET="127.0.0.0/8")
+class TestClonedMac(CustomAPITestCase):
+    """Проверяем что будет если 2 абонента с одинаковым маком попытаются получить ip.
+       Такое бывает когда клонировали мак на роутере.
+       Сессия должна выдаться на учётку, которая подходит по opt82,
+       если opt82 имеется. Если нет, то тогда уже доверяем маку, т.к. не остаётся вариантов."""
+
+    def _send_request(self, vlan_id: int, cid: str, arid: str, mac: str):
+        """Help method 4 send request to endpoint."""
+        return self.post(
+            "/api/radius/customer/auth/juniper/",
+            radius_api_request(vlan_id, cid, arid, mac)
+        )
+
+    def setUp(self):
+        signals.post_save.disconnect()
+        signals.post_delete.disconnect()
+        signals.pre_save.disconnect()
+        signals.pre_delete.disconnect()
+
+    def test_abc(self):
+        r = self._send_request(
+            vlan_id=12,
+            cid='0004008B0002',
+            arid='0006121314151617',
+            mac='18c0.4d51.dee4',
+        )
+        self.assertEqual(r.status_code, 200, msg=r.content)
+
