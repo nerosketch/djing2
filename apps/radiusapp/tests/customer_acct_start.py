@@ -2,27 +2,53 @@ from typing import Optional
 from django.test import override_settings
 from django.db.models import signals
 from rest_framework import status
-from customers.tests.customer import CustomAPITestCase
-from devices.tests import DeviceTestCase
+from rest_framework.test import APITestCase
+from profiles.models import UserProfile
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
-from services.models import Service
 from networks.models import (
     VlanIf, NetworkIpPool,
     NetworkIpPoolKind
 )
+from devices.device_config.switch.dlink.dgs_1100_10me import DEVICE_UNIQUE_CODE as Dlink_dgs1100_10me_code
 from .customer_auth import radius_api_request_auth
+from ._create_full_customer import create_full_customer
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
-class CustomerAcctStartTestCase(CustomAPITestCase):
+class CustomerAcctStartTestCase(APITestCase):
+    def get(self, *args, **kwargs):
+        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
+
+    def post(self, *args, **kwargs):
+        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+
     def setUp(self):
+        """Set up data for this tests."""
         signals.post_save.disconnect()
         signals.post_delete.disconnect()
         signals.pre_save.disconnect()
         signals.pre_delete.disconnect()
-        """Set up data for this tests."""
-        super().setUp()
-        # default_vlan = VlanIf.objects.filter(vid=1).first()
+
+        self.admin = UserProfile.objects.create_superuser(
+            username="admin", password="admin", telephone="+797812345678"
+        )
+        self.client.login(username="admin", password="admin")
+
+        self.full_customer = create_full_customer(
+            uname='custo1',
+            tel='+797811234567',
+            initial_balance=11,
+            dev_ip="192.168.2.3",
+            dev_mac="12:13:14:15:16:17",
+            dev_type=Dlink_dgs1100_10me_code,
+            service_title='test',
+            service_descr='test',
+            service_speed_in=11.0,
+            service_speed_out=11.0,
+            service_cost=10.0,
+            service_calc_type=SERVICE_CHOICE_DEFAULT
+        )
+
         vlan12 = VlanIf.objects.create(title="Vlan12 for customer tests", vid=12)
         vlan13 = VlanIf.objects.create(title="Vlan13 for customer tests", vid=13)
         pool = NetworkIpPool.objects.create(
@@ -45,27 +71,13 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
             gateway="10.152.65.1",
             is_dynamic=False,
         )
-        pool.groups.add(self.group)
-        poolv13.groups.add(self.group)
+        group = self.full_customer.group
+        pool.groups.add(group)
+        poolv13.groups.add(group)
         self.pool = pool
         self.poolv13 = poolv13
 
-        # Create service for customer
-        self.service = Service.objects.create(
-            title="test", descr="test", speed_in=11.0, speed_out=11.0,
-            cost=10.0, calc_type=SERVICE_CHOICE_DEFAULT
-        )
         self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
-
-        # Initialize devices instances
-        DeviceTestCase.setUp(self)
-
-        self.customer.device = self.device_switch
-        self.customer.dev_port = self.ports[1]
-        self.customer.balance = 15
-        self.customer.save()
-
-        self.customer.pick_service(self.service, self.customer)
 
         # self.client.logout()
 
@@ -97,7 +109,7 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
 
     def _get_ip_leases(self, customer_id: Optional[int] = None) -> list:
         if customer_id is None:
-            customer_id = self.customer.pk
+            customer_id = self.full_customer.customer.pk
         r = self.get(
             f"/api/networks/lease/?customer={customer_id}",
         )
@@ -127,7 +139,7 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
     def _create_static_lease(self, ip):
         new_lease_r = self.post(
             "/api/networks/lease/", {
-                "customer": self.customer.pk,
+                "customer": self.full_customer.customer.pk,
                 "ip_address": ip,
                 # "mac_address": "",
                 "pool": self.pool.pk
@@ -144,11 +156,11 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
         lease = leases[0]
         self.assertEqual(lease['ip_address'], '10.152.64.6')
         self.assertEqual(lease['mac_address'], '1c:c0:4d:95:d0:30')
-        self.assertEqual(lease['customer'], self.customer.pk)
+        self.assertEqual(lease['customer'], self.full_customer.customer.pk)
         self.assertEqual(lease['pool'], self.pool.pk)
 
         rad_ses = self._get_rad_session_by_lease(lease['id'])
-        self.assertEqual(rad_ses['customer'], self.customer.pk)
+        self.assertEqual(rad_ses['customer'], self.full_customer.customer.pk)
         self.assertEqual(rad_ses['radius_username'], "18c0.4d51.dee2-ae0:12-0004008B0002-0006121314151617")
         self.assertEqual(rad_ses['session_id'], "2ea5a184-3334-573b-d11d-c15417426f36")
 
@@ -170,7 +182,7 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
         self.assertEqual(lease['ip_address'], ip)
         self.assertIsNone(lease['mac_address'])
         self.assertEqual(lease['pool'], self.pool.pk)
-        self.assertEqual(lease['customer'], self.customer.pk)
+        self.assertEqual(lease['customer'], self.full_customer.customer.pk)
 
         # Проверяем CustomerRadiusSession, должен был создаться для этой lease
         rad_ses = self._get_rad_session_by_lease(lease['id'])
@@ -178,7 +190,7 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
         self.assertIsNotNone(rad_ses['session_id'])
         self.assertEqual(rad_ses['ip_lease'], lease['id'])
         self.assertEqual(rad_ses['ip_lease_ip'], lease['ip_address'])
-        self.assertEqual(rad_ses['customer'], self.customer.pk)
+        self.assertEqual(rad_ses['customer'], self.full_customer.customer.pk)
 
     # Проверить что происходит когда запрашиваем ip у другого абонента, не у того, кому он выдан.
 
@@ -199,7 +211,7 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
         self.assertEqual(lease['ip_address'], ip)
         self.assertEqual(lease['mac_address'], mac)
         self.assertIsNone(lease['pool'])
-        self.assertEqual(lease['customer'], self.customer.pk)
+        self.assertEqual(lease['customer'], self.full_customer.customer.pk)
 
     def test_two_leases_on_customer_profile(self):
         """Тестируем когда на учётке больше одного ip, и пробуем их получить.
@@ -211,7 +223,7 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
         # Создадим статичный ip на учётке в vlan 13, 10.152.65.16
         self.post(
             "/api/networks/lease/", {
-                "customer": self.customer.pk,
+                "customer": self.full_customer.customer.pk,
                 "ip_address": '10.152.65.16',
                 # "mac_address": "",
                 "pool": self.poolv13.pk
