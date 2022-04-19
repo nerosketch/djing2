@@ -94,7 +94,7 @@ def create_full_customer(uname: str,
 
 
 
-def radius_api_request(vlan_id: int, cid: str, arid: str, mac: str):
+def radius_api_request_auth(vlan_id: int, cid: str, arid: str, mac: str):
     return {
         "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
         "NAS-Port-Id": {"value": [vlan_id]},
@@ -102,6 +102,17 @@ def radius_api_request(vlan_id: int, cid: str, arid: str, mac: str):
         "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
         "ERX-Dhcp-Mac-Addr": {"value": [mac]},
         "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]},
+    }
+
+def radius_api_request_acct(vlan_id: int, cid: str, arid: str, mac: str, ip: str):
+    return {
+        "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
+        "NAS-Port-Id": {"value": [vlan_id]},
+        "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
+        "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
+        "ERX-Dhcp-Mac-Addr": {"value": [mac]},
+        "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]},
+        "Framed-IP-Address": {"value": [ip]}
     }
 
 
@@ -146,7 +157,7 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
         """Help method 4 send request to endpoint."""
         return self.post(
             "/api/radius/customer/auth/juniper/",
-            radius_api_request(vlan_id, cid, arid, mac)
+            radius_api_request_auth(vlan_id, cid, arid, mac)
         )
 
     def test_guest_radius_session(self):
@@ -198,11 +209,29 @@ class TestClonedMac(APITestCase, ReqMixin):
        Сессия должна выдаться на учётку, которая подходит по opt82,
        если opt82 имеется. Если нет, то тогда уже доверяем маку, т.к. не остаётся вариантов."""
 
-    def _send_request(self, vlan_id: int, cid: str, arid: str, mac: str):
+    def _send_request_auth(self, vlan_id: int, cid: str, arid: str, mac: str):
         """Help method 4 send request to endpoint."""
         return self.post(
             "/api/radius/customer/auth/juniper/",
-            radius_api_request(vlan_id, cid, arid, mac)
+            radius_api_request_auth(
+                vlan_id=vlan_id,
+                cid=cid,
+                arid=arid,
+                mac=mac
+            )
+        )
+
+    def _send_request_acct(self, vlan_id: int, cid: str, arid: str, mac: str, ip: str):
+        """Help method 4 send request to endpoint."""
+        return self.post(
+            "/api/radius/customer/acct/juniper/",
+            radius_api_request_acct(
+                vlan_id=vlan_id,
+                cid=cid,
+                arid=arid,
+                mac=mac,
+                ip=ip
+            )
         )
 
     def setUp(self):
@@ -240,34 +269,56 @@ class TestClonedMac(APITestCase, ReqMixin):
             dev_mac="11:13:14:15:17:17",
             dev_type=OnuZTE_F601_code,
             dev_comment='test3',
-            service_title='test',
-            service_descr='test',
-            service_speed_in=11.0,
-            service_speed_out=11.0,
-            service_cost=10.0,
+            service_title='tess',
+            service_descr='tess',
+            service_speed_in=12.0,
+            service_speed_out=12.0,
+            service_cost=3.0,
             service_calc_type=SERVICE_CHOICE_DEFAULT
         )
-        self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
+        #  self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
         #  self.client.logout()
 
-        self.client.logout()
+    def _check_customer_network_leases(self, customer_id: int):
+        r = self.get(
+            '/api/networks/lease/?customer=%d' % customer_id
+        )
+        d = r.data
+        self.assertEqual(r.status_code, 200, msg=r.content)
+        for i in d:
+            self.assertEqual(i['customer'], customer_id, msg=i)
+        return d
 
-    def test_abc(self):
-        r = self._send_request(
+    def test_two_customers_with_cloned_mac(self):
+        r = self._send_request_acct(
             vlan_id=12,
             cid='0004008B0002',
             arid='0006121314151617',
             mac='18c0.4d51.dee4',
+            ip='192.168.2.2'
         )
-        print('R1', r.content)
+        #  print('R1', r.content)
 
-        r2 = self._send_request(
+        #customer = self.full_customer.customer
+        #net_dat = self._check_customer_network_leases(
+        #    customer_id=customer.pk
+        #)
+        #print('R1 NetData:', net_dat)
+        ## Какие-то данные дожны быть
+        #self.assertGreaterEqual(len(net_dat), 1, msg='Customer profile network leases is empty')
+
+        r2 = self._send_request_auth(
             vlan_id=12,
-            cid='0004008B0002',
+            cid='0004008B8002',
             arid='0006111314151717',
             mac='18c0.4d51.dee4',
         )
-        print('R2', r2.content)
+        #  print('R2', r2.content)
         self.assertEqual(r.status_code, 200, msg=r.content)
         self.assertEqual(r2.status_code, 200, msg=r2.content)
 
+    def test_two_leases_on_customer_profile(self):
+        """Тестируем когда на учётке больше одного ip, и пробуем его получить.
+           Должно выдавать по opt82, если есть в запросе, если нет то по маку, если он есть в ip лизе.
+        """
+        pass
