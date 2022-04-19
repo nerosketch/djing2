@@ -381,6 +381,7 @@ class CustomerAcctStartTestCase(APITestCase):
         self.assertEqual(r.status_code, 200)
         d = r.data
         self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,2062500,11000000,2062500)')
+        # т.к. мак отличается, то говорим что на учётке нет подходящего ip, надо подбирать новый
         self.assertIsNone(d.get('Framed-IP-Address'))
 
         # Пробуем получить ip со второй учётки, с маком абонента от первой
@@ -392,6 +393,7 @@ class CustomerAcctStartTestCase(APITestCase):
         self.assertEqual(r.status_code, 200)
         d = r.data
         self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,2062500,11000000,2062500)')
+        # т.к. мак отличается, то говорим что на учётке нет подходящего ip, надо подбирать новый
         self.assertIsNone(d.get('Framed-IP-Address'))
 
     #def test_profile_with_opt82_and_bad_vid(self):
