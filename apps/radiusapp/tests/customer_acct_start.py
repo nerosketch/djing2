@@ -50,7 +50,6 @@ class CustomerAcctStartTestCase(APITestCase):
         )
 
         vlan12 = VlanIf.objects.create(title="Vlan12 for customer tests", vid=12)
-        vlan13 = VlanIf.objects.create(title="Vlan13 for customer tests", vid=13)
         pool = NetworkIpPool.objects.create(
             network="10.152.64.0/24",
             kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
@@ -61,6 +60,7 @@ class CustomerAcctStartTestCase(APITestCase):
             gateway="10.152.64.1",
             is_dynamic=True,
         )
+        vlan13 = VlanIf.objects.create(title="Vlan13 for customer tests", vid=13)
         poolv13 = NetworkIpPool.objects.create(
             network="10.152.65.0/24",
             kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
@@ -135,6 +135,7 @@ class CustomerAcctStartTestCase(APITestCase):
             mac=mac,
         )
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
+        self.assertIsNone(r.data)
 
     def _create_static_lease(self, ip):
         new_lease_r = self.post(
@@ -215,7 +216,6 @@ class CustomerAcctStartTestCase(APITestCase):
 
     def test_two_leases_on_customer_profile(self):
         """Тестируем когда на учётке больше одного ip, и пробуем их получить.
-           IP должны выдаваться в соответствии с vlan.
         """
         # Создаём динамический ip в vlan 12, 10.152.64.6
         self.test_normal_new_session()
@@ -255,4 +255,69 @@ class CustomerAcctStartTestCase(APITestCase):
         self.assertEqual(r.status_code, 200)
         d = r.data
         self.assertEqual(d['Framed-IP-Address'], '10.152.64.6')
+
+    def test_creating_new_dynamic_session_with_different_client_mac(self):
+        """Проверяем чтобы на учётку создавались новые сессии и ip когда
+           приходят запросы с разными маками от оборудования клиента.
+        """
+        # Создаём первую сессию.
+        self.test_normal_new_session()
+
+        # Создаём вторую сессию
+        self._create_acct_session(
+            vid=13,
+            cid='0004008B0002',
+            arid='0006121314151617',
+            ip='10.152.65.17',
+            mac='1c:c0:4d:95:d0:31',
+        )
+
+        leases = self._get_ip_leases()
+        self.assertEqual(len(leases), 2, msg=leases)
+
+        leasev12, leasev13 = leases
+        self.assertEqual(leasev12['ip_address'], '10.152.64.6')
+        self.assertEqual(leasev12['mac_address'], '1c:c0:4d:95:d0:30')
+        self.assertEqual(leasev12['customer'], self.full_customer.customer.pk)
+        self.assertEqual(leasev12['pool'], self.pool.pk)
+        # ---------
+        self.assertEqual(leasev13['ip_address'], '10.152.65.17')
+        self.assertEqual(leasev13['mac_address'], '1c:c0:4d:95:d0:31')
+        self.assertEqual(leasev13['customer'], self.full_customer.customer.pk)
+        self.assertEqual(leasev13['pool'], self.poolv13.pk)
+
+    #def test_guest_session_while_unknown_opt82_credentials(self):
+    #    """Если по opt82 мы нашли учётку, ..."""
+    #    pass
+
+    def test_profile_not_found_then_global_guest_session(self):
+        """Если по opt82 не находим учётку, то создаём глобальную гостевую
+           сессию.
+        """
+        r = self._send_request_acct(
+            # Not existing credentials
+            vlan_id=15,
+            cid='0004008B0003',
+            arid='0006121314151618',
+            ip='10.152.65.17',
+            mac='1c:c0:4d:95:d0:31',
+        )
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
+        self.assertIsNone(r.data)
+
+        # Получаем все гостевые аренды
+        r = self.get(
+            "/api/radius/session/guest_list/"
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        d = r.data
+        self.assertGreaterEqual(len(d), 1)
+        print('Data:', d)
+
+    #def test_profile_with_opt82_and_bad_vid(self):
+    #    """Если по opt82 находим учётку, но vid не существует.
+    #       Пока не делаю, т.к. в билинге не должно быть информации по пулам,
+    #       она должна быть в модуле который занимается выдачей ip.
+    #    """
+    #    pass
 
