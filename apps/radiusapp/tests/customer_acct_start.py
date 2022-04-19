@@ -48,6 +48,20 @@ class CustomerAcctStartTestCase(APITestCase):
             service_cost=10.0,
             service_calc_type=SERVICE_CHOICE_DEFAULT
         )
+        self.full_customer2 = create_full_customer(
+            uname='custo2',
+            tel='+797811234568',
+            initial_balance=11,
+            dev_ip="192.168.3.3",
+            dev_mac="13:13:14:15:17:17",
+            dev_type=Dlink_dgs1100_10me_code,
+            service_title='test',
+            service_descr='test',
+            service_speed_in=11.0,
+            service_speed_out=11.0,
+            service_cost=10.0,
+            service_calc_type=SERVICE_CHOICE_DEFAULT
+        )
 
         vlan12 = VlanIf.objects.create(title="Vlan12 for customer tests", vid=12)
         pool = NetworkIpPool.objects.create(
@@ -81,8 +95,10 @@ class CustomerAcctStartTestCase(APITestCase):
 
         # self.client.logout()
 
-    def _send_request_acct(self, vlan_id: int, cid: str, arid: str, ip="10.152.164.2", mac="18c0.4d51.dee2"):
-        """Help method 4 send request to acct endpoint."""
+    def _send_request_acct(self, cid: str, arid: str, vlan_id: int = 0, ip="10.152.164.2", mac="18c0.4d51.dee2"):
+        """Help method 4 send request to acct endpoint.
+           Важно: vlan_id (NAS-Port-Id) сейчас не влияет на логику radius accounting в билинге.
+        """
         return self.post(
             "/api/radius/customer/acct/juniper/", {
                 "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
@@ -96,7 +112,7 @@ class CustomerAcctStartTestCase(APITestCase):
             },
         )
 
-    def _send_request_auth(self, vlan_id: int, cid: str, arid: str, mac: str):
+    def _send_request_auth(self, cid: str, arid: str, mac: str, vlan_id: int = 0):
         return self.post(
             "/api/radius/customer/auth/juniper/",
             radius_api_request_auth(
@@ -235,7 +251,7 @@ class CustomerAcctStartTestCase(APITestCase):
 
         # Пробуем получить статический ip vlan13
         r = self._send_request_auth(
-            vlan_id=13,
+            #  vlan_id=13,
             cid='0004008B0002',
             arid='0006121314151617',
             mac='1c:c0:4d:95:d0:30'
@@ -243,14 +259,13 @@ class CustomerAcctStartTestCase(APITestCase):
         self.assertEqual(r.status_code, 200)
         d = r.data
         self.assertEqual(d['Framed-IP-Address'], '10.152.65.16')
-        #  print('Ret:', r, r.content)
 
         # Пробуем получить динамичекий ip vlan12
         r = self._send_request_auth(
-            vlan_id=12,
+            #  vlan_id=12,
             cid='0004008B0002',
             arid='0006121314151617',
-            mac='1c:c0:4d:95:d0:30'
+            mac='1c:c0:4d:95:d0:38'
         )
         self.assertEqual(r.status_code, 200)
         d = r.data
@@ -291,12 +306,11 @@ class CustomerAcctStartTestCase(APITestCase):
     #    pass
 
     def test_profile_not_found_then_global_guest_session(self):
-        """Если по opt82 не находим учётку, то создаём глобальную гостевую
-           сессию.
+        """Если по opt82 не находим учётку, то создаём гостевую
+           сессию без учётки.
         """
         r = self._send_request_acct(
             # Not existing credentials
-            vlan_id=15,
             cid='0004008B0003',
             arid='0006121314151618',
             ip='10.152.65.17',
@@ -312,7 +326,73 @@ class CustomerAcctStartTestCase(APITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         d = r.data
         self.assertGreaterEqual(len(d), 1)
-        print('Data:', d)
+        #  print('Data:', d)
+
+    def test_fetch_ip_with_cloned_mac(self):
+        """Пробуем получить ip с opt82 от одной учётки, но маком от другой.
+           Должны не вестись на такое.
+        """
+        self.test_normal_new_session()
+
+        # Делаем ip для второй учётки
+        r = self._send_request_acct(
+            cid='0004008B0002',
+            arid='0006131314151717',
+            ip='10.152.65.17',
+            mac='1c:c0:4d:95:d0:36',
+        )
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(r.data)
+
+        # На первой учётке ip 10.152.64.6
+        leases4customer1 = self._get_ip_leases()
+        self.assertEqual(len(leases4customer1), 1)
+
+        # На второй учётке ip 10.152.65.17
+        leases4customer2 = self._get_ip_leases(customer_id=self.full_customer2.customer.pk)
+        self.assertEqual(len(leases4customer2), 1)
+
+        # Пробуем получить первый ip
+        r = self._send_request_auth(
+            cid='0004008B0002',
+            arid='0006121314151617',
+            mac='1c:c0:4d:95:d0:30'
+        )
+        self.assertEqual(r.status_code, 200)
+        d = r.data
+        self.assertEqual(d['Framed-IP-Address'], '10.152.64.6')
+
+        # Пробуем получить второй ip
+        r = self._send_request_auth(
+            cid='0004008B0002',
+            arid='0006131314151717',
+            mac='1c:c0:4d:95:d0:36'
+        )
+        self.assertEqual(r.status_code, 200)
+        d = r.data
+        self.assertEqual(d['Framed-IP-Address'], '10.152.65.17')
+
+        # Пробуем получить ip с первой учётки, с маком абонента от второй
+        r = self._send_request_auth(
+            cid='0004008B0002',
+            arid='0006121314151617',
+            mac='1c:c0:4d:95:d0:36'
+        )
+        self.assertEqual(r.status_code, 200)
+        d = r.data
+        self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,2062500,11000000,2062500)')
+        self.assertIsNone(d.get('Framed-IP-Address'))
+
+        # Пробуем получить ip со второй учётки, с маком абонента от первой
+        r = self._send_request_auth(
+            cid='0004008B0002',
+            arid='0006131314151717',
+            mac='1c:c0:4d:95:d0:30'
+        )
+        self.assertEqual(r.status_code, 200)
+        d = r.data
+        self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,2062500,11000000,2062500)')
+        self.assertIsNone(d.get('Framed-IP-Address'))
 
     #def test_profile_with_opt82_and_bad_vid(self):
     #    """Если по opt82 находим учётку, но vid не существует.

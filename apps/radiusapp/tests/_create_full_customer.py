@@ -43,7 +43,7 @@ def create_full_customer(uname: str,
         dev_comment = 'device for tests'
 
     # Other device for other customer
-    device = Device.objects.create(
+    device, _ = Device.objects.get_or_create(
         mac_addr=dev_mac, comment=dev_comment,
         dev_type=dev_type, ip_address=dev_ip,
     )
