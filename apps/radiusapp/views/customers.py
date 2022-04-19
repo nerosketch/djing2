@@ -135,7 +135,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if customer is None:
             return _bad_ret('Customer not found', custom_status=status.HTTP_404_NOT_FOUND)
 
-        # Return response
+        # Return auth response
         try:
             r = vendor_manager.get_auth_session_response(
                 customer_service=customer.active_service(),

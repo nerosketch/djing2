@@ -2,14 +2,12 @@
 from typing import Optional
 from dataclasses import dataclass
 from django.test import override_settings
-from django.db.models import signals
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from django.contrib.sites.models import Site
 from customers.models import Customer
 from devices.models import Device, Port
-from devices.device_config.pon.gpon.onu_zte_f601 import DEVICE_UNIQUE_CODE as OnuZTE_F601_code
 from devices.device_config.switch.dlink.dgs_1100_10me import DEVICE_UNIQUE_CODE as Dlink_dgs1100_10me_code
 from groupapp.models import Group
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
@@ -104,17 +102,6 @@ def radius_api_request_auth(vlan_id: int, cid: str, arid: str, mac: str):
         "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]},
     }
 
-def radius_api_request_acct(vlan_id: int, cid: str, arid: str, mac: str, ip: str):
-    return {
-        "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
-        "NAS-Port-Id": {"value": [vlan_id]},
-        "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
-        "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
-        "ERX-Dhcp-Mac-Addr": {"value": [mac]},
-        "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]},
-        "Framed-IP-Address": {"value": [ip]}
-    }
-
 
 class ReqMixin:
     def get(self, *args, **kwargs):
@@ -202,123 +189,108 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
         self.assertDictEqual(r.data, {"User-Password": "SERVICE-GUEST"})
 
 
-@override_settings(API_AUTH_SUBNET="127.0.0.0/8")
-class TestClonedMac(APITestCase, ReqMixin):
-    """Проверяем что будет если 2 абонента с одинаковым маком попытаются получить ip.
-       Такое бывает когда клонировали мак на роутере.
-       Сессия должна выдаться на учётку, которая подходит по opt82,
-       если opt82 имеется. Если нет, то тогда уже доверяем маку, т.к. не остаётся вариантов."""
-
-    def _send_request_auth(self, vlan_id: int, cid: str, arid: str, mac: str):
-        """Help method 4 send request to endpoint."""
-        return self.post(
-            "/api/radius/customer/auth/juniper/",
-            radius_api_request_auth(
-                vlan_id=vlan_id,
-                cid=cid,
-                arid=arid,
-                mac=mac
-            )
-        )
-
-    def _send_request_acct(self, vlan_id: int, cid: str, arid: str, mac: str, ip: str):
-        """Help method 4 send request to endpoint."""
-        return self.post(
-            "/api/radius/customer/acct/juniper/",
-            radius_api_request_acct(
-                vlan_id=vlan_id,
-                cid=cid,
-                arid=arid,
-                mac=mac,
-                ip=ip
-            )
-        )
-
-    def setUp(self):
-        """Set up data for this tests."""
-        super().setUp()
-        # default_vlan = VlanIf.objects.filter(vid=1).first()
-        signals.post_save.disconnect()
-        signals.post_delete.disconnect()
-        signals.pre_save.disconnect()
-        signals.pre_delete.disconnect()
-
-        self.admin = UserProfile.objects.create_superuser(
-            username="admin", password="admin", telephone="+797812345678"
-        )
-        self.client.login(username="admin", password="admin")
-        self.full_customer = create_full_customer(
-            uname='custo1',
-            tel='+797811234567',
-            initial_balance=11,
-            dev_ip="192.168.2.3",
-            dev_mac="12:13:14:15:16:17",
-            dev_type=Dlink_dgs1100_10me_code,
-            service_title='test',
-            service_descr='test',
-            service_speed_in=11.0,
-            service_speed_out=11.0,
-            service_cost=10.0,
-            service_calc_type=SERVICE_CHOICE_DEFAULT
-        )
-        self.full_customer2 = create_full_customer(
-            uname='custo2',
-            tel='+79782345679',
-            initial_balance=11,
-            dev_ip="192.168.2.4",
-            dev_mac="11:13:14:15:17:17",
-            dev_type=OnuZTE_F601_code,
-            dev_comment='test3',
-            service_title='tess',
-            service_descr='tess',
-            service_speed_in=12.0,
-            service_speed_out=12.0,
-            service_cost=3.0,
-            service_calc_type=SERVICE_CHOICE_DEFAULT
-        )
-        #  self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
-        #  self.client.logout()
-
-    def _check_customer_network_leases(self, customer_id: int):
-        r = self.get(
-            '/api/networks/lease/?customer=%d' % customer_id
-        )
-        d = r.data
-        self.assertEqual(r.status_code, 200, msg=r.content)
-        for i in d:
-            self.assertEqual(i['customer'], customer_id, msg=i)
-        return d
-
-    def test_two_customers_with_cloned_mac(self):
-        r = self._send_request_acct(
-            vlan_id=12,
-            cid='0004008B0002',
-            arid='0006121314151617',
-            mac='18c0.4d51.dee4',
-            ip='192.168.2.2'
-        )
-        #  print('R1', r.content)
-
-        #customer = self.full_customer.customer
-        #net_dat = self._check_customer_network_leases(
-        #    customer_id=customer.pk
-        #)
-        #print('R1 NetData:', net_dat)
-        ## Какие-то данные дожны быть
-        #self.assertGreaterEqual(len(net_dat), 1, msg='Customer profile network leases is empty')
-
-        r2 = self._send_request_auth(
-            vlan_id=12,
-            cid='0004008B8002',
-            arid='0006111314151717',
-            mac='18c0.4d51.dee4',
-        )
-        #  print('R2', r2.content)
-        self.assertEqual(r.status_code, 200, msg=r.content)
-        self.assertEqual(r2.status_code, 200, msg=r2.content)
-
-    def test_two_leases_on_customer_profile(self):
-        """Тестируем когда на учётке больше одного ip, и пробуем его получить.
-           Должно выдавать по opt82, если есть в запросе, если нет то по маку, если он есть в ip лизе.
-        """
-        pass
+#@override_settings(API_AUTH_SUBNET="127.0.0.0/8")
+#class TestClonedMac(APITestCase, ReqMixin):
+#    """Проверяем что будет если 2 абонента с одинаковым маком попытаются получить ip.
+#       Такое бывает когда клонировали мак на роутере.
+#       Сессия должна выдаться на учётку, которая подходит по opt82,
+#       если opt82 имеется. Если нет, то тогда уже доверяем маку, т.к. не остаётся вариантов."""
+#
+#    def _send_request_auth(self, vlan_id: int, cid: str, arid: str, mac: str):
+#        """Help method 4 send request to endpoint."""
+#        return self.post(
+#            "/api/radius/customer/auth/juniper/",
+#            radius_api_request_auth(
+#                vlan_id=vlan_id,
+#                cid=cid,
+#                arid=arid,
+#                mac=mac
+#            )
+#        )
+#
+#    def _send_request_acct(self, vlan_id: int, cid: str, arid: str, mac: str, ip: str):
+#        """Help method 4 send request to endpoint."""
+#        return self.post(
+#            "/api/radius/customer/acct/juniper/",
+#            radius_api_request_acct(
+#                vlan_id=vlan_id,
+#                cid=cid,
+#                arid=arid,
+#                mac=mac,
+#                ip=ip
+#            )
+#        )
+#
+#    def setUp(self):
+#        """Set up data for this tests."""
+#        super().setUp()
+#        # default_vlan = VlanIf.objects.filter(vid=1).first()
+#        signals.post_save.disconnect()
+#        signals.post_delete.disconnect()
+#        signals.pre_save.disconnect()
+#        signals.pre_delete.disconnect()
+#
+#        self.admin = UserProfile.objects.create_superuser(
+#            username="admin", password="admin", telephone="+797812345678"
+#        )
+#        self.client.login(username="admin", password="admin")
+#        self.full_customer = create_full_customer(
+#            uname='custo1',
+#            tel='+797811234567',
+#            initial_balance=11,
+#            dev_ip="192.168.2.3",
+#            dev_mac="12:13:14:15:16:17",
+#            dev_type=Dlink_dgs1100_10me_code,
+#            service_title='test',
+#            service_descr='test',
+#            service_speed_in=11.0,
+#            service_speed_out=11.0,
+#            service_cost=10.0,
+#            service_calc_type=SERVICE_CHOICE_DEFAULT
+#        )
+#        self.full_customer2 = create_full_customer(
+#            uname='custo2',
+#            tel='+79782345679',
+#            initial_balance=11,
+#            dev_ip="192.168.2.4",
+#            dev_mac="11:13:14:15:17:17",
+#            dev_type=OnuZTE_F601_code,
+#            dev_comment='test3',
+#            service_title='tess',
+#            service_descr='tess',
+#            service_speed_in=12.0,
+#            service_speed_out=12.0,
+#            service_cost=3.0,
+#            service_calc_type=SERVICE_CHOICE_DEFAULT
+#        )
+#        #  self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
+#        #  self.client.logout()
+#
+#    def test_two_customers_with_cloned_mac(self):
+#        r = self._send_request_acct(
+#            vlan_id=12,
+#            cid='0004008B0002',
+#            arid='0006121314151617',
+#            mac='18c0.4d51.dee4',
+#            ip='192.168.2.2'
+#        )
+#        #  print('R1', r.content)
+#
+#        #customer = self.full_customer.customer
+#        #net_dat = self._check_customer_network_leases(
+#        #    customer_id=customer.pk
+#        #)
+#        #print('R1 NetData:', net_dat)
+#        ## Какие-то данные дожны быть
+#        #self.assertGreaterEqual(len(net_dat), 1, msg='Customer profile network leases is empty')
+#
+#        r2 = self._send_request_auth(
+#            vlan_id=12,
+#            cid='0004008B8002',
+#            arid='0006111314151717',
+#            mac='18c0.4d51.dee4',
+#        )
+#        #  print('R2', r2.content)
+#        self.assertEqual(r.status_code, 200, msg=r.content)
+#        self.assertEqual(r2.status_code, 200, msg=r2.content)
+#

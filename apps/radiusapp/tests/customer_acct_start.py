@@ -1,3 +1,4 @@
+from typing import Optional
 from django.test import override_settings
 from django.db.models import signals
 from rest_framework import status
@@ -9,6 +10,7 @@ from networks.models import (
     VlanIf, NetworkIpPool,
     NetworkIpPoolKind
 )
+from .customer_auth import radius_api_request_auth
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
@@ -21,7 +23,8 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
         """Set up data for this tests."""
         super().setUp()
         # default_vlan = VlanIf.objects.filter(vid=1).first()
-        vlan12 = VlanIf.objects.create(title="Vlan for customer tests", vid=12)
+        vlan12 = VlanIf.objects.create(title="Vlan12 for customer tests", vid=12)
+        vlan13 = VlanIf.objects.create(title="Vlan13 for customer tests", vid=13)
         pool = NetworkIpPool.objects.create(
             network="10.152.64.0/24",
             kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
@@ -32,8 +35,20 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
             gateway="10.152.64.1",
             is_dynamic=True,
         )
+        poolv13 = NetworkIpPool.objects.create(
+            network="10.152.65.0/24",
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
+            description="Test inet pool13",
+            ip_start="10.152.65.2",
+            ip_end="10.152.65.254",
+            vlan_if=vlan13,
+            gateway="10.152.65.1",
+            is_dynamic=False,
+        )
         pool.groups.add(self.group)
+        poolv13.groups.add(self.group)
         self.pool = pool
+        self.poolv13 = poolv13
 
         # Create service for customer
         self.service = Service.objects.create(
@@ -54,8 +69,8 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
 
         # self.client.logout()
 
-    def _send_request(self, vlan_id: int, cid: str, arid: str, ip="10.152.164.2", mac="18c0.4d51.dee2"):
-        """Help method 4 send request to endpoint."""
+    def _send_request_acct(self, vlan_id: int, cid: str, arid: str, ip="10.152.164.2", mac="18c0.4d51.dee2"):
+        """Help method 4 send request to acct endpoint."""
         return self.post(
             "/api/radius/customer/acct/juniper/", {
                 "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
@@ -69,11 +84,24 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
             },
         )
 
-    def _get_ip_leases(self) -> list:
-        r = self.get(
-            f"/api/networks/lease/?customer={self.customer.pk}",
+    def _send_request_auth(self, vlan_id: int, cid: str, arid: str, mac: str):
+        return self.post(
+            "/api/radius/customer/auth/juniper/",
+            radius_api_request_auth(
+                vlan_id=vlan_id,
+                cid=cid,
+                arid=arid,
+                mac=mac
+            )
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+
+    def _get_ip_leases(self, customer_id: Optional[int] = None) -> list:
+        if customer_id is None:
+            customer_id = self.customer.pk
+        r = self.get(
+            f"/api/networks/lease/?customer={customer_id}",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         self.assertGreater(len(r.data), 0)
         return r.data
 
@@ -81,13 +109,13 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
         r = self.get(
             f"/api/radius/session/get_by_lease/{lease_id}/",
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         self.assertIsNotNone(r.data, msg=r.content)
         return r.data
 
     def _create_acct_session(self, vid=12, cid="0004008B0002", arid="0006121314151617",
                              ip="10.152.64.6", mac="1c:c0:4d:95:d0:30"):
-        r = self._send_request(
+        r = self._send_request_acct(
             vlan_id=vid,
             cid=cid,
             arid=arid,
@@ -172,3 +200,47 @@ class CustomerAcctStartTestCase(CustomAPITestCase):
         self.assertEqual(lease['mac_address'], mac)
         self.assertIsNone(lease['pool'])
         self.assertEqual(lease['customer'], self.customer.pk)
+
+    def test_two_leases_on_customer_profile(self):
+        """Тестируем когда на учётке больше одного ip, и пробуем их получить.
+           IP должны выдаваться в соответствии с vlan.
+        """
+        # Создаём динамический ip в vlan 12, 10.152.64.6
+        self.test_normal_new_session()
+
+        # Создадим статичный ip на учётке в vlan 13, 10.152.65.16
+        self.post(
+            "/api/networks/lease/", {
+                "customer": self.customer.pk,
+                "ip_address": '10.152.65.16',
+                # "mac_address": "",
+                "pool": self.poolv13.pk
+            }
+        )
+
+        leases = self._get_ip_leases()
+        self.assertEqual(len(leases), 2, msg='Must be two leases on account')
+
+        # Пробуем получить статический ip vlan13
+        r = self._send_request_auth(
+            vlan_id=13,
+            cid='0004008B0002',
+            arid='0006121314151617',
+            mac='1c:c0:4d:95:d0:30'
+        )
+        self.assertEqual(r.status_code, 200)
+        d = r.data
+        self.assertEqual(d['Framed-IP-Address'], '10.152.65.16')
+        #  print('Ret:', r, r.content)
+
+        # Пробуем получить динамичекий ip vlan12
+        r = self._send_request_auth(
+            vlan_id=12,
+            cid='0004008B0002',
+            arid='0006121314151617',
+            mac='1c:c0:4d:95:d0:30'
+        )
+        self.assertEqual(r.status_code, 200)
+        d = r.data
+        self.assertEqual(d['Framed-IP-Address'], '10.152.64.6')
+
