@@ -17,7 +17,7 @@ RETURNS bool
 AS $$
 BEGIN
     WITH updated_lease AS (
-        UPDATE networks_ip_leases SET last_update = now() WHERE ip_address = v_ip RETURNING id
+        UPDATE networks_ip_leases SET last_update = now(), mac_address = v_mac WHERE ip_address = v_ip RETURNING id
     )
     INSERT INTO radius_customer_session(
         assign_time,
@@ -37,6 +37,7 @@ BEGIN
         v_customer_id,
         id
     FROM updated_lease
+    -- Когда пытаемся создать сессию на аренду у которой уже есть сессия, то мы просто обновляем время, а надо ???
         ON CONFLICT (ip_lease_id) DO UPDATE SET last_event_time=now();
 
     IF FOUND THEN
