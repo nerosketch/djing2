@@ -31,7 +31,12 @@ def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST):
 
 
 def _update_lease_send_ws_signal(customer_id: int):
-    send_data2ws({"eventType": WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value, "data": {"customer_id": customer_id}})
+    send_data2ws({
+        "eventType": WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value,
+        "data": {
+            "customer_id": customer_id
+        }
+    })
 
 
 # TODO: Also protect requests by hash
@@ -56,17 +61,17 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
         customer_service = CustomerService.get_user_credentials_by_ip(ip_addr=customer_ip)
         if customer_service is None:
-            return Response({"Reply-Message": "Customer service not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "Reply-Message": "Customer service not found"
+            }, status=status.HTTP_404_NOT_FOUND)
 
         sess_time = customer_service.calc_session_time()
-        return Response(
-            {
-                "ip": customer_ip,
-                "session_time": int(sess_time.total_seconds()),
-                "speed_in": customer_service.service.speed_in,
-                "speed_out": customer_service.service.speed_out,
-            }
-        )
+        return Response({
+            "ip": customer_ip,
+            "session_time": int(sess_time.total_seconds()),
+            "speed_in": customer_service.service.speed_in,
+            "speed_out": customer_service.service.speed_out,
+        })
 
     @get_service.mapping.get
     def get_service_get(self, request, **kwargs):
@@ -93,13 +98,15 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
         if all((agent_remote_id, agent_circuit_id)):
             dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
-                agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
+                agent_remote_id=agent_remote_id,
+                agent_circuit_id=agent_circuit_id
             )
             if not dev_mac:
                 return _bad_ret("Failed to parse option82")
 
             customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
-                device_mac=dev_mac, device_port=dev_port
+                device_mac=dev_mac,
+                device_port=dev_port
             )
             if customer is None:
                 return _bad_ret('Customer not found', custom_status=status.HTTP_404_NOT_FOUND)
@@ -133,7 +140,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             del leases
 
         if customer is None:
-            return _bad_ret('Customer not found', custom_status=status.HTTP_404_NOT_FOUND)
+            return _bad_ret(
+                'Customer not found',
+                custom_status=status.HTTP_404_NOT_FOUND
+            )
 
         # Return auth response
         try:
@@ -144,7 +154,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 subscriber_lease=subscriber_lease,
             )
             if r is None:
-                return Response('Empty auth session response', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response(
+                    'Empty auth session response',
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
             response, code = r
             _update_lease_send_ws_signal(customer.pk)
             return Response(response, status=code)
