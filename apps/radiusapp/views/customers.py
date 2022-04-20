@@ -224,13 +224,16 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
     def _acct_start(self, request):
         """Accounting start handler."""
-        dat = request.data
         vendor_manager = self.vendor_manager
         if not vendor_manager or not vendor_manager.vendor_class:
             return _bad_ret(
                 'No vendor manager exists',
                 custom_status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+        dat = request.data
+        if not dat:
+            return _bad_ret("Empty request")
 
         ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
         if not ip:
@@ -240,13 +243,20 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if not radius_username:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        agent_remote_id, agent_circuit_id = vendor_manager.get_opt82(data=request.data)
+        opt82 = vendor_manager.get_opt82(data=request.data)
+        if opt82 is None:
+            return _bad_ret('Bad opt82')
+
+        agent_remote_id, agent_circuit_id = opt82
         if all([agent_remote_id, agent_circuit_id]):
             dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
                 agent_remote_id=agent_remote_id, agent_circuit_id=agent_circuit_id
             )
+            if not dev_mac:
+                return _bad_ret('bad opt82 device mac address')
             customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
-                device_mac=dev_mac, device_port=dev_port
+                device_mac=dev_mac,
+                device_port=dev_port
             )
             if not customer:
                 return _bad_ret(

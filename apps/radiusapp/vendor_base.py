@@ -27,7 +27,7 @@ class IVendorSpecific(abc.ABC):
                 return k
             k = k.get("value")
             if k:
-                return k[0]
+                return str(k[0])
         return default
 
     @abc.abstractmethod
@@ -42,8 +42,9 @@ class IVendorSpecific(abc.ABC):
     def get_vlan_id(self, data):
         raise NotImplementedError
 
-    def get_radius_username(self, data):
-        return self.get_rad_val(data, "User-Name")
+    def get_radius_username(self, data) -> Optional[str]:
+        v = self.get_rad_val(data, "User-Name")
+        return str(v) if v else None
 
     def get_radius_unique_id(self, data):
         return self.get_rad_val(data, "Acct-Unique-Session-Id")
