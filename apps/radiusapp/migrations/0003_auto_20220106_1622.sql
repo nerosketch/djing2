@@ -38,7 +38,12 @@ BEGIN
         id
     FROM updated_lease
     -- Когда пытаемся создать сессию на аренду у которой уже есть сессия, то мы просто обновляем время, а надо ???
-        ON CONFLICT (ip_lease_id) DO UPDATE SET last_event_time=now();
+    -- Не терять бы сессию, когда обновляем session_id.
+        ON CONFLICT (ip_lease_id) DO UPDATE SET
+            last_event_time=now(),
+            customer_id=v_customer_id,
+            radius_username=v_radius_username,
+            session_id=v_rad_uniq_id;
 
     IF FOUND THEN
         -- lease exists, a new record has not been created
