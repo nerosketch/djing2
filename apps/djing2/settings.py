@@ -94,7 +94,7 @@ INSTALLED_APPS = [
     "dynamicfields.apps.DynamicfieldsConfig",
     "customers_legal.apps.CustomersLegalConfig",
     "customer_contract.apps.CustomerContractConfig",
-    "webhooks.apps.WebhooksConfig",
+    #"webhooks.apps.WebhooksConfig",
 ]
 
 if DEBUG:
