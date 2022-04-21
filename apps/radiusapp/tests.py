@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from django.contrib.sites.models import Site
 from django.db.models import signals
 from django.test import SimpleTestCase, TestCase, override_settings
-from django.forms.models import model_to_dict
 from rest_framework import status
 from rest_framework.test import APITestCase
 from customers.models import Customer
@@ -683,6 +682,11 @@ class Option82TestCase(SimpleTestCase):
 
 class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
     def setUp(self):
+        signals.post_save.disconnect()
+        signals.post_delete.disconnect()
+        signals.pre_save.disconnect()
+        signals.pre_delete.disconnect()
+
         self.full_customer = create_full_customer(
             uname='custo1',
             tel='+797811234567',
@@ -700,7 +704,6 @@ class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
 
     def test_normal(self):
         """Просто тыкаем, отработает-ли вообще"""
-
         is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
             ip='10.152.16.37',
             mac='18:c0:4d:51:de:e3',
@@ -739,3 +742,90 @@ class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
         self.assertEqual(session.input_packets, 0)
         self.assertEqual(session.output_packets, 0)
         self.assertFalse(session.closed)
+
+    def test_check_for_exist_session(self):
+        """Проверяем что при первом обращении сессия создастся,
+           а при повтормном, с теми же credentials просто вернётся
+        """
+        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+            ip='10.152.16.37',
+            mac='18:c0:4d:51:de:e3',
+            customer_id=self.full_customer.customer.pk,
+            radius_uname='50d4.f794.d535-ae0:1011-139',
+            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562'
+        )
+        self.assertTrue(is_created)
+        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+            ip='10.152.16.37',
+            mac='18:c0:4d:51:de:e3',
+            customer_id=self.full_customer.customer.pk,
+            radius_uname='50d4.f794.d535-ae0:1011-139',
+            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562'
+        )
+        self.assertFalse(is_created)
+
+    def test_creating_2_sessions_on_profile(self):
+        """Пробуем создать 2 разные сессии на учётку."""
+        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+            ip='10.152.16.37',
+            mac='18:c0:4d:51:de:e3',
+            customer_id=self.full_customer.customer.pk,
+            radius_uname='50d4.f794.d535-ae0:1011-139',
+            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562'
+        )
+        self.assertTrue(is_created)
+
+        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+            ip='10.152.16.33',
+            mac='18:c0:4d:51:de:e4',
+            customer_id=self.full_customer.customer.pk,
+            radius_uname='50d4.f794.d535-ae0:1011-149',
+            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd563'
+        )
+        self.assertTrue(is_created)
+
+        sessions_qs = CustomerRadiusSession.objects.all()
+        leases_qs = CustomerIpLeaseModel.objects.all()
+        self.assertEqual(sessions_qs.count(), 2)
+        self.assertEqual(leases_qs.count(), 2)
+
+    #def test_one_session_constraint(self):
+    #    """Пробуем создать 2 сессии на одну аренду ip.
+    #       Там есть constraint о том что аренда может содеражть только одну сессию.
+    #    """
+    #    from django.forms.models import model_to_dict
+    #    from time import sleep
+    #    is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+    #        ip='10.152.16.37',
+    #        mac='18:c0:4d:51:de:e3',
+    #        customer_id=self.full_customer.customer.pk,
+    #        radius_uname='50d4.f794.d535-ae0:1011-139',
+    #        radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562'
+    #    )
+    #    self.assertTrue(is_created)
+
+    #    sessions_qs = CustomerRadiusSession.objects.all()
+    #    leases_qs = CustomerIpLeaseModel.objects.all()
+
+    #    for ses in sessions_qs:
+    #        print('Ses1', model_to_dict(ses))
+    #    for lease in leases_qs:
+    #        print('Lease1', model_to_dict(lease))
+
+    #    is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+    #        ip='10.152.16.37',
+    #        mac='18:c0:4d:51:de:e3',
+    #        customer_id=self.full_customer.customer.pk,
+    #        radius_uname='50d4.f794.d535-ae0:1011-149',
+    #        radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd563'
+    #    )
+    #    #  self.assertTrue(is_created)
+
+    #    sessions_qs = CustomerRadiusSession.objects.all()
+    #    leases_qs = CustomerIpLeaseModel.objects.all()
+
+    #    for ses in sessions_qs:
+    #        print('Ses2', model_to_dict(ses))
+    #    for lease in leases_qs:
+    #        print('Lease2', model_to_dict(lease))
+
