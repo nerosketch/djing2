@@ -2,7 +2,8 @@ from typing import Optional
 from dataclasses import dataclass
 from django.contrib.sites.models import Site
 from django.db.models import signals
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
+from django.forms.models import model_to_dict
 from rest_framework import status
 from rest_framework.test import APITestCase
 from customers.models import Customer
@@ -16,7 +17,8 @@ from radiusapp.vendors import VendorManager, parse_opt82
 from radiusapp.models import CustomerRadiusSession
 from networks.models import (
     VlanIf, NetworkIpPool,
-    NetworkIpPoolKind
+    NetworkIpPoolKind,
+    CustomerIpLeaseModel
 )
 
 
@@ -679,7 +681,7 @@ class Option82TestCase(SimpleTestCase):
         self.assertEqual(port, 0)
 
 
-class CreateLeaseWAutoPoolNSessionTestCase(APITestCase):
+class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
     def setUp(self):
         self.full_customer = create_full_customer(
             uname='custo1',
@@ -696,12 +698,44 @@ class CreateLeaseWAutoPoolNSessionTestCase(APITestCase):
             service_calc_type=SERVICE_CHOICE_DEFAULT
         )
 
-    def test_create_lease_w_auto_pool_n_session(self):
-        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
-            ip='',
-            mac='',
-            customer_id=0,
-            radius_uname='',
-            radius_unique_id=''
-        )
+    def test_normal(self):
+        """Просто тыкаем, отработает-ли вообще"""
 
+        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+            ip='10.152.16.37',
+            mac='18:c0:4d:51:de:e3',
+            customer_id=self.full_customer.customer.pk,
+            radius_uname='50d4.f794.d535-ae0:1011-139',
+            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562'
+        )
+        self.assertTrue(is_created)
+
+        sessions_qs = CustomerRadiusSession.objects.all()
+        leases_qs = CustomerIpLeaseModel.objects.all()
+
+        self.assertEqual(sessions_qs.count(), 1)
+        self.assertEqual(leases_qs.count(), 1)
+
+        customer = self.full_customer.customer
+
+        lease = leases_qs.first()
+        self.assertIsNotNone(lease)
+        self.assertEqual(lease.ip_address, '10.152.16.37')
+        self.assertIsNone(lease.pool)
+        self.assertEqual(lease.customer_id, customer.pk)
+        self.assertEqual(lease.mac_address, '18:c0:4d:51:de:e3')
+        self.assertTrue(lease.is_dynamic)
+        self.assertIsNotNone(lease.last_update)
+
+        session = sessions_qs.first()
+        self.assertIsNotNone(session)
+        self.assertEqual(session.customer_id, customer.pk)
+        self.assertEqual(session.radius_username, '50d4.f794.d535-ae0:1011-139')
+        self.assertEqual(session.ip_lease, lease)
+        self.assertEqual(str(session.session_id), '02e65fad-07c3-20d8-9149-a66eadebd562')
+        self.assertIsNone(session.session_duration)
+        self.assertEqual(session.input_octets, 0)
+        self.assertEqual(session.output_octets, 0)
+        self.assertEqual(session.input_packets, 0)
+        self.assertEqual(session.output_packets, 0)
+        self.assertFalse(session.closed)
