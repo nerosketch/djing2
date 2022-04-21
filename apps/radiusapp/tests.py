@@ -1,17 +1,150 @@
 from typing import Optional
-from django.test import override_settings
+from dataclasses import dataclass
+from django.contrib.sites.models import Site
 from django.db.models import signals
+from django.test import SimpleTestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
-from profiles.models import UserProfile
+from customers.models import Customer
+from devices.models import Device, Port
+from devices.device_config.switch.dlink.dgs_1100_10me import DEVICE_UNIQUE_CODE as Dlink_dgs1100_10me_code
+from groupapp.models import Group
+from services.models import Service
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
+from profiles.models import UserProfile
+from radiusapp.vendors import VendorManager, parse_opt82
+from radiusapp.models import CustomerRadiusSession
 from networks.models import (
     VlanIf, NetworkIpPool,
     NetworkIpPoolKind
 )
-from devices.device_config.switch.dlink.dgs_1100_10me import DEVICE_UNIQUE_CODE as Dlink_dgs1100_10me_code
-from .customer_auth import radius_api_request_auth
-from ._create_full_customer import create_full_customer
+
+
+@dataclass
+class CreateFullCustomerReturnType:
+    group: Group
+    customer: Customer
+    device: Device
+    service: Service
+    site: Optional[Site]
+
+
+def create_full_customer(uname: str,
+                         tel: str,
+                         dev_type: int,
+                         dev_mac: Optional[str] = None,
+                         dev_ip: Optional[str] = None,
+                         group_title: Optional[str] = None,
+                         service_title: Optional[str] = None,
+                         service_descr: Optional[str] = None,
+                         service_speed_in=11.0,
+                         service_speed_out=11.0,
+                         service_cost=10,
+                         service_calc_type=SERVICE_CHOICE_DEFAULT,
+                         initial_balance=0,
+                         dev_comment: Optional[str] = None) -> CreateFullCustomerReturnType:
+    if group_title is None:
+        group_title = 'test_group'
+
+    group, _ = Group.objects.get_or_create(title=group_title, code="tst")
+
+    if dev_mac is None:
+        dev_mac = "11:13:14:15:17:17"
+
+    if dev_comment is None:
+        dev_comment = 'device for tests'
+
+    # Other device for other customer
+    device, _ = Device.objects.get_or_create(
+        mac_addr=dev_mac, comment=dev_comment,
+        dev_type=dev_type, ip_address=dev_ip,
+    )
+    ports = tuple(Port(device=device, num=n, descr="test %d" % n) for n in range(1, 3))
+    ports = Port.objects.bulk_create(ports)
+
+    customer = Customer.objects.create_user(
+        telephone=tel, username=uname, password="passw",
+        is_dynamic_ip=True, group=group,
+        balance=initial_balance, device=device,
+        dev_port=ports[1]
+    )
+
+    example_site = Site.objects.first()
+    if example_site:
+        customer.sites.add(example_site)
+    customer.refresh_from_db()
+
+    if service_title is None:
+        service_title = 'test service'
+    if service_descr is None:
+        service_descr = 'test service description'
+    # Create service for customer
+    service, service_is_created = Service.objects.get_or_create(
+        title=service_title, descr=service_descr,
+        speed_in=service_speed_in,
+        speed_out=service_speed_out,
+        cost=service_cost,
+        calc_type=service_calc_type
+    )
+    customer.pick_service(service, customer)
+    return CreateFullCustomerReturnType(
+        group=group,
+        customer=customer,
+        site=example_site,
+        device=device,
+        service=service
+    )
+
+
+
+class VendorsBuildDevMacByOpt82TestCase(SimpleTestCase):
+    def _make_request(self, remote_id: str, circuit_id: str):
+        dev_mac, dev_port = VendorManager.build_dev_mac_by_opt82(
+            agent_remote_id=remote_id, agent_circuit_id=circuit_id
+        )
+        return dev_mac, dev_port
+
+    def test_parse_opt82_ok(self):
+        circuit_id = "0x000400980005"
+        rem_id = "0x0006f8e903e755a6"
+        mac, port = self._make_request(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertEqual(mac, "f8:e9:03:e7:55:a6")
+        self.assertEqual(port, 5)
+
+    def test_parse_opt82_ok2(self):
+        circuit_id = "0x00007400071d"
+        rem_id = "0x00061c877912e61a"
+        mac, port = self._make_request(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertEqual(mac, "1c:87:79:12:e6:1a")
+        self.assertEqual(port, 29)
+
+    def test_parse_opt82_long_data(self):
+        circuit_id = "0x007400ff1dff01"
+        rem_id = "0x0006ff121c877912e61a"
+        mac, port = self._make_request(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertEqual(mac, "1c:87:79:12:e6:1a")
+        self.assertEqual(port, 1)
+
+    def test_parse_opt82_short_data(self):
+        circuit_id = "0x007400ff"
+        rem_id = "0x1c8779"
+        mac, port = self._make_request(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertIsNone(mac)
+        self.assertEqual(port, 255)
+
+    def test_parse_opt82_ok_zte(self):
+        circuit_id = "0x5a5445474330323838453730"
+        rem_id = "0x34353a34373a63303a32383a38653a3730"
+        mac, port = self._make_request(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertEqual(mac, "45:47:c0:28:8e:70")
+        self.assertEqual(port, 0)
+
+    def test_parse_opt82_ok_zte2(self):
+        circuit_id = "0x5a5445474334303235334233"
+        rem_id = "0x34353a34373a63343a323a35333a6233"
+        mac, port = self._make_request(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertEqual(mac, "45:47:c4:2:53:b3")
+        self.assertEqual(port, 0)
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
@@ -402,4 +535,173 @@ class CustomerAcctStartTestCase(APITestCase):
     #       она должна быть в модуле который занимается выдачей ip.
     #    """
     #    pass
+
+
+
+def radius_api_request_auth(vlan_id: int, cid: str, arid: str, mac: str):
+    return {
+        "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
+        "NAS-Port-Id": {"value": [vlan_id]},
+        "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
+        "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
+        "ERX-Dhcp-Mac-Addr": {"value": [mac]},
+        "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]},
+    }
+
+
+class ReqMixin:
+    def get(self, *args, **kwargs):
+        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
+
+    def post(self, *args, **kwargs):
+        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+
+
+@override_settings(API_AUTH_SUBNET="127.0.0.0/8")
+class CustomerAuthTestCase(APITestCase, ReqMixin):
+    """Main test case class."""
+
+    def setUp(self):
+        """Set up data for this tests."""
+        #  super().setUp()
+        # default_vlan = VlanIf.objects.filter(vid=1).first()
+        self.admin = UserProfile.objects.create_superuser(
+            username="admin", password="admin", telephone="+797812345678"
+        )
+        self.client.login(username="admin", password="admin")
+        self.full_customer = create_full_customer(
+            uname='custo1',
+            tel='+797811234567',
+            initial_balance=11,
+            dev_ip="192.168.2.3",
+            dev_mac="12:13:14:15:16:17",
+            dev_type=Dlink_dgs1100_10me_code,
+            service_title='test',
+            service_descr='test',
+            service_speed_in=11.0,
+            service_speed_out=11.0,
+            service_cost=10.0,
+            service_calc_type=SERVICE_CHOICE_DEFAULT
+        )
+        self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
+        #  self.client.logout()
+
+    def _send_request(self, vlan_id: int, cid: str, arid: str, mac="18c0.4d51.dee2"):
+        """Help method 4 send request to endpoint."""
+        return self.post(
+            "/api/radius/customer/auth/juniper/",
+            radius_api_request_auth(vlan_id, cid, arid, mac)
+        )
+
+    def test_guest_radius_session(self):
+        """Just send simple request to not existed customer."""
+        r = self._send_request(vlan_id=14, cid="0004008b000c", arid="0006286ED47B1CA4")
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND, msg=r.content)
+
+    def test_auth_radius_session(self):
+        """Just send simple request to en existed customer."""
+        r = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertEqual(r.data["User-Password"], self.service_inet_str, msg=r.content)
+
+    def test_two_identical_fetch(self):
+        """Repeat identical requests for same customer.
+           Request must be deterministic."""
+        r1 = self._send_request(
+            vlan_id=12, cid="0004008B0002",
+            arid="0006121314151617", mac="18c0.4d51.dee3"
+        )
+        self.assertEqual(r1.status_code, status.HTTP_200_OK)
+        # self.assertEqual(r1.data["Framed-IP-Address"], "10.152.64.2")
+        self.assertEqual(r1.data["User-Password"], self.service_inet_str)
+        r2 = self._send_request(
+            vlan_id=12, cid="0004008B0002", arid="0006121314151617", mac="18c0.4d51.dee4"
+        )
+        self.assertEqual(r2.status_code, status.HTTP_200_OK)
+        # self.assertEqual(r2.data["Framed-IP-Address"], "10.152.64.3")
+        self.assertEqual(r2.data["User-Password"], self.service_inet_str)
+
+    def test_guest_and_inet_subnet(self):
+        """Проверка гостевой и инетной сессии.
+
+        Проверяем что при включённой и выключенной услуге будет
+        выдавать интернетную и гостевую сессию соответственно.
+        """
+        customer = self.full_customer.customer
+        self.test_auth_radius_session()
+        customer.stop_service(self.admin)
+        r = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertDictEqual(r.data, {"User-Password": "SERVICE-GUEST"})
+
+
+class Option82TestCase(SimpleTestCase):
+    def test_parse_opt82_ok(self):
+        circuit_id = b"\x00\x04\x00\x98\x00\x05"
+        rem_id = b"\x00\x06\xec\x22\x80\x7f\xad\xb8"
+        mac, port = parse_opt82(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertEqual(mac, "ec:22:80:7f:ad:b8")
+        self.assertEqual(port, 5)
+
+    def test_parse_opt82_ok2(self):
+        circuit_id = b"\x00\x74\x00\x07\x1d"
+        rem_id = b"\x1c\x87\x79\x12\xe6\x1a"
+        mac, port = parse_opt82(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertEqual(mac, "1c:87:79:12:e6:1a")
+        self.assertEqual(port, 29)
+
+    def test_parse_opt82_long_data(self):
+        circuit_id = b"\x00\x74\x00\xff\x1d\xff\x01"
+        rem_id = b"\xff\x12\x1c\x87\x79\x12\xe6\x1a"
+        mac, port = parse_opt82(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertEqual(mac, "1c:87:79:12:e6:1a")
+        self.assertEqual(port, 1)
+
+    def test_parse_opt82_short_data(self):
+        circuit_id = b"\x00\x74\x00\xff"
+        rem_id = b"\x1c\x87\x79"
+        mac, port = parse_opt82(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertIsNone(mac)
+        self.assertEqual(port, 255)
+
+    def test_parse_opt82_ok_zte(self):
+        circuit_id = b"\x5a\x54\x45\x47\x43\x30\x32\x38\x38\x45\x37\x30"
+        rem_id = b"\x34\x35\x3a\x34\x37\x3a\x63\x30\x3a\x32\x38\x3a\x38\x65\x3a\x37\x30"
+        mac, port = parse_opt82(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertEqual(mac, "45:47:c0:28:8e:70")
+        self.assertEqual(port, 0)
+
+    def test_parse_opt82_ok_zte2(self):
+        circuit_id = b"\x5a\x54\x45\x47\x43\x34\x30\x32\x35\x33\x42\x33"
+        rem_id = b"\x34\x35\x3a\x34\x37\x3a\x63\x34\x3a\x32\x3a\x35\x33\x3a\x62\x33"
+        mac, port = parse_opt82(remote_id=rem_id, circuit_id=circuit_id)
+        self.assertEqual(mac, "45:47:c4:2:53:b3")
+        self.assertEqual(port, 0)
+
+
+class CreateLeaseWAutoPoolNSessionTestCase(APITestCase):
+    def setUp(self):
+        self.full_customer = create_full_customer(
+            uname='custo1',
+            tel='+797811234567',
+            initial_balance=11,
+            dev_ip="192.168.2.3",
+            dev_mac="12:13:14:15:16:17",
+            dev_type=Dlink_dgs1100_10me_code,
+            service_title='test',
+            service_descr='test',
+            service_speed_in=11.0,
+            service_speed_out=11.0,
+            service_cost=10.0,
+            service_calc_type=SERVICE_CHOICE_DEFAULT
+        )
+
+    def test_create_lease_w_auto_pool_n_session(self):
+        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+            ip='',
+            mac='',
+            customer_id=0,
+            radius_uname='',
+            radius_unique_id=''
+        )
 
