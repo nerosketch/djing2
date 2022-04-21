@@ -331,7 +331,7 @@ class CustomerAcctStartTestCase(APITestCase):
         self.assertEqual(len(leases), 1, msg=leases)
         lease = leases[0]
         self.assertEqual(lease['ip_address'], ip)
-        self.assertIsNone(lease['mac_address'])
+        self.assertEqual(lease['mac_address'], '1c:c0:4d:95:d0:30')
         self.assertEqual(lease['pool'], self.pool.pk)
         self.assertEqual(lease['customer'], self.full_customer.customer.pk)
 
