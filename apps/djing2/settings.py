@@ -89,15 +89,16 @@ INSTALLED_APPS = [
     "traf_stat.apps.TrafStatConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
-    "sorm_export.apps.SormExportConfig",
+    #"sorm_export.apps.SormExportConfig",
     "customer_comments.apps.CustomerCommentsConfig",
     "dynamicfields.apps.DynamicfieldsConfig",
     "customers_legal.apps.CustomersLegalConfig",
     "customer_contract.apps.CustomerContractConfig",
-    "webhooks.apps.WebhooksConfig",
 
     # Monitoring
     "django_statsd",
+
+    #"webhooks.apps.WebhooksConfig",
 ]
 
 if DEBUG:
