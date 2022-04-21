@@ -121,7 +121,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 subscriber_lease = subscriber_session.first().ip_lease
             else:
                 subscriber_lease = CustomerIpLeaseModel.objects.filter(
-                    Q(mac_address=customer_mac) | Q(mac_address=None, is_dynamic=False),
+                    Q(mac_address=customer_mac, is_dynamic=True) | Q(is_dynamic=False),
                     customer=customer,
                     # mac_address=customer_mac
                 ).first()
@@ -332,10 +332,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             last_event_time=event_time,
             customer_mac=customer_mac
         )
-        CustomerIpLeaseModel.objects.filter(ip_address=ip).update(
-            last_update=event_time,
-            mac_address=customer_mac
-        )
+        #CustomerIpLeaseModel.objects.filter(ip_address=ip).update(
+        #    last_update=event_time,
+        #    mac_address=customer_mac
+        #)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

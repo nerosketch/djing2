@@ -17,7 +17,8 @@ RETURNS bool
 AS $$
 BEGIN
     WITH updated_lease AS (
-        UPDATE networks_ip_leases SET last_update = now(), mac_address = v_mac WHERE ip_address = v_ip RETURNING id
+        -- UPDATE networks_ip_leases SET last_update = now(), mac_address = v_mac WHERE ip_address = v_ip RETURNING id
+        UPDATE networks_ip_leases SET last_update = now() WHERE ip_address = v_ip RETURNING id
     )
     INSERT INTO radius_customer_session(
         assign_time,

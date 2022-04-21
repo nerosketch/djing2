@@ -331,7 +331,7 @@ class CustomerAcctStartTestCase(APITestCase):
         self.assertEqual(len(leases), 1, msg=leases)
         lease = leases[0]
         self.assertEqual(lease['ip_address'], ip)
-        self.assertEqual(lease['mac_address'], '1c:c0:4d:95:d0:30')
+        self.assertIsNone(lease['mac_address'])
         self.assertEqual(lease['pool'], self.pool.pk)
         self.assertEqual(lease['customer'], self.full_customer.customer.pk)
 
@@ -367,7 +367,9 @@ class CustomerAcctStartTestCase(APITestCase):
     def test_two_leases_on_customer_profile(self):
         """Тестируем когда на учётке больше одного ip, и пробуем их получить.
         """
-        # Создаём динамический ip в vlan 12, 10.152.64.6
+        # Создаём динамический ip в vlan 12,
+        # ip 10.152.64.6
+        # мак 1c:c0:4d:95:d0:30
         self.test_normal_new_session()
 
         # Создадим статичный ip на учётке в vlan 13, 10.152.65.16
@@ -388,7 +390,7 @@ class CustomerAcctStartTestCase(APITestCase):
             #  vlan_id=13,
             cid='0004008B0002',
             arid='0006121314151617',
-            mac='1c:c0:4d:95:d0:30'
+            mac='1c:c0:4d:95:d0:38'
         )
         self.assertEqual(r.status_code, 200)
         d = r.data
@@ -399,7 +401,7 @@ class CustomerAcctStartTestCase(APITestCase):
             #  vlan_id=12,
             cid='0004008B0002',
             arid='0006121314151617',
-            mac='1c:c0:4d:95:d0:38'
+            mac='1c:c0:4d:95:d0:30'
         )
         self.assertEqual(r.status_code, 200)
         d = r.data
