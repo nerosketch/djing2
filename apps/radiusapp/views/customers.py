@@ -174,15 +174,16 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
         request_type = vendor_manager.get_acct_status_type(request)
         if request_type is None:
-            return self._acct_unknown(request)
+            return self._acct_unknown(request, 'request_type is None')
         acct_status_type_map = {
             AcctStatusType.START.value: self._acct_start,
             AcctStatusType.STOP.value: self._acct_stop,
             AcctStatusType.UPDATE.value: self._acct_update,
         }
-        request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
+        #request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
+        request_type_fn = acct_status_type_map.get(request_type.value)
         if request_type_fn is None:
-            return self._acct_unknown(request)
+            return self._acct_unknown(request, 'request_type_fn is None, (request_type=%s)' % request_type)
         return request_type_fn(request)
 
     def _update_counters(self, sessions, data: dict, customer_mac: EUI,
@@ -343,5 +344,5 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @staticmethod
-    def _acct_unknown(_):
-        return _bad_ret("Bad Acct-Status-Type", custom_status=status.HTTP_200_OK)
+    def _acct_unknown(_, tx=''):
+        return _bad_ret("Bad Acct-Status-Type: %s" % tx, custom_status=status.HTTP_200_OK)
