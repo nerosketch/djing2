@@ -20,7 +20,7 @@ from fin_app.tests import _make_sign
     },
     SORM_EXPORT_FTP_DISABLE=False
 )
-class PaymentsExportAPITestCase(CustomAPITestCase ,FtpTestCaseMixin):
+class PaymentsExportAPITestCase(CustomAPITestCase, FtpTestCaseMixin):
     payment_url = "/api/fin/asd/pay/"
 
     @classmethod

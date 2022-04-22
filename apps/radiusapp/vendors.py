@@ -76,7 +76,7 @@ class VendorManager:
         request_data,
         subscriber_lease: Optional[FetchSubscriberLeaseResponse] = None,
     ) -> dict:
-        if vendor_classes:
+        if self.vendor_class:
             return self.vendor_class.get_auth_session_response(
                 customer_service=customer_service,
                 customer=customer,
