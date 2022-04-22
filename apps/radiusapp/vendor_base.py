@@ -64,6 +64,7 @@ class IVendorSpecific(abc.ABC):
         act_type = self.get_rad_val(dat, "Acct-Status-Type")
         #  logger.debug('act_type: %s - %s' % (act_type, type(act_type)))
         if isinstance(act_type, int) or (isinstance(act_type, str) and act_type.isdigit()):
+            act_type = int(act_type)
             r_map = {1: AcctStatusType.START, 2: AcctStatusType.STOP, 3: AcctStatusType.UPDATE}
         else:
             r_map = {
