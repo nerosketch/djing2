@@ -64,6 +64,7 @@ class IVendorSpecific(abc.ABC):
         dat = request.data
         act_type = self.get_rad_val(dat, "Acct-Status-Type")
         if isinstance(act_type, int) or (isinstance(act_type, str) and act_type.isdigit()):
+            act_type = int(act_type)
             r_map = {
                 1: AcctStatusType.START,
                 2: AcctStatusType.STOP,
