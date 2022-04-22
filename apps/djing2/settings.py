@@ -368,6 +368,7 @@ CONTRACTS_OPTIONS = {
     'DEFAULT_TITLE': get_env('CONTRACT_DEFAULT_TITLE', 'Contract default title')
 }
 
-STATSD_HOST = '10.12.1.20'
-STATSD_PORT = 8125
+STATSD_HOST = get_env("GRAPHITE_HOST", default='graphite_statsd')
+STATSD_PORT = get_env("GRAPHITE_PORT", default=8125)
 STATSD_MODEL_SIGNALS = True
+
