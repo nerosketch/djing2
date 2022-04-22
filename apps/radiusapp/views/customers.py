@@ -166,6 +166,9 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
     @action(methods=["post"], detail=False, url_path=r"acct/(?P<vendor_name>\w{1,32})")
     def acct(self, request, vendor_name=None):
+        if vendor_name is None:
+            return _bad_ret('Empty vendor name')
+
         vendor_manager = VendorManager(vendor_name=vendor_name)
         self.vendor_manager = vendor_manager
 
