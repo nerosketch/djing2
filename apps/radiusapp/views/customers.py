@@ -12,12 +12,20 @@ from customers.serializers import RadiusCustomerServiceRequestSerializer
 from djing2.lib import LogicError, safe_int
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from djing2.lib.mixins import AllowedSubnetMixin
+from djing2.lib.logger import logger
 from networks.models import CustomerIpLeaseModel
 from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
 from radiusapp import custom_signals
-from radiusapp.tasks import async_finish_session_task
+# from radiusapp.tasks import async_finish_session_task
+
+import logging
+fh = logging.FileHandler('/tmp/djing2_s.log')
+fh.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
 
 def _gigaword_imp(num: int, gwords: int) -> int:
@@ -27,6 +35,7 @@ def _gigaword_imp(num: int, gwords: int) -> int:
 
 
 def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST):
+    logger.error(text)
     return Response({"Reply-Message": text}, status=custom_status)
 
 
@@ -154,6 +163,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 subscriber_lease=subscriber_lease,
             )
             if r is None:
+                logger.error('Empty auth session response')
                 return Response(
                     'Empty auth session response',
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -174,6 +184,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
         request_type = vendor_manager.get_acct_status_type(request)
         if request_type is None:
+            logger.error('request_type is None')
             return self._acct_unknown(request, 'request_type is None')
         acct_status_type_map = {
             AcctStatusType.START.value: self._acct_start,
@@ -183,7 +194,9 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         #request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
         request_type_fn = acct_status_type_map.get(request_type.value)
         if request_type_fn is None:
-            return self._acct_unknown(request, 'request_type_fn is None, (request_type=%s)' % request_type)
+            err = 'request_type_fn is None, (request_type=%s)' % request_type
+            logger.error(err)
+            return self._acct_unknown(request, err)
         return request_type_fn(request)
 
     def _update_counters(self, sessions, data: dict, customer_mac: EUI,
@@ -241,11 +254,17 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
         ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
         if not ip:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return _bad_ret(
+                "Request has no ip information (Framed-IP-Address)",
+                custom_status=status.HTTP_200_OK
+            )
 
         radius_username = vendor_manager.get_radius_username(dat)
         if not radius_username:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return _bad_ret(
+                "Request has no username",
+                custom_status=status.HTTP_200_OK
+            )
 
         opt82 = vendor_manager.get_opt82(data=request.data)
         if opt82 is None:
@@ -268,7 +287,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
         else:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return _bad_ret(
+                "Request has not opt82 info",
+                custom_status=status.HTTP_200_OK
+            )
 
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
         customer_mac = vendor_manager.get_customer_mac(dat)
@@ -295,7 +317,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 event_time=datetime.now(),
             )
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return _bad_ret(
+            "Request has not opt82 info",
+            custom_status=status.HTTP_200_OK
+        )
 
     def _acct_stop(self, request):
         dat = request.data
@@ -313,10 +338,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             radius_unique_id=radius_unique_id,
             customer_mac=customer_mac,
         )
-        for session in sessions:
-            async_finish_session_task(
-                radius_uname=str(session.radius_username)
-            )
+        #for session in sessions:
+        #    async_finish_session_task(
+        #        radius_uname=str(session.radius_username)
+        #    )
         sessions.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -345,4 +370,5 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
     @staticmethod
     def _acct_unknown(_, tx=''):
+        logger.error('Unknown acct: %s' % tx)
         return _bad_ret("Bad Acct-Status-Type: %s" % tx, custom_status=status.HTTP_200_OK)
