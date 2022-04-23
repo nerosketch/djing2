@@ -288,7 +288,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 )
         else:
             return _bad_ret(
-                "Request has not opt82 info",
+                    "Request has not opt82 info: %s" % (opt82),
                 custom_status=status.HTTP_200_OK
             )
 
@@ -317,10 +317,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 event_time=datetime.now(),
             )
 
-        return _bad_ret(
-            "Request has not opt82 info",
-            custom_status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _acct_stop(self, request):
         dat = request.data
