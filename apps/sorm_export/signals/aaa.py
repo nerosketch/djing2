@@ -8,7 +8,6 @@ from radiusapp import custom_signals
 from django.conf import settings
 from django.dispatch.dispatcher import receiver
 from djing2.lib import time2utctime
-from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendors import IVendorSpecific
 from rest_framework.exceptions import ValidationError
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType

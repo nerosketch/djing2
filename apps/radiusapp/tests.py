@@ -13,7 +13,6 @@ from services.models import Service
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from profiles.models import UserProfile
 from radiusapp.vendors import VendorManager, parse_opt82
-from radiusapp.models import CustomerRadiusSession
 from networks.models import (
     VlanIf, NetworkIpPool,
     NetworkIpPoolKind,

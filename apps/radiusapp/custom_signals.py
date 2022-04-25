@@ -13,7 +13,7 @@ from django.dispatch import Signal
 #    customer - customers.models.Customer instance
 #    radius_unique_id - obviously
 #    event_time - datetime.now() on fetch request time
-radius_acct_start_signal = Signal()
+#radius_acct_start_signal = Signal()
 
 
 # Sends while radius finished session
@@ -24,7 +24,7 @@ radius_acct_start_signal = Signal()
 #    ip_addr - customer ip address from radius request
 #    radius_unique_id - obviously
 #    customer_mac: netaddr.EUI instance -  customer device mac address from radius request
-radius_acct_stop_signal = Signal()
+#radius_acct_stop_signal = Signal()
 
 
 # Sends while radius send acct-update event
@@ -40,4 +40,4 @@ radius_acct_stop_signal = Signal()
 #    radius_unique_id - obviously
 #    ip_addr - customer ip address from radius request
 #    customer_mac: netaddr.EUI instance -  customer device mac address from radius request
-radius_auth_update_signal = Signal()
+#radius_auth_update_signal = Signal()

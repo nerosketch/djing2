@@ -14,7 +14,6 @@ from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from djing2.lib.mixins import AllowedSubnetMixin
 from djing2.lib.logger import logger
 from networks.models import CustomerIpLeaseModel
-from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
 from radiusapp import custom_signals

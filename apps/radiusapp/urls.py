@@ -10,6 +10,4 @@ router = DefaultRouter()
 # customer radius views
 router.register("customer", customers.RadiusCustomerServiceRequestViewSet, basename="customer")
 
-router.register("session", session_views.CustomerRadiusSessionModelViewSet)
-
 urlpatterns = [path("", include(router.urls))]
