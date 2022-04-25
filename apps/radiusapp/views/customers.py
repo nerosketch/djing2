@@ -283,7 +283,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             )
             if not customer:
                 return _bad_ret(
-                    'Customer with provided device credentials not found',
+                    'Customer with provided device credentials not found: %s _ %s' % (str(dev_mac), str(dev_port)),
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
         else:
