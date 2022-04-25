@@ -1,29 +1,27 @@
 """Radius application signals file."""
 import logging
 from django.dispatch.dispatcher import receiver
-from django.db.models.signals import pre_delete
 
 from radiusapp.models import CustomerRadiusSession
 from radiusapp import tasks
 from customers import custom_signals as customer_custom_signals
 from customers.models import Customer, CustomerService
-from networks.models import CustomerIpLeaseModel
 
 logger = logging.getLogger(__name__)
 
 
-@receiver(pre_delete, sender=CustomerIpLeaseModel)
-def send_finish_session_when_removed_it_ip(sender, instance, **kwargs):
-    """
-    Try to stop session when removing customer ip lease.
-    :param sender: CustomerIpLeaseModel class
-    :param instance: CustomerIpLeaseModel instance
-    :param kwargs:
-    :return: nothing
-    """
-    sessions = CustomerRadiusSession.objects.filter(ip_lease=instance).only("radius_username")
-    for session in sessions:
-        tasks.async_finish_session_task(session.radius_username)
+#@receiver(pre_delete, sender=CustomerIpLeaseModel)
+#def send_finish_session_when_removed_it_ip(sender, instance, **kwargs):
+#    """
+#    Try to stop session when removing customer ip lease.
+#    :param sender: CustomerIpLeaseModel class
+#    :param instance: CustomerIpLeaseModel instance
+#    :param kwargs:
+#    :return: nothing
+#    """
+#    sessions = CustomerRadiusSession.objects.filter(ip_lease=instance).only("radius_username")
+#    for session in sessions:
+#        tasks.async_finish_session_task(session.radius_username)
 
 
 @receiver(
