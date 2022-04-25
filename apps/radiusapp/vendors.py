@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 from netaddr import EUI
 from customers.models import CustomerService, Customer
 from djing2.lib import macbin2str, safe_int, LogicError
-from radiusapp.models import FetchSubscriberLeaseResponse
+from networks.models import FetchSubscriberLeaseResponse
 
 from radiusapp.vendor_specific import vendor_classes
 from radiusapp.vendor_base import IVendorSpecific

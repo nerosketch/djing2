@@ -10,13 +10,17 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, connection, InternalError
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField, CidrAddressField
-
-from customers.models import Customer
 from djing2 import ping as icmp_ping
 from djing2.lib import process_lock, LogicError, safe_int
+from djing2.lib.logger import logger
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
-from radiusapp.radius_commands import finish_session, change_session_inet2guest, change_session_guest2inet
+from customers.models import Customer
+from radiusapp.radius_commands import (
+    finish_session,
+    change_session_inet2guest,
+    change_session_guest2inet
+)
 
 
 DHCP_DEFAULT_LEASE_TIME = getattr(settings, "DHCP_DEFAULT_LEASE_TIME", 86400)
@@ -264,22 +268,27 @@ class CustomerIpLeaseModelQuerySet(models.QuerySet):
 
 class CustomerIpLeaseModel(models.Model):
     ip_address = models.GenericIPAddressField(_("Ip address"), unique=True)
-    pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE, null=True)
-    lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
     mac_address = MACAddressField(verbose_name=_("Mac address"), null=True, default=None)
+    pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
     is_dynamic = models.BooleanField(_("Is dynamic"), default=False)
-    last_update = models.DateTimeField(_("Last update"), blank=True, null=True, default=None)
-    radius_username = models.CharField(_("User-Name av pair from radius"), max_length=128)
-    session_id = models.UUIDField(_("Unique session id"))
-    cvid = models.PositiveSmallIntegerField(_("Customer Vlan id"), default=0)
-    svid = models.PositiveSmallIntegerField(_("Service Vlan id"), default=0)
     input_octets = models.BigIntegerField(default=0)
     output_octets = models.BigIntegerField(default=0)
     input_packets = models.BigIntegerField(default=0)
     output_packets = models.BigIntegerField(default=0)
-
-    state = models.NullBooleanField(_('Lease state'), default=None)
+    cvid = models.PositiveSmallIntegerField(_("Customer Vlan id"), default=0)
+    svid = models.PositiveSmallIntegerField(_("Service Vlan id"), default=0)
+    state = models.BooleanField(_('Lease state'), null=True, blank=True, default=None)
+    lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)
+    last_update = models.DateTimeField(_("Last update"), blank=True, null=True, default=None)
+    session_id = models.UUIDField(_("Unique session id"), blank=True, null=True, default=None)
+    radius_username = models.CharField(
+        _("User-Name av pair from radius"),
+        max_length=128,
+        null=True,
+        blank=True,
+        default=None
+    )
 
     objects = CustomerIpLeaseModelQuerySet.as_manager()
 
@@ -367,18 +376,31 @@ class CustomerIpLeaseModel(models.Model):
         :return: str about result
         """
         dev_port = safe_int(dev_port)
-        dev_port = dev_port if dev_port > 0 else None
         try:
             with connection.cursor() as cur:
                 cur.execute(
                     "SELECT * FROM lease_commit_add_update(%s::inet, %s::macaddr, %s::macaddr, %s::smallint)",
-                    (client_ip, mac_addr, dev_mac, dev_port),
+                    (client_ip, mac_addr, dev_mac, dev_port or None),
                 )
                 res = cur.fetchone()
             # lease_id, ip_addr, pool_id, lease_time, mac_addr, customer_id, is_dynamic, last_update = res
             return res
         except InternalError as err:
             raise LogicError(str(err)) from err
+
+    @staticmethod
+    def create_lease_w_auto_pool(ip: str, mac: str, customer_id: int,
+                                 radius_uname: str, radius_unique_id: str,
+                                 svid: int=0, cvid: int=0) -> bool:
+        with connection.cursor() as cur:
+            cur.execute("SELECT create_lease_w_auto_pool"
+                "(%s::inet, %s::macaddr, %s::integer, %s,           %s::uuid,         %s::smallint, %s::smallint)",
+                 (ip,       mac,         customer_id, radius_uname, radius_unique_id, svid,         cvid))
+            created = cur.fetchone()
+        if isinstance(created, tuple) and len(created) == 1:
+            return created[0]
+        logger.error('Unexpected result from create_lease_w_auto_pool sql func')
+        return False
 
     def radius_coa_inet2guest(self) -> Optional[str]:
         if not self.radius_username:

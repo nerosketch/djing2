@@ -1,7 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import customers
-from .views import session_views
 
 app_name = "radiusapp"
 

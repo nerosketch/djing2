@@ -5,7 +5,7 @@ from netaddr import EUI
 
 from djing2.lib import LogicError
 from customers.models import CustomerService, Customer
-from radiusapp.models import FetchSubscriberLeaseResponse
+from networks.models import FetchSubscriberLeaseResponse
 
 
 class AcctStatusType(enum.IntEnum):
