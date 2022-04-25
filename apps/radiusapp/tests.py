@@ -705,19 +705,19 @@ class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
 
     def test_normal(self):
         """Просто тыкаем, отработает-ли вообще"""
-        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+        is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
             ip='10.152.16.37',
             mac='18:c0:4d:51:de:e3',
             customer_id=self.full_customer.customer.pk,
             radius_uname='50d4.f794.d535-ae0:1011-139',
-            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562'
+            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562',
+            cvid=111,
+            svid=5
         )
         self.assertTrue(is_created)
 
-        sessions_qs = CustomerRadiusSession.objects.all()
         leases_qs = CustomerIpLeaseModel.objects.all()
 
-        self.assertEqual(sessions_qs.count(), 1)
         self.assertEqual(leases_qs.count(), 1)
 
         customer = self.full_customer.customer
@@ -725,63 +725,68 @@ class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
         lease = leases_qs.first()
         self.assertIsNotNone(lease)
         self.assertEqual(lease.ip_address, '10.152.16.37')
+        self.assertEqual(lease.mac_address, '18:c0:4d:51:de:e3')
         self.assertIsNone(lease.pool)
         self.assertEqual(lease.customer_id, customer.pk)
-        self.assertEqual(lease.mac_address, '18:c0:4d:51:de:e3')
         self.assertTrue(lease.is_dynamic)
         self.assertIsNotNone(lease.last_update)
-
-        session = sessions_qs.first()
-        self.assertIsNotNone(session)
-        self.assertEqual(session.customer_id, customer.pk)
-        self.assertEqual(session.radius_username, '50d4.f794.d535-ae0:1011-139')
-        self.assertEqual(session.ip_lease, lease)
-        self.assertEqual(str(session.session_id), '02e65fad-07c3-20d8-9149-a66eadebd562')
-        self.assertIsNone(session.session_duration)
-        self.assertEqual(session.input_octets, 0)
-        self.assertEqual(session.output_octets, 0)
-        self.assertEqual(session.input_packets, 0)
-        self.assertEqual(session.output_packets, 0)
-        self.assertFalse(session.closed)
+        self.assertEqual(lease.input_octets, 0)
+        self.assertEqual(lease.output_octets, 0)
+        self.assertEqual(lease.input_packets, 0)
+        self.assertEqual(lease.output_packets, 0)
+        self.assertEqual(lease.svid, 5)
+        self.assertEqual(lease.cvid, 111)
+        self.assertTrue(lease.state)
+        self.assertEqual(lease.lease_time, lease.last_update)
+        self.assertEqual(lease.session_id, '02e65fad-07c3-20d8-9149-a66eadebd562')
+        self.assertEqual(lease.radius_username, '50d4.f794.d535-ae0:1011-139')
 
     def test_check_for_exist_session(self):
         """Проверяем что при первом обращении сессия создастся,
            а при повтормном, с теми же credentials просто вернётся
         """
-        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+        is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
             ip='10.152.16.37',
             mac='18:c0:4d:51:de:e3',
             customer_id=self.full_customer.customer.pk,
             radius_uname='50d4.f794.d535-ae0:1011-139',
-            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562'
+            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562',
+            cvid=111,
+            svid=5
         )
         self.assertTrue(is_created)
-        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+        is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
             ip='10.152.16.37',
             mac='18:c0:4d:51:de:e3',
             customer_id=self.full_customer.customer.pk,
             radius_uname='50d4.f794.d535-ae0:1011-139',
-            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562'
+            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562',
+            cvid=111,
+            svid=5
         )
         self.assertFalse(is_created)
 
     def test_creating_2_sessions_on_profile(self):
         """Пробуем создать 2 разные сессии на учётку."""
-        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+        is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
             ip='10.152.16.37',
             mac='18:c0:4d:51:de:e3',
             customer_id=self.full_customer.customer.pk,
             radius_uname='50d4.f794.d535-ae0:1011-139',
-            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562'
+            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562',
+            cvid=111,
+            svid=5
         )
         self.assertTrue(is_created)
 
-        is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
+        is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
             ip='10.152.16.33',
             mac='18:c0:4d:51:de:e4',
             customer_id=self.full_customer.customer.pk,
             radius_uname='50d4.f794.d535-ae0:1011-149',
-            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd563'
+            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd563',
+            cvid=111,
+            svid=5
         )
         self.assertTrue(is_created)
 
