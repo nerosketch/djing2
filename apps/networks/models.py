@@ -428,22 +428,27 @@ class CustomerIpLeaseModel(models.Model):
             speed_out_burst=speed_out_burst,
         )
 
+    @property
     def h_input_octets(self):
         """Human readable input octets."""
         return _human_readable_int(num=self.input_octets)
 
+    @property
     def h_output_octets(self):
         """Human readable output octets."""
         return _human_readable_int(num=self.output_octets)
 
+    @property
     def h_input_packets(self):
         """Human readable input packets."""
         return _human_readable_int(num=self.input_packets, u="p")
 
+    @property
     def h_output_packets(self):
         """Human readable output packets."""
         return _human_readable_int(num=self.output_packets, u="p")
 
+    @property
     def finish_session(self) -> Optional[str]:
         """Send radius disconnect packet to BRAS."""
         if not self.radius_username:

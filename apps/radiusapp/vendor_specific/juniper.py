@@ -40,7 +40,7 @@ class JuniperVendorSpecific(IVendorSpecific):
             # User-Password - it is a crutch, for config in freeradius
             "User-Password": service_option,
         }
-        if subscriber_lease:
+        if subscriber_lease and not subscriber_lease.is_dynamic:
             res.update({
                 "Framed-IP-Address": subscriber_lease.ip_address,
             })
