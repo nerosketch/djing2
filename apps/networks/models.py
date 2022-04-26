@@ -454,7 +454,6 @@ class CustomerIpLeaseModel(models.Model):
         db_table = "networks_ip_leases"
         verbose_name = _("IP lease")
         verbose_name_plural = _("IP leases")
-        unique_together = ("ip_address", "mac_address", "pool", "customer")
 
 
 class CustomerIpLeaseLog(models.Model):

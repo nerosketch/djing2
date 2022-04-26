@@ -1,5 +1,6 @@
 from typing import Optional
 from dataclasses import dataclass
+from uuid import UUID
 from django.contrib.sites.models import Site
 from django.db.models import signals
 from django.test import SimpleTestCase, TestCase, override_settings
@@ -228,20 +229,25 @@ class CustomerAcctStartTestCase(APITestCase):
 
         # self.client.logout()
 
-    def _send_request_acct(self, cid: str, arid: str, vlan_id: int = 0, ip="10.152.164.2", mac="18c0.4d51.dee2"):
+    def _send_request_acct(self, cid: str, arid: str,
+            vlan_id: int = 0, ip="10.152.164.2", mac="18c0.4d51.dee2",
+            session_id: Optional[UUID] = None
+            ):
         """Help method 4 send request to acct endpoint.
            Важно: vlan_id (NAS-Port-Id) сейчас не влияет на логику radius accounting в билинге.
         """
+        if session_id is None:
+            session_id = UUID('2ea5a1843334573bd11dc15417426f36')
         return self.post(
             "/api/radius/customer/acct/juniper/", {
-                "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
+                "User-Name": {"value": [f"{mac}-ae0:{vlan_id}-{cid}-{arid}"]},
                 "Acct-Status-Type": {"value": ["Start"]},
                 "Framed-IP-Address": {"value": [ip]},
                 "NAS-Port-Id": {"value": [vlan_id]},
                 "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
                 "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
                 "ERX-Dhcp-Mac-Addr": {"value": [mac]},
-                "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]},
+                "Acct-Unique-Session-Id": {"value": [str(session_id)]},
             },
         )
 
@@ -266,22 +272,16 @@ class CustomerAcctStartTestCase(APITestCase):
         self.assertGreater(len(r.data), 0)
         return r.data
 
-    def _get_rad_session_by_lease(self, lease_id: int):
-        r = self.get(
-            f"/api/radius/session/get_by_lease/{lease_id}/",
-        )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
-        self.assertIsNotNone(r.data, msg=r.content)
-        return r.data
-
     def _create_acct_session(self, vid=12, cid="0004008B0002", arid="0006121314151617",
-                             ip="10.152.64.6", mac="1c:c0:4d:95:d0:30"):
+                             ip="10.152.64.6", mac="1c:c0:4d:95:d0:30",
+                             session_id='12345678123456781234567812345678'):
         r = self._send_request_acct(
             vlan_id=vid,
             cid=cid,
             arid=arid,
             ip=ip,
             mac=mac,
+            session_id=session_id
         )
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
         self.assertIsNone(r.data)
@@ -308,39 +308,37 @@ class CustomerAcctStartTestCase(APITestCase):
         self.assertEqual(lease['mac_address'], '1c:c0:4d:95:d0:30')
         self.assertEqual(lease['customer'], self.full_customer.customer.pk)
         self.assertEqual(lease['pool'], self.pool.pk)
-
-        rad_ses = self._get_rad_session_by_lease(lease['id'])
-        self.assertEqual(rad_ses['customer'], self.full_customer.customer.pk)
-        self.assertEqual(rad_ses['radius_username'], "18c0.4d51.dee2-ae0:12-0004008B0002-0006121314151617")
-        self.assertEqual(rad_ses['session_id'], "2ea5a184-3334-573b-d11d-c15417426f36")
+        self.assertEqual(lease['customer'], self.full_customer.customer.pk)
+        self.assertEqual(lease['radius_username'], "1c:c0:4d:95:d0:30-ae0:12-0004008B0002-0006121314151617")
+        self.assertEqual(lease['session_id'], "12345678-1234-5678-1234-567812345678")
 
     def test_get_fixed_ip_without_mac(self):
         ip = '10.152.64.16'
         # Создаём статический lease с ip и без мака
         self._create_static_lease(ip=ip)
 
-        # делаем запрос от радиуса
-        self._create_acct_session(
-            ip=ip
-        )
+        leases = self._get_ip_leases()
+        self.assertEqual(len(leases), 1, msg=leases)
+        lease = leases[0]
+        self.assertFalse(lease['is_dynamic'])
+        self.assertIsNone(lease['mac_address'])
+
+        # делаем запрос от радиуса на создание сессии acct start
+        self._create_acct_session(ip=ip)
 
         # Пробуем получить этот ip по оборудованию, которое назначено на учётку абонента
         leases = self._get_ip_leases()
         # На выходе должны получить эту lease
         self.assertEqual(len(leases), 1, msg=leases)
         lease = leases[0]
-        self.assertEqual(lease['ip_address'], ip)
-        self.assertIsNone(lease['mac_address'])
-        self.assertEqual(lease['pool'], self.pool.pk)
-        self.assertEqual(lease['customer'], self.full_customer.customer.pk)
-
-        # Проверяем CustomerRadiusSession, должен был создаться для этой lease
-        rad_ses = self._get_rad_session_by_lease(lease['id'])
-        self.assertIsNotNone(rad_ses['radius_username'])
-        self.assertIsNotNone(rad_ses['session_id'])
-        self.assertEqual(rad_ses['ip_lease'], lease['id'])
-        self.assertEqual(rad_ses['ip_lease_ip'], lease['ip_address'])
-        self.assertEqual(rad_ses['customer'], self.full_customer.customer.pk)
+        self.assertEqual(lease['ip_address'], ip, msg=lease)
+        self.assertEqual(lease['mac_address'], '1c:c0:4d:95:d0:30', msg=lease)
+        self.assertEqual(lease['pool'], self.pool.pk, msg=lease)
+        self.assertEqual(lease['customer'], self.full_customer.customer.pk, msg=lease)
+        self.assertFalse(lease['is_dynamic'], msg=lease)
+        self.assertIsNotNone(lease['radius_username'], msg=lease)
+        self.assertIsNotNone(lease['session_id'], msg=lease)
+        self.assertEqual(lease['customer'], self.full_customer.customer.pk, msg=lease)
 
     # Проверить что происходит когда запрашиваем ip у другого абонента, не у того, кому он выдан.
 
@@ -414,12 +412,14 @@ class CustomerAcctStartTestCase(APITestCase):
         self.test_normal_new_session()
 
         # Создаём вторую сессию
+        v13uuid = UUID('12345678123456781234567812345679')
         self._create_acct_session(
             vid=13,
             cid='0004008B0002',
             arid='0006121314151617',
             ip='10.152.65.17',
             mac='1c:c0:4d:95:d0:31',
+            session_id=v13uuid
         )
 
         leases = self._get_ip_leases()
@@ -435,6 +435,7 @@ class CustomerAcctStartTestCase(APITestCase):
         self.assertEqual(leasev13['mac_address'], '1c:c0:4d:95:d0:31')
         self.assertEqual(leasev13['customer'], self.full_customer.customer.pk)
         self.assertEqual(leasev13['pool'], self.poolv13.pk)
+        self.assertEqual(leasev13['session_id'], str(v13uuid))
 
     #def test_guest_session_while_unknown_opt82_credentials(self):
     #    """Если по opt82 мы нашли учётку, ..."""
@@ -450,6 +451,7 @@ class CustomerAcctStartTestCase(APITestCase):
             arid='0006121314151618',
             ip='10.152.65.17',
             mac='1c:c0:4d:95:d0:31',
+            session_id=UUID('12345678123456781234567812345678')
         )
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
         self.assertIsNone(r.data)
@@ -475,6 +477,7 @@ class CustomerAcctStartTestCase(APITestCase):
             arid='0006131314151717',
             ip='10.152.65.17',
             mac='1c:c0:4d:95:d0:36',
+            session_id=UUID('22345678123456781234567812345679')
         )
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(r.data)
@@ -738,7 +741,7 @@ class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
         self.assertEqual(lease.cvid, 111)
         self.assertTrue(lease.state)
         self.assertEqual(lease.lease_time, lease.last_update)
-        self.assertEqual(lease.session_id, '02e65fad-07c3-20d8-9149-a66eadebd562')
+        self.assertEqual(lease.session_id, UUID('02e65fad-07c3-20d8-9149-a66eadebd562'))
         self.assertEqual(lease.radius_username, '50d4.f794.d535-ae0:1011-139')
 
     def test_check_for_exist_session(self):
@@ -790,9 +793,7 @@ class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
         )
         self.assertTrue(is_created)
 
-        sessions_qs = CustomerRadiusSession.objects.all()
         leases_qs = CustomerIpLeaseModel.objects.all()
-        self.assertEqual(sessions_qs.count(), 2)
         self.assertEqual(leases_qs.count(), 2)
 
     #def test_one_session_constraint(self):
@@ -810,13 +811,7 @@ class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
     #    )
     #    self.assertTrue(is_created)
 
-    #    sessions_qs = CustomerRadiusSession.objects.all()
     #    leases_qs = CustomerIpLeaseModel.objects.all()
-
-    #    for ses in sessions_qs:
-    #        print('Ses1', model_to_dict(ses))
-    #    for lease in leases_qs:
-    #        print('Lease1', model_to_dict(lease))
 
     #    is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
     #        ip='10.152.16.37',
@@ -827,11 +822,8 @@ class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
     #    )
     #    #  self.assertTrue(is_created)
 
-    #    sessions_qs = CustomerRadiusSession.objects.all()
     #    leases_qs = CustomerIpLeaseModel.objects.all()
 
-    #    for ses in sessions_qs:
-    #        print('Ses2', model_to_dict(ses))
     #    for lease in leases_qs:
     #        print('Lease2', model_to_dict(lease))
 

@@ -244,6 +244,14 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if opt82 is None:
             return _bad_ret('Bad opt82')
 
+        customer_mac = vendor_manager.get_customer_mac(dat)
+        if not customer_mac:
+            return _bad_ret("Customer mac is required")
+
+        radius_unique_id = vendor_manager.get_radius_unique_id(dat)
+        if not radius_unique_id:
+            return _bad_ret('Bad unique id from radius request')
+
         agent_remote_id, agent_circuit_id = opt82
         if all([agent_remote_id, agent_circuit_id]):
             dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
@@ -258,22 +266,31 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             )
             if not customer:
                 return _bad_ret(
-                    'Customer with provided device credentials not found: %s _ %s' % (str(dev_mac), str(dev_port)),
+                    'Customer with provided device credentials not found: %s %s' % (dev_mac, dev_port),
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
         else:
+            lease = CustomerIpLeaseModel.objects.filter(
+                mac_address=customer_mac,
+                is_dynamic=False
+            ).exclude(
+                customer=None
+            ).select_related('customer').first()
+            if lease is None:
+                return _bad_ret(
+                    'Lease with mac="%s" not found' % customer_mac,
+                    custom_status=status.HTTP_404_NOT_FOUND
+                )
+            customer = lease.customer
+            if not customer:
+                return _bad_ret(
+                    'Customer with provided mac address: %s Not found' % customer_mac,
+                    custom_status=status.HTTP_404_NOT_FOUND
+                )
             return _bad_ret(
                 "Request has not opt82 info: %s" % (opt82),
                 custom_status=status.HTTP_200_OK
             )
-
-        radius_unique_id = vendor_manager.get_radius_unique_id(dat)
-        if not radius_unique_id:
-            return _bad_ret('Bad unique id from radius request')
-
-        customer_mac = vendor_manager.get_customer_mac(dat)
-        if not customer_mac:
-            return _bad_ret("Customer mac is required")
 
         CustomerIpLeaseModel.create_lease_w_auto_pool(
             ip=str(ip),

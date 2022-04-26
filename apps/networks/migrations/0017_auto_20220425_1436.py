@@ -62,6 +62,10 @@ class Migration(migrations.Migration):
             name='svid',
             field=models.PositiveSmallIntegerField(default=0, verbose_name='Service Vlan id'),
         ),
+        migrations.AlterUniqueTogether(
+            name='customeripleasemodel',
+            unique_together=set(),
+        ),
         migrations.RunSQL(sql=copy_from_old_sessions_sql),
         migrations.RunSQL(sql=read_all_file("0017_auto_20220425_1436.sql", __file__)),
     ]
