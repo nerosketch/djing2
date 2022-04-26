@@ -17,8 +17,12 @@ BEGIN
       -- UPDATE networks_ip_leases SET last_update = now(), mac_address = v_mac WHERE ip_address = v_ip RETURNING id
       UPDATE networks_ip_leases
       SET
-          last_update = now(),
+          ip_address = v_ip,
+          mac_address = v_mac,
           customer_id = v_customer_id,
+          last_update = now(),
+          cvid = v_cvid,
+          svid = v_svid,
           radius_username = v_radius_username,
           state = true
       WHERE
@@ -49,7 +53,9 @@ BEGIN
       v_radius_username
     )
       ON CONFLICT (ip_address) DO UPDATE SET
-        last_update=now(), ip_address=v_ip, mac_address=v_mac,
+        last_update=now(), mac_address=v_mac,
+        customer_id=v_customer_id,
+        cvid=v_cvid, svid=v_svid, state=true,
         session_id=v_rad_uniq_id, radius_username=v_radius_username;
 
     RETURN true;
