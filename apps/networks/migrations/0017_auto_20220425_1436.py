@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('networks', '0016_auto_20220117_1027'),
-        ('radiusapp', '0004_delete_customerradiusses'),
+        ('radiusapp', '0003_auto_20220106_1622'),
     ]
 
     operations = [

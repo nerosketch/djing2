@@ -7,6 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('radiusapp', '0003_auto_20220106_1622'),
+        ('networks', '0017_auto_20220425_1436'),
     ]
 
     operations = [

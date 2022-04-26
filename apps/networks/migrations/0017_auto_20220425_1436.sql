@@ -42,7 +42,7 @@ BEGIN
         SELECT id FROM networks_ip_pool WHERE v_ip <<= network LIMIT 1
       ), v_customer_id, true,
       0,0,0,0,
-      v_cvid, v_svid, true
+      v_cvid, v_svid, true,
       now(), now(),
       v_rad_uniq_id,
       v_radius_username
