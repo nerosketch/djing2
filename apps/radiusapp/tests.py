@@ -510,7 +510,8 @@ class CustomerAcctStartTestCase(APITestCase):
         )
         self.assertEqual(r.status_code, 200)
         d = r.data
-        self.assertEqual(d['Framed-IP-Address'], '10.152.65.17')
+        self.assertIsNone(d.get('Framed-IP-Address'), msg=d)
+        self.assertIsNotNone(d.get('User-Password'))
 
         # Пробуем получить ip с первой учётки, с маком абонента от второй
         r = self._send_request_auth(
