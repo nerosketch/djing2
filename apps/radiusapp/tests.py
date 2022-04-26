@@ -402,7 +402,8 @@ class CustomerAcctStartTestCase(APITestCase):
         )
         self.assertEqual(r.status_code, 200)
         d = r.data
-        self.assertEqual(d['Framed-IP-Address'], '10.152.64.6')
+        self.assertIsNone(d.get('Framed-IP-Address'), msg=d)
+        self.assertIsNotNone(d.get('User-Password'))
 
     def test_creating_new_dynamic_session_with_different_client_mac(self):
         """Проверяем чтобы на учётку создавались новые сессии и ip когда
@@ -498,7 +499,8 @@ class CustomerAcctStartTestCase(APITestCase):
         )
         self.assertEqual(r.status_code, 200)
         d = r.data
-        self.assertEqual(d['Framed-IP-Address'], '10.152.64.6')
+        self.assertIsNone(d.get('Framed-IP-Address'), msg=d)
+        self.assertIsNotNone(d.get('User-Password'))
 
         # Пробуем получить второй ip
         r = self._send_request_auth(
