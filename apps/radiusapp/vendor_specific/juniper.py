@@ -23,10 +23,8 @@ class JuniperVendorSpecific(IVendorSpecific):
         return param
 
     def get_auth_session_response(self, customer_service, customer, request_data, subscriber_lease=None):
-        status_code = status.HTTP_200_OK
         if not customer_service or not customer_service.service:
             service_option = "SERVICE-GUEST"
-            status_code = status.HTTP_200_OK
         else:
             service = customer_service.service
 
@@ -44,4 +42,4 @@ class JuniperVendorSpecific(IVendorSpecific):
             res.update({
                 "Framed-IP-Address": subscriber_lease.ip_address,
             })
-        return res, status_code
+        return res, status.HTTP_200_OK
