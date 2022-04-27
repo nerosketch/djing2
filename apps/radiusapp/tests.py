@@ -21,6 +21,24 @@ from networks.models import (
 )
 
 
+class ReqMixin:
+    def get(self, *args, **kwargs):
+        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
+
+    def post(self, *args, **kwargs):
+        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+
+    def _get_ip_leases(self, customer_id: Optional[int] = None) -> list:
+        if customer_id is None:
+            customer_id = self.full_customer.customer.pk
+        r = self.get(
+            f"/api/networks/lease/?customer={customer_id}",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertGreater(len(r.data), 0)
+        return r.data
+
+
 @dataclass
 class CreateFullCustomerReturnType:
     group: Group
@@ -97,6 +115,36 @@ def create_full_customer(uname: str,
     )
 
 
+def radius_api_request_auth(mac: str, vlan_id: Optional[int] = None, cid: Optional[str] = None,
+                            arid: Optional[str] = None, session_id=None):
+    if session_id is None:
+        session_id = "2ea5a1843334573bd11dc15417426f36"
+    d = {
+        "ERX-Dhcp-Mac-Addr": {"value": [mac]},
+        "Acct-Unique-Session-Id": {"value": [session_id]},
+    }
+    if cid:
+        d.update({
+            "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
+        })
+    if arid:
+        d.update({
+            "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
+        })
+    if vlan_id:
+        d.update({
+            "NAS-Port-Id": {"value": ['ae0:1011-%d' % vlan_id]},
+        })
+    if all([cid, arid, vlan_id, mac]):
+        d.update({
+            "User-Name": {"value": [f"{mac}-ae0:{vlan_id}-{cid}-{arid}"]},
+        })
+    else:
+        d.update({
+            "User-Name": {"value": [mac]},
+        })
+    return d
+
 
 class VendorsBuildDevMacByOpt82TestCase(SimpleTestCase):
     def _make_request(self, remote_id: str, circuit_id: str):
@@ -149,12 +197,7 @@ class VendorsBuildDevMacByOpt82TestCase(SimpleTestCase):
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
-class CustomerAcctStartTestCase(APITestCase):
-    def get(self, *args, **kwargs):
-        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
-
-    def post(self, *args, **kwargs):
-        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+class CustomerAcctStartTestCase(APITestCase, ReqMixin):
 
     def setUp(self):
         """Set up data for this tests."""
@@ -261,16 +304,6 @@ class CustomerAcctStartTestCase(APITestCase):
                 mac=mac
             )
         )
-
-    def _get_ip_leases(self, customer_id: Optional[int] = None) -> list:
-        if customer_id is None:
-            customer_id = self.full_customer.customer.pk
-        r = self.get(
-            f"/api/networks/lease/?customer={customer_id}",
-        )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
-        self.assertGreater(len(r.data), 0)
-        return r.data
 
     def _create_acct_session(self, vid=12, cid="0004008B0002", arid="0006121314151617",
                              ip="10.152.64.6", mac="1c:c0:4d:95:d0:30",
@@ -546,33 +579,12 @@ class CustomerAcctStartTestCase(APITestCase):
 
 
 
-def radius_api_request_auth(vlan_id: int, cid: str, arid: str, mac: str):
-    return {
-        "User-Name": {"value": [f"18c0.4d51.dee2-ae0:{vlan_id}-{cid}-{arid}"]},
-        "NAS-Port-Id": {"value": [vlan_id]},
-        "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
-        "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
-        "ERX-Dhcp-Mac-Addr": {"value": [mac]},
-        "Acct-Unique-Session-Id": {"value": ["2ea5a1843334573bd11dc15417426f36"]},
-    }
-
-
-class ReqMixin:
-    def get(self, *args, **kwargs):
-        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
-
-    def post(self, *args, **kwargs):
-        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
-
-
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
 class CustomerAuthTestCase(APITestCase, ReqMixin):
     """Main test case class."""
 
     def setUp(self):
         """Set up data for this tests."""
-        #  super().setUp()
-        # default_vlan = VlanIf.objects.filter(vid=1).first()
         self.admin = UserProfile.objects.create_superuser(
             username="admin", password="admin", telephone="+797812345678"
         )
@@ -594,36 +606,56 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
         self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
         #  self.client.logout()
 
-    def _send_request(self, vlan_id: int, cid: str, arid: str, mac="18c0.4d51.dee2"):
-        """Help method 4 send request to endpoint."""
-        return self.post(
-            "/api/radius/customer/auth/juniper/",
-            radius_api_request_auth(vlan_id, cid, arid, mac)
-        )
-
     def test_guest_radius_session(self):
         """Just send simple request to not existed customer."""
-        r = self._send_request(vlan_id=14, cid="0004008b000c", arid="0006286ED47B1CA4")
+        r = self.post(
+            "/api/radius/customer/auth/juniper/",
+            radius_api_request_auth(
+                vlan_id=14,
+                cid="0004008b000c",
+                arid="0006286ED47B1CA4",
+                mac="18c0.4d51.dee2",
+            )
+        )
         self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND, msg=r.content)
 
     def test_auth_radius_session(self):
         """Just send simple request to en existed customer."""
-        r = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617")
+        r = self.post(
+            "/api/radius/customer/auth/juniper/",
+            radius_api_request_auth(
+                vlan_id=12,
+                cid="0004008B0002",
+                arid="0006121314151617",
+                mac="18c0.4d51.dee2",
+            )
+        )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         self.assertEqual(r.data["User-Password"], self.service_inet_str, msg=r.content)
 
     def test_two_identical_fetch(self):
         """Repeat identical requests for same customer.
            Request must be deterministic."""
-        r1 = self._send_request(
-            vlan_id=12, cid="0004008B0002",
-            arid="0006121314151617", mac="18c0.4d51.dee3"
+        r1 = self.post(
+            "/api/radius/customer/auth/juniper/",
+            radius_api_request_auth(
+                vlan_id=12,
+                cid="0004008B0002",
+                arid="0006121314151617",
+                mac="18c0.4d51.dee3",
+            )
         )
         self.assertEqual(r1.status_code, status.HTTP_200_OK)
         # self.assertEqual(r1.data["Framed-IP-Address"], "10.152.64.2")
         self.assertEqual(r1.data["User-Password"], self.service_inet_str)
-        r2 = self._send_request(
-            vlan_id=12, cid="0004008B0002", arid="0006121314151617", mac="18c0.4d51.dee4"
+        r2 = self.post(
+            "/api/radius/customer/auth/juniper/",
+            radius_api_request_auth(
+                vlan_id=12,
+                cid="0004008B0002",
+                arid="0006121314151617",
+                mac="18c0.4d51.dee4",
+            )
         )
         self.assertEqual(r2.status_code, status.HTTP_200_OK)
         # self.assertEqual(r2.data["Framed-IP-Address"], "10.152.64.3")
@@ -638,7 +670,15 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
         customer = self.full_customer.customer
         self.test_auth_radius_session()
         customer.stop_service(self.admin)
-        r = self._send_request(vlan_id=12, cid="0004008B0002", arid="0006121314151617")
+        r = self.post(
+            "/api/radius/customer/auth/juniper/",
+            radius_api_request_auth(
+                vlan_id=12,
+                cid="0004008B0002",
+                arid="0006121314151617",
+                mac="18c0.4d51.dee4",
+            )
+        )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         self.assertDictEqual(r.data, {"User-Password": "SERVICE-GUEST"})
 
@@ -799,34 +839,79 @@ class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
         leases_qs = CustomerIpLeaseModel.objects.all()
         self.assertEqual(leases_qs.count(), 2)
 
-    #def test_one_session_constraint(self):
-    #    """Пробуем создать 2 сессии на одну аренду ip.
-    #       Там есть constraint о том что аренда может содеражть только одну сессию.
-    #    """
-    #    from django.forms.models import model_to_dict
-    #    from time import sleep
-    #    is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
-    #        ip='10.152.16.37',
-    #        mac='18:c0:4d:51:de:e3',
-    #        customer_id=self.full_customer.customer.pk,
-    #        radius_uname='50d4.f794.d535-ae0:1011-139',
-    #        radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562'
-    #    )
-    #    self.assertTrue(is_created)
 
-    #    leases_qs = CustomerIpLeaseModel.objects.all()
+class CustomerStaticMacAuthTestCase(APITestCase, ReqMixin):
+    def setUp(self):
+        self.admin = UserProfile.objects.create_superuser(
+            username="admin", password="admin", telephone="+797812345678"
+        )
+        self.client.login(username="admin", password="admin")
+        self.full_customer = create_full_customer(
+            uname='custo1',
+            tel='+797811234567',
+            initial_balance=11,
+            dev_ip="192.168.2.3",
+            dev_mac="12:13:14:15:16:17",
+            dev_type=Dlink_dgs1100_10me_code,
+            service_title='test',
+            service_descr='test',
+            service_speed_in=11.0,
+            service_speed_out=11.0,
+            service_cost=10.0,
+            service_calc_type=SERVICE_CHOICE_DEFAULT
+        )
+        self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
 
-    #    is_created = CustomerRadiusSession.create_lease_w_auto_pool_n_session(
-    #        ip='10.152.16.37',
-    #        mac='18:c0:4d:51:de:e3',
-    #        customer_id=self.full_customer.customer.pk,
-    #        radius_uname='50d4.f794.d535-ae0:1011-149',
-    #        radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd563'
-    #    )
-    #    #  self.assertTrue(is_created)
+        vlan13 = VlanIf.objects.create(title="Vlan13 for customer tests", vid=13)
+        poolv13 = NetworkIpPool.objects.create(
+            network="10.152.65.0/24",
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
+            description="Test inet pool13",
+            ip_start="10.152.65.2",
+            ip_end="10.152.65.254",
+            vlan_if=vlan13,
+            gateway="10.152.65.1",
+            is_dynamic=False,
+        )
+        group = self.full_customer.group
+        poolv13.groups.add(group)
+        self.poolv13 = poolv13
 
-    #    leases_qs = CustomerIpLeaseModel.objects.all()
+        # Очистим информацию по оборудованию
+        self.full_customer.customer.device = None
+        self.full_customer.customer.dev_port = None
+        self.full_customer.customer.save()
+        self.full_customer.customer.refresh_from_db()
 
-    #    for lease in leases_qs:
-    #        print('Lease2', model_to_dict(lease))
+    def test_static_auth_by_mac(self):
+        """Проверяем что можем получить ip с учётки без оборудования(без opt82).
+           Когда установлен статический ip с маком"""
 
+        # Создадим статичный ip на учётке в vlan 13, 10.152.65.16
+        self.post(
+            "/api/networks/lease/", {
+                "customer": self.full_customer.customer.pk,
+                "ip_address": '10.152.65.24',
+                "mac_address": "18:c0:4d:95:d0:30",
+                "pool": self.poolv13.pk
+            }
+        )
+
+        leases = self._get_ip_leases()
+        self.assertEqual(len(leases), 1, msg=leases)
+
+        # Пробуем получить статический ip vlan13, с авторизацией по маку
+        r = self.post(
+            "/api/radius/customer/auth/juniper/",
+            radius_api_request_auth(
+                vlan_id=13,
+                cid=None,
+                arid=None,
+                mac='18:c0:4d:95:d0:30'
+            )
+        )
+        self.assertEqual(r.status_code, 200, msg=r.content)
+        d = r.data
+        self.assertEqual(d['Framed-IP-Address'], '10.152.65.24', msg=d)
+        self.assertIsNotNone(d.get('User-Password'), msg=d)
+        self.assertEqual(d.get('User-Password'), self.service_inet_str, msg=d)

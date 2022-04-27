@@ -87,6 +87,29 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         serializer = self.get_serializer()
         return Response(serializer.data)
 
+    #@staticmethod
+    #def get_customer_and_service_and_lease_by_device_credentials(device_mac: EUI, device_port: int = 0):
+    #    sql = (
+    #        "SELECT ba.id, ba.last_login, ba.is_superuser, ba.username, "
+    #        "ba.fio, ba.birth_day, ba.is_active, ba.is_admin, "
+    #        "ba.telephone, ba.create_date, ba.last_update_time, "
+    #        "cs.balance, cs.is_dynamic_ip, cs.auto_renewal_service, "
+    #        "cs.current_service_id, cs.dev_port_id, cs.device_id, "
+    #        "cs.gateway_id, cs.group_id, cs.last_connected_service_id, cs.address_id "
+    #        "FROM customers cs "
+    #        "LEFT JOIN device dv ON (dv.id = cs.device_id) "
+    #        "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
+    #        "LEFT JOIN device_dev_type_is_use_dev_port ddtiudptiu ON (ddtiudptiu.dev_type = dv.dev_type) "
+    #        "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+    #        "LEFT JOIN customer_service custsrv ON custsrv = cs.current_service_id "
+    #        "LEFT JOIN services srv ON srv.id = custsrv.service_id "
+    #        "LEFT JOIN networks_ip_leases nip ON nip.customer_id = cs.baseaccount_ptr_id "
+    #        "WHERE dv.mac_addr = %s::MACADDR "
+    #        "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = %s::SMALLINT) "
+    #        "LIMIT 1;"
+    #    )
+    #    return Customer.objects.raw(sql, [device_mac, device_port, ])[0]
+
     @action(methods=["post"], detail=False, url_path=r"auth/(?P<vendor_name>\w{1,32})")
     def auth(self, request, vendor_name=None):
         # Just find customer by credentials from request
@@ -102,31 +125,40 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if not customer_mac:
             return _bad_ret("Customer mac is required")
 
-        if not all([agent_remote_id, agent_circuit_id]):
-            return _bad_ret('Request has no opt82 info')
-
-        dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
-            agent_remote_id=agent_remote_id,
-            agent_circuit_id=agent_circuit_id
-        )
-        if not dev_mac:
-            return _bad_ret("Failed to parse option82")
-
-        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
-            device_mac=dev_mac,
-            device_port=dev_port
-        )
-        if customer is None:
-            return _bad_ret(
-                'Customer not found',
-                custom_status=status.HTTP_404_NOT_FOUND
+        if all([agent_remote_id, agent_circuit_id]):
+            dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+                agent_remote_id=agent_remote_id,
+                agent_circuit_id=agent_circuit_id
             )
+            if not dev_mac:
+                return _bad_ret("Failed to parse option82")
 
-        # Ищем по сущ арендам
-        subscriber_lease = CustomerIpLeaseModel.objects.filter(
-            Q(mac_address=customer_mac, is_dynamic=True) | Q(is_dynamic=False),
-            customer=customer,
-        ).first()
+            customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                device_mac=dev_mac,
+                device_port=dev_port
+            )
+            if customer is None:
+                return _bad_ret(
+                    'Customer not found',
+                    custom_status=status.HTTP_404_NOT_FOUND
+                )
+            # Ищем по сущ арендам
+            subscriber_lease = CustomerIpLeaseModel.objects.filter(
+                Q(mac_address=customer_mac, is_dynamic=True) | Q(is_dynamic=False),
+                customer=customer,
+            ).first()
+        else:
+            # auth by mac. Find static lease.
+            subscriber_lease = CustomerIpLeaseModel.objects.filter(
+                mac_address=customer_mac, is_dynamic=False,
+            ).exclude(customer=None).select_related(
+                'customer', 'customer__current_service',
+                'customer__current_service__service'
+            ).first()
+            if subscriber_lease is None:
+                return _bad_ret('Lease for mac "%s" not found' % customer_mac)
+            customer = subscriber_lease.customer
+            #  return _bad_ret('Request has no opt82 info')
 
         # Return auth response
         try:
