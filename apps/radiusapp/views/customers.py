@@ -369,16 +369,43 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         customer_mac = vendor_manager.get_customer_mac(dat)
         if not customer_mac:
             return _bad_ret("Customer mac is required")
-        event_time = datetime.now()
-        leases = CustomerIpLeaseModel.objects.filter(
-            session_id=radius_unique_id
+        radius_username = vendor_manager.get_radius_username(dat)
+        leases = CustomerIpLeaseModel.objects.exclude(
+            Q(session_id=None) | Q(radius_username=None)
+        ).filter(
+            Q(session_id=radius_unique_id) | Q(radius_username=radius_username)
         )
-        self._update_counters(
-            leases=leases,
-            data=dat,
-            last_event_time=event_time,
-            customer_mac=customer_mac
-        )
+        if leases.exists():
+            event_time = datetime.now()
+            self._update_counters(
+                leases=leases,
+                data=dat,
+                last_event_time=event_time,
+                customer_mac=customer_mac
+            )
+        else:
+            # Optimize
+            opt82 = vendor_manager.get_opt82(data=request.data)
+            if not opt82:
+                return _bad_ret("Failed fetch opt82 info")
+            agent_remote_id, agent_circuit_id = opt82
+            dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+                agent_remote_id=agent_remote_id,
+                agent_circuit_id=agent_circuit_id
+            )
+            customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                device_mac=dev_mac,
+                device_port=dev_port
+            )
+            ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
+            is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
+                ip=str(ip),
+                mac=str(customer_mac),
+                customer_id=customer.pk,
+                radius_uname=radius_username,
+                radius_unique_id=str(radius_unique_id)
+            )
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @staticmethod
