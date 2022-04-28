@@ -398,6 +398,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     device_mac=dev_mac,
                     device_port=dev_port
                 )
+                if not customer:
+                    return _bad_ret('Customer not found in update: dev_mac=%s, dev_port=%s' % (str(dev_mac), str(dev_port)))
                 ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
                 is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
                     ip=str(ip),
