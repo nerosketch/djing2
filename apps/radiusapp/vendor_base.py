@@ -43,6 +43,10 @@ class IVendorSpecific(abc.ABC):
     def get_vlan_id(self, data):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def get_service_vlan_id(self, data):
+        raise NotImplementedError
+
     def get_radius_username(self, data) -> Optional[str]:
         v = self.get_rad_val(data, "User-Name")
         return str(v) if v else None

@@ -22,6 +22,12 @@ class JuniperVendorSpecific(IVendorSpecific):
             return int(param.split(":")[1].split("-")[1])
         return param
 
+    def get_service_vlan_id(self, data):
+        param = self.get_rad_val(data, "NAS-Port-Id")
+        if isinstance(param, str) and ":" in param:
+            return int(param.split(":")[1].split("-")[0])
+        return param
+
     def get_auth_session_response(self, customer_service, customer, request_data, subscriber_lease=None):
         if not customer_service or not customer_service.service:
             service_option = "SERVICE-GUEST"

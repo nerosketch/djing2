@@ -320,12 +320,16 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
 
+        vlan_id = vendor_manager.get_vlan_id(dat)
+        service_vlan_id = vendor_manager.get_service_vlan_id(dat)
         CustomerIpLeaseModel.create_lease_w_auto_pool(
             ip=str(ip),
             mac=str(customer_mac),
             customer_id=customer.pk,
             radius_uname=radius_username,
-            radius_unique_id=str(radius_unique_id)
+            radius_unique_id=str(radius_unique_id),
+            svid=safe_int(service_vlan_id),
+            cvid=safe_int(vlan_id)
         )
 
         custom_signals.radius_acct_start_signal.send(
@@ -401,12 +405,16 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 if not customer:
                     return _bad_ret('Customer not found in update: dev_mac=%s, dev_port=%s' % (str(dev_mac), str(dev_port)))
                 ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
-                is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
+                vlan_id = vendor_manager.get_vlan_id(dat)
+                service_vlan_id = vendor_manager.get_service_vlan_id(dat)
+                CustomerIpLeaseModel.create_lease_w_auto_pool(
                     ip=str(ip),
                     mac=str(customer_mac),
                     customer_id=customer.pk,
                     radius_uname=radius_username,
-                    radius_unique_id=str(radius_unique_id)
+                    radius_unique_id=str(radius_unique_id),
+                    svid=safe_int(service_vlan_id),
+                    cvid=safe_int(vlan_id)
                 )
             else:
                 logger.error('not all opt82 %s' % str(opt82))
