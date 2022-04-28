@@ -385,26 +385,30 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             )
         else:
             # Optimize
-            opt82 = vendor_manager.get_opt82(data=request.data)
+            opt82 = vendor_manager.get_opt82(data=dat)
             if not opt82:
                 return _bad_ret("Failed fetch opt82 info")
             agent_remote_id, agent_circuit_id = opt82
-            dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
-                agent_remote_id=agent_remote_id,
-                agent_circuit_id=agent_circuit_id
-            )
-            customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
-                device_mac=dev_mac,
-                device_port=dev_port
-            )
-            ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
-            is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
-                ip=str(ip),
-                mac=str(customer_mac),
-                customer_id=customer.pk,
-                radius_uname=radius_username,
-                radius_unique_id=str(radius_unique_id)
-            )
+            if all([agent_remote_id, agent_circuit_id]):
+                dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+                    agent_remote_id=agent_remote_id,
+                    agent_circuit_id=agent_circuit_id
+                )
+                customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                    device_mac=dev_mac,
+                    device_port=dev_port
+                )
+                ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
+                is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
+                    ip=str(ip),
+                    mac=str(customer_mac),
+                    customer_id=customer.pk,
+                    radius_uname=radius_username,
+                    radius_unique_id=str(radius_unique_id)
+                )
+            else:
+                logger.error('not all opt82 %s' % str(opt82))
+
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
