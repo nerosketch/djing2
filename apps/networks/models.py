@@ -16,7 +16,7 @@ from djing2.lib.logger import logger
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from customers.models import Customer
-from radiusapp.radius_commands import (
+from networks.radius_commands import (
     finish_session,
     change_session_inet2guest,
     change_session_guest2inet

@@ -1,7 +1,7 @@
 """Radius application signals file."""
 from django.dispatch.dispatcher import receiver
 
-from radiusapp import tasks
+from networks import tasks
 from customers import custom_signals as customer_custom_signals
 from customers.models import CustomerService
 

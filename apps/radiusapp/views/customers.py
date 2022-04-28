@@ -403,7 +403,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     device_port=dev_port
                 )
                 if not customer:
-                    return _bad_ret('Customer not found in update: dev_mac=%s, dev_port=%s' % (str(dev_mac), str(dev_port)))
+                    return _bad_ret(
+                        'Customer not found in update: dev_mac=%s, dev_port=%s' % (str(dev_mac), str(dev_port)),
+                        custom_status=status.HTTP_404_NOT_FOUND
+                    )
                 ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
                 vlan_id = vendor_manager.get_vlan_id(dat)
                 service_vlan_id = vendor_manager.get_service_vlan_id(dat)

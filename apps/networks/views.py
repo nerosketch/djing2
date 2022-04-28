@@ -17,6 +17,7 @@ from djing2.lib.logger import logger
 from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
 from networks import serializers
+from networks import radius_commands
 from customers.serializers import CustomerModelSerializer
 
 
@@ -118,6 +119,16 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
         except ValueError as err:
             return Response({"text": str(err), "status": False})
         return Response({"text": text, "status": is_pinged})
+
+    @action(detail=True, methods=['get'])
+    def free_session(self, request, pk=None):
+        lease = self.get_object()
+        if not lease.radius_username:
+            return Response('Lease has not contain username', status=status.HTTP_403_FORBIDDEN)
+        r = radius_commands.finish_session(radius_uname=str(lease.radius_username))
+        if r is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(str(r))
 
 
 class DhcpLever(SecureApiViewMixin, APIView):
