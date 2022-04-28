@@ -20,6 +20,9 @@ class MikrotikVendorSpecific(IVendorSpecific):
     def get_vlan_id(self, data):
         return 0
 
+    def get_service_vlan_id(self, data):
+        return 0
+
     def get_auth_session_response(self, customer_service, customer, request_data, subscriber_lease=None):
         # TODO: Make it
         return {
