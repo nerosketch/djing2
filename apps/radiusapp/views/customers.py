@@ -319,10 +319,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     'Customer with provided mac address: %s Not found' % customer_mac,
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
-            return _bad_ret(
-                "Request has not opt82 info: %s" % (opt82),
-                custom_status=status.HTTP_200_OK
-            )
 
         CustomerIpLeaseModel.create_lease_w_auto_pool(
             ip=str(ip),
