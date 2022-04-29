@@ -5,12 +5,13 @@ LABEL maintainer="nerosketch@gmail.com"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONOPTIMIZE=1
 ENV PYTHONPATH="/var/www/djing2/apps:/var/www/djing2:/usr/local/lib/python3.9/site-packages:/usr/local/lib/python3.9/lib-dynload:/usr/local/lib/python3.9"
+ENV DJING2_LOG_FILE=/var/log/djing2/main.log
 
 RUN ["apt-get", "update"]
 RUN ["apt-get", "install", "-y", "python3-psycopg2", "libsnmp-dev", "arping", "gcc", "gettext", "telnet", "--no-install-recommends"]
-RUN mkdir -p /var/www/djing2/media \
+RUN mkdir -p /var/www/djing2/media /var/log/djing2 \
     && touch /var/www/djing2/touch_reload \
-    && chown -R www-data. /var/www/djing2
+    && chown -R www-data. /var/www/djing2 /var/log/djing2
 
 COPY --chown=www-data:www-data ["requirements.txt", "/var/www/djing2"]
 RUN ["pip", "install", "--no-cache-dir", "-r", "/var/www/djing2/requirements.txt"]

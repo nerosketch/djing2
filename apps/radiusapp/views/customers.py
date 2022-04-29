@@ -20,14 +20,6 @@ from radiusapp.vendors import VendorManager
 from radiusapp import custom_signals
 
 
-import logging
-fh = logging.FileHandler('/tmp/djing2_s.log')
-fh.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-logger.addHandler(fh)
-
-
 def _gigaword_imp(num: int, gwords: int) -> int:
     num = safe_int(num)
     gwords = safe_int(gwords)
