@@ -2,6 +2,7 @@ Django==3.1.14
 django-stubs==1.10.1
 djangorestframework==3.12.4
 Pillow>=8.2.0
+uWSGI
 
 # permissions
 #django-guardian
