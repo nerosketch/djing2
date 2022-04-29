@@ -203,6 +203,9 @@ msgstr "не пингуется"
 msgid "Process locked by another process"
 msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
 
+msgid "Radius session not found error"
+msgstr "Сессия не найдена"
+
 #~ msgid "Client mac address"
 #~ msgstr "MAC адрес клиента"
 

@@ -2,6 +2,9 @@ import os
 from typing import Optional
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import APIException
+from rest_framework import status
 from pyrad.client import Client, Timeout
 from pyrad import packet
 from pyrad import dictionary
@@ -24,12 +27,14 @@ def _abspath(fname):
     return os.path.join(curdir, fname)
 
 
-class RadiusBaseException(Exception):
+class RadiusBaseException(APIException):
     pass
 
 
 class RadiusSessionNotFoundException(RadiusBaseException):
-    pass
+    status_code = status.HTTP_404_NOT_FOUND
+    default_detail = _('Radius session not found error')
+    default_code = 'error'
 
 
 class RadiusTimeoutException(RadiusBaseException):
