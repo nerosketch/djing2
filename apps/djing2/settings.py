@@ -406,7 +406,7 @@ CONTRACTS_OPTIONS = {
     'DEFAULT_TITLE': os.getenv('CONTRACT_DEFAULT_TITLE', 'Contract default title')
 }
 
-STATSD_HOST = os.getenv("GRAPHITE_HOST", default='graphite_statsd')
+STATSD_HOST = os.getenv("GRAPHITE_HOST", default='djing2_graphite_stats')
 STATSD_PORT = os.getenv("GRAPHITE_PORT", default=8125)
 STATSD_MODEL_SIGNALS = True
 
