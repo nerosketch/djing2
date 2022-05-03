@@ -273,8 +273,8 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         # self.client.logout()
 
     def _send_request_acct_start(self, cid: str, arid: str,
-            vlan_id: int = 0, ip="10.152.164.2", mac="18c0.4d51.dee2",
-            session_id: Optional[UUID] = None
+            vlan_id: int = 0, service_vlan_id=0, ip="10.152.164.2",
+            mac="18c0.4d51.dee2", session_id: Optional[UUID] = None
             ):
         """Help method 4 send request to acct endpoint.
            Важно: vlan_id (NAS-Port-Id) сейчас не влияет на логику radius accounting в билинге.
@@ -287,6 +287,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
                 "Acct-Status-Type": {"value": ["Start"]},
                 "Framed-IP-Address": {"value": [ip]},
                 "NAS-Port-Id": {"value": [vlan_id]},
+                "NAS-Port-Id": {"value": [f"ae0:{service_vlan_id}-{vlan_id}"]},
                 "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
                 "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
                 "ERX-Dhcp-Mac-Addr": {"value": [mac]},
@@ -339,7 +340,6 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         lease = leases[0]
         self.assertEqual(lease['ip_address'], '10.152.64.6')
         self.assertEqual(lease['mac_address'], '1c:c0:4d:95:d0:30')
-        self.assertEqual(lease['customer'], self.full_customer.customer.pk)
         self.assertEqual(lease['pool'], self.pool.pk)
         self.assertEqual(lease['customer'], self.full_customer.customer.pk)
         self.assertEqual(lease['radius_username'], "1c:c0:4d:95:d0:30-ae0:12-0004008B0002-0006121314151617")
@@ -371,7 +371,6 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         self.assertFalse(lease['is_dynamic'], msg=lease)
         self.assertIsNotNone(lease['radius_username'], msg=lease)
         self.assertIsNotNone(lease['session_id'], msg=lease)
-        self.assertEqual(lease['customer'], self.full_customer.customer.pk, msg=lease)
 
     # Проверить что происходит когда запрашиваем ip у другого абонента, не у того, кому он выдан.
 
@@ -576,6 +575,184 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
     #       она должна быть в модуле который занимается выдачей ip.
     #    """
     #    pass
+
+
+@override_settings(API_AUTH_SUBNET="127.0.0.0/8")
+class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
+
+    def setUp(self):
+        signals.post_save.disconnect()
+        signals.post_delete.disconnect()
+        signals.pre_save.disconnect()
+        signals.pre_delete.disconnect()
+
+        self.admin = UserProfile.objects.create_superuser(
+            username="admin", password="admin", telephone="+797812345678"
+        )
+        self.client.login(username="admin", password="admin")
+
+        self.full_customer = create_full_customer(
+            uname='custo1',
+            tel='+797811234567',
+            initial_balance=11,
+            dev_ip="192.168.2.3",
+            dev_mac="12:13:14:15:16:17",
+            dev_type=Dlink_dgs1100_10me_code,
+            service_title='test',
+            service_descr='test',
+            service_speed_in=11.0,
+            service_speed_out=11.0,
+            service_cost=10.0,
+            service_calc_type=SERVICE_CHOICE_DEFAULT
+        )
+        vlan12 = VlanIf.objects.create(title="Vlan12 for customer tests", vid=12)
+        pool = NetworkIpPool.objects.create(
+            network="10.152.64.0/24",
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
+            description="Test inet pool",
+            ip_start="10.152.64.2",
+            ip_end="10.152.64.254",
+            vlan_if=vlan12,
+            gateway="10.152.64.1",
+            is_dynamic=True,
+        )
+        group = self.full_customer.group
+        pool.groups.add(group)
+        self.pool = pool
+
+    def _send_request_acct_update(self, cid: str, arid: str,
+            vlan_id: int = 0, service_vlan_id=0, ip="10.152.64.2", mac="18c0.4d51.dee2",
+            session_id: Optional[UUID] = None,
+            session_time_secs=0,
+            in_octets=0, out_octets=0,
+            in_pkts=0, out_pkts=0,
+            service_session_name=None
+            ):
+        """Help method 4 send request to acct update endpoint.
+           Важно: vlan_id (NAS-Port-Id) сейчас не влияет на логику radius accounting в билинге.
+        """
+        if session_id is None:
+            session_id = UUID('2ea5a1843334573bd11dc15417426f36')
+        return self.post(
+            "/api/radius/customer/acct/juniper/", {
+                "User-Name": {"value": [f"{mac}-ae0:{service_vlan_id}-{vlan_id}-{cid}-{arid}"]},
+                "Acct-Status-Type": {"value": ["Interim-Update"]},
+                "Acct-Input-Octets": {"value": [in_octets]},
+                "Acct-Output-Octets": {"value": [out_octets]},
+                "Acct-Session-Time": {"value": [session_time_secs]},
+                "Acct-Input-Packets": {"value": [in_pkts]},
+                "Acct-Output-Packets": {"value": [out_pkts]},
+                "ERX-Dhcp-Mac-Addr": {"value": [mac]},
+                "Framed-IP-Address": {"value": [ip]},
+                "NAS-Port-Id": {"value": [f"ae0:{service_vlan_id}-{vlan_id}"]},
+                "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
+                "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
+                "Acct-Unique-Session-Id": {"value": [str(session_id)]},
+                "ERX-Service-Session": {"value": [service_session_name or '']}
+            },
+        )
+
+    def test_acct_update_counters(self):
+        """Проверяем чтоб существующая сессия обновляла данные счётчиков,
+           которые приходят с BRAS'а"""
+        # Create ip lease
+        CustomerIpLeaseModel.objects.create(
+            ip_address='10.152.64.18',
+            mac_address='18c0.4d51.dee2',
+            pool=self.pool,
+            customer=self.full_customer.customer,
+            is_dynamic=True,
+            cvid=12,
+            svid=1112,
+            state=True,
+            session_id=UUID('12345678-1234-5678-1234-567812345678'),
+            radius_username='18c0.4d51.dee2-ae0:12-0004008B0002-0006121314151617'
+        )
+
+        r = self._send_request_acct_update(
+            cid='0004008B0002',
+            arid='0006121314151617',
+            vlan_id=12,
+            session_id=UUID('12345678-1234-5678-1234-567812345678'),
+            session_time_secs=17711972,
+            in_octets=1374368169,
+            out_octets=3403852035,
+            in_pkts=1154026959,
+            out_pkts=2349616998
+        )
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
+        self.assertIsNone(r.data, msg=r.content)
+
+        leases4customer = self._get_ip_leases()
+        self.assertEqual(len(leases4customer), 1, msg=leases4customer)
+        lease = leases4customer[0]
+        self.assertEqual(lease['ip_address'], '10.152.64.18')
+        self.assertEqual(lease['mac_address'], '18:c0:4d:51:de:e2')
+        self.assertEqual(lease['customer'], self.full_customer.customer.pk)
+        self.assertEqual(lease['pool'], self.pool.pk)
+        self.assertEqual(lease['radius_username'], "18c0.4d51.dee2-ae0:12-0004008B0002-0006121314151617")
+        self.assertEqual(lease['session_id'], "12345678-1234-5678-1234-567812345678")
+        self.assertEqual(lease['input_octets'], 1374368169)
+        self.assertEqual(lease['output_octets'], 3403852035)
+        self.assertEqual(lease['input_packets'], 1154026959)
+        self.assertEqual(lease['output_packets'], 2349616998)
+        self.assertEqual(lease['h_input_octets'], '1.37 Gb')
+        self.assertEqual(lease['h_output_octets'], '3.4 Gb')
+        self.assertEqual(lease['h_input_packets'], '1.15 Gp')
+        self.assertEqual(lease['h_output_packets'], '2.35 Gp')
+        self.assertEqual(lease['cvid'], 12)
+        self.assertEqual(lease['svid'], 1112)
+        self.assertTrue(lease['state'])
+        self.assertTrue(lease['is_dynamic'])
+        self.assertIsNotNone(lease['lease_time'])
+        self.assertIsNotNone(lease['last_update'])
+        self.assertEqual(lease['lease_time'], lease['last_update'])
+
+    def test_acct_update_create_not_existed_lease(self):
+        """Проверяем чтоб сессия создалась на учётке абонента, если
+           они прилитела с BRAS'а, перед Acct-Start, и её нет на учётке.
+           Создаётся новая аренда с нулевыми счётчиками.
+           (Может сделать чтоб создавалась сразу с имеющимися занчениями?)
+        """
+        r = self._send_request_acct_update(
+            cid='0004008B0002',
+            arid='0006121314151617',
+            vlan_id=12,
+            service_vlan_id=11421,
+            session_id=UUID('12345678-1234-5678-1234-567812345678'),
+            session_time_secs=17711972,
+            in_octets=1374368169,
+            out_octets=3403852035,
+            in_pkts=1154026959,
+            out_pkts=2349616998
+        )
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
+        self.assertIsNone(r.data, msg=r.content)
+
+        leases4customer = self._get_ip_leases()
+        self.assertEqual(len(leases4customer), 1, msg=leases4customer)
+        lease = leases4customer[0]
+        self.assertEqual(lease['ip_address'], '10.152.64.2')
+        self.assertEqual(lease['mac_address'], '18:c0:4d:51:de:e2')
+        self.assertEqual(lease['customer'], self.full_customer.customer.pk)
+        self.assertEqual(lease['pool'], self.pool.pk)
+        self.assertEqual(lease['radius_username'], "18c0.4d51.dee2-ae0:11421-12-0004008B0002-0006121314151617")
+        self.assertEqual(lease['session_id'], "12345678-1234-5678-1234-567812345678")
+        self.assertEqual(lease['input_octets'], 0)
+        self.assertEqual(lease['output_octets'], 0)
+        self.assertEqual(lease['input_packets'], 0)
+        self.assertEqual(lease['output_packets'], 0)
+        self.assertEqual(lease['h_input_octets'], '0')
+        self.assertEqual(lease['h_output_octets'], '0')
+        self.assertEqual(lease['h_input_packets'], '0')
+        self.assertEqual(lease['h_output_packets'], '0')
+        self.assertEqual(lease['cvid'], 12)
+        self.assertEqual(lease['svid'], 11421)
+        self.assertTrue(lease['state'])
+        self.assertTrue(lease['is_dynamic'])
+        self.assertIsNotNone(lease['lease_time'])
+        self.assertIsNotNone(lease['last_update'])
+        self.assertEqual(lease['lease_time'], lease['last_update'])
 
 
 
