@@ -1,5 +1,5 @@
 from netaddr import EUI
-from radiusapp.vendor_base import IVendorSpecific
+from radiusapp.vendor_base import IVendorSpecific, SpeedInfoStruct
 from rest_framework import status
 
 
@@ -28,16 +28,23 @@ class JuniperVendorSpecific(IVendorSpecific):
             return int(param.split(":")[1].split("-")[0])
         return param
 
+    def get_speed(self, service) -> SpeedInfoStruct:
+        speed_in_burst, speed_out_burst = service.calc_burst()
+        return SpeedInfoStruct(
+            speed_in=int(service.speed_in * 1000000),
+            speed_out=int(service.speed_out * 1000000),
+            burst_in=speed_in_burst,
+            burst_out=speed_out_burst
+        )
+
     def get_auth_session_response(self, customer_service, customer, request_data, subscriber_lease=None):
         if not customer_service or not customer_service.service:
             service_option = "SERVICE-GUEST"
         else:
             service = customer_service.service
 
-            speed_in = int(service.speed_in * 1000000)
-            speed_out = int(service.speed_out * 1000000)
-            speed_in_burst, speed_out_burst = service.calc_burst()
-            service_option = f"SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})"
+            speed = self.get_speed(service=service)
+            service_option = f"SERVICE-INET({speed.speed_in},{speed.burst_in},{speed.speed_out},{speed.burst_out})"
 
         res = {
             # 'Framed-IP-Netmask': '255.255.0.0',

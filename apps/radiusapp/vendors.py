@@ -5,7 +5,7 @@ from djing2.lib import macbin2str, safe_int, LogicError
 from networks.models import FetchSubscriberLeaseResponse
 
 from radiusapp.vendor_specific import vendor_classes
-from radiusapp.vendor_base import IVendorSpecific
+from radiusapp.vendor_base import IVendorSpecific, SpeedInfoStruct
 
 
 def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[EUI], int]:
@@ -72,6 +72,11 @@ class VendorManager:
     def get_radius_unique_id(self, data):
         if self.vendor_class:
             return self.vendor_class.get_radius_unique_id(data)
+
+    def get_speed(self, service) -> SpeedInfoStruct:
+        if not self.vendor_class:
+            raise RuntimeError('Vendor class not specified')
+        return self.vendor_class.get_speed(service=service)
 
     def get_auth_session_response(
         self,

@@ -1,6 +1,7 @@
 import abc
 import enum
 from typing import Optional, Tuple
+from dataclasses import dataclass
 from netaddr import EUI
 
 from djing2.lib import LogicError
@@ -12,6 +13,13 @@ class AcctStatusType(enum.IntEnum):
     START = 1
     STOP = 2
     UPDATE = 3
+
+@dataclass
+class SpeedInfoStruct:
+    speed_in: int
+    speed_out: int
+    burst_in: int
+    burst_out: int
 
 
 class IVendorSpecific(abc.ABC):
@@ -53,6 +61,10 @@ class IVendorSpecific(abc.ABC):
 
     def get_radius_unique_id(self, data):
         return self.get_rad_val(data, "Acct-Unique-Session-Id")
+
+    @abc.abstractmethod
+    def get_speed(self, service) -> SpeedInfoStruct:
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_auth_session_response(
