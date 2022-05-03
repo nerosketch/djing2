@@ -213,7 +213,7 @@ LOGGING = {
             'formatter': 'verbose'
         },
         'file': {
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'class': 'logging.FileHandler',
             'filename': os.getenv('DJING2_LOG_FILE', '/tmp/djing2.log'),
             'formatter': 'simple'
