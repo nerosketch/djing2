@@ -390,6 +390,9 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     agent_remote_id=agent_remote_id,
                     agent_circuit_id=agent_circuit_id
                 )
+                if not dev_mac:
+                    return _bad_ret('opt82 has no device mac: (%s, %s)' % str(agent_remote_id), str(agent_circuit_id))
+
                 customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
                     device_mac=dev_mac,
                     device_port=dev_port
