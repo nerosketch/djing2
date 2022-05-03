@@ -55,20 +55,18 @@ def async_change_session_inet2guest(radius_uname: str):
         logger.warning(ret_text)
 
 
-#
-# Call like this:
-# async_change_session_guest2inet(
-#     radius_uname: str,
-#     speed_in: int,
-#     speed_out: int,
-#     speed_in_burst: int,
-#     speed_out_burst: int
-# )
-#
 @task(executor=TaskExecutor.MULE)
 @_radius_task_wrapper
-def async_change_session_guest2inet(*args, **kwargs):
-    ret_text = rc.change_session_guest2inet(*args, **kwargs)
+def async_change_session_guest2inet(radius_uname: str, speed_in: int,
+                                    speed_out: int, speed_in_burst: int,
+                                    speed_out_burst: int):
+    ret_text = rc.change_session_guest2inet(
+        radius_uname=radius_uname,
+        speed_in=speed_in,
+        speed_out=speed_out,
+        speed_in_burst=speed_in_burst,
+        speed_out_burst=speed_out_burst
+    )
     if ret_text is not None:
         logger.warning(ret_text)
 
