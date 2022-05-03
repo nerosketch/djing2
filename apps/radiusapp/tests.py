@@ -272,7 +272,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
 
         # self.client.logout()
 
-    def _send_request_acct(self, cid: str, arid: str,
+    def _send_request_acct_start(self, cid: str, arid: str,
             vlan_id: int = 0, ip="10.152.164.2", mac="18c0.4d51.dee2",
             session_id: Optional[UUID] = None
             ):
@@ -308,7 +308,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
     def _create_acct_session(self, vid=12, cid="0004008B0002", arid="0006121314151617",
                              ip="10.152.64.6", mac="1c:c0:4d:95:d0:30",
                              session_id='12345678123456781234567812345678'):
-        r = self._send_request_acct(
+        r = self._send_request_acct_start(
             vlan_id=vid,
             cid=cid,
             arid=arid,
@@ -479,7 +479,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         """Если по opt82 не находим учётку, то создаём гостевую
            сессию без учётки.
         """
-        r = self._send_request_acct(
+        r = self._send_request_acct_start(
             # Not existing credentials
             cid='0004008B0003',
             arid='0006121314151618',
@@ -506,7 +506,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         self.test_normal_new_session()
 
         # Делаем ip для второй учётки
-        r = self._send_request_acct(
+        r = self._send_request_acct_start(
             cid='0004008B0002',
             arid='0006131314151717',
             ip='10.152.65.17',
