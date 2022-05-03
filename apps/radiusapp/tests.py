@@ -6,6 +6,7 @@ from django.db.models import signals
 from django.test import SimpleTestCase, TestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
+from djing2.lib.logger import logger
 from customers.models import Customer
 from devices.models import Device, Port
 from devices.device_config.switch.dlink.dgs_1100_10me import DEVICE_UNIQUE_CODE as Dlink_dgs1100_10me_code
@@ -754,6 +755,65 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
         self.assertIsNotNone(lease['last_update'])
         self.assertEqual(lease['lease_time'], lease['last_update'])
 
+    def test_sync_customer_session_guest2inet(self):
+        """Проверяем синхронизацию абонентских сессий при Acct Interim-Update.
+           Сценарий: у абонента есть услуга, и на брасе нету.
+        """
+        with self.assertLogs(logger, level='INFO') as log_capt:
+            r = self._send_request_acct_update(
+                cid='0004008B0002',
+                arid='0006121314151617',
+                vlan_id=12,
+                service_vlan_id=11421,
+                session_id=UUID('12345678-1234-5678-1234-567812345678'),
+                session_time_secs=17711972,
+                in_octets=1374368169,
+                out_octets=3403852035,
+                in_pkts=1154026959,
+                out_pkts=2349616998,
+                service_session_name="SERVICE-GUEST"
+            )
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
+        self.assertIsNone(r.data, msg=r.content)
+        self.assertGreater(len(log_capt.records), 0)
+        self.assertIn(
+            'INFO:djing2_logger:COA: guest->inet uname=18c0.4d51.dee2-ae0:11421-12-0004008B0002-0006121314151617',
+            log_capt.output,
+            msg=log_capt.output
+        )
+
+    def test_sync_customer_session_inet2guest(self):
+        """Проверяем синхронизацию абонентских сессий при Acct Interim-Update.
+           Сценарий: у абонента нет услуги, и на брасе есть.
+        """
+        # remove customer service
+        customer = self.full_customer.customer
+        customer.current_service = None
+        customer.save()
+        customer.refresh_from_db()
+
+        with self.assertLogs(logger, level='INFO') as log_capt:
+            r = self._send_request_acct_update(
+                cid='0004008B0002',
+                arid='0006121314151617',
+                vlan_id=12,
+                service_vlan_id=11421,
+                session_id=UUID('12345678-1234-5678-1234-567812345678'),
+                session_time_secs=17711972,
+                in_octets=1374368169,
+                out_octets=3403852035,
+                in_pkts=1154026959,
+                out_pkts=2349616998,
+                service_session_name="SERVICE-INET(100000000,18750000,101000000,18937500)"
+            )
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
+        self.assertIsNone(r.data, msg=r.content)
+        self.assertGreater(len(log_capt.records), 0)
+        self.assertIn(
+            'INFO:djing2_logger:COA: inet->guest uname=18c0.4d51.dee2-ae0:11421-12-0004008B0002-0006121314151617',
+            log_capt.output,
+            msg=log_capt.output
+        )
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
