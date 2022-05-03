@@ -455,15 +455,18 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         # Check for service synchronizaion
         bras_service_name = vendor_manager.get_rad_val(dat, "ERX-Service-Session", str)
         if isinstance(bras_service_name, str):
+            customer_is_access = customer.is_access()
             if 'SERVICE-INET' in bras_service_name:
                 # bras contain inet session
-                if not customer.is_access():
+                if not customer_is_access:
+                    logger.info("COA: inet->guest uname=%s" % radius_username)
                     async_change_session_inet2guest(
                         radius_uname=radius_username
                     )
             elif 'SERVICE-GUEST' in bras_service_name:
                 # bras contain guest session
-                if customer.is_access():
+                if customer_is_access:
+                    logger.info("COA: guest->inet uname=%s" % radius_username)
                     customer_service = customer.active_service()
                     service = customer_service.service
                     speed = vendor_manager.get_speed(service=service)
