@@ -7,23 +7,23 @@ class JuniperVendorSpecific(IVendorSpecific):
     vendor = "juniper"
 
     def parse_option82(self, data):
-        aget_remote_id = self.get_rad_val(data, "ADSL-Agent-Remote-Id")
-        aget_circ_id = self.get_rad_val(data, "ADSL-Agent-Circuit-Id")
+        aget_remote_id = self.get_rad_val(data, "ADSL-Agent-Remote-Id" ,str)
+        aget_circ_id = self.get_rad_val(data, "ADSL-Agent-Circuit-Id", str)
         return aget_remote_id, aget_circ_id
 
     def get_customer_mac(self, data):
-        str_mac = self.get_rad_val(data, "ERX-Dhcp-Mac-Addr")
+        str_mac = self.get_rad_val(data, "ERX-Dhcp-Mac-Addr", str)
         if str_mac:
             return EUI(str_mac)
 
     def get_vlan_id(self, data):
-        param = self.get_rad_val(data, "NAS-Port-Id")
+        param = self.get_rad_val(data, "NAS-Port-Id", str)
         if isinstance(param, str) and ":" in param:
             return int(param.split(":")[1].split("-")[1])
         return param
 
     def get_service_vlan_id(self, data):
-        param = self.get_rad_val(data, "NAS-Port-Id")
+        param = self.get_rad_val(data, "NAS-Port-Id", str)
         if isinstance(param, str) and ":" in param:
             return int(param.split(":")[1].split("-")[0])
         return param

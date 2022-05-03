@@ -220,17 +220,17 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                         last_event_time=None, **update_kwargs):
         if last_event_time is None:
             last_event_time = datetime.now()
-        vcls = self.vendor_manager.vendor_class
+        vendor_manager = self.vendor_manager
         v_inp_oct = _gigaword_imp(
-            num=vcls.get_rad_val(data, "Acct-Input-Octets", 0),
-            gwords=vcls.get_rad_val(data, "Acct-Input-Gigawords", 0),
+            num=vendor_manager.get_rad_val(data, "Acct-Input-Octets", int, 0),
+            gwords=vendor_manager.get_rad_val(data, "Acct-Input-Gigawords", int, 0),
         )
         v_out_oct = _gigaword_imp(
-            num=vcls.get_rad_val(data, "Acct-Output-Octets", 0),
-            gwords=vcls.get_rad_val(data, "Acct-Output-Gigawords", 0),
+            num=vendor_manager.get_rad_val(data, "Acct-Output-Octets", int, 0),
+            gwords=vendor_manager.get_rad_val(data, "Acct-Output-Gigawords", int, 0),
         )
-        v_in_pkt = vcls.get_rad_val(data, "Acct-Input-Packets", 0)
-        v_out_pkt = vcls.get_rad_val(data, "Acct-Output-Packets", 0)
+        v_in_pkt = vendor_manager.get_rad_val(data, "Acct-Input-Packets", int, 0)
+        v_out_pkt = vendor_manager.get_rad_val(data, "Acct-Output-Packets", int, 0)
         leases.update(
             last_update=last_event_time,
             input_octets=v_inp_oct,
@@ -241,7 +241,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         )
         vendor_manager = self.vendor_manager
         radius_unique_id = vendor_manager.get_radius_unique_id(data)
-        ip = vcls.get_rad_val(data, "Framed-IP-Address")
+        ip = vendor_manager.get_rad_val(data, "Framed-IP-Address", str)
         custom_signals.radius_auth_update_signal.send(
             sender=CustomerIpLeaseModel,
             instance=None,
@@ -269,7 +269,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if not dat:
             return _bad_ret("Empty request")
 
-        ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
+        ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address", str)
         if not ip:
             return _bad_ret(
                 "Request has no ip information (Framed-IP-Address)",
@@ -361,8 +361,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
     def _acct_stop(self, request):
         dat = request.data
         vendor_manager = self.vendor_manager
-        vcls = vendor_manager.vendor_class
-        ip = vcls.get_rad_val(dat, "Framed-IP-Address")
+        ip = vendor_manager.get_rad_val(dat, "Framed-IP-Address", str)
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
         customer_mac = vendor_manager.get_customer_mac(dat)
         leases = CustomerIpLeaseModel.objects.filter(session_id=radius_unique_id)
@@ -430,6 +429,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         )
         customer = self._find_customer(data=dat)
         if leases.exists():
+            # just update counters
             event_time = datetime.now()
             self._update_counters(
                 leases=leases,
@@ -438,7 +438,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 customer_mac=customer_mac
             )
         else:
-            ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
+            # create lease on customer profile if it not exists
+            ip = vendor_manager.get_rad_val(dat, "Framed-IP-Address", str)
             vlan_id = vendor_manager.get_vlan_id(dat)
             service_vlan_id = vendor_manager.get_service_vlan_id(dat)
             CustomerIpLeaseModel.create_lease_w_auto_pool(
@@ -452,7 +453,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             )
 
         # Check for service synchronizaion
-        bras_service_name = vendor_manager.vendor_class.get_rad_val(dat, "ERX-Service-Session")
+        bras_service_name = vendor_manager.get_rad_val(dat, "ERX-Service-Session", str)
         if isinstance(bras_service_name, str):
             if 'SERVICE-INET' in bras_service_name:
                 # bras contain inet session

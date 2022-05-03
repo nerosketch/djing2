@@ -8,12 +8,12 @@ class MikrotikVendorSpecific(IVendorSpecific):
     vendor = "mikrotik"
 
     def parse_option82(self, data):
-        aget_remote_id = self.get_rad_val(data, "Agent-Remote-Id")
-        aget_circ_id = self.get_rad_val(data, "Agent-Circuit-Id")
+        aget_remote_id = self.get_rad_val(data, "Agent-Remote-Id", str)
+        aget_circ_id = self.get_rad_val(data, "Agent-Circuit-Id", str)
         return aget_remote_id, aget_circ_id
 
     def get_customer_mac(self, data):
-        str_mac = self.get_rad_val(data, "User-Name")
+        str_mac = self.get_rad_val(data, "User-Name", str)
         if str_mac:
             return EUI(str_mac, dialect=mac_unix_common)
 
