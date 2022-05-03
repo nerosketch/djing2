@@ -3,8 +3,9 @@ import enum
 from typing import Optional, Tuple
 from netaddr import EUI
 
+from djing2.lib import LogicError
 from customers.models import CustomerService, Customer
-from radiusapp.models import FetchSubscriberLeaseResponse
+from networks.models import FetchSubscriberLeaseResponse
 
 
 class AcctStatusType(enum.IntEnum):
@@ -27,7 +28,7 @@ class IVendorSpecific(abc.ABC):
                 return k
             k = k.get("value")
             if k:
-                return k[0]
+                return str(k[0])
         return default
 
     @abc.abstractmethod
@@ -42,8 +43,13 @@ class IVendorSpecific(abc.ABC):
     def get_vlan_id(self, data):
         raise NotImplementedError
 
-    def get_radius_username(self, data):
-        return self.get_rad_val(data, "User-Name")
+    @abc.abstractmethod
+    def get_service_vlan_id(self, data):
+        raise NotImplementedError
+
+    def get_radius_username(self, data) -> Optional[str]:
+        v = self.get_rad_val(data, "User-Name")
+        return str(v) if v else None
 
     def get_radius_unique_id(self, data):
         return self.get_rad_val(data, "Acct-Unique-Session-Id")
@@ -61,12 +67,19 @@ class IVendorSpecific(abc.ABC):
     def get_acct_status_type(self, request) -> AcctStatusType:
         dat = request.data
         act_type = self.get_rad_val(dat, "Acct-Status-Type")
-        if isinstance(act_type, int):
-            r_map = {1: AcctStatusType.START, 2: AcctStatusType.STOP, 3: AcctStatusType.UPDATE}
-        else:
+        if isinstance(act_type, int) or (isinstance(act_type, str) and act_type.isdigit()):
+            act_type = int(act_type)
+            r_map = {
+                1: AcctStatusType.START,
+                2: AcctStatusType.STOP,
+                3: AcctStatusType.UPDATE
+            }
+        elif isinstance(act_type, str):
             r_map = {
                 "Start": AcctStatusType.START,
                 "Stop": AcctStatusType.STOP,
                 "Interim-Update": AcctStatusType.UPDATE,
             }
+        else:
+            raise LogicError('Unknown act_type: "%s" - %s' % (act_type, type(act_type)))
         return r_map.get(act_type)

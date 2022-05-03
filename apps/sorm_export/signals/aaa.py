@@ -5,10 +5,10 @@ from django.core.mail import send_mail
 from netaddr import EUI
 from netfields.mac import mac_unix_common
 from radiusapp import custom_signals
+from networks.models import CustomerIpLeaseModel
 from django.conf import settings
 from django.dispatch.dispatcher import receiver
 from djing2.lib import time2utctime
-from radiusapp.models import CustomerRadiusSession
 from radiusapp.vendors import IVendorSpecific
 from rest_framework.exceptions import ValidationError
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
@@ -36,10 +36,10 @@ def _save_aaa_log(event_time: datetime, **serializer_keys):
             )
 
 
-@receiver(custom_signals.radius_acct_start_signal, sender=CustomerRadiusSession)
+@receiver(custom_signals.radius_acct_start_signal, sender=CustomerIpLeaseModel)
 def signal_radius_session_acc_start(
     sender,
-    instance: CustomerRadiusSession,
+    instance: CustomerIpLeaseModel,
     data: dict,
     ip_addr: str,
     customer,
@@ -63,9 +63,9 @@ def signal_radius_session_acc_start(
     )
 
 
-@receiver(custom_signals.radius_acct_stop_signal, sender=CustomerRadiusSession)
+@receiver(custom_signals.radius_acct_stop_signal, sender=CustomerIpLeaseModel)
 def signal_radius_session_acct_stop(
-        sender: Type[CustomerRadiusSession],
+        sender: Type[CustomerIpLeaseModel],
         instance_queryset, data: dict, ip_addr: str,
         radius_unique_id: str, customer_mac: EUI, *args, **kwargs):
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
@@ -93,10 +93,10 @@ def signal_radius_session_acct_stop(
     )
 
 
-@receiver(custom_signals.radius_auth_update_signal, sender=CustomerRadiusSession)
+@receiver(custom_signals.radius_auth_update_signal, sender=CustomerIpLeaseModel)
 def signal_radius_acct_update(
-        sender: Type[CustomerRadiusSession],
-        instance: Optional[CustomerRadiusSession],
+        sender: Type[CustomerIpLeaseModel],
+        instance: Optional[CustomerIpLeaseModel],
         instance_queryset,
         data: dict,
         input_octets: int,
@@ -130,3 +130,4 @@ def signal_radius_acct_update(
         input_octets=input_octets,
         output_octets=output_octets,
     )
+
