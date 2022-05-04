@@ -3,22 +3,9 @@ from functools import wraps
 from uwsgi_tasks import task, cron, TaskExecutor
 
 from djing2.lib.logger import logger
+from djing2.lib.uwsgi_lock import uwsgi
 from networks import radius_commands as rc
 from networks.models import CustomerIpLeaseModel
-
-
-def log(*args):
-    with open('/tmp/mule.log', 'a') as f:
-        f.write("%s\n" % '-'.join(str(i) for i in args))
-
-
-try:
-    import uwsgi
-except ImportError:
-    _stub_fn = lambda *_: ...
-    class uwsgi:
-        lock = _stub_fn
-        unlock = _stub_fn
 
 
 @cron(minute=-30)
@@ -31,7 +18,6 @@ def _radius_task_wrapper(fn):
     def _wrapped(*args, **kwargs):
         try:
             uwsgi.lock()
-            log('UWSGI LOCK')
             return fn(*args, **kwargs)
         except rc.RadiusSessionNotFoundException as err:
             logger.error('Radius session not found: %s' % str(err))
@@ -43,7 +29,6 @@ def _radius_task_wrapper(fn):
         except rc.RadiusMissingAttributeException as err:
             logger.error('Radius missing attribute: %s' % str(err))
         finally:
-            log('UWSGI UNLOCK')
             uwsgi.unlock()
     return _wrapped
 
@@ -53,7 +38,7 @@ def _radius_task_wrapper(fn):
 def async_finish_session_task(radius_uname: str):
     ret_text = rc.finish_session(radius_uname=radius_uname)
     if ret_text is not None:
-        logger.warning(ret_text)
+        logger.warning("async_finish_session_task: %s" % ret_text)
 
 
 @task(executor=TaskExecutor.MULE)
@@ -67,23 +52,21 @@ def async_change_session_inet2guest(radius_uname: str):
     """
     ret_text = rc.change_session_inet2guest(radius_uname)
     if ret_text is not None:
-        logger.warning(ret_text)
+        logger.warning('inet2guest: %s' % ret_text)
 
 
-#
-# Call like this:
-# async_change_session_guest2inet(
-#     radius_uname: str,
-#     speed_in: int,
-#     speed_out: int,
-#     speed_in_burst: int,
-#     speed_out_burst: int
-# )
-#
 @task(executor=TaskExecutor.MULE)
 @_radius_task_wrapper
-def async_change_session_guest2inet(*args, **kwargs):
-    ret_text = rc.change_session_guest2inet(*args, **kwargs)
+def async_change_session_guest2inet(radius_uname: str, speed_in: int,
+                                    speed_out: int, speed_in_burst: int,
+                                    speed_out_burst: int):
+    ret_text = rc.change_session_guest2inet(
+        radius_uname=radius_uname,
+        speed_in=speed_in,
+        speed_out=speed_out,
+        speed_in_burst=speed_in_burst,
+        speed_out_burst=speed_out_burst
+    )
     if ret_text is not None:
-        logger.warning(ret_text)
+        logger.warning('guest2inet: %s' % ret_text)
 

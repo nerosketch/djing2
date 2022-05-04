@@ -2,19 +2,25 @@ from typing import Optional
 from datetime import datetime
 from netaddr import EUI
 from django.db.models import Q
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import APIException
 
-from customers.models import CustomerService
+from customers.models import CustomerService, Customer
 from customers.serializers import RadiusCustomerServiceRequestSerializer
 from djing2.lib import LogicError, safe_int
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from djing2.lib.mixins import AllowedSubnetMixin
 from djing2.lib.logger import logger
 from networks.models import CustomerIpLeaseModel
+from networks.tasks import (
+    async_change_session_inet2guest,
+    async_change_session_guest2inet
+)
 from radiusapp.vendor_base import AcctStatusType
 from radiusapp.vendors import VendorManager
 from radiusapp import custom_signals
@@ -38,6 +44,16 @@ def _update_lease_send_ws_signal(customer_id: int):
             "customer_id": customer_id
         }
     })
+
+
+class BadRetException(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = _('exception from radius.')
+    default_code = 'invalid'
+
+    def __init__(self, status_code=status.HTTP_400_BAD_REQUEST, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.status_code = status_code
 
 
 # TODO: Also protect requests by hash
@@ -169,7 +185,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             response, code = r
             _update_lease_send_ws_signal(customer.pk)
             return Response(response, status=code)
-        except LogicError as err:
+        except (LogicError, BadRetException) as err:
             return _bad_ret(str(err))
 
     @action(methods=["post"], detail=False, url_path=r"acct/(?P<vendor_name>\w{1,32})")
@@ -185,33 +201,36 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             logger.error('request_type is None')
             return self._acct_unknown(request, 'request_type is None')
         acct_status_type_map = {
-            AcctStatusType.START.value: self._acct_start,
-            AcctStatusType.STOP.value: self._acct_stop,
-            AcctStatusType.UPDATE.value: self._acct_update,
+            AcctStatusType.START: self._acct_start,
+            AcctStatusType.STOP: self._acct_stop,
+            AcctStatusType.UPDATE: self._acct_update,
         }
-        #request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
-        request_type_fn = acct_status_type_map.get(request_type.value)
-        if request_type_fn is None:
-            err = 'request_type_fn is None, (request_type=%s)' % request_type
-            logger.error(err)
-            return self._acct_unknown(request, err)
-        return request_type_fn(request)
+        try:
+            #request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
+            request_type_fn = acct_status_type_map.get(request_type)
+            if request_type_fn is None:
+                err = 'request_type_fn is None, (request_type=%s)' % request_type
+                logger.error(err)
+                return self._acct_unknown(request, err)
+            return request_type_fn(request)
+        except BadRetException as err:
+            return _bad_ret(str(err))
 
     def _update_counters(self, leases, data: dict, customer_mac: Optional[EUI] = None,
                         last_event_time=None, **update_kwargs):
         if last_event_time is None:
             last_event_time = datetime.now()
-        vcls = self.vendor_manager.vendor_class
+        vendor_manager = self.vendor_manager
         v_inp_oct = _gigaword_imp(
-            num=vcls.get_rad_val(data, "Acct-Input-Octets", 0),
-            gwords=vcls.get_rad_val(data, "Acct-Input-Gigawords", 0),
+            num=vendor_manager.get_rad_val(data, "Acct-Input-Octets", int, 0),
+            gwords=vendor_manager.get_rad_val(data, "Acct-Input-Gigawords", int, 0),
         )
         v_out_oct = _gigaword_imp(
-            num=vcls.get_rad_val(data, "Acct-Output-Octets", 0),
-            gwords=vcls.get_rad_val(data, "Acct-Output-Gigawords", 0),
+            num=vendor_manager.get_rad_val(data, "Acct-Output-Octets", int, 0),
+            gwords=vendor_manager.get_rad_val(data, "Acct-Output-Gigawords", int, 0),
         )
-        v_in_pkt = vcls.get_rad_val(data, "Acct-Input-Packets", 0)
-        v_out_pkt = vcls.get_rad_val(data, "Acct-Output-Packets", 0)
+        v_in_pkt = vendor_manager.get_rad_val(data, "Acct-Input-Packets", int, 0)
+        v_out_pkt = vendor_manager.get_rad_val(data, "Acct-Output-Packets", int, 0)
         leases.update(
             last_update=last_event_time,
             input_octets=v_inp_oct,
@@ -222,7 +241,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         )
         vendor_manager = self.vendor_manager
         radius_unique_id = vendor_manager.get_radius_unique_id(data)
-        ip = vcls.get_rad_val(data, "Framed-IP-Address")
+        ip = vendor_manager.get_rad_val(data, "Framed-IP-Address", str)
         custom_signals.radius_auth_update_signal.send(
             sender=CustomerIpLeaseModel,
             instance=None,
@@ -250,7 +269,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if not dat:
             return _bad_ret("Empty request")
 
-        ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
+        ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address", str)
         if not ip:
             return _bad_ret(
                 "Request has no ip information (Framed-IP-Address)",
@@ -342,8 +361,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
     def _acct_stop(self, request):
         dat = request.data
         vendor_manager = self.vendor_manager
-        vcls = vendor_manager.vendor_class
-        ip = vcls.get_rad_val(dat, "Framed-IP-Address")
+        ip = vendor_manager.get_rad_val(dat, "Framed-IP-Address", str)
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
         customer_mac = vendor_manager.get_customer_mac(dat)
         leases = CustomerIpLeaseModel.objects.filter(session_id=radius_unique_id)
@@ -358,6 +376,44 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         leases.update(state=False)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def _find_customer(self, data) -> Customer:
+        # Optimize
+        vendor_manager = self.vendor_manager
+        opt82 = vendor_manager.get_opt82(data=data)
+        if not opt82:
+            raise BadRetException("Failed fetch opt82 info")
+        agent_remote_id, agent_circuit_id = opt82
+        if all([agent_remote_id, agent_circuit_id]):
+            dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
+                agent_remote_id=agent_remote_id,
+                agent_circuit_id=agent_circuit_id
+            )
+            if not dev_mac:
+                raise BadRetException(
+                    'opt82 has no device mac: (%(ari)s, %(aci)s)' % {
+                        'ari': str(agent_remote_id),
+                        'aci': str(agent_circuit_id)
+                    }
+                )
+
+            customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+                device_mac=dev_mac,
+                device_port=dev_port
+            )
+            if not customer:
+                raise BadRetException(
+                    detail='Customer not found by device: dev_mac=%(dev_mac)s, dev_port=%(dev_port)s' % {
+                        'dev_mac': str(dev_mac),
+                        'dev_port': str(dev_port),
+                    },
+                    status_code=status.HTTP_404_NOT_FOUND
+                )
+            return customer
+        raise BadRetException(
+            detail='not all opt82 %s' % str(opt82),
+            status_code=status.HTTP_200_OK
+        )
+
     def _acct_update(self, request):
         dat = request.data
         vendor_manager = self.vendor_manager
@@ -371,7 +427,9 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         ).filter(
             Q(session_id=radius_unique_id) | Q(radius_username=radius_username)
         )
+        customer = self._find_customer(data=dat)
         if leases.exists():
+            # just update counters
             event_time = datetime.now()
             self._update_counters(
                 leases=leases,
@@ -380,40 +438,48 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 customer_mac=customer_mac
             )
         else:
-            # Optimize
-            opt82 = vendor_manager.get_opt82(data=dat)
-            if not opt82:
-                return _bad_ret("Failed fetch opt82 info")
-            agent_remote_id, agent_circuit_id = opt82
-            if all([agent_remote_id, agent_circuit_id]):
-                dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
-                    agent_remote_id=agent_remote_id,
-                    agent_circuit_id=agent_circuit_id
-                )
-                customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
-                    device_mac=dev_mac,
-                    device_port=dev_port
-                )
-                if not customer:
-                    return _bad_ret(
-                        'Customer not found in update: dev_mac=%s, dev_port=%s' % (str(dev_mac), str(dev_port)),
-                        custom_status=status.HTTP_404_NOT_FOUND
-                    )
-                ip = vendor_manager.vendor_class.get_rad_val(dat, "Framed-IP-Address")
-                vlan_id = vendor_manager.get_vlan_id(dat)
-                service_vlan_id = vendor_manager.get_service_vlan_id(dat)
-                CustomerIpLeaseModel.create_lease_w_auto_pool(
-                    ip=str(ip),
-                    mac=str(customer_mac),
-                    customer_id=customer.pk,
-                    radius_uname=radius_username,
-                    radius_unique_id=str(radius_unique_id),
-                    svid=safe_int(service_vlan_id),
-                    cvid=safe_int(vlan_id)
-                )
-            else:
-                logger.error('not all opt82 %s' % str(opt82))
+            # create lease on customer profile if it not exists
+            ip = vendor_manager.get_rad_val(dat, "Framed-IP-Address", str)
+            vlan_id = vendor_manager.get_vlan_id(dat)
+            service_vlan_id = vendor_manager.get_service_vlan_id(dat)
+            CustomerIpLeaseModel.create_lease_w_auto_pool(
+                ip=str(ip),
+                mac=str(customer_mac),
+                customer_id=customer.pk,
+                radius_uname=radius_username,
+                radius_unique_id=str(radius_unique_id),
+                svid=safe_int(service_vlan_id),
+                cvid=safe_int(vlan_id)
+            )
 
+        # Check for service synchronizaion
+        bras_service_name = vendor_manager.get_rad_val(dat, "ERX-Service-Session", str)
+        if isinstance(bras_service_name, str):
+            if 'SERVICE-INET' in bras_service_name:
+                # bras contain inet session
+                if not customer.is_access():
+                    logger.info("COA: inet->guest uname=%s" % radius_username)
+                    async_change_session_inet2guest(
+                        radius_uname=radius_username
+                    )
+            elif 'SERVICE-GUEST' in bras_service_name:
+                # bras contain guest session
+                if customer.is_access():
+                    logger.info("COA: guest->inet uname=%s" % radius_username)
+                    customer_service = customer.active_service()
+                    service = customer_service.service
+                    speed = vendor_manager.get_speed(service=service)
+                    async_change_session_guest2inet(
+                        radius_uname=radius_username,
+                        speed_in=speed.speed_in,
+                        speed_out=speed.speed_out,
+                        speed_in_burst=speed.burst_in,
+                        speed_out_burst=speed.burst_out
+                    )
+            else:
+                logger.error('Unknown session name from bras: %s' % bras_service_name)
+        else:
+            logger.error('Bad bras service name: %s' % str(bras_service_name))
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

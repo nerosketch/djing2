@@ -296,7 +296,7 @@ class CustomerIpLeaseModel(models.Model):
         return f"{self.ip_address} [{self.mac_address}]"
 
     @staticmethod
-    def find_customer_by_device_credentials(device_mac: EUI, device_port: int = 0) -> Optional[Customer]:
+    def find_customer_by_device_credentials(device_mac: Union[EUI, str], device_port: int = 0) -> Optional[Customer]:
         sql = (
             "SELECT ba.id, ba.last_login, ba.is_superuser, ba.username, "
             "ba.fio, ba.birth_day, ba.is_active, ba.is_admin, "

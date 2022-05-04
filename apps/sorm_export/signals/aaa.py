@@ -49,7 +49,7 @@ def signal_radius_session_acc_start(
     *args,
     **kwargs
 ):
-    nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
+    nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", int, 0)
     customer_username = customer.username
 
     _save_aaa_log(
@@ -68,7 +68,7 @@ def signal_radius_session_acct_stop(
         sender: Type[CustomerIpLeaseModel],
         instance_queryset, data: dict, ip_addr: str,
         radius_unique_id: str, customer_mac: EUI, *args, **kwargs):
-    nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
+    nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", int, 0)
 
     # TODO: Optimize
     if instance_queryset.exists():
@@ -106,7 +106,7 @@ def signal_radius_acct_update(
         customer_mac: EUI,
         *args, **kwargs):
 
-    nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", 0)
+    nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", int, 0)
 
     # TODO: Optimize
     if instance_queryset.exists():

@@ -1,11 +1,11 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Type, overload
 from netaddr import EUI
 from customers.models import CustomerService, Customer
 from djing2.lib import macbin2str, safe_int, LogicError
 from networks.models import FetchSubscriberLeaseResponse
 
 from radiusapp.vendor_specific import vendor_classes
-from radiusapp.vendor_base import IVendorSpecific
+from radiusapp.vendor_base import IVendorSpecific, SpeedInfoStruct, T
 
 
 def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[EUI], int]:
@@ -42,6 +42,24 @@ class VendorManager:
         if self.vendor_class:
             return self.vendor_class.parse_option82(data=data)
 
+    @overload
+    def get_rad_val(self, data, v: str, fabric_type: Type[T]) -> Optional[T]:
+        ...
+
+    @overload
+    def get_rad_val(self, data, v: str, fabric_type: Type[T], default: T) -> T:
+        ...
+
+    def get_rad_val(self, data, v, fabric_type, default=None):
+        if self.vendor_class:
+            return self.vendor_class.get_rad_val(
+                data=data,
+                v=v,
+                fabric_type=fabric_type,
+                default=default
+            )
+        raise RuntimeError('Vendor class not specified')
+
     @staticmethod
     def build_dev_mac_by_opt82(agent_remote_id: str, agent_circuit_id: str) -> Tuple[Optional[EUI], int]:
         def _cnv(v):
@@ -72,6 +90,11 @@ class VendorManager:
     def get_radius_unique_id(self, data):
         if self.vendor_class:
             return self.vendor_class.get_radius_unique_id(data)
+
+    def get_speed(self, service) -> SpeedInfoStruct:
+        if not self.vendor_class:
+            raise RuntimeError('Vendor class not specified')
+        return self.vendor_class.get_speed(service=service)
 
     def get_auth_session_response(
         self,
