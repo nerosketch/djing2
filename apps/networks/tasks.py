@@ -52,7 +52,7 @@ def async_change_session_inet2guest(radius_uname: str):
     """
     ret_text = rc.change_session_inet2guest(radius_uname)
     if ret_text is not None:
-        logger.warning(ret_text)
+        logger.warning('inet2guest: %s' % ret_text)
 
 
 @task(executor=TaskExecutor.MULE)
@@ -68,5 +68,5 @@ def async_change_session_guest2inet(radius_uname: str, speed_in: int,
         speed_out_burst=speed_out_burst
     )
     if ret_text is not None:
-        logger.warning(ret_text)
+        logger.warning('guest2inet: %s' % ret_text)
 
