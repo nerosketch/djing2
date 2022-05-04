@@ -176,8 +176,6 @@ set ignorecase
 " Signify default updatetime 4000ms is not good for async update
 set updatetime=100
 
-" I don't use recording, don't judge me
-map q <Nop>
 inoremap jk <ESC>
 vnoremap <M-/> <Esc>/\%V
 nnoremap <ESC><ESC> :nohlsearch<CR>
