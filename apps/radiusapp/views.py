@@ -577,7 +577,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             else:
                 logger.error('Unknown session name from bras: %s' % bras_service_name)
         else:
-            logger.error('Bad bras service name: %s' % str(bras_service_name))
+            logger.info('Bad bras service name: %s, uname: %s' % (str(bras_service_name), radius_username))
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

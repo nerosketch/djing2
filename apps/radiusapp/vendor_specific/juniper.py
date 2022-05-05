@@ -32,10 +32,12 @@ class JuniperVendorSpecific(IVendorSpecific):
         return param
 
     def get_speed(self, speed: SpeedInfoStruct) -> SpeedInfoStruct:
-        speed_in = int(speed.speed_in * 1000000)
-        speed_out = int(speed.speed_out * 1000000)
-        brst_in = int(speed_in / 8 * 1.5)
-        brst_out = int(speed_in / 8 * 1.5)
+        speed_in = speed.speed_in * 1000000.0
+        speed_out = speed.speed_out * 1000000.0
+        #brst_in = speed_in / 8.0 * 1.5
+        brst_in = speed_in / 8.0
+        #brst_out = speed_in / 8.0 * 1.5
+        brst_out = speed_in / 8.0
         return SpeedInfoStruct(
             speed_in=speed_in,
             speed_out=speed_out,
