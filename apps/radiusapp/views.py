@@ -22,9 +22,13 @@ from networks.tasks import (
     async_change_session_inet2guest,
     async_change_session_guest2inet
 )
-from radiusapp.vendor_base import AcctStatusType, CustomerServiceLeaseResult
 from radiusapp.vendors import VendorManager
 from radiusapp import custom_signals
+from radiusapp.vendor_base import (
+    AcctStatusType,
+    CustomerServiceLeaseResult,
+    SpeedInfoStruct
+)
 
 
 def _gigaword_imp(num: int, gwords: int) -> int:
@@ -55,6 +59,117 @@ class BadRetException(APIException):
     def __init__(self, status_code=status.HTTP_400_BAD_REQUEST, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.status_code = status_code
+
+
+def _build_srv_result_from_db_result(row: tuple) -> CustomerServiceLeaseResult:
+    (uid, uname, acc_is_act, balance, is_dyn_ip, ars, csid, dev_port_id, dev_id, gw_id,
+        si, so, sb, ip_addr, mac_addr, ip_is_dynamic) = row
+    if all([si, so]):
+        speed = SpeedInfoStruct(
+            speed_in=si,
+            speed_out=so,
+            burst_in=sb,
+            burst_out=sb
+        )
+    else:
+        speed = None
+    return CustomerServiceLeaseResult(
+        id=uid,
+        username=uname,
+        is_active=acc_is_act,
+        balance=balance,
+        is_dynamic_ip=is_dyn_ip,
+        auto_renewal_service=ars,
+        current_service_id=csid,
+        dev_port_id=dev_port_id,
+        device_id=dev_id,
+        gateway_id=gw_id,
+        speed=speed,
+        ip_address=ip_addr,
+        mac_address=mac_addr,
+        is_dynamic=ip_is_dynamic
+    )
+
+
+def _get_customer_and_service_and_lease_by_device_credentials(
+        device_mac: EUI, customer_mac: EUI, device_port: int = 0
+    ) -> Optional[CustomerServiceLeaseResult]:
+    sql = (
+        "SELECT ba.id, "
+            "ba.username, "
+            "ba.is_active, "
+            "cs.balance, "
+            "cs.is_dynamic_ip, "
+            "cs.auto_renewal_service, "
+            "cs.current_service_id, "
+            "cs.dev_port_id, "
+            "cs.device_id, "
+            "cs.gateway_id, "
+            "srv.speed_in, "
+            "srv.speed_out, "
+            "srv.speed_burst, "
+            "nip.ip_address, "
+            "nip.mac_address, "
+            "nip.is_dynamic "
+        "FROM customers cs "
+            "LEFT JOIN device dv ON (dv.id = cs.device_id) "
+            "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
+            "LEFT JOIN device_dev_type_is_use_dev_port ddtiudptiu ON (ddtiudptiu.dev_type = dv.dev_type) "
+            "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+            "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
+            "LEFT JOIN services srv ON srv.id = custsrv.service_id "
+            "LEFT JOIN networks_ip_leases nip ON ( "
+                "nip.customer_id = cs.baseaccount_ptr_id AND ( "
+                    "not nip.is_dynamic and (nip.mac_address = %s::MACADDR or nip.mac_address is null) "
+                ") "
+            ") "
+        "WHERE dv.mac_addr = %s::MACADDR "
+        "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = %s::SMALLINT) "
+        "LIMIT 1;"
+    )
+    with connection.cursor() as cur:
+        cur.execute(sql=sql, params=[str(customer_mac), str(device_mac), device_port])
+        row = cur.fetchone()
+    if not row:
+        return None
+    return _build_srv_result_from_db_result(row=row)
+
+
+def _get_customer_and_service_and_lease_by_mac(
+    customer_mac: EUI
+) -> Optional[CustomerServiceLeaseResult]:
+    sql = (
+        "SELECT ba.id, "
+            "ba.username, "
+            "ba.is_active, "
+            "cs.balance, "
+            "cs.is_dynamic_ip, "
+            "cs.auto_renewal_service, "
+            "cs.current_service_id, "
+            "cs.dev_port_id, "
+            "cs.device_id, "
+            "cs.gateway_id, "
+            "srv.speed_in, "
+            "srv.speed_out, "
+            "srv.speed_burst, "
+            "nip.ip_address, "
+            "nip.mac_address, "
+            "false "
+        "FROM customers cs "
+            "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+            "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
+            "LEFT JOIN services srv ON srv.id = custsrv.service_id "
+            "LEFT JOIN networks_ip_leases nip ON nip.customer_id = cs.baseaccount_ptr_id "
+        "WHERE "
+        "NOT nip.is_dynamic AND nip.mac_address = %s::MACADDR "
+        "LIMIT 1;"
+    )
+    with connection.cursor() as cur:
+        cur.execute(sql=sql, params=[str(customer_mac)])
+        row = cur.fetchone()
+    if not row:
+        return None
+    return _build_srv_result_from_db_result(row=row)
 
 
 # TODO: Also protect requests by hash
@@ -96,87 +211,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         serializer = self.get_serializer()
         return Response(serializer.data)
 
-    @staticmethod
-    def get_customer_and_service_and_lease_by_device_credentials(
-            device_mac: EUI, customer_mac: EUI, device_port: int = 0
-        ) -> Optional[CustomerServiceLeaseResult]:
-        sql = (
-            "SELECT ba.id, "
-                "ba.username, "
-                "ba.is_active, "
-                "cs.balance, "
-                "cs.is_dynamic_ip, "
-                "cs.auto_renewal_service, "
-                "cs.current_service_id, "
-                "cs.dev_port_id, "
-                "cs.device_id, "
-                "cs.gateway_id, "
-                "srv.speed_in, "
-                "srv.speed_out, "
-                "srv.speed_burst, "
-                "nip.ip_address, "
-                "nip.mac_address, "
-                "nip.is_dynamic "
-            "FROM customers cs "
-                "LEFT JOIN device dv ON (dv.id = cs.device_id) "
-                "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
-                "LEFT JOIN device_dev_type_is_use_dev_port ddtiudptiu ON (ddtiudptiu.dev_type = dv.dev_type) "
-                "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
-                "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
-                "LEFT JOIN services srv ON srv.id = custsrv.service_id "
-                "LEFT JOIN networks_ip_leases nip ON ( "
-                    "nip.customer_id = cs.baseaccount_ptr_id AND ( "
-                        "not nip.is_dynamic and (nip.mac_address = %s::MACADDR or nip.mac_address is null) "
-                    ") "
-                ") "
-            "WHERE dv.mac_addr = %s::MACADDR "
-            "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = %s::SMALLINT) "
-            "LIMIT 1;"
-        )
-        with connection.cursor() as cur:
-            cur.execute(sql=sql, params=[str(customer_mac), str(device_mac), device_port])
-            row = cur.fetchone()
-        if not row:
-            return None
-        return CustomerServiceLeaseResult(*row)
-
-    @staticmethod
-    def get_customer_and_service_and_lease_by_mac(
-        customer_mac: EUI
-    ) -> Optional[CustomerServiceLeaseResult]:
-        sql = (
-            "SELECT ba.id, "
-                "ba.username, "
-                "ba.is_active, "
-                "cs.balance, "
-                "cs.is_dynamic_ip, "
-                "cs.auto_renewal_service, "
-                "cs.current_service_id, "
-                "cs.dev_port_id, "
-                "cs.device_id, "
-                "cs.gateway_id, "
-                "srv.speed_in, "
-                "srv.speed_out, "
-                "srv.speed_burst, "
-                "nip.ip_address, "
-                "nip.mac_address, "
-                "false "
-            "FROM customers cs "
-                "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
-                "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
-                "LEFT JOIN services srv ON srv.id = custsrv.service_id "
-                "LEFT JOIN networks_ip_leases nip ON nip.customer_id = cs.baseaccount_ptr_id "
-            "WHERE "
-            "NOT nip.is_dynamic AND nip.mac_address = %s::MACADDR "
-            "LIMIT 1;"
-        )
-        with connection.cursor() as cur:
-            cur.execute(sql=sql, params=[str(customer_mac)])
-            row = cur.fetchone()
-        if not row:
-            return None
-        return CustomerServiceLeaseResult(*row)
-
     @action(methods=["post"], detail=False, url_path=r"auth/(?P<vendor_name>\w{1,32})")
     def auth(self, request, vendor_name=None):
         # Just find customer by credentials from request
@@ -200,7 +234,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             if not dev_mac:
                 return _bad_ret("Failed to parse option82")
 
-            db_info = self.get_customer_and_service_and_lease_by_device_credentials(
+            db_info = _get_customer_and_service_and_lease_by_device_credentials(
                 device_mac=dev_mac,
                 customer_mac=customer_mac,
                 device_port=dev_port
@@ -213,7 +247,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 )
         else:
             # auth by mac. Find static lease.
-            db_info = self.get_customer_and_service_and_lease_by_mac(
+            db_info = _get_customer_and_service_and_lease_by_mac(
                 customer_mac=customer_mac
             )
             if db_info is None:
@@ -475,6 +509,11 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if not customer_mac:
             return _bad_ret("Customer mac is required")
         radius_username = vendor_manager.get_radius_username(dat)
+        if not radius_username:
+            return _bad_ret(
+                "Request has no username",
+                custom_status=status.HTTP_200_OK
+            )
         leases = CustomerIpLeaseModel.objects.exclude(
             Q(session_id=None) | Q(radius_username=None)
         ).filter(
@@ -521,8 +560,13 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     logger.info("COA: guest->inet uname=%s" % radius_username)
                     customer_service = customer.active_service()
                     service = customer_service.service
-                    raise Exception('change it get_speed')
-                    speed = vendor_manager.get_speed(service=service)
+                    speed = SpeedInfoStruct(
+                        speed_in=float(service.speed_in),
+                        speed_out=float(service.speed_out),
+                        burst_in=float(service.spee),
+                        burst_out=float(service.speed_burst),
+                    )
+                    speed = vendor_manager.get_speed(speed=speed)
                     async_change_session_guest2inet(
                         radius_uname=radius_username,
                         speed_in=speed.speed_in,
