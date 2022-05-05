@@ -9,10 +9,10 @@ from djing2.lib import LogicError
 
 @dataclass
 class SpeedInfoStruct:
-    speed_in: int
-    speed_out: int
-    burst_in: int
-    burst_out: int
+    speed_in: float
+    speed_out: float
+    burst_in: float
+    burst_out: float
 
 
 @dataclass

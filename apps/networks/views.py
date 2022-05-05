@@ -64,7 +64,7 @@ class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
 
 class FindCustomerByCredentials(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
-    http_method_names = ('get',)
+    http_method_names = ['get']
 
     def get(self, request, format=None):
         request_serializer = serializers.FindCustomerByDeviceCredentialsParams(
@@ -72,9 +72,10 @@ class FindCustomerByCredentials(APIView):
             context={'request': request}
         )
         request_serializer.is_valid(raise_exception=True)
-        customer = NetworkIpPool.find_customer_by_device_credentials(
-            device_mac=request_serializer.data.get('mac'),
-            device_port=request_serializer.data.get('dev_port')
+        dat = request_serializer.data
+        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+            device_mac=dat.get('mac'),
+            device_port=int(dat.get('dev_port'))
         )
         if not customer:
             return Response('Not found', status=status.HTTP_404_NOT_FOUND)
