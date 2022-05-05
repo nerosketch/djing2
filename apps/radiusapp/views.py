@@ -140,6 +140,43 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             return None
         return CustomerServiceLeaseResult(*row)
 
+    @staticmethod
+    def get_customer_and_service_and_lease_by_mac(
+        customer_mac: EUI
+    ) -> Optional[CustomerServiceLeaseResult]:
+        sql = (
+            "SELECT ba.id, "
+                "ba.username, "
+                "ba.is_active, "
+                "cs.balance, "
+                "cs.is_dynamic_ip, "
+                "cs.auto_renewal_service, "
+                "cs.current_service_id, "
+                "cs.dev_port_id, "
+                "cs.device_id, "
+                "cs.gateway_id, "
+                "srv.speed_in, "
+                "srv.speed_out, "
+                "srv.speed_burst, "
+                "nip.ip_address, "
+                "nip.mac_address, "
+                "false "
+            "FROM customers cs "
+                "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+                "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
+                "LEFT JOIN services srv ON srv.id = custsrv.service_id "
+                "LEFT JOIN networks_ip_leases nip ON nip.customer_id = cs.baseaccount_ptr_id "
+            "WHERE "
+            "NOT nip.is_dynamic AND nip.mac_address = %s::MACADDR "
+            "LIMIT 1;"
+        )
+        with connection.cursor() as cur:
+            cur.execute(sql=sql, params=[str(customer_mac)])
+            row = cur.fetchone()
+        if not row:
+            return None
+        return CustomerServiceLeaseResult(*row)
+
     @action(methods=["post"], detail=False, url_path=r"auth/(?P<vendor_name>\w{1,32})")
     def auth(self, request, vendor_name=None):
         # Just find customer by credentials from request
@@ -169,33 +206,21 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 device_port=dev_port
             )
 
-            #customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
-            #    device_mac=dev_mac,
-            #    device_port=dev_port
-            #)
             if db_info is None:
                 return _bad_ret(
                     'Customer not found',
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
-            # Ищем по сущ арендам
-            #subscriber_lease = CustomerIpLeaseModel.objects.filter(
-            #    Q(mac_address=customer_mac, is_dynamic=True) | Q(is_dynamic=False),
-            #    customer=customer,
-            #).first()
         else:
             # auth by mac. Find static lease.
-            Сделать
-            subscriber_lease = CustomerIpLeaseModel.objects.filter(
-                mac_address=customer_mac, is_dynamic=False,
-            ).exclude(customer=None).select_related(
-                'customer', 'customer__current_service',
-                'customer__current_service__service'
-            ).first()
-            if subscriber_lease is None:
-                return _bad_ret('Lease for mac "%s" not found' % customer_mac)
-            customer = subscriber_lease.customer
-            #  return _bad_ret('Request has no opt82 info')
+            db_info = self.get_customer_and_service_and_lease_by_mac(
+                customer_mac=customer_mac
+            )
+            if db_info is None:
+                return _bad_ret(
+                    'Customer not found',
+                    custom_status=status.HTTP_404_NOT_FOUND
+                )
 
         # Return auth response
         try:
@@ -209,7 +234,9 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             response, code = r
-            _update_lease_send_ws_signal(customer.pk)
+            _update_lease_send_ws_signal(
+                customer_id=db_info.id
+            )
             return Response(response, status=code)
         except (LogicError, BadRetException) as err:
             return _bad_ret(str(err))
