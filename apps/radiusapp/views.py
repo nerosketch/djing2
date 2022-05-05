@@ -563,7 +563,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     speed = SpeedInfoStruct(
                         speed_in=float(service.speed_in),
                         speed_out=float(service.speed_out),
-                        burst_in=float(service.spee),
+                        burst_in=float(service.speed_burst),
                         burst_out=float(service.speed_burst),
                     )
                     speed = vendor_manager.get_speed(speed=speed)
