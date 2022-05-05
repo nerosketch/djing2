@@ -1,6 +1,9 @@
 from netaddr import EUI
-from radiusapp.vendor_base import IVendorSpecific, SpeedInfoStruct
 from rest_framework import status
+from radiusapp.vendor_base import (
+    IVendorSpecific, SpeedInfoStruct,
+    CustomerServiceLeaseResult
+)
 
 
 class JuniperVendorSpecific(IVendorSpecific):
@@ -28,31 +31,37 @@ class JuniperVendorSpecific(IVendorSpecific):
             return int(param.split(":")[1].split("-")[0])
         return param
 
-    def get_speed(self, service) -> SpeedInfoStruct:
-        speed_in_burst, speed_out_burst = service.calc_burst()
+    def get_speed(self, speed: SpeedInfoStruct) -> SpeedInfoStruct:
+        speed_in = int(speed.speed_in * 1000000)
+        speed_out = int(speed.speed_out * 1000000)
+        brst_in = int(speed_in / 8 * 1.5)
+        brst_out = int(speed_in / 8 * 1.5)
         return SpeedInfoStruct(
-            speed_in=int(service.speed_in * 1000000),
-            speed_out=int(service.speed_out * 1000000),
-            burst_in=speed_in_burst,
-            burst_out=speed_out_burst
+            speed_in=speed_in,
+            speed_out=speed_out,
+            burst_in=brst_in,
+            burst_out=brst_out
         )
 
-    def get_auth_session_response(self, customer_service, customer, request_data, subscriber_lease=None):
-        if not customer_service or not customer_service.service:
-            service_option = "SERVICE-GUEST"
+    def get_auth_session_response(self, db_result: CustomerServiceLeaseResult):
+        if db_result.current_service_id and db_result.speed:
+            speed = self.get_speed(speed=db_result.speed)
+            service_option = "SERVICE-INET(%(si)d,%(bi)d,%(so)d,%(bo)d)" % {
+                'si': speed.speed_in,
+                'so': speed.speed_out,
+                'bi': speed.burst_in,
+                'bo': speed.burst_out
+            }
         else:
-            service = customer_service.service
-
-            speed = self.get_speed(service=service)
-            service_option = f"SERVICE-INET({speed.speed_in},{speed.burst_in},{speed.speed_out},{speed.burst_out})"
+            service_option = "SERVICE-GUEST"
 
         res = {
             # 'Framed-IP-Netmask': '255.255.0.0',
             # User-Password - it is a crutch, for config in freeradius
             "User-Password": service_option,
         }
-        if subscriber_lease and not subscriber_lease.is_dynamic:
+        if db_result.ip_address and not db_result.is_dynamic:
             res.update({
-                "Framed-IP-Address": subscriber_lease.ip_address,
+                "Framed-IP-Address": db_result.ip_address,
             })
         return res, status.HTTP_200_OK

@@ -1,18 +1,11 @@
 import abc
 import enum
-from typing import Optional, Tuple, Type, TypeVar, Union, overload
+from typing import Optional, Tuple, Type, TypeVar, overload
 from dataclasses import dataclass
 from netaddr import EUI
 
 from djing2.lib import LogicError
-from customers.models import CustomerService, Customer
-from networks.models import FetchSubscriberLeaseResponse
 
-
-class AcctStatusType(enum.IntEnum):
-    START = 1
-    STOP = 2
-    UPDATE = 3
 
 @dataclass
 class SpeedInfoStruct:
@@ -20,6 +13,30 @@ class SpeedInfoStruct:
     speed_out: int
     burst_in: int
     burst_out: int
+
+
+@dataclass
+class CustomerServiceLeaseResult:
+    id: int
+    username: str
+    is_active: bool
+    balance: float
+    is_dynamic_ip: bool
+    auto_renewal_service: bool
+    current_service_id: Optional[int]
+    dev_port_id: Optional[int] = None
+    device_id: Optional[int] = None
+    gateway_id: Optional[int] = None
+    speed: Optional[SpeedInfoStruct] = None
+    ip_address: Optional[str] = None
+    mac_address: Optional[str] = None
+    is_dynamic: Optional[bool] = False
+
+
+class AcctStatusType(enum.IntEnum):
+    START = 1
+    STOP = 2
+    UPDATE = 3
 
 
 T = TypeVar('T')
@@ -76,17 +93,14 @@ class IVendorSpecific(abc.ABC):
         return self.get_rad_val(data, "Acct-Unique-Session-Id", str)
 
     @abc.abstractmethod
-    def get_speed(self, service) -> SpeedInfoStruct:
+    def get_speed(self, speed: SpeedInfoStruct) -> SpeedInfoStruct:
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_auth_session_response(
         self,
-        customer_service: Optional[CustomerService],
-        customer: Customer,
-        request_data,
-        subscriber_lease: Optional[FetchSubscriberLeaseResponse] = None,
-    ) -> dict:
+        db_result: CustomerServiceLeaseResult
+    ) -> Optional[dict]:
         raise NotImplementedError
 
     def get_acct_status_type(self, request) -> AcctStatusType:

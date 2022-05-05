@@ -1,11 +1,9 @@
 from typing import Optional, Tuple, Type, overload
 from netaddr import EUI
-from customers.models import CustomerService, Customer
 from djing2.lib import macbin2str, safe_int, LogicError
-from networks.models import FetchSubscriberLeaseResponse
 
 from radiusapp.vendor_specific import vendor_classes
-from radiusapp.vendor_base import IVendorSpecific, SpeedInfoStruct, T
+from radiusapp.vendor_base import IVendorSpecific, SpeedInfoStruct, T, CustomerServiceLeaseResult
 
 
 def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[EUI], int]:
@@ -91,24 +89,18 @@ class VendorManager:
         if self.vendor_class:
             return self.vendor_class.get_radius_unique_id(data)
 
-    def get_speed(self, service) -> SpeedInfoStruct:
+    def get_speed(self, speed: SpeedInfoStruct) -> SpeedInfoStruct:
         if not self.vendor_class:
             raise RuntimeError('Vendor class not specified')
-        return self.vendor_class.get_speed(service=service)
+        return self.vendor_class.get_speed(speed=speed)
 
     def get_auth_session_response(
         self,
-        customer_service: Optional[CustomerService],
-        customer: Customer,
-        request_data,
-        subscriber_lease: Optional[FetchSubscriberLeaseResponse] = None,
-    ) -> dict:
+        db_result: CustomerServiceLeaseResult
+    ) -> Optional[dict]:
         if self.vendor_class:
             return self.vendor_class.get_auth_session_response(
-                customer_service=customer_service,
-                customer=customer,
-                request_data=request_data,
-                subscriber_lease=subscriber_lease,
+                db_result=db_result
             )
 
     def get_acct_status_type(self, request):
