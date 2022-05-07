@@ -32,7 +32,7 @@ class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
     serializer_class = serializers.NetworkIpPoolModelSerializer
     filter_backends = (CustomObjectPermissionsFilter, OrderingFilter, DjangoFilterBackend)
     ordering_fields = ("network", "ip_start", "ip_end", "gateway")
-    filterset_fields = ("groups",)
+    filterset_fields = ("groups", "is_dynamic")
 
     @action(detail=True, methods=["post"])
     def group_attach(self, request, pk=None):
