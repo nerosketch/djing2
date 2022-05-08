@@ -138,8 +138,7 @@ class LocationAuth(APIView):
     schema = AutoSchema()
     __doc__ = gettext("Login profile via customer's ip address")
 
-    @staticmethod
-    def get(request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         user = authenticate(request=request, byip=True)
 
         if not user:
