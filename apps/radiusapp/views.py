@@ -400,6 +400,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
         else:
+            # auth by mac. Find static lease.
             lease = CustomerIpLeaseModel.objects.filter(
                 mac_address=customer_mac,
                 is_dynamic=False
@@ -514,10 +515,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 "Request has no username",
                 custom_status=status.HTTP_200_OK
             )
-        leases = CustomerIpLeaseModel.objects.exclude(
-            Q(session_id=None) | Q(radius_username=None)
-        ).filter(
-            Q(session_id=radius_unique_id) | Q(radius_username=radius_username)
+        leases = CustomerIpLeaseModel.objects.filter(
+            session_id=radius_unique_id
         )
         customer = self._find_customer(data=dat)
         if leases.exists():
@@ -576,8 +575,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     )
             else:
                 logger.error('Unknown session name from bras: %s' % bras_service_name)
-        else:
-            logger.info('Bad bras service name: %s, uname: %s' % (str(bras_service_name), radius_username))
+        #else:
+        #    logger.info('Bad bras service name: %s, uname: %s' % (str(bras_service_name), radius_username))
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
