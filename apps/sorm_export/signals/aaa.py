@@ -9,6 +9,7 @@ from networks.models import CustomerIpLeaseModel
 from django.conf import settings
 from django.dispatch.dispatcher import receiver
 from djing2.lib import time2utctime
+from djing2.lib.logger import logger
 from radiusapp.vendors import IVendorSpecific
 from rest_framework.exceptions import ValidationError
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
@@ -86,17 +87,20 @@ def signal_radius_session_acct_stop(
 
     event_time = datetime.now()
 
-    _save_aaa_log(
-        event_time=event_time,
-        event_type=AAAEventType.RADIUS_AUTH_STOP,
-        session_id=radius_unique_id,
-        customer_ip=ip_addr,
-        customer_db_username=customer_username,
-        nas_port=nas_port,
-        customer_device_mac=customer_mac.format(dialect=mac_unix_common) if customer_mac else '',
-        input_octets=input_octets,
-        output_octets=output_octets,
-    )
+    try:
+        _save_aaa_log(
+            event_time=event_time,
+            event_type=AAAEventType.RADIUS_AUTH_STOP,
+            session_id=radius_unique_id,
+            customer_ip=ip_addr,
+            customer_db_username=customer_username,
+            nas_port=nas_port,
+            customer_device_mac=customer_mac.format(dialect=mac_unix_common) if customer_mac else '',
+            input_octets=input_octets,
+            output_octets=output_octets,
+        )
+    except Exception as err:
+        logger.error("signal_radius_session_acct_stop: Error export AAA: %s" % err)
 
 
 @receiver(custom_signals.radius_auth_update_signal, sender=CustomerIpLeaseModel)
