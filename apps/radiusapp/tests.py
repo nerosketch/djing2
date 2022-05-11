@@ -407,7 +407,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             "/api/networks/lease/", {
                 "customer": self.full_customer.customer.pk,
                 "ip_address": '10.152.65.16',
-                # "mac_address": "",
+                "mac_address": "1c:c0:4d:95:d0:38",
                 "pool": self.poolv13.pk
             }
         )

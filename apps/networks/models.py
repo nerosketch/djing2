@@ -16,11 +16,7 @@ from djing2.lib.logger import logger
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from customers.models import Customer
-from networks.radius_commands import (
-    finish_session,
-    change_session_inet2guest,
-    change_session_guest2inet
-)
+from networks.radius_commands import finish_session
 
 
 DHCP_DEFAULT_LEASE_TIME = getattr(settings, "DHCP_DEFAULT_LEASE_TIME", 86400)
@@ -75,65 +71,6 @@ class NetworkIpPoolKind(models.IntegerChoices):
     NETWORK_KIND_TRUST = 3, _("Trusted")
     NETWORK_KIND_DEVICES = 4, _("Devices")
     NETWORK_KIND_ADMIN = 5, _("Admin")
-
-
-class FetchSubscriberLeaseResponse:
-    """Type for ip lease results."""
-
-    lease_id = 0
-    ip_addr = ""
-    pool_id = 0
-    lease_time = 0
-    customer_mac = None
-    customer_id = 0
-    is_dynamic = None
-    is_assigned = None
-
-    def __init__(
-        self,
-        lease_id=0,
-        ip_addr="",
-        pool_id=0,
-        lease_time=0,
-        customer_mac=None,
-        customer_id=0,
-        is_dynamic=None,
-        is_assigned=None,
-    ):
-        """Init fn.
-
-        :param lease_id: number, CustomerIpLeaseModel instance id
-        :param ip_addr: customer ip address
-        :param pool_id: NetworkIpPool instance id
-        :param lease_time: when lease assigned
-        :param customer_mac: customer device mac address
-        :param customer_id: customers.models.Customer instance id
-        :param is_dynamic: if lease assigned dynamically or not
-        :param is_assigned: is it new assignment or not
-        """
-        self.lease_id = lease_id
-        self.ip_addr = ip_addr
-        self.pool_id = pool_id
-        self.lease_time = lease_time
-        self.customer_mac = EUI(customer_mac) if customer_mac else None
-        self.customer_id = customer_id
-        self.is_dynamic = is_dynamic
-        self.is_assigned = is_assigned
-
-    def __repr__(self):
-        """Repr 4 this."""
-        return "{}: <{}, {}, {}, {}, {}>".format(
-            self.__class__.__name__,
-            self.ip_addr,
-            self.lease_time,
-            self.customer_mac,
-            self.is_dynamic,
-            self.is_assigned,
-        )
-
-    def __str__(self):
-        """Str 4 this."""
-        return self.__repr__()
 
 
 class NetworkIpPool(BaseAbstractModel):
@@ -401,32 +338,6 @@ class CustomerIpLeaseModel(models.Model):
             return created[0]
         logger.error('Unexpected result from create_lease_w_auto_pool sql func')
         return False
-
-    def radius_coa_inet2guest(self) -> Optional[str]:
-        if not self.radius_username:
-            return
-        return change_session_inet2guest(self.radius_username)
-
-    def radius_coa_guest2inet(self) -> Optional[str]:
-        if not self.radius_username:
-            return
-        if not self.customer:
-            return
-        customer_service = self.customer.current_service
-        if not customer_service:
-            return
-        service = customer_service.service
-        if not service:
-            return
-
-        speed_in_burst, speed_out_burst = service.calc_burst()
-        return change_session_guest2inet(
-            radius_uname=self.radius_username,
-            speed_in=int(service.speed_in * 1000000),
-            speed_out=int(service.speed_out * 1000000),
-            speed_in_burst=speed_in_burst,
-            speed_out_burst=speed_out_burst,
-        )
 
     @property
     def h_input_octets(self):

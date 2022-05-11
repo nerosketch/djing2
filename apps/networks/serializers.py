@@ -44,6 +44,12 @@ class CustomerIpLeaseModelSerializer(BaseCustomModelSerializer):
     h_input_packets = serializers.CharField(read_only=True)
     h_output_packets = serializers.CharField(read_only=True)
 
+    def validate_pool(self, val):
+        print('POOL', val.is_dynamic)
+        if val.is_dynamic:
+            raise serializers.ValidationError('Not allowed to add ip from dynamic pool as static')
+        return val
+
     class Meta:
         model = CustomerIpLeaseModel
         fields = "__all__"
