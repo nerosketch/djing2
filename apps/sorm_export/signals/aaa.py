@@ -66,8 +66,12 @@ def signal_radius_session_acc_start(
 @receiver(custom_signals.radius_acct_stop_signal, sender=CustomerIpLeaseModel)
 def signal_radius_session_acct_stop(
         sender: Type[CustomerIpLeaseModel],
-        instance_queryset, data: dict, ip_addr: str,
-        radius_unique_id: str, customer_mac: EUI, *args, **kwargs):
+        instance_queryset, data: dict,
+        input_octets: int,
+        output_octets: int,
+        ip_addr: str,
+        radius_unique_id: str, customer_mac: EUI,
+        *args, **kwargs):
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", int, 0)
 
     # TODO: Optimize
@@ -89,7 +93,9 @@ def signal_radius_session_acct_stop(
         customer_ip=ip_addr,
         customer_db_username=customer_username,
         nas_port=nas_port,
-        customer_device_mac=customer_mac.format(dialect=mac_unix_common) if customer_mac else ''
+        customer_device_mac=customer_mac.format(dialect=mac_unix_common) if customer_mac else '',
+        input_octets=input_octets,
+        output_octets=output_octets,
     )
 
 
