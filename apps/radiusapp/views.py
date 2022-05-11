@@ -461,7 +461,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             radius_unique_id=radius_unique_id,
             customer_mac=customer_mac,
         )
-        leases.update(state=False)
+        #leases.update(state=False)
+        leases.filter(is_dynamic=True).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _find_customer(self, data) -> Customer:
