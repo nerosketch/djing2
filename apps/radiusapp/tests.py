@@ -269,7 +269,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         self.pool = pool
         self.poolv13 = poolv13
 
-        self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
+        self.service_inet_str = "SERVICE-INET(11000000,1375000,11000000,1375000)"
 
         # self.client.logout()
 
@@ -327,7 +327,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
                 "customer": self.full_customer.customer.pk,
                 "ip_address": ip,
                 # "mac_address": "",
-                "pool": self.pool.pk
+                "pool": self.poolv13.pk
             }
         )
         self.assertEqual(new_lease_r.status_code, status.HTTP_201_CREATED, new_lease_r.content)
@@ -347,7 +347,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         self.assertEqual(lease['session_id'], "12345678-1234-5678-1234-567812345678")
 
     def test_get_fixed_ip_without_mac(self):
-        ip = '10.152.64.16'
+        ip = '10.152.65.16'
         # Создаём статический lease с ip и без мака
         self._create_static_lease(ip=ip)
 
@@ -367,7 +367,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         lease = leases[0]
         self.assertEqual(lease['ip_address'], ip, msg=lease)
         self.assertEqual(lease['mac_address'], '1c:c0:4d:95:d0:30', msg=lease)
-        self.assertEqual(lease['pool'], self.pool.pk, msg=lease)
+        self.assertEqual(lease['pool'], self.poolv13.pk, msg=lease)
         self.assertEqual(lease['customer'], self.full_customer.customer.pk, msg=lease)
         self.assertFalse(lease['is_dynamic'], msg=lease)
         self.assertIsNotNone(lease['radius_username'], msg=lease)
@@ -554,7 +554,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         )
         self.assertEqual(r.status_code, 200)
         d = r.data
-        self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,2062500,11000000,2062500)')
+        self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,1375000,11000000,1375000)')
         # т.к. мак отличается, то говорим что на учётке нет подходящего ip, надо подбирать новый
         self.assertIsNone(d.get('Framed-IP-Address'))
 
@@ -566,7 +566,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         )
         self.assertEqual(r.status_code, 200)
         d = r.data
-        self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,2062500,11000000,2062500)')
+        self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,1375000,11000000,1375000)')
         # т.к. мак отличается, то говорим что на учётке нет подходящего ip, надо подбирать новый
         self.assertIsNone(d.get('Framed-IP-Address'))
 
@@ -840,7 +840,7 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
             service_cost=10.0,
             service_calc_type=SERVICE_CHOICE_DEFAULT
         )
-        self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
+        self.service_inet_str = "SERVICE-INET(11000000,1375000,11000000,1375000)"
         #  self.client.logout()
 
     def test_guest_radius_session(self):
@@ -1097,7 +1097,7 @@ class CustomerStaticMacAuthTestCase(APITestCase, ReqMixin):
             service_cost=10.0,
             service_calc_type=SERVICE_CHOICE_DEFAULT
         )
-        self.service_inet_str = "SERVICE-INET(11000000,2062500,11000000,2062500)"
+        self.service_inet_str = "SERVICE-INET(11000000,1375000,11000000,1375000)"
 
         vlan13 = VlanIf.objects.create(title="Vlan13 for customer tests", vid=13)
         poolv13 = NetworkIpPool.objects.create(
