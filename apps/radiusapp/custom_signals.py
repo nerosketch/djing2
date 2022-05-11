@@ -19,6 +19,7 @@ radius_acct_start_signal = Signal()
 # Sends while radius finished session
 # attrs:
 #    sender - CustomerIpLeaseModel
+#    instance - CustomerIpLeaseModel instance
 #    instance_queryset - CustomerIpLeaseModel Queryset in instance is None
 #    data - all raw data from radius request
 #    input_octets - count of input octets from start session to now

@@ -67,6 +67,7 @@ def signal_radius_session_acc_start(
 @receiver(custom_signals.radius_acct_stop_signal, sender=CustomerIpLeaseModel)
 def signal_radius_session_acct_stop(
         sender: Type[CustomerIpLeaseModel],
+        instance: CustomerIpLeaseModel,
         instance_queryset, data: dict,
         input_octets: int,
         output_octets: int,

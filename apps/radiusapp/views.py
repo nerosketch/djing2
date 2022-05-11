@@ -467,6 +467,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
 
         custom_signals.radius_acct_stop_signal.send(
             sender=CustomerIpLeaseModel,
+            instance=CustomerIpLeaseModel(),
             instance_queryset=leases,
             data=dat,
             input_octets=v_inp_oct,
