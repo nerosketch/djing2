@@ -452,7 +452,10 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         ip = vendor_manager.get_rad_val(dat, "Framed-IP-Address", str)
         radius_unique_id = vendor_manager.get_radius_unique_id(dat)
         customer_mac = vendor_manager.get_customer_mac(dat)
-        leases = CustomerIpLeaseModel.objects.filter(session_id=radius_unique_id)
+        radius_username = vendor_manager.get_radius_username(dat)
+        leases = CustomerIpLeaseModel.objects.filter(
+            session_id=radius_unique_id
+        )
         custom_signals.radius_acct_stop_signal.send(
             sender=CustomerIpLeaseModel,
             instance_queryset=leases,
@@ -462,7 +465,13 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             customer_mac=customer_mac,
         )
         #leases.update(state=False)
-        leases.filter(is_dynamic=True).delete()
+        leases.filter(
+            is_dynamic=True,
+        ).delete()
+        CustomerIpLeaseModel.objects.filter(
+            radius_username=radius_username,
+            is_dynamic=True,
+        ).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _find_customer(self, data) -> Customer:
