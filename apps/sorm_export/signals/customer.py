@@ -15,7 +15,6 @@ from sorm_export.tasks.customer import (
     customer_contact_export_task,
     customer_root_export_task,
 )
-from sorm_export.tasks.customer_eol_export import customer_export_eol_task
 
 
 def on_customer_fields_change(sender, instance, old_inst):
