@@ -19,8 +19,11 @@ radius_acct_start_signal = Signal()
 # Sends while radius finished session
 # attrs:
 #    sender - CustomerIpLeaseModel
+#    instance - CustomerIpLeaseModel instance
 #    instance_queryset - CustomerIpLeaseModel Queryset in instance is None
 #    data - all raw data from radius request
+#    input_octets - count of input octets from start session to now
+#    output_octets - count of output octets from start session to now
 #    ip_addr - customer ip address from radius request
 #    radius_unique_id - obviously
 #    customer_mac: netaddr.EUI instance -  customer device mac address from radius request

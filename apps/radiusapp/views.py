@@ -1,7 +1,6 @@
 from typing import Optional
 from datetime import datetime
 from netaddr import EUI
-from django.db.models import Q
 from django.db import connection
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
@@ -334,7 +333,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             instance=None,
             instance_queryset=leases,
             data=data,
-            input_octets=v_in_pkt,
+            input_octets=v_inp_oct,
             output_octets=v_out_oct,
             input_packets=v_in_pkt,
             output_packets=v_out_pkt,
@@ -456,10 +455,23 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         leases = CustomerIpLeaseModel.objects.filter(
             session_id=radius_unique_id
         )
+
+        v_inp_oct = _gigaword_imp(
+            num=vendor_manager.get_rad_val(dat, "Acct-Input-Octets", int, 0),
+            gwords=vendor_manager.get_rad_val(dat, "Acct-Input-Gigawords", int, 0),
+        )
+        v_out_oct = _gigaword_imp(
+            num=vendor_manager.get_rad_val(dat, "Acct-Output-Octets", int, 0),
+            gwords=vendor_manager.get_rad_val(dat, "Acct-Output-Gigawords", int, 0),
+        )
+
         custom_signals.radius_acct_stop_signal.send(
             sender=CustomerIpLeaseModel,
+            instance=CustomerIpLeaseModel(),
             instance_queryset=leases,
             data=dat,
+            input_octets=v_inp_oct,
+            output_octets=v_out_oct,
             ip_addr=ip,
             radius_unique_id=radius_unique_id,
             customer_mac=customer_mac,
