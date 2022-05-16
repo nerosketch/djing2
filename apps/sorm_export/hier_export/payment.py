@@ -1,12 +1,9 @@
-from typing import Iterable
-
 from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway
-from sorm_export.hier_export.base import iterable_export_decorator, format_fname
+from sorm_export.hier_export.base import format_fname, ExportTree
 from sorm_export.serializers.payment import UnknownPaymentExportFormat
 
 
-@iterable_export_decorator
-def export_customer_unknown_payment(pays: Iterable[AllTimePayLog], event_time=None):
+class CustomerUnknownPaymentExportTree(ExportTree[AllTimePayLog]):
     """
     Файл выгрузки платежей версии 1.
     В этом файле выгружаются информация о платежах,
@@ -14,7 +11,13 @@ def export_customer_unknown_payment(pays: Iterable[AllTimePayLog], event_time=No
     т.е. необходимо выгружать только новые события платежей
     за время, прошедшее с последней выгрузки.
     """
-    def _gen(pay: AllTimePayLog):
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/payments_v1_{format_fname(event_time)}.txt"
+
+    def get_export_format_serializer(self):
+        return UnknownPaymentExportFormat
+
+    def get_item(self, pay: AllTimePayLog, *args, **kwargs):
         params = "платёжная система '%s', Идентификатор торговой точки: '%s'. Номер чека, выдаваемого клиенту: '%d'." % (
             PayAllTimeGateway.pay_system_title,
             pay.trade_point,
@@ -27,5 +30,3 @@ def export_customer_unknown_payment(pays: Iterable[AllTimePayLog], event_time=No
             "pay_description": "Безналичный",  # TODO: Вынести это куда-то, чтоб были разные типы
             'pay_params': params
         }
-
-    return UnknownPaymentExportFormat, _gen, pays, f"ISP/abonents/payments_v1_{format_fname(event_time)}.txt"

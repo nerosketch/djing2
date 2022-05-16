@@ -1,9 +1,8 @@
 from uwsgi_tasks import task
 
 from fin_app.models.alltime import AllTimePayLog
-from sorm_export.hier_export.payment import export_customer_unknown_payment
+from sorm_export.hier_export.payment import CustomerUnknownPaymentExportTree
 from sorm_export.models import ExportStampTypeEnum
-from sorm_export.tasks.task_export import task_export
 
 
 @task()
@@ -26,6 +25,7 @@ def export_customer_payment_task(
         receipt_num=receipt_num,
         pay_gw=pay_gw
     ),)
-    data, fname = export_customer_unknown_payment(pays=pay_logs, event_time=event_time)
-    task_export(data, fname, ExportStampTypeEnum.PAYMENT_UNKNOWN)
+    exporter = CustomerUnknownPaymentExportTree(event_time=event_time)
+    data = exporter.export(queryset=pay_logs)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.PAYMENT_UNKNOWN)
 
