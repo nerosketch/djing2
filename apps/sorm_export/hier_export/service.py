@@ -3,7 +3,7 @@ from typing import Iterable
 
 from customers.models import CustomerService
 from services.models import Service
-from .base import iterable_export_decorator, format_fname, simple_export_decorator
+from .base import format_fname, simple_export_decorator, ExportTree
 from ..models import CommunicationStandardChoices
 from ..serializers.customer_service_serializer import CustomerServiceIncrementalFormat
 from ..serializers.service_serializer import ServiceIncrementalNomenclature
@@ -42,14 +42,18 @@ def export_nomenclature(services: Iterable[Service], event_time=None):
     return ser, f"ISP/abonents/service_list_v1_{format_fname(event_time)}.txt"
 
 
-@iterable_export_decorator
-def export_customer_service(cservices: Iterable[CustomerService], event_time=None):
+class CustomerServiceExportTree(ExportTree[CustomerService]):
     """
     Файл выгрузки услуг по абонентам.
     В этом файле выгружаются все привязки услуг к абонентам.
     """
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/services_{format_fname(self._event_time)}.txt"
 
-    def gen(cs: CustomerService):
+    def get_export_format_serializer(self):
+        return CustomerServiceIncrementalFormat
+
+    def get_item(self, cs: CustomerService, *args, **kwargs):
         # srv = cs.service
         if hasattr(cs, "customer"):
             return {
@@ -62,8 +66,6 @@ def export_customer_service(cservices: Iterable[CustomerService], event_time=Non
             }
         else:
             return None
-
-    return CustomerServiceIncrementalFormat, gen, cservices, f"ISP/abonents/services_{format_fname(event_time)}.txt"
 
 
 @simple_export_decorator

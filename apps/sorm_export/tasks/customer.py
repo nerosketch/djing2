@@ -1,6 +1,7 @@
 from typing import List
 from uwsgi_tasks import task
-from sorm_export.hier_export.service import export_customer_service, export_manual_data_customer_service
+from customers.models import CustomerService
+from sorm_export.hier_export.service import export_manual_data_customer_service, CustomerServiceExportTree
 from sorm_export.models import ExportStampTypeEnum
 from sorm_export.tasks.task_export import task_export
 
@@ -10,11 +11,9 @@ def customer_service_export_task(customer_service_id_list: List[int], event_time
     cservices = CustomerService.objects.filter(
         pk__in=customer_service_id_list
     )
-    data, fname = export_customer_service(
-        cservices=cservices,
-        event_time=event_time
-    )
-    task_export(data, fname, ExportStampTypeEnum.SERVICE_CUSTOMER)
+    exporter = CustomerServiceExportTree(event_time=event_time)
+    data = exporter.export(queryset=cservices)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.SERVICE_CUSTOMER)
 
 
 @task()

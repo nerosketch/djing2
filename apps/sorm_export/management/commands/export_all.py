@@ -32,7 +32,7 @@ from sorm_export.hier_export.customer import (
 )
 
 from sorm_export.hier_export.networks import IpLeaseExportTree
-from sorm_export.hier_export.service import export_nomenclature, export_customer_service
+from sorm_export.hier_export.service import export_nomenclature, CustomerServiceExportTree
 from sorm_export.hier_export.special_numbers import export_special_numbers
 from sorm_export.hier_export.devices import DeviceExportTree
 from sorm_export.hier_export.ip_numbering import IpNumberingExportTree
@@ -157,8 +157,9 @@ def export_all_customer_services():
     csrv = CustomerService.objects.select_related("customer").filter(
         customer__in=customers_qs
     )
-    data, fname = export_customer_service(cservices=csrv, event_time=datetime.now())
-    task_export(data, fname, ExportStampTypeEnum.SERVICE_CUSTOMER)
+    exporter = CustomerServiceExportTree(recursive=False)
+    data = exporter.export(queryset=csrv)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.SERVICE_CUSTOMER)
 
 
 def export_all_switches():
