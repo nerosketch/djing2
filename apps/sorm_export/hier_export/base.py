@@ -21,17 +21,17 @@ def format_fname(fname_timestamp=None) -> str:
     return fname_timestamp.strftime(_fname_date_format)
 
 
-def simple_export_decorator(fn):
-    @wraps(fn)
-    def _wrapped(event_time=None, *args, **kwargs):
-        if event_time is None:
-            event_time = datetime.now()
-        elif isinstance(event_time, str):
-            event_time = datetime.fromisoformat(event_time)
-        ser, fname = fn(event_time=event_time, *args, **kwargs)
-        ser.is_valid(raise_exception=True)
-        return ser.data, fname
-    return _wrapped
+#def simple_export_decorator(fn):
+#    @wraps(fn)
+#    def _wrapped(event_time=None, *args, **kwargs):
+#        if event_time is None:
+#            event_time = datetime.now()
+#        elif isinstance(event_time, str):
+#            event_time = datetime.fromisoformat(event_time)
+#        ser, fname = fn(event_time=event_time, *args, **kwargs)
+#        ser.is_valid(raise_exception=True)
+#        return ser.data, fname
+#    return _wrapped
 
 
 class ContinueIteration(Exception):
@@ -107,3 +107,10 @@ class ExportTree(Generic[T]):
         fname = self.get_remote_ftp_file_name()
         task_export(data, fname, export_type)
 
+
+class SimpleExportTree(ExportTree):
+    def get_export_format_serializer(self):
+        pass
+
+    def export(self, queryset, event_time: Optional[datetime] = None, *args, **kwargs):
+        raise NotImplementedError

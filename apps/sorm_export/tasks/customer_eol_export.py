@@ -8,8 +8,8 @@ from sorm_export.models import ExportStampTypeEnum,  CustomerDocumentTypeChoices
 from sorm_export.tasks.task_export import task_export
 from sorm_export.hier_export.base import format_fname
 from sorm_export.hier_export.customer import (
-    export_contact,
     general_customer_filter_queryset,
+    ContactSimpleExportTree
 )
 from sorm_export.serializers.individual_entity_serializers import CustomerIndividualObjectFormat
 from profiles.models import split_fio
@@ -123,41 +123,41 @@ def export_individual_customer_eol(customer_id: int,
     task_export(ser.data, fname, ExportStampTypeEnum.CUSTOMER_INDIVIDUAL)
 
 
-#def export_customer_contact_eol(customer_id: int, actual_end_time: datetime, curr_time: datetime=None):
-#    if curr_time is None:
-#        curr_time = datetime.now()
-#
-#    if actual_end_time is None:
-#        actual_end_time = curr_time
-#
-#    customers_qs = _general_customers_queryset_filter(
-#        customer_id=customer_id
-#    ).only("pk", "telephone", "username", "fio", "create_date")
-#    customer_tels = [
-#        {
-#            "customer_id": c.pk,
-#            "contact": f"{c.get_full_name()} {c.telephone}",
-#            "actual_start_time": datetime(c.create_date.year, c.create_date.month, c.create_date.day),
-#            'actual_end_time': actual_end_time
-#        }
-#        for c in customers_qs.iterator()
-#    ]
-#
-#    # export additional tels
-#    tels = AdditionalTelephone.objects.filter(customer__in=customers_qs).select_related("customer")
-#    customer_tels.extend(
-#        {
-#            "customer_id": t.customer_id,
-#            "contact": f"{t.customer.get_full_name()} {t.telephone}",
-#            "actual_start_time": t.create_time,
-#            'actual_end_time': actual_end_time
-#        }
-#        for t in tels.iterator()
-#    )
-#
-#    data, fname = export_contact(customer_tels=customer_tels, event_time=curr_time)
-#
-#    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTACT)
+def export_customer_contact_eol(customer_id: int, actual_end_time: datetime, curr_time: datetime=None):
+    if curr_time is None:
+        curr_time = datetime.now()
+
+    if actual_end_time is None:
+        actual_end_time = curr_time
+
+    customers_qs = _general_customers_queryset_filter(
+        customer_id=customer_id
+    ).only("pk", "telephone", "username", "fio", "create_date")
+    customer_tels = [
+        {
+            "customer_id": c.pk,
+            "contact": f"{c.get_full_name()} {c.telephone}",
+            "actual_start_time": datetime(c.create_date.year, c.create_date.month, c.create_date.day),
+            'actual_end_time': actual_end_time
+        }
+        for c in customers_qs.iterator()
+    ]
+
+    # export additional tels
+    tels = AdditionalTelephone.objects.filter(customer__in=customers_qs).select_related("customer")
+    customer_tels.extend(
+        {
+            "customer_id": t.customer_id,
+            "contact": f"{t.customer.get_full_name()} {t.telephone}",
+            "actual_start_time": t.create_time,
+            'actual_end_time': actual_end_time
+        }
+        for t in tels.iterator()
+    )
+
+    exporter = ContactSimpleExportTree(event_time=curr_time)
+    data = exporter.export(data=customer_tels, many=True)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.CUSTOMER_CONTACT)
 
 
 def customer_export_eol(

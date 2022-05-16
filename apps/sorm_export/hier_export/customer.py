@@ -13,9 +13,9 @@ from sorm_export.models import (
 )
 from sorm_export.serializers import individual_entity_serializers
 from .base import (
-    simple_export_decorator,
     format_fname,
-    ExportTree, ContinueIteration
+    ExportTree, ContinueIteration,
+    SimpleExportTree
 )
 
 
@@ -429,13 +429,17 @@ class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
             yield res
 
 
-@simple_export_decorator
-def export_contact(customer_tels, event_time=None):
+class ContactSimpleExportTree(SimpleExportTree):
     """
     Файл данных по контактной информации.
     В этом файле выгружается контактная информация
     для каждого абонента - ФИО, телефон и факс контактного лица.
     """
-    ser = individual_entity_serializers.CustomerContactObjectFormat(data=customer_tels, many=True)
-    return ser, f"ISP/abonents/contact_phones_v1_{format_fname(event_time)}.txt"
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/contact_phones_v1_{format_fname(event_time)}.txt"
+
+    def export(self, data, many: bool, *args, **kwargs):
+        ser = individual_entity_serializers.CustomerContactObjectFormat(data=data, many=many)
+        ser.is_valid(raise_exception=True)
+        return ser.data
 

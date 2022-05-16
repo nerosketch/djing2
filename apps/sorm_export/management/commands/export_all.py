@@ -22,13 +22,13 @@ from sorm_export.hier_export.addresses import (
     export_address_object, get_remote_export_filename
 )
 from sorm_export.hier_export.customer import (
-    export_contact,
     general_customer_filter_queryset,
     CustomerRootExportTree,
     CustomerContractExportTree,
     AccessPointExportTree,
     IndividualCustomersExportTree,
     LegalCustomerExportTree,
+    ContactSimpleExportTree
 )
 
 from sorm_export.hier_export.networks import IpLeaseExportTree
@@ -130,9 +130,9 @@ def export_all_customer_contacts():
         for t in tels.iterator()
     )
 
-    data, fname = export_contact(customer_tels=customer_tels, event_time=datetime.now())
-
-    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTACT)
+    exporter = ContactSimpleExportTree(recursive=False)
+    data = exporter.export(data=customer_tels, many=True)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.CUSTOMER_CONTACT)
 
 
 def export_all_service_nomenclature():
