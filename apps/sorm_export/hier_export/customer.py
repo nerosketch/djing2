@@ -436,7 +436,7 @@ class ContactSimpleExportTree(SimpleExportTree):
     для каждого абонента - ФИО, телефон и факс контактного лица.
     """
     def get_remote_ftp_file_name(self):
-        return f"ISP/abonents/contact_phones_v1_{format_fname(event_time)}.txt"
+        return f"ISP/abonents/contact_phones_v1_{format_fname(self._event_time)}.txt"
 
     def export(self, data, many: bool, *args, **kwargs):
         ser = individual_entity_serializers.CustomerContactObjectFormat(data=data, many=many)

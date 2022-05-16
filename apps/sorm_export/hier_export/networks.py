@@ -20,7 +20,7 @@ class IpLeaseExportTree(ExportTree[CustomerIpLeaseModel]):
     адресам и подсетям, выданным абонентам.
     """
     def get_remote_ftp_file_name(self):
-        return f'ISP/abonents/ip_nets_v1_{format_fname(event_time)}.txt'
+        return f'ISP/abonents/ip_nets_v1_{format_fname(self._event_time)}.txt'
 
     def get_export_format_serializer(self):
         return networks.CustomerIpLeaseExportFormat
