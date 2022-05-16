@@ -41,7 +41,7 @@ class CustomerRootExportTree(ExportTree[Customer]):
     """
 
     def get_remote_ftp_file_name(self):
-        return f"ISP/abonents/abonents_v1_{format_fname(self._event_time)}.txt",
+        return f"ISP/abonents/abonents_v1_{format_fname(self._event_time)}.txt"
 
     def get_export_format_serializer(self):
         return individual_entity_serializers.CustomerRootObjectFormat
@@ -113,8 +113,7 @@ def _addr_get_parent(addr: AddressModel, err_msg=None) -> Optional[AddressModel]
     return addr_parent_region
 
 
-@iterable_export_decorator
-def export_access_point_address(customers: Iterable[Customer], event_time=None):
+class AccessPointExportTree(ExportTree[Customer]):
     """
     Файл выгрузки адресов точек подключения, версия 1.
     В этом файле выгружается информация о точках подключения оборудования - реальном адресе,
@@ -125,7 +124,23 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
     что и у абонента.
     """
 
-    def gen(customer: Customer):
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/ap_region_v1_{format_fname(self._event_time)}.txt"
+
+    def get_export_format_serializer(self):
+        return individual_entity_serializers.CustomerAccessPointAddressObjectFormat
+
+    def get_items(self, queryset):
+        queryset.select_related(
+            "address", "address__parent_addr"
+        )
+        for customer in queryset:
+            try:
+                yield self.get_item(customer)
+            except ContinueIteration:
+                continue
+
+    def get_item(self, customer):
         if not hasattr(customer, "address"):
             logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
             return
@@ -180,14 +195,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             'actual_end_time': contract.end_service_time or None
         }
 
-    return (
-        individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
-        gen,
-        customers.select_related(
-            "address", "address__parent_addr"
-        ),
-        f"ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt",
-    )
+
 
 
 def _report_about_customers_no_have_passport(customers_without_passports_qs):
