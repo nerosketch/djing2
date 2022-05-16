@@ -50,6 +50,8 @@ class ExportTree(Generic[T]):
         else:
             self._event_time = event_time
 
+    def filter_queryset(self, queryset):
+        return queryset
 
     @abc.abstractmethod
     def get_remote_ftp_file_name(self):
@@ -60,7 +62,7 @@ class ExportTree(Generic[T]):
         raise NotImplementedError
 
     def get_items(self, queryset: QuerySet):
-        for item in queryset:
+        for item in self.filter_queryset(queryset=queryset):
             try:
                 yield self.get_item(item)
             except ContinueIteration:
@@ -68,10 +70,6 @@ class ExportTree(Generic[T]):
 
     @abc.abstractmethod
     def get_item(self, *args, **kwargs):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_queryset(self):
         raise NotImplementedError
 
     #def _resolve_tree_deps(self, *args, **kwargs):
@@ -98,7 +96,7 @@ class ExportTree(Generic[T]):
             except ValidationError as e:
                 logger.error("%s | %s" % (e.detail, dat))
 
-        gen = self.get_items(event_time=event_time, queryset=queryset, *args, **kwargs)
+        gen = self.get_items(queryset=queryset, *args, **kwargs)
 
         res_data = (_val_fn(r) for r in gen if r)
         res_data = (r for r in res_data if r)

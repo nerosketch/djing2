@@ -22,12 +22,14 @@ from sorm_export.hier_export.addresses import (
     export_address_object, get_remote_export_filename
 )
 from sorm_export.hier_export.customer import (
-    export_legal_customer,
     export_contact,
     general_customer_filter_queryset,
     CustomerRootExportTree,
     CustomerContractExportTree,
-    AccessPointExportTree
+    AccessPointExportTree,
+    IndividualCustomersExportTree,
+    LegalCustomerExportTree,
+    CustomerContactExportTree,
 )
 
 from sorm_export.hier_export.networks import export_ip_leases
@@ -93,14 +95,16 @@ def export_all_access_point_addresses():
 
 def export_all_individual_customers():
     customers = general_customer_filter_queryset()
-    data, fname = export_individual_customers_queryset(customers_queryset=customers, event_time=datetime.now())
-    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_INDIVIDUAL)
+    exporter = IndividualCustomersExportTree(recursive=False)
+    data = exporter.export(queryset=customers)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.CUSTOMER_INDIVIDUAL)
 
 
 def export_all_legal_customers():
     customers = CustomerLegalModel.objects.all()
-    data, fname = export_legal_customer(legal_customers=customers, event_time=datetime.now())
-    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_LEGAL)
+    exporter = LegalCustomerExportTree(recursive=False)
+    data = exporter.export(queryset=customers)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.CUSTOMER_LEGAL)
 
 
 def export_all_customer_contacts():

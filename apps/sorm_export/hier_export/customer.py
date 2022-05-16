@@ -1,4 +1,4 @@
-from typing import Iterable, Optional
+from typing import Optional
 
 from django.db.models import Subquery, OuterRef, Count
 from django.utils.translation import gettext_lazy as _
@@ -130,15 +130,10 @@ class AccessPointExportTree(ExportTree[Customer]):
     def get_export_format_serializer(self):
         return individual_entity_serializers.CustomerAccessPointAddressObjectFormat
 
-    def get_items(self, queryset):
-        queryset.select_related(
+    def filter_queryset(self, queryset):
+        return queryset.select_related(
             "address", "address__parent_addr"
         )
-        for customer in queryset:
-            try:
-                yield self.get_item(customer)
-            except ContinueIteration:
-                continue
 
     def get_item(self, customer):
         if not hasattr(customer, "address"):
@@ -210,15 +205,34 @@ def _report_about_customers_no_have_passport(customers_without_passports_qs):
         )
 
 
-@iterable_export_decorator
-def export_individual_customers_queryset(customers_queryset, event_time=None):
+class IndividualCustomersExportTree(ExportTree[Customer]):
     """
     Файл выгрузки данных о физическом лице, версия 2
     В этом файле выгружается информация об абонентах, у которых контракт заключён с физическим лицом.
     Выгружаются только абоненты с паспортными данными.
     """
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/fiz_v2_{format_fname(self._event_time)}.txt"
 
-    def gen(customer: Customer):
+    def get_export_format_serializer(self):
+        return individual_entity_serializers.CustomerIndividualObjectFormat
+
+    def filter_queryset(self, queryset):
+        contract_start_service_time_q = CustomerContractModel.objects.filter(
+            customer_id=OuterRef('pk'),
+            is_active=True
+        ).values('start_service_time')
+        qs = queryset.exclude(passportinfo=None).select_related(
+            "group", "passportinfo"
+        ).annotate(
+            contract_date=Subquery(contract_start_service_time_q)
+        )
+        _report_about_customers_no_have_passport(
+            qs.filter(passportinfo=None)
+        )
+        return qs
+
+    def get_item(self, customer):
         if not hasattr(customer, "passportinfo"):
             logger.error('Customer "%s" has no passport info' % customer)
             return
@@ -286,35 +300,28 @@ def export_individual_customers_queryset(customers_queryset, event_time=None):
             r['last_name'] = last_name
         return r
 
-    contract_start_service_time_q = CustomerContractModel.objects.filter(
-        customer_id=OuterRef('pk'),
-        is_active=True
-    ).values('start_service_time')
 
-    _report_about_customers_no_have_passport(
-        customers_queryset.filter(passportinfo=None)
-    )
-
-    return (
-        individual_entity_serializers.CustomerIndividualObjectFormat,
-        gen,
-        customers_queryset.exclude(passportinfo=None).select_related(
-            "group", "passportinfo"
-        ).annotate(
-            contract_date=Subquery(contract_start_service_time_q)
-        ),
-        f"ISP/abonents/fiz_v2_{format_fname(event_time)}.txt",
-    )
-
-
-@iterable_gen_export_decorator
-def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_time=None):
+class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
     """
     Файл выгрузки данных о юридическом лице версия 5.
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
     """
 
-    def _iter_customers(legal):
+    def get_remote_ftp_file_name(self):
+        return f'ISP/abonents/jur_v5_{format_fname(self._event_time)}.txt'
+
+    def get_export_format_serializer(self):
+        return individual_entity_serializers.CustomerLegalObjectFormat
+
+    def filter_queryset(self, queryset):
+        legals = queryset.select_related('address', 'delivery_address', 'post_address')
+        return legals
+
+    def get_items(self, queryset):
+        for legal in queryset:
+            yield from self._iter_customers(legal)
+
+    def _iter_customers(self, legal):
         # TODO: Optimize
         #  оптимизаровать запросы к бд
         #  Сейчас на каждый запрос адреса из иерархии адресов делается отдельный запрос в бд.
@@ -420,17 +427,6 @@ def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_t
                     'customer_bank_num': bank_info.number,
                 })
             yield res
-
-    def _gen():
-        legals = legal_customers.select_related('address', 'delivery_address', 'post_address')
-        for legal in legals:
-            yield from _iter_customers(legal)
-
-    return (
-        individual_entity_serializers.CustomerLegalObjectFormat,
-        _gen,
-        f'ISP/abonents/jur_v5_{format_fname(event_time)}.txt'
-    )
 
 
 @simple_export_decorator
