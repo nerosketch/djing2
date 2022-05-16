@@ -3,8 +3,8 @@ from uwsgi_tasks import task
 from devices.models import Device
 from sorm_export.tasks.task_export import task_export
 from sorm_export.hier_export.devices import (
-    export_devices,
     export_device_finish_serve,
+    DeviceExportTree,
 )
 from sorm_export.models import CommunicationStandardChoices, ExportStampTypeEnum
 from sorm_export.serializers.devices import DeviceSwitchTypeChoices
@@ -36,12 +36,6 @@ def send_device_on_delete_task(device_id: int,
 def send_device_update_task(device_id: int, event_time=None):
     dev_qs = Device.objects.filter(pk=device_id)
     if dev_qs.exists():
-        data, fname = export_devices(
-            event_time=event_time,
-            devices=dev_qs,
-        )
-        task_export(
-            data=data,
-            filename=fname,
-            export_type=ExportStampTypeEnum.DEVICE_SWITCH
-        )
+        exporter = DeviceExportTree(event_time=event_time)
+        data = exporter.export(queryset=dev_qs)
+        exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.DEVICE_SWITCH)

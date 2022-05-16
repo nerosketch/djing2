@@ -1,7 +1,6 @@
-from typing import Iterable
 from ipaddress import ip_address
 from networks.models import CustomerIpLeaseModel
-from sorm_export.hier_export.base import iterable_export_decorator, format_fname
+from sorm_export.hier_export.base import format_fname, ExportTree
 from sorm_export.serializers import networks
 
 
@@ -14,15 +13,19 @@ def get_addr_type(ip) -> networks.IpLeaseAddrTypeChoice:
         return networks.IpLeaseAddrTypeChoice.WHITE
 
 
-@iterable_export_decorator
-def export_ip_leases(leases: Iterable[CustomerIpLeaseModel], event_time=None):
+class IpLeaseExportTree(ExportTree[CustomerIpLeaseModel]):
     """
     Формат выгрузки IP адресов.
     В этом файле выгружается информация по статическим IP
     адресам и подсетям, выданным абонентам.
     """
+    def get_remote_ftp_file_name(self):
+        return f'ISP/abonents/ip_nets_v1_{format_fname(event_time)}.txt'
 
-    def _gen(lease: CustomerIpLeaseModel):
+    def get_export_format_serializer(self):
+        return networks.CustomerIpLeaseExportFormat
+
+    def get_item(self, lease: CustomerIpLeaseModel, *args, **kwargs):
         return {
             'customer_id': lease.customer_id,
             'ip_addr': lease.ip_address,
@@ -31,5 +34,3 @@ def export_ip_leases(leases: Iterable[CustomerIpLeaseModel], event_time=None):
             'mac_addr': lease.mac_address
         }
 
-    return (networks.CustomerIpLeaseExportFormat, _gen,
-            leases, f'ISP/abonents/ip_nets_v1_{format_fname(event_time)}.txt')

@@ -29,15 +29,14 @@ from sorm_export.hier_export.customer import (
     AccessPointExportTree,
     IndividualCustomersExportTree,
     LegalCustomerExportTree,
-    CustomerContactExportTree,
 )
 
-from sorm_export.hier_export.networks import export_ip_leases
+from sorm_export.hier_export.networks import IpLeaseExportTree
 from sorm_export.hier_export.service import export_nomenclature, export_customer_service
 from sorm_export.hier_export.special_numbers import export_special_numbers
-from sorm_export.hier_export.devices import export_devices
-from sorm_export.hier_export.ip_numbering import export_ip_numbering
-from sorm_export.hier_export.gateways import export_gateways
+from sorm_export.hier_export.devices import DeviceExportTree
+from sorm_export.hier_export.ip_numbering import IpNumberingExportTree
+from sorm_export.hier_export.gateways import GatewayExportTree
 from sorm_export.management.commands._general_func import export_customer_lease_binds
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
 from sorm_export.tasks.task_export import task_export
@@ -148,8 +147,9 @@ def export_all_ip_leases():
         customer__in=customers_qs,
         is_dynamic=False
     )
-    data, fname = export_ip_leases(leases=leases, event_time=datetime.now())
-    task_export(data, fname, ExportStampTypeEnum.NETWORK_STATIC_IP)
+    exporter = IpLeaseExportTree(recursive=False)
+    data = exporter.export(queryset=leases)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.NETWORK_STATIC_IP)
 
 
 def export_all_customer_services():
@@ -166,25 +166,22 @@ def export_all_switches():
         dev_klass, SwitchDeviceStrategy)]
     devs = Device.objects.filter(dev_type__in=device_switch_type_ids).exclude(address=None).select_related('address')
     if devs.exists():
-        data, fname = export_devices(devices=devs, event_time=datetime.now())
-        task_export(data, fname, ExportStampTypeEnum.DEVICE_SWITCH)
+        exporter = DeviceExportTree()
+        data = exporter.export(queryset=devs)
+        exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.DEVICE_SWITCH)
 
 
 def export_all_ip_numbering():
-    data, fname = export_ip_numbering(
-        pools=NetworkIpPool.objects.all(),
-        event_time=datetime.now()
-    )
-    task_export(data, fname, ExportStampTypeEnum.IP_NUMBERING)
+    exporter = IpNumberingExportTree(recursive=False)
+    data = exporter.export(queryset=NetworkIpPool.objects.all())
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.IP_NUMBERING)
 
 
 def export_all_gateways():
     from gateways.models import Gateway
-    data, fname = export_gateways(
-        event_time=datetime.now(),
-        gateways_qs=Gateway.objects.exclude(place=None),
-    )
-    task_export(data, fname, ExportStampTypeEnum.GATEWAYS)
+    exporter = GatewayExportTree()
+    data = exporter.export(queryset=Gateway.objects.exclude(place=None))
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.GATEWAYS)
 
 
 class Command(BaseCommand):

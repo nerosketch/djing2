@@ -3,18 +3,15 @@ from uwsgi_tasks import task
 from gateways.models import Gateway
 from sorm_export.tasks.task_export import task_export
 from sorm_export.models import ExportStampTypeEnum
-from sorm_export.hier_export.gateways import export_gateways, export_gateway_stop_using
+from sorm_export.hier_export.gateways import export_gateway_stop_using, GatewayExportTree
 
 
 @task()
 def export_gateway_task(gw_id: int, event_time=None):
     gws = Gateway.objects.filter(pk=gw_id).exclude(place=None)
-    if gws.exists():
-        dat, fname = export_gateways(
-            event_time=event_time,
-            gateways_qs=gws
-        )
-        task_export(dat, fname, ExportStampTypeEnum.GATEWAYS)
+    exporter = GatewayExportTree(event_time=event_time)
+    data = exporter.export(queryset=gws)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.GATEWAYS)
 
 
 @task()

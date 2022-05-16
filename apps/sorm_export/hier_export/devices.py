@@ -1,38 +1,41 @@
 from datetime import datetime
-from typing import Iterable
-from sorm_export.hier_export.base import iterable_export_decorator, simple_export_decorator, format_fname
+from sorm_export.hier_export.base import simple_export_decorator, format_fname, ExportTree
 from devices.models import Device
 from sorm_export.serializers.devices import DeviceSwitchExportFormat, DeviceSwitchTypeChoices
 from sorm_export.models import CommunicationStandardChoices
 
 
-@iterable_export_decorator
-def export_devices(devices: Iterable[Device], event_time: datetime):
+class DeviceExportTree(ExportTree[Device]):
     """В этом файле выгружаются все коммутаторы, установленные у оператора связи."""
 
+    @staticmethod
     def _calc_switch_type(device: Device):
         # TODO: calc it
         return DeviceSwitchTypeChoices.INTERNAL
 
+    @staticmethod
     def _calc_net_type(device: Device):
         # TODO: calc it
         return CommunicationStandardChoices.ETHERNET.label
 
-    def _gen(device: Device):
+    def get_remote_ftp_file_name(self):
+        return f'ISP/abonents/switches_{format_fname(self._event_time)}.txt'
+
+    def get_export_format_serializer(self):
+        return DeviceSwitchExportFormat
+
+    def get_item(self, device, *args, **kwargs):
         addr = device.address
         if not addr:
             return
         return {
             'title': "switch_%d" % device.pk,
-            'switch_type': _calc_switch_type(device),
-            'network_type': _calc_net_type(device),
+            'switch_type': self._calc_switch_type(device),
+            'network_type': self._calc_net_type(device),
             'description': device.comment,
             'place': addr.full_title(),
             'start_usage_time': device.create_time,
         }
-
-    return (DeviceSwitchExportFormat, _gen, devices,
-            f'ISP/abonents/switches_{format_fname(event_time)}.txt')
 
 
 @simple_export_decorator
