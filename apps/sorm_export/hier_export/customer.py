@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Iterable, Optional
 
 from django.db.models import Subquery, OuterRef, Count
@@ -14,10 +13,9 @@ from sorm_export.models import (
 )
 from sorm_export.serializers import individual_entity_serializers
 from .base import (
-    iterable_export_decorator,
     simple_export_decorator,
     format_fname,
-    iterable_gen_export_decorator
+    ExportTree, ContinueIteration
 )
 
 
@@ -33,8 +31,7 @@ def _addr2str(addr: Optional[AddressModel]) -> str:
     return str(addr.title)
 
 
-@iterable_gen_export_decorator
-def export_customer_root(customers: Iterable[Customer], event_time=None):
+class CustomerRootExportTree(ExportTree[Customer]):
     """
     Файл данных по абонентам v1.
     В этом файле выгружается корневая запись всей иерархии
@@ -42,35 +39,44 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
     к каскадным ошибкам загрузки связанных данных в других файлах.
     :return: data, filename
     """
+    parent_dependencies = ()
 
-    def _gen():
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/abonents_v1_{format_fname(self._event_time)}.txt",
+
+    def get_export_format_serializer(self):
+        return individual_entity_serializers.CustomerRootObjectFormat
+
+    def get_items(self, queryset):
         lgl_sb = CustomerLegalModel.objects.filter(branches__id=OuterRef('pk')).values('pk')
         # FIXME: Абоненты без договора не выгружаются.
         #  Нужно выгружать только тех, у кого есть основной договор.
         #  Нужно сделать типы договоров, чтоб проверять только по 'основному'.
         #  Типы договоров, например: Основной, iptv, voip, доп оборудование, и.т.д.
 
-        for customer in customers.annotate(
+        for customer in queryset.annotate(
             legal_id=Subquery(lgl_sb)
         ):
-            # TODO: optimize
-            contract = customer.customercontractmodel_set.first()
-            if contract is None:
-                logger.error('Contract for customer: "%s" not found' % customer)
+            try:
+                yield self.get_item(customer)
+            except ContinueIteration:
                 continue
-            yield {
-                "customer_id": customer.pk,
-                "legal_customer_id": customer.legal_id if customer.legal_id else customer.pk,
-                "contract_start_date": contract.start_service_time.date(),
-                "customer_login": customer.username,
-                "communication_standard": CommunicationStandardChoices.ETHERNET.value,
-            }
 
-    return (
-        individual_entity_serializers.CustomerRootObjectFormat,
-        _gen,
-        f"ISP/abonents/abonents_v1_{format_fname(event_time)}.txt",
-    )
+    def get_item(self, customer):
+        # TODO: optimize
+        contract = customer.customercontractmodel_set.first()
+        if contract is None:
+            logger.error('Contract for customer: "%s" not found' % customer)
+            raise ContinueIteration
+        return {
+            "customer_id": customer.pk,
+            "legal_customer_id": customer.legal_id if customer.legal_id else customer.pk,
+            "contract_start_date": contract.start_service_time.date(),
+            "customer_login": customer.username,
+            "communication_standard": CommunicationStandardChoices.ETHERNET.value,
+        }
+
+
 
 
 @iterable_export_decorator

@@ -22,13 +22,13 @@ from sorm_export.hier_export.addresses import (
     export_address_object, get_remote_export_filename
 )
 from sorm_export.hier_export.customer import (
-    export_customer_root,
     export_contract,
     export_access_point_address,
     export_individual_customers_queryset,
     export_legal_customer,
     export_contact,
     general_customer_filter_queryset,
+    CustomerRootExportTree
 )
 
 from sorm_export.hier_export.networks import export_ip_leases
@@ -44,8 +44,9 @@ from sorm_export.tasks.task_export import task_export
 
 def export_all_root_customers():
     customers = general_customer_filter_queryset()
-    data, fname = export_customer_root(customers=customers, event_time=datetime.now())
-    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ROOT)
+    exporter = CustomerRootExportTree(recursive=False)
+    data = exporter.export(queryset=customers)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.CUSTOMER_ROOT)
 
 
 def export_all_customer_contracts():

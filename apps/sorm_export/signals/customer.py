@@ -13,7 +13,6 @@ from sorm_export.tasks.customer import (
     customer_service_export_task,
     customer_service_manual_data_export_task,
     customer_contact_export_task,
-    customer_root_export_task,
 )
 
 
@@ -74,11 +73,11 @@ def prevent_delete_customer_due2eol_export(sender, instance, **kwargs):
     )
 
 
-@receiver(post_save, sender=Customer)
-def customer_post_save_signal(sender, instance: Customer, created=False, **kwargs):
-    if created:
-        # export customer root record
-        customer_root_export_task(customer_id=instance.pk, event_time=datetime.now())
+#@receiver(post_save, sender=Customer)
+#def customer_post_save_signal(sender, instance: Customer, created=False, **kwargs):
+#    if created:
+#        # export customer root record
+#        customer_root_export_task(customer_id=instance.pk, event_time=datetime.now())
 
 
 @receiver(customer_service_post_pick, sender=Customer)
