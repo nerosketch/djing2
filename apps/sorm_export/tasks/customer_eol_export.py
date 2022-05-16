@@ -8,7 +8,6 @@ from sorm_export.models import ExportStampTypeEnum,  CustomerDocumentTypeChoices
 from sorm_export.tasks.task_export import task_export
 from sorm_export.hier_export.base import format_fname
 from sorm_export.hier_export.customer import (
-    export_contract,
     export_contact,
     general_customer_filter_queryset,
 )
@@ -36,14 +35,14 @@ def _general_customers_queryset_filter(customer_id: int):
 #    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ROOT)
 
 
-def export_customer_contract_eol(customer_id: int, curr_time: datetime):
-    customers_qs = _general_customers_queryset_filter(customer_id=customer_id)
-    contracts = CustomerContractModel.objects.select_related('customer').filter(
-        customer__in=customers_qs,
-        customer_id=customer_id
-    )
-    data, fname = export_contract(contracts=contracts, event_time=curr_time)
-    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTRACT)
+#def export_customer_contract_eol(customer_id: int, curr_time: datetime):
+#    customers_qs = _general_customers_queryset_filter(customer_id=customer_id)
+#    contracts = CustomerContractModel.objects.select_related('customer').filter(
+#        customer__in=customers_qs,
+#        customer_id=customer_id
+#    )
+#    data, fname = export_contract(contracts=contracts, event_time=curr_time)
+#    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTRACT)
 
 
 def export_individual_customer_eol(customer_id: int,

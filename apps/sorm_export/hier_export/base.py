@@ -59,9 +59,12 @@ class ExportTree(Generic[T]):
     def get_export_format_serializer(self):
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def get_items(self, queryset: QuerySet, *args, **kwargs):
-        raise NotImplementedError
+    def get_items(self, queryset: QuerySet):
+        for item in queryset:
+            try:
+                yield self.get_item(item)
+            except ContinueIteration:
+                continue
 
     @abc.abstractmethod
     def get_item(self, *args, **kwargs):

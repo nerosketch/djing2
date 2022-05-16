@@ -39,7 +39,6 @@ class CustomerRootExportTree(ExportTree[Customer]):
     к каскадным ошибкам загрузки связанных данных в других файлах.
     :return: data, filename
     """
-    parent_dependencies = ()
 
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/abonents_v1_{format_fname(self._event_time)}.txt",
@@ -77,17 +76,20 @@ class CustomerRootExportTree(ExportTree[Customer]):
         }
 
 
-
-
-@iterable_export_decorator
-def export_contract(contracts, event_time=None):
+class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     """
     Файл данных по договорам.
     В этом файле выгружаются данные по договорам абонентов.
     :return:
     """
 
-    def gen(contract):
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt",
+
+    def get_export_format_serializer(self):
+        return individual_entity_serializers.CustomerContractObjectFormat,
+
+    def get_item(self, contract: CustomerContractModel):
         return {
             "contract_id": contract.pk,
             "customer_id": contract.customer_id,
@@ -97,13 +99,6 @@ def export_contract(contracts, event_time=None):
             "contract_title": "Договор на оказание услуг связи",
             # "contract_title": contract.title,
         }
-
-    return (
-        individual_entity_serializers.CustomerContractObjectFormat,
-        gen,
-        contracts,
-        f"ISP/abonents/contracts_{format_fname(event_time)}.txt",
-    )
 
 
 def _addr_get_parent(addr: AddressModel, err_msg=None) -> Optional[AddressModel]:
