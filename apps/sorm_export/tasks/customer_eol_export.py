@@ -162,9 +162,24 @@ def export_customer_contact_eol(customer_id: int, actual_end_time: datetime, cur
     task_export(data, fname, ExportStampTypeEnum.CUSTOMER_CONTACT)
 
 
-def customer_export_eol(customer_id: int, curr_time: Optional[datetime] = None):
-    if curr_time is None:
-        curr_time = datetime.now()
+def customer_export_eol(
+        customer_id: int,
+        full_fname: str,
+        birthday: date,
+        document_type: CustomerDocumentTypeChoices,
+        passport_series: str,
+        passport_number: str,
+        passport_distributor: str,
+        passport_date_of_acceptance: date,
+        house_title: str,
+        addr_id: int,
+        actual_start_date: datetime,
+        curr_time: datetime,
+        actual_end_time: Optional[datetime] = None,
+        passport_division_code='',
+    ):
+    if actual_end_time is None:
+        actual_end_time = datetime.now()
     export_root_customer_eol(
         customer_id=customer_id,
         curr_time=curr_time
@@ -175,17 +190,59 @@ def customer_export_eol(customer_id: int, curr_time: Optional[datetime] = None):
     )
     export_individual_customer_eol(
         customer_id=customer_id,
-        curr_time=curr_time
+        full_fname=full_fname,
+        birthday=birthday,
+        document_type=document_type,
+        passport_series=passport_series,
+        passport_number=passport_number,
+        passport_distributor=passport_distributor,
+        passport_date_of_acceptance=passport_date_of_acceptance,
+        house_title=house_title,
+        addr_id=addr_id,
+        actual_start_date=actual_start_date,
+        actual_end_time=actual_end_time,
+        passport_division_code=passport_division_code,
+        curr_time=curr_time,
     )
 
     export_customer_contact_eol(
         customer_id=customer_id,
         curr_time=curr_time,
-        act
+        actual_end_time=actual_end_time,
     )
 
 
 @task(executor=TaskExecutor.SPOOLER)
-def customer_export_eol_task(customer_id: int, curr_time: datetime):
-    customer_export_eol(customer_id=customer_id, curr_time=curr_time)
+def customer_export_eol_task(
+        customer_id: int,
+        full_fname: str,
+        birthday: date,
+        document_type: CustomerDocumentTypeChoices,
+        passport_series: str,
+        passport_number: str,
+        passport_distributor: str,
+        passport_date_of_acceptance: date,
+        house_title: str,
+        addr_id: int,
+        actual_start_date: datetime,
+        curr_time: datetime,
+        actual_end_time: Optional[datetime] = None,
+        passport_division_code='',
+    ):
+    customer_export_eol(
+        customer_id=customer_id,
+        full_fname=full_fname,
+        birthday=birthday,
+        document_type=document_type,
+        passport_series=passport_series,
+        passport_number=passport_number,
+        passport_distributor=passport_distributor,
+        passport_date_of_acceptance=passport_date_of_acceptance,
+        house_title=house_title,
+        addr_id=addr_id,
+        actual_start_date=actual_start_date,
+        actual_end_time=actual_end_time,
+        passport_division_code=passport_division_code,
+        curr_time=curr_time,
+    )
 
