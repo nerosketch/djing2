@@ -271,7 +271,7 @@ let g:esearch = {
   \ 'adapter': 'rg',
   \ 'backend': 'nvim'
   \}
-call esearch#out#win#map('<Enter>', 'tab')
+" call esearch#out#win#map('<Enter>', 'tab')
 
 " Custom icon for coc.nvim statusline
 let g:coc_status_error_sign=" "
@@ -354,10 +354,10 @@ nnoremap <Leader>n :NERDTree<CR>
 nmap " :NERDTreeToggle<CR>
 nnoremap <Leader>f :NERDTreeFind<CR>
 " Tabs
-nnoremap <Leader>tn :tabn<CR>
-nnoremap <Leader>tp :tabp<CR>
-nnoremap <Leader>tc :tabe<CR>
-nnoremap <Leader>tx :tabclose<CR>
+" nnoremap <Leader>tn :tabn<CR>
+" nnoremap <Leader>tp :tabp<CR>
+" nnoremap <Leader>tc :tabe<CR>
+" nnoremap <Leader>tx :tabclose<CR>
 
 " Buffers
 nnoremap <Leader>qq :bd<CR>
@@ -476,20 +476,20 @@ augroup END
       " \ pumvisible() ? "\<C-n>" :
       " \ <SID>check_back_space() ? "\<TAB>" :
       " \ coc#refresh()
-inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+" inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
 
-inoremap <silent><expr> <TAB>
-      \ pumvisible() ? coc#_select_confirm() :
-      \ coc#expandableOrJumpable() ? "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
-      \ <SID>check_back_space() ? "\<TAB>" :
-      \ coc#refresh()
+" inoremap <silent><expr> <TAB>
+"       \ pumvisible() ? coc#_select_confirm() :
+"       \ coc#expandableOrJumpable() ? "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
+"       \ <SID>check_back_space() ? "\<TAB>" :
+"       \ coc#refresh()
 
 function! s:check_back_space() abort
   let col = col('.') - 1
   return !col || getline('.')[col - 1]  =~# '\s'
 endfunction
 
-let g:coc_snippet_next = '<tab>'
+" let g:coc_snippet_next = '<tab>'
 let g:coc_disable_startup_warning = 1
 
 function! s:show_documentation()
