@@ -15,7 +15,7 @@ class NomenclatureSimpleExportTree(SimpleExportTree):
      А пока выгружается "Высокоскоростной доступ в интернет".
     Да и вообще тут пока всё статично.
     """
-    def get_export_format_serializer(self):
+    def get_remote_ftp_file_name(self):
         return f"ISP/abonents/service_list_v1_{format_fname(self._event_time)}.txt"
 
     def export(self, *args, **kwargs):

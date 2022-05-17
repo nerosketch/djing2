@@ -206,12 +206,12 @@ class Command(BaseCommand):
                 #self.stdout.write(msg, ending=' ')
                 fn()
                 #self.stdout.write(self.style.SUCCESS("OK"))
-            except (ExportFailedStatus, FileNotFoundError) as err:
+            except ExportFailedStatus as err:
                 export_logger.error(str(err))
-                #self.stderr.write(str(err))
+                self.stderr.write(str(err))
             except ValidationError as e:
                 export_logger.error(str(e.detail))
-                #self.stderr.write(str(e.detail))
+                self.stderr.write(str(e.detail))
         export_logger.info("Finished full export")
         sorm_reporting_emails = getattr(settings, 'SORM_REPORTING_EMAILS', None)
         if not sorm_reporting_emails:

@@ -84,10 +84,10 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     """
 
     def get_remote_ftp_file_name(self):
-        return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt",
+        return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt"
 
     def get_export_format_serializer(self):
-        return individual_entity_serializers.CustomerContractObjectFormat,
+        return individual_entity_serializers.CustomerContractObjectFormat
 
     def get_item(self, contract: CustomerContractModel):
         return {
