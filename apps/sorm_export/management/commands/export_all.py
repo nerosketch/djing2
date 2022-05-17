@@ -153,7 +153,7 @@ def export_all_switches():
         dev_klass, SwitchDeviceStrategy)]
     devs = Device.objects.filter(dev_type__in=device_switch_type_ids).exclude(address=None).select_related('address')
     if devs.exists():
-        exporter = DeviceExportTree()
+        exporter = DeviceExportTree(recursive=True)
         data = exporter.export(queryset=devs)
         exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.DEVICE_SWITCH)
 
@@ -166,7 +166,7 @@ def export_all_ip_numbering():
 
 def export_all_gateways():
     from gateways.models import Gateway
-    exporter = GatewayExportTree()
+    exporter = GatewayExportTree(recursive=True)
     data = exporter.export(queryset=Gateway.objects.exclude(place=None))
     exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.GATEWAYS)
 
