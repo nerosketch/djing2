@@ -13,7 +13,6 @@ from customers.models import CustomerService, AdditionalTelephone
 from customers_legal.models import CustomerLegalModel
 from devices.device_config.device_type_collection import DEVICE_TYPES
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
-from services.models import Service
 from devices.models import Device
 from networks.models import CustomerIpLeaseModel, NetworkIpPool
 from customer_contract.models import CustomerContractModel
@@ -36,7 +35,6 @@ from sorm_export.hier_export.ip_numbering import IpNumberingExportTree
 from sorm_export.hier_export.gateways import GatewayExportTree
 from sorm_export.management.commands._general_func import export_customer_lease_binds
 from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
-from sorm_export.tasks.task_export import task_export
 
 
 def export_all_root_customers():
