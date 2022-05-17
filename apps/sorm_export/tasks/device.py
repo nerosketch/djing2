@@ -5,7 +5,7 @@ from sorm_export.hier_export.devices import (
     DeviceExportTree,
     DeviceFinishServeSimpleExportTree
 )
-from sorm_export.models import CommunicationStandardChoices, ExportStampTypeEnum
+from sorm_export.models import CommunicationStandardChoices
 from sorm_export.serializers.devices import DeviceSwitchTypeChoices
 
 
@@ -25,7 +25,7 @@ def send_device_on_delete_task(device_id: int,
         start_usage_time=start_usage_time,
         event_time=event_time,
     )
-    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.DEVICE_SWITCH)
+    exporter.upload2ftp(data=data)
 
 
 @task()
@@ -34,4 +34,4 @@ def send_device_update_task(device_id: int, event_time=None):
     if dev_qs.exists():
         exporter = DeviceExportTree(event_time=event_time)
         data = exporter.export(queryset=dev_qs)
-        exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.DEVICE_SWITCH)
+        exporter.upload2ftp(data=data)

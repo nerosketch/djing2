@@ -27,5 +27,5 @@ def export_customer_payment_task(
     ),)
     exporter = CustomerUnknownPaymentExportTree(event_time=event_time)
     data = exporter.export(queryset=pay_logs)
-    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.PAYMENT_UNKNOWN)
+    exporter.upload2ftp(data=data)
 

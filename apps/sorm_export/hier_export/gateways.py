@@ -2,6 +2,7 @@ from datetime import datetime
 from gateways.models import Gateway
 from sorm_export.hier_export.base import format_fname, ExportTree, SimpleExportTree
 from sorm_export.serializers.gateways import GatewayExportFormatSerializer
+from sorm_export.models import ExportStampTypeEnum
 
 
 class GatewayExportTree(ExportTree[Gateway]):
@@ -11,8 +12,13 @@ class GatewayExportTree(ExportTree[Gateway]):
     def get_remote_ftp_file_name(self):
         return f"ISP/dict/gateways_v1_{format_fname(self._event_time)}.txt"
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return GatewayExportFormatSerializer
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.GATEWAYS
 
     def get_item(self, gw, *args, **kwargs):
         return {
@@ -32,6 +38,10 @@ class GatewayStopUsingSimpleExportTree(SimpleExportTree):
     """
     def get_remote_ftp_file_name(self):
         return f"ISP/dict/gateways_v1_{format_fname(self._event_time)}.txt"
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.GATEWAYS
 
     def export(self, gw_id: int, gw_type: str, descr: str, gw_place: str, start_use_time: datetime,
                ip_addr: str, ip_port: int, event_time: datetime, *args, **kwargs):

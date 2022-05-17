@@ -2,7 +2,7 @@ from datetime import datetime
 from sorm_export.hier_export.base import format_fname, ExportTree, SimpleExportTree
 from devices.models import Device
 from sorm_export.serializers.devices import DeviceSwitchExportFormat, DeviceSwitchTypeChoices
-from sorm_export.models import CommunicationStandardChoices
+from sorm_export.models import CommunicationStandardChoices, ExportStampTypeEnum
 
 
 class DeviceExportTree(ExportTree[Device]):
@@ -21,8 +21,13 @@ class DeviceExportTree(ExportTree[Device]):
     def get_remote_ftp_file_name(self):
         return f'ISP/abonents/switches_{format_fname(self._event_time)}.txt'
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return DeviceSwitchExportFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.DEVICE_SWITCH
 
     def get_item(self, device, *args, **kwargs):
         addr = device.address
@@ -41,6 +46,10 @@ class DeviceExportTree(ExportTree[Device]):
 class DeviceFinishServeSimpleExportTree(SimpleExportTree):
     def get_remote_ftp_file_name(self):
         return f'ISP/abonents/switches_{format_fname(self._event_time)}.txt'
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.DEVICE_SWITCH
 
     def export(self, dev_id: int, switch_type: DeviceSwitchTypeChoices,
                network_type: CommunicationStandardChoices,

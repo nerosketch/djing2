@@ -2,7 +2,7 @@ from djing2.lib.logger import logger
 from addresses.fias_socrbase import AddressFIASInfo
 from addresses.models import AddressModel
 from sorm_export.serializers import individual_entity_serializers
-from sorm_export.models import ExportFailedStatus
+from sorm_export.models import ExportFailedStatus, ExportStampTypeEnum
 from .base import format_fname, ExportTree, ContinueIteration
 
 
@@ -18,8 +18,13 @@ class AddressExportTree(ExportTree[AddressModel]):
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/regions_{format_fname(self._event_time)}.txt"
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return individual_entity_serializers.AddressObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_ADDRESS
 
     def get_items(self, queryset):
         for item in self.filter_queryset(queryset=queryset):

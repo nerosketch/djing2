@@ -1,6 +1,7 @@
 from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway
 from sorm_export.hier_export.base import format_fname, ExportTree
 from sorm_export.serializers.payment import UnknownPaymentExportFormat
+from sorm_export.models import ExportStampTypeEnum
 
 
 class CustomerUnknownPaymentExportTree(ExportTree[AllTimePayLog]):
@@ -14,8 +15,13 @@ class CustomerUnknownPaymentExportTree(ExportTree[AllTimePayLog]):
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/payments_v1_{format_fname(self._event_time)}.txt"
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return UnknownPaymentExportFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.PAYMENT_UNKNOWN
 
     def get_item(self, pay: AllTimePayLog, *args, **kwargs):
         params = "платёжная система '%s', Идентификатор торговой точки: '%s'. Номер чека, выдаваемого клиенту: '%d'." % (

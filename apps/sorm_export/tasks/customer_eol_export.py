@@ -2,7 +2,6 @@ from typing import Optional
 from uwsgi_tasks import task, TaskExecutor
 from datetime import datetime, date
 from customers.models import AdditionalTelephone
-from customer_contract.models import CustomerContractModel
 from addresses.models import AddressModelTypes, AddressModel
 from sorm_export.models import ExportStampTypeEnum,  CustomerDocumentTypeChoices
 from sorm_export.tasks.task_export import task_export
@@ -157,7 +156,7 @@ def export_customer_contact_eol(customer_id: int, actual_end_time: datetime, cur
 
     exporter = ContactSimpleExportTree(event_time=curr_time)
     data = exporter.export(data=customer_tels, many=True)
-    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.CUSTOMER_CONTACT)
+    exporter.upload2ftp(data=data)
 
 
 def customer_export_eol(

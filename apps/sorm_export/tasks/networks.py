@@ -17,7 +17,7 @@ def export_static_ip_leases_task(customer_lease_id_list: List[int], event_time=N
     try:
         exporter = IpLeaseExportTree(event_time=event_time)
         data = exporter.export(queryset=leases)
-        exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.NETWORK_STATIC_IP)
+        exporter.upload2ftp(data=data)
     except ExportFailedStatus as err:
         logger.error(err)
 

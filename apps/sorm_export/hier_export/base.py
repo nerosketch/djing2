@@ -43,8 +43,14 @@ class ExportTree(Generic[T]):
     def get_remote_ftp_file_name(self):
         raise NotImplementedError
 
+    @classmethod
     @abc.abstractmethod
-    def get_export_format_serializer(self):
+    def get_export_format_serializer(cls):
+        raise NotImplementedError
+
+    @classmethod
+    @abc.abstractmethod
+    def get_export_type(cls) -> ExportStampTypeEnum:
         raise NotImplementedError
 
     def get_items(self, queryset: QuerySet):
@@ -66,12 +72,7 @@ class ExportTree(Generic[T]):
     #    for dep in self.parent_dependencies:
     #        return dep(*args, **kwargs)
 
-    def export(self, queryset, event_time: Optional[datetime] = None, *args, **kwargs):
-        if event_time is None:
-            event_time = self._event_time
-        elif isinstance(event_time, str):
-            event_time = datetime.fromisoformat(event_time)
-
+    def export(self, queryset, *args, **kwargs):
         serializer_class = self.get_export_format_serializer()
 
         def _val_fn(dat):
@@ -89,9 +90,9 @@ class ExportTree(Generic[T]):
 
         return res_data
 
-    def upload2ftp(self, data, export_type: ExportStampTypeEnum):
+    def upload2ftp(self, data):
         fname = self.get_remote_ftp_file_name()
-        task_export(data, fname, export_type)
+        task_export(data, fname, export_type=self.get_export_type())
 
 
 class SimpleExportTree(ExportTree):

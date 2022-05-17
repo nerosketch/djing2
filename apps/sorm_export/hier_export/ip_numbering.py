@@ -2,6 +2,7 @@ from datetime import datetime
 from sorm_export.hier_export.base import SimpleExportTree, format_fname, ExportTree
 from networks.models import NetworkIpPool
 from sorm_export.serializers.ip_numbering import IpNumberingExportFormatSerializer
+from sorm_export.models import ExportStampTypeEnum
 
 
 def make_ip_numbering_description(pool: NetworkIpPool) -> str:
@@ -17,8 +18,13 @@ class IpNumberingExportTree(ExportTree[NetworkIpPool]):
     def get_remote_ftp_file_name(self):
         return f"ISP/dict/ip_numbering_{format_fname(self._event_time)}.txt"
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return IpNumberingExportFormatSerializer
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.IP_NUMBERING
 
     def get_item(self, pool: NetworkIpPool, *args, **kwargs):
         return {
@@ -35,6 +41,10 @@ class IpNumberingStopUsageSimpleExportTree(SimpleExportTree):
     """
     def get_remote_ftp_file_name(self):
         return f"ISP/dict/ip_numbering_{format_fname(self._event_time)}.txt"
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.IP_NUMBERING
 
     def export(self, ip_net: str, descr: str, start_usage_time: datetime, event_time: datetime, *args, **kwargs):
         dat = [{

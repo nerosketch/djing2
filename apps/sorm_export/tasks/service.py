@@ -13,4 +13,4 @@
 #     task_export(data, fname, ExportStampTypeEnum.SERVICE_NOMENCLATURE)
 #    exporter = NomenclatureSimpleExportTree(recursive=False)
 #    data = exporter.export()
-#    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.SERVICE_NOMENCLATURE)
+#    exporter.upload2ftp(data=data)

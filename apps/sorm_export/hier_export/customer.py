@@ -10,6 +10,7 @@ from customers.models import Customer
 from sorm_export.models import (
     CommunicationStandardChoices,
     CustomerDocumentTypeChoices,
+    ExportStampTypeEnum
 )
 from sorm_export.serializers import individual_entity_serializers
 from .base import (
@@ -43,8 +44,13 @@ class CustomerRootExportTree(ExportTree[Customer]):
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/abonents_v1_{format_fname(self._event_time)}.txt"
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return individual_entity_serializers.CustomerRootObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_ROOT
 
     def get_items(self, queryset):
         lgl_sb = CustomerLegalModel.objects.filter(branches__id=OuterRef('pk')).values('pk')
@@ -82,12 +88,37 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     В этом файле выгружаются данные по договорам абонентов.
     :return:
     """
+    parent_dependencies = (CustomerRootExportTree, IndividualCustomersExportTree)
 
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt"
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return individual_entity_serializers.CustomerContractObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_CONTRACT
+
+    def export_dependencies(self):
+        # Проверить и выгрузить все зависимости, если self._recursive
+        for dep in self.parent_dependencies:
+            exporter = dep(recursive=True, event_time=self._event_time)
+            data = exporter.export(queryset=)
+            exporter.upload2ftp(data=data, export_type=)
+
+    def get_items(self, queryset):
+        # Проверить и выгрузить все зависимости, если self._recursive
+        if self._recursive:
+            self.export_dependencies()
+
+        # Выгрузить себя
+        for item in self.filter_queryset(queryset=queryset):
+            try:
+                yield self.get_item(item)
+            except ContinueIteration:
+                continue
 
     def get_item(self, contract: CustomerContractModel):
         return {
@@ -127,8 +158,13 @@ class AccessPointExportTree(ExportTree[Customer]):
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/ap_region_v1_{format_fname(self._event_time)}.txt"
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return individual_entity_serializers.CustomerAccessPointAddressObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_AP_ADDRESS
 
     def filter_queryset(self, queryset):
         return queryset.select_related(
@@ -214,8 +250,13 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/fiz_v2_{format_fname(self._event_time)}.txt"
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return individual_entity_serializers.CustomerIndividualObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_INDIVIDUAL
 
     def filter_queryset(self, queryset):
         contract_start_service_time_q = CustomerContractModel.objects.filter(
@@ -310,8 +351,13 @@ class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
     def get_remote_ftp_file_name(self):
         return f'ISP/abonents/jur_v5_{format_fname(self._event_time)}.txt'
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return individual_entity_serializers.CustomerLegalObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_LEGAL
 
     def filter_queryset(self, queryset):
         legals = queryset.select_related('address', 'delivery_address', 'post_address')
@@ -437,6 +483,10 @@ class ContactSimpleExportTree(SimpleExportTree):
     """
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/contact_phones_v1_{format_fname(self._event_time)}.txt"
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_CONTACT
 
     def export(self, data, many: bool, *args, **kwargs):
         ser = individual_entity_serializers.CustomerContactObjectFormat(data=data, many=many)

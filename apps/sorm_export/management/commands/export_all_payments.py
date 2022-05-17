@@ -14,5 +14,5 @@ class Command(BaseCommand):
         )
         exporter = CustomerUnknownPaymentExportTree(recursive=False)
         data = exporter.export(queryset=pay_logs)
-        exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.PAYMENT_UNKNOWN)
+        exporter.upload2ftp(data=data)
         self.stdout.write(self.style.SUCCESS("OK"))

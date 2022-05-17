@@ -2,6 +2,7 @@ from ipaddress import ip_address
 from networks.models import CustomerIpLeaseModel
 from sorm_export.hier_export.base import format_fname, ExportTree
 from sorm_export.serializers import networks
+from sorm_export.models import ExportStampTypeEnum
 
 
 def get_addr_type(ip) -> networks.IpLeaseAddrTypeChoice:
@@ -22,8 +23,13 @@ class IpLeaseExportTree(ExportTree[CustomerIpLeaseModel]):
     def get_remote_ftp_file_name(self):
         return f'ISP/abonents/ip_nets_v1_{format_fname(self._event_time)}.txt'
 
-    def get_export_format_serializer(self):
+    @classmethod
+    def get_export_format_serializer(cls):
         return networks.CustomerIpLeaseExportFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.NETWORK_STATIC_IP
 
     def get_item(self, lease: CustomerIpLeaseModel, *args, **kwargs):
         return {
