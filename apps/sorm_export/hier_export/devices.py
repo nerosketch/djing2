@@ -1,5 +1,5 @@
 from datetime import datetime
-from sorm_export.hier_export.base import simple_export_decorator, format_fname, ExportTree
+from sorm_export.hier_export.base import format_fname, ExportTree, SimpleExportTree
 from devices.models import Device
 from sorm_export.serializers.devices import DeviceSwitchExportFormat, DeviceSwitchTypeChoices
 from sorm_export.models import CommunicationStandardChoices
@@ -38,22 +38,26 @@ class DeviceExportTree(ExportTree[Device]):
         }
 
 
-@simple_export_decorator
-def export_device_finish_serve(dev_id: int, switch_type: DeviceSwitchTypeChoices,
-                               network_type: CommunicationStandardChoices,
-                               descr: str, place: str, start_usage_time: datetime,
-                               event_time: datetime):
-    dat = [{
-        'title': "switch_%d" % dev_id,
-        'switch_type': switch_type,
-        'network_type': network_type.label,
-        'description': descr,
-        'place': place,
-        'start_usage_time': start_usage_time,
-        'end_usage_time': event_time,
-    }]
+class DeviceFinishServeSimpleExportTree(SimpleExportTree):
+    def get_remote_ftp_file_name(self):
+        return f'ISP/abonents/switches_{format_fname(self._event_time)}.txt'
 
-    ser = DeviceSwitchExportFormat(
-        data=dat, many=True
-    )
-    return ser, f'ISP/abonents/switches_{format_fname(event_time)}.txt'
+    def export(self, dev_id: int, switch_type: DeviceSwitchTypeChoices,
+               network_type: CommunicationStandardChoices,
+               descr: str, place: str, start_usage_time: datetime,
+               event_time: datetime, *args, **kwargs):
+        dat = [{
+            'title': "switch_%d" % dev_id,
+            'switch_type': switch_type,
+            'network_type': network_type.label,
+            'description': descr,
+            'place': place,
+            'start_usage_time': start_usage_time,
+            'end_usage_time': event_time,
+        }]
+
+        ser = DeviceSwitchExportFormat(
+            data=dat, many=True
+        )
+        ser.is_valid(raise_exception=True)
+        return ser.data
