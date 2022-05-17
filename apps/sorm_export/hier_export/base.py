@@ -81,7 +81,7 @@ class ExportTree(Generic[T]):
 
     def export(self, queryset, event_time: Optional[datetime] = None, *args, **kwargs):
         if event_time is None:
-            event_time = datetime.now()
+            event_time = self._event_time
         elif isinstance(event_time, str):
             event_time = datetime.fromisoformat(event_time)
 

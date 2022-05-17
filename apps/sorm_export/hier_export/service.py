@@ -68,7 +68,11 @@ class CustomerServiceExportTree(ExportTree[CustomerService]):
             return None
 
 
-@simple_export_decorator
-def export_manual_data_customer_service(data, event_time=None):
-    ser = CustomerServiceIncrementalFormat(data=data, many=True)
-    return ser, f"ISP/abonents/services_{format_fname(event_time)}.txt"
+class ManualDataCustomerServiceSimpleExportTree(SimpleExportTree):
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/services_{format_fname(self._event_time)}.txt"
+
+    def export(self, *args, **kwargs):
+        ser = CustomerServiceIncrementalFormat(many=True, *args, **kwargs)
+        ser.is_valid(raise_exception=True)
+        return ser.data
