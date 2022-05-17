@@ -29,7 +29,7 @@ from sorm_export.hier_export.customer import (
 )
 
 from sorm_export.hier_export.networks import IpLeaseExportTree
-from sorm_export.hier_export.service import export_nomenclature, CustomerServiceExportTree
+from sorm_export.hier_export.service import NomenclatureSimpleExportTree, CustomerServiceExportTree
 from sorm_export.hier_export.special_numbers import export_special_numbers
 from sorm_export.hier_export.devices import DeviceExportTree
 from sorm_export.hier_export.ip_numbering import IpNumberingExportTree
@@ -124,9 +124,9 @@ def export_all_customer_contacts():
 
 
 def export_all_service_nomenclature():
-    services = Service.objects.all()
-    data, fname = export_nomenclature(services=services, event_time=datetime.now())
-    task_export(data, fname, ExportStampTypeEnum.SERVICE_NOMENCLATURE)
+    exporter = NomenclatureSimpleExportTree(recursive=False)
+    data = exporter.export()
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.SERVICE_NOMENCLATURE)
 
 
 def export_all_ip_leases():

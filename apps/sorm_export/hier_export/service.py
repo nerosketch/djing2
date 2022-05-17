@@ -1,45 +1,45 @@
 from datetime import datetime
-from typing import Iterable
 
 from customers.models import CustomerService
-from services.models import Service
-from .base import format_fname, simple_export_decorator, ExportTree
+from .base import format_fname, ExportTree, SimpleExportTree
 from ..models import CommunicationStandardChoices
 from ..serializers.customer_service_serializer import CustomerServiceIncrementalFormat
 from ..serializers.service_serializer import ServiceIncrementalNomenclature
 
 
-@simple_export_decorator
-def export_nomenclature(services: Iterable[Service], event_time=None):
+class NomenclatureSimpleExportTree(SimpleExportTree):
     """
     Файл выгрузки номенклатуры, версия 1.
     В этом файле выгружаются все услуги, предоставляемые оператором своим абонентам - номенклатура-справочник.
+    FIXME: Определиться нужно-ли выгружать названия тарифов.
+     А пока выгружается "Высокоскоростной доступ в интернет".
+    Да и вообще тут пока всё статично.
     """
+    def get_export_format_serializer(self):
+        return f"ISP/abonents/service_list_v1_{format_fname(self._event_time)}.txt"
 
-    # def gen(srv: Service):
-    #     return {
-    #         "service_id": srv.pk,
-    #         "mnemonic": str(srv.title)[:64],
-    #         "description": str(srv.descr)[:256],
-    #         "begin_time": srv.create_time.date(),  # дата начала будет датой создания тарифа.
-    #         # end_time 36525 дней (~100 лет), типо бесконечно. Т.к. для вида услуги нет даты завершения,
-    #         # как и нет даты окончания действия какого-то имени, например.
-    #         "end_time": srv.create_time.date() + timedelta(days=36525),
-    #         "operator_type_id": CommunicationStandardChoices.ETHERNET.label,
-    #     }
-
-    dat = [{
-        # FIXME: Определиться нужно-ли выгружать названия тарифов.
-        #  А пока выгружается "Высокоскоростной доступ в интернет".
-        "service_id": 1,
-        "mnemonic": "Интернет",
-        "description": "Высокоскоростной доступ в интернет",
-        "begin_time": datetime(2017, 1, 1, 0, 0).date(),
-        "operator_type_id": CommunicationStandardChoices.ETHERNET.label,
-    }]
-    ser = ServiceIncrementalNomenclature(data=dat, many=True)
-
-    return ser, f"ISP/abonents/service_list_v1_{format_fname(event_time)}.txt"
+    def export(self, *args, **kwargs):
+        # def gen(srv: Service):
+        #     return {
+        #         "service_id": srv.pk,
+        #         "mnemonic": str(srv.title)[:64],
+        #         "description": str(srv.descr)[:256],
+        #         "begin_time": srv.create_time.date(),  # дата начала будет датой создания тарифа.
+        #         # end_time 36525 дней (~100 лет), типо бесконечно. Т.к. для вида услуги нет даты завершения,
+        #         # как и нет даты окончания действия какого-то имени, например.
+        #         "end_time": srv.create_time.date() + timedelta(days=36525),
+        #         "operator_type_id": CommunicationStandardChoices.ETHERNET.label,
+        #     }
+        dat = [{
+            "service_id": 1,
+            "mnemonic": "Интернет",
+            "description": "Высокоскоростной доступ в интернет",
+            "begin_time": datetime(2017, 1, 1, 0, 0).date(),
+            "operator_type_id": CommunicationStandardChoices.ETHERNET.label,
+        }]
+        ser = ServiceIncrementalNomenclature(data=dat, many=True)
+        ser.is_valid(raise_exception=True)
+        return ser.data
 
 
 class CustomerServiceExportTree(ExportTree[CustomerService]):
