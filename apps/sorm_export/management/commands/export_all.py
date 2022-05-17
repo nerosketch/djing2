@@ -8,7 +8,6 @@ from django.conf import settings
 from django.core.mail import send_mail
 from rest_framework.exceptions import ValidationError
 
-from djing2.lib.logger import logger
 from addresses.models import AddressModel, AddressModelTypes
 from customers.models import CustomerService, AdditionalTelephone
 from customers_legal.models import CustomerLegalModel
@@ -18,9 +17,7 @@ from services.models import Service
 from devices.models import Device
 from networks.models import CustomerIpLeaseModel, NetworkIpPool
 from customer_contract.models import CustomerContractModel
-from sorm_export.hier_export.addresses import (
-    export_address_object, get_remote_export_filename
-)
+from sorm_export.hier_export.addresses import AddressExportTree
 from sorm_export.hier_export.customer import (
     general_customer_filter_queryset,
     CustomerRootExportTree,
@@ -70,19 +67,10 @@ def export_all_address_objects():
         "fias_address_type"
     )
     et = datetime.now()
-    fname = get_remote_export_filename(event_time=et)
 
-    def _make_exportable_object(addr_object):
-        try:
-            dat, _ = export_address_object(fias_addr=addr_object, event_time=et)
-            if not dat:
-                return
-            return dat
-        except ExportFailedStatus as err:
-            logger.error(str(err))
-
-    data = (_make_exportable_object(a) for a in addr_objects.iterator())
-    task_export(data, fname, ExportStampTypeEnum.CUSTOMER_ADDRESS)
+    exporter = AddressExportTree(event_time=et, recursive=False)
+    data = exporter.export(queryset=addr_objects)
+    exporter.upload2ftp(data=data, export_type=ExportStampTypeEnum.CUSTOMER_ADDRESS)
 
 
 def export_all_access_point_addresses():

@@ -1,7 +1,6 @@
 import abc
 from typing import Optional, TypeVar, Generic
 from datetime import datetime
-from functools import wraps
 
 from django.db.models import QuerySet
 from djing2.lib.logger import logger

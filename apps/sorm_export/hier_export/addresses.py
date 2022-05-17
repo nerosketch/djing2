@@ -2,15 +2,11 @@ from djing2.lib.logger import logger
 from addresses.fias_socrbase import AddressFIASInfo
 from addresses.models import AddressModel
 from sorm_export.serializers import individual_entity_serializers
-from .base import simple_export_decorator, format_fname
+from sorm_export.models import ExportFailedStatus
+from .base import format_fname, ExportTree, ContinueIteration
 
 
-def get_remote_export_filename(event_time=None) -> str:
-    return f"ISP/abonents/regions_{format_fname(event_time)}.txt"
-
-
-@simple_export_decorator
-def export_address_object(fias_addr: AddressModel, event_time=None):
+class AddressExportTree(ExportTree[AddressModel]):
     """
     Файл выгрузки адресных объектов.
     В этом файле выгружается иерархия адресных объектов, которые фигурируют
@@ -19,20 +15,33 @@ def export_address_object(fias_addr: AddressModel, event_time=None):
     инфа по одному адресному объекту. Чтобы выгрузить несколько адресных объектов -
     можно вызвать её в цикле.
     """
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/regions_{format_fname(self._event_time)}.txt"
 
-    addr = AddressFIASInfo.get_address(addr_code=fias_addr.fias_address_type)
-    if addr is None:
-        logger.error('Fias address with code %d not found' % fias_addr.fias_address_type)
-        return None, None
+    def get_export_format_serializer(self):
+        return individual_entity_serializers.AddressObjectFormat
 
-    dat = {
-        "address_id": str(fias_addr.pk),
-        "parent_id": str(fias_addr.parent_addr_id) if fias_addr.parent_addr_id else "",
-        "type_id": fias_addr.fias_address_type,
-        "region_type": addr.addr_short_name,
-        "title": fias_addr.title,
-        "full_title": fias_addr.full_title(),
-    }
+    def get_items(self, queryset):
+        for item in self.filter_queryset(queryset=queryset):
+            try:
+                yield self.get_item(item)
+            except ContinueIteration:
+                continue
+            except ExportFailedStatus as err:
+                logger.error("AddressExportTree error: %s" % str(err))
 
-    ser = individual_entity_serializers.AddressObjectFormat(data=dat)
-    return ser, None
+    def get_item(self, fias_addr: AddressModel, *args, **kwargs):
+        addr = AddressFIASInfo.get_address(addr_code=fias_addr.fias_address_type)
+        if addr is None:
+            logger.error('Fias address with code %d not found' % fias_addr.fias_address_type)
+            raise ContinueIteration
+
+        return {
+            "address_id": str(fias_addr.pk),
+            "parent_id": str(fias_addr.parent_addr_id) if fias_addr.parent_addr_id else "",
+            "type_id": fias_addr.fias_address_type,
+            "region_type": addr.addr_short_name,
+            "title": fias_addr.title,
+            "full_title": fias_addr.full_title(),
+        }
+
