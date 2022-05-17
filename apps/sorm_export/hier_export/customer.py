@@ -82,56 +82,6 @@ class CustomerRootExportTree(ExportTree[Customer]):
         }
 
 
-class CustomerContractExportTree(ExportTree[CustomerContractModel]):
-    """
-    Файл данных по договорам.
-    В этом файле выгружаются данные по договорам абонентов.
-    :return:
-    """
-    parent_dependencies = (CustomerRootExportTree, IndividualCustomersExportTree)
-
-    def get_remote_ftp_file_name(self):
-        return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt"
-
-    @classmethod
-    def get_export_format_serializer(cls):
-        return individual_entity_serializers.CustomerContractObjectFormat
-
-    @classmethod
-    def get_export_type(cls):
-        return ExportStampTypeEnum.CUSTOMER_CONTRACT
-
-    def export_dependencies(self):
-        # Проверить и выгрузить все зависимости, если self._recursive
-        for dep in self.parent_dependencies:
-            exporter = dep(recursive=True, event_time=self._event_time)
-            data = exporter.export(queryset=)
-            exporter.upload2ftp(data=data, export_type=)
-
-    def get_items(self, queryset):
-        # Проверить и выгрузить все зависимости, если self._recursive
-        if self._recursive:
-            self.export_dependencies()
-
-        # Выгрузить себя
-        for item in self.filter_queryset(queryset=queryset):
-            try:
-                yield self.get_item(item)
-            except ContinueIteration:
-                continue
-
-    def get_item(self, contract: CustomerContractModel):
-        return {
-            "contract_id": contract.pk,
-            "customer_id": contract.customer_id,
-            "contract_start_date": contract.start_service_time.date(),
-            'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
-            "contract_number": contract.contract_number,
-            "contract_title": "Договор на оказание услуг связи",
-            # "contract_title": contract.title,
-        }
-
-
 def _addr_get_parent(addr: AddressModel, err_msg=None) -> Optional[AddressModel]:
     # TODO: Cache address hierarchy
     addr_parent_region = addr.get_address_item_by_type(
@@ -493,3 +443,60 @@ class ContactSimpleExportTree(SimpleExportTree):
         ser.is_valid(raise_exception=True)
         return ser.data
 
+
+class CustomerContractExportTree(ExportTree[CustomerContractModel]):
+    """
+    Файл данных по договорам.
+    В этом файле выгружаются данные по договорам абонентов.
+    :return:
+    """
+    parent_dependencies = (
+        (
+            CustomerRootExportTree,
+        ),
+        (
+            IndividualCustomersExportTree,
+        ),
+    )
+
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt"
+
+    @classmethod
+    def get_export_format_serializer(cls):
+        return individual_entity_serializers.CustomerContractObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_CONTRACT
+
+    def export_dependencies(self):
+        # Проверить и выгрузить все зависимости, если self._recursive
+        for dep_class, qs in self.parent_dependencies:
+            Тут надо сделать queryset для зависимостей
+            exporter = dep_class(recursive=True, event_time=self._event_time)
+            data = exporter.export(queryset=qs)
+            exporter.upload2ftp(data=data)
+
+    def get_items(self, queryset):
+        # Проверить и выгрузить все зависимости, если self._recursive
+        if self._recursive:
+            self.export_dependencies()
+
+        # Выгрузить себя
+        for item in self.filter_queryset(queryset=queryset):
+            try:
+                yield self.get_item(item)
+            except ContinueIteration:
+                continue
+
+    def get_item(self, contract: CustomerContractModel):
+        return {
+            "contract_id": contract.pk,
+            "customer_id": contract.customer_id,
+            "contract_start_date": contract.start_service_time.date(),
+            'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
+            "contract_number": contract.contract_number,
+            "contract_title": "Договор на оказание услуг связи",
+            # "contract_title": contract.title,
+        }
