@@ -1,6 +1,6 @@
 from datetime import datetime
 from gateways.models import Gateway
-from sorm_export.hier_export.base import simple_export_decorator, format_fname, ExportTree
+from sorm_export.hier_export.base import format_fname, ExportTree, SimpleExportTree
 from sorm_export.serializers.gateways import GatewayExportFormatSerializer
 
 
@@ -26,20 +26,24 @@ class GatewayExportTree(ExportTree[Gateway]):
         }
 
 
-@simple_export_decorator
-def export_gateway_stop_using(gw_id: int, gw_type: str, descr: str, gw_place: str, start_use_time: datetime,
-                              ip_addr: str, ip_port: int, event_time: datetime):
+class GatewayStopUsingSimpleExportTree(SimpleExportTree):
     """
     В этом файле выгружаются все шлюзы, используемые оператором связи.
     """
-    dat = [{
-        'gw_id': gw_id,
-        'gw_type': gw_type,
-        'descr': descr,
-        'gw_addr': gw_place,
-        'start_use_time': start_use_time,
-        'deactivate_time': event_time,
-        'ip_addrs': "%s:%d" % (ip_addr, ip_port)
-    }]
-    ser = GatewayExportFormatSerializer(data=dat, many=True)
-    return ser, f"ISP/dict/gateways_v1_{format_fname(event_time)}.txt"
+    def get_remote_ftp_file_name(self):
+        return f"ISP/dict/gateways_v1_{format_fname(self._event_time)}.txt"
+
+    def export(self, gw_id: int, gw_type: str, descr: str, gw_place: str, start_use_time: datetime,
+               ip_addr: str, ip_port: int, event_time: datetime, *args, **kwargs):
+        dat = [{
+            'gw_id': gw_id,
+            'gw_type': gw_type,
+            'descr': descr,
+            'gw_addr': gw_place,
+            'start_use_time': start_use_time,
+            'deactivate_time': event_time,
+            'ip_addrs': "%s:%d" % (ip_addr, ip_port)
+        }]
+        ser = GatewayExportFormatSerializer(data=dat, many=True)
+        ser.is_valid(raise_exception=True)
+        return ser.data

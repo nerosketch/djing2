@@ -111,5 +111,5 @@ class SimpleExportTree(ExportTree):
     def get_export_format_serializer(self):
         pass
 
-    def export(self, queryset, event_time: Optional[datetime] = None, *args, **kwargs):
+    def export(self, *args, **kwargs) -> dict:
         raise NotImplementedError
