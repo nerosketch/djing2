@@ -84,7 +84,7 @@ call plug#begin('~/.local/share/nvim/plugged')
   Plug 'MattesGroeger/vim-bookmarks'
 
   " Wakatime
-  Plug 'wakatime/vim-wakatime'
+  " Plug 'wakatime/vim-wakatime'
 
 call plug#end()
 
