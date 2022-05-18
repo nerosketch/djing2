@@ -83,6 +83,9 @@ call plug#begin('~/.local/share/nvim/plugged')
   " Bookmarks
   Plug 'MattesGroeger/vim-bookmarks'
 
+  " Wakatime
+  Plug 'wakatime/vim-wakatime'
+
 call plug#end()
 
 filetype plugin indent on
