@@ -10,23 +10,17 @@ def customer_service_export_task(customer_service_id_list: List[int], event_time
     cservices = CustomerService.objects.filter(
         pk__in=customer_service_id_list
     )
-    exporter = CustomerServiceExportTree(event_time=event_time)
-    data = exporter.export(queryset=cservices)
-    exporter.upload2ftp(data=data)
+    CustomerServiceExportTree(event_time=event_time).exportNupload(queryset=cservices)
 
 
 @task()
 def customer_service_manual_data_export_task(event_time=None, *args, **kwargs):
-    exporter = ManualDataCustomerServiceSimpleExportTree(event_time=event_time)
-    data = exporter.export(*args, **kwargs)
-    exporter.upload2ftp(data=data)
+    ManualDataCustomerServiceSimpleExportTree(event_time=event_time).exportNupload(*args, **kwargs)
 
 
 @task()
 def customer_contact_export_task(customer_tels, event_time=None):
-    exporter = ContactSimpleExportTree(event_time=event_time)
-    data = exporter.export(data=customer_tels, many=True)
-    exporter.upload2ftp(data=data)
+    ContactSimpleExportTree(event_time=event_time).exportNupload(data=customer_tels, many=True)
 
 
 #@task()

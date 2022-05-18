@@ -94,6 +94,10 @@ class ExportTree(Generic[T]):
         fname = self.get_remote_ftp_file_name()
         task_export(data, fname, export_type=self.get_export_type())
 
+    def exportNupload(self, *args, **kwargs):
+        data = self.export(*args, **kwargs)
+        self.upload2ftp(data=data)
+
 
 class SimpleExportTree(ExportTree):
     def get_export_format_serializer(self):

@@ -7,16 +7,13 @@ from sorm_export.hier_export.gateways import GatewayStopUsingSimpleExportTree, G
 @task()
 def export_gateway_task(gw_id: int, event_time=None):
     gws = Gateway.objects.filter(pk=gw_id).exclude(place=None)
-    exporter = GatewayExportTree(event_time=event_time)
-    data = exporter.export(queryset=gws)
-    exporter.upload2ftp(data=data)
+    GatewayExportTree(event_time=event_time).exportNupload(queryset=gws)
 
 
 @task()
 def export_gateway_stop_using_task(gw_id: int, gw_type: str, descr: str, gw_place: str, start_use_time: datetime,
                                    ip_addr: str, ip_port: int, event_time: datetime):
-    exporter = GatewayStopUsingSimpleExportTree(event_time=event_time)
-    data = exporter.export(
+    GatewayStopUsingSimpleExportTree(event_time=event_time).exportNupload(
         gw_id=gw_id,
         gw_type=gw_type,
         descr=descr,
@@ -26,4 +23,3 @@ def export_gateway_stop_using_task(gw_id: int, gw_type: str, descr: str, gw_plac
         ip_port=ip_port,
         event_time=event_time,
     )
-    exporter.upload2ftp(data=data)

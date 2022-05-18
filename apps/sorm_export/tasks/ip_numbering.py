@@ -11,20 +11,16 @@ from networks.models import NetworkIpPool
 def export_ip_numbering_task(ip_pool_id: int, event_time=None):
     pools = NetworkIpPool.objects.filter(pk=ip_pool_id)
     if pools.exists():
-        exporter = IpNumberingExportTree(event_time=event_time)
-        data = exporter.export(queryset=pools)
-        exporter.upload2ftp(data=data)
+        IpNumberingExportTree(event_time=event_time).exportNupload(queryset=pools)
 
 
 @task()
 def export_ip_numbering_stop_using_task(ip_net: str, descr: str,
                                         start_usage_time: datetime,
                                         event_time: datetime):
-    exporter = IpNumberingStopUsageSimpleExportTree(event_time=event_time)
-    data = exporter.export(
+    IpNumberingStopUsageSimpleExportTree(event_time=event_time).exportNupload(
         ip_net=ip_net,
         descr=descr,
         start_usage_time=start_usage_time,
         event_time=event_time
     )
-    exporter.upload2ftp(data=data)

@@ -39,18 +39,14 @@ from sorm_export.models import ExportFailedStatus
 
 def export_all_root_customers():
     customers = general_customer_filter_queryset()
-    exporter = CustomerRootExportTree(recursive=False)
-    data = exporter.export(queryset=customers)
-    exporter.upload2ftp(data=data)
+    CustomerRootExportTree(recursive=False).exportNupload(queryset=customers)
 
 
 def export_all_customer_contracts():
     contracts = CustomerContractModel.objects.select_related('customer').filter(
         customer__is_active=True
     )
-    exporter = CustomerContractExportTree(recursive=False)
-    data = exporter.export(queryset=contracts)
-    exporter.upload2ftp(data=data)
+    CustomerContractExportTree(recursive=False).exportNupload(queryset=contracts)
 
 
 def export_all_address_objects():
@@ -66,30 +62,22 @@ def export_all_address_objects():
     )
     et = datetime.now()
 
-    exporter = AddressExportTree(event_time=et, recursive=False)
-    data = exporter.export(queryset=addr_objects)
-    exporter.upload2ftp(data=data)
+    AddressExportTree(event_time=et, recursive=False).exportNupload(queryset=addr_objects)
 
 
 def export_all_access_point_addresses():
     customers = general_customer_filter_queryset()
-    exporter = AccessPointExportTree()
-    data = exporter.export(queryset=customers)
-    exporter.upload2ftp(data=data)
+    AccessPointExportTree(recursive=False).exportNupload(queryset=customers)
 
 
 def export_all_individual_customers():
     customers = general_customer_filter_queryset()
-    exporter = IndividualCustomersExportTree(recursive=False)
-    data = exporter.export(queryset=customers)
-    exporter.upload2ftp(data=data)
+    IndividualCustomersExportTree(recursive=False).exportNupload(queryset=customers)
 
 
 def export_all_legal_customers():
     customers = CustomerLegalModel.objects.all()
-    exporter = LegalCustomerExportTree(recursive=False)
-    data = exporter.export(queryset=customers)
-    exporter.upload2ftp(data=data)
+    LegalCustomerExportTree(recursive=False).exportNupload(queryset=customers)
 
 
 def export_all_customer_contacts():
@@ -116,15 +104,11 @@ def export_all_customer_contacts():
         for t in tels.iterator()
     )
 
-    exporter = ContactSimpleExportTree(recursive=False)
-    data = exporter.export(data=customer_tels, many=True)
-    exporter.upload2ftp(data=data)
+    ContactSimpleExportTree(recursive=False).exportNupload(data=customer_tels, many=True)
 
 
 def export_all_service_nomenclature():
-    exporter = NomenclatureSimpleExportTree(recursive=False)
-    data = exporter.export()
-    exporter.upload2ftp(data=data)
+    NomenclatureSimpleExportTree(recursive=False).exportNupload()
 
 
 def export_all_ip_leases():
@@ -133,9 +117,7 @@ def export_all_ip_leases():
         customer__in=customers_qs,
         is_dynamic=False
     )
-    exporter = IpLeaseExportTree(recursive=False)
-    data = exporter.export(queryset=leases)
-    exporter.upload2ftp(data=data)
+    IpLeaseExportTree(recursive=False).exportNupload(queryset=leases)
 
 
 def export_all_customer_services():
@@ -143,9 +125,7 @@ def export_all_customer_services():
     csrv = CustomerService.objects.select_related("customer").filter(
         customer__in=customers_qs
     )
-    exporter = CustomerServiceExportTree(recursive=False)
-    data = exporter.export(queryset=csrv)
-    exporter.upload2ftp(data=data)
+    CustomerServiceExportTree(recursive=False).exportNupload(queryset=csrv)
 
 
 def export_all_switches():
@@ -153,22 +133,16 @@ def export_all_switches():
         dev_klass, SwitchDeviceStrategy)]
     devs = Device.objects.filter(dev_type__in=device_switch_type_ids).exclude(address=None).select_related('address')
     if devs.exists():
-        exporter = DeviceExportTree(recursive=True)
-        data = exporter.export(queryset=devs)
-        exporter.upload2ftp(data=data)
+        DeviceExportTree(recursive=True).exportNupload(queryset=devs)
 
 
 def export_all_ip_numbering():
-    exporter = IpNumberingExportTree(recursive=False)
-    data = exporter.export(queryset=NetworkIpPool.objects.all())
-    exporter.upload2ftp(data=data)
+    IpNumberingExportTree(recursive=False).exportNupload(queryset=NetworkIpPool.objects.all())
 
 
 def export_all_gateways():
     from gateways.models import Gateway
-    exporter = GatewayExportTree(recursive=True)
-    data = exporter.export(queryset=Gateway.objects.exclude(place=None))
-    exporter.upload2ftp(data=data)
+    GatewayExportTree(recursive=True).exportNupload(queryset=Gateway.objects.exclude(place=None))
 
 
 class Command(BaseCommand):

@@ -450,14 +450,7 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     В этом файле выгружаются данные по договорам абонентов.
     :return:
     """
-    parent_dependencies = (
-        (
-            CustomerRootExportTree,
-        ),
-        (
-            IndividualCustomersExportTree,
-        ),
-    )
+    parent_dependencies = ()
 
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt"
@@ -470,13 +463,13 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     def get_export_type(cls):
         return ExportStampTypeEnum.CUSTOMER_CONTRACT
 
-    def export_dependencies(self):
-        # Проверить и выгрузить все зависимости, если self._recursive
-        for dep_class, qs in self.parent_dependencies:
-            Тут надо сделать queryset для зависимостей
-            exporter = dep_class(recursive=True, event_time=self._event_time)
-            data = exporter.export(queryset=qs)
-            exporter.upload2ftp(data=data)
+    #def export_dependencies(self):
+    #    # Проверить и выгрузить все зависимости, если self._recursive
+    #    for dep_class, qs in self.parent_dependencies:
+    #        Тут надо сделать queryset для зависимостей
+    #        exporter = dep_class(recursive=True, event_time=self._event_time)
+    #        data = exporter.export(queryset=qs)
+    #        exporter.upload2ftp(data=data)
 
     def get_items(self, queryset):
         # Проверить и выгрузить все зависимости, если self._recursive

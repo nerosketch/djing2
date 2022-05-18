@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand, no_translations
-from sorm_export.models import ExportStampTypeEnum
 from fin_app.models.alltime import AllTimePayLog
 from sorm_export.hier_export.payment import CustomerUnknownPaymentExportTree
 
@@ -12,7 +11,5 @@ class Command(BaseCommand):
         pay_logs = AllTimePayLog.objects.exclude(customer=None).filter(
             customer__is_active=True
         )
-        exporter = CustomerUnknownPaymentExportTree(recursive=False)
-        data = exporter.export(queryset=pay_logs)
-        exporter.upload2ftp(data=data)
+        CustomerUnknownPaymentExportTree(recursive=False).exportNupload(queryset=pay_logs)
         self.stdout.write(self.style.SUCCESS("OK"))

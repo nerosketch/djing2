@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from django.db.models.signals import post_save, pre_save, pre_delete
 from django.dispatch.dispatcher import receiver
@@ -14,6 +13,19 @@ from sorm_export.tasks.customer import (
     customer_service_manual_data_export_task,
     customer_contact_export_task,
 )
+
+
+def reexport_customer_with_new_contract(customer):
+    """Завершение учётки со старой датой, и выгрузка с новой.
+       Когда изменяется логин, дата актуальности, и.т.д. То для
+       сохранения историчности данных сначала выгружаем учётку
+       со старыми данными, с датой завершения договора сейчас,
+       и ещё раз но только с датой старта договора сейчас, и не определённой
+       датой завершения договора.
+    """
+
+    # Выгружаем контакт
+    ContactSimpleExportTree(event_time=event_time).exportNupload(data=customer_tels, many=True)
 
 
 def on_customer_fields_change(sender, instance, old_inst):

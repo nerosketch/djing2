@@ -15,9 +15,7 @@ from sorm_export.serializers import networks as sorm_networks_serializers
 def export_static_ip_leases_task(customer_lease_id_list: List[int], event_time=None):
     leases = CustomerIpLeaseModel.objects.filter(pk__in=customer_lease_id_list).exclude(customer=None)
     try:
-        exporter = IpLeaseExportTree(event_time=event_time)
-        data = exporter.export(queryset=leases)
-        exporter.upload2ftp(data=data)
+        IpLeaseExportTree(event_time=event_time).exportNupload(queryset=leases)
     except ExportFailedStatus as err:
         logger.error(err)
 

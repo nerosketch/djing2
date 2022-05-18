@@ -154,9 +154,7 @@ def export_customer_contact_eol(customer_id: int, actual_end_time: datetime, cur
         for t in tels.iterator()
     )
 
-    exporter = ContactSimpleExportTree(event_time=curr_time)
-    data = exporter.export(data=customer_tels, many=True)
-    exporter.upload2ftp(data=data)
+    ContactSimpleExportTree(event_time=curr_time).exportNupload(data=customer_tels, many=True)
 
 
 def customer_export_eol(

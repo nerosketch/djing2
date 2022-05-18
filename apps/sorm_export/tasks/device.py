@@ -15,8 +15,7 @@ def send_device_on_delete_task(device_id: int,
                                network_type: CommunicationStandardChoices,
                                descr: str, place: str, start_usage_time: datetime,
                                event_time=None):
-    exporter = DeviceFinishServeSimpleExportTree(event_time=event_time)
-    data = exporter.export(
+    DeviceFinishServeSimpleExportTree(event_time=event_time).exportNupload(
         dev_id=device_id,
         switch_type=switch_type,
         network_type=network_type,
@@ -25,13 +24,10 @@ def send_device_on_delete_task(device_id: int,
         start_usage_time=start_usage_time,
         event_time=event_time,
     )
-    exporter.upload2ftp(data=data)
 
 
 @task()
 def send_device_update_task(device_id: int, event_time=None):
     dev_qs = Device.objects.filter(pk=device_id)
     if dev_qs.exists():
-        exporter = DeviceExportTree(event_time=event_time)
-        data = exporter.export(queryset=dev_qs)
-        exporter.upload2ftp(data=data)
+        DeviceExportTree(event_time=event_time).exportNupload(queryset=dev_qs)
