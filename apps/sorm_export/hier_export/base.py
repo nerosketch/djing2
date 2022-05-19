@@ -27,10 +27,12 @@ class ContinueIteration(Exception):
 class ExportTree(Generic[T]):
     _recursive: bool
     _event_time: datetime
+    _extra_kwargs: Optional[dict]
     parent_dependencies = ()
 
-    def __init__(self, recursive=True, event_time: Optional[datetime]= None):
+    def __init__(self, recursive=True, event_time: Optional[datetime]= None, extra_kwargs: Optional[dict] = None):
         self._recursive = recursive
+        self._extra_kwargs = extra_kwargs
         if event_time is None:
             self._event_time = datetime.now()
         else:
@@ -56,7 +58,12 @@ class ExportTree(Generic[T]):
     def get_items(self, queryset: QuerySet):
         for item in self.filter_queryset(queryset=queryset):
             try:
-                yield self.get_item(item)
+                r = self.get_item(item)
+                # Добавляем или обновляем к результатам дополнительные данные.
+                if isinstance(self._extra_kwargs, dict):
+                    r.update(self._extra_kwargs)
+                yield r
+
             except ContinueIteration:
                 continue
 
