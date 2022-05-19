@@ -1,13 +1,14 @@
 from django.utils.translation import gettext as _
 from django.db.models import JSONField
 from django.db import models
+from djing2.lib import LogicError
 
 
 date_format = '%d.%m.%Y'
 datetime_format = '%d.%m.%YT%H:%M:%S'
 
 
-class ExportFailedStatus(Exception):
+class ExportFailedStatus(LogicError):
     pass
 
 
