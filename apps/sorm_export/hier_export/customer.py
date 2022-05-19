@@ -473,8 +473,8 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
 
     def get_items(self, queryset):
         # Проверить и выгрузить все зависимости, если self._recursive
-        if self._recursive:
-            self.export_dependencies()
+        #if self._recursive:
+        #    self.export_dependencies()
 
         # Выгрузить себя
         for item in self.filter_queryset(queryset=queryset):
