@@ -74,7 +74,8 @@ from customer_contract.models import CustomerContractModel
 def on_customer_change(instance: Customer):
     old_instance = Customer.objects.filter(pk=instance.pk).first()
     if old_instance is None:
-        raise LogicError('Failed to get Customer old instance')
+        # if old instance does not exists, then it is new instance, just skip
+        return
     if old_instance.username != instance.username:
         raise LogicError('Changing username is forbidden due to СОРМ rules')
 
@@ -286,7 +287,8 @@ def customer_additional_telephone_post_delete_signal(sender, instance: Additiona
 def on_customer_contract_api_save(sender, instance: CustomerContractModel, **kwargs):
     old_instance = CustomerContractModel.objects.filter(pk=instance.pk).first()
     if old_instance is None:
-        raise LogicError('Failed to get CustomerContractModel old instance')
+        # if old instance does not exists, then it is new instance, just skip
+        return
     if old_instance.start_service_time != instance.start_service_time:
         raise LogicError('Изменение даты начала договора запрещено правилами выгрузки СОРМ')
     if old_instance.contract_number != instance.contract_number:
