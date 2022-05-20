@@ -237,7 +237,7 @@ def customer_additional_telephone_post_save_signal(sender, instance: AdditionalT
             {
                 "customer_id": customer.pk,
                 "contact": contact,
-                "actual_start_time": now,
+                "actual_start_time": instance.create_time,
                 'actual_end_time': None
             }
         ]
@@ -256,6 +256,7 @@ def customer_additional_telephone_post_save_signal(sender, instance: AdditionalT
                 'actual_end_time': None
             },
         ]
+    instance.create_time = now
     customer_contact_export_task(customer_tels=customer_tels, event_time=datetime.now())
 
 
