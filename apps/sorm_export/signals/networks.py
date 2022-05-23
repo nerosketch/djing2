@@ -17,7 +17,7 @@ def customer_ip_changed(sender, instance: Optional[CustomerIpLeaseModel] = None,
         # https://wiki.vasexperts.ru/doku.php?id=sorm:sorm3:sorm3_subs_dump:sorm3_subs_ip_nets:start
         export_static_ip_leases_task(
             customer_lease_id_list=[instance.pk],
-            event_time=str(datetime.now())
+            event_time=datetime.now()
         )
 
 
