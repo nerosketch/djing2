@@ -14,7 +14,7 @@ T = TypeVar('T')
 _fname_date_format = '%d%m%Y%H%M%S'
 
 
-def format_fname(fname_timestamp=None) -> str:
+def format_fname(fname_timestamp: Optional[datetime] = None) -> str:
     if fname_timestamp is None:
         fname_timestamp = datetime.now()
     return fname_timestamp.strftime(_fname_date_format)

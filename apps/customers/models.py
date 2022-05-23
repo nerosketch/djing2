@@ -587,10 +587,10 @@ class Customer(IAddressContaining, BaseAccount):
         :param allow_negative: Allows negative balance
         :param service: instance of services.models.Service.
         :param author: Instance of profiles.models.UserProfile.
-        Who connected this service. May be None if author is a system.
+         Who connected this service. May be None if author is a system.
         :param comment: Optional text for logging this pay.
         :param deadline: Instance of datetime.datetime. Date when service is
-        expired.
+         expired.
         :return: Nothing
         """
         if not isinstance(service, Service):

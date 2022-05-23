@@ -216,7 +216,7 @@ def customer_service_deleted(sender, instance: CustomerService, **kwargs):
                 "end_time": datetime.now(),
             }
         ]
-        customer_service_manual_data_export_task(data=dat, event_time=str(datetime.now()))
+        customer_service_manual_data_export_task(data=dat, event_time=datetime.now())
 
 
 # @receiver(post_save, sender=CustomerRawPassword)
