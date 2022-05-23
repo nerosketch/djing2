@@ -92,9 +92,20 @@ class IVendorSpecific(abc.ABC):
     def get_radius_unique_id(self, data):
         return self.get_rad_val(data, "Acct-Unique-Session-Id", str)
 
-    @abc.abstractmethod
-    def get_speed(self, speed: SpeedInfoStruct) -> SpeedInfoStruct:
-        raise NotImplementedError
+    @staticmethod
+    def get_speed(speed: SpeedInfoStruct) -> SpeedInfoStruct:
+        speed_in = speed.speed_in * 1000000.0
+        speed_out = speed.speed_out * 1000000.0
+        #brst_in = speed_in / 8.0 * 1.5
+        brst_in = speed_in / 8.0
+        #brst_out = speed_in / 8.0 * 1.5
+        brst_out = speed_in / 8.0
+        return SpeedInfoStruct(
+            speed_in=speed_in,
+            speed_out=speed_out,
+            burst_in=brst_in,
+            burst_out=brst_out
+        )
 
     @abc.abstractmethod
     def get_auth_session_response(

@@ -2,7 +2,7 @@ from netaddr import EUI
 from netfields.mac import mac_unix_common
 from rest_framework import status
 from radiusapp.vendor_base import (
-    IVendorSpecific, SpeedInfoStruct,
+    IVendorSpecific,
     CustomerServiceLeaseResult
 )
 
@@ -25,9 +25,6 @@ class MikrotikVendorSpecific(IVendorSpecific):
 
     def get_service_vlan_id(self, data):
         return 0
-
-    def get_speed(self, speed: SpeedInfoStruct) -> SpeedInfoStruct:
-        return speed
 
     def get_auth_session_response(self, db_result: CustomerServiceLeaseResult):
         # TODO: Make it

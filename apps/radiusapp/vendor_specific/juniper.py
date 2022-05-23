@@ -1,7 +1,7 @@
 from netaddr import EUI
 from rest_framework import status
 from radiusapp.vendor_base import (
-    IVendorSpecific, SpeedInfoStruct,
+    IVendorSpecific,
     CustomerServiceLeaseResult
 )
 
@@ -30,20 +30,6 @@ class JuniperVendorSpecific(IVendorSpecific):
         if isinstance(param, str) and ":" in param:
             return int(param.split(":")[1].split("-")[0])
         return param
-
-    def get_speed(self, speed: SpeedInfoStruct) -> SpeedInfoStruct:
-        speed_in = speed.speed_in * 1000000.0
-        speed_out = speed.speed_out * 1000000.0
-        #brst_in = speed_in / 8.0 * 1.5
-        brst_in = speed_in / 8.0
-        #brst_out = speed_in / 8.0 * 1.5
-        brst_out = speed_in / 8.0
-        return SpeedInfoStruct(
-            speed_in=speed_in,
-            speed_out=speed_out,
-            burst_in=brst_in,
-            burst_out=brst_out
-        )
 
     def get_auth_session_response(self, db_result: CustomerServiceLeaseResult):
         if db_result.current_service_id and db_result.speed:
