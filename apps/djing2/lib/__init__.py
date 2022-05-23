@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from datetime import timedelta, datetime
 from functools import wraps
 from hashlib import sha256
-from typing import Any, Union
+from typing import Any, Union, Optional
 
 from django.conf import settings
 from django.utils import timezone
@@ -32,6 +32,11 @@ def safe_int(i: Any, default=0) -> int:
 
 # Exceptions
 class LogicError(ParseError):
+    def __init__(self, status: Optional[int] = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if status is not None:
+            self.status_code = status
+
     default_detail = _("Internal logic error")
 
 

@@ -355,16 +355,16 @@ class CustomerManager(MyUserManager):
         if comment is None:
             comment = _("Service for customer %(customer_name)s with name '%(service_name)s' has expired")
         now = datetime.now()
-        expired_service = CustomerService.objects.filter(
+        expired_services = CustomerService.objects.filter(
             deadline__lt=now,
             customer__auto_renewal_service=False
         )
         if customer is not None and isinstance(customer, Customer):
-            expired_service = expired_service.filter(customer=customer)
-        if expired_service.exists():
-            expired_service = expired_service.select_related("customer", "service")
+            expired_services = expired_services.filter(customer=customer)
+        if expired_services.exists():
+            expired_services = expired_services.select_related("customer", "service")
             # TODO: Replace it logging by trigger from db
-            for exp_srv in expired_service.iterator():
+            for exp_srv in expired_services.iterator():
                 if not hasattr(exp_srv, "customer"):
                     continue
                 exp_srv_customer = exp_srv.customer
@@ -378,11 +378,14 @@ class CustomerManager(MyUserManager):
                                    "service_name": exp_srv.service.title},
                     )
             custom_signals.customer_service_batch_pre_stop.send(
-                sender=CustomerService, expired_services=expired_service
+                sender=CustomerService,
+                instance=CustomerService(),
+                expired_services=expired_services
             )
-            expired_service.delete()
+            expired_services.delete()
             custom_signals.customer_service_batch_post_stop.send(
-                sender=CustomerService, expired_services=expired_service
+                sender=CustomerService,
+                instance=expired_services
             )
 
     @staticmethod
@@ -436,7 +439,7 @@ class CustomerManager(MyUserManager):
                 # finish service otherwise
                 custom_signals.customer_service_pre_stop.send(
                     sender=CustomerService,
-                    expired_service=expired_service
+                    instance=expired_service
                 )
                 with transaction.atomic():
                     expired_service.delete()
@@ -448,7 +451,8 @@ class CustomerManager(MyUserManager):
                         },
                     )
                     custom_signals.customer_service_post_stop.send(
-                        sender=CustomerService, expired_service=expired_service
+                        sender=CustomerService,
+                        instance=expired_service,
                     )
 
 
@@ -610,7 +614,7 @@ class Customer(IAddressContaining, BaseAccount):
             # if service is present then speak about it
             raise LogicError(_("Service already activated"))
 
-        if allow_negative and not author.is_staff:
+        if allow_negative and (author is None or not author.is_staff):
             raise LogicError(_("User, who is no staff, can not be buy services on credit"))
 
         # if not enough money
@@ -622,7 +626,7 @@ class Customer(IAddressContaining, BaseAccount):
 
         custom_signals.customer_service_pre_pick.send(
             sender=Customer,
-            customer=self,
+            instance=self,
             service=service
         )
         old_balance = self.balance
@@ -653,7 +657,7 @@ class Customer(IAddressContaining, BaseAccount):
             )
         custom_signals.customer_service_post_pick.send(
             sender=Customer,
-            customer=self,
+            instance=self,
             service=service
         )
 
@@ -666,7 +670,7 @@ class Customer(IAddressContaining, BaseAccount):
         customer_service = self.active_service()
         custom_signals.customer_service_pre_stop.send(
             sender=CustomerService,
-            expired_service=customer_service
+            instance=customer_service
         )
         with transaction.atomic():
             cost_to_return = self.calc_cost_to_return()
@@ -688,7 +692,7 @@ class Customer(IAddressContaining, BaseAccount):
             customer_service.delete()
         custom_signals.customer_service_post_stop.send(
             sender=CustomerService,
-            expired_service=customer_service
+            instance=customer_service
         )
 
     def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
