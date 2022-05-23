@@ -377,16 +377,12 @@ class CustomerManager(MyUserManager):
                                 % {"customer_name": exp_srv_customer.get_short_name(),
                                    "service_name": exp_srv.service.title},
                     )
-            custom_signals.customer_service_batch_pre_stop.send(
-                sender=CustomerService,
-                instance=CustomerService(),
-                expired_services=expired_services
-            )
+                custom_signals.customer_service_post_stop.send(
+                    sender=CustomerService,
+                    instance=exp_srv,
+                    customer=exp_srv_customer
+                )
             expired_services.delete()
-            custom_signals.customer_service_batch_post_stop.send(
-                sender=CustomerService,
-                instance=expired_services
-            )
 
     @staticmethod
     def continue_services_if_autoconnect(customer=None) -> None:

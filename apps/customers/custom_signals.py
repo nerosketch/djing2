@@ -1,10 +1,5 @@
 from django.dispatch import Signal
 
-# Signal raises when customer service finished
-# Params:
-# - Instance: Queryset of CustomerService model
-customer_service_batch_pre_stop = Signal()
-customer_service_batch_post_stop = Signal()
 
 # Signal raises when customer service finished
 # Params:

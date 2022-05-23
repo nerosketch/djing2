@@ -10,23 +10,6 @@ from customers.models import CustomerService, Customer
 from radiusapp.vendor_base import SpeedInfoStruct, IVendorSpecific
 
 
-@receiver(
-    customer_custom_signals.customer_service_batch_pre_stop,
-    sender=CustomerService,
-    dispatch_uid="on_pre_batch_stop_customer_services&$@(7",
-)
-def on_pre_batch_stop_customer_services_signal(sender, instance: CustomerService, expired_services, **kwargs):
-    """When a lot of customers picked services, then reset its session.
-
-    :param sender: CustomerService class
-    :param expired_services: queryset of CustomerService
-    :param kwargs:
-    """
-    for es in expired_services.select_related('customer').iterator():
-        uname = es.customer.username
-        tasks.async_change_session_inet2guest(radius_uname=uname)
-
-
 @receiver(customer_custom_signals.customer_service_post_pick, sender=Customer)
 def customer_post_pick_service_signal_handler(sender, instance: Customer, service, **kwargs):
     """When single customer picked a service, then change it session to inet.
