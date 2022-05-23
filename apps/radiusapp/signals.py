@@ -21,7 +21,6 @@ def on_pre_batch_stop_customer_services_signal(sender, instance: CustomerService
     :param sender: CustomerService class
     :param expired_services: queryset of CustomerService
     :param kwargs:
-    :return: nothing
     """
     for es in expired_services.select_related('customer').iterator():
         uname = es.customer.username
@@ -30,6 +29,12 @@ def on_pre_batch_stop_customer_services_signal(sender, instance: CustomerService
 
 @receiver(customer_custom_signals.customer_service_post_pick, sender=Customer)
 def customer_post_pick_service_signal_handler(sender, instance: Customer, service, **kwargs):
+    """When single customer picked a service, then change it session to inet.
+
+    :param sender: customers.Customer class
+    :param instance:
+    :param service: instance of services.Service.
+    """
     if not instance.current_service_id:
         raise LogicError(
             detail="Server error: Customer has not current_service",
@@ -53,3 +58,19 @@ def customer_post_pick_service_signal_handler(sender, instance: Customer, servic
             speed_in_burst=speed.burst_in,
             speed_out_burst=speed.burst_out
         )
+
+
+@receiver(customer_custom_signals.customer_service_post_stop, sender=CustomerService)
+def on_customer_stops_service(sender, instance: CustomerService, customer: Customer, **kwargs):
+    """When single customer stopped his service, then change it session to guest.
+
+    :param sender: customers.Customer class
+    :param instance:
+    :param csutomer: instance of customers.Customer
+    """
+    leases = CustomerIpLeaseModel.objects.filter(customer=customer, state=True).exclude(radius_username=None)
+    for lease in leases:
+        tasks.async_change_session_inet2guest(
+            radius_uname=str(lease.radius_username)
+        )
+

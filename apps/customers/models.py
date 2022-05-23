@@ -439,7 +439,8 @@ class CustomerManager(MyUserManager):
                 # finish service otherwise
                 custom_signals.customer_service_pre_stop.send(
                     sender=CustomerService,
-                    instance=expired_service
+                    instance=expired_service,
+                    customer=expired_service_customer
                 )
                 with transaction.atomic():
                     expired_service.delete()
@@ -453,6 +454,7 @@ class CustomerManager(MyUserManager):
                     custom_signals.customer_service_post_stop.send(
                         sender=CustomerService,
                         instance=expired_service,
+                        customer=expired_service_customer,
                     )
 
 
@@ -670,7 +672,8 @@ class Customer(IAddressContaining, BaseAccount):
         customer_service = self.active_service()
         custom_signals.customer_service_pre_stop.send(
             sender=CustomerService,
-            instance=customer_service
+            instance=customer_service,
+            customer=self
         )
         with transaction.atomic():
             cost_to_return = self.calc_cost_to_return()
@@ -692,7 +695,8 @@ class Customer(IAddressContaining, BaseAccount):
             customer_service.delete()
         custom_signals.customer_service_post_stop.send(
             sender=CustomerService,
-            instance=customer_service
+            instance=customer_service,
+            customer=self
         )
 
     def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
@@ -712,7 +716,7 @@ class Customer(IAddressContaining, BaseAccount):
         # if not enough money
         if not allow_negative and self.balance < cost:
             raise NotEnoughMoney(
-                _("%(uname)s not enough money for service %(srv_name)s")
+                detail=_("%(uname)s not enough money for service %(srv_name)s")
                 % {"uname": self.username, "srv_name": shot.name}
             )
         old_balance = self.balance
