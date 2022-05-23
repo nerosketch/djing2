@@ -32,8 +32,8 @@ def safe_int(i: Any, default=0) -> int:
 
 # Exceptions
 class LogicError(ParseError):
-    def __init__(self, status: Optional[int] = None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, detail=None, code=None, status: Optional[int] = None, *args, **kwargs):
+        super().__init__(detail=detail, code=code, *args, **kwargs)
         if status is not None:
             self.status_code = status
 
