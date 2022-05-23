@@ -38,7 +38,7 @@ def customer_post_pick_service_signal_handler(sender, instance: Customer, servic
     if not instance.current_service_id:
         raise LogicError(
             detail="Server error: Customer has not current_service",
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
     speed = SpeedInfoStruct(
