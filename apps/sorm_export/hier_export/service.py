@@ -4,7 +4,7 @@ from customers.models import CustomerService
 from .base import format_fname, ExportTree, SimpleExportTree
 from sorm_export.serializers.customer_service_serializer import CustomerServiceIncrementalFormat
 from sorm_export.serializers.service_serializer import ServiceIncrementalNomenclature
-from sorm_export.models import ExportStampTypeEnum, CommunicationStandardChoices
+from sorm_export.models import ExportStampTypeEnum, CommunicationStandardChoices, ExportStampTypeEnum
 
 
 class NomenclatureSimpleExportTree(SimpleExportTree):
@@ -80,6 +80,10 @@ class CustomerServiceExportTree(ExportTree[CustomerService]):
 class ManualDataCustomerServiceSimpleExportTree(SimpleExportTree):
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/services_{format_fname(self._event_time)}.txt"
+
+    @classmethod
+    def get_export_type(cls) -> ExportStampTypeEnum:
+        return ExportStampTypeEnum.SERVICE_CUSTOMER_MANUAL
 
     def export(self, *args, **kwargs):
         ser = CustomerServiceIncrementalFormat(many=True, *args, **kwargs)
