@@ -248,16 +248,8 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # if customer.gateway:
-        #     customer_gw_remove.delay(
-        #         customer_uid=int(customer.pk),
-        #         ip_addr=str(customer.ip_address),
-        #         speed=(srv.speed_in, srv.speed_out),
-        #         is_access=customer.is_access(),
-        #         gw_pk=int(customer.gateway_id)
-        #     )
         customer.stop_service(request.user)
-        return Response()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True)
     @catch_customers_errs
