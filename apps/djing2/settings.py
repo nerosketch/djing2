@@ -227,12 +227,12 @@ LOGGING = {
         'django': {
             'handlers': ['file', 'console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'propagate': True
+            'propagate': False
         },
         'djing2_logger': {
             'handlers': ['file', 'console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'propagate': True
+            'propagate': False
         }
     }
 }
