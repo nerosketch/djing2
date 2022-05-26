@@ -31,9 +31,9 @@ def _human_readable_int(num: int, u="b") -> str:
     """
     decs = (
         (10 ** 12, "T"),
-        (10 ** 9, "G"),
-        (10 ** 6, "M"),
-        (10 ** 3, "K"),
+        (10 **  9, "G"),
+        (10 **  6, "M"),
+        (10 **  3, "K"),
     )
     for dec, pref in decs:
         if num >= dec:
