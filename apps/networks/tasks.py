@@ -10,7 +10,7 @@ from networks.models import CustomerIpLeaseModel
 
 @cron(minute=-30)
 def periodically_checks_for_stale_leases(signal_number):
-    CustomerIpLeaseModel.objects.filter(last_update__lte=datetime.now() - timedelta(days=2), is_dynamic=True).delete()
+    CustomerIpLeaseModel.objects.filter(last_update__lte=datetime.now() - timedelta(days=2), is_dynamic=True).release()
 
 
 def _radius_task_wrapper(fn):

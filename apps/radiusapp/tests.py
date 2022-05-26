@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from uuid import UUID
 from django.contrib.sites.models import Site
 from django.db.models import signals
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.test import SimpleTestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 from djing2.lib.logger import logger
@@ -962,119 +962,6 @@ class Option82TestCase(SimpleTestCase):
         mac, port = parse_opt82(remote_id=rem_id, circuit_id=circuit_id)
         self.assertEqual(mac, "45:47:c4:2:53:b3")
         self.assertEqual(port, 0)
-
-
-class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
-    def setUp(self):
-        signals.post_save.disconnect()
-        signals.post_delete.disconnect()
-        signals.pre_save.disconnect()
-        signals.pre_delete.disconnect()
-
-        self.full_customer = create_full_customer(
-            uname='custo1',
-            tel='+797811234567',
-            initial_balance=11,
-            dev_ip="192.168.2.3",
-            dev_mac="12:13:14:15:16:17",
-            dev_type=Dlink_dgs1100_10me_code,
-            service_title='test',
-            service_descr='test',
-            service_speed_in=11.0,
-            service_speed_out=11.0,
-            service_cost=10.0,
-            service_calc_type=SERVICE_CHOICE_DEFAULT
-        )
-
-    def test_normal(self):
-        """Просто тыкаем, отработает-ли вообще"""
-        is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
-            ip='10.152.16.37',
-            mac='18:c0:4d:51:de:e3',
-            customer_id=self.full_customer.customer.pk,
-            radius_uname='50d4.f794.d535-ae0:1011-139',
-            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562',
-            cvid=111,
-            svid=5
-        )
-        self.assertTrue(is_created)
-
-        leases_qs = CustomerIpLeaseModel.objects.all()
-
-        self.assertEqual(leases_qs.count(), 1)
-
-        customer = self.full_customer.customer
-
-        lease = leases_qs.first()
-        self.assertIsNotNone(lease)
-        self.assertEqual(lease.ip_address, '10.152.16.37')
-        self.assertEqual(lease.mac_address, '18:c0:4d:51:de:e3')
-        self.assertIsNone(lease.pool)
-        self.assertEqual(lease.customer_id, customer.pk)
-        self.assertTrue(lease.is_dynamic)
-        self.assertIsNotNone(lease.last_update)
-        self.assertEqual(lease.input_octets, 0)
-        self.assertEqual(lease.output_octets, 0)
-        self.assertEqual(lease.input_packets, 0)
-        self.assertEqual(lease.output_packets, 0)
-        self.assertEqual(lease.svid, 5)
-        self.assertEqual(lease.cvid, 111)
-        self.assertTrue(lease.state)
-        self.assertEqual(lease.lease_time, lease.last_update)
-        self.assertEqual(lease.session_id, UUID('02e65fad-07c3-20d8-9149-a66eadebd562'))
-        self.assertEqual(lease.radius_username, '50d4.f794.d535-ae0:1011-139')
-
-    def test_check_for_exist_session(self):
-        """Проверяем что при первом обращении сессия создастся,
-           а при повтормном, с теми же credentials просто вернётся
-        """
-        is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
-            ip='10.152.16.37',
-            mac='18:c0:4d:51:de:e3',
-            customer_id=self.full_customer.customer.pk,
-            radius_uname='50d4.f794.d535-ae0:1011-139',
-            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562',
-            cvid=111,
-            svid=5
-        )
-        self.assertTrue(is_created)
-        is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
-            ip='10.152.16.37',
-            mac='18:c0:4d:51:de:e3',
-            customer_id=self.full_customer.customer.pk,
-            radius_uname='50d4.f794.d535-ae0:1011-139',
-            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562',
-            cvid=111,
-            svid=5
-        )
-        self.assertFalse(is_created)
-
-    def test_creating_2_sessions_on_profile(self):
-        """Пробуем создать 2 разные сессии на учётку."""
-        is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
-            ip='10.152.16.37',
-            mac='18:c0:4d:51:de:e3',
-            customer_id=self.full_customer.customer.pk,
-            radius_uname='50d4.f794.d535-ae0:1011-139',
-            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd562',
-            cvid=111,
-            svid=5
-        )
-        self.assertTrue(is_created)
-
-        is_created = CustomerIpLeaseModel.create_lease_w_auto_pool(
-            ip='10.152.16.33',
-            mac='18:c0:4d:51:de:e4',
-            customer_id=self.full_customer.customer.pk,
-            radius_uname='50d4.f794.d535-ae0:1011-149',
-            radius_unique_id='02e65fad-07c3-20d8-9149-a66eadebd563',
-            cvid=111,
-            svid=5
-        )
-        self.assertTrue(is_created)
-
-        leases_qs = CustomerIpLeaseModel.objects.all()
-        self.assertEqual(leases_qs.count(), 2)
 
 
 class CustomerStaticMacAuthTestCase(APITestCase, ReqMixin):

@@ -215,6 +215,25 @@ class CustomerIpLeaseModelQuerySet(models.QuerySet):
         expire_time = datetime.now() - timedelta(seconds=DHCP_DEFAULT_LEASE_TIME)
         return self.filter(lease_time__lt=expire_time)
 
+    def release(self):
+        """
+        Free leases. Mark it free, for use again.
+        """
+        return self.update(
+            mac_address=None,
+            customer=None,
+            input_octets=0,
+            output_octets=0,
+            input_packets=0,
+            output_packets=0,
+            cvid=0,
+            svid=0,
+            state=False,
+            last_update=datetime.now(),
+            session_id=None,
+            radius_username=None
+        )
+
 
 class CustomerIpLeaseModel(models.Model):
     ip_address = models.GenericIPAddressField(_("Ip address"), unique=True)
@@ -337,20 +356,6 @@ class CustomerIpLeaseModel(models.Model):
             return res
         except InternalError as err:
             raise LogicError(str(err)) from err
-
-    @staticmethod
-    def create_lease_w_auto_pool(ip: str, mac: str, customer_id: int,
-                                 radius_uname: str, radius_unique_id: str,
-                                 svid: int=0, cvid: int=0) -> bool:
-        with connection.cursor() as cur:
-            cur.execute("SELECT create_lease_w_auto_pool"
-                "(%s::inet, %s::macaddr, %s::integer, %s,           %s::uuid,         %s::smallint, %s::smallint)",
-                 (ip,       mac,         customer_id, radius_uname, radius_unique_id, svid,         cvid))
-            created = cur.fetchone()
-        if isinstance(created, tuple) and len(created) == 1:
-            return created[0]
-        logger.error('Unexpected result from create_lease_w_auto_pool sql func')
-        return False
 
     @property
     def h_input_octets(self):

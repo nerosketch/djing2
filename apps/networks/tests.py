@@ -226,7 +226,7 @@ class IpPoolTestCase(TestCase):
             )
         )
         # Delete from some lease
-        CustomerIpLeaseModel.objects.filter(ip_address="192.168.0.156").delete()
+        CustomerIpLeaseModel.objects.filter(ip_address="192.168.0.156").release()
         free_ip = str(self.pool1.get_free_ip())
         self.assertEqual(free_ip, "192.168.0.156")
 

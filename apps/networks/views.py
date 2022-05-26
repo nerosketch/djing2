@@ -189,8 +189,8 @@ class DhcpLever(SecureApiViewMixin, APIView):
                     customer_uids = (lease.customer_id for lease in leases.iterator())
                     for customer_uid in customer_uids:
                         _update_lease_send_ws_signal(customer_uid, send2ws)
-                del_count, del_details = leases.delete()
-                return "Removed: %d" % del_count
+                leases.release()
+                return "Removed"
             else:
                 return '"cmd" parameter is invalid: %s' % data_action
         except (LogicError, DuplicateEntry) as e:

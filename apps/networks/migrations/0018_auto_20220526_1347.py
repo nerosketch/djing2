@@ -19,5 +19,8 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             sql="DROP FUNCTION IF EXISTS find_new_ip_pool_lease(varchar, boolean, smallint, smallint)"
+        ),
+        migrations.RunSQL(
+            sql="DROP FUNCTION IF EXISTS create_lease_w_auto_pool(inet, macaddr, int, varchar, uuid, smallint, smallint)"
         )
     ]
