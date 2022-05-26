@@ -186,6 +186,21 @@ class NetworkIpPool(BaseAbstractModel):
             )
         return None
 
+    def reserve_leases(self):
+        start_ip = ip_address(self.ip_start)
+        end_ip = ip_address(self.ip_end)
+        sql = ("INSERT INTO networks_ip_leases"
+                "(ip_address, pool_id, is_dynamic, "
+                "last_update, state, svid, cvid, input_octets, "
+                "input_packets, output_octets, output_packets) "
+                "SELECT %s::inet + ip, %s::int, false, null, "
+                "false, 0,0,0,0,0,0 FROM generate_series(0, %s::int) ip "
+                "ON CONFLICT DO NOTHING"
+               )
+        range_len = int(end_ip) - int(start_ip)
+        with connection.cursor() as cur:
+            cur.execute(sql=sql, params=[str(start_ip), self.pk, range_len])
+
     class Meta:
         """Declare database table name in metaclass."""
         db_table = "networks_ip_pool"
@@ -207,7 +222,7 @@ class CustomerIpLeaseModel(models.Model):
     ip_address = models.GenericIPAddressField(_("Ip address"), unique=True)
     mac_address = MACAddressField(verbose_name=_("Mac address"), null=True, default=None)
     pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE, null=True)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, default=None)
     is_dynamic = models.BooleanField(_("Is dynamic"), default=False)
     input_octets = models.BigIntegerField(default=0)
     output_octets = models.BigIntegerField(default=0)
