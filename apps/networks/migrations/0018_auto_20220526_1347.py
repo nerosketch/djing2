@@ -17,4 +17,7 @@ class Migration(migrations.Migration):
             name='customer',
             field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers.customer'),
         ),
+        migrations.RunSQL(
+            sql="DROP FUNCTION IF EXISTS find_new_ip_pool_lease(varchar, boolean, smallint, smallint)"
+        )
     ]

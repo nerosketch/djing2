@@ -154,18 +154,16 @@ class NetworkIpPool(BaseAbstractModel):
                 )
                 raise ValidationError(errs)
 
-    def get_free_ip(self) -> Optional[Union[IPv4Address, IPv6Address]]:
+    def get_free_ip(self) -> Optional['CustomerIpLeaseModel']:
         """
         Find unused ip
         :return:
         """
-        with connection.cursor() as cur:
-            cur.execute(
-                "SELECT find_new_ip_pool_lease(%s, %s::boolean, 0::smallint, %s::smallint)",
-                (self.pk, 1 if self.is_dynamic else 0, self.kind)
-            )
-            free_ip = cur.fetchone()
-        return ip_address(free_ip[0]) if free_ip and free_ip[0] else None
+        return CustomerIpLeaseModel.objects.filter(
+            pool=self,
+            customer=None,
+            is_dynamic=self.is_dynamic
+        ).first()
 
     @staticmethod
     def find_ip_pool_by_ip(ip_addr: str):
