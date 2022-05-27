@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address
+from ipaddress import ip_address, ip_network
 from typing import Optional, Union
 from netaddr import EUI
 
@@ -12,7 +12,6 @@ from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField, CidrAddressField
 from djing2 import ping as icmp_ping
 from djing2.lib import process_lock, LogicError, safe_int
-from djing2.lib.logger import logger
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from customers.models import Customer
@@ -248,7 +247,7 @@ class CustomerIpLeaseModel(models.Model):
     cvid = models.PositiveSmallIntegerField(_("Customer Vlan id"), default=0)
     svid = models.PositiveSmallIntegerField(_("Service Vlan id"), default=0)
     state = models.BooleanField(_('Lease state'), null=True, blank=True, default=None)
-    lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)
+    lease_time = models.DateTimeField(_("Lease time"), blank=True, null=True, default=datetime.now)
     last_update = models.DateTimeField(_("Last update"), blank=True, null=True, default=None)
     session_id = models.UUIDField(_("Unique session id"), blank=True, null=True, default=None)
     radius_username = models.CharField(
