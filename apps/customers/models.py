@@ -447,11 +447,11 @@ class CustomerManager(MyUserManager):
                             "service_name": service.title
                         },
                     )
-                    custom_signals.customer_service_post_stop.send(
-                        sender=CustomerService,
-                        instance=expired_service,
-                        customer=expired_service_customer,
-                    )
+                custom_signals.customer_service_post_stop.send(
+                    sender=CustomerService,
+                    instance=expired_service,
+                    customer=expired_service_customer,
+                )
 
 
 class Customer(IAddressContaining, BaseAccount):
