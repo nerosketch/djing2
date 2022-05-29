@@ -41,6 +41,8 @@ def _human_readable_int(num: int, u="b") -> str:
     return str(num)
 
 class VlanIf(BaseAbstractModel):
+    """802.1q, vlan information for bindings"""
+
     title = models.CharField(_("Vlan title"), max_length=128)
     vid = models.PositiveSmallIntegerField(
         _("VID"),
@@ -184,6 +186,9 @@ class NetworkIpPool(BaseAbstractModel):
         return None
 
     def reserve_leases(self):
+        """Reserve networks.CustomerIpLeaseModel instances
+           for this pool for feauture usage"""
+
         start_ip = ip_address(self.ip_start)
         end_ip = ip_address(self.ip_end)
         sql = ("INSERT INTO networks_ip_leases"
@@ -235,6 +240,8 @@ class CustomerIpLeaseModelQuerySet(models.QuerySet):
 
 
 class CustomerIpLeaseModel(models.Model):
+    """Ip lease credentials for customer."""
+
     ip_address = models.GenericIPAddressField(_("Ip address"), unique=True)
     mac_address = MACAddressField(verbose_name=_("Mac address"), null=True, default=None)
     pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE, null=True)
@@ -265,6 +272,9 @@ class CustomerIpLeaseModel(models.Model):
 
     @staticmethod
     def find_customer_by_device_credentials(device_mac: Union[EUI, str], device_port: int = 0) -> Optional[Customer]:
+        """Returns customers.Customer instance for passed device mac and port.
+           If device is not use ports, then it is ignored."""
+
         sql = (
             "SELECT ba.id, ba.last_login, ba.is_superuser, ba.username, "
             "ba.fio, ba.birth_day, ba.is_active, ba.is_admin, "
@@ -322,6 +332,8 @@ class CustomerIpLeaseModel(models.Model):
 
     @staticmethod
     def get_service_permit_by_ip(ip_addr: str) -> bool:
+        """Checks if customer has service by passed ip address"""
+
         with connection.cursor() as cur:
             cur.execute("select * from find_service_permit(%s::inet)", [ip_addr])
             res = cur.fetchone()
@@ -390,6 +402,9 @@ class CustomerIpLeaseModel(models.Model):
 
 
 class CustomerIpLeaseLog(models.Model):
+    """Stores history of CustomerIpLeaseModel changes. If ip lease changed
+       customer, then save log about it in this table"""
+
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     ip_address = models.GenericIPAddressField(_("Ip address"))
     lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)
