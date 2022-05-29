@@ -413,7 +413,7 @@ function! DeleteCurrentFileAndBuffer()
 endfunction
 
 function! DrawGitBranchInfo()
-  let branch = fugitive#head()
+  let branch = FugitiveHead()
   return len(branch) > 0 ? " " . branch : ""
 endfunction
 
@@ -456,7 +456,7 @@ let g:lightline = {
       \   'fileicon': 'MyFiletype',
       \   'icongitbranch': 'DrawGitBranchInfo',
       \   'iconline': 'DrawLineInfo',
-      \   'gitbranch': 'fugitive#head',
+      \   'gitbranch': 'FugitiveHead',
       \   'cocstatus': 'coc#status',
       \   'filename': 'LightLineFilename',
       \ },
