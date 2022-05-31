@@ -2,6 +2,7 @@ from typing import Optional
 from datetime import datetime
 from netaddr import EUI
 from django.db import connection
+from django.db.models import F
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
@@ -16,7 +17,7 @@ from djing2.lib import LogicError, safe_int
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from djing2.lib.mixins import AllowedSubnetMixin
 from djing2.lib.logger import logger
-from networks.models import CustomerIpLeaseModel
+from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
 from networks.tasks import (
     async_change_session_inet2guest,
     async_change_session_guest2inet
@@ -119,7 +120,7 @@ def _get_customer_and_service_and_lease_by_device_credentials(
             "LEFT JOIN services srv ON srv.id = custsrv.service_id "
             "LEFT JOIN networks_ip_leases nip ON ( "
                 "nip.customer_id = cs.baseaccount_ptr_id AND ( "
-                    "not nip.is_dynamic and (nip.mac_address = %s::MACADDR or nip.mac_address is null) "
+                    "nip.mac_address = %s::MACADDR OR nip.mac_address IS NULL "
                 ") "
             ") "
         "WHERE dv.mac_addr = %s::MACADDR "
@@ -160,7 +161,7 @@ def _get_customer_and_service_and_lease_by_mac(
             "LEFT JOIN services srv ON srv.id = custsrv.service_id "
             "LEFT JOIN networks_ip_leases nip ON nip.customer_id = cs.baseaccount_ptr_id "
         "WHERE "
-        "NOT nip.is_dynamic AND nip.mac_address = %s::MACADDR "
+        "nip.mac_address = %s::MACADDR "
         "LIMIT 1;"
     )
     with connection.cursor() as cur:
@@ -225,6 +226,11 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if not customer_mac:
             return _bad_ret("Customer mac is required")
 
+        vlan_id = vendor_manager.get_vlan_id(request.data)
+        service_vlan_id = vendor_manager.get_vlan_id(request.data)
+        radius_unique_id = vendor_manager.get_radius_unique_id(request.data)
+        radius_username = vendor_manager.get_radius_username(request.data)
+
         if all([agent_remote_id, agent_circuit_id]):
             dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
                 agent_remote_id=agent_remote_id,
@@ -244,6 +250,41 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     'Customer not found',
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
+            if not db_info.ip_address:
+                # assign new lease
+                #  with transaction.atomic():
+                # find one free lease, and update it for customer
+                lease = CustomerIpLeaseModel.objects.filter(
+                    pool__vlan_if__vid=vlan_id,
+                    pool__is_dynamic=True,
+                    pool__kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
+                    ip_address__gte=F('pool__ip_start'),
+                    ip_address__lte=F('pool__ip_end'),
+                    is_dynamic=True,
+                    customer=None,
+                    cvid=0, svid=0,
+                    state=False
+                )[:1]
+                now = datetime.now()
+                updated_lease_count = CustomerIpLeaseModel.objects.filter(pk__in=lease).update(
+                    mac_address=customer_mac,
+                    customer=db_info.id,
+                    input_octets=0,
+                    output_octets=0,
+                    input_packets=0,
+                    output_packets=0,
+                    cvid=vlan_id,
+                    svid=service_vlan_id,
+                    state=False,  # Set True in acct start
+                    lease_time=now,
+                    last_update=now,
+                    session_id=radius_unique_id,
+                    radius_username=radius_username,
+                )
+                if updated_lease_count > 0:
+                    lease = lease.only('ip_address').values('ip_address').first()
+                    if lease is not None and lease.get('ip_address') is not None:
+                        db_info.ip_address = lease.get('ip_address')
         else:
             # auth by mac. Find static lease.
             db_info = _get_customer_and_service_and_lease_by_mac(
@@ -254,6 +295,45 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     'Customer not found',
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
+
+        # If ip does not exists, then assign guest lease
+        if not db_info.ip_address:
+            # assign new guest lease
+            lease = CustomerIpLeaseModel.objects.filter(
+                pool__vlan_if__vid=vlan_id,
+                pool__is_dynamic=True,
+                pool__vlan_if__kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
+                ip_address__gte=F('pool__ip_start'),
+                ip_address__lte=F('pool__ip_end'),
+                is_dynamic=True,
+                customer=None,
+                cvid=0, svid=0,
+                state=False
+            )[:1]
+            now = datetime.now()
+            updated_lease_count = CustomerIpLeaseModel.objects.filter(pk__in=lease).update(
+                mac_address=customer_mac,
+                customer=db_info.id,
+                input_octets=0,
+                output_octets=0,
+                input_packets=0,
+                output_packets=0,
+                cvid=vlan_id,
+                svid=service_vlan_id,
+                state=False,  # Set True in acct start
+                lease_time=now,
+                last_update=now,
+                session_id=radius_unique_id,
+                radius_username=radius_username,
+            )
+            if updated_lease_count > 0:
+                lease = lease.only('ip_address').values('ip_address').first()
+                if lease is not None and lease.get('ip_address') is not None:
+                    db_info.ip_address = lease.get('ip_address')
+
+        if not db_info.ip_address:
+            logger.error('Failed to assign ip address for mac: %s, opt82: %s' % (customer_mac, str(opt82)))
+            return _bad_ret('Failed to assign ip address')
 
         # Return auth response
         try:
@@ -418,17 +498,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
 
-        vlan_id = vendor_manager.get_vlan_id(dat)
-        service_vlan_id = vendor_manager.get_service_vlan_id(dat)
-        CustomerIpLeaseModel.create_lease_w_auto_pool(
-            ip=str(ip),
-            mac=str(customer_mac),
-            customer_id=customer.pk,
-            radius_uname=radius_username,
-            radius_unique_id=str(radius_unique_id),
-            svid=safe_int(service_vlan_id),
-            cvid=safe_int(vlan_id)
-        )
+        #  vlan_id = vendor_manager.get_vlan_id(dat)
+        #  service_vlan_id = vendor_manager.get_service_vlan_id(dat)
 
         custom_signals.radius_acct_start_signal.send(
             sender=CustomerIpLeaseModel,
