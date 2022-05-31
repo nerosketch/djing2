@@ -221,7 +221,7 @@ class CustomerIpLeaseModelQuerySet(models.QuerySet):
 
     def release(self):
         """
-        Free leases. Mark it free, for use again.
+        Free leases. Mark it free, for use it again.
         """
         return self.update(
             mac_address=None,
@@ -233,7 +233,8 @@ class CustomerIpLeaseModelQuerySet(models.QuerySet):
             cvid=0,
             svid=0,
             state=False,
-            last_update=datetime.now(),
+            lease_time=None,
+            last_update=None,
             session_id=None,
             radius_username=None
         )
@@ -394,6 +395,29 @@ class CustomerIpLeaseModel(models.Model):
         if not self.radius_username:
             return
         return finish_session(self.radius_username)
+
+    @staticmethod
+    def delete(*args, **kwargs):
+        raise LogicError('Currently not allowed to remove CustomerIpLeaseModel, use release action instead.')
+
+    def release(self):
+        """Reset all fields, it marked as Free, for next time usages"""
+        self.mac_address = None
+        self.customer = None
+        self.input_octets = 0
+        self.output_octets = 0
+        self.input_packets = 0
+        self.output_packets = 0
+        self.cvid = 0
+        self.svid = 0
+        self.state = False
+        self.lease_time = None
+        self.last_update = None
+        self.session_id = None
+        self.radius_username = None
+        return ('mac_address', 'customer', 'input_octets', 'output_octets', 'input_packets',
+                'output_packets', 'cvid', 'svid', 'state', 'lease_time', 'last_update',
+                'session_id', 'radius_username')
 
     class Meta:
         db_table = "networks_ip_leases"

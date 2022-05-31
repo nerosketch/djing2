@@ -1,3 +1,4 @@
+from typing import Optional
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.translation import gettext_lazy as _
 from django.db.utils import IntegrityError
@@ -130,6 +131,13 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
         if r is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(str(r))
+
+    @action(detail=True, methods=['get'])
+    def release(self, request, pk: Optional[int] = None):
+        if pk is None:
+            return Response('object id is required', status=status.HTTP_403_FORBIDDEN)
+        reset_count = CustomerIpLeaseModel.objects.filter(pk=pk).release()
+        return Response(reset_count)
 
 
 class DhcpLever(SecureApiViewMixin, APIView):
