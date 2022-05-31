@@ -6,7 +6,7 @@ from rest_framework import status
 from networks import tasks
 from networks.models import CustomerIpLeaseModel
 from customers import custom_signals as customer_custom_signals
-from customers.models import CustomerService, Customer
+from customers.models import Customer
 from radiusapp.vendor_base import SpeedInfoStruct, IVendorSpecific
 
 
@@ -43,17 +43,17 @@ def customer_post_pick_service_signal_handler(sender, instance: Customer, servic
         )
 
 
-@receiver(customer_custom_signals.customer_service_post_stop, sender=CustomerService)
-def on_customer_stops_service(sender, instance: CustomerService, customer: Customer, **kwargs):
-    """When single customer stopped his service, then change it session to guest.
-
-    :param sender: customers.Customer class
-    :param instance:
-    :param csutomer: instance of customers.Customer
-    """
-    leases = CustomerIpLeaseModel.objects.filter(customer=customer, state=True).exclude(radius_username=None)
-    for lease in leases:
-        tasks.async_change_session_inet2guest(
-            radius_uname=str(lease.radius_username)
-        )
+#@receiver(customer_custom_signals.customer_service_post_stop, sender=CustomerService)
+#def on_customer_stops_service(sender, instance: CustomerService, customer: Customer, **kwargs):
+#    """When single customer stopped his service, then change it session to guest.
+#
+#    :param sender: customers.Customer class
+#    :param instance:
+#    :param csutomer: instance of customers.Customer
+#    """
+#    leases = CustomerIpLeaseModel.objects.filter(customer=customer, state=True).exclude(radius_username=None)
+#    for lease in leases:
+#        tasks.async_change_session_inet2guest(
+#            radius_uname=str(lease.radius_username)
+#        )
 
