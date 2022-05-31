@@ -621,6 +621,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             ip = vendor_manager.get_rad_val(dat, "Framed-IP-Address", str)
             vlan_id = vendor_manager.get_vlan_id(dat)
             service_vlan_id = vendor_manager.get_service_vlan_id(dat)
+            Удалить тут
             CustomerIpLeaseModel.create_lease_w_auto_pool(
                 ip=str(ip),
                 mac=str(customer_mac),
