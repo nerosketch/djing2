@@ -4,7 +4,7 @@ from typing import Optional, Tuple, Type, TypeVar, overload
 from dataclasses import dataclass
 from netaddr import EUI
 
-from djing2.lib import LogicError
+from djing2.lib import LogicError, safe_int
 
 
 @dataclass
@@ -33,10 +33,31 @@ class CustomerServiceLeaseResult:
     is_dynamic: Optional[bool] = False
 
 
+@dataclass
+class RadiusCounters:
+    """
+    input_octets - count of input octets from start session to now
+    output_octets - count of output octets from start session to now
+    input_packets - count of input packets from start session to now
+    output_packets - count of output packets from start session to now
+    """
+
+    input_octets: int = 0
+    output_octets: int = 0
+    input_packets: int = 0
+    output_packets: int = 0
+
+
 class AcctStatusType(enum.IntEnum):
     START = 1
     STOP = 2
     UPDATE = 3
+
+
+def gigaword_imp(num: int, gwords: int) -> int:
+    num = safe_int(num)
+    gwords = safe_int(gwords)
+    return num + gwords * (10 ** 9)
 
 
 T = TypeVar('T')
@@ -106,6 +127,10 @@ class IVendorSpecific(abc.ABC):
             burst_in=brst_in,
             burst_out=brst_out
         )
+
+    @abc.abstractmethod
+    def get_counters(self, data: dict) -> RadiusCounters:
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_auth_session_response(

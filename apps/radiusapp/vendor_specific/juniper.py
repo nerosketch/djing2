@@ -2,7 +2,8 @@ from netaddr import EUI
 from rest_framework import status
 from radiusapp.vendor_base import (
     IVendorSpecific,
-    CustomerServiceLeaseResult
+    CustomerServiceLeaseResult,
+    RadiusCounters, gigaword_imp
 )
 
 
@@ -30,6 +31,24 @@ class JuniperVendorSpecific(IVendorSpecific):
         if isinstance(param, str) and ":" in param:
             return int(param.split(":")[1].split("-")[0])
         return param
+
+    def get_counters(self, data: dict) -> RadiusCounters:
+        v_inp_oct = gigaword_imp(
+            num=self.get_rad_val(data, "Acct-Input-Octets", int, 0),
+            gwords=self.get_rad_val(data, "Acct-Input-Gigawords", int, 0),
+        )
+        v_out_oct = gigaword_imp(
+            num=self.get_rad_val(data, "Acct-Output-Octets", int, 0),
+            gwords=self.get_rad_val(data, "Acct-Output-Gigawords", int, 0),
+        )
+        v_in_pkt = self.get_rad_val(data, "Acct-Input-Packets", int, 0)
+        v_out_pkt = self.get_rad_val(data, "Acct-Output-Packets", int, 0)
+        return RadiusCounters(
+            input_octets=v_inp_oct,
+            output_octets=v_out_oct,
+            input_packets=v_in_pkt,
+            output_packets=v_out_pkt
+        )
 
     def get_auth_session_response(self, db_result: CustomerServiceLeaseResult):
         if db_result.current_service_id and db_result.speed:

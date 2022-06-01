@@ -3,7 +3,11 @@ from netaddr import EUI
 from djing2.lib import macbin2str, safe_int, LogicError
 
 from radiusapp.vendor_specific import vendor_classes
-from radiusapp.vendor_base import IVendorSpecific, SpeedInfoStruct, T, CustomerServiceLeaseResult
+from radiusapp.vendor_base import (
+    IVendorSpecific, SpeedInfoStruct,
+    T, CustomerServiceLeaseResult,
+    RadiusCounters
+)
 
 
 def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[EUI], int]:
@@ -93,6 +97,13 @@ class VendorManager:
         if not self.vendor_class:
             raise RuntimeError('Vendor class not specified')
         return self.vendor_class.get_speed(speed=speed)
+
+    def get_counters(self, data: dict) -> RadiusCounters:
+        """Parse counters info from radius Acct Update request and return it"""
+
+        if self.vendor_class:
+            return self.vendor_class.get_counters(data=data)
+        return RadiusCounters()
 
     def get_auth_session_response(
         self,
