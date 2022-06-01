@@ -27,14 +27,8 @@ from radiusapp import custom_signals
 from radiusapp.vendor_base import (
     AcctStatusType,
     CustomerServiceLeaseResult,
-    SpeedInfoStruct
+    SpeedInfoStruct, RadiusCounters
 )
-
-
-def _gigaword_imp(num: int, gwords: int) -> int:
-    num = safe_int(num)
-    gwords = safe_int(gwords)
-    return num + gwords * (10 ** 9)
 
 
 def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST):
@@ -382,27 +376,17 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         except BadRetException as err:
             return _bad_ret(str(err))
 
-    def _update_counters(self, leases, data: dict, customer_mac: Optional[EUI] = None,
-                        last_event_time=None, **update_kwargs):
+    def _update_counters(self, leases, data: dict, counters: RadiusCounters, customer_mac: Optional[EUI] = None,
+            last_event_time=None, **update_kwargs):
         if last_event_time is None:
             last_event_time = datetime.now()
         vendor_manager = self.vendor_manager
-        v_inp_oct = _gigaword_imp(
-            num=vendor_manager.get_rad_val(data, "Acct-Input-Octets", int, 0),
-            gwords=vendor_manager.get_rad_val(data, "Acct-Input-Gigawords", int, 0),
-        )
-        v_out_oct = _gigaword_imp(
-            num=vendor_manager.get_rad_val(data, "Acct-Output-Octets", int, 0),
-            gwords=vendor_manager.get_rad_val(data, "Acct-Output-Gigawords", int, 0),
-        )
-        v_in_pkt = vendor_manager.get_rad_val(data, "Acct-Input-Packets", int, 0)
-        v_out_pkt = vendor_manager.get_rad_val(data, "Acct-Output-Packets", int, 0)
         leases.update(
             last_update=last_event_time,
-            input_octets=v_inp_oct,
-            output_octets=v_out_oct,
-            input_packets=v_in_pkt,
-            output_packets=v_out_pkt,
+            input_octets=counters.input_octets,
+            output_octets=counters.output_octets,
+            input_packets=counters.input_packets,
+            output_packets=counters.output_packets,
             **update_kwargs,
         )
         vendor_manager = self.vendor_manager
@@ -413,10 +397,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             instance=None,
             instance_queryset=leases,
             data=data,
-            input_octets=v_inp_oct,
-            output_octets=v_out_oct,
-            input_packets=v_in_pkt,
-            output_packets=v_out_pkt,
+            counters=counters,
             radius_unique_id=radius_unique_id,
             ip_addr=ip,
             customer_mac=customer_mac
@@ -526,22 +507,14 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             session_id=radius_unique_id
         )
 
-        v_inp_oct = _gigaword_imp(
-            num=vendor_manager.get_rad_val(dat, "Acct-Input-Octets", int, 0),
-            gwords=vendor_manager.get_rad_val(dat, "Acct-Input-Gigawords", int, 0),
-        )
-        v_out_oct = _gigaword_imp(
-            num=vendor_manager.get_rad_val(dat, "Acct-Output-Octets", int, 0),
-            gwords=vendor_manager.get_rad_val(dat, "Acct-Output-Gigawords", int, 0),
-        )
+        counters = vendor_manager.get_counters(data=dat)
 
         custom_signals.radius_acct_stop_signal.send(
             sender=CustomerIpLeaseModel,
             instance=CustomerIpLeaseModel(),
             instance_queryset=leases,
             data=dat,
-            input_octets=v_inp_oct,
-            output_octets=v_out_oct,
+            counters=counters,
             ip_addr=ip,
             radius_unique_id=radius_unique_id,
             customer_mac=customer_mac,
@@ -603,17 +576,18 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 "Request has no username",
                 custom_status=status.HTTP_200_OK
             )
+        now = datetime.now()
+        counters = vendor_manager.get_counters(dat)
         leases = CustomerIpLeaseModel.objects.filter(
             session_id=radius_unique_id
         )
-        customer = self._find_customer(data=dat)
+        customer = None
         if leases.exists():
             # just update counters
-            event_time = datetime.now()
             self._update_counters(
                 leases=leases,
                 data=dat,
-                last_event_time=event_time,
+                counters=counters,
                 customer_mac=customer_mac
             )
         else:
@@ -621,13 +595,21 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             ip = vendor_manager.get_rad_val(dat, "Framed-IP-Address", str)
             vlan_id = vendor_manager.get_vlan_id(dat)
             service_vlan_id = vendor_manager.get_service_vlan_id(dat)
-            Удалить тут
-            CustomerIpLeaseModel.create_lease_w_auto_pool(
-                ip=str(ip),
-                mac=str(customer_mac),
-                customer_id=customer.pk,
-                radius_uname=radius_username,
-                radius_unique_id=str(radius_unique_id),
+            customer = self._find_customer(data=dat)
+            CustomerIpLeaseModel.objects.filter(
+                ip_address=str(ip),
+            ).update(
+                customer=customer,
+                mac_address=str(customer_mac),
+                input_octets=counters.input_octets,
+                output_octets=counters.output_octets,
+                input_packets=counters.input_packets,
+                output_packets=counters.output_packets,
+                state=True,
+                lease_time=now,
+                last_update=now,
+                session_id=str(radius_unique_id),
+                radius_username=radius_username,
                 svid=safe_int(service_vlan_id),
                 cvid=safe_int(vlan_id)
             )
@@ -637,6 +619,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if isinstance(bras_service_name, str):
             if 'SERVICE-INET' in bras_service_name:
                 # bras contain inet session
+                if customer is None:
+                    customer = self._find_customer(data=dat)
                 if not customer.is_access():
                     logger.info("COA: inet->guest uname=%s" % radius_username)
                     async_change_session_inet2guest(
@@ -644,6 +628,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     )
             elif 'SERVICE-GUEST' in bras_service_name:
                 # bras contain guest session
+                if customer is None:
+                    customer = self._find_customer(data=dat)
                 if customer.is_access():
                     logger.info("COA: guest->inet uname=%s" % radius_username)
                     customer_service = customer.active_service()
@@ -664,8 +650,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     )
             else:
                 logger.error('Unknown session name from bras: %s' % bras_service_name)
-        #else:
-        #    logger.info('Bad bras service name: %s, uname: %s' % (str(bras_service_name), radius_username))
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
