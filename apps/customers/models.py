@@ -548,7 +548,9 @@ class Customer(IAddressContaining, BaseAccount):
         Return icon list of set flags from self.markers
         :return: ['icon-donkey', 'icon-tv', ...]
         """
-        return tuple(name for name, state in self.markers if state)
+        if self.markers:
+            return tuple(name for name, state in self.markers if state)
+        return ()
 
     def set_markers(self, flag_names: List[str]):
         flags = None
@@ -573,7 +575,7 @@ class Customer(IAddressContaining, BaseAccount):
             from_balance=old_balance,
             to_balance=old_balance + cost,
             author=profile if isinstance(profile, UserProfile) else None,
-            comment=re.sub(r"\W{1,128}", " ", comment),
+            comment=re.sub(r"\W{1,128}", " ", comment)[:128] if comment else '-'
         )
         self.balance += cost
 
