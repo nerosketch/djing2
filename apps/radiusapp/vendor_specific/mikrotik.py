@@ -3,7 +3,8 @@ from netfields.mac import mac_unix_common
 from rest_framework import status
 from radiusapp.vendor_base import (
     IVendorSpecific,
-    CustomerServiceLeaseResult
+    CustomerServiceLeaseResult,
+    RadiusCounters
 )
 
 
@@ -25,6 +26,9 @@ class MikrotikVendorSpecific(IVendorSpecific):
 
     def get_service_vlan_id(self, data):
         return 0
+
+    def get_counters(self, data: dict) -> RadiusCounters:
+        return RadiusCounters()
 
     def get_auth_session_response(self, db_result: CustomerServiceLeaseResult):
         # TODO: Make it
