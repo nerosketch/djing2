@@ -5,6 +5,7 @@ from datetime import timedelta, datetime
 from functools import wraps
 from hashlib import sha256
 from typing import Any, Union, Optional
+from enum import IntEnum
 
 from django.conf import settings
 from django.utils import timezone
@@ -164,3 +165,10 @@ def time2utctime(src_datetime) -> datetime:
     """Convert datetime from local tz to UTC"""
     tz = timezone.get_current_timezone()
     return tz.localize(src_datetime, is_dst=None).astimezone(pytz.utc)
+
+
+class IntEnumEx(IntEnum):
+    @classmethod
+    def in_range(cls, value: int):
+        return value in cls._value2member_map_
+

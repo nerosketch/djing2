@@ -1,10 +1,9 @@
 import abc
-import enum
 from typing import Optional, Tuple, Type, TypeVar, overload
 from dataclasses import dataclass
 from netaddr import EUI
 
-from djing2.lib import LogicError
+from djing2.lib import LogicError, IntEnumEx
 
 
 @dataclass
@@ -33,7 +32,7 @@ class CustomerServiceLeaseResult:
     is_dynamic: Optional[bool] = False
 
 
-class AcctStatusType(enum.IntEnum):
+class AcctStatusType(IntEnumEx):
     START = 1
     STOP = 2
     UPDATE = 3
