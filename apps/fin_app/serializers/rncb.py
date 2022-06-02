@@ -69,7 +69,7 @@ class RNCBPaymentCheckResponseSerializer(serializers.Serializer, ErrorFieldValid
 class RNCBPaymentPaySerializer(serializers.Serializer):
     payment_id = serializers.IntegerField(min_value=1)
     account = serializers.CharField(max_length=64, validators=[integer_validator])
-    summa = serializers.IntegerField(min_value=0, max_length=50000)
+    summa = serializers.IntegerField(min_value=0, max_value=50000)
     exec_date = serializers.DateTimeField(
         format=date_format
     )
