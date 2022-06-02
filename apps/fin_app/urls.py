@@ -7,11 +7,14 @@ app_name = "fin_app"
 
 
 router = DefaultRouter()
-router.register("log", alltime.AllTimePayLogModelViewSet)
-router.register("", alltime.AllTimeGatewayModelViewSet)
+router.register("alltime/log", alltime.AllTimePayLogModelViewSet)
+router.register("alltime", alltime.AllTimeGatewayModelViewSet)
+
+router.register("rncb/log", rncb.RNCBPayLogModelViewSet)
+router.register("rncb", rncb.PayRNCBGatewayModelViewSet)
 
 urlpatterns = [
-    path("<slug:pay_slug>/pay/", alltime.AllTimePay.as_view()),
-    path("<slug:pay_slug>/pay/", rncb.RNCBPaymentViewSet.as_view()),
+    path("alltime/<slug:pay_slug>/pay/", alltime.AllTimePay.as_view()),
+    path("rncb/<slug:pay_slug>/pay/", rncb.RNCBPaymentViewSet.as_view()),
     path("", include(router.urls)),
 ]
