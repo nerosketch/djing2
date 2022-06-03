@@ -51,7 +51,7 @@ class CustomAPITestCase(APITestCase):
 
         # Pay System
         pay_system = PayAllTimeGateway.objects.create(
-            title="Test pay system", secret="secret",
+            title="Test pay alltime system", secret="secret",
             service_id="service_id", slug="pay_gw_slug"
         )
         example_site = Site.objects.first()
@@ -70,31 +70,26 @@ class AllPayTestCase(CustomAPITestCase):
     def test_user_pay_view_info(self):
         current_date = timezone.now().strftime(time_format)
         service_id = self.pay_system.service_id
-        r = self.get(
-            self.url,
-            {
-                "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
-                "PAY_ACCOUNT": "custo1",
-                "SIGN": _make_sign(
-                    AllTimePayActEnum.ACT_VIEW_INFO,
-                    "custo1", "", "", self.pay_system.secret
-                )
-            },
-        )
-        o = "".join(
-            (
-                "<pay-response>",
-                "<balance>-13.12</balance>",
-                "<name>Test Name</name>",
-                "<account>custo1</account>",
-                "<service_id>%s</service_id>" % escape(service_id),
-                "<min_amount>10.0</min_amount>",
-                "<max_amount>15000</max_amount>",
-                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.PAYMENT_POSSIBLE.value,
-                "<time_stamp>%s</time_stamp>" % escape(current_date),
-                "</pay-response>",
+        r = self.get(self.url, {
+            "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
+            "PAY_ACCOUNT": "custo1",
+            "SIGN": _make_sign(
+                AllTimePayActEnum.ACT_VIEW_INFO,
+                "custo1", "", "", self.pay_system.secret
             )
-        )
+        })
+        o = "".join((
+            "<pay-response>",
+            "<balance>-13.12</balance>",
+            "<name>Test Name</name>",
+            "<account>custo1</account>",
+            "<service_id>%s</service_id>" % escape(service_id),
+            "<min_amount>10.0</min_amount>",
+            "<max_amount>15000</max_amount>",
+            "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.PAYMENT_POSSIBLE.value,
+            "<time_stamp>%s</time_stamp>" % escape(current_date),
+            "</pay-response>",
+        ))
         self.maxDiff = None
         self.assertXMLEqual(r.content.decode("utf8"), o)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -102,24 +97,21 @@ class AllPayTestCase(CustomAPITestCase):
     def test_user_pay_pay(self):
         current_date = timezone.now().strftime(time_format)
         service_id = self.pay_system.service_id
-        r = self.get(
-            self.url,
-            {
-                "ACT": AllTimePayActEnum.ACT_PAY_DO.value,
-                "PAY_ACCOUNT": "custo1",
-                "PAY_AMOUNT": 18.21,
-                "RECEIPT_NUM": 2126235,
-                "SERVICE_ID": service_id,
-                "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
-                "TRADE_POINT": "term1",
-                "SIGN": _make_sign(
-                    AllTimePayActEnum.ACT_PAY_DO,
-                    "custo1", service_id,
-                    "840ab457-e7d1-4494-8197-9570da035170",
-                    self.pay_system.secret
-                ),
-            },
-        )
+        r = self.get(self.url, {
+            "ACT": AllTimePayActEnum.ACT_PAY_DO.value,
+            "PAY_ACCOUNT": "custo1",
+            "PAY_AMOUNT": 18.21,
+            "RECEIPT_NUM": 2126235,
+            "SERVICE_ID": service_id,
+            "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
+            "TRADE_POINT": "term1",
+            "SIGN": _make_sign(
+                AllTimePayActEnum.ACT_PAY_DO,
+                "custo1", service_id,
+                "840ab457-e7d1-4494-8197-9570da035170",
+                self.pay_system.secret
+            )
+        })
         xml = "".join((
             "<pay-response>",
             "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
@@ -138,35 +130,30 @@ class AllPayTestCase(CustomAPITestCase):
     def user_pay_check(self, test_pay_time):
         current_date = timezone.now().strftime(time_format)
         service_id = self.pay_system.service_id
-        r = self.get(
-            self.url,
-            {
-                "ACT": AllTimePayActEnum.ACT_PAY_CHECK.value,
-                "SERVICE_ID": service_id,
-                "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
-                "SIGN": _make_sign(
-                    AllTimePayActEnum.ACT_PAY_CHECK,
-                    "", service_id,
-                    "840ab457-e7d1-4494-8197-9570da035170",
-                    self.pay_system.secret
-                ),
-            },
-        )
-        xml = "".join(
-            (
-                "<pay-response>",
-                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.TRANSACTION_STATUS_DETERMINED.value,
-                "<time_stamp>%s</time_stamp>" % escape(current_date),
-                "<transaction>",
-                "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
-                "<service_id>%s</service_id>" % escape(service_id),
-                "<amount>18.21</amount>",
-                "<status>%d</status>" % TRANSACTION_STATUS_PAYMENT_OK,
-                "<time_stamp>%s</time_stamp>" % escape(test_pay_time),
-                "</transaction>",
-                "</pay-response>",
+        r = self.get(self.url, {
+            "ACT": AllTimePayActEnum.ACT_PAY_CHECK.value,
+            "SERVICE_ID": service_id,
+            "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
+            "SIGN": _make_sign(
+                AllTimePayActEnum.ACT_PAY_CHECK,
+                "", service_id,
+                "840ab457-e7d1-4494-8197-9570da035170",
+                self.pay_system.secret
             )
-        )
+        })
+        xml = "".join((
+            "<pay-response>",
+            "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.TRANSACTION_STATUS_DETERMINED.value,
+            "<time_stamp>%s</time_stamp>" % escape(current_date),
+            "<transaction>",
+            "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
+            "<service_id>%s</service_id>" % escape(service_id),
+            "<amount>18.21</amount>",
+            "<status>%d</status>" % TRANSACTION_STATUS_PAYMENT_OK,
+            "<time_stamp>%s</time_stamp>" % escape(test_pay_time),
+            "</transaction>",
+            "</pay-response>",
+        ))
         self.assertXMLEqual(r.content.decode(), xml)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
@@ -183,26 +170,21 @@ class SitesAllPayTestCase(CustomAPITestCase):
 
     def test_another_site(self):
         current_date = timezone.now().strftime(time_format)
-        r = self.get(
-            self.url,
-            {
-                "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
-                "PAY_ACCOUNT": "custo1",
-                "SIGN": _make_sign(
-                    AllTimePayActEnum.ACT_VIEW_INFO,
-                    "custo1", "", "", self.pay_system.secret
-                )
-            },
-        )
-        o = "".join(
-            (
-                "<pay-response>",
-                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.BAD_REQUEST.value,
-                "<time_stamp>%s</time_stamp>" % escape(current_date),
-                "<description>Pay gateway does not exist</description>",
-                "</pay-response>",
+        r = self.get(self.url, {
+            "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
+            "PAY_ACCOUNT": "custo1",
+            "SIGN": _make_sign(
+                AllTimePayActEnum.ACT_VIEW_INFO,
+                "custo1", "", "", self.pay_system.secret
             )
-        )
+        })
+        o = "".join((
+            "<pay-response>",
+            "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.BAD_REQUEST.value,
+            "<time_stamp>%s</time_stamp>" % escape(current_date),
+            "<description>Pay gateway does not exist</description>",
+            "</pay-response>",
+        ))
         self.maxDiff = None
         self.assertXMLEqual(r.content.decode("utf8"), o)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -237,7 +219,7 @@ class RNCBPaymentAPITestCase(APITestCase):
 
         # RNCB Pay system
         pay_system = models_rncb.PayRNCBGateway.objects.create(
-            title="Test pay system",
+            title="Test pay rncb system",
             slug="rncb_gw_slug"
         )
         example_site = Site.objects.first()
@@ -247,13 +229,10 @@ class RNCBPaymentAPITestCase(APITestCase):
         self.pay_system = pay_system
 
     def test_pay_view(self):
-        r = self.get(
-            self.url,
-            {
-                "query_type": 'check',
-                "account": "129386",
-            }
-        )
+        r = self.get(self.url, {
+            "query_type": 'check',
+            "account": "129386",
+        })
         xml = ''.join((
             '<?xml version="1.0" encoding="utf-8"?>\n',
             "<checkresponse>",
@@ -267,13 +246,10 @@ class RNCBPaymentAPITestCase(APITestCase):
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
 
     def test_pay_view_unknown_account(self):
-        r = self.get(
-            self.url,
-            {
-                "query_type": 'check',
-                "account": "12089",
-            }
-        )
+        r = self.get(self.url, {
+            "query_type": 'check',
+            "account": "12089",
+        })
         xml = ''.join((
             '<?xml version="1.0" encoding="utf-8"?>\n',
             "<checkresponse>",
@@ -285,11 +261,28 @@ class RNCBPaymentAPITestCase(APITestCase):
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
 
     def test_pay_view_bad_account(self):
-        r = self.get(
-            self.url,
-            {
-                "query_type": 'check',
-                "account": "*7867^&a",
-            }
-        )
+        r = self.get(self.url, {
+            "query_type": 'check',
+            "account": "*7867^&a",
+        })
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, msg=r.data)
+
+    def test_pay(self):
+        r = self.get(self.url, {
+            "query_type": 'pay',
+            "account": "129386",
+            "payment_id": 12983,
+            "summa": 198.123321,
+            "exec_date": "20170101182810",
+            "inn": 1234567891
+        })
+        xml = ''.join((
+            '<?xml version="1.0" encoding="utf-8"?>\n',
+            "<payresponse>",
+            "<out_payment_id>1</out_payment_id>",
+            "<error>0</error>",
+            "<comments>Success</comments>",
+            "</payresponse>"
+        ))
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertXMLEqual(r.content.decode("utf-8"), xml)

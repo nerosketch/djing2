@@ -20,7 +20,7 @@ class RNCBPaymentErrorEnum(IntEnumEx):
     UNKNOWN_CODE = 100
 
 
-class RNCBProtocolErrorExeption(serializers.ValidationError):
+class RNCBProtocolErrorException(serializers.ValidationError):
     status_code = status.HTTP_200_OK
     default_detail = 'Payment protocol error.'
     default_error: RNCBPaymentErrorEnum = RNCBPaymentErrorEnum.UNKNOWN_CODE
@@ -62,9 +62,9 @@ class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
 class RNCBPaymentPaySerializer(serializers.Serializer):
     payment_id = serializers.IntegerField(min_value=1)
     account = serializers.CharField(max_length=64, validators=[integer_validator])
-    summa = serializers.IntegerField(min_value=0, max_value=50000)
+    summa = serializers.DecimalField(min_value=0, max_value=50000, max_digits=12, decimal_places=6)
     exec_date = serializers.DateTimeField(
-        format=date_format
+        input_formats=[date_format], format=date_format
     )
     #  inn = serializers.IntegerField(min_value=1000000000, max_value=999999999999)
 
@@ -79,16 +79,16 @@ class RNCBPaymentPayResponseSerializer(serializers.Serializer):
 
 
 class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
-    dateftom = serializers.DateTimeField(format=date_format)
-    dateto = serializers.DateTimeField(format=date_format)
+    dateftom = serializers.DateTimeField(format=date_format, input_formats=[date_format])
+    dateto = serializers.DateTimeField(format=date_format, input_formats=[date_format])
 
     def validate(self, data: OrderedDict):
         date_from = data['datefrom']
         date_to = data['dateto']
         if date_from > date_to:
-            raise RNCBProtocolErrorExeption("DATEFROM Can't be more then DATETO")
+            raise RNCBProtocolErrorException("DATEFROM Can't be more then DATETO")
         elif date_from == date_to:
-            raise RNCBProtocolErrorExeption('Empty time interval')
+            raise RNCBProtocolErrorException('Empty time interval')
         return data
 
 
