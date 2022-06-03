@@ -2,6 +2,7 @@ from functools import wraps, cached_property
 from datetime import datetime
 from django.db import transaction
 from django.db.models import Sum
+from django.utils.encoding import force_str
 from rest_framework.generics import GenericAPIView
 from rest_framework_xml.renderers import XMLRenderer
 from rest_framework.permissions import AllowAny
@@ -51,6 +52,26 @@ class DynamicRootXMLRenderer(XMLRenderer):
             accepted_media_type=accepted_media_type,
             renderer_context=renderer_context
         )
+
+    def _to_xml(self, xml, data):
+        if isinstance(data, (list, tuple)):
+            for item in data:
+                #  xml.startElement(self.item_tag_name, {})
+                self._to_xml(xml, item)
+                #  xml.endElement(self.item_tag_name)
+
+        elif isinstance(data, dict):
+            for key, value in data.items():
+                xml.startElement(key, {})
+                self._to_xml(xml, value)
+                xml.endElement(key)
+
+        elif data is None:
+            # Don't output any value
+            pass
+
+        else:
+            xml.characters(force_str(data))
 
 
 def payment_wrapper(request_serializer, response_serializer, root_tag: str):
@@ -196,11 +217,13 @@ class RNCBPaymentViewSet(GenericAPIView):
         date_to = data['dateto']
         #  inn = data['inn']
 
+        date_from = datetime.strptime(date_from, serializers_rncb.date_format)
+        date_to = datetime.strptime(date_to, serializers_rncb.date_format)
+
         pays = RNCBPayLog.objects.filter(
-            acct_time__lte=date_from,
-            acct_time__gte=date_to
-        ).select_related('customer')
-        #.annotate(all_sum=Sum('amount'), )
+            acct_time__gte=date_from,
+            acct_time__lte=date_to
+        ).select_related('customer').order_by('id')
 
         def _gen_pay(p: RNCBPayLog):
             return {
@@ -209,15 +232,17 @@ class RNCBPaymentViewSet(GenericAPIView):
                     'out_payment_id': p.pk,
                     'account': p.customer.username,
                     'sum': float(p.amount),
-                    'ex_date': p.acct_time
+                    'ex_date': p.acct_time.strftime(serializers_rncb.date_format)
                 }
             }
 
-
+        fs = pays.aggregate(Sum('amount'))
+        full_sum = fs.get('amount__sum', 0.0)
+        del fs
         return {
-            'full_summa': pays.aggregate(Sum('amount')),
+            'full_summa': full_sum or 0.0,
             'number_of_payments': pays.count(),
-            'payments': (_gen_pay(p) for p in pays.iterator())
+            'payments': [_gen_pay(p) for p in pays]
         }
 
     def _unknown_query_type(self, *args, **kwargs):

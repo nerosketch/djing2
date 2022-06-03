@@ -92,10 +92,6 @@ class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
         return data
 
 
-class RNCBPaymentTransactionCheckResponseRowSerializer(serializers.Serializer):
-    payment_row = serializers.CharField()
-
-
 class RNCBPaymentTransactionCheckResponseSerializer(serializers.Serializer):
     full_summa = serializers.DecimalField(max_digits=12, decimal_places=6, coerce_to_string=False, required=False)
     number_of_payments = serializers.IntegerField()
@@ -103,5 +99,5 @@ class RNCBPaymentTransactionCheckResponseSerializer(serializers.Serializer):
         choices=RNCBPaymentErrorEnum.choices,
         default=RNCBPaymentErrorEnum.OK.value,
     )
-    payments = RNCBPaymentTransactionCheckResponseRowSerializer(many=True)
+    payments = serializers.ListField()
 

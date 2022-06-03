@@ -1,5 +1,5 @@
 from hashlib import md5
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.sites.models import Site
 from django.utils import timezone
@@ -234,15 +234,15 @@ class RNCBPaymentAPITestCase(APITestCase):
             "query_type": 'check',
             "account": "129386",
         })
-        xml = ''.join((
-            '<?xml version="1.0" encoding="utf-8"?>\n',
-            "<checkresponse>",
-            "<fio>Test Name</fio>",
-            "<balance>13.12</balance>",
-            "<error>0</error>",
-            "<comments>Ok</comments>",
+        xml = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            "<checkresponse>"
+            "<fio>Test Name</fio>"
+            "<balance>13.12</balance>"
+            "<error>0</error>"
+            "<comments>Ok</comments>"
             "</checkresponse>"
-        ))
+        )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
 
@@ -251,13 +251,13 @@ class RNCBPaymentAPITestCase(APITestCase):
             "query_type": 'check',
             "account": "12089",
         })
-        xml = ''.join((
-            '<?xml version="1.0" encoding="utf-8"?>\n',
-            "<checkresponse>",
-            "<error>1</error>",
-            "<comments>Customer does not exists</comments>",
+        xml = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            "<checkresponse>"
+            "<error>1</error>"
+            "<comments>Customer does not exists</comments>"
             "</checkresponse>"
-        ))
+        )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
 
@@ -277,14 +277,14 @@ class RNCBPaymentAPITestCase(APITestCase):
             "exec_date": "20170101182810",
             "inn": 1234567891
         })
-        xml = ''.join((
-            '<?xml version="1.0" encoding="utf-8"?>\n',
-            "<payresponse>",
-            "<out_payment_id>1</out_payment_id>",
-            "<error>0</error>",
-            "<comments>Success</comments>",
+        xml = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            "<payresponse>"
+            "<out_payment_id>1</out_payment_id>"
+            "<error>0</error>"
+            "<comments>Success</comments>"
             "</payresponse>"
-        ))
+        )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
 
@@ -313,5 +313,97 @@ class RNCBPaymentAPITestCase(APITestCase):
             "<comments>Payment duplicate</comments>",
             "</payresponse>"
         ))
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertXMLEqual(r.content.decode("utf-8"), xml)
+
+
+class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
+    url = "/api/fin/rncb/rncb_gw_slug/pay/"
+
+    def get(self, *args, **kwargs):
+        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
+
+    def post(self, *args, **kwargs):
+        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+
+    def setUp(self):
+        # customer for tests
+        custo1 = Customer.objects.create_user(
+            telephone="+79782345678",
+            username="129386",
+            password="passw"
+        )
+        custo1.balance = -13.12
+        custo1.fio = "Test Name"
+        custo1.save(update_fields=("balance", "fio"))
+        custo1.refresh_from_db()
+        self.customer = custo1
+
+        # RNCB Pay system
+        pay_system = models_rncb.PayRNCBGateway.objects.create(
+            title="Test pay rncb system",
+            slug="rncb_gw_slug"
+        )
+        example_site = Site.objects.first()
+        pay_system.sites.add(example_site)
+        custo1.sites.add(example_site)
+        pay_system.refresh_from_db()
+        self.pay_system = pay_system
+
+        now = datetime(year=2017, month=1, day=1)
+
+        logs = [
+            models_rncb.RNCBPayLog(
+                customer=self.customer,
+                pay_id=12837,
+                acct_time=now,
+                amount=1,
+                pay_gw=self.pay_system
+            ),
+            models_rncb.RNCBPayLog(
+                customer=self.customer,
+                pay_id=12838,
+                acct_time=now + timedelta(days=2),
+                amount=2,
+                pay_gw=self.pay_system
+            ),
+            models_rncb.RNCBPayLog(
+                customer=self.customer,
+                pay_id=12839,
+                acct_time=now + timedelta(days=6),
+                amount=3,
+                pay_gw=self.pay_system
+            ),
+            models_rncb.RNCBPayLog(
+                customer=self.customer,
+                pay_id=12840,
+                acct_time=now + timedelta(days=8),
+                amount=5,
+                pay_gw=self.pay_system
+            )
+        ]
+        models_rncb.RNCBPayLog.objects.bulk_create(logs)
+
+    def test_pay_balance_check(self):
+        r = self.get(self.url, {
+            "query_type": 'balance',
+            "datefrom": '20170101000000',
+            "dateto": '2017012200000',
+            #  "inn": 1234567891
+        })
+        xml = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            "<balanceresponse>"
+              "<full_summa>11.000000</full_summa>"
+              "<number_of_payments>4</number_of_payments>"
+              "<error>0</error>"
+              "<payments>"
+                "<payment_row>12837;1;129386;1.00;20170101000000</payment_row>"
+                "<payment_row>12838;2;129386;2.00;20170103000000</payment_row>"
+                "<payment_row>12839;3;129386;3.00;20170107000000</payment_row>"
+                "<payment_row>12840;4;129386;5.00;20170109000000</payment_row>"
+              "</payments>"
+            "</balanceresponse>"
+        )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
