@@ -42,7 +42,7 @@ class RNCBPayLog(BaseAbstractModel):
     )
 
     def __str__(self):
-        return self.pay_id
+        return str(self.pay_id)
 
     class Meta:
         db_table = "rncb_pay_log"

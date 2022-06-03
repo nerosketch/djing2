@@ -79,7 +79,7 @@ class RNCBPaymentPayResponseSerializer(serializers.Serializer):
 
 
 class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
-    dateftom = serializers.DateTimeField(format=date_format, input_formats=[date_format])
+    datefrom = serializers.DateTimeField(format=date_format, input_formats=[date_format])
     dateto = serializers.DateTimeField(format=date_format, input_formats=[date_format])
 
     def validate(self, data: OrderedDict):
