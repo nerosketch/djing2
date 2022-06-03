@@ -1,4 +1,5 @@
 from hashlib import md5
+from datetime import datetime
 
 from django.contrib.sites.models import Site
 from django.utils import timezone
@@ -282,6 +283,34 @@ class RNCBPaymentAPITestCase(APITestCase):
             "<out_payment_id>1</out_payment_id>",
             "<error>0</error>",
             "<comments>Success</comments>",
+            "</payresponse>"
+        ))
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertXMLEqual(r.content.decode("utf-8"), xml)
+
+    def test_pay_already_provided(self):
+        now = datetime.now()
+        pay = models_rncb.RNCBPayLog.objects.create(
+            customer=self.customer,
+            pay_id=1927863123,
+            acct_time=now,
+            amount=12.344,
+            pay_gw=self.pay_system
+        )
+        r = self.get(self.url, {
+            "query_type": 'pay',
+            "account": "129386",
+            "payment_id": 1927863123,
+            "summa": 198.123321,
+            "exec_date": "20170101182810",
+            "inn": 1234567891
+        })
+        xml = ''.join((
+            '<?xml version="1.0" encoding="utf-8"?>\n',
+            "<payresponse>",
+            "<out_payment_id>%d</out_payment_id>" % pay.pk,
+            "<error>10</error>",
+            "<comments>Payment duplicate</comments>",
             "</payresponse>"
         ))
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
