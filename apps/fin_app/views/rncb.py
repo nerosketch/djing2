@@ -32,27 +32,34 @@ class RNCBPayLogModelViewSet(DjingModelViewSet):
     serializer_class = serializers_rncb.RNCBPayLogModelSerializer
 
 
-class RNCBCheckResponseXMLRenderer(XMLRenderer):
-    root_tag_name = "CHECKRESPONSE"
+class DynamicRootXMLRenderer(XMLRenderer):
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        """
+        Renders `data` into serialized XML.
+        """
+        if data is None:
+            return ""
+
+        if isinstance(data, dict):
+            if len(data.keys()) == 1:
+                self.root_tag_name, val = next(i for i in data.items())
+                data = val
+
+        return super().render(
+            data,
+            accepted_media_type=accepted_media_type,
+            renderer_context=renderer_context
+        )
 
 
-class RNCBPayResponseXMLRenderer(XMLRenderer):
-    root_tag_name = "PAYRESPONSE"
-
-
-class RNCBBalanceResponseXMLRenderer(XMLRenderer):
-    root_tag_name = "BALANCERESPONSE"
-
-
-def payment_wrapper(request_serializer, response_serializer, renderer_class):
+def payment_wrapper(request_serializer, response_serializer):
     def _fn(fn):
         @wraps(fn)
         def _wrapper(self, request, *args, **kwargs):
-            self.renderer_classes = [renderer_class]
             try:
                 ser = request_serializer(data=request.query_params)
                 ser.is_valid(raise_exception=True)
-                res = fn(data=ser.data, *args, **kwargs)
+                res = fn(self, data=ser.data, *args, **kwargs)
                 r_ser = response_serializer(data=res)
                 r_ser.is_valid(raise_exception=True)
                 return Response(r_ser.data)
@@ -63,13 +70,13 @@ def payment_wrapper(request_serializer, response_serializer, renderer_class):
                 }, status=e.status_code)
             except ValidationError as e:
                 return Response({
-                    'error': serializers_rncb.RNCBPaymentErrorEnum,
+                    'error': serializers_rncb.RNCBPaymentErrorEnum.UNKNOWN_CODE.value,
                     'comments': str(e)
                 }, status=e.status_code)
-            except Customer.DoesNotExists:
+            except Customer.DoesNotExist:
                 raise serializers_rncb.RNCBProtocolErrorExeption(
                     'Customer does not exists',
-                    error=serializers_rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND
+                    error=serializers_rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value
                 )
 
         return _wrapper
@@ -77,6 +84,7 @@ def payment_wrapper(request_serializer, response_serializer, renderer_class):
 
 
 class RNCBPaymentViewSet(GenericAPIView):
+    renderer_classes = [DynamicRootXMLRenderer]
     http_method_names = ["get"]
     queryset = PayRNCBGateway.objects.all()
     serializer_class = serializers_rncb.PayRNCBGatewayModelSerializer
@@ -108,7 +116,6 @@ class RNCBPaymentViewSet(GenericAPIView):
     @payment_wrapper(
         request_serializer=serializers_rncb.RNCBPaymentCheckSerializer,
         response_serializer=serializers_rncb.RNCBPaymentCheckResponseSerializer,
-        renderer_class=RNCBCheckResponseXMLRenderer
     )
     def _check(self, data: dict, *args, **kwargs):
         account = data['account']
@@ -116,16 +123,17 @@ class RNCBPaymentViewSet(GenericAPIView):
         customer = Customer.objects.get(username=account)
 
         return {
-            'fio': customer.get_full_name(),
-            'balance': -customer.balance,
-            'comments': 'Ok',
-            #  'inn': ''
+            'checkresponse': {
+                'fio': customer.get_full_name(),
+                'balance': -customer.balance,
+                'comments': 'Ok',
+                #  'inn': ''
+            }
         }
 
     @payment_wrapper(
         request_serializer=serializers_rncb.RNCBPaymentPaySerializer,
         response_serializer=serializers_rncb.RNCBPaymentPayResponseSerializer,
-        renderer_class=RNCBPayResponseXMLRenderer
     )
     def _pay(self, data: dict, *args, **kwargs):
         account = data['account']
@@ -144,9 +152,11 @@ class RNCBPaymentViewSet(GenericAPIView):
         ).first()
         if pay is not None:
             return {
-                'error': serializers_rncb.RNCBPaymentErrorEnum.DUPLICATE_TRANSACTION,
-                'out_payment_id': pay.pk,
-                'comments': 'Payment duplicate'
+                'payresponse': {
+                    'error': serializers_rncb.RNCBPaymentErrorEnum.DUPLICATE_TRANSACTION.value,
+                    'out_payment_id': pay.pk,
+                    'comments': 'Payment duplicate'
+                }
             }
         del pay
 
@@ -174,7 +184,6 @@ class RNCBPaymentViewSet(GenericAPIView):
     @payment_wrapper(
         request_serializer=serializers_rncb.RNCBPaymentTransactionCheckSerializer,
         response_serializer=serializers_rncb.RNCBPaymentTransactionCheckResponseSerializer,
-        renderer_class=RNCBBalanceResponseXMLRenderer,
     )
     def _balance(self, data: dict, *args, **kwargs):
         date_from = data['datefrom']
@@ -189,12 +198,14 @@ class RNCBPaymentViewSet(GenericAPIView):
 
         def _gen_pay(p: RNCBPayLog):
             return {
-                'payment_row': '%(payment_id)d;%(out_payment_id)d;%(account)s;%(sum).2f;%(ex_date)s' % {
-                    'payment_id': p.pay_id,
-                    'out_payment_id': p.pk,
-                    'account': p.customer.username,
-                    'sum': float(p.amount),
-                    'ex_date': p.acct_time
+                'balanceresponse': {
+                    'payment_row': '%(payment_id)d;%(out_payment_id)d;%(account)s;%(sum).2f;%(ex_date)s' % {
+                        'payment_id': p.pay_id,
+                        'out_payment_id': p.pk,
+                        'account': p.customer.username,
+                        'sum': float(p.amount),
+                        'ex_date': p.acct_time
+                    }
                 }
             }
 

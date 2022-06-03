@@ -13,6 +13,7 @@ from fin_app.views.alltime import (
     TRANSACTION_STATUS_PAYMENT_OK,
     AllTimeStatusCodeEnum
 )
+from fin_app.models import rncb as models_rncb
 
 
 def _make_sign(act: AllTimePayActEnum, pay_account: str, serv_id: str, pay_id, secret: str):
@@ -63,7 +64,7 @@ time_format = "%d.%m.%Y %H:%M"
 
 
 class AllPayTestCase(CustomAPITestCase):
-    url = "/api/fin/pay_gw_slug/pay/"
+    url = "/api/fin/alltime/pay_gw_slug/pay/"
 
     def test_user_pay_view_info(self):
         current_date = timezone.now().strftime(time_format)
@@ -118,17 +119,15 @@ class AllPayTestCase(CustomAPITestCase):
                 ),
             },
         )
-        xml = "".join(
-            (
-                "<pay-response>",
-                "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
-                "<service_id>%s</service_id>" % escape(service_id),
-                "<amount>18.21</amount>",
-                "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.PAYMENT_OK.value,
-                "<time_stamp>%s</time_stamp>" % escape(current_date),
-                "</pay-response>",
-            )
-        )
+        xml = "".join((
+            "<pay-response>",
+            "<pay_id>840ab457-e7d1-4494-8197-9570da035170</pay_id>",
+            "<service_id>%s</service_id>" % escape(service_id),
+            "<amount>18.21</amount>",
+            "<status_code>%d</status_code>" % AllTimeStatusCodeEnum.PAYMENT_OK.value,
+            "<time_stamp>%s</time_stamp>" % escape(current_date),
+            "</pay-response>",
+        ))
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
         self.assertEqual(r.status_code, 200)
         self.customer.refresh_from_db()
@@ -172,7 +171,7 @@ class AllPayTestCase(CustomAPITestCase):
 
 
 class SitesAllPayTestCase(CustomAPITestCase):
-    url = "/api/fin/pay_gw_slug/pay/"
+    url = "/api/fin/alltime/pay_gw_slug/pay/"
 
     def setUp(self):
         super().setUp()
@@ -206,3 +205,62 @@ class SitesAllPayTestCase(CustomAPITestCase):
         self.maxDiff = None
         self.assertXMLEqual(r.content.decode("utf8"), o)
         self.assertEqual(r.status_code, 200)
+
+
+class RNCBPaymentAPITestCase(APITestCase):
+    url = "/api/fin/rncb/rncb_gw_slug/pay/"
+
+    def get(self, *args, **kwargs):
+        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
+
+    def post(self, *args, **kwargs):
+        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+
+    def setUp(self):
+        self.admin = UserProfile.objects.create_superuser(
+            username="admin",
+            password="admin",
+            telephone="+797812345678"
+        )
+        # customer for tests
+        custo1 = Customer.objects.create_user(
+            telephone="+79782345678",
+            username="129386",
+            password="passw"
+        )
+        custo1.balance = -13.12
+        custo1.fio = "Test Name"
+        custo1.save(update_fields=("balance", "fio"))
+        custo1.refresh_from_db()
+        self.customer = custo1
+
+        # RNCB Pay system
+        pay_system = models_rncb.PayRNCBGateway.objects.create(
+            title="Test pay system",
+            slug="rncb_gw_slug"
+        )
+        example_site = Site.objects.first()
+        pay_system.sites.add(example_site)
+        custo1.sites.add(example_site)
+        pay_system.refresh_from_db()
+        self.pay_system = pay_system
+
+    def test_pay_view(self):
+        r = self.get(
+            self.url,
+            {
+                "query_type": 'check',
+                "account": "129386",
+            }
+        )
+        xml = ''.join((
+            '<?xml version="1.0" encoding="utf-8"?>\n',
+            "<checkresponse>",
+            "<fio>Test Name</fio>",
+            "<balance>13.12</balance>",
+            "<error>0</error>",
+            "<comments>Ok</comments>",
+            "</checkresponse>"
+        ))
+        self.assertEqual(r.status_code, 200, msg=r.data)
+        self.assertXMLEqual(r.content.decode("utf-8"), xml)

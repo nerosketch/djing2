@@ -44,26 +44,21 @@ class RNCBPaymentCheckSerializer(serializers.Serializer):
     account = serializers.CharField(max_length=64, validators=[integer_validator])
 
 
-class ErrorFieldValidationMixin:
-    error = serializers.IntegerField()
-
-    def validate_error(self, value):
-        i = int(value)
-        if not RNCBPaymentErrorEnum.in_range(i):
-            raise RNCBProtocolErrorExeption(
-                'Value "%d" not in available range' % i
-            )
-        return i
-
-
-class RNCBPaymentCheckResponseSerializer(serializers.Serializer, ErrorFieldValidationMixin):
+class _RNCBPaymentCheckResponseSerializer(serializers.Serializer):
     fio = serializers.CharField()
 
     # Negative from customer balance.
     balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
 
+    error = serializers.ChoiceField(
+        choices=RNCBPaymentErrorEnum.choices,
+        default=RNCBPaymentErrorEnum.OK,
+    )
+
     comments = serializers.CharField(required=False)
     #  inn = serializers.IntegerField(min_value=1000000000, max_value=999999999999)
+class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
+    checkresponse = _RNCBPaymentCheckResponseSerializer()
 
 
 class RNCBPaymentPaySerializer(serializers.Serializer):
@@ -76,12 +71,15 @@ class RNCBPaymentPaySerializer(serializers.Serializer):
     #  inn = serializers.IntegerField(min_value=1000000000, max_value=999999999999)
 
 
-class RNCBPaymentPayResponseSerializer(serializers.Serializer, ErrorFieldValidationMixin):
-    error = serializers.IntegerField(
-        default=RNCBPaymentErrorEnum.OK.value
-    )
+class _RNCBPaymentPayResponseSerializer(serializers.Serializer):
     out_payment_id = serializers.IntegerField() # Уникальный идентификатор Перевода в ИС Клиента
+    error = serializers.ChoiceField(
+        choices=RNCBPaymentErrorEnum.choices,
+        default=RNCBPaymentErrorEnum.OK.value,
+    )
     comments = serializers.CharField(required=False)
+class RNCBPaymentPayResponseSerializer(serializers.Serializer):
+    payresponse = _RNCBPaymentPayResponseSerializer()
 
 
 class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
@@ -102,11 +100,12 @@ class RNCBPaymentTransactionCheckResponseRowSerializer(serializers.Serializer):
     payment_row = serializers.CharField()
 
 
-class RNCBPaymentTransactionCheckResponseSerializer(serializers.Serializer, ErrorFieldValidationMixin):
-    error = serializers.IntegerField(
-        default=RNCBPaymentErrorEnum.OK.value
-    )
+class RNCBPaymentTransactionCheckResponseSerializer(serializers.Serializer):
     full_summa = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
     number_of_payments = serializers.IntegerField()
+    error = serializers.ChoiceField(
+        choices=RNCBPaymentErrorEnum.choices,
+        default=RNCBPaymentErrorEnum.OK.value,
+    )
     payments = RNCBPaymentTransactionCheckResponseRowSerializer(many=True)
 
