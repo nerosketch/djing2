@@ -1,4 +1,5 @@
-from functools import wraps
+from functools import wraps, cached_property
+from datetime import datetime
 from django.db import transaction
 from django.db.models import Sum
 from rest_framework.generics import GenericAPIView
@@ -65,7 +66,7 @@ def payment_wrapper(request_serializer, response_serializer, root_tag: str):
                 return Response({
                     root_tag: r_ser.data
                 })
-            except serializers_rncb.RNCBProtocolErrorExeption as e:
+            except serializers_rncb.RNCBProtocolErrorException as e:
                 return Response({root_tag: {
                     'error': e.error,
                     'comments': str(e)
@@ -94,12 +95,14 @@ class RNCBPaymentViewSet(GenericAPIView):
     lookup_url_kwarg = "pay_slug"
     permission_classes = [AllowAny]
 
-    @property
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        kw = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+        return PayRNCBGateway.objects.get(**kw)
+
+    @cached_property
     def _lazy_object(self):
-        if self._obj_cache is None:
-            self._obj_cache = self.get_object()
-        self.object = self._obj_cache
-        return self.object
+        return self.get_object()
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -140,8 +143,10 @@ class RNCBPaymentViewSet(GenericAPIView):
     def _pay(self, data: dict, *args, **kwargs):
         account = data['account']
         payment_id = data['payment_id']
-        pay_amount = data['summa']
+        pay_amount = float(data['summa'])
         exec_date = data['exec_date']
+        if not isinstance(exec_date, datetime):
+            exec_date = datetime.strptime(exec_date, serializers_rncb.date_format)
         #  inn = data['inn']
 
         customer = Customer.objects.filter(username=account, is_active=True)
