@@ -4,6 +4,7 @@ from django.contrib.sites.models import Site
 from django.utils import timezone
 from django.utils.html import escape
 from rest_framework.test import APITestCase
+from rest_framework import status
 
 from customers.models import Customer
 from fin_app.models.alltime import PayAllTimeGateway
@@ -96,7 +97,7 @@ class AllPayTestCase(CustomAPITestCase):
         )
         self.maxDiff = None
         self.assertXMLEqual(r.content.decode("utf8"), o)
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_user_pay_pay(self):
         current_date = timezone.now().strftime(time_format)
@@ -129,7 +130,7 @@ class AllPayTestCase(CustomAPITestCase):
             "</pay-response>",
         ))
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.customer.refresh_from_db()
         self.assertEqual(round(self.customer.balance, 2), 5.09)
         self.user_pay_check(current_date)
@@ -167,7 +168,7 @@ class AllPayTestCase(CustomAPITestCase):
             )
         )
         self.assertXMLEqual(r.content.decode(), xml)
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
 
 
 class SitesAllPayTestCase(CustomAPITestCase):
@@ -204,7 +205,7 @@ class SitesAllPayTestCase(CustomAPITestCase):
         )
         self.maxDiff = None
         self.assertXMLEqual(r.content.decode("utf8"), o)
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
 
 
 class RNCBPaymentAPITestCase(APITestCase):
@@ -262,5 +263,33 @@ class RNCBPaymentAPITestCase(APITestCase):
             "<comments>Ok</comments>",
             "</checkresponse>"
         ))
-        self.assertEqual(r.status_code, 200, msg=r.data)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
+
+    def test_pay_view_unknown_account(self):
+        r = self.get(
+            self.url,
+            {
+                "query_type": 'check',
+                "account": "12089",
+            }
+        )
+        xml = ''.join((
+            '<?xml version="1.0" encoding="utf-8"?>\n',
+            "<checkresponse>",
+            "<error>1</error>",
+            "<comments>Customer does not exists</comments>",
+            "</checkresponse>"
+        ))
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertXMLEqual(r.content.decode("utf-8"), xml)
+
+    def test_pay_view_bad_account(self):
+        r = self.get(
+            self.url,
+            {
+                "query_type": 'check',
+                "account": "*7867^&a",
+            }
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, msg=r.data)

@@ -44,7 +44,7 @@ class RNCBPaymentCheckSerializer(serializers.Serializer):
     account = serializers.CharField(max_length=64, validators=[integer_validator])
 
 
-class _RNCBPaymentCheckResponseSerializer(serializers.Serializer):
+class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
     fio = serializers.CharField()
 
     # Negative from customer balance.
@@ -57,8 +57,6 @@ class _RNCBPaymentCheckResponseSerializer(serializers.Serializer):
 
     comments = serializers.CharField(required=False)
     #  inn = serializers.IntegerField(min_value=1000000000, max_value=999999999999)
-class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
-    checkresponse = _RNCBPaymentCheckResponseSerializer()
 
 
 class RNCBPaymentPaySerializer(serializers.Serializer):
@@ -71,15 +69,13 @@ class RNCBPaymentPaySerializer(serializers.Serializer):
     #  inn = serializers.IntegerField(min_value=1000000000, max_value=999999999999)
 
 
-class _RNCBPaymentPayResponseSerializer(serializers.Serializer):
+class RNCBPaymentPayResponseSerializer(serializers.Serializer):
     out_payment_id = serializers.IntegerField() # Уникальный идентификатор Перевода в ИС Клиента
     error = serializers.ChoiceField(
         choices=RNCBPaymentErrorEnum.choices,
         default=RNCBPaymentErrorEnum.OK.value,
     )
     comments = serializers.CharField(required=False)
-class RNCBPaymentPayResponseSerializer(serializers.Serializer):
-    payresponse = _RNCBPaymentPayResponseSerializer()
 
 
 class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
