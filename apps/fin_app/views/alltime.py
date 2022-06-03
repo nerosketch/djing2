@@ -1,4 +1,5 @@
 from hashlib import md5
+from functools import cached_property
 
 from django.db import transaction, IntegrityError
 from django.db.utils import DatabaseError
@@ -97,14 +98,10 @@ class AllTimePay(GenericAPIView):
     lookup_url_kwarg = "pay_slug"
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend]
-    _obj_cache = None
 
-    @property
+    @cached_property
     def _lazy_object(self):
-        if self._obj_cache is None:
-            self._obj_cache = self.get_object()
-        self.object = self._obj_cache
-        return self.object
+        return self.get_object()
 
     def get_queryset(self):
         qs = super().get_queryset()
