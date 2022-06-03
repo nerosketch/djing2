@@ -238,7 +238,7 @@ class RNCBPaymentAPITestCase(APITestCase):
             '<?xml version="1.0" encoding="utf-8"?>\n'
             "<checkresponse>"
             "<fio>Test Name</fio>"
-            "<balance>13.12</balance>"
+            "<balance>13.120000</balance>"
             "<error>0</error>"
             "<comments>Ok</comments>"
             "</checkresponse>"
@@ -398,12 +398,13 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
               "<number_of_payments>4</number_of_payments>"
               "<error>0</error>"
               "<payments>"
-                "<payment_row>12837;1;129386;1.00;20170101000000</payment_row>"
-                "<payment_row>12838;2;129386;2.00;20170103000000</payment_row>"
-                "<payment_row>12839;3;129386;3.00;20170107000000</payment_row>"
-                "<payment_row>12840;4;129386;5.00;20170109000000</payment_row>"
+                "<payment_row>12837;1;129386;3.00;20170101000000</payment_row>"
+                "<payment_row>12838;2;129386;4.00;20170103000000</payment_row>"
+                "<payment_row>12839;3;129386;5.00;20170107000000</payment_row>"
+                "<payment_row>12840;4;129386;6.00;20170109000000</payment_row>"
               "</payments>"
             "</balanceresponse>"
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.maxDiff = None
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
