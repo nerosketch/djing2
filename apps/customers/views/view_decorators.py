@@ -1,3 +1,4 @@
+from functools import wraps
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -7,6 +8,7 @@ from djing2.lib import LogicError
 
 
 def catch_customers_errs(fn):
+    @wraps(fn)
     def wrapper(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
@@ -15,6 +17,4 @@ def catch_customers_errs(fn):
         except TimeoutError as e:
             return Response(str(e), status=status.HTTP_408_REQUEST_TIMEOUT)
 
-    # Hack for decorator @action
-    wrapper.__name__ = fn.__name__
     return wrapper

@@ -9,6 +9,7 @@ from typing import Any, Union, Optional
 from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.db.models import IntegerChoices
 from rest_framework.exceptions import ParseError, APIException
 
 
@@ -164,3 +165,10 @@ def time2utctime(src_datetime) -> datetime:
     """Convert datetime from local tz to UTC"""
     tz = timezone.get_current_timezone()
     return tz.localize(src_datetime, is_dst=None).astimezone(pytz.utc)
+
+
+class IntEnumEx(IntegerChoices):
+    @classmethod
+    def in_range(cls, value: int):
+        return value in cls._value2member_map_
+

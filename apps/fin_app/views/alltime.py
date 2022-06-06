@@ -1,5 +1,5 @@
 from hashlib import md5
-from enum import IntEnum
+from functools import cached_property
 
 from django.db import transaction, IntegrityError
 from django.db.utils import DatabaseError
@@ -7,6 +7,7 @@ from django.db.models import Count
 from django.http import Http404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
+from djing2.lib import IntEnumEx
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -30,19 +31,14 @@ from fin_app.serializers import alltime as alltime_serializers
 from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway, report_by_pays
 
 
-class CustomIntEnum(IntEnum):
-    @classmethod
-    def in_range(cls, value: int):
-        return value in cls._value2member_map_
 
-
-class AllTimePayActEnum(CustomIntEnum):
+class AllTimePayActEnum(IntEnumEx):
     ACT_VIEW_INFO = 1
     ACT_PAY_DO = 4
     ACT_PAY_CHECK = 7
 
 
-class AllTimeStatusCodeEnum(CustomIntEnum):
+class AllTimeStatusCodeEnum(IntEnumEx):
     PAYMENT_OK = 22
     PAYMENT_POSSIBLE = 21
     TRANSACTION_STATUS_DETERMINED = 11
@@ -95,21 +91,17 @@ class AllTimeSpecifiedXMLRenderer(XMLRenderer):
 
 class AllTimePay(GenericAPIView):
     http_method_names = ["get"]
-    renderer_classes = (AllTimeSpecifiedXMLRenderer,)
+    renderer_classes = [AllTimeSpecifiedXMLRenderer]
     queryset = PayAllTimeGateway.objects.all()
     serializer_class = alltime_serializers.PayAllTimeGatewayModelSerializer
     lookup_field = "slug"
     lookup_url_kwarg = "pay_slug"
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend]
-    _obj_cache = None
 
-    @property
+    @cached_property
     def _lazy_object(self):
-        if self._obj_cache is None:
-            self._obj_cache = self.get_object()
-        self.object = self._obj_cache
-        return self.object
+        return self.get_object()
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -224,7 +216,11 @@ class AllTimePay(GenericAPIView):
             )
 
         with transaction.atomic():
-            customer.add_balance(profile=None, cost=pay_amount, comment=f"{self._lazy_object.title} {pay_amount:.2f}")
+            customer.add_balance(
+                profile=None,
+                cost=pay_amount,
+                comment=f"{self._lazy_object.title} {pay_amount:.2f}"
+            )
             customer.save(update_fields=("balance",))
 
             AllTimePayLog.objects.create(

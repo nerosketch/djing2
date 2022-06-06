@@ -1,10 +1,8 @@
 import abc
-import enum
 from typing import Optional, Tuple, Type, TypeVar, overload
 from dataclasses import dataclass
 from netaddr import EUI
-
-from djing2.lib import LogicError, safe_int
+from djing2.lib import LogicError, safe_int, IntEnumEx
 
 
 @dataclass
@@ -48,7 +46,7 @@ class RadiusCounters:
     output_packets: int = 0
 
 
-class AcctStatusType(enum.IntEnum):
+class AcctStatusType(IntEnumEx):
     START = 1
     STOP = 2
     UPDATE = 3
