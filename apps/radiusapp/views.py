@@ -254,7 +254,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     pool__kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
                     ip_address__gte=F('pool__ip_start'),
                     ip_address__lte=F('pool__ip_end'),
-                    is_dynamic=True,
+                    is_dynamic=F('pool__is_dynamic'),
                     customer=None,
                     cvid=0, svid=0,
                     state=False
