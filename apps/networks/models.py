@@ -195,13 +195,14 @@ class NetworkIpPool(BaseAbstractModel):
                 "(ip_address, pool_id, is_dynamic, "
                 "last_update, state, svid, cvid, input_octets, "
                 "input_packets, output_octets, output_packets) "
-                "SELECT %s::inet + ip, %s::int, false, null, "
+                "SELECT %s::inet + ip, %s::int, %s::boolean, null, "
                 "false, 0,0,0,0,0,0 FROM generate_series(0, %s::int) ip "
                 "ON CONFLICT DO NOTHING"
                )
         range_len = int(end_ip) - int(start_ip)
+        is_dynamic = bool(self.is_dynamic)
         with connection.cursor() as cur:
-            cur.execute(sql=sql, params=[str(start_ip), self.pk, range_len])
+            cur.execute(sql=sql, params=[str(start_ip), self.pk, is_dynamic, range_len])
 
     class Meta:
         """Declare database table name in metaclass."""
