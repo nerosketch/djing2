@@ -657,8 +657,9 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
         """Проверяем чтоб существующая сессия обновляла данные счётчиков,
            которые приходят с BRAS'а"""
         # Create ip lease
-        CustomerIpLeaseModel.objects.create(
+        CustomerIpLeaseModel.objects.filter(
             ip_address='10.152.64.18',
+        ).update(
             mac_address='18c0.4d51.dee2',
             pool=self.pool,
             customer=self.full_customer.customer,

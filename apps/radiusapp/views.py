@@ -296,7 +296,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             lease = CustomerIpLeaseModel.objects.filter(
                 pool__vlan_if__vid=vlan_id,
                 pool__is_dynamic=True,
-                pool__vlan_if__kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
+                pool__kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
                 ip_address__gte=F('pool__ip_start'),
                 ip_address__lte=F('pool__ip_end'),
                 is_dynamic=True,
