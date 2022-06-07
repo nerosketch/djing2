@@ -742,7 +742,6 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
         """Проверяем чтоб сессия создалась на учётке абонента, если
            они прилитела с BRAS'а, перед Acct-Start, и её нет на учётке.
            Создаётся новая аренда с нулевыми счётчиками.
-           (Может сделать чтоб создавалась сразу с имеющимися занчениями?)
         """
         r = self._send_request_acct_update(
             cid='0004008B0002',
@@ -756,8 +755,8 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
             in_pkts=1154026959,
             out_pkts=2349616998
         )
-        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
-        self.assertIsNone(r.data, msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.data)
+        self.assertIsNone(r.data, msg=r.data)
 
         leases4customer = self._get_ip_leases()
         self.assertEqual(len(leases4customer), 1, msg=leases4customer)
@@ -768,14 +767,14 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
         self.assertEqual(lease['pool'], self.pool.pk)
         self.assertEqual(lease['radius_username'], "18c0.4d51.dee2-ae0:11421-12-0004008B0002-0006121314151617")
         self.assertEqual(lease['session_id'], "12345678-1234-5678-1234-567812345678")
-        self.assertEqual(lease['input_octets'], 0)
-        self.assertEqual(lease['output_octets'], 0)
-        self.assertEqual(lease['input_packets'], 0)
-        self.assertEqual(lease['output_packets'], 0)
-        self.assertEqual(lease['h_input_octets'], '0')
-        self.assertEqual(lease['h_output_octets'], '0')
-        self.assertEqual(lease['h_input_packets'], '0')
-        self.assertEqual(lease['h_output_packets'], '0')
+        self.assertEqual(lease['input_octets'], 1374368169)
+        self.assertEqual(lease['output_octets'], 3403852035)
+        self.assertEqual(lease['input_packets'], 1154026959)
+        self.assertEqual(lease['output_packets'], 2349616998)
+        self.assertEqual(lease['h_input_octets'], '1.37 Gb')
+        self.assertEqual(lease['h_output_octets'], '3.4 Gb')
+        self.assertEqual(lease['h_input_packets'], '1.15 Gp')
+        self.assertEqual(lease['h_output_packets'], '2.35 Gp')
         self.assertEqual(lease['cvid'], 12)
         self.assertEqual(lease['svid'], 11421)
         self.assertTrue(lease['state'])
