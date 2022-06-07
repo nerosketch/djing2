@@ -18,7 +18,7 @@ from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SecureApiViewMixin, SitesGroupFilterMixin, SitesFilterMixin
 from djing2.lib.logger import logger
 from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
-from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
+from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel, NetworkIpPoolKind
 from networks import serializers
 from networks import radius_commands
 from customers.serializers import CustomerModelSerializer
@@ -176,6 +176,21 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
             return Response('object id is required', status=status.HTTP_403_FORBIDDEN)
         reset_count = CustomerIpLeaseModel.objects.filter(pk=pk).release()
         return Response(reset_count)
+
+    @action(detail=False, methods=['get'])
+    def guest_list(self, request):
+        #  from rest_framework.viewsets import mixins
+        queryset = CustomerIpLeaseModel.objects.filter(
+            pool__kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
+            state=True
+        )
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class DhcpLever(SecureApiViewMixin, APIView):
