@@ -15,13 +15,13 @@ class SpeedInfoStruct:
 
 @dataclass
 class CustomerServiceLeaseResult:
-    id: int
-    username: str
-    is_active: bool
-    balance: float
-    is_dynamic_ip: bool
-    auto_renewal_service: bool
-    current_service_id: Optional[int]
+    id: int = 0
+    username: str = ''
+    is_active: bool = False
+    balance: float = 0
+    is_dynamic_ip: bool = False
+    auto_renewal_service: bool = False
+    current_service_id: Optional[int] = None
     dev_port_id: Optional[int] = None
     device_id: Optional[int] = None
     gateway_id: Optional[int] = None
