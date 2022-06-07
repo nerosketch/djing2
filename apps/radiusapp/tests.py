@@ -527,6 +527,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         d = r.data
         self.assertEqual(len(d), 1)
+        d = d[0]
         self.assertTrue(d['is_dynamic'])
         self.assertEqual(d['ip_address'], '192.168.0.2')
         self.assertEqual(d['mac_address'], mac)
