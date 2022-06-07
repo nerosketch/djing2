@@ -354,7 +354,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         leases = self._get_ip_leases()
         self.assertEqual(len(leases), 1, msg=leases)
         lease = leases[0]
-        self.assertEqual(lease['ip_address'], '10.152.64.2')
+        self.assertEqual(lease['ip_address'], '10.152.64.3')
         self.assertEqual(lease['mac_address'], '1c:c0:4d:95:d0:30')
         self.assertEqual(lease['pool'], self.pool.pk)
         self.assertEqual(lease['customer'], self.full_customer.customer.pk)
@@ -871,6 +871,29 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
         self.service_inet_str = "SERVICE-INET(11000000,1375000,11000000,1375000)"
         #  self.client.logout()
 
+        vlan12 = VlanIf.objects.create(title="Vlan12 for customer tests", vid=12)
+        pool = NetworkIpPool.objects.create(
+            network="10.152.64.0/24",
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
+            description="Test inet pool",
+            ip_start="10.152.64.2",
+            ip_end="10.152.64.254",
+            vlan_if=vlan12,
+            gateway="10.152.64.1",
+            is_dynamic=True,
+        )
+        self.pool = pool
+
+        NetworkIpPool.objects.create(
+            network="192.168.0.0/24",
+            kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
+            description="Test inet guest pool",
+            ip_start="192.168.0.2",
+            ip_end="192.168.0.254",
+            gateway="192.168.0.1",
+            is_dynamic=True,
+        )
+
     def test_guest_radius_session(self):
         """Just send simple request to not existed customer."""
         r = self.post(
@@ -895,8 +918,9 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
                 mac="18c0.4d51.dee2",
             )
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
-        self.assertEqual(r.data["User-Password"], self.service_inet_str, msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertEqual(r.data["User-Password"], self.service_inet_str, msg=r.data)
+        self.assertEqual(r.data["Framed-IP-Address"], '10.152.64.3')
 
     def test_two_identical_fetch(self):
         """Repeat identical requests for same customer.
