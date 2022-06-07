@@ -712,8 +712,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                         speed_in_burst=speed.burst_in,
                         speed_out_burst=speed.burst_out
                     )
-            else:
-                logger.error('Unknown session name from bras: %s' % bras_service_name)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
