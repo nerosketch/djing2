@@ -163,7 +163,8 @@ class NetworkIpPool(BaseAbstractModel):
         return CustomerIpLeaseModel.objects.filter(
             pool=self,
             customer=None,
-            is_dynamic=self.is_dynamic
+            is_dynamic=self.is_dynamic,
+            state=False
         ).first()
 
     @staticmethod
