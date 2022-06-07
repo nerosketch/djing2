@@ -117,7 +117,8 @@ def create_full_customer(uname: str,
 
 
 def radius_api_request_auth(mac: str, vlan_id: Optional[int] = None, cid: Optional[str] = None,
-                            arid: Optional[str] = None, session_id=None):
+                            arid: Optional[str] = None, session_id=None,
+                            service_vlan_id=1011):
     if session_id is None:
         session_id = "2ea5a1843334573bd11dc15417426f36"
     d = {
@@ -134,7 +135,7 @@ def radius_api_request_auth(mac: str, vlan_id: Optional[int] = None, cid: Option
         })
     if vlan_id:
         d.update({
-            "NAS-Port-Id": {"value": ['ae0:1011-%d' % vlan_id]},
+            "NAS-Port-Id": {"value": [f"ae0:{service_vlan_id}-{vlan_id}"]},
         })
     if all([cid, arid, vlan_id, mac]):
         d.update({
@@ -273,6 +274,18 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
 
         # self.client.logout()
 
+        guest_pool = NetworkIpPool.objects.create(
+            network="192.168.0.0/24",
+            kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
+            description="Test inet guest pool",
+            ip_start="192.168.0.2",
+            ip_end="192.168.0.254",
+            vlan_if=vlan12,
+            gateway="192.168.0.1",
+            is_dynamic=True,
+        )
+        self.guest_pool = guest_pool
+
     def _send_request_acct_start(self, cid: str, arid: str,
             vlan_id: int = 0, service_vlan_id=0, ip="10.152.164.2",
             mac="18c0.4d51.dee2", session_id: Optional[UUID] = None
@@ -359,11 +372,13 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         leases = self._get_ip_leases()
         self.assertEqual(len(leases), 1, msg=leases)
         lease = leases[0]
-        self.assertFalse(lease['is_dynamic'])
-        self.assertIsNone(lease['mac_address'])
         self.assertEqual(lease['ip_address'], ip, msg=lease)
+        self.assertIsNone(lease['mac_address'])
         self.assertEqual(lease['pool'], self.poolv13.pk, msg=lease)
         self.assertEqual(lease['customer'], self.full_customer.customer.pk, msg=lease)
+        self.assertFalse(lease['is_dynamic'], msg=lease)
+        self.assertIsNone(lease['radius_username'], msg=lease)
+        self.assertIsNone(lease['session_id'], msg=lease)
 
         #  self._create_auth_session()
         self._send_request_acct_start(
@@ -492,24 +507,29 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         """Если по opt82 не находим учётку, то создаём гостевую
            сессию без учётки.
         """
-        r = self._send_request_acct_start(
+        mac = '1c:c0:4d:95:d0:31'
+        r = self._send_request_auth(
             # Not existing credentials
             cid='0004008B0003',
             arid='0006121314151618',
-            ip='10.152.65.17',
-            mac='1c:c0:4d:95:d0:31',
+            vlan_id=12,
+            mac=mac,
             session_id=UUID('12345678123456781234567812345678')
         )
-        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
-        self.assertIsNone(r.data)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertDictEqual(r.data, {
+            "User-Password": "SERVICE-GUEST",
+            "Framed-IP-Address": "192.168.0.3"
+        })
 
         # Получаем все гостевые аренды
-        r = self.get(
-            "/api/radius/session/guest_list/"
-        )
+        r = self.get("/api/networks/lease/guest_list/")
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         d = r.data
-        self.assertGreaterEqual(len(d), 1)
+        self.assertEqual(len(d), 1)
+        self.assertTrue(d['is_dynamic'])
+        self.assertEqual(d['ip_address'], '192.168.0.2')
+        self.assertEqual(d['mac_address'], mac)
 
     def test_fetch_ip_with_cloned_mac(self):
         """Пробуем получить ip с opt82 от одной учётки, но маком от другой.
