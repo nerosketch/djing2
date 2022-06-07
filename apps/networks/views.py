@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.translation import gettext_lazy as _
 from django.db.utils import IntegrityError
@@ -98,11 +99,47 @@ class VlanIfModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
 
 class CustomerIpLeaseModelViewSet(DjingModelViewSet):
+    """
+    TIP: While creating new ip lease, actually we find existing lease by ip address,
+         and update other fields. Because ip leases creating on new IpPool created.
+    """
+
     queryset = CustomerIpLeaseModel.objects.all()
     serializer_class = serializers.CustomerIpLeaseModelSerializer
     filter_backends = (CustomObjectPermissionsFilter, OrderingFilter, DjangoFilterBackend)
     filterset_fields = ("customer",)
     ordering_fields = ("ip_address", "lease_time", "mac_address")
+
+    def create(self, request, *args, **kwargs):
+        d = request.data
+        instance = CustomerIpLeaseModel.objects.filter(
+            ip_address=d['ip_address']
+        ).first()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
+
+    def perform_update(self, serializer):
+        d = serializer.data
+        now = datetime.now()
+        CustomerIpLeaseModel.objects.filter(
+            ip_address=d['ip_address']
+        ).update(
+            mac_address=d.get('mac_address'),
+            customer=d['customer'],
+            is_dynamic=False,
+            input_octets=0,
+            output_octets=0,
+            input_packets=0,
+            output_packets=0,
+            cvid=0,
+            svid=0,
+            state=True,
+            lease_time=now,
+            last_update=now,
+        )
 
     @action(detail=True)
     def ping_ip(self, request, pk=None):
