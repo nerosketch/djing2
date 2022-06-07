@@ -10,6 +10,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import NotFound
 
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws, WebSocketSender
@@ -115,14 +116,11 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
         instance = CustomerIpLeaseModel.objects.filter(
             ip_address=d['ip_address']
         ).first()
-        serializer = self.get_serializer(instance, data=request.data)
+        if instance is None:
+            raise NotFound('Failed to attach ip address')
+        serializer = self.get_serializer(instance, data=d, partial=True)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
 
-    def perform_update(self, serializer):
-        d = serializer.data
         now = datetime.now()
         CustomerIpLeaseModel.objects.filter(
             ip_address=d['ip_address']
@@ -140,6 +138,9 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
             lease_time=now,
             last_update=now,
         )
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
 
     @action(detail=True)
     def ping_ip(self, request, pk=None):
