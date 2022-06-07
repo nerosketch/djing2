@@ -442,6 +442,8 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         if not radius_unique_id:
             return _bad_ret('Bad unique id from radius request')
 
+        now = datetime.now()
+
         agent_remote_id, agent_circuit_id = opt82
         if all([agent_remote_id, agent_circuit_id]):
             dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
@@ -459,6 +461,29 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     'Customer with provided device credentials not found: %s %s' % (dev_mac, dev_port),
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
+
+            vlan_id = vendor_manager.get_vlan_id(dat)
+            service_vlan_id = vendor_manager.get_service_vlan_id(dat)
+            counters = vendor_manager.get_counters(data=dat)
+            CustomerIpLeaseModel.objects.filter(
+                ip_address=ip,
+                customer=customer,
+                is_dynamic=False,
+                mac_address=None
+            ).update(
+                mac_address=customer_mac,
+                input_octets=counters.input_octets,
+                output_octets=counters.output_octets,
+                input_packets=counters.input_packets,
+                output_packets=counters.output_packets,
+                state=True,
+                lease_time=now,
+                last_update=now,
+                session_id=radius_unique_id,
+                radius_username=radius_username,
+                svid=safe_int(service_vlan_id),
+                cvid=safe_int(vlan_id)
+            )
         else:
             # auth by mac. Find static lease.
             lease = CustomerIpLeaseModel.objects.filter(
@@ -479,9 +504,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     custom_status=status.HTTP_404_NOT_FOUND
                 )
 
-        #  vlan_id = vendor_manager.get_vlan_id(dat)
-        #  service_vlan_id = vendor_manager.get_service_vlan_id(dat)
-
         custom_signals.radius_acct_start_signal.send(
             sender=CustomerIpLeaseModel,
             instance=None,
@@ -492,7 +514,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             customer_ip_lease=None,
             customer=customer,
             radius_unique_id=radius_unique_id,
-            event_time=datetime.now(),
+            event_time=now,
         )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
