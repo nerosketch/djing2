@@ -205,6 +205,40 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         serializer = self.get_serializer()
         return Response(serializer.data)
 
+    def _assign_global_guest_lease(self, customer_mac, vlan_id: Optional[int], svid: Optional[int],
+            now: datetime, session_id: Optional[str], radius_username: Optional[str]):
+        """Create global guest lease without customer"""
+
+        leases_qs = CustomerIpLeaseModel.objects.filter(
+            pool__kind=NetworkIpPoolKind.NETWORK_KIND_GUEST.value,
+            state=False,
+        )[:1]
+        updated_lease_count = CustomerIpLeaseModel.objects.filter(pk__in=leases_qs).update(
+            mac_address=customer_mac,
+            state=True,
+            input_octets=0,
+            output_octets=0,
+            input_packets=0,
+            output_packets=0,
+            cvid=vlan_id,
+            svid=svid,
+            lease_time=now,
+            last_update=now,
+            session_id=session_id,
+            radius_username=radius_username,
+        )
+        if updated_lease_count > 0:
+            ipaddr = leases_qs.first()
+            if ipaddr is not None:
+                db_info = CustomerServiceLeaseResult(
+                    ip_address=ipaddr.ip_address
+                )
+                return db_info
+        raise BadRetException(
+            detail='Failed to assign guest address',
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
     @action(methods=["post"], detail=False, url_path=r"auth/(?P<vendor_name>\w{1,32})")
     def auth(self, request, vendor_name=None):
         # Just find customer by credentials from request
@@ -224,6 +258,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
         service_vlan_id = vendor_manager.get_vlan_id(request.data)
         radius_unique_id = vendor_manager.get_radius_unique_id(request.data)
         radius_username = vendor_manager.get_radius_username(request.data)
+        now = datetime.now()
 
         if all([agent_remote_id, agent_circuit_id]):
             dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
@@ -240,9 +275,13 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
             )
 
             if db_info is None:
-                return _bad_ret(
-                    'Customer not found',
-                    custom_status=status.HTTP_404_NOT_FOUND
+                db_info = self._assign_global_guest_lease(
+                    customer_mac=customer_mac,
+                    vlan_id=vlan_id,
+                    svid=service_vlan_id,
+                    now=now,
+                    session_id=radius_unique_id,
+                    radius_username=radius_username
                 )
             if not db_info.ip_address:
                 # assign new lease
@@ -259,7 +298,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     cvid=0, svid=0,
                     state=False
                 )[:1]
-                now = datetime.now()
                 updated_lease_count = CustomerIpLeaseModel.objects.filter(pk__in=lease).update(
                     mac_address=customer_mac,
                     customer=db_info.id,
@@ -285,9 +323,14 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 customer_mac=customer_mac
             )
             if db_info is None:
-                return _bad_ret(
-                    'Customer not found',
-                    custom_status=status.HTTP_404_NOT_FOUND
+                #  Create global guest lease without customer
+                db_info = self._assign_global_guest_lease(
+                    customer_mac=customer_mac,
+                    vlan_id=vlan_id,
+                    svid=service_vlan_id,
+                    now=now,
+                    session_id=radius_unique_id,
+                    radius_username=radius_username
                 )
 
         # If ip does not exists, then assign guest lease
@@ -304,7 +347,6 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                 cvid=0, svid=0,
                 state=False
             )[:1]
-            now = datetime.now()
             updated_lease_count = CustomerIpLeaseModel.objects.filter(pk__in=lease).update(
                 mac_address=customer_mac,
                 customer=db_info.id,
