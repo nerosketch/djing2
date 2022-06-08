@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from datetime import datetime
 from django.test import override_settings
 from django.contrib.sites.models import Site
@@ -21,7 +22,7 @@ from fin_app.tests import _make_sign
     SORM_EXPORT_FTP_DISABLE=False
 )
 class PaymentsExportAPITestCase(CustomAPITestCase, FtpTestCaseMixin):
-    payment_url = "/api/fin/asd/pay/"
+    payment_url = "/api/fin/alltime/asd/pay/"
 
     @classmethod
     def setUpClass(cls):
@@ -70,7 +71,6 @@ class PaymentsExportAPITestCase(CustomAPITestCase, FtpTestCaseMixin):
         )
 
     def test_customer_payment_task(self):
-        from pathlib import Path
         Path('/tmp/ISP/abonents').mkdir(parents=True, exist_ok=True)
         event_time = datetime.now()
         fname = f"/tmp/ISP/abonents/payments_v1_{format_fname(event_time)}.txt"
