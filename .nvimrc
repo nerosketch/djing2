@@ -340,13 +340,6 @@ map g/ <Plug>(incsearch-stay)
 nnoremap <Leader>1 :diffget 1<CR>:diffupdate<CR>
 nnoremap <Leader>2 :diffget 2<CR>:diffupdate<CR>
 nnoremap <Leader>s :Ack<CR>
-nnoremap <Leader>l :vsplit<CR>
-nnoremap <Leader>k :split<CR>
-nnoremap <Leader>wh :wincmd h<CR>
-nnoremap <Leader>wl :wincmd l<CR>
-nnoremap <Leader>wk :wincmd k<CR>
-nnoremap <Leader>wj :wincmd j<CR>
-nnoremap <Leader>w= :wincmd =<CR>
 nnoremap <Leader>wb :e#<CR>
 nnoremap <Leader>qq :bd<CR>
 nnoremap <Leader>qk :call DeleteCurrentFileAndBuffer()<CR>
@@ -355,7 +348,7 @@ nnoremap <Leader>sr :so .vimsession<CR>
 nnoremap <Leader><Leader>r :so ~/.config/nvim/init.vim<CR>
 nnoremap <Leader>n :NERDTree<CR>
 nmap " :NERDTreeToggle<CR>
-nnoremap <Leader>f :NERDTreeFind<CR>
+" nnoremap <Leader>f :NERDTreeFind<CR>
 " Tabs
 " nnoremap <Leader>tn :tabn<CR>
 " nnoremap <Leader>tp :tabp<CR>
@@ -569,4 +562,11 @@ let g:bookmark_highlight_lines = 1
 " set a byte character marker (BOM) utf-8 symbol when retrieving file encoding
 " disabled by default with no value
 let g:WebDevIconsUnicodeByteOrderMarkerDefaultSymbol = ''
+
+" Git key mappings
+nnoremap <Leader>gu :Git pull<CR>
+nnoremap <Leader>gp :Git push<CR>
+nnoremap <Leader>gs :Git status<CR>
+nnoremap <Leader>gc :Git commit %<cr>
+nnoremap <Leader>gd :Git diff<cr>
 
