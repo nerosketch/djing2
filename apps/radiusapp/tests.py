@@ -354,7 +354,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         leases = self._get_ip_leases()
         self.assertEqual(len(leases), 1, msg=leases)
         lease = leases[0]
-        self.assertEqual(lease['ip_address'], '10.152.64.3')
+        self.assertEqual(lease['ip_address'], '10.152.64.2')
         self.assertEqual(lease['mac_address'], '1c:c0:4d:95:d0:30')
         self.assertEqual(lease['pool'], self.pool.pk)
         self.assertEqual(lease['customer'], self.full_customer.customer.pk)
@@ -427,7 +427,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         """Тестируем когда на учётке больше одного ip, и пробуем их получить.
         """
         # Создаём динамический ip в vlan 12,
-        # ip 10.152.64.6
+        # ip 10.152.64.2
         # мак 1c:c0:4d:95:d0:30
         self.test_normal_new_session()
 
@@ -464,8 +464,8 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         d = r.data
-        self.assertIsNone(d.get('Framed-IP-Address'), msg=d)
-        self.assertIsNotNone(d.get('User-Password'))
+        self.assertEqual(d['Framed-IP-Address'], '10.152.64.2', msg=d)
+        self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,1375000,11000000,1375000)', msg=d)
 
     def test_creating_new_dynamic_session_with_different_client_mac(self):
         """Проверяем чтобы на учётку создавались новые сессии и ip когда
