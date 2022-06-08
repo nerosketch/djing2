@@ -896,6 +896,7 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
 
     def test_guest_radius_session(self):
         """Just send simple request to not existed customer."""
+
         r = self.post(
             "/api/radius/customer/auth/juniper/",
             radius_api_request_auth(
@@ -905,7 +906,11 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
                 mac="18c0.4d51.dee2",
             )
         )
-        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND, msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            "User-Password": "SERVICE-GUEST",
+            "Framed-IP-Address": "192.168.0.3"
+        }, msg=r.data)
 
     def test_auth_radius_session(self):
         """Just send simple request to en existed customer."""
@@ -969,7 +974,10 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
             )
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
-        self.assertDictEqual(r.data, {"User-Password": "SERVICE-GUEST"})
+        self.assertDictEqual(r.data, {
+            "User-Password": "SERVICE-GUEST",
+            "Framed-IP-Address": "10.152.64.4"
+        })
 
 
 class Option82TestCase(SimpleTestCase):
