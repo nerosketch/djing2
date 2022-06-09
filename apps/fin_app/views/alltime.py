@@ -1,5 +1,5 @@
+import sys
 from hashlib import md5
-from functools import cached_property
 
 from django.db import transaction, IntegrityError
 from django.db.utils import DatabaseError
@@ -13,6 +13,12 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework_xml.renderers import XMLRenderer
+
+if sys.version_info >= (3, 8):
+    from functools import cached_property
+else:
+    cached_property = property
+
 
 try:
     from customers.models import Customer
