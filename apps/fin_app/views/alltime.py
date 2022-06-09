@@ -1,6 +1,6 @@
-import sys
 from hashlib import md5
 
+from ._general import cached_property
 from django.db import transaction, IntegrityError
 from django.db.utils import DatabaseError
 from django.db.models import Count
@@ -13,12 +13,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework_xml.renderers import XMLRenderer
-
-if sys.version_info >= (3, 8):
-    from functools import cached_property
-else:
-    cached_property = property
-
+from djing2.lib import safe_int, safe_float
+from djing2.viewsets import DjingModelViewSet
+from fin_app.serializers import alltime as alltime_serializers
+from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway, report_by_pays
 
 try:
     from customers.models import Customer
@@ -31,10 +29,6 @@ except ImportError as imperr:
         'application. Check if it installed'
     ) from imperr
 
-from djing2.lib import safe_int, safe_float
-from djing2.viewsets import DjingModelViewSet
-from fin_app.serializers import alltime as alltime_serializers
-from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway, report_by_pays
 
 
 

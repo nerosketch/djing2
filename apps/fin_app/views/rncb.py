@@ -1,4 +1,5 @@
-from functools import wraps, cached_property
+from functools import wraps
+from ._general import cached_property
 from datetime import datetime
 from django.db import transaction
 from django.db.models import Sum
