@@ -105,7 +105,7 @@ lua << EOF
   buf_set_option('omnifunc', 'v:lua.vim.lsp.omnifunc')
 
   -- Mappings.
-  local opts = { noremap=true, silent=true }
+  local opts = { noremap=true, silent=false }
 
   -- See `:help vim.lsp.*` for documentation on any of the below functions
   buf_set_keymap('n', 'gD', '<cmd>lua vim.lsp.buf.declaration()<CR>', opts)
@@ -564,9 +564,10 @@ let g:bookmark_highlight_lines = 1
 let g:WebDevIconsUnicodeByteOrderMarkerDefaultSymbol = ''
 
 " Git key mappings
-nnoremap <Leader>gu :Git pull<CR>
+nnoremap <Leader>gg :Git pull<CR>
 nnoremap <Leader>gp :Git push<CR>
 nnoremap <Leader>gs :Git status<CR>
 nnoremap <Leader>gc :Git commit %<cr>
+nnoremap <Leader>gu :Git checkout -- %<cr>
 nnoremap <Leader>gd :Git diff<cr>
 
