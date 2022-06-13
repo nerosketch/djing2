@@ -35,12 +35,14 @@ def _addr_get_parent(addr, err_msg=None):
 
 
 def customer_checks(customer: Customer) -> CustomerChecksRes:
-
     if not hasattr(customer, "address"):
         raise CheckFailedException(_('Customer "%s" [%s] has no address') % (customer, customer.username))
 
     if not hasattr(customer, "passportinfo"):
         raise CheckFailedException(_('Customer "%s" has no passport info') % customer)
+
+    if not customer.customercontractmodel_set.exists():
+        raise ValidationError('Customer "%s" [%s] has no contract' % (customer, customer.username))
 
     passport = customer.passportinfo
     if not passport:
@@ -132,3 +134,8 @@ def customer_legal_checks(legal: CustomerLegalModel) -> CustomerLegalCheckRes:
         delivery_addr=delivery_addr,
         delivery_parent_street=delivery_addr_parent_region,
     )
+
+
+def customer_legal_branch_checks(customer_branch: Customer):
+    raise NotImplementedError
+
