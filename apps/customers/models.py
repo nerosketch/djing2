@@ -549,6 +549,8 @@ class Customer(IAddressContaining, BaseAccount):
 
     objects = CustomerManager.from_queryset(CustomerQuerySet)()
 
+    passportinfo: 'PassportInfo'
+
     def save(self, *args, **kwargs):
         curr_is_active = bool(self.is_active)
         if self.__before_is_active and not curr_is_active:
