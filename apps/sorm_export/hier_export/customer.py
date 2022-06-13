@@ -233,6 +233,9 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
         if not check_ok_res.parent_street:
             return
 
+        if not customer.contract_date:
+            logger.error(_('Customer contract has no date %s [%s]') % (customer, customer.username))
+            return
         actual_start_date = customer.contract_date
 
         full_fname = customer.get_full_name()

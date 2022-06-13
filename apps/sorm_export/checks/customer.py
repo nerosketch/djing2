@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 from addresses.models import AddressModel, AddressModelTypes
 from customers.models import Customer, PassportInfo
+from customers_legal.models import CustomerLegalModel
 
 
 @dataclass(frozen=True)
@@ -52,9 +53,6 @@ def customer_checks(customer: Customer) -> CustomerChecksRes:
     if not customer.address.parent_addr:
         raise CheckFailedException(_('Customer "%s" has address without parent address object') % customer)
 
-    if not customer.contract_date:
-        raise CheckFailedException(_('Customer contract has no date %s [%s]') % (customer, customer.username))
-
     addr_passport_parent_region = _addr_get_parent(
         passport_addr,
         _('Customer "%s" with login "%s" passport registration address has no parent street element') % (
@@ -88,10 +86,9 @@ class CustomerLegalCheckRes:
     delivery_parent_street: AddressModel
 
 
-def customer_legal_checks(legal: Customer) -> CustomerLegalCheckRes:
+def customer_legal_checks(legal: CustomerLegalModel) -> CustomerLegalCheckRes:
     """Тут проверяются все требования для абонентских учёток,
-       которые являются филиалами ЮЛ. Т.е. models.Customer которые
-       содержаться в customers_legal.CustomerLegalModel.branches
+       которые являются филиалами ЮЛ.
     """
     addr: AddressModel = legal.address
 
@@ -100,10 +97,10 @@ def customer_legal_checks(legal: Customer) -> CustomerLegalCheckRes:
     else:
         post_addr = addr
 
-    if not legal.delivery_address:
-        delivery_addr = legal.address
-    else:
+    if legal.delivery_address:
         delivery_addr = legal.delivery_address
+    else:
+        delivery_addr = addr
 
     addr_parent_street_region = _addr_get_parent(
         addr,
