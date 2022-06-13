@@ -11,14 +11,21 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-from typing import Optional
+from typing import overload, TypeVar, Union
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+_T = TypeVar("_T")
 
-def get_secret(fname: str, default=None) -> Optional[str]:
+@overload
+def get_secret(fname: str) -> str: ...
+
+@overload
+def get_secret(fname: str, default: _T) -> Union[str, _T]: ...
+
+def get_secret(fname: str, default=None):
     try:
         secrets_dir_path = os.environ.get("SECRETS_DIR_PATH", "/run/secrets")
         with open(os.path.join(secrets_dir_path, fname), 'r') as f:
