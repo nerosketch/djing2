@@ -180,7 +180,10 @@ class PassportInfoModelSerializer(BaseCustomModelSerializer):
         exclude = ("customer",)
         extra_kwargs = {
             'distributor': {
-                'initial': os.getenv('CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR')
+                'initial': os.getenv(
+                    'CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR',
+                    'customers passport default distributor'
+                )
             }
         }
 
