@@ -67,5 +67,5 @@ class ExtendedRenderer(ORJSONRenderer):
             )
         else:
             encoder_class = DjangoJSONEncoder
-            serialized = json.dumps(data, indent=indent, cls=encoder_class, ensure_ascii=False)
+            serialized = json.dumps(data, indent=indent, cls=encoder_class, ensure_ascii=True)
         return serialized
