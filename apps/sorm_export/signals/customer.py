@@ -5,7 +5,9 @@ from django.dispatch.dispatcher import receiver
 from django.utils.translation import gettext
 
 from djing2.lib import LogicError
+from djing2.lib.logger import logger
 from customers.models import Customer, CustomerService, AdditionalTelephone
+from customers.custom_signals import customer_turns_on
 from sorm_export.models import ExportFailedStatus
 from sorm_export.tasks.customer import (
     customer_service_manual_data_export_task,
@@ -13,6 +15,10 @@ from sorm_export.tasks.customer import (
 )
 #  from customer_contract.custom_signals import finish_customer_contract_signal
 from customer_contract.models import CustomerContractModel
+from sorm_export.checks.customer import (
+    customer_checks,
+    customer_legal_branch_checks,
+)
 
 
 #def reexport_customer_with_new_contract(customer, event_time: datetime):
@@ -293,4 +299,23 @@ def on_customer_contract_api_save(sender, instance: CustomerContractModel, **kwa
         raise LogicError('Изменение даты начала договора запрещено правилами выгрузки СОРМ')
     if old_instance.contract_number != instance.contract_number:
         raise LogicError('Изменение номера договора запрещено правилами выгрузки СОРМ')
+
+
+@receiver(customer_turns_on, sender=Customer)
+def on_customer_turns_on(sender, instance: Customer, **kwargs):
+    """Check is customer has all necessary info for exporting to СОРМ"""
+    logger.info("on_customer_turns_on, Customer: '%s'" % instance)
+
+    # check is customer is legal
+    if instance.customerlegalmodel_set.exists():
+        # customer is legal
+        customer_legal_branch_checks(customer_branch=instance)
+    else:
+        # customer is individual
+        customer_checks(customer=instance)
+
+
+#@receiver(customer_turns_off, sender=Customer)
+#def on_customer_turns_off(sender, instance: Customer, **kwargs):
+#    logger.info("on_customer_turns_off")
 
