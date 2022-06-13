@@ -13,6 +13,7 @@ from sorm_export.models import (
     ExportStampTypeEnum
 )
 from sorm_export.serializers import individual_entity_serializers
+from sorm_export.checks.customer import customer_checks, CheckFailedException
 from .base import (
     format_fname,
     ExportTree, ContinueIteration,
@@ -95,18 +96,6 @@ class CustomerRootExportTree(ExportTree[Customer]):
         }
 
 
-def _addr_get_parent(addr: AddressModel, err_msg=None) -> Optional[AddressModel]:
-    # TODO: Cache address hierarchy
-    addr_parent_region = addr.get_address_item_by_type(
-        addr_type=AddressModelTypes.STREET
-    )
-    if not addr_parent_region:
-        if err_msg is not None:
-            logger.error(err_msg)
-        return
-    return addr_parent_region
-
-
 class AccessPointExportTree(ExportTree[Customer]):
     """
     Файл выгрузки адресов точек подключения, версия 1.
@@ -135,16 +124,14 @@ class AccessPointExportTree(ExportTree[Customer]):
         )
 
     def get_item(self, customer):
-        if not hasattr(customer, "address"):
-            logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
+        try:
+            r = customer_checks(customer=customer)
+        except CheckFailedException as err:
+            logger.error(str(err))
             return
+
         addr = customer.address
-        if not addr:
-            logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
-            return
-        if not addr.parent_addr:
-            logger.error(_('Customer "%s" has address without parent address object') % customer)
-            return
+
         addr_house = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.HOUSE
         ))
@@ -156,15 +143,9 @@ class AccessPointExportTree(ExportTree[Customer]):
                 customer, customer.username, addr
             ))
             return
-        addr_parent_region = _addr_get_parent(
-            addr,
-            _('Customer "%s" with login "%s" address has no parent street element') % (
-                customer,
-                customer.username
-            )
-        )
-        if not addr_parent_region:
-            return
+
+        addr_parent_region = r.parent_street
+
         addr_building = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
         ))
@@ -237,31 +218,17 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
         return qs
 
     def get_item(self, customer):
-        if not hasattr(customer, "passportinfo"):
-            logger.error('Customer "%s" has no passport info' % customer)
+        try:
+            check_ok_res = customer_checks(customer=customer)
+        except CheckFailedException as err:
+            logger.error(str(err))
             return
-        passport = customer.passportinfo
-        if not passport:
-            logger.error(_('Customer "%s" [%s] has no passport info') % (customer, customer.username))
-            return
+
+        passport = check_ok_res.passport
         addr = passport.registration_address
-        if not addr:
-            logger.error(_('Customer "%s" [%s] has no address in passport') % (customer, customer.username))
+        if not check_ok_res.parent_street:
             return
 
-        addr_parent_region = _addr_get_parent(
-            addr,
-            _('Customer "%s" with login "%s" passport registration address has no parent street element') % (
-                customer,
-                customer.username
-            )
-        )
-        if not addr_parent_region:
-            return
-
-        if not customer.contract_date:
-            logger.error(_('Customer contract has no date %s [%s]') % (customer, customer.username))
-            return
         actual_start_date = customer.contract_date
 
         full_fname = customer.get_full_name()
@@ -287,7 +254,7 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
             "passport_code": passport.division_code or "",
             "passport_date": passport.date_of_acceptance,
             "house": addr.title,
-            "parent_id_ao": addr_parent_region.pk,
+            "parent_id_ao": check_ok_res.parent_street.pk,
             "house_num": addr_house.title if addr_house else None,
             "building": addr_building.title if addr_building else None,
             "building_corpus": addr_corp.title if addr_corp else None,
