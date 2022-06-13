@@ -69,14 +69,27 @@ class CustomerRootExportTree(ExportTree[Customer]):
 
     def get_item(self, customer):
         # TODO: optimize
-        contract = customer.customercontractmodel_set.first()
-        if contract is None:
-            logger.error('Contract for customer: "%s" not found' % customer)
-            raise ContinueIteration
+        if customer.legal_id:
+            # legal
+            customer_id = customer.legal_id
+            legal = customer.customerlegalmodel_set.first()
+            if legal:
+                contract_date = legal.actual_start_time.date()
+            else:
+                logger.error('Contract date for customer legal branch "%s" not found' % customer)
+                raise ContinueIteration
+        else:
+            # individual
+            customer_id = customer.pk
+            contract = customer.customercontractmodel_set.first()
+            if contract is None:
+                logger.error('Contract for customer: "%s" not found' % customer)
+                raise ContinueIteration
+            contract_date = contract.start_service_time.date()
         return {
             "customer_id": customer.pk,
-            "legal_customer_id": customer.legal_id if customer.legal_id else customer.pk,
-            "contract_start_date": contract.start_service_time.date(),
+            "legal_customer_id": customer_id,
+            "contract_start_date": contract_date,
             "customer_login": customer.username,
             "communication_standard": CommunicationStandardChoices.ETHERNET.value,
         }
