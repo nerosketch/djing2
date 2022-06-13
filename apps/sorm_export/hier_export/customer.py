@@ -13,7 +13,11 @@ from sorm_export.models import (
     ExportStampTypeEnum
 )
 from sorm_export.serializers import individual_entity_serializers
-from sorm_export.checks.customer import customer_checks, CheckFailedException
+from sorm_export.checks.customer import (
+    customer_checks,
+    CheckFailedException,
+    customer_legal_checks
+)
 from .base import (
     format_fname,
     ExportTree, ContinueIteration,
@@ -304,43 +308,18 @@ class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
         for customer in legal.branches.annotate(
             contr_count=Count('customercontractmodel')
         ).filter(contr_count__gt=0, is_active=True):
-            addr: AddressModel = legal.address
-            if not addr:
-                continue
-
-            if not legal.post_address:
-                post_addr = addr
-            else:
-                post_addr = legal.post_address
-
-            if not legal.delivery_address:
-                delivery_addr = legal.address
-            else:
-                delivery_addr = legal.delivery_address
-
-            addr_parent_region = _addr_get_parent(
-                addr,
-                _('Legal customer "%s" with login "%s" address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
-            if not addr_parent_region:
+            try:
+                r = customer_legal_checks(legal=legal)
+            except CheckFailedException as err:
+                logger.error(str(err))
                 return
-            post_addr_parent_region = _addr_get_parent(
-                post_addr,
-                _('Legal customer "%s" with login "%s" post address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
-            delivery_addr_parent_region = _addr_get_parent(
-                delivery_addr,
-                _('Legal customer "%s" with login "%s" delivery address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
+            addr = r.addr
+            addr_parent_region = r.parent_street
+            post_addr = r.post_addr
+            post_addr_parent_region = r.post_addr_parent_street
+            delivery_addr = r.delivery_addr
+            delivery_addr_parent_region = r.delivery_parent_street
+
             res = {
                 'legal_id': legal.pk,
                 'legal_title': legal.title,
