@@ -13,6 +13,11 @@ from sorm_export.models import (
     ExportStampTypeEnum
 )
 from sorm_export.serializers import individual_entity_serializers
+from sorm_export.checks.customer import (
+    customer_checks,
+    CheckFailedException,
+    customer_legal_checks
+)
 from .base import (
     format_fname,
     ExportTree, ContinueIteration,
@@ -69,29 +74,30 @@ class CustomerRootExportTree(ExportTree[Customer]):
 
     def get_item(self, customer):
         # TODO: optimize
-        contract = customer.customercontractmodel_set.first()
-        if contract is None:
-            logger.error('Contract for customer: "%s" not found' % customer)
-            raise ContinueIteration
+        if customer.legal_id:
+            # legal
+            customer_id = customer.legal_id
+            legal = customer.customerlegalmodel_set.first()
+            if legal:
+                contract_date = legal.actual_start_time.date()
+            else:
+                logger.error('Contract date for customer legal branch "%s" not found' % customer)
+                raise ContinueIteration
+        else:
+            # individual
+            customer_id = customer.pk
+            contract = customer.customercontractmodel_set.first()
+            if contract is None:
+                logger.error('Contract for customer: "%s" not found' % customer)
+                raise ContinueIteration
+            contract_date = contract.start_service_time.date()
         return {
             "customer_id": customer.pk,
-            "legal_customer_id": customer.legal_id if customer.legal_id else customer.pk,
-            "contract_start_date": contract.start_service_time.date(),
+            "legal_customer_id": customer_id,
+            "contract_start_date": contract_date,
             "customer_login": customer.username,
             "communication_standard": CommunicationStandardChoices.ETHERNET.value,
         }
-
-
-def _addr_get_parent(addr: AddressModel, err_msg=None) -> Optional[AddressModel]:
-    # TODO: Cache address hierarchy
-    addr_parent_region = addr.get_address_item_by_type(
-        addr_type=AddressModelTypes.STREET
-    )
-    if not addr_parent_region:
-        if err_msg is not None:
-            logger.error(err_msg)
-        return
-    return addr_parent_region
 
 
 class AccessPointExportTree(ExportTree[Customer]):
@@ -122,16 +128,14 @@ class AccessPointExportTree(ExportTree[Customer]):
         )
 
     def get_item(self, customer):
-        if not hasattr(customer, "address"):
-            logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
+        try:
+            r = customer_checks(customer=customer)
+        except CheckFailedException as err:
+            logger.error(str(err))
             return
+
         addr = customer.address
-        if not addr:
-            logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
-            return
-        if not addr.parent_addr:
-            logger.error(_('Customer "%s" has address without parent address object') % customer)
-            return
+
         addr_house = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.HOUSE
         ))
@@ -143,15 +147,9 @@ class AccessPointExportTree(ExportTree[Customer]):
                 customer, customer.username, addr
             ))
             return
-        addr_parent_region = _addr_get_parent(
-            addr,
-            _('Customer "%s" with login "%s" address has no parent street element') % (
-                customer,
-                customer.username
-            )
-        )
-        if not addr_parent_region:
-            return
+
+        addr_parent_region = r.parent_street
+
         addr_building = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
         ))
@@ -224,26 +222,15 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
         return qs
 
     def get_item(self, customer):
-        if not hasattr(customer, "passportinfo"):
-            logger.error('Customer "%s" has no passport info' % customer)
-            return
-        passport = customer.passportinfo
-        if not passport:
-            logger.error(_('Customer "%s" [%s] has no passport info') % (customer, customer.username))
-            return
-        addr = passport.registration_address
-        if not addr:
-            logger.error(_('Customer "%s" [%s] has no address in passport') % (customer, customer.username))
+        try:
+            check_ok_res = customer_checks(customer=customer)
+        except CheckFailedException as err:
+            logger.error(str(err))
             return
 
-        addr_parent_region = _addr_get_parent(
-            addr,
-            _('Customer "%s" with login "%s" passport registration address has no parent street element') % (
-                customer,
-                customer.username
-            )
-        )
-        if not addr_parent_region:
+        passport = check_ok_res.passport
+        addr = passport.registration_address
+        if not check_ok_res.parent_street:
             return
 
         if not customer.contract_date:
@@ -274,7 +261,7 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
             "passport_code": passport.division_code or "",
             "passport_date": passport.date_of_acceptance,
             "house": addr.title,
-            "parent_id_ao": addr_parent_region.pk,
+            "parent_id_ao": check_ok_res.parent_street.pk,
             "house_num": addr_house.title if addr_house else None,
             "building": addr_building.title if addr_building else None,
             "building_corpus": addr_corp.title if addr_corp else None,
@@ -324,43 +311,18 @@ class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
         for customer in legal.branches.annotate(
             contr_count=Count('customercontractmodel')
         ).filter(contr_count__gt=0, is_active=True):
-            addr: AddressModel = legal.address
-            if not addr:
-                continue
-
-            if not legal.post_address:
-                post_addr = addr
-            else:
-                post_addr = legal.post_address
-
-            if not legal.delivery_address:
-                delivery_addr = legal.address
-            else:
-                delivery_addr = legal.delivery_address
-
-            addr_parent_region = _addr_get_parent(
-                addr,
-                _('Legal customer "%s" with login "%s" address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
-            if not addr_parent_region:
+            try:
+                r = customer_legal_checks(legal=legal)
+            except CheckFailedException as err:
+                logger.error(str(err))
                 return
-            post_addr_parent_region = _addr_get_parent(
-                post_addr,
-                _('Legal customer "%s" with login "%s" post address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
-            delivery_addr_parent_region = _addr_get_parent(
-                delivery_addr,
-                _('Legal customer "%s" with login "%s" delivery address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
+            addr = r.addr
+            addr_parent_region = r.parent_street
+            post_addr = r.post_addr
+            post_addr_parent_region = r.post_addr_parent_street
+            delivery_addr = r.delivery_addr
+            delivery_addr_parent_region = r.delivery_parent_street
+
             res = {
                 'legal_id': legal.pk,
                 'legal_title': legal.title,

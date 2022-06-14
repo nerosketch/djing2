@@ -455,6 +455,12 @@ class CustomerManager(MyUserManager):
 
 
 class Customer(IAddressContaining, BaseAccount):
+    __before_is_active: bool
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__before_is_active = bool(self.is_active)
+
     current_service = models.OneToOneField(
         CustomerService,
         null=True,
@@ -542,6 +548,24 @@ class Customer(IAddressContaining, BaseAccount):
     markers = BitField(flags=MARKER_FLAGS, default=0)
 
     objects = CustomerManager.from_queryset(CustomerQuerySet)()
+
+    passportinfo: 'PassportInfo'
+
+    def save(self, *args, **kwargs):
+        curr_is_active = bool(self.is_active)
+        if self.__before_is_active and not curr_is_active:
+            # Disabling customer
+            custom_signals.customer_turns_off.send(
+                sender=self.__class__,
+                instance=self
+            )
+        elif not self.__before_is_active and curr_is_active:
+            # Enabling customer
+            custom_signals.customer_turns_on.send(
+                sender=self.__class__,
+                instance=self
+            )
+        return super().save(*args, **kwargs)
 
     def get_flag_icons(self) -> tuple:
         """
