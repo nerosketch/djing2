@@ -36,24 +36,37 @@ def _addr_get_parent(addr, err_msg=None):
 
 def customer_checks(customer: Customer) -> CustomerChecksRes:
     if not hasattr(customer, "address"):
-        raise CheckFailedException(_('Customer "%s" [%s] has no address') % (customer, customer.username))
+        raise CheckFailedException(
+            _('Customer "%s" [%s] has no address') % (
+                customer, customer.username
+            ))
 
     if not hasattr(customer, "passportinfo"):
-        raise CheckFailedException(_('Customer "%s" has no passport info') % customer)
+        raise CheckFailedException(_('Customer "%s" [%s] has no passport info') % (
+            customer,
+            customer.username
+        ))
 
     if not customer.customercontractmodel_set.exists():
-        raise ValidationError('Customer "%s" [%s] has no contract' % (customer, customer.username))
+        raise CheckFailedException(
+            _('Customer "%s" [%s] has no contract') % (
+                customer, customer.username
+            ))
 
     passport = customer.passportinfo
-    if not passport:
-        raise CheckFailedException(_('Customer "%s" [%s] has no passport info') % (customer, customer.username))
 
     passport_addr = passport.registration_address
     if not passport_addr:
-        raise CheckFailedException(_('Customer "%s" [%s] has no address in passport') % (customer, customer.username))
+        raise CheckFailedException(
+            _('Customer \"%s\" [%s] has no address in passport') % (
+                customer, customer.username
+            )
+        )
 
     if not customer.address.parent_addr:
-        raise CheckFailedException(_('Customer "%s" has address without parent address object') % customer)
+        raise CheckFailedException(
+            _('Customer "%s" has address without parent address object') % customer
+        )
 
     addr_passport_parent_region = _addr_get_parent(
         passport_addr,

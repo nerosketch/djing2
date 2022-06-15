@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import pre_save, pre_delete
 from django.dispatch.dispatcher import receiver
 from django.utils.translation import gettext
@@ -83,7 +84,7 @@ def on_customer_change(instance: Customer):
         # if old instance does not exists, then it is new instance, just skip
         return
     if old_instance.username != instance.username:
-        raise LogicError('Changing username is forbidden due to СОРМ rules')
+        raise LogicError(_('Changing username is forbidden due to СОРМ rules'))
 
 
 
@@ -304,7 +305,6 @@ def on_customer_contract_api_save(sender, instance: CustomerContractModel, **kwa
 @receiver(customer_turns_on, sender=Customer)
 def on_customer_turns_on(sender, instance: Customer, **kwargs):
     """Check is customer has all necessary info for exporting to СОРМ"""
-    logger.info("on_customer_turns_on, Customer: '%s'" % instance)
 
     # check is customer is legal
     if instance.customerlegalmodel_set.exists():
