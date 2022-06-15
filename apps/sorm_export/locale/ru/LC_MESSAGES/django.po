@@ -23,6 +23,10 @@ msgstr ""
 msgid "Customer \"%s\" [%s] has no address"
 msgstr "Абонент не имеет адрес; \"%s\" [%s]"
 
+#, python-format
+msgid "Customer \"%s\" [%s] has no contract"
+msgstr "У абонента \"%s\" [%s] нет информации о договоре."
+
 #: apps/sorm_export/hier_export/customer.py:117
 #, python-format
 msgid "Customer \"%s\" has address without parent address object"
