@@ -186,5 +186,8 @@ msgstr "Вход учётной записи через ip адрес"
 msgid "Incorrect provided credentials."
 msgstr "Авторизация с предоставленными учётными данными невозможна"
 
+msgid "Account is too old, birth_day \"%s\""
+msgstr "Учётная запись слишком стара. Дата рождения \"%s\""
+
 #~ msgid "Login is not possible"
 #~ msgstr "Не получается войти в предоставленными учётными данными"
