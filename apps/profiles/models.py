@@ -102,7 +102,7 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
     sites = models.ManyToManyField(Site, blank=True)
 
     USERNAME_FIELD = "username"
-    REQUIRED_FIELDS = ("telephone",)
+    REQUIRED_FIELDS = ["telephone"]
 
     def get_full_name(self):
         return self.fio if self.fio else self.username
