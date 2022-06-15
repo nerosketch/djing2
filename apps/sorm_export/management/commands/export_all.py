@@ -1,11 +1,7 @@
-import os
 from datetime import datetime
 from typing import Any
 
-import logging
 from django.core.management.base import BaseCommand
-from django.conf import settings
-from django.core.mail import send_mail
 from django.db.models import Count
 from rest_framework.exceptions import ValidationError
 
@@ -193,37 +189,12 @@ class Command(BaseCommand):
             (export_all_ip_numbering, "Ip numbering export status"),
             (export_all_gateways, "Gateways export status"),
         )
-        fname = f"/tmp/export{datetime.now().strftime('%Y-%m-%d_%H:%M:%S.%f')}.log"
-        export_logger = logging.getLogger('djing2.sorm_logger')
-        logging.basicConfig(
-            filename=fname,
-            filemode='w',
-            level=logging.INFO
-        )
-        export_logger.info("Starting full export")
         for fn, msg in funcs:
             try:
-                export_logger.info(msg)
-                #self.stdout.write(msg, ending=' ')
+                self.stdout.write(msg, ending=' ')
                 fn()
-                #self.stdout.write(self.style.SUCCESS("OK"))
+                self.stdout.write(self.style.SUCCESS("OK"))
             except ExportFailedStatus as err:
-                export_logger.error(str(err))
                 self.stderr.write(str(err))
             except ValidationError as e:
-                export_logger.error(str(e.detail))
                 self.stderr.write(str(e.detail))
-        export_logger.info("Finished full export")
-        sorm_reporting_emails = getattr(settings, 'SORM_REPORTING_EMAILS', None)
-        if not sorm_reporting_emails:
-            return
-        with open(fname, 'r') as f:
-            content = f.read()
-            if 'ERROR' in content:
-                send_mail(
-                    'Отчёт выгрузки',
-                    content,
-                    getattr(settings, 'DEFAULT_FROM_EMAIL'),
-                    sorm_reporting_emails
-                )
-        os.remove(fname)
