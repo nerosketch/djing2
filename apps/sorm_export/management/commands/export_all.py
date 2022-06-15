@@ -6,6 +6,7 @@ import logging
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db.models import Count
 from rest_framework.exceptions import ValidationError
 
 from addresses.models import AddressModel, AddressModelTypes
@@ -81,27 +82,53 @@ def export_all_legal_customers():
 
 
 def export_all_customer_contacts():
-    customers = general_customer_filter_queryset().only("pk", "telephone", "username", "fio", "create_date")
-    customer_tels = [
-        {
+    customers = general_customer_filter_queryset()
+
+    # Filter only individual customers
+    customers = customers.annotate(
+        legals=Count('customerlegalmodel')
+    ).filter(legals=0)
+
+    customers = customers.only("pk", "telephone", "username", "fio", "create_date")
+
+    def _build_f_tels(c):
+        contract_date = c.customercontractmodel_set.first().start_service_time
+        create_date = datetime(c.create_date.year, c.create_date.month, c.create_date.day)
+
+        if create_date >= contract_date:
+            act_start_time = create_date
+        else:
+            act_start_time = contract_date
+
+        return {
             "customer_id": c.pk,
             "contact": f"{c.get_full_name()} {c.telephone}",
-            "actual_start_time": datetime(c.create_date.year, c.create_date.month, c.create_date.day),
+            "actual_start_time": act_start_time,
             # 'actual_end_time':
         }
-        for c in customers.iterator()
-    ]
+    customer_tels = [_build_f_tels(c) for c in customers.iterator()]
+
+    def _build_s_tels(t: AdditionalTelephone):
+        c = t.customer
+        contract_date = c.customercontractmodel_set.first().start_service_time
+        create_date = datetime(c.create_date.year, c.create_date.month, c.create_date.day)
+
+        if create_date >= contract_date:
+            act_start_time = create_date
+        else:
+            act_start_time = contract_date
+
+        return {
+            "customer_id": c.pk,
+            "contact": f"{t.customer.get_full_name()} {t.telephone}",
+            "actual_start_time": act_start_time,
+            # 'actual_end_time':
+        }
 
     # export additional tels
     tels = AdditionalTelephone.objects.filter(customer__in=customers).select_related("customer")
     customer_tels.extend(
-        {
-            "customer_id": t.customer_id,
-            "contact": f"{t.customer.get_full_name()} {t.telephone}",
-            "actual_start_time": t.create_time,
-            # 'actual_end_time':
-        }
-        for t in tels.iterator()
+        _build_s_tels(t) for t in tels.iterator()
     )
 
     ContactSimpleExportTree(recursive=False).exportNupload(data=customer_tels, many=True)
