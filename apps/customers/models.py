@@ -1009,6 +1009,7 @@ class AdditionalTelephone(BaseAbstractModel):
 
     class Meta:
         db_table = "additional_telephones"
+        unique_together = ('customer', 'telephone')
         verbose_name = _("Additional telephone")
         verbose_name_plural = _("Additional telephones")
 
