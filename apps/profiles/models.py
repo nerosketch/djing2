@@ -89,7 +89,7 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
     )
     create_date = models.DateField(_("Create date"), auto_now_add=True)
     last_update_time = models.DateTimeField(_("Last update time"), default=None, null=True, blank=True)
-    is_active = models.BooleanField(_("Is active"), default=True)
+    is_active = models.BooleanField(_("Is active"), default=False)
     is_admin = models.BooleanField(default=False)
     telephone = models.CharField(
         max_length=16,
