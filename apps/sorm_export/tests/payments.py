@@ -21,7 +21,7 @@ from fin_app.tests import _make_sign
     SORM_EXPORT_FTP_DISABLE=False
 )
 class PaymentsExportAPITestCase(CustomAPITestCase, FtpTestCaseMixin):
-    payment_url = "/api/fin/asd/pay/"
+    payment_url = "/api/fin/alltime/asd/pay/"
 
     @classmethod
     def setUpClass(cls):

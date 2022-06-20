@@ -106,8 +106,8 @@ class CustomerModelAPITestCase(CustomAPITestCase):
     def test_stop_service(self):
         self.test_pick_service()
         r = self.get("/api/customers/%d/stop_service/" % self.customer.pk)
-        self.assertFalse(r.content)
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertFalse(r.data, msg=r.data)
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_stop_not_exists_service(self):
         models.Customer.objects.filter(username="custo1").update(current_service=None)

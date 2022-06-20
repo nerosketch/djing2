@@ -1093,7 +1093,7 @@ class CustomerStaticMacAuthTestCase(APITestCase, ReqMixin):
             username="admin",
             password="admin",
             telephone="+797812345678",
-            is_dynamic=True
+            is_active=True
         )
         self.client.login(username="admin", password="admin")
         self.full_customer = create_full_customer(
