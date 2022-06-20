@@ -36,7 +36,8 @@ class CustomAPITestCase(APITestCase):
         self.admin = UserProfile.objects.create_superuser(
             username="admin",
             password="admin",
-            telephone="+797812345678"
+            telephone="+797812345678",
+            is_active=True
         )
         # customer for tests
         custo1 = Customer.objects.create_user(
@@ -204,7 +205,8 @@ class RNCBPaymentAPITestCase(APITestCase):
         self.admin = UserProfile.objects.create_superuser(
             username="admin",
             password="admin",
-            telephone="+797812345678"
+            telephone="+797812345678",
+            is_active=True
         )
         # customer for tests
         custo1 = Customer.objects.create_user(

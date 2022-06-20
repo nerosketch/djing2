@@ -208,7 +208,10 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         signals.pre_delete.disconnect()
 
         self.admin = UserProfile.objects.create_superuser(
-            username="admin", password="admin", telephone="+797812345678"
+            username="admin",
+            password="admin",
+            telephone="+797812345678",
+            is_active=True
         )
         self.client.login(username="admin", password="admin")
 
@@ -588,7 +591,10 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
         signals.pre_delete.disconnect()
 
         self.admin = UserProfile.objects.create_superuser(
-            username="admin", password="admin", telephone="+797812345678"
+            username="admin",
+            password="admin",
+            telephone="+797812345678",
+            is_active=True
         )
         self.client.login(username="admin", password="admin")
 
@@ -823,7 +829,10 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
     def setUp(self):
         """Set up data for this tests."""
         self.admin = UserProfile.objects.create_superuser(
-            username="admin", password="admin", telephone="+797812345678"
+            username="admin",
+            password="admin",
+            telephone="+797812345678",
+            is_active=True
         )
         self.client.login(username="admin", password="admin")
         self.full_customer = create_full_customer(
@@ -1080,7 +1089,10 @@ class CreateLeaseWAutoPoolNSessionTestCase(TestCase):
 class CustomerStaticMacAuthTestCase(APITestCase, ReqMixin):
     def setUp(self):
         self.admin = UserProfile.objects.create_superuser(
-            username="admin", password="admin", telephone="+797812345678"
+            username="admin",
+            password="admin",
+            telephone="+797812345678",
+            is_dynamic=True
         )
         self.client.login(username="admin", password="admin")
         self.full_customer = create_full_customer(
