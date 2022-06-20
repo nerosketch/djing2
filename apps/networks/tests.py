@@ -22,7 +22,12 @@ class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
 
         # customer for tests
         custo2 = Customer.objects.create_user(
-            telephone="+79782345679", username="custo2", password="passw", group=self.group, device=self.device_onu
+            telephone="+79782345679",
+            username="custo2",
+            password="passw",
+            group=self.group,
+            device=self.device_onu,
+            is_active=True
         )
         custo2.refresh_from_db()
         self.customer2 = custo2

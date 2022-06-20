@@ -88,7 +88,12 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
 
     def test_customer_with_onu_device(self):
         # customer for tests
-        customer_onu = Customer.objects.create_user(telephone="+79782345679", username="custo_onu", password="passww")
+        customer_onu = Customer.objects.create_user(
+            telephone="+79782345679",
+            username="custo_onu",
+            password="passww",
+            is_active=True
+        )
         customer_onu.device = self.device_onu
         customer_onu.add_balance(self.admin, 10000, "test")
         customer_onu.save()

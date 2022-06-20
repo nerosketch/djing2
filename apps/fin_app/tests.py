@@ -43,7 +43,8 @@ class CustomAPITestCase(APITestCase):
         custo1 = Customer.objects.create_user(
             telephone="+79782345678",
             username="custo1",
-            password="passw"
+            password="passw",
+            is_active=True
         )
         custo1.balance = -13.12
         custo1.fio = "Test Name"
@@ -212,7 +213,8 @@ class RNCBPaymentAPITestCase(APITestCase):
         custo1 = Customer.objects.create_user(
             telephone="+79782345678",
             username="129386",
-            password="passw"
+            password="passw",
+            is_active=True
         )
         custo1.balance = -13.12
         custo1.fio = "Test Name"
@@ -333,7 +335,8 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         custo1 = Customer.objects.create_user(
             telephone="+79782345678",
             username="129386",
-            password="passw"
+            password="passw",
+            is_active=True
         )
         custo1.balance = -13.12
         custo1.fio = "Test Name"

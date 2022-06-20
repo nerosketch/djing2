@@ -86,7 +86,8 @@ def create_full_customer(uname: str,
         telephone=tel, username=uname, password="passw",
         is_dynamic_ip=True, group=group,
         balance=initial_balance, device=device,
-        dev_port=ports[1]
+        dev_port=ports[1],
+        is_active=True
     )
 
     example_site = Site.objects.first()

@@ -1,5 +1,3 @@
-import json
-
 from rest_framework import status
 
 from customers.tests.customer import CustomAPITestCase
@@ -68,7 +66,7 @@ class FetchCredentialsTestCase(CustomAPITestCase):
         r = self.get("/api/gateways/fetch_customers_srvnet_credentials_by_gw/", {"gw_id": self.gw.pk})
 
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        data = json.loads(r.content)
+        data = list(r.data)
         (
             customer_id,
             lease_id,

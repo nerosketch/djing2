@@ -30,7 +30,8 @@ class CustomAPITestCase(APITestCase):
         # customer for tests
         custo1 = models.Customer.objects.create_user(
             telephone="+79782345678", username="custo1", password="passw",
-            is_dynamic_ip=True, group=self.group
+            is_dynamic_ip=True, group=self.group,
+            is_active=True
         )
         example_site = Site.objects.first()
         custo1.sites.add(example_site)
