@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.9-slim
 
 LABEL maintainer="nerosketch@gmail.com"
 
@@ -8,14 +8,14 @@ ENV PYTHONPATH="/var/www/djing2/apps:/var/www/djing2:/usr/local/lib/python3.9/si
 ENV DJING2_LOG_FILE=/var/log/djing2/main.log
 
 RUN ["apt-get", "update"]
-RUN ["apt-get", "install", "-y", "python3-psycopg2", "libsnmp-dev", "arping", "gcc", "gettext", "telnet", "--no-install-recommends"]
+RUN ["apt-get", "install", "-y", "python3-psycopg2", "libsnmp-dev", "arping", "gettext", "telnet", "gcc", "git-core", "--no-install-recommends"]
 RUN mkdir -p /var/www/djing2/media /var/log/djing2 \
     && touch /var/www/djing2/touch_reload \
     && chown -R www-data. /var/www/djing2 /var/log/djing2
 
 COPY --chown=www-data:www-data ["requirements.txt", "/var/www/djing2"]
 RUN ["pip", "install", "--no-cache-dir", "-r", "/var/www/djing2/requirements.txt"]
-RUN ["apt-get", "purge", "-y", "--auto-remove", "gcc"]
+RUN ["apt-get", "purge", "-y", "--auto-remove", "gcc", "git-core"]
 
 EXPOSE 3031 1717
 
