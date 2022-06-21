@@ -3,6 +3,8 @@
 **/static
 **/venv
 **/__pycache__
+install/
+pyrightconfig.json
 .git/
 .vscode/
 .github/
