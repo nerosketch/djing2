@@ -27,7 +27,7 @@ def get_secret(fname: str, default: _T) -> Union[str, _T]: ...
 
 def get_secret(fname: str, default=None):
     try:
-        secrets_dir_path = os.environ.get("SECRETS_DIR_PATH", "/run/secrets")
+        secrets_dir_path = os.getenv("SECRETS_DIR_PATH", "/run/secrets")
         with open(os.path.join(secrets_dir_path, fname), 'r') as f:
             val = f.read().strip()
         return val
