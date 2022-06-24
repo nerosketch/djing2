@@ -232,56 +232,56 @@ def customer_service_deleted(sender, instance: CustomerService, **kwargs):
 #    pass
 
 
-@receiver(pre_save, sender=AdditionalTelephone)
-def customer_additional_telephone_post_save_signal(sender, instance: AdditionalTelephone, **kwargs):
-    customer = instance.customer
-    customer_name = customer.get_full_name()
-    contact = f"{customer_name}({instance.owner_name}) {instance.telephone}"
-    now = datetime.now()
-    old_inst = sender.objects.filter(pk=instance.pk).first()
-    if old_inst is None:
-        # then its created
-        customer_tels = [
-            {
-                "customer_id": customer.pk,
-                "contact": contact,
-                "actual_start_time": instance.create_time,
-                'actual_end_time': None
-            }
-        ]
-    else:
-        customer_tels = [
-            {
-                "customer_id": customer.pk,
-                "contact": f"{customer_name}({old_inst.owner_name}) {old_inst.telephone}",
-                "actual_start_time": old_inst.create_time,
-                "actual_end_time": now,
-            },
-            {
-                "customer_id": customer.pk,
-                "contact": contact,
-                "actual_start_time": now,
-                'actual_end_time': None
-            },
-        ]
-    instance.create_time = now
-    customer_contact_export_task(customer_tels=customer_tels, event_time=datetime.now())
+#@receiver(pre_save, sender=AdditionalTelephone)
+#def customer_additional_telephone_post_save_signal(sender, instance: AdditionalTelephone, **kwargs):
+#    customer = instance.customer
+#    customer_name = customer.get_full_name()
+#    contact = f"{customer_name}({instance.owner_name}) {instance.telephone}"
+#    now = datetime.now()
+#    old_inst = sender.objects.filter(pk=instance.pk).first()
+#    if old_inst is None:
+#        # then its created
+#        customer_tels = [
+#            {
+#                "customer_id": customer.pk,
+#                "contact": contact,
+#                "actual_start_time": instance.create_time,
+#                'actual_end_time': None
+#            }
+#        ]
+#    else:
+#        customer_tels = [
+#            {
+#                "customer_id": customer.pk,
+#                "contact": f"{customer_name}({old_inst.owner_name}) {old_inst.telephone}",
+#                "actual_start_time": old_inst.create_time,
+#                "actual_end_time": now,
+#            },
+#            {
+#                "customer_id": customer.pk,
+#                "contact": contact,
+#                "actual_start_time": now,
+#                'actual_end_time': None
+#            },
+#        ]
+#    instance.create_time = now
+#    customer_contact_export_task(customer_tels=customer_tels, event_time=datetime.now())
 
 
-@receiver(pre_delete, sender=AdditionalTelephone)
-def customer_additional_telephone_post_delete_signal(sender, instance: AdditionalTelephone, **kwargs):
-    customer = instance.customer
-    customer_name = customer.get_full_name()
-    now = datetime.now()
-    customer_tels = [
-        {
-            "customer_id": customer.pk,
-            "contact": f"{customer_name}({instance.owner_name}) {instance.telephone}",
-            "actual_start_time": instance.create_time,
-            "actual_end_time": now,
-        }
-    ]
-    customer_contact_export_task(customer_tels=customer_tels, event_time=now)
+#@receiver(pre_delete, sender=AdditionalTelephone)
+#def customer_additional_telephone_post_delete_signal(sender, instance: AdditionalTelephone, **kwargs):
+#    customer = instance.customer
+#    customer_name = customer.get_full_name()
+#    now = datetime.now()
+#    customer_tels = [
+#        {
+#            "customer_id": customer.pk,
+#            "contact": f"{customer_name}({instance.owner_name}) {instance.telephone}",
+#            "actual_start_time": instance.create_time,
+#            "actual_end_time": now,
+#        }
+#    ]
+#    customer_contact_export_task(customer_tels=customer_tels, event_time=now)
 
 
 # @receiver(post_save, sender=PeriodicPayForId)
