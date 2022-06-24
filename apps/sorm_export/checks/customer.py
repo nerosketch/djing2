@@ -150,5 +150,4 @@ def customer_legal_checks(legal: CustomerLegalModel) -> CustomerLegalCheckRes:
 
 
 def customer_legal_branch_checks(customer_branch: Customer):
-    raise NotImplementedError
-
+    pass
