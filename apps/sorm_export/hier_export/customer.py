@@ -216,11 +216,11 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
         ).annotate(
             contract_date=Subquery(contract_start_service_time_q),
             legals=Count('customerlegalmodel'),
-        )
+        ).filter(legals=0)
         _report_about_customers_no_have_passport(
             qs.filter(passportinfo=None)
         )
-        return qs.exclude(passportinfo=None).filter(legals=0)
+        return qs.exclude(passportinfo=None)
 
     def get_item(self, customer):
         try:

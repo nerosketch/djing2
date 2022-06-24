@@ -1,23 +1,20 @@
-from typing import List
 from datetime import datetime
 from uwsgi_tasks import task
 
-from djing2.lib.logger import logger
-from networks.models import CustomerIpLeaseModel
 from sorm_export.hier_export.base import format_fname
-from sorm_export.hier_export.networks import get_addr_type, IpLeaseExportTree
-from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
+from sorm_export.hier_export.networks import get_addr_type
+from sorm_export.models import ExportStampTypeEnum
 from sorm_export.tasks.task_export import task_export
 from sorm_export.serializers import networks as sorm_networks_serializers
 
 
-@task()
-def export_static_ip_leases_task(customer_lease_id_list: List[int], event_time=None):
-    leases = CustomerIpLeaseModel.objects.filter(pk__in=customer_lease_id_list).exclude(customer=None)
-    try:
-        IpLeaseExportTree(event_time=event_time).exportNupload(queryset=leases)
-    except ExportFailedStatus as err:
-        logger.error(err)
+#@task()
+#def export_static_ip_leases_task(customer_lease_id_list: List[int], event_time=None):
+#    leases = CustomerIpLeaseModel.objects.filter(pk__in=customer_lease_id_list).exclude(customer=None)
+#    try:
+#        IpLeaseExportTree(event_time=event_time).exportNupload(queryset=leases)
+#    except ExportFailedStatus as err:
+#        logger.error(err)
 
 
 @task()
