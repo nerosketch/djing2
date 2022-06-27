@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Any
 
 from django.core.management.base import BaseCommand
-from django.db.models import Count
 from rest_framework.exceptions import ValidationError
 
 from addresses.models import AddressModel, AddressModelTypes
@@ -16,6 +15,7 @@ from customer_contract.models import CustomerContractModel
 from sorm_export.hier_export.addresses import AddressExportTree
 from sorm_export.hier_export.customer import (
     general_customer_filter_queryset,
+    general_customer_all_filter_queryset,
     CustomerRootExportTree,
     CustomerContractExportTree,
     AccessPointExportTree,
@@ -35,7 +35,11 @@ from sorm_export.models import ExportFailedStatus
 
 
 def export_all_root_customers():
-    customers = general_customer_filter_queryset()
+    """Фильтр абонентов, юрики(которые прикреплены хотябы к 1й учётке юриков).
+       Или физики, у которых есть хотябы один договор.
+    """
+
+    customers = general_customer_all_filter_queryset()
     CustomerRootExportTree(recursive=False).exportNupload(queryset=customers)
 
 
@@ -67,6 +71,7 @@ def export_all_address_objects():
 
 
 def export_all_access_point_addresses():
+    # TODO: Выгружать так же и оборудование юриков. сейчас только физики.
     customers = general_customer_filter_queryset()
     AccessPointExportTree(recursive=False).exportNupload(queryset=customers)
 
@@ -82,14 +87,9 @@ def export_all_legal_customers():
 
 
 def export_all_customer_contacts():
-    customers = general_customer_filter_queryset()
-
-    # Filter only individual customers
-    customers = customers.annotate(
-        legals=Count('customerlegalmodel')
-    ).filter(legals=0)
-
-    customers = customers.only("pk", "telephone", "username", "fio", "create_date")
+    customers = general_customer_filter_queryset().only(
+        "pk", "telephone", "username", "fio", "create_date"
+    )
 
     def _build_f_tels(c):
         contract_date = c.customercontractmodel_set.first().start_service_time
@@ -139,7 +139,7 @@ def export_all_service_nomenclature():
 
 
 def export_all_ip_leases():
-    customers_qs = general_customer_filter_queryset()
+    customers_qs = general_customer_all_filter_queryset()
     leases = CustomerIpLeaseModel.objects.filter(
         customer__in=customers_qs,
         is_dynamic=False

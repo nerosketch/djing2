@@ -1,6 +1,6 @@
 from typing import Optional
 
-from django.db.models import Subquery, OuterRef, Count
+from django.db.models import Subquery, OuterRef, Count, Q
 from django.utils.translation import gettext_lazy as _
 from djing2.lib.logger import logger
 from addresses.models import AddressModelTypes, AddressModel
@@ -25,10 +25,30 @@ from .base import (
 )
 
 
-def general_customer_filter_queryset():
+def general_customer_all_filter_queryset():
     return Customer.objects.filter(is_active=True).annotate(
-        contr_count=Count('customercontractmodel')
-    ).filter(contr_count__gt=0)
+        contr_count=Count('customercontractmodel'),
+        legals=Count('customerlegalmodel')
+    ).filter(Q(contr_count__gt=0) | Q(legals__gt=0))
+
+
+def general_customer_filter_queryset():
+    """Физ учётки только те, у которых есть хотя бы один договор, и нет
+       привязки к ЮР учётке"""
+
+    return Customer.objects.filter(is_active=True).annotate(
+        contr_count=Count('customercontractmodel'),
+        legals=Count('customerlegalmodel')
+    ).filter(contr_count__gt=0, legals=0)
+
+
+def general_legal_filter_queryset():
+    """Юр учётки только те, которые привязаны к ЮР учётке, и без договора."""
+
+    return Customer.objects.filter(is_active=True).annotate(
+        contr_count=Count('customercontractmodel'),
+        legals=Count('customerlegalmodel'),
+    ).filter(legals__gt=0, contr_count=0)
 
 
 def _addr2str(addr: Optional[AddressModel]) -> str:
@@ -107,6 +127,7 @@ class AccessPointExportTree(ExportTree[Customer]):
     на котором находится оборудование абонента, с помощью которого он пользуется услугами оператора связи.
     TODO: Выгружать адреса абонентов чъё это оборудование.
     TODO: Записывать адреса к устройствам абонентов. Заполнять при создании устройства.
+    TODO: Выгружать так же и оборудование юриков. сейчас только физики.
     Сейчас у нас оборудование абонента ставится у абонента дома, так что это тот же адрес
     что и у абонента.
     """
@@ -128,12 +149,11 @@ class AccessPointExportTree(ExportTree[Customer]):
         )
 
     def get_item(self, customer):
-        try:
-            r = customer_checks(customer=customer)
-        except CheckFailedException as err:
-            logger.error(str(err))
+        if not hasattr(customer, "address"):
+            logger.error(_('Customer "%s" [%s] has no address') % (
+                customer, customer.username
+            ))
             return
-
         addr = customer.address
 
         addr_house = _addr2str(addr.get_address_item_by_type(
@@ -148,7 +168,16 @@ class AccessPointExportTree(ExportTree[Customer]):
             ))
             return
 
-        addr_parent_region = r.parent_street
+        addr_parent_street = _addr2str(addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.STREET
+        ))
+        if not addr_parent_street:
+            logger.error(
+            _('Customer "%s" with login "%s" address has no parent street element') % (
+                customer,
+                customer.username
+            ))
+            return
 
         addr_building = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
@@ -165,7 +194,7 @@ class AccessPointExportTree(ExportTree[Customer]):
             "ap_id": addr.pk,
             "customer_id": customer.pk,
             "house": addr_house or addr_office,
-            "parent_id_ao": addr_parent_region.pk if addr_parent_region else None,
+            "parent_id_ao": addr_parent_street,
             "house_num": addr_house or None,
             "builing": addr_building,
             "building_corpus": addr_corpus or None,
