@@ -27,6 +27,18 @@ msgstr "Абонент не имеет адрес; \"%s\" [%s]"
 msgid "Customer \"%s\" [%s] has no contract"
 msgstr "У абонента \"%s\" [%s] нет информации о договоре."
 
+#, python-format
+msgid "Individual customer \"%s\" [%s] has relation to legal [%s]"
+msgstr "Учётка физика \"%s\" [%s] имеет отношение к Юр лицу [%s]"
+
+#, python-format
+msgid "Legal customer \"%s\" [%s] has individual contract"
+msgstr "Юр учётка \"%s\" [%s] имеет договор физ лица."
+
+#, python-format
+msgid "Legal customer \"%s\" [%s] has no one relation to legal"
+msgstr "Учётка юрика \"%s\" [%s] не имеет отношений к Юр учёткам"
+
 #: apps/sorm_export/hier_export/customer.py:117
 #, python-format
 msgid "Customer \"%s\" has address without parent address object"

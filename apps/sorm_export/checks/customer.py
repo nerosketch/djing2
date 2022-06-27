@@ -48,10 +48,17 @@ def customer_checks(customer: Customer) -> CustomerChecksRes:
         ))
 
     if not customer.customercontractmodel_set.exists():
+        # Checks if customer has at least one contract.
         raise CheckFailedException(
             _('Customer "%s" [%s] has no contract') % (
                 customer, customer.username
             ))
+
+    if customer.customerlegalmodel_set.exists():
+        # Checks if customer has not no one Legal relation.
+        legal_names = ', '.join(lm.title for lm in customer.customerlegalmodel_set.all())
+        raise CheckFailedException(
+            _('Individual customer "%s" [%s] has relation to legal [%s]') % legal_names)
 
     passport = customer.passportinfo
 
@@ -150,4 +157,17 @@ def customer_legal_checks(legal: CustomerLegalModel) -> CustomerLegalCheckRes:
 
 
 def customer_legal_branch_checks(customer_branch: Customer):
-    pass
+    if customer_branch.customercontractmodel_set.exists():
+        # Checks if customer has no one contracts.
+        raise CheckFailedException(
+            _('Legal customer "%s" [%s] has individual contract') % (
+                customer_branch, customer_branch.username
+            ))
+
+    if not customer_branch.customerlegalmodel_set.exists():
+        # Checks if customer has at least one Legal relation.
+        raise CheckFailedException(
+            _('Legal customer "%s" [%s] has no one relation to legal [%s]') % (
+                customer_branch, customer_branch.username
+            ))
+
