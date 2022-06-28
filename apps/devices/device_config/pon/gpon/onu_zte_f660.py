@@ -223,7 +223,61 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         from .onu_config.zte_f660_static_bridge_config import ZteF660BridgeStaticScriptModule
         from .onu_config.zte_f660_dynamic_bridge_config import ZteF660BridgeDynamicScriptModule
 
-        return [ZteF660RouterScriptModule, ZteF660BridgeStaticScriptModule, ZteF660BridgeDynamicScriptModule]
+        return [
+            ZteF660RouterScriptModule,
+            ZteF660BridgeStaticScriptModule,
+            ZteF660BridgeDynamicScriptModule
+        ]
+
+    def find_onu(self, *args, **kwargs):
+        dev = self.model_instance
+        parent = dev.parent_dev
+        if parent is not None:
+            mac = dev.mac_addr
+            extra_data = dict(parent.extra_data)
+
+            serial_num = "ZTEG" + "".join("%.2x" % i for i in mac[-4:]).upper()
+
+            telnet = extra_data.get("telnet")
+            hostname=parent.ip_address
+            prompt = telnet.get("prompt")
+            # Enter
+            ch = ZteOnuDeviceConfigType.login_into_olt(
+                hostname=hostname,
+                login=telnet.get("login"),
+                password=telnet.get("password"),
+                prompt=prompt
+            )
+
+            # find onu on olt
+            choice = ch.do_cmd("show gpon onu by sn %s" % serial_num, [
+                "No related information to show",
+                "SearchResult",
+            ])
+            if choice == 1:
+                # Found onu
+                lines = ch.get_lines_before()
+                for line in lines:
+                    if line.startswith('gpon-onu'):
+                        onu = zte_utils.parse_onu_name(line)
+                        onu_num = zte_utils.zte_onu_conv_to_num(
+                            rack_num=int(onu['rack_num']),
+                            fiber_num=int(onu['fiber_num']),
+                            port_num=int(onu['onu_num'])
+                        )
+                        # Exit
+                        ch.sendline("exit")
+                        ch.close()
+                        return onu_num, None
+
+            # Exit
+            ch.sendline("exit")
+            ch.close()
+
+            # Not found onu
+            return None, _('Onu with mac "%(onu_mac)s" not found on OLT') % {"onu_mac": mac}
+
+        return None, _("Parent device not found")
 
 
 PonONUDeviceStrategyContext.add_device_type(_DEVICE_UNIQUE_CODE, OnuZTE_F660)
