@@ -1,21 +1,21 @@
-FROM python:3.9-slim
+FROM python:3.9-alpine
 
 LABEL maintainer="nerosketch@gmail.com"
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONOPTIMIZE=1
-ENV PYTHONPATH="/var/www/djing2/apps:/var/www/djing2:/usr/local/lib/python3.9/site-packages:/usr/local/lib/python3.9/lib-dynload:/usr/local/lib/python3.9"
 ENV DJING2_LOG_FILE=/var/log/djing2/main.log
+ENV PYTHONIOENCODING=UTF-8
 
-RUN ["apt-get", "update"]
-RUN ["apt-get", "install", "-y", "python3-psycopg2", "libsnmp-dev", "arping", "gettext", "telnet", "gcc", "git-core", "--no-install-recommends"]
+RUN ["apk", "add", "py3-psycopg2", "net-snmp-dev", "arping", "gettext", "inetutils-telnet", "gcc", "git", "musl-dev", "libffi-dev", "libpq-dev", "--no-cache"]
+RUN ["adduser", "-G", "www-data", "-SDH", "-h", "/var/www/djing2", "www-data"]
 RUN mkdir -p /var/www/djing2/media /var/log/djing2 \
     && touch /var/www/djing2/touch_reload \
     && chown -R www-data. /var/www/djing2 /var/log/djing2
 
 COPY --chown=www-data:www-data ["requirements.txt", "/var/www/djing2"]
 RUN ["pip", "install", "--no-cache-dir", "-r", "/var/www/djing2/requirements.txt"]
-RUN ["apt-get", "purge", "-y", "--auto-remove", "gcc", "git-core"]
+RUN ["apk", "del", "-r", "gcc", "git"]
 
 EXPOSE 3031 1717
 
@@ -31,3 +31,4 @@ CMD ./manage.py migrate \
     # && ./manage.py compilemessages -l ru \
     # && ./manage.py shell -c "from create_initial_user import *; make_initial_user()"
     && exec uwsgi --ini /var/www/djing2/uwsgi_djing2.ini
+
