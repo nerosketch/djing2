@@ -250,25 +250,20 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             )
 
             # find onu on olt
-            choice = ch.do_cmd("show gpon onu by sn %s" % serial_num, [
-                "No related information to show",
-                "SearchResult",
-            ])
-            if choice == 1:
-                # Found onu
-                lines = ch.get_lines_before()
-                for line in lines:
-                    if line.startswith('gpon-onu'):
-                        onu = zte_utils.parse_onu_name(line)
-                        onu_num = zte_utils.zte_onu_conv_to_num(
-                            rack_num=int(onu['rack_num']),
-                            fiber_num=int(onu['fiber_num']),
-                            port_num=int(onu['onu_num'])
-                        )
-                        # Exit
-                        ch.sendline("exit")
-                        ch.close()
-                        return onu_num, None
+            ch.do_cmd("show gpon onu by sn %s" % serial_num, "%s#" % prompt)
+            for line in ch.get_lines_before():
+                if line.startswith('gpon-onu'):
+                    # Found onu
+                    onu = zte_utils.parse_onu_name(line)
+                    onu_num = zte_utils.zte_onu_conv_to_num(
+                        rack_num=int(onu['rack_num']),
+                        fiber_num=int(onu['fiber_num']),
+                        port_num=int(onu['onu_num'])
+                    )
+                    # Exit
+                    ch.sendline("exit")
+                    ch.close()
+                    return onu_num, None
 
             # Exit
             ch.sendline("exit")
