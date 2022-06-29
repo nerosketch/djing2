@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Optional
 from django.db import models, connection
 from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ValidationError
 
 from djing2.lib import safe_int
 from djing2.models import BaseAbstractModel
@@ -134,7 +135,6 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         choices=AddressModelTypes.choices,
         default=AddressModelTypes.UNKNOWN.value
     )
-
     fias_address_level = models.IntegerField(
         _('Address Level'),
         choices=((num, name) for num, name in AddressFIASInfo.get_levels()),
@@ -145,7 +145,6 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         choices=AddressFIASInfo.get_address_type_choices(),
         default=0
     )
-
     title = models.CharField(_('Title'), max_length=128)
 
     objects = AddressModelManager.from_queryset(AddressModelQuerySet)()
@@ -208,6 +207,24 @@ class AddressModel(IAddressObject, BaseAbstractModel):
     #             yield res
     #             res = cur.fetchone()
 
+    def save(self, *args, **kwargs):
+        """Нельзя чтобы у адресного объекта его тип был таким же как и у родителя.
+           Например улица не может находится в улице, дом в доме, а город в городе.
+        """
+        if self.address_type == self.parent_addr.address_type:
+            raise ValidationError(
+                'У родительского адресного объекта не может '
+                'быть такой же тип как у родителя'
+            )
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+    def __repr__(self):
+        return "<%s> %s" % (self.address_type, self.title)
+
     class Meta:
         db_table = 'addresses'
         unique_together = ('parent_addr', 'address_type', 'fias_address_type', 'title')
+
