@@ -6,13 +6,11 @@ from django.dispatch.dispatcher import receiver
 from django.utils.translation import gettext
 
 from djing2.lib import LogicError
-from djing2.lib.logger import logger
-from customers.models import Customer, CustomerService, AdditionalTelephone
+from customers.models import Customer, CustomerService
 from customers.custom_signals import customer_turns_on
 from sorm_export.models import ExportFailedStatus
 from sorm_export.tasks.customer import (
     customer_service_manual_data_export_task,
-    customer_contact_export_task,
 )
 #  from customer_contract.custom_signals import finish_customer_contract_signal
 from customer_contract.models import CustomerContractModel
@@ -318,4 +316,9 @@ def on_customer_turns_on(sender, instance: Customer, **kwargs):
 #@receiver(customer_turns_off, sender=Customer)
 #def on_customer_turns_off(sender, instance: Customer, **kwargs):
 #    logger.info("on_customer_turns_off")
+
+
+@receiver(pre_delete, sender=CustomerContractModel)
+def on_customer_contract_delete(sender, instance: CustomerContractModel, **kwargs):
+    raise LogicError('Запрещено удалять договор абонента, можно только завершить его. СОРМ')
 
