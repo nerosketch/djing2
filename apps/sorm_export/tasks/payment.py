@@ -1,10 +1,10 @@
-from uwsgi_tasks import task
+#from uwsgi_tasks import task
+#
+#from fin_app.models.alltime import AllTimePayLog
+#from sorm_export.hier_export.payment import CustomerUnknownPaymentExportTree
 
-from fin_app.models.alltime import AllTimePayLog
-from sorm_export.hier_export.payment import CustomerUnknownPaymentExportTree
 
-
-@task()
+#@task()
 def export_customer_payment_task(
     customer_id,
     pay_id,
