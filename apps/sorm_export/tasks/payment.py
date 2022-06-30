@@ -15,14 +15,15 @@ def export_customer_payment_task(
     pay_gw,
     event_time=None
 ):
-    pay_logs = (AllTimePayLog(
-        customer_id=customer_id,
-        pay_id=pay_id,
-        date_add=date_add,
-        sum=summ,
-        trade_point=trade_point,
-        receipt_num=receipt_num,
-        pay_gw=pay_gw
-    ),)
-    CustomerUnknownPaymentExportTree(event_time=event_time).exportNupload(queryset=pay_logs)
+    pass
+    #pay_logs = (AllTimePayLog(
+    #    customer_id=customer_id,
+    #    pay_id=pay_id,
+    #    date_add=date_add,
+    #    sum=summ,
+    #    trade_point=trade_point,
+    #    receipt_num=receipt_num,
+    #    pay_gw=pay_gw
+    #),)
+    #CustomerUnknownPaymentExportTree(event_time=event_time).exportNupload(queryset=pay_logs)
 
