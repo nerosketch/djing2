@@ -65,8 +65,9 @@ class FetchCredentialsTestCase(CustomAPITestCase):
     def test_get_credentials(self):
         r = self.get("/api/gateways/fetch_customers_srvnet_credentials_by_gw/", {"gw_id": self.gw.pk})
 
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         data = list(r.data)
+        self.assertGreater(len(data), 0, msg=data)
         (
             customer_id,
             lease_id,
