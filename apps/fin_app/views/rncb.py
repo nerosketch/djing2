@@ -131,7 +131,7 @@ class RNCBPaymentViewSet(GenericAPIView):
         return qs.filter(sites__in=[self.request.site])
 
     def get(self, request, *args, **kwargs):
-        query_type = request.query_params.get('query_type')
+        query_type = request.query_params.get('querytype')
         query_type_map = {
             'check': self._check,
             'pay': self._pay,
