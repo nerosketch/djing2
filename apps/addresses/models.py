@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional
 from django.db import models, connection
+from django.db.models import Q, Count
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
@@ -211,7 +212,15 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         """Нельзя чтобы у адресного объекта его тип был таким же как и у родителя.
            Например улица не может находится в улице, дом в доме, а город в городе.
         """
-        if self.fias_address_type == self.parent_addr.fias_address_type:
+        qs = AddressModel.objects.annotate(
+            # Считаем всех потомков, у которых тип адреса как а родителя
+            children_addrs_count=Count('addressmodel', filter=Q(addressmodel__fias_address_type=self.fias_address_type))
+        ).filter(
+            Q(parent_addr__fias_address_type=self.fias_address_type) | # Сверяемся с родителем
+            Q(children_addrs_count__gt=0),
+            pk=self.pk
+        )
+        if qs.exists():
             raise ValidationError(
                 'У родительского адресного объекта не может '
                 'быть такой же тип как у родителя'
