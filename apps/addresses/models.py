@@ -211,7 +211,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         """Нельзя чтобы у адресного объекта его тип был таким же как и у родителя.
            Например улица не может находится в улице, дом в доме, а город в городе.
         """
-        if self.address_type == self.parent_addr.address_type:
+        if self.fias_address_type == self.parent_addr.fias_address_type:
             raise ValidationError(
                 'У родительского адресного объекта не может '
                 'быть такой же тип как у родителя'
@@ -222,7 +222,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         return self.title
 
     def __repr__(self):
-        return "<%s> %s" % (self.address_type, self.title)
+        return "<%s> %s" % (self.get_address_type_display(), self.title)
 
     class Meta:
         db_table = 'addresses'
