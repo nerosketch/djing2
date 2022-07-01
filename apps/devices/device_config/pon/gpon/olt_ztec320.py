@@ -2,7 +2,6 @@ from typing import Iterable
 
 from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock
 from devices.device_config.base import Vlans, Vlan
-from .zte_utils import conv_zte_signal
 from ..pon_device_strategy import PonOLTDeviceStrategyContext
 from ..epon.bdcom_p3310c import BDCOM_P3310C
 from ...base_device_strategy import SNMPWorker

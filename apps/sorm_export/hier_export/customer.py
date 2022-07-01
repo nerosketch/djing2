@@ -1,6 +1,6 @@
 from typing import Optional
 
-from django.db.models import Subquery, OuterRef, Count
+from django.db.models import Subquery, OuterRef, Count, Q
 from django.utils.translation import gettext_lazy as _
 from djing2.lib.logger import logger
 from addresses.models import AddressModelTypes, AddressModel
@@ -13,6 +13,11 @@ from sorm_export.models import (
     ExportStampTypeEnum
 )
 from sorm_export.serializers import individual_entity_serializers
+from sorm_export.checks.customer import (
+    customer_checks,
+    CheckFailedException,
+    customer_legal_checks
+)
 from .base import (
     format_fname,
     ExportTree, ContinueIteration,
@@ -20,10 +25,30 @@ from .base import (
 )
 
 
-def general_customer_filter_queryset():
+def general_customer_all_filter_queryset():
     return Customer.objects.filter(is_active=True).annotate(
-        contr_count=Count('customercontractmodel')
-    ).filter(contr_count__gt=0)
+        contr_count=Count('customercontractmodel'),
+        legals=Count('customerlegalmodel')
+    ).filter(Q(contr_count__gt=0) | Q(legals__gt=0))
+
+
+def general_customer_filter_queryset():
+    """Физ учётки только те, у которых есть хотя бы один договор, и нет
+       привязки к ЮР учётке"""
+
+    return Customer.objects.filter(is_active=True).annotate(
+        contr_count=Count('customercontractmodel'),
+        legals=Count('customerlegalmodel')
+    ).filter(contr_count__gt=0, legals=0)
+
+
+def general_legal_filter_queryset():
+    """Юр учётки только те, которые привязаны к ЮР учётке, и без договора."""
+
+    return Customer.objects.filter(is_active=True).annotate(
+        contr_count=Count('customercontractmodel'),
+        legals=Count('customerlegalmodel'),
+    ).filter(legals__gt=0, contr_count=0)
 
 
 def _addr2str(addr: Optional[AddressModel]) -> str:
@@ -69,29 +94,30 @@ class CustomerRootExportTree(ExportTree[Customer]):
 
     def get_item(self, customer):
         # TODO: optimize
-        contract = customer.customercontractmodel_set.first()
-        if contract is None:
-            logger.error('Contract for customer: "%s" not found' % customer)
-            raise ContinueIteration
+        if customer.legal_id:
+            # legal
+            customer_id = customer.legal_id
+            legal = customer.customerlegalmodel_set.first()
+            if legal:
+                contract_date = legal.actual_start_time.date()
+            else:
+                logger.error('Contract date for customer legal branch "%s" not found' % customer)
+                raise ContinueIteration
+        else:
+            # individual
+            customer_id = customer.pk
+            contract = customer.customercontractmodel_set.first()
+            if contract is None:
+                logger.error('Contract for customer: "%s" not found' % customer)
+                raise ContinueIteration
+            contract_date = contract.start_service_time.date()
         return {
             "customer_id": customer.pk,
-            "legal_customer_id": customer.legal_id if customer.legal_id else customer.pk,
-            "contract_start_date": contract.start_service_time.date(),
+            "legal_customer_id": customer_id,
+            "contract_start_date": contract_date,
             "customer_login": customer.username,
             "communication_standard": CommunicationStandardChoices.ETHERNET.value,
         }
-
-
-def _addr_get_parent(addr: AddressModel, err_msg=None) -> Optional[AddressModel]:
-    # TODO: Cache address hierarchy
-    addr_parent_region = addr.get_address_item_by_type(
-        addr_type=AddressModelTypes.STREET
-    )
-    if not addr_parent_region:
-        if err_msg is not None:
-            logger.error(err_msg)
-        return
-    return addr_parent_region
 
 
 class AccessPointExportTree(ExportTree[Customer]):
@@ -101,6 +127,7 @@ class AccessPointExportTree(ExportTree[Customer]):
     на котором находится оборудование абонента, с помощью которого он пользуется услугами оператора связи.
     TODO: Выгружать адреса абонентов чъё это оборудование.
     TODO: Записывать адреса к устройствам абонентов. Заполнять при создании устройства.
+    TODO: Выгружать так же и оборудование юриков. сейчас только физики.
     Сейчас у нас оборудование абонента ставится у абонента дома, так что это тот же адрес
     что и у абонента.
     """
@@ -123,15 +150,12 @@ class AccessPointExportTree(ExportTree[Customer]):
 
     def get_item(self, customer):
         if not hasattr(customer, "address"):
-            logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
+            logger.error(_('Customer "%s" [%s] has no address') % (
+                customer, customer.username
+            ))
             return
         addr = customer.address
-        if not addr:
-            logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
-            return
-        if not addr.parent_addr:
-            logger.error(_('Customer "%s" has address without parent address object') % customer)
-            return
+
         addr_house = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.HOUSE
         ))
@@ -143,15 +167,18 @@ class AccessPointExportTree(ExportTree[Customer]):
                 customer, customer.username, addr
             ))
             return
-        addr_parent_region = _addr_get_parent(
-            addr,
+
+        addr_parent_street = _addr2str(addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.STREET
+        ))
+        if not addr_parent_street:
+            logger.error(
             _('Customer "%s" with login "%s" address has no parent street element') % (
                 customer,
                 customer.username
-            )
-        )
-        if not addr_parent_region:
+            ))
             return
+
         addr_building = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
         ))
@@ -167,7 +194,7 @@ class AccessPointExportTree(ExportTree[Customer]):
             "ap_id": addr.pk,
             "customer_id": customer.pk,
             "house": addr_house or addr_office,
-            "parent_id_ao": addr_parent_region.pk if addr_parent_region else None,
+            "parent_id_ao": addr_parent_street,
             "house_num": addr_house or None,
             "builing": addr_building,
             "building_corpus": addr_corpus or None,
@@ -213,37 +240,27 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
             customer_id=OuterRef('pk'),
             is_active=True
         ).values('start_service_time')
-        qs = queryset.exclude(passportinfo=None).select_related(
+        qs = queryset.select_related(
             "group", "passportinfo"
         ).annotate(
-            contract_date=Subquery(contract_start_service_time_q)
-        )
+            contract_date=Subquery(contract_start_service_time_q),
+            legals=Count('customerlegalmodel'),
+        ).filter(legals=0)
         _report_about_customers_no_have_passport(
             qs.filter(passportinfo=None)
         )
-        return qs
+        return qs.exclude(passportinfo=None)
 
     def get_item(self, customer):
-        if not hasattr(customer, "passportinfo"):
-            logger.error('Customer "%s" has no passport info' % customer)
-            return
-        passport = customer.passportinfo
-        if not passport:
-            logger.error(_('Customer "%s" [%s] has no passport info') % (customer, customer.username))
-            return
-        addr = passport.registration_address
-        if not addr:
-            logger.error(_('Customer "%s" [%s] has no address in passport') % (customer, customer.username))
+        try:
+            check_ok_res = customer_checks(customer=customer)
+        except CheckFailedException as err:
+            logger.error(str(err))
             return
 
-        addr_parent_region = _addr_get_parent(
-            addr,
-            _('Customer "%s" with login "%s" passport registration address has no parent street element') % (
-                customer,
-                customer.username
-            )
-        )
-        if not addr_parent_region:
+        passport = check_ok_res.passport
+        addr = passport.registration_address
+        if not check_ok_res.parent_street:
             return
 
         if not customer.contract_date:
@@ -274,7 +291,7 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
             "passport_code": passport.division_code or "",
             "passport_date": passport.date_of_acceptance,
             "house": addr.title,
-            "parent_id_ao": addr_parent_region.pk,
+            "parent_id_ao": check_ok_res.parent_street.pk,
             "house_num": addr_house.title if addr_house else None,
             "building": addr_building.title if addr_building else None,
             "building_corpus": addr_corp.title if addr_corp else None,
@@ -324,43 +341,18 @@ class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
         for customer in legal.branches.annotate(
             contr_count=Count('customercontractmodel')
         ).filter(contr_count__gt=0, is_active=True):
-            addr: AddressModel = legal.address
-            if not addr:
-                continue
-
-            if not legal.post_address:
-                post_addr = addr
-            else:
-                post_addr = legal.post_address
-
-            if not legal.delivery_address:
-                delivery_addr = legal.address
-            else:
-                delivery_addr = legal.delivery_address
-
-            addr_parent_region = _addr_get_parent(
-                addr,
-                _('Legal customer "%s" with login "%s" address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
-            if not addr_parent_region:
+            try:
+                r = customer_legal_checks(legal=legal)
+            except CheckFailedException as err:
+                logger.error(str(err))
                 return
-            post_addr_parent_region = _addr_get_parent(
-                post_addr,
-                _('Legal customer "%s" with login "%s" post address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
-            delivery_addr_parent_region = _addr_get_parent(
-                delivery_addr,
-                _('Legal customer "%s" with login "%s" delivery address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
+            addr = r.addr
+            addr_parent_region = r.parent_street
+            post_addr = r.post_addr
+            post_addr_parent_region = r.post_addr_parent_street
+            delivery_addr = r.delivery_addr
+            delivery_addr_parent_region = r.delivery_parent_street
+
             res = {
                 'legal_id': legal.pk,
                 'legal_title': legal.title,

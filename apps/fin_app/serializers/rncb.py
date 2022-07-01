@@ -41,7 +41,7 @@ class RNCBPayLogModelSerializer(BaseCustomModelSerializer):
 
 
 class RNCBPaymentCheckSerializer(serializers.Serializer):
-    account = serializers.CharField(max_length=64, validators=[integer_validator])
+    Account = serializers.CharField(max_length=64, validators=[integer_validator])
 
 
 class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
@@ -60,10 +60,10 @@ class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
 
 
 class RNCBPaymentPaySerializer(serializers.Serializer):
-    payment_id = serializers.IntegerField(min_value=1)
-    account = serializers.CharField(max_length=64, validators=[integer_validator])
-    summa = serializers.DecimalField(min_value=0, max_value=50000, max_digits=12, decimal_places=6)
-    exec_date = serializers.DateTimeField(
+    Payment_id = serializers.IntegerField(min_value=1)
+    Account = serializers.CharField(max_length=64, validators=[integer_validator])
+    Summa = serializers.DecimalField(min_value=0, max_value=50000, max_digits=12, decimal_places=6)
+    Exec_date = serializers.DateTimeField(
         input_formats=[date_format], format=date_format
     )
     #  inn = serializers.IntegerField(min_value=1000000000, max_value=999999999999)
@@ -79,12 +79,12 @@ class RNCBPaymentPayResponseSerializer(serializers.Serializer):
 
 
 class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
-    datefrom = serializers.DateTimeField(format=date_format, input_formats=[date_format])
-    dateto = serializers.DateTimeField(format=date_format, input_formats=[date_format])
+    DateFrom = serializers.DateTimeField(format=date_format, input_formats=[date_format])
+    DateTo = serializers.DateTimeField(format=date_format, input_formats=[date_format])
 
     def validate(self, data: OrderedDict):
-        date_from = data['datefrom']
-        date_to = data['dateto']
+        date_from = data['DateFrom']
+        date_to = data['DateTo']
         if date_from > date_to:
             raise RNCBProtocolErrorException("DATEFROM Can't be more then DATETO")
         elif date_from == date_to:

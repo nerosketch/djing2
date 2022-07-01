@@ -1,18 +1,23 @@
 from datetime import datetime
 
+from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import pre_save, pre_delete
 from django.dispatch.dispatcher import receiver
 from django.utils.translation import gettext
 
 from djing2.lib import LogicError
-from customers.models import Customer, CustomerService, AdditionalTelephone
+from customers.models import Customer, CustomerService
+from customers.custom_signals import customer_turns_on
 from sorm_export.models import ExportFailedStatus
 from sorm_export.tasks.customer import (
     customer_service_manual_data_export_task,
-    customer_contact_export_task,
 )
 #  from customer_contract.custom_signals import finish_customer_contract_signal
 from customer_contract.models import CustomerContractModel
+from sorm_export.checks.customer import (
+    customer_checks,
+    customer_legal_branch_checks,
+)
 
 
 #def reexport_customer_with_new_contract(customer, event_time: datetime):
@@ -77,7 +82,7 @@ def on_customer_change(instance: Customer):
         # if old instance does not exists, then it is new instance, just skip
         return
     if old_instance.username != instance.username:
-        raise LogicError('Changing username is forbidden due to СОРМ rules')
+        raise LogicError(_('Changing username is forbidden due to СОРМ rules'))
 
 
 
@@ -225,56 +230,56 @@ def customer_service_deleted(sender, instance: CustomerService, **kwargs):
 #    pass
 
 
-@receiver(pre_save, sender=AdditionalTelephone)
-def customer_additional_telephone_post_save_signal(sender, instance: AdditionalTelephone, **kwargs):
-    customer = instance.customer
-    customer_name = customer.get_full_name()
-    contact = f"{customer_name}({instance.owner_name}) {instance.telephone}"
-    now = datetime.now()
-    old_inst = sender.objects.filter(pk=instance.pk).first()
-    if old_inst is None:
-        # then its created
-        customer_tels = [
-            {
-                "customer_id": customer.pk,
-                "contact": contact,
-                "actual_start_time": instance.create_time,
-                'actual_end_time': None
-            }
-        ]
-    else:
-        customer_tels = [
-            {
-                "customer_id": customer.pk,
-                "contact": f"{customer_name}({old_inst.owner_name}) {old_inst.telephone}",
-                "actual_start_time": old_inst.create_time,
-                "actual_end_time": now,
-            },
-            {
-                "customer_id": customer.pk,
-                "contact": contact,
-                "actual_start_time": now,
-                'actual_end_time': None
-            },
-        ]
-    instance.create_time = now
-    customer_contact_export_task(customer_tels=customer_tels, event_time=datetime.now())
+#@receiver(pre_save, sender=AdditionalTelephone)
+#def customer_additional_telephone_post_save_signal(sender, instance: AdditionalTelephone, **kwargs):
+#    customer = instance.customer
+#    customer_name = customer.get_full_name()
+#    contact = f"{customer_name}({instance.owner_name}) {instance.telephone}"
+#    now = datetime.now()
+#    old_inst = sender.objects.filter(pk=instance.pk).first()
+#    if old_inst is None:
+#        # then its created
+#        customer_tels = [
+#            {
+#                "customer_id": customer.pk,
+#                "contact": contact,
+#                "actual_start_time": instance.create_time,
+#                'actual_end_time': None
+#            }
+#        ]
+#    else:
+#        customer_tels = [
+#            {
+#                "customer_id": customer.pk,
+#                "contact": f"{customer_name}({old_inst.owner_name}) {old_inst.telephone}",
+#                "actual_start_time": old_inst.create_time,
+#                "actual_end_time": now,
+#            },
+#            {
+#                "customer_id": customer.pk,
+#                "contact": contact,
+#                "actual_start_time": now,
+#                'actual_end_time': None
+#            },
+#        ]
+#    instance.create_time = now
+#    customer_contact_export_task(customer_tels=customer_tels, event_time=datetime.now())
 
 
-@receiver(pre_delete, sender=AdditionalTelephone)
-def customer_additional_telephone_post_delete_signal(sender, instance: AdditionalTelephone, **kwargs):
-    customer = instance.customer
-    customer_name = customer.get_full_name()
-    now = datetime.now()
-    customer_tels = [
-        {
-            "customer_id": customer.pk,
-            "contact": f"{customer_name}({instance.owner_name}) {instance.telephone}",
-            "actual_start_time": instance.create_time,
-            "actual_end_time": now,
-        }
-    ]
-    customer_contact_export_task(customer_tels=customer_tels, event_time=now)
+#@receiver(pre_delete, sender=AdditionalTelephone)
+#def customer_additional_telephone_post_delete_signal(sender, instance: AdditionalTelephone, **kwargs):
+#    customer = instance.customer
+#    customer_name = customer.get_full_name()
+#    now = datetime.now()
+#    customer_tels = [
+#        {
+#            "customer_id": customer.pk,
+#            "contact": f"{customer_name}({instance.owner_name}) {instance.telephone}",
+#            "actual_start_time": instance.create_time,
+#            "actual_end_time": now,
+#        }
+#    ]
+#    customer_contact_export_task(customer_tels=customer_tels, event_time=now)
 
 
 # @receiver(post_save, sender=PeriodicPayForId)
@@ -293,4 +298,27 @@ def on_customer_contract_api_save(sender, instance: CustomerContractModel, **kwa
         raise LogicError('Изменение даты начала договора запрещено правилами выгрузки СОРМ')
     if old_instance.contract_number != instance.contract_number:
         raise LogicError('Изменение номера договора запрещено правилами выгрузки СОРМ')
+
+
+@receiver(customer_turns_on, sender=Customer)
+def on_customer_turns_on(sender, instance: Customer, **kwargs):
+    """Check is customer has all necessary info for exporting to СОРМ"""
+
+    # check is customer is legal
+    if instance.customerlegalmodel_set.exists():
+        # customer is legal
+        customer_legal_branch_checks(customer_branch=instance)
+    else:
+        # customer is individual
+        customer_checks(customer=instance)
+
+
+#@receiver(customer_turns_off, sender=Customer)
+#def on_customer_turns_off(sender, instance: Customer, **kwargs):
+#    logger.info("on_customer_turns_off")
+
+
+@receiver(pre_delete, sender=CustomerContractModel)
+def on_customer_contract_delete(sender, instance: CustomerContractModel, **kwargs):
+    raise LogicError('Запрещено удалять договор абонента, можно только завершить его. СОРМ')
 

@@ -21,13 +21,17 @@ class CustomAPITestCase(APITestCase):
         self.group = Group.objects.create(title="test group", code="tst")
 
         self.admin = UserProfile.objects.create_superuser(
-            username="admin", password="admin", telephone="+797812345678"
+            username="admin",
+            password="admin",
+            telephone="+797812345678",
+            is_active=True
         )
         self.client.login(username="admin", password="admin")
         # customer for tests
         custo1 = models.Customer.objects.create_user(
             telephone="+79782345678", username="custo1", password="passw",
-            is_dynamic_ip=True, group=self.group
+            is_dynamic_ip=True, group=self.group,
+            is_active=True
         )
         example_site = Site.objects.first()
         custo1.sites.add(example_site)
@@ -102,7 +106,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
     def test_stop_service(self):
         self.test_pick_service()
         r = self.get("/api/customers/%d/stop_service/" % self.customer.pk)
-        self.assertFalse(r.content)
+        self.assertFalse(r.data, msg=r.data)
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_stop_not_exists_service(self):

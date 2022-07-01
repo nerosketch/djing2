@@ -74,17 +74,22 @@ def birth_day_18yo_validator(val: date) -> None:
         raise ValidationError(_('Account is too young, birth_day "%s" less than 18 yo') % val)
 
 
+def birth_day_too_old_validator(val: date) -> None:
+    low_bound = datetime(year=1900, month=1, day=1).date()
+    if val <= low_bound:
+        raise ValidationError(_('Account is too old, birth_day "%s"') % val)
+
 class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
     username = models.CharField(_("profile username"), max_length=127, unique=True, validators=(latinValidator,))
     fio = models.CharField(_("fio"), max_length=256)
     birth_day = models.DateField(
         _("birth day"),
         null=True, blank=True, default=None,
-        validators=[birth_day_18yo_validator]
+        validators=[birth_day_18yo_validator, birth_day_too_old_validator]
     )
     create_date = models.DateField(_("Create date"), auto_now_add=True)
     last_update_time = models.DateTimeField(_("Last update time"), default=None, null=True, blank=True)
-    is_active = models.BooleanField(_("Is active"), default=True)
+    is_active = models.BooleanField(_("Is active"), default=False)
     is_admin = models.BooleanField(default=False)
     telephone = models.CharField(
         max_length=16,
@@ -97,7 +102,7 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
     sites = models.ManyToManyField(Site, blank=True)
 
     USERNAME_FIELD = "username"
-    REQUIRED_FIELDS = ("telephone",)
+    REQUIRED_FIELDS = ["telephone"]
 
     def get_full_name(self):
         return self.fio if self.fio else self.username

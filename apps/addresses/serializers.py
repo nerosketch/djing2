@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from djing2.lib.mixins import BaseCustomModelSerializer
@@ -27,10 +26,6 @@ class AddressModelSerializer(BaseCustomModelSerializer):
             except ValueError:
                 raise serializers.ValidationError(_("House and office can be only number"))
         return value
-
-    def validate(self, data: OrderedDict):
-        # Улица не может находится в улице
-        return data
 
     class Meta:
         model = AddressModel

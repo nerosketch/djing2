@@ -1,4 +1,5 @@
-from functools import wraps, cached_property
+from functools import wraps
+from ._general import cached_property
 from datetime import datetime
 from django.db import transaction
 from django.db.models import Sum
@@ -130,7 +131,8 @@ class RNCBPaymentViewSet(GenericAPIView):
         return qs.filter(sites__in=[self.request.site])
 
     def get(self, request, *args, **kwargs):
-        query_type = request.query_params.get('query_type')
+        query_type = request.query_params.get('QueryType')
+        print('queryType:', query_type)
         query_type_map = {
             'check': self._check,
             'pay': self._pay,
@@ -145,9 +147,12 @@ class RNCBPaymentViewSet(GenericAPIView):
         root_tag='checkresponse'
     )
     def _check(self, data: dict, *args, **kwargs):
-        account = data['account']
+        account = data['Account']
 
-        customer = Customer.objects.get(username=account)
+        customer = Customer.objects.filter(username=account)
+        if hasattr(self.request, 'site'):
+            customer = customer.filter(sites__in=[self.request.site])
+        customer = customer.get()
 
         return {
             'fio': customer.get_full_name(),
@@ -162,10 +167,10 @@ class RNCBPaymentViewSet(GenericAPIView):
         root_tag='payresponse'
     )
     def _pay(self, data: dict, *args, **kwargs):
-        account = data['account']
-        payment_id = data['payment_id']
-        pay_amount = float(data['summa'])
-        exec_date = data['exec_date']
+        account = data['Account']
+        payment_id = data['Payment_id']
+        pay_amount = float(data['Summa'])
+        exec_date = data['Exec_date']
         if not isinstance(exec_date, datetime):
             exec_date = datetime.strptime(exec_date, serializers_rncb.date_format)
         #  inn = data['inn']
@@ -213,8 +218,8 @@ class RNCBPaymentViewSet(GenericAPIView):
         root_tag='balanceresponse'
     )
     def _balance(self, data: dict, *args, **kwargs):
-        date_from = data['datefrom']
-        date_to = data['dateto']
+        date_from = data['DateFrom']
+        date_to = data['DateTo']
         #  inn = data['inn']
 
         date_from = datetime.strptime(date_from, serializers_rncb.date_format)

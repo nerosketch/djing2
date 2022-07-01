@@ -23,9 +23,9 @@ class GatewayModelViewSet(DjingModelViewSet):
 
     @action(detail=False)
     def fetch_customers_srvnet_credentials_by_gw(self, request, *args, **kwargs):
-        service_id = safe_int(request.query_params.get("gw_id"))
-        if service_id > 0:
-            res = Gateway.get_user_credentials_by_gw(gw_id=service_id)
+        gw_id = safe_int(request.query_params.get("gw_id"))
+        if gw_id > 0:
+            res = Gateway.get_user_credentials_by_gw(gw_id=gw_id)
             # res = (customer_id, lease_id, lease_time, lease_mac, ip_address,
             #  speed_in, speed_out, speed_burst, service_start_time,
             #  service_deadline)

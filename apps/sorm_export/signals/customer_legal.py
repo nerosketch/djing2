@@ -15,7 +15,7 @@ def customer_branches_pre_save_signal(sender, instance: CustomerLegalModel, acti
     for new_customer in new_customers:
         for contract in new_customer.customercontractmodel_set.all():
             if contract.start_service_time != legal_contract_date:
-                raise LogicError('Дата заключения договора филиала(абонента) ЮЛ не совпадает с датой начала договора ЮЛ. '
+                raise LogicError('Дата заключения договора подразделения(абонента) ЮЛ не совпадает с датой начала договора ЮЛ. '
                         'Это соответствие обязательно для СОРМ. Филиал(абонент): "%s", договор: "%s", ЮЛ: "%s"' % (
                     new_customer.get_full_name(), contract.title, instance.title
                 ))

@@ -80,7 +80,10 @@ class AddressesAPITestCase(APITestCase):
 
         # Login super user
         self.admin = UserProfile.objects.create_superuser(
-            username="admin", password="admin", telephone="+797812345678"
+            username="admin",
+            password="admin",
+            telephone="+797812345678",
+            is_active=True
         )
         self.client.login(username="admin", password="admin")
 
@@ -92,15 +95,16 @@ class AddressesAPITestCase(APITestCase):
             'fias_address_type': 905,
             'title': 'винный подвал'
         })
-        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(r.data['parent_addr_title'], '7')
-        self.assertEqual(r.data['fias_address_level_name'], 'Помещение в пределах здания, сооружения')
-        self.assertEqual(r.data['fias_address_type_name'], 'п-б')
-        self.assertEqual(r.data['address_type'], 64)
-        self.assertEqual(r.data['fias_address_level'], 9)
-        self.assertEqual(r.data['fias_address_type'], 905)
-        self.assertEqual(r.data['title'], 'винный подвал')
-        self.assertEqual(r.data['parent_addr'], self.office_addr.pk)
+        data = r.data
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED, msg=r.data)
+        self.assertEqual(data['parent_addr_title'], '7')
+        self.assertEqual(data['fias_address_level_name'], 'Помещение в пределах здания, сооружения')
+        self.assertEqual(data['fias_address_type_name'], 'п-б')
+        self.assertEqual(data['address_type'], 64)
+        self.assertEqual(data['fias_address_level'], 9)
+        self.assertEqual(data['fias_address_type'], 905)
+        self.assertEqual(data['title'], 'винный подвал')
+        self.assertEqual(data['parent_addr'], self.office_addr.pk)
 
     def _all_children_request(self, parent_addr):
         r = self.get("/api/addrs/get_all_children/", {

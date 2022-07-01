@@ -32,31 +32,29 @@ def _get_pon_mng_template(all_vids: VlanList, config: dict, *args, **kwargs) -> 
     trunk_vids_len = len(trunk_vids)
 
     if native_vids_len > 1:
-        raise expect_util.ExpectValidationError(_("Multiple native vid is not allowed on one port"))
+        raise expect_util.ExpectValidationError(
+            _("Multiple native vid is not allowed on one port")
+        )
 
     ports_config = []
 
     if native_vids_len == 1:
         if trunk_vids_len > 0:
             # Trunk with access port, Hybrid
-            ports_config.extend(
-                [
-                    "vlan port eth_0/1 mode hybrid def-vlan %d" % native_vids[0],
-                    "vlan port eth_0/1 vlan %s" % ",".join(map(str, trunk_vids)),
-                ]
-            )
+            ports_config.extend([
+                "vlan port eth_0/1 mode hybrid def-vlan %d" % native_vids[0],
+                "vlan port eth_0/1 vlan %s" % ",".join(map(str, trunk_vids)),
+            ])
         elif trunk_vids_len == 0:
             # Only Access port
             ports_config.append("vlan port eth_0/1 mode tag vlan %d" % native_vids[0])
     elif native_vids_len == 0:
         if trunk_vids_len > 0:
             # Only trunk port
-            ports_config.extend(
-                [
-                    "vlan port eth_0/1 mode trunk",
-                    "vlan port eth_0/1 vlan %s" % ",".join(map(str, trunk_vids)),
-                ]
-            )
+            ports_config.extend([
+                "vlan port eth_0/1 mode trunk",
+                "vlan port eth_0/1 vlan %s" % ",".join(map(str, trunk_vids)),
+            ])
         elif trunk_vids_len == 0:
             # Without vlan config, type default vlan
             ports_config.append("vlan port eth_0/1 mode tag vlan 1")

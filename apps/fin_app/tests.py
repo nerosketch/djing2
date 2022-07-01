@@ -36,13 +36,15 @@ class CustomAPITestCase(APITestCase):
         self.admin = UserProfile.objects.create_superuser(
             username="admin",
             password="admin",
-            telephone="+797812345678"
+            telephone="+797812345678",
+            is_active=True
         )
         # customer for tests
         custo1 = Customer.objects.create_user(
             telephone="+79782345678",
             username="custo1",
-            password="passw"
+            password="passw",
+            is_active=True
         )
         custo1.balance = -13.12
         custo1.fio = "Test Name"
@@ -204,13 +206,15 @@ class RNCBPaymentAPITestCase(APITestCase):
         self.admin = UserProfile.objects.create_superuser(
             username="admin",
             password="admin",
-            telephone="+797812345678"
+            telephone="+797812345678",
+            is_active=True
         )
         # customer for tests
         custo1 = Customer.objects.create_user(
             telephone="+79782345678",
             username="129386",
-            password="passw"
+            password="passw",
+            is_active=True
         )
         custo1.balance = -13.12
         custo1.fio = "Test Name"
@@ -231,8 +235,8 @@ class RNCBPaymentAPITestCase(APITestCase):
 
     def test_pay_view(self):
         r = self.get(self.url, {
-            "query_type": 'check',
-            "account": "129386",
+            "QueryType": 'check',
+            "Account": "129386",
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -248,8 +252,8 @@ class RNCBPaymentAPITestCase(APITestCase):
 
     def test_pay_view_unknown_account(self):
         r = self.get(self.url, {
-            "query_type": 'check',
-            "account": "12089",
+            "QueryType": 'check',
+            "Account": "12089",
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -263,19 +267,19 @@ class RNCBPaymentAPITestCase(APITestCase):
 
     def test_pay_view_bad_account(self):
         r = self.get(self.url, {
-            "query_type": 'check',
-            "account": "*7867^&a",
+            "QueryType": 'check',
+            "Account": "*7867^&a",
         })
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, msg=r.data)
 
     def test_pay(self):
         r = self.get(self.url, {
-            "query_type": 'pay',
-            "account": "129386",
-            "payment_id": 12983,
-            "summa": 198.123321,
-            "exec_date": "20170101182810",
-            "inn": 1234567891
+            "QueryType": 'pay',
+            "Account": "129386",
+            "Payment_id": 12983,
+            "Summa": 198.123321,
+            "Exec_date": "20170101182810",
+            "Inn": 1234567891
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -298,12 +302,12 @@ class RNCBPaymentAPITestCase(APITestCase):
             pay_gw=self.pay_system
         )
         r = self.get(self.url, {
-            "query_type": 'pay',
-            "account": "129386",
-            "payment_id": 1927863123,
-            "summa": 198.123321,
-            "exec_date": "20170101182810",
-            "inn": 1234567891
+            "QueryType": 'pay',
+            "Account": "129386",
+            "Payment_id": 1927863123,
+            "Summa": 198.123321,
+            "Exec_date": "20170101182810",
+            "Inn": 1234567891
         })
         xml = ''.join((
             '<?xml version="1.0" encoding="utf-8"?>\n',
@@ -331,7 +335,8 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         custo1 = Customer.objects.create_user(
             telephone="+79782345678",
             username="129386",
-            password="passw"
+            password="passw",
+            is_active=True
         )
         custo1.balance = -13.12
         custo1.fio = "Test Name"
@@ -386,10 +391,10 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
 
     def test_pay_balance_check(self):
         r = self.get(self.url, {
-            "query_type": 'balance',
-            "datefrom": '20170101000000',
-            "dateto": '2017012200000',
-            #  "inn": 1234567891
+            "QueryType": 'balance',
+            "DateFrom": '20170101000000',
+            "DateTo": '2017012200000',
+            #  "Inn": 1234567891
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
