@@ -2,11 +2,12 @@ from django.db.models import Count
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from djing2.permissions import IsSuperUser
+from djing2.lib.mixins import SitesFilterMixin
 from customers.models import Customer
 from customers.serializers import CustomerModelSerializer
 
 
-class SormCustomersWithoutContractsListView(ReadOnlyModelViewSet):
+class SormCustomersWithoutContractsView(SitesFilterMixin, ReadOnlyModelViewSet):
     """
     Fetch example:
 
@@ -36,9 +37,23 @@ class SormCustomersWithoutContractsListView(ReadOnlyModelViewSet):
     >>>
     """
     queryset = Customer.objects.annotate(
-        ccc=Count('customercontractmodel')
+        ccc=Count('customercontractmodel'),
+        legc=Count('customerlegalmodel')
     ).filter(
         ccc=0,
+        legc=0,
+        is_active=True
+    )
+    serializer_class = CustomerModelSerializer
+    permission_classes = [IsAuthenticated, IsSuperUser]
+
+
+class SormCustomersWithoutPassportsView(SitesFilterMixin, ReadOnlyModelViewSet):
+    queryset = Customer.objects.annotate(
+        legals=Count('customerlegalmodel')
+    ).filter(
+        passportinfo=None,
+        legals=0,
         is_active=True
     )
     serializer_class = CustomerModelSerializer
