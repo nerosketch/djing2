@@ -112,6 +112,7 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
 
     def auth_log(self, user_agent: str, remote_ip: str):
         ProfileAuthLog.objects.create(profile=self, user_agent=user_agent, remote_ip=remote_ip)
+        BaseAccount.objects.filter(pk=self.pk).update(last_login=datetime.now())
 
     def split_fio(self):
         """Try to split name, last_name, and surname."""
