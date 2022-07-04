@@ -1,7 +1,6 @@
 from django.db.models import Count
 from rest_framework.viewsets import ReadOnlyModelViewSet
-from rest_framework.permissions import IsAuthenticated
-from djing2.permissions import IsSuperUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from djing2.lib.mixins import SitesFilterMixin
 from customers.models import Customer
 from customers.serializers import CustomerModelSerializer
@@ -45,7 +44,7 @@ class SormCustomersWithoutContractsView(SitesFilterMixin, ReadOnlyModelViewSet):
         is_active=True
     )
     serializer_class = CustomerModelSerializer
-    permission_classes = [IsAuthenticated, IsSuperUser]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
 
 class SormCustomersWithoutPassportsView(SitesFilterMixin, ReadOnlyModelViewSet):
@@ -57,5 +56,5 @@ class SormCustomersWithoutPassportsView(SitesFilterMixin, ReadOnlyModelViewSet):
         is_active=True
     )
     serializer_class = CustomerModelSerializer
-    permission_classes = [IsAuthenticated, IsSuperUser]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
