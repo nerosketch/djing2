@@ -170,10 +170,6 @@ msgstr "Не получается войти с предоставленными
 msgid "Must include \"username\" and \"password\"."
 msgstr "Должны быть \"username\" и \"password\"."
 
-#: apps/profiles/views.py:99
-msgid "Passwords must be same"
-msgstr "Пароли должны быть одинаковыми"
-
 #: apps/profiles/views.py:101
 msgid "Wrong old password"
 msgstr "Не правильный старый пароль"

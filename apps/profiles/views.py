@@ -97,8 +97,6 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
         if not request.user.is_superuser:
             if request.user.pk != profile.pk:
                 return Response(status=status.HTTP_403_FORBIDDEN)
-            if old_passw != new_passw:
-                return Response(_("Passwords must be same"), status=status.HTTP_400_BAD_REQUEST)
             if not profile.check_password(old_passw):
                 return Response(_("Wrong old password"), status=status.HTTP_400_BAD_REQUEST)
         # validate_password(old_passw, profile)
