@@ -70,6 +70,3 @@ requests
 # Tests
 pyftpdlib==1.5.6
 
-# Monitoring
-django-statsd-mozilla
-

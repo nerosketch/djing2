@@ -98,9 +98,6 @@ INSTALLED_APPS = [
     "customers_legal.apps.CustomersLegalConfig",
     "customer_contract.apps.CustomerContractConfig",
 
-    # Monitoring
-    "django_statsd",
-
     #"webhooks.apps.WebhooksConfig",
 ]
 
@@ -116,10 +113,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-
-    # Monitoring
-    "django_statsd.middleware.GraphiteRequestTimingMiddleware",
-    "django_statsd.middleware.GraphiteMiddleware",
 
     "djing2.lib.mixins.CustomCurrentSiteMiddleware",
 ]
@@ -412,8 +405,3 @@ SORM_REPORTING_EMAILS = []
 CONTRACTS_OPTIONS = {
     'DEFAULT_TITLE': os.getenv('CONTRACT_DEFAULT_TITLE', 'Contract default title')
 }
-
-STATSD_HOST = os.getenv("GRAPHITE_HOST", default='djing2_graphite_stats')
-STATSD_PORT = os.getenv("GRAPHITE_PORT", default=8125)
-STATSD_MODEL_SIGNALS = True
-
