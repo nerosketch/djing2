@@ -75,8 +75,9 @@ def birth_day_18yo_validator(val: date) -> None:
 
 
 def birth_day_too_old_validator(val: date) -> None:
-    low_bound = datetime(year=1900, month=1, day=1).date()
-    if val <= low_bound:
+    # 110 years
+    low_bound = datetime.now() - timedelta(days=40150)
+    if val <= low_bound.date():
         raise ValidationError(_('Account is too old, birth_day "%s"') % val)
 
 class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
