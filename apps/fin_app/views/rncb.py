@@ -132,7 +132,6 @@ class RNCBPaymentViewSet(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         query_type = request.query_params.get('QueryType')
-        print('queryType:', query_type)
         query_type_map = {
             'check': self._check,
             'pay': self._pay,
@@ -155,8 +154,8 @@ class RNCBPaymentViewSet(GenericAPIView):
         customer = customer.get()
 
         return {
-            'fio': customer.get_full_name(),
-            'balance': -customer.balance,
+            # 'fio': customer.get_full_name(),
+            'balance': f'{-customer.balance:.2f}',
             'comments': 'Ok',
             #  'inn': ''
         }
@@ -245,7 +244,7 @@ class RNCBPaymentViewSet(GenericAPIView):
         full_sum = fs.get('amount__sum', 0.0)
         del fs
         return {
-            'full_summa': full_sum or 0.0,
+            'full_summa': f'{full_sum or 0.0:.2f}',
             'number_of_payments': pays.count(),
             'payments': [_gen_pay(p) for p in pays]
         }
