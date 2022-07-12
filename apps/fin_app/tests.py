@@ -216,7 +216,7 @@ class RNCBPaymentAPITestCase(APITestCase):
             password="passw",
             is_active=True
         )
-        custo1.balance = -13.12
+        custo1.balance = -13.12109349
         custo1.fio = "Test Name"
         custo1.save(update_fields=("balance", "fio"))
         custo1.refresh_from_db()
@@ -240,12 +240,12 @@ class RNCBPaymentAPITestCase(APITestCase):
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
-            "<checkresponse>"
-            "<fio>Test Name</fio>"
-            "<balance>13.120000</balance>"
-            "<error>0</error>"
-            "<comments>Ok</comments>"
-            "</checkresponse>"
+            "<CHECKRESPONSE>"
+            #  "<FIO>Test Name</FIO>"
+            "<BALANCE>13.12</BALANCE>"
+            "<ERROR>0</ERROR>"
+            "<COMMENTS>Ok</COMMENTS>"
+            "</CHECKRESPONSE>"
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
@@ -257,20 +257,28 @@ class RNCBPaymentAPITestCase(APITestCase):
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
-            "<checkresponse>"
-            "<error>1</error>"
-            "<comments>Customer does not exists</comments>"
-            "</checkresponse>"
+            "<CHECKRESPONSE>"
+            "<ERROR>1</ERROR>"
+            "<COMMENTS>Customer does not exists</COMMENTS>"
+            "</CHECKRESPONSE>"
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        self.assertXMLEqual(r.content.decode("utf-8"), xml)
+        self.assertXMLEqual(r.content.decode("utf-8"), xml, r.data)
 
     def test_pay_view_bad_account(self):
         r = self.get(self.url, {
             "QueryType": 'check',
             "Account": "*7867^&a",
         })
-        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, msg=r.data)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        xml = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            "<CHECKRESPONSE>"
+            "<ERROR>1</ERROR>"
+            "<COMMENTS>Account: Введите правильное число.</COMMENTS>"
+            "</CHECKRESPONSE>"
+        )
+        self.assertXMLEqual(r.content.decode("utf-8"), xml, r.data)
 
     def test_pay(self):
         r = self.get(self.url, {
@@ -283,11 +291,11 @@ class RNCBPaymentAPITestCase(APITestCase):
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
-            "<payresponse>"
-            "<out_payment_id>1</out_payment_id>"
-            "<error>0</error>"
-            "<comments>Success</comments>"
-            "</payresponse>"
+            "<PAYRESPONSE>"
+            "<OUT_PAYMENT_ID>1</OUT_PAYMENT_ID>"
+            "<ERROR>0</ERROR>"
+            "<COMMENTS>Success</COMMENTS>"
+            "</PAYRESPONSE>"
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
@@ -311,11 +319,11 @@ class RNCBPaymentAPITestCase(APITestCase):
         })
         xml = ''.join((
             '<?xml version="1.0" encoding="utf-8"?>\n',
-            "<payresponse>",
-            "<out_payment_id>%d</out_payment_id>" % pay.pk,
-            "<error>10</error>",
-            "<comments>Payment duplicate</comments>",
-            "</payresponse>"
+            "<PAYRESPONSE>",
+            "<OUT_PAYMENT_ID>%d</OUT_PAYMENT_ID>" % pay.pk,
+            "<ERROR>10</ERROR>",
+            "<COMMENTS>Payment duplicate</COMMENTS>",
+            "</PAYRESPONSE>"
         ))
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
@@ -398,17 +406,17 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
-            "<balanceresponse>"
-              "<full_summa>11.000000</full_summa>"
-              "<number_of_payments>4</number_of_payments>"
-              "<error>0</error>"
-              "<payments>"
-                "<payment_row>12837;3;129386;1.00;20170101000000</payment_row>"
-                "<payment_row>12838;4;129386;2.00;20170103000000</payment_row>"
-                "<payment_row>12839;5;129386;3.00;20170107000000</payment_row>"
-                "<payment_row>12840;6;129386;5.00;20170109000000</payment_row>"
-              "</payments>"
-            "</balanceresponse>"
+            "<BALANCERESPONSE>"
+              "<FULL_SUMMA>11.00</FULL_SUMMA>"
+              "<NUMBER_OF_PAYMENTS>4</NUMBER_OF_PAYMENTS>"
+              "<ERROR>0</ERROR>"
+              "<PAYMENTS>"
+                "<PAYMENT_ROW>12837;3;129386;1.00;20170101000000</PAYMENT_ROW>"
+                "<PAYMENT_ROW>12838;4;129386;2.00;20170103000000</PAYMENT_ROW>"
+                "<PAYMENT_ROW>12839;5;129386;3.00;20170107000000</PAYMENT_ROW>"
+                "<PAYMENT_ROW>12840;6;129386;5.00;20170109000000</PAYMENT_ROW>"
+              "</PAYMENTS>"
+            "</BALANCERESPONSE>"
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.maxDiff = None

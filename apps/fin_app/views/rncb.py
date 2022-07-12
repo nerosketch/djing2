@@ -76,6 +76,15 @@ class DynamicRootXMLRenderer(XMLRenderer):
 
 
 def payment_wrapper(request_serializer, response_serializer, root_tag: str):
+    def _el(l: list):
+        """Expand list"""
+        return ' '.join(s for s in l)
+
+    def _expand_str_from_err(err: ValidationError):
+        if isinstance(err.detail, dict):
+            return '\n'.join(f'{k}: {_el(v)}' for k, v in err.detail.items())
+        return str(err.detail)
+
     def _fn(fn):
         @wraps(fn)
         def _wrapper(self, request, *args, **kwargs):
@@ -91,13 +100,14 @@ def payment_wrapper(request_serializer, response_serializer, root_tag: str):
             except serializers_rncb.RNCBProtocolErrorException as e:
                 return Response({root_tag: {
                     'ERROR': e.error,
-                    'COMMENTS': str(e)
+                    'COMMENTS': _expand_str_from_err(e)
                 }}, status=e.status_code)
             except ValidationError as e:
                 return Response({root_tag: {
-                    'ERROR': serializers_rncb.RNCBPaymentErrorEnum.UNKNOWN_CODE.value,
-                    'COMMENTS': str(e)
-                }}, status=e.status_code)
+                    # 'CUSTOMER_NOT_FOUND' because RNCB wants it that way
+                    'ERROR': serializers_rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
+                    'COMMENTS': _expand_str_from_err(e)
+                }}, status=status.HTTP_200_OK)
             except Customer.DoesNotExist:
                 return Response({root_tag: {
                     'ERROR': serializers_rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
@@ -232,11 +242,11 @@ class RNCBPaymentViewSet(GenericAPIView):
         def _gen_pay(p: RNCBPayLog):
             return {
                 'PAYMENT_ROW': '%(payment_id)d;%(out_payment_id)d;%(account)s;%(sum).2f;%(ex_date)s' % {
-                    'PAYMENT_ID': p.pay_id,
-                    'OUT_PAYMENT_ID': p.pk,
-                    'ACCOUNT': p.customer.username,
-                    'SUM': float(p.amount),
-                    'EX_DATE': p.acct_time.strftime(serializers_rncb.date_format)
+                    'payment_id': p.pay_id,
+                    'out_payment_id': p.pk,
+                    'account': p.customer.username,
+                    'sum': float(p.amount),
+                    'ex_date': p.acct_time.strftime(serializers_rncb.date_format)
                 }
             }
 
