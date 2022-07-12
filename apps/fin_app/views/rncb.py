@@ -90,18 +90,18 @@ def payment_wrapper(request_serializer, response_serializer, root_tag: str):
                 })
             except serializers_rncb.RNCBProtocolErrorException as e:
                 return Response({root_tag: {
-                    'error': e.error,
-                    'comments': str(e)
+                    'ERROR': e.error,
+                    'COMMENTS': str(e)
                 }}, status=e.status_code)
             except ValidationError as e:
                 return Response({root_tag: {
-                    'error': serializers_rncb.RNCBPaymentErrorEnum.UNKNOWN_CODE.value,
-                    'comments': str(e)
+                    'ERROR': serializers_rncb.RNCBPaymentErrorEnum.UNKNOWN_CODE.value,
+                    'COMMENTS': str(e)
                 }}, status=e.status_code)
             except Customer.DoesNotExist:
                 return Response({root_tag: {
-                    'error': serializers_rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
-                    'comments': 'Customer does not exists'
+                    'ERROR': serializers_rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
+                    'COMMENTS': 'Customer does not exists'
                 }}, status=status.HTTP_200_OK)
 
         return _wrapper
@@ -143,7 +143,7 @@ class RNCBPaymentViewSet(GenericAPIView):
     @payment_wrapper(
         request_serializer=serializers_rncb.RNCBPaymentCheckSerializer,
         response_serializer=serializers_rncb.RNCBPaymentCheckResponseSerializer,
-        root_tag='checkresponse'
+        root_tag='CHECKRESPONSE'
     )
     def _check(self, data: dict, *args, **kwargs):
         account = data['Account']
@@ -155,15 +155,15 @@ class RNCBPaymentViewSet(GenericAPIView):
 
         return {
             # 'fio': customer.get_full_name(),
-            'balance': f'{-customer.balance:.2f}',
-            'comments': 'Ok',
+            'BALANCE': f'{-customer.balance:.2f}',
+            'COMMENTS': 'Ok',
             #  'inn': ''
         }
 
     @payment_wrapper(
         request_serializer=serializers_rncb.RNCBPaymentPaySerializer,
         response_serializer=serializers_rncb.RNCBPaymentPayResponseSerializer,
-        root_tag='payresponse'
+        root_tag='PAYRESPONSE'
     )
     def _pay(self, data: dict, *args, **kwargs):
         account = data['Account']
@@ -184,9 +184,9 @@ class RNCBPaymentViewSet(GenericAPIView):
         ).first()
         if pay is not None:
             return {
-                'error': serializers_rncb.RNCBPaymentErrorEnum.DUPLICATE_TRANSACTION.value,
-                'out_payment_id': pay.pk,
-                'comments': 'Payment duplicate'
+                'ERROR': serializers_rncb.RNCBPaymentErrorEnum.DUPLICATE_TRANSACTION.value,
+                'OUT_PAYMENT_ID': pay.pk,
+                'COMMENTS': 'Payment duplicate'
             }
         del pay
 
@@ -207,14 +207,14 @@ class RNCBPaymentViewSet(GenericAPIView):
         customer_check_service_for_expiration(customer_id=customer.pk)
 
         return {
-            'out_payment_id': log.pk,
-            'comments': 'Success'
+            'OUT_PAYMENT_ID': log.pk,
+            'COMMENTS': 'Success'
         }
 
     @payment_wrapper(
         request_serializer=serializers_rncb.RNCBPaymentTransactionCheckSerializer,
         response_serializer=serializers_rncb.RNCBPaymentTransactionCheckResponseSerializer,
-        root_tag='balanceresponse'
+        root_tag='BALANCERESPONSE'
     )
     def _balance(self, data: dict, *args, **kwargs):
         date_from = data['DateFrom']
@@ -231,12 +231,12 @@ class RNCBPaymentViewSet(GenericAPIView):
 
         def _gen_pay(p: RNCBPayLog):
             return {
-                'payment_row': '%(payment_id)d;%(out_payment_id)d;%(account)s;%(sum).2f;%(ex_date)s' % {
-                    'payment_id': p.pay_id,
-                    'out_payment_id': p.pk,
-                    'account': p.customer.username,
-                    'sum': float(p.amount),
-                    'ex_date': p.acct_time.strftime(serializers_rncb.date_format)
+                'PAYMENT_ROW': '%(payment_id)d;%(out_payment_id)d;%(account)s;%(sum).2f;%(ex_date)s' % {
+                    'PAYMENT_ID': p.pay_id,
+                    'OUT_PAYMENT_ID': p.pk,
+                    'ACCOUNT': p.customer.username,
+                    'SUM': float(p.amount),
+                    'EX_DATE': p.acct_time.strftime(serializers_rncb.date_format)
                 }
             }
 
@@ -244,9 +244,9 @@ class RNCBPaymentViewSet(GenericAPIView):
         full_sum = fs.get('amount__sum', 0.0)
         del fs
         return {
-            'full_summa': f'{full_sum or 0.0:.2f}',
-            'number_of_payments': pays.count(),
-            'payments': [_gen_pay(p) for p in pays]
+            'FULL_SUMMA': f'{full_sum or 0.0:.2f}',
+            'NUMBER_OF_PAYMENTS': pays.count(),
+            'PAYMENTS': [_gen_pay(p) for p in pays]
         }
 
     def _unknown_query_type(self, *args, **kwargs):

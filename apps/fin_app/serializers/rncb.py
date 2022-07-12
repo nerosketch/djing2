@@ -48,14 +48,14 @@ class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
     #  fio = serializers.CharField()
 
     # Negative from customer balance.
-    balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
+    BALANCE = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
 
-    error = serializers.ChoiceField(
+    ERROR = serializers.ChoiceField(
         choices=RNCBPaymentErrorEnum.choices,
         default=RNCBPaymentErrorEnum.OK,
     )
 
-    comments = serializers.CharField(required=False)
+    COMMENTS = serializers.CharField(required=False)
     #  inn = serializers.IntegerField(min_value=1000000000, max_value=999999999999)
 
 
@@ -70,12 +70,12 @@ class RNCBPaymentPaySerializer(serializers.Serializer):
 
 
 class RNCBPaymentPayResponseSerializer(serializers.Serializer):
-    out_payment_id = serializers.IntegerField() # Уникальный идентификатор Перевода в ИС Клиента
-    error = serializers.ChoiceField(
+    OUT_PAYMENT_ID = serializers.IntegerField() # Уникальный идентификатор Перевода в ИС Клиента
+    ERROR = serializers.ChoiceField(
         choices=RNCBPaymentErrorEnum.choices,
         default=RNCBPaymentErrorEnum.OK.value,
     )
-    comments = serializers.CharField(required=False)
+    COMMENTS = serializers.CharField(required=False)
 
 
 class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
@@ -93,11 +93,11 @@ class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
 
 
 class RNCBPaymentTransactionCheckResponseSerializer(serializers.Serializer):
-    full_summa = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
-    number_of_payments = serializers.IntegerField()
-    error = serializers.ChoiceField(
+    FULL_SUMMA = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
+    NUMBER_OF_PAYMENTS = serializers.IntegerField()
+    ERROR = serializers.ChoiceField(
         choices=RNCBPaymentErrorEnum.choices,
         default=RNCBPaymentErrorEnum.OK.value,
     )
-    payments = serializers.ListField()
+    PAYMENTS = serializers.ListField()
 
