@@ -48,7 +48,7 @@ class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
     #  fio = serializers.CharField()
 
     # Negative from customer balance.
-    balance = serializers.DecimalField(max_digits=12, decimal_places=6, coerce_to_string=False, required=False)
+    balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
 
     error = serializers.ChoiceField(
         choices=RNCBPaymentErrorEnum.choices,
@@ -62,7 +62,7 @@ class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
 class RNCBPaymentPaySerializer(serializers.Serializer):
     Payment_id = serializers.IntegerField(min_value=1)
     Account = serializers.CharField(max_length=64, validators=[integer_validator])
-    Summa = serializers.DecimalField(min_value=0, max_value=50000, max_digits=12, decimal_places=6)
+    Summa = serializers.DecimalField(min_value=0, max_value=50000, max_digits=12, decimal_places=2)
     Exec_date = serializers.DateTimeField(
         input_formats=[date_format], format=date_format
     )
@@ -93,7 +93,7 @@ class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
 
 
 class RNCBPaymentTransactionCheckResponseSerializer(serializers.Serializer):
-    full_summa = serializers.DecimalField(max_digits=12, decimal_places=6, coerce_to_string=False, required=False)
+    full_summa = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
     number_of_payments = serializers.IntegerField()
     error = serializers.ChoiceField(
         choices=RNCBPaymentErrorEnum.choices,
