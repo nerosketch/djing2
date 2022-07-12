@@ -45,7 +45,7 @@ class RNCBPaymentCheckSerializer(serializers.Serializer):
 
 
 class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
-    fio = serializers.CharField()
+    #  fio = serializers.CharField()
 
     # Negative from customer balance.
     balance = serializers.DecimalField(max_digits=12, decimal_places=6, coerce_to_string=False, required=False)
