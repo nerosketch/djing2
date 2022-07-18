@@ -242,7 +242,7 @@ class RNCBPaymentAPITestCase(APITestCase):
             '<?xml version="1.0" encoding="utf-8"?>\n'
             "<CHECKRESPONSE>"
             #  "<FIO>Test Name</FIO>"
-            "<BALANCE>13.12</BALANCE>"
+            "<BALANCE>-13.12</BALANCE>"
             "<ERROR>0</ERROR>"
             "<COMMENTS>Ok</COMMENTS>"
             "</CHECKRESPONSE>"

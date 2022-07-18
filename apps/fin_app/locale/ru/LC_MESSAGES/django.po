@@ -53,6 +53,9 @@ msgstr "Номер квитанции"
 msgid "Pay gateway"
 msgstr "Платёжный шлюз"
 
+msgid "Act time from payment system"
+msgstr "Время пдатежа из платёжной системы"
+
 #~ msgid "Fin report"
 #~ msgstr "Фин. отчёт"
 

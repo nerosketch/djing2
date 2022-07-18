@@ -226,7 +226,7 @@ class AllTimePay(GenericAPIView):
             AllTimePayLog.objects.create(
                 customer=customer,
                 pay_id=pay_id,
-                sum=pay_amount,
+                amount=pay_amount,
                 trade_point=trade_point,
                 receipt_num=receipt_num,
                 pay_gw=self._lazy_object,
@@ -252,7 +252,7 @@ class AllTimePay(GenericAPIView):
                 "transaction": {
                     "pay_id": pay_id,
                     "service_id": data.get("SERVICE_ID"),
-                    "amount": round(pay.sum, 2),
+                    "amount": round(pay.amount, 2),
                     "status": TRANSACTION_STATUS_PAYMENT_OK,
                     "time_stamp": pay.date_add.strftime("%d.%m.%Y %H:%M"),
                 },
