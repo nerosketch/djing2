@@ -165,7 +165,7 @@ class RNCBPaymentViewSet(GenericAPIView):
 
         return {
             # 'fio': customer.get_full_name(),
-            'BALANCE': f'{-customer.balance:.2f}',
+            'BALANCE': f'{customer.balance:.2f}',
             'COMMENTS': 'Ok',
             #  'inn': ''
         }
