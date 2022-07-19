@@ -1,37 +1,59 @@
-from django.db import migrations, models, transaction
+from django.db import migrations, models, transaction, connection
 from django.db.models.deletion import CASCADE, SET_DEFAULT
 from djing2.models import BaseAbstractModelMixin
 import encrypted_model_fields.fields
-from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
-from fin_app.models.alltime import AllTimePaymentLog, AllTimePayGateway
+from fin_app.models.rncb import RNCBPaymentGateway
+from fin_app.models.alltime import AllTimePayGateway
 
 
 def _copy_logs(apps, _):
-    alltimepaylog = apps.get_model('fin_app', 'AllTimePayLog')
-    rncbpaylog = apps.get_model('fin_app', 'RNCBPayLog')
+    # Copy AllTime payment logs
+    sql = """
+    DO $$
+    DECLARE
+      log RECORD;
+      new_base_log RECORD;
+    BEGIN
+      FOR log IN
+        SELECT apl.*, bpg.id AS base_gw_id FROM all_time_pay_log apl
+        LEFT JOIN pay_all_time_gateways pog ON pog.id = apl.pay_gw_id
+        LEFT JOIN base_payment_gateway bpg ON (bpg.title = pog.title AND bpg.slug = pog.slug)
+        ORDER BY apl.date_add
+      LOOP
+        INSERT INTO base_payment_log(date_add, amount, customer_id)
+          VALUES (log.date_add, log.sum, log.customer_id) RETURNING id INTO new_base_log;
+        INSERT INTO all_time_payment_log(basepaymentlogmodel_ptr_id, pay_id, trade_point, receipt_num, pay_gw_id)
+          VALUES(new_base_log.id, log.pay_id, log.trade_point, log.receipt_num, log.base_gw_id);
+      END LOOP;
+    END;
+    $$;
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql)
 
-    with transaction.atomic():
-        for old_log in rncbpaylog.objects.iterator():
-            RNCBPaymentLog.objects.create(
-                customer_id=old_log.customer_id,
-                date_add=old_log.date_add,
-                amount=old_log.amount,
-                pay_id=old_log.pay_id,
-                acct_time=old_log.acct_time,
-                pay_gw_id=old_log.pay_gw_id,
-            )
-
-    with transaction.atomic():
-        for old_log in alltimepaylog.objects.iterator():
-            AllTimePaymentLog.objects.create(
-                customer_id=old_log.customer_id,
-                date_add=old_log.date_add,
-                amount=old_log.sum,
-                pay_id=old_log.pay_id,
-                trade_point=old_log.trade_point,
-                receipt_num=old_log.receipt_num,
-                pay_gw_id=old_log.pay_gw_id,
-            )
+    # Copy RNCB payment logs
+    sql = """
+    DO $$
+    DECLARE
+      log RECORD;
+      new_base_log RECORD;
+    BEGIN
+      FOR log IN
+        SELECT rpl.*, bpg.id AS base_gw_id FROM rncb_pay_log rpl
+        LEFT JOIN pay_rncb_gateways prg ON prg.id = rpl.pay_gw_id
+        LEFT JOIN base_payment_gateway bpg ON (bpg.title = prg.title AND bpg.slug = prg.slug)
+        ORDER BY rpl.date_add
+      LOOP
+        INSERT INTO base_payment_log(date_add, amount, customer_id)
+          VALUES (log.date_add, log.amount, log.customer_id) RETURNING id INTO new_base_log;
+        INSERT INTO rncb_payment_log(basepaymentlogmodel_ptr_id, pay_id, acct_time, pay_gw_id)
+          VALUES(new_base_log.id, log.pay_id, log.acct_time, log.base_gw_id);
+      END LOOP;
+    END;
+    $$;
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql)
 
 
 def _copy_pay_gateways(apps, _):
@@ -39,28 +61,25 @@ def _copy_pay_gateways(apps, _):
     alltimepaygateway = apps.get_model('fin_app', 'PayAllTimeGateway')
     payrncbgateway = apps.get_model('fin_app', 'PayRNCBGateway')
 
-    assert alltimepaygateway.objects.count() > 0
-    assert payrncbgateway.objects.count() > 0
+    with transaction.atomic():
+        for old_gw in alltimepaygateway.objects.order_by('id').iterator():
+            g = AllTimePayGateway.objects.create(
+                title=old_gw.title,
+                slug=old_gw.slug,
+                secret=old_gw.secret,
+                service_id=old_gw.service_id,
+            )
+            g.sites.set((s.pk for s in old_gw.sites.all()))
+            print(end='.', flush=True)
 
-    for old_gw in alltimepaygateway.objects.iterator():
-        g = AllTimePayGateway.objects.create(
-            title=old_gw.title,
-            slug=old_gw.slug,
-            secret=old_gw.secret,
-            service_id=old_gw.service_id,
-        )
-        g.sites.set((s.pk for s in old_gw.sites.all()))
-        print(end='.', flush=True)
-
-    for old_gw in payrncbgateway.objects.iterator():
-        g = RNCBPaymentGateway.objects.create(
-            title=old_gw.title,
-            slug=old_gw.slug,
-            secret=old_gw.secret,
-            service_id=old_gw.service_id,
-        )
-        g.sites.set((s.pk for s in old_gw.sites.all()))
-        print(end='.', flush=True)
+    with transaction.atomic():
+        for old_gw in payrncbgateway.objects.order_by('id').iterator():
+            g = RNCBPaymentGateway.objects.create(
+                title=old_gw.title,
+                slug=old_gw.slug,
+            )
+            g.sites.set((s.pk for s in old_gw.sites.all()))
+            print(end='.', flush=True)
 
 
 class Migration(migrations.Migration):
@@ -91,12 +110,13 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('title', models.CharField(max_length=64, verbose_name='Title')),
-                ('slug', models.SlugField(max_length=32, unique=True, verbose_name='Slug')),
+                ('slug', models.SlugField(max_length=32, verbose_name='Slug')),
                 ('sites', models.ManyToManyField(blank=True, to='sites.Site')),
             ],
             options={
                 'verbose_name': 'Base gateway',
                 'db_table': 'base_payment_gateway',
+                'unique_together': {('slug', 'title')},
             },
             bases=(BaseAbstractModelMixin, models.Model),
         ),

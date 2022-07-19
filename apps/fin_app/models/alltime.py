@@ -36,39 +36,40 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
     date_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
     if group_by == 1:
         # group by day
-        query.append("date_trunc('day', date_add),")
+        query.append("date_trunc('day', bpl.date_add),")
         date_fmt = getattr(api_settings, "DATE_FORMAT", "%Y-%m-%d")
     elif group_by == 3:
         # group by mon
-        query.append("date_trunc('month', date_add),")
+        query.append("date_trunc('month', bpl.date_add),")
         date_fmt = '%Y-%m'
     elif group_by == 2:
         # group by week
-        query.append("date_trunc('week', date_add),")
+        query.append("date_trunc('week', bpl.date_add),")
         date_fmt = '%Y-%m'
 
     query.extend((
-        'sum("amount") AS alsum,',
-        'count("amount") as alcnt',
-        "FROM all_time_payment_log",
-        "where date_add >= %s::date",
+        "SUM(bpl.amount) AS alsum,",
+        "COUNT(bpl.amount) AS alcnt",
+        "FROM base_payment_log bpl LEFT JOIN all_time_payment_log apl ON apl.basepaymentlogmodel_ptr_id = bpl.id",
+        "WHERE bpl.date_add >= %s::date",
     ))
 
     if pay_gw_id is not None:
         pay_gw_id = safe_int(pay_gw_id)
         if pay_gw_id > 0:
-            query.append("and pay_gw_id = %s::integer")
+            query.append("AND apl.pay_gw_id = %s::integer")
             params.append(pay_gw_id)
 
     if to_time is not None:
-        query.append("and date_add <= %s::date")
+        query.append("AND bpl.date_add <= %s::date")
         params.append(to_time)
 
     query.extend((
-        "group by 1",
-        "order by 1",
+        "GROUP BY 1",
+        "ORDER BY 1",
     ))
     cur = connection.cursor()
+    print('QUERY:', ' '.join(query))
     cur.execute(' '.join(query), params)
 
     while True:

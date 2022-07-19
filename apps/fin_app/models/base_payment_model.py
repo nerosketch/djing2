@@ -9,7 +9,7 @@ class BasePaymentModel(BaseAbstractModel):
     pay_system_title = "Base abstract implementation"
 
     title = models.CharField(_("Title"), max_length=64)
-    slug = models.SlugField(_("Slug"), max_length=32, unique=True, allow_unicode=False)
+    slug = models.SlugField(_("Slug"), max_length=32, allow_unicode=False)
     sites = models.ManyToManyField(Site, blank=True)
 
     def __str__(self):
@@ -18,6 +18,7 @@ class BasePaymentModel(BaseAbstractModel):
     class Meta:
         db_table = "base_payment_gateway"
         verbose_name = _("Base gateway")
+        unique_together = ('slug', 'title')
         #  abstract = True
 
 
