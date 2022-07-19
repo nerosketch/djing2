@@ -3,19 +3,20 @@ from django.utils.translation import gettext_lazy as _
 from .base_payment_model import BasePaymentModel, BasePaymentLogModel
 
 
-class PayRNCBGateway(BasePaymentModel):
+class RNCBPaymentGateway(BasePaymentModel):
     pay_system_title = "RNCB"
 
     class Meta:
-        db_table = "pay_rncb_gateways"
+        #  db_table = "pay_rncb_gateways"
         verbose_name = _("RNCB gateway")
+        proxy = True
 
 
-class RNCBPayLog(BasePaymentLogModel):
+class RNCBPaymentLog(BasePaymentLogModel):
     pay_id = models.IntegerField(unique=True)
     acct_time = models.DateTimeField(_('Act time from payment system'))
     pay_gw = models.ForeignKey(
-        PayRNCBGateway,
+        RNCBPaymentGateway,
         verbose_name=_("Pay gateway"),
         on_delete=models.CASCADE
     )
@@ -24,4 +25,4 @@ class RNCBPayLog(BasePaymentLogModel):
         return str(self.pay_id)
 
     class Meta:
-        db_table = "rncb_pay_log"
+        db_table = "rncb_payment_log"

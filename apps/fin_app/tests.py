@@ -8,7 +8,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 
 from customers.models import Customer
-from fin_app.models.alltime import PayAllTimeGateway
+from fin_app.models.alltime import AllTimePayGateway
 from profiles.models import UserProfile
 from fin_app.views.alltime import (
     AllTimePayActEnum,
@@ -53,7 +53,7 @@ class CustomAPITestCase(APITestCase):
         self.customer = custo1
 
         # Pay System
-        pay_system = PayAllTimeGateway.objects.create(
+        pay_system = AllTimePayGateway.objects.create(
             title="Test pay alltime system", secret="secret",
             service_id="service_id", slug="pay_gw_slug"
         )
@@ -223,7 +223,7 @@ class RNCBPaymentAPITestCase(APITestCase):
         self.customer = custo1
 
         # RNCB Pay system
-        pay_system = models_rncb.PayRNCBGateway.objects.create(
+        pay_system = models_rncb.RNCBPaymentGateway.objects.create(
             title="Test pay rncb system",
             slug="rncb_gw_slug"
         )
@@ -292,7 +292,7 @@ class RNCBPaymentAPITestCase(APITestCase):
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
             "<PAYRESPONSE>"
-            "<OUT_PAYMENT_ID>1</OUT_PAYMENT_ID>"
+            "<OUT_PAYMENT_ID>2</OUT_PAYMENT_ID>"
             "<ERROR>0</ERROR>"
             "<COMMENTS>Success</COMMENTS>"
             "</PAYRESPONSE>"
@@ -302,7 +302,7 @@ class RNCBPaymentAPITestCase(APITestCase):
 
     def test_pay_already_provided(self):
         now = datetime.now()
-        pay = models_rncb.RNCBPayLog.objects.create(
+        pay = models_rncb.RNCBPaymentLog.objects.create(
             customer=self.customer,
             pay_id=1927863123,
             acct_time=now,
@@ -353,7 +353,7 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         self.customer = custo1
 
         # RNCB Pay system
-        pay_system = models_rncb.PayRNCBGateway.objects.create(
+        pay_system = models_rncb.RNCBPaymentGateway.objects.create(
             title="Test pay rncb system",
             slug="rncb_gw_slug"
         )
@@ -366,28 +366,28 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         now = datetime(year=2017, month=1, day=1)
 
         logs = [
-            models_rncb.RNCBPayLog(
+            models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12837,
                 acct_time=now,
                 amount=1,
                 pay_gw=self.pay_system
             ),
-            models_rncb.RNCBPayLog(
+            models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12838,
                 acct_time=now + timedelta(days=2),
                 amount=2,
                 pay_gw=self.pay_system
             ),
-            models_rncb.RNCBPayLog(
+            models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12839,
                 acct_time=now + timedelta(days=6),
                 amount=3,
                 pay_gw=self.pay_system
             ),
-            models_rncb.RNCBPayLog(
+            models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12840,
                 acct_time=now + timedelta(days=8),
@@ -395,7 +395,8 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
                 pay_gw=self.pay_system
             )
         ]
-        models_rncb.RNCBPayLog.objects.bulk_create(logs)
+        for log in logs:
+            log.save()
 
     def test_pay_balance_check(self):
         r = self.get(self.url, {
@@ -411,10 +412,10 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
               "<NUMBER_OF_PAYMENTS>4</NUMBER_OF_PAYMENTS>"
               "<ERROR>0</ERROR>"
               "<PAYMENTS>"
-                "<PAYMENT_ROW>12837;3;129386;1.00;20170101000000</PAYMENT_ROW>"
-                "<PAYMENT_ROW>12838;4;129386;2.00;20170103000000</PAYMENT_ROW>"
-                "<PAYMENT_ROW>12839;5;129386;3.00;20170107000000</PAYMENT_ROW>"
-                "<PAYMENT_ROW>12840;6;129386;5.00;20170109000000</PAYMENT_ROW>"
+                "<PAYMENT_ROW>12837;4;129386;1.00;20170101000000</PAYMENT_ROW>"
+                "<PAYMENT_ROW>12838;5;129386;2.00;20170103000000</PAYMENT_ROW>"
+                "<PAYMENT_ROW>12839;6;129386;3.00;20170107000000</PAYMENT_ROW>"
+                "<PAYMENT_ROW>12840;7;129386;5.00;20170109000000</PAYMENT_ROW>"
               "</PAYMENTS>"
             "</BALANCERESPONSE>"
         )

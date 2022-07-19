@@ -24,6 +24,8 @@ COPY --chown=www-data:www-data ["apps", "/var/www/djing2/apps"]
 
 WORKDIR /var/www/djing2
 
+USER www-data
+
 CMD ./manage.py migrate \
     && ./manage.py loaddata initial_data \
     # && ./manage.py compilemessages -l ru \

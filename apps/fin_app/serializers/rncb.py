@@ -4,7 +4,7 @@ from rest_framework import status
 from django.core.validators import integer_validator
 from djing2.lib import IntEnumEx
 from djing2.lib.mixins import BaseCustomModelSerializer
-from fin_app.models.rncb import PayRNCBGateway, RNCBPayLog
+from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
 
 
 date_format = '%Y%m%d%H%M%S'
@@ -32,12 +32,12 @@ class RNCBProtocolErrorException(serializers.ValidationError):
 
 class PayRNCBGatewayModelSerializer(BaseCustomModelSerializer):
     class Meta:
-        model = PayRNCBGateway
+        model = RNCBPaymentGateway
 
 
 class RNCBPayLogModelSerializer(BaseCustomModelSerializer):
     class Meta:
-        model = RNCBPayLog
+        model = RNCBPaymentLog
 
 
 class RNCBPaymentCheckSerializer(serializers.Serializer):

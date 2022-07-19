@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from djing2.viewsets import DjingModelViewSet
-from fin_app.models.rncb import PayRNCBGateway, RNCBPayLog
+from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
 from fin_app.serializers import rncb as serializers_rncb
 try:
     from customers.models import Customer
@@ -26,12 +26,12 @@ except ImportError as imperr:
 
 
 class PayRNCBGatewayModelViewSet(DjingModelViewSet):
-    queryset = PayRNCBGateway.objects.all()
+    queryset = RNCBPaymentGateway.objects.all()
     serializer_class = serializers_rncb.PayRNCBGatewayModelSerializer
 
 
 class RNCBPayLogModelViewSet(DjingModelViewSet):
-    queryset = RNCBPayLog.objects.all()
+    queryset = RNCBPaymentLog.objects.all()
     serializer_class = serializers_rncb.RNCBPayLogModelSerializer
 
 
@@ -121,7 +121,7 @@ def payment_wrapper(request_serializer, response_serializer, root_tag: str):
 class RNCBPaymentViewSet(GenericAPIView):
     renderer_classes = [DynamicRootXMLRenderer]
     http_method_names = ["get"]
-    queryset = PayRNCBGateway.objects.all()
+    queryset = RNCBPaymentGateway.objects.all()
     serializer_class = serializers_rncb.PayRNCBGatewayModelSerializer
     lookup_field = "slug"
     lookup_url_kwarg = "pay_slug"
@@ -130,7 +130,7 @@ class RNCBPaymentViewSet(GenericAPIView):
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         kw = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        return PayRNCBGateway.objects.get(**kw)
+        return RNCBPaymentGateway.objects.get(**kw)
 
     @cached_property
     def _lazy_object(self):
@@ -189,7 +189,7 @@ class RNCBPaymentViewSet(GenericAPIView):
             customer = customer.filter(sites__in=[self.request.site])
         customer = customer.get()
 
-        pay = RNCBPayLog.objects.filter(
+        pay = RNCBPaymentLog.objects.filter(
             pay_id=payment_id
         ).first()
         if pay is not None:
@@ -207,7 +207,7 @@ class RNCBPaymentViewSet(GenericAPIView):
                 comment=f"{self._lazy_object.title} {pay_amount:.2f}"
             )
             customer.save(update_fields=("balance",))
-            log = RNCBPayLog.objects.create(
+            log = RNCBPaymentLog.objects.create(
                 customer=customer,
                 pay_id=payment_id,
                 acct_time=exec_date,
@@ -234,12 +234,12 @@ class RNCBPaymentViewSet(GenericAPIView):
         date_from = datetime.strptime(date_from, serializers_rncb.date_format)
         date_to = datetime.strptime(date_to, serializers_rncb.date_format)
 
-        pays = RNCBPayLog.objects.filter(
+        pays = RNCBPaymentLog.objects.filter(
             acct_time__gte=date_from,
             acct_time__lte=date_to
         ).select_related('customer').order_by('id')
 
-        def _gen_pay(p: RNCBPayLog):
+        def _gen_pay(p: RNCBPaymentLog):
             return {
                 'PAYMENT_ROW': '%(payment_id)d;%(out_payment_id)d;%(account)s;%(sum).2f;%(ex_date)s' % {
                     'payment_id': p.pay_id,

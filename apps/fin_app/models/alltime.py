@@ -10,14 +10,14 @@ from djing2.lib import safe_int
 from .base_payment_model import BasePaymentModel, BasePaymentLogModel
 
 
-class PayAllTimeGateway(BasePaymentModel):
+class AllTimePayGateway(BasePaymentModel):
     pay_system_title = "24 All Time"
 
     secret = EncryptedCharField(verbose_name=_("Secret"), max_length=64)
     service_id = models.CharField(_("Service id"), max_length=64)
 
     class Meta:
-        db_table = "pay_all_time_gateways"
+        db_table = "all_time_pay_gateways"
         verbose_name = _("All time gateway")
 
 
@@ -48,9 +48,9 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
         date_fmt = '%Y-%m'
 
     query.extend((
-        'sum("sum") AS alsum,',
-        'count("sum") as alcnt',
-        "FROM all_time_pay_log",
+        'sum("amount") AS alsum,',
+        'count("amount") as alcnt',
+        "FROM all_time_payment_log",
         "where date_add >= %s::date",
     ))
 
@@ -83,15 +83,25 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
         }
 
 
-class AllTimePayLog(BasePaymentLogModel):
+class AllTimePaymentLog(BasePaymentLogModel):
     pay_id = models.CharField(max_length=36, unique=True, primary_key=True)
 
-    trade_point = models.CharField(_("Trade point"), max_length=20, default=None, null=True, blank=True)
+    trade_point = models.CharField(
+        _("Trade point"),
+        max_length=20,
+        default=None,
+        null=True,
+        blank=True
+    )
     receipt_num = models.BigIntegerField(_("Receipt number"), default=0)
-    pay_gw = models.ForeignKey(PayAllTimeGateway, verbose_name=_("Pay gateway"), on_delete=models.CASCADE)
+    pay_gw = models.ForeignKey(
+        AllTimePayGateway,
+        verbose_name=_("Pay gateway"),
+        on_delete=models.CASCADE
+    )
 
     def __str__(self):
         return self.pay_id
 
     class Meta:
-        db_table = "all_time_pay_log"
+        db_table = "all_time_payment_log"

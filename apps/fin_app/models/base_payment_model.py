@@ -16,8 +16,9 @@ class BasePaymentModel(BaseAbstractModel):
         return self.title
 
     class Meta:
+        db_table = "base_payment_gateway"
         verbose_name = _("Base gateway")
-        abstract = True
+        #  abstract = True
 
 
 class BasePaymentLogModel(BaseAbstractModel):
@@ -35,5 +36,6 @@ class BasePaymentLogModel(BaseAbstractModel):
     )
 
     class Meta:
+        db_table = 'base_payment_log'
         verbose_name = _("Base payment log")
-        abstract = True
+        #  abstract = True

@@ -16,7 +16,7 @@ from rest_framework_xml.renderers import XMLRenderer
 from djing2.lib import safe_int, safe_float
 from djing2.viewsets import DjingModelViewSet
 from fin_app.serializers import alltime as alltime_serializers
-from fin_app.models.alltime import AllTimePayLog, PayAllTimeGateway, report_by_pays
+from fin_app.models.alltime import AllTimePaymentLog, AllTimePayGateway, report_by_pays
 
 try:
     from customers.models import Customer
@@ -57,7 +57,7 @@ TRANSACTION_STATUS_PAYMENT_OK = 111
 
 
 class AllTimeGatewayModelViewSet(DjingModelViewSet):
-    queryset = PayAllTimeGateway.objects.annotate(pay_count=Count("alltimepaylog"))
+    queryset = AllTimePayGateway.objects.annotate(pay_count=Count("alltimepaymentlog"))
     serializer_class = alltime_serializers.AllTimeGatewayModelSerializer
 
     @action(methods=['get'], detail=False)
@@ -81,7 +81,7 @@ class AllTimeGatewayModelViewSet(DjingModelViewSet):
 
 
 class AllTimePayLogModelViewSet(DjingModelViewSet):
-    queryset = AllTimePayLog.objects.all()
+    queryset = AllTimePaymentLog.objects.all()
     serializer_class = alltime_serializers.AllTimePayLogModelSerializer
 
 
@@ -92,7 +92,7 @@ class AllTimeSpecifiedXMLRenderer(XMLRenderer):
 class AllTimePay(GenericAPIView):
     http_method_names = ["get"]
     renderer_classes = [AllTimeSpecifiedXMLRenderer]
-    queryset = PayAllTimeGateway.objects.all()
+    queryset = AllTimePayGateway.objects.all()
     serializer_class = alltime_serializers.PayAllTimeGatewayModelSerializer
     lookup_field = "slug"
     lookup_url_kwarg = "pay_slug"
@@ -163,7 +163,7 @@ class AllTimePay(GenericAPIView):
             return self._bad_ret(
                 AllTimeStatusCodeEnum.CUSTOMER_NOT_FOUND, "Account does not exist"
             )
-        except (PayAllTimeGateway.DoesNotExist, Http404):
+        except (AllTimePayGateway.DoesNotExist, Http404):
             return self._bad_ret(
                 AllTimeStatusCodeEnum.BAD_REQUEST, "Pay gateway does not exist"
             )
@@ -175,7 +175,7 @@ class AllTimePay(GenericAPIView):
             return self._bad_ret(
                 AllTimeStatusCodeEnum.SERVICE_UNAVIALABLE
             )
-        except AllTimePayLog.DoesNotExist:
+        except AllTimePaymentLog.DoesNotExist:
             return self._bad_ret(
                 AllTimeStatusCodeEnum.TRANSACTION_NOT_FOUND
             )
@@ -223,7 +223,7 @@ class AllTimePay(GenericAPIView):
             )
             customer.save(update_fields=("balance",))
 
-            AllTimePayLog.objects.create(
+            AllTimePaymentLog.objects.create(
                 customer=customer,
                 pay_id=pay_id,
                 amount=pay_amount,
@@ -244,7 +244,7 @@ class AllTimePay(GenericAPIView):
 
     def _check_pay(self, data: dict) -> Response:
         pay_id = data.get("PAY_ID")
-        pay = AllTimePayLog.objects.get(pay_id=pay_id)
+        pay = AllTimePaymentLog.objects.get(pay_id=pay_id)
         return Response(
             {
                 "status_code": AllTimeStatusCodeEnum.TRANSACTION_STATUS_DETERMINED.value,
