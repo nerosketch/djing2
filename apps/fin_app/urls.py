@@ -2,11 +2,15 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from fin_app.views import alltime
 from fin_app.views import rncb
+from fin_app.views import base
 
 app_name = "fin_app"
 
 
 router = DefaultRouter()
+router.register("base/log", base.BasePaymentLogModelViewSet)
+router.register("base", base.BasePaymentGatewayModelViewSet)
+
 router.register("alltime/log", alltime.AllTimePayLogModelViewSet)
 router.register("alltime", alltime.AllTimeGatewayModelViewSet)
 
