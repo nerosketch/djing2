@@ -20,10 +20,10 @@ def _copy_logs(apps, _):
         LEFT JOIN base_payment_gateway bpg ON (bpg.title = pog.title AND bpg.slug = pog.slug)
         ORDER BY apl.date_add
       LOOP
-        INSERT INTO base_payment_log(date_add, amount, customer_id)
-          VALUES (log.date_add, log.sum, log.customer_id) RETURNING id INTO new_base_log;
-        INSERT INTO all_time_payment_log(basepaymentlogmodel_ptr_id, pay_id, trade_point, receipt_num, pay_gw_id)
-          VALUES(new_base_log.id, log.pay_id, log.trade_point, log.receipt_num, log.base_gw_id);
+        INSERT INTO base_payment_log(date_add, amount, customer_id, pay_gw_id)
+          VALUES (log.date_add, log.sum, log.customer_id, log.base_gw_id) RETURNING id INTO new_base_log;
+        INSERT INTO all_time_payment_log(basepaymentlogmodel_ptr_id, pay_id, trade_point, receipt_num)
+          VALUES(new_base_log.id, log.pay_id, log.trade_point, log.receipt_num);
       END LOOP;
     END;
     $$;
@@ -44,10 +44,10 @@ def _copy_logs(apps, _):
         LEFT JOIN base_payment_gateway bpg ON (bpg.title = prg.title AND bpg.slug = prg.slug)
         ORDER BY rpl.date_add
       LOOP
-        INSERT INTO base_payment_log(date_add, amount, customer_id)
-          VALUES (log.date_add, log.amount, log.customer_id) RETURNING id INTO new_base_log;
-        INSERT INTO rncb_payment_log(basepaymentlogmodel_ptr_id, pay_id, acct_time, pay_gw_id)
-          VALUES(new_base_log.id, log.pay_id, log.acct_time, log.base_gw_id);
+        INSERT INTO base_payment_log(date_add, amount, customer_id, pay_gw_id)
+          VALUES (log.date_add, log.amount, log.customer_id, log.base_gw_id) RETURNING id INTO new_base_log;
+        INSERT INTO rncb_payment_log(basepaymentlogmodel_ptr_id, pay_id, acct_time)
+          VALUES(new_base_log.id, log.pay_id, log.acct_time);
       END LOOP;
     END;
     $$;
@@ -92,20 +92,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='BasePaymentLogModel',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date_add', models.DateTimeField(auto_now_add=True)),
-                ('amount', models.DecimalField(decimal_places=6, default=0.0, max_digits=19, verbose_name='Cost')),
-                ('customer', models.ForeignKey(blank=True, default=None, null=True, on_delete=SET_DEFAULT, to='customers.customer')),
-            ],
-            options={
-                'verbose_name': 'Base payment log',
-                'db_table': 'base_payment_log',
-            },
-            bases=(BaseAbstractModelMixin, models.Model),
-        ),
-        migrations.CreateModel(
             name='BasePaymentModel',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
@@ -117,6 +103,21 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Base gateway',
                 'db_table': 'base_payment_gateway',
                 'unique_together': {('slug', 'title')},
+            },
+            bases=(BaseAbstractModelMixin, models.Model),
+        ),
+        migrations.CreateModel(
+            name='BasePaymentLogModel',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('date_add', models.DateTimeField(auto_now_add=True)),
+                ('amount', models.DecimalField(decimal_places=6, default=0.0, max_digits=19, verbose_name='Cost')),
+                ('customer', models.ForeignKey(blank=True, default=None, null=True, on_delete=SET_DEFAULT, to='customers.customer')),
+                ('pay_gw', models.ForeignKey(on_delete=CASCADE, to='fin_app.basepaymentmodel', verbose_name='Pay gateway')),
+            ],
+            options={
+                'verbose_name': 'Base payment log',
+                'db_table': 'base_payment_log',
             },
             bases=(BaseAbstractModelMixin, models.Model),
         ),
@@ -152,7 +153,6 @@ class Migration(migrations.Migration):
                 ('pay_id', models.CharField(max_length=36, primary_key=True, serialize=False, unique=True)),
                 ('trade_point', models.CharField(blank=True, default=None, max_length=20, null=True, verbose_name='Trade point')),
                 ('receipt_num', models.BigIntegerField(default=0, verbose_name='Receipt number')),
-                ('pay_gw', models.ForeignKey(on_delete=CASCADE, to='fin_app.alltimepaygateway', verbose_name='Pay gateway')),
             ],
             options={
                 'db_table': 'all_time_payment_log',
@@ -170,11 +170,6 @@ class Migration(migrations.Migration):
                 'db_table': 'rncb_payment_log',
             },
             bases=('fin_app.basepaymentlogmodel',),
-        ),
-        migrations.AddField(
-            model_name='rncbpaymentlog',
-            name='pay_gw',
-            field=models.ForeignKey(on_delete=CASCADE, to='fin_app.rncbpaymentgateway', verbose_name='Pay gateway'),
         ),
         migrations.RunPython(_copy_pay_gateways),
         migrations.RunPython(_copy_logs),

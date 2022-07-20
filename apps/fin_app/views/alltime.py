@@ -3,7 +3,6 @@ from hashlib import md5
 from ._general import cached_property
 from django.db import transaction, IntegrityError
 from django.db.utils import DatabaseError
-from django.db.models import Count
 from django.http import Http404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -11,12 +10,11 @@ from djing2.lib import IntEnumEx
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.decorators import action
 from rest_framework_xml.renderers import XMLRenderer
 from djing2.lib import safe_int, safe_float
 from djing2.viewsets import DjingModelViewSet
 from fin_app.serializers import alltime as alltime_serializers
-from fin_app.models.alltime import AllTimePaymentLog, AllTimePayGateway, report_by_pays
+from fin_app.models.alltime import AllTimePaymentLog, AllTimePayGateway
 
 try:
     from customers.models import Customer
@@ -57,21 +55,8 @@ TRANSACTION_STATUS_PAYMENT_OK = 111
 
 
 class AllTimeGatewayModelViewSet(DjingModelViewSet):
-    queryset = AllTimePayGateway.objects.annotate(pay_count=Count("alltimepaymentlog"))
+    queryset = AllTimePayGateway.objects.all()
     serializer_class = alltime_serializers.AllTimeGatewayModelSerializer
-
-    @action(methods=['get'], detail=False)
-    def pays_report(self, request):
-        ser = alltime_serializers.PaysReportParamsSerializer(data=request.query_params)
-        ser.is_valid(raise_exception=True)
-        dat = ser.data
-        r = report_by_pays(
-            from_time=dat.get('from_time'),
-            to_time=dat.get('to_time'),
-            pay_gw_id=dat.get('pay_gw'),
-            group_by=dat.get('group_by', 0),
-        )
-        return Response(tuple(r))
 
     def perform_create(self, serializer, *args, **kwargs):
         return super().perform_create(

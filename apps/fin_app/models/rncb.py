@@ -15,11 +15,6 @@ class RNCBPaymentGateway(BasePaymentModel):
 class RNCBPaymentLog(BasePaymentLogModel):
     pay_id = models.IntegerField(unique=True)
     acct_time = models.DateTimeField(_('Act time from payment system'))
-    pay_gw = models.ForeignKey(
-        RNCBPaymentGateway,
-        verbose_name=_("Pay gateway"),
-        on_delete=models.CASCADE
-    )
 
     def __str__(self):
         return str(self.pay_id)

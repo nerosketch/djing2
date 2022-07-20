@@ -4,18 +4,9 @@ from fin_app.models.alltime import AllTimePayGateway, AllTimePaymentLog
 
 
 class AllTimeGatewayModelSerializer(BaseCustomModelSerializer):
-    pay_count = serializers.IntegerField(read_only=True)
-
     class Meta:
         model = AllTimePayGateway
         fields = "__all__"
-
-
-class PaysReportParamsSerializer(serializers.Serializer):
-    from_time = serializers.DateTimeField()
-    to_time = serializers.DateTimeField()
-    pay_gw = serializers.IntegerField(default=None, allow_null=True)
-    group_by = serializers.IntegerField(default=0)
 
 
 class AllTimePayLogModelSerializer(BaseCustomModelSerializer):
