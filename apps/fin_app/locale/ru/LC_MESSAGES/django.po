@@ -56,6 +56,9 @@ msgstr "Платёжный шлюз"
 msgid "Act time from payment system"
 msgstr "Время пдатежа из платёжной системы"
 
+msgid "Unknown"
+msgstr "Не известно"
+
 #~ msgid "Fin report"
 #~ msgstr "Фин. отчёт"
 

@@ -2,7 +2,18 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedCharField
 
-from .base_payment_model import BasePaymentModel, BasePaymentLogModel
+from .base_payment_model import (
+    BasePaymentModel,
+    BasePaymentLogModel,
+    add_payment_type
+)
+
+ALLTIME_DB_TYPE_ID = 3
+
+
+class AllTimePayGatewayModelManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(payment_type=ALLTIME_DB_TYPE_ID)
 
 
 class AllTimePayGateway(BasePaymentModel):
@@ -10,6 +21,8 @@ class AllTimePayGateway(BasePaymentModel):
 
     secret = EncryptedCharField(verbose_name=_("Secret"), max_length=64)
     service_id = models.CharField(_("Service id"), max_length=64)
+
+    objects = AllTimePayGatewayModelManager()
 
     class Meta:
         db_table = "all_time_pay_gateways"
@@ -33,3 +46,6 @@ class AllTimePaymentLog(BasePaymentLogModel):
 
     class Meta:
         db_table = "all_time_payment_log"
+
+
+add_payment_type(ALLTIME_DB_TYPE_ID, AllTimePayGateway)

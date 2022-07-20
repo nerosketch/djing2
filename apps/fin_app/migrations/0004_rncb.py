@@ -95,6 +95,7 @@ class Migration(migrations.Migration):
             name='BasePaymentModel',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('payment_type', models.PositiveSmallIntegerField(choices=[], default=0)),
                 ('title', models.CharField(max_length=64, verbose_name='Title')),
                 ('slug', models.SlugField(max_length=32, verbose_name='Slug')),
                 ('sites', models.ManyToManyField(blank=True, to='sites.Site')),

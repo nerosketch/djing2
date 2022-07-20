@@ -1,10 +1,24 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from .base_payment_model import BasePaymentModel, BasePaymentLogModel
+from .base_payment_model import (
+    BasePaymentModel,
+    BasePaymentLogModel,
+    add_payment_type
+)
+
+
+RNCB_DB_TYPE_ID = 2
+
+
+class RNCBPaymentGatewayModelManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(payment_type=RNCB_DB_TYPE_ID)
 
 
 class RNCBPaymentGateway(BasePaymentModel):
     pay_system_title = "RNCB"
+
+    objects = RNCBPaymentGatewayModelManager()
 
     class Meta:
         #  db_table = "pay_rncb_gateways"
@@ -21,3 +35,6 @@ class RNCBPaymentLog(BasePaymentLogModel):
 
     class Meta:
         db_table = "rncb_payment_log"
+
+
+add_payment_type(RNCB_DB_TYPE_ID, RNCBPaymentGateway)

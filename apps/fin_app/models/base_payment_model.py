@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Tuple, Type
 from django.utils.translation import gettext_lazy as _
 from django.db import models, connection
 from django.contrib.sites.models import Site
@@ -10,9 +10,15 @@ from djing2.models import BaseAbstractModel
 from customers.models import Customer
 
 
+_payment_types = [
+    (0, _('Unknown'))
+]
+
+
 class BasePaymentModel(BaseAbstractModel):
     pay_system_title = "Base abstract implementation"
 
+    payment_type = models.PositiveSmallIntegerField(default=0, choices=_payment_types)
     title = models.CharField(_("Title"), max_length=64)
     slug = models.SlugField(_("Slug"), max_length=32, allow_unicode=False)
     sites = models.ManyToManyField(Site, blank=True)
@@ -112,3 +118,13 @@ class BasePaymentLogModel(BaseAbstractModel):
         db_table = 'base_payment_log'
         verbose_name = _("Base payment log")
         #  abstract = True
+
+
+def add_payment_type(code: int, gateway_model: Type[BasePaymentModel]):
+    global _payment_types
+    _payment_types.append((code, gateway_model.pay_system_title))
+
+
+def get_payment_types() -> List[Tuple[int, str]]:
+    return _payment_types
+

@@ -12,6 +12,7 @@ class PaysReportParamsSerializer(serializers.Serializer):
 
 class BasePaymentModelSerializer(BaseCustomModelSerializer):
     pay_count = serializers.IntegerField(read_only=True)
+    payment_type_text = serializers.CharField(source='get_payment_type_display', read_only=True)
 
     class Meta:
         model = BasePaymentModel
