@@ -69,7 +69,7 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
     if pay_gw_id is not None:
         pay_gw_id = safe_int(pay_gw_id)
         if pay_gw_id > 0:
-            query.append("AND apl.pay_gw_id = %s::integer")
+            query.append("AND pay_gw_id = %s::integer")
             params.append(pay_gw_id)
 
     if to_time is not None:
