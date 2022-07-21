@@ -16,8 +16,10 @@ class BasePaymentModelSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = BasePaymentModel
+        fields = "__all__"
 
 
 class BasePaymentLogModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = BasePaymentLogModel
+        fields = "__all__"

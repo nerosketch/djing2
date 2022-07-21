@@ -33,11 +33,13 @@ class RNCBProtocolErrorException(serializers.ValidationError):
 class PayRNCBGatewayModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = RNCBPaymentGateway
+        fields = "__all__"
 
 
 class RNCBPayLogModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = RNCBPaymentLog
+        fields = "__all__"
 
 
 class RNCBPaymentCheckSerializer(serializers.Serializer):
