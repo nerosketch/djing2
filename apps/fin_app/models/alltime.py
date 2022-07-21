@@ -24,6 +24,10 @@ class AllTimePayGateway(BasePaymentModel):
 
     objects = AllTimePayGatewayModelManager()
 
+    def save(self, *args, **kwargs):
+        self.payment_type = ALLTIME_DB_TYPE_ID
+        return super().save(*args, **kwargs)
+
     class Meta:
         db_table = "all_time_pay_gateways"
         verbose_name = _("All time gateway")

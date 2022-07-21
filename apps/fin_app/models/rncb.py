@@ -20,6 +20,10 @@ class RNCBPaymentGateway(BasePaymentModel):
 
     objects = RNCBPaymentGatewayModelManager()
 
+    def save(self, *args, **kwargs):
+        self.payment_type = RNCB_DB_TYPE_ID
+        return super().save(*args, **kwargs)
+
     class Meta:
         #  db_table = "pay_rncb_gateways"
         verbose_name = _("RNCB gateway")
