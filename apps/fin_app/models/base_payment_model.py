@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import Optional, List, Tuple, Type
 from django.utils.translation import gettext_lazy as _
-from django.db import models, connection
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.contrib.sites.models import Site
 from rest_framework.exceptions import ParseError
-from rest_framework.settings import api_settings
+from django.db import models
 from djing2.lib import safe_int
 from djing2.models import BaseAbstractModel
 from customers.models import Customer
@@ -44,75 +44,58 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
     flds = {
         1: {
             # group by day
-            'query': "date_trunc('day', date_add),",
-            'format_fn': lambda val: val.strftime('%Y-%m-%d')
+            'field': "date_trunk",
+            'annotate': {'date_trunk': TruncDay('date_add', output_field=models.DateField())}
         },
         2: {
             # group by week
-            'query': "date_trunc('week', date_add),",
-            'format_fn': lambda val: val.strftime('%Y-%m')
+            'field': "date_trunk",
+            'annotate': {'date_trunk': TruncWeek('date_add', output_field=models.DateField())}
         },
         3: {
             # group by mon
-            'query': "date_trunc('month', date_add),",
-            'format_fn': lambda val: val.strftime('%Y-%m')
+            'field': "date_trunk",
+            'annotate': {'date_trunk': TruncMonth('date_add', output_field=models.DateField())}
         },
         4: {
             # group by customers
-            'query': "customer_id,",
+            'field': "customer_id",
         },
     }
-
-    params = [from_time]
-    query = [
-        "SELECT"
-    ]
 
     query_opt = flds.get(group_by)
     if query_opt is None:
         raise ParseError('Bad value in "group_by" param')
 
-    query.append(query_opt['query'])
+    field_name = query_opt['field']
+    annotation = query_opt.get('annotate', {})
 
-    query.extend((
-        "SUM(amount) AS alsum,",
-        "COUNT(amount) AS alcnt",
-        "FROM base_payment_log",
-        "WHERE date_add >= %s::date",
-    ))
+    qs = BasePaymentLogModel.objects.annotate(**annotation).values(
+        field_name
+    ).annotate(
+        summ=models.Sum('amount'),
+        pay_count=models.Count('amount'),
+    ).filter(
+        date_add__gte=from_time
+    )
 
     if pay_gw_id is not None:
         pay_gw_id = safe_int(pay_gw_id)
         if pay_gw_id > 0:
-            query.append("AND pay_gw_id = %s::integer")
-            params.append(pay_gw_id)
+            qs = qs.filter(pay_gw_id=pay_gw_id)
 
     if to_time is not None:
-        query.append("AND date_add <= %s::date")
-        params.append(to_time)
+        qs = qs.filter(date_add__lte=to_time)
 
-    query.extend((
-        "GROUP BY 1",
-        "ORDER BY 1",
-    ))
-    cur = connection.cursor()
-    cur.execute(' '.join(query), params)
-
-    def _default_format(val):
-        return val
-
-    while True:
-        r = cur.fetchone()
-        if r is None:
-            break
-        report_data, summ, pay_count = r
+    #  yield qs.count()
+    for item in qs.iterator():
         yield {
+            'summ': item['summ'],
+            'pay_count': item['pay_count'],
             'data': {
-                'val': query_opt.get('format_fn', _default_format)(report_data),
-                'name': 'date'
-            },
-            'summ': round(summ, 4),
-            'pay_count': pay_count
+                'val': item[field_name],
+                'name': field_name
+            }
         }
 
 
