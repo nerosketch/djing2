@@ -36,8 +36,7 @@ class BasePaymentGatewayModelViewSet(DjingModelViewSet):
             group_by=dat.get('group_by', 0),
             limit=dat.get('limit')
         )
-        return Response(tuple(r))
-
+        return Response(list(r))
 
 
 class BasePaymentLogModelViewSet(DjingModelViewSet):

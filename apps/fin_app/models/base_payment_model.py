@@ -96,13 +96,8 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
         yield {
             'summ': item['summ'],
             'pay_count': item['pay_count'],
-            'data': {
-                'val': {
-                    field_name: item[field_name],
-                    **{f:item[f] for f in related_fields}
-                },
-                'name': field_name
-            }
+            **{field_name: item[field_name]},
+            **{f:item[f] for f in related_fields}
         }
 
 

@@ -334,6 +334,7 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         # 'djing2.lib.renderer.ExtendedRenderer',
         'rest_framework.renderers.JSONRenderer',
+        'rest_framework_csv.renderers.CSVRenderer',
     ]
 }
 
