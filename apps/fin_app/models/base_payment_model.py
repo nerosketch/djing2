@@ -60,8 +60,8 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
         },
         4: {
             # group by customers
-            'field': "customer_id",
-            'related_fields': ['customer__fio']
+            'field': "customer__fio",
+            'related_fields': ['customer__username', 'customer__fio']
         },
     }
 
