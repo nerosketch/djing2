@@ -60,6 +60,7 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
         4: {
             # group by customers
             'field': "customer_id",
+            'related_fields': ['customer__fio']
         },
     }
 
@@ -70,13 +71,16 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
     field_name = query_opt['field']
     annotation = query_opt.get('annotate', {})
 
-    qs = BasePaymentLogModel.objects.annotate(**annotation).values(
-        field_name
+    qs = BasePaymentLogModel.objects.filter(
+        date_add__gte=from_time
+    )
+    related_fields = query_opt.get('related_fields', [])
+
+    qs = qs.annotate(**annotation).values(
+        *([field_name] + related_fields)
     ).annotate(
         summ=models.Sum('amount'),
         pay_count=models.Count('amount'),
-    ).filter(
-        date_add__gte=from_time
     )
 
     if pay_gw_id is not None:
@@ -87,13 +91,15 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
     if to_time is not None:
         qs = qs.filter(date_add__lte=to_time)
 
-    #  yield qs.count()
     for item in qs.iterator():
         yield {
             'summ': item['summ'],
             'pay_count': item['pay_count'],
             'data': {
-                'val': item[field_name],
+                'val': {
+                    field_name: item[field_name],
+                    **{f:item[f] for f in related_fields}
+                },
                 'name': field_name
             }
         }
