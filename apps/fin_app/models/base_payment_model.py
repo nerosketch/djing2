@@ -35,29 +35,44 @@ class BasePaymentModel(BaseAbstractModel):
 
 def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = None, pay_gw_id=None, group_by=0):
     group_by = safe_int(group_by)
-    if group_by not in [1, 2, 3]:
+    if not group_by:
         raise ParseError('Bad value in "group_by" param')
 
     if not from_time:
         raise ParseError('from_time is required')
 
+    flds = {
+        1: {
+            # group by day
+            'query': "date_trunc('day', date_add),",
+            'format_fn': lambda val: val.strftime('%Y-%m-%d')
+        },
+        2: {
+            # group by week
+            'query': "date_trunc('week', date_add),",
+            'format_fn': lambda val: val.strftime('%Y-%m')
+        },
+        3: {
+            # group by mon
+            'query': "date_trunc('month', date_add),",
+            'format_fn': lambda val: val.strftime('%Y-%m')
+        },
+        4: {
+            # group by customers
+            'query': "customer_id,",
+        },
+    }
+
     params = [from_time]
     query = [
         "SELECT"
     ]
-    date_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
-    if group_by == 1:
-        # group by day
-        query.append("date_trunc('day', date_add),")
-        date_fmt = getattr(api_settings, "DATE_FORMAT", "%Y-%m-%d")
-    elif group_by == 3:
-        # group by mon
-        query.append("date_trunc('month', date_add),")
-        date_fmt = '%Y-%m'
-    elif group_by == 2:
-        # group by week
-        query.append("date_trunc('week', date_add),")
-        date_fmt = '%Y-%m'
+
+    query_opt = flds.get(group_by)
+    if query_opt is None:
+        raise ParseError('Bad value in "group_by" param')
+
+    query.append(query_opt['query'])
 
     query.extend((
         "SUM(amount) AS alsum,",
@@ -83,14 +98,20 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
     cur = connection.cursor()
     cur.execute(' '.join(query), params)
 
+    def _default_format(val):
+        return val
+
     while True:
         r = cur.fetchone()
         if r is None:
             break
-        pay_time, summ, pay_count = r
+        report_data, summ, pay_count = r
         yield {
+            'data': {
+                'val': query_opt.get('format_fn', _default_format)(report_data),
+                'name': 'date'
+            },
             'summ': round(summ, 4),
-            'pay_date': pay_time.strftime(date_fmt),
             'pay_count': pay_count
         }
 
