@@ -33,7 +33,8 @@ class BasePaymentModel(BaseAbstractModel):
         #  abstract = True
 
 
-def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = None, pay_gw_id=None, group_by=0):
+def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = None,
+        pay_gw_id=None, group_by=0, limit=50):
     group_by = safe_int(group_by)
     if not group_by:
         raise ParseError('Bad value in "group_by" param')
@@ -91,7 +92,7 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
     if to_time is not None:
         qs = qs.filter(date_add__lte=to_time)
 
-    for item in qs.iterator():
+    for item in qs[:limit].iterator():
         yield {
             'summ': item['summ'],
             'pay_count': item['pay_count'],

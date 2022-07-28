@@ -34,6 +34,7 @@ class BasePaymentGatewayModelViewSet(DjingModelViewSet):
             to_time=dat.get('to_time'),
             pay_gw_id=dat.get('pay_gw'),
             group_by=dat.get('group_by', 0),
+            limit=dat.get('limit')
         )
         return Response(tuple(r))
 

@@ -8,6 +8,7 @@ class PaysReportParamsSerializer(serializers.Serializer):
     to_time = serializers.DateTimeField()
     pay_gw = serializers.IntegerField(default=None, allow_null=True)
     group_by = serializers.IntegerField(default=0)
+    limit = serializers.IntegerField(default=50)
 
 
 class BasePaymentModelSerializer(BaseCustomModelSerializer):
