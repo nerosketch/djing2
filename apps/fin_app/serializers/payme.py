@@ -15,6 +15,9 @@ def _base_request_wrapper(cls):
     return _PaymeBaseRequestSerializer
 
 
+class PaymeCheckPerformTransactionAccountRequestSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=64, validators=[integer_validator])
+
 @_base_request_wrapper
 class PaymeCheckPerformTransactionRequestSerializer(serializers.Serializer):
     amount = serializers.DecimalField(
@@ -23,8 +26,11 @@ class PaymeCheckPerformTransactionRequestSerializer(serializers.Serializer):
         max_digits=12,
         decimal_places=4
     )
+    account = PaymeCheckPerformTransactionAccountRequestSerializer()
 
 
 @_base_request_wrapper
 class PaymeCreateTransactionRequestSerializer(serializers.Serializer):
     pass
+
+# TODO: ...

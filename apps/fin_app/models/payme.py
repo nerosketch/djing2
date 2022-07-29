@@ -21,6 +21,8 @@ class PaymeErrorsEnum(IntEnumEx):
     PERMISSION_DENIED = -32504
     SERVER_ERROR = -32400
 
+    CUSTOMER_DOES_NOT_EXISTS = -31050
+
 
 class PaymeBaseRPCException(APIException):
     code: PaymeErrorsEnum = PaymeErrorsEnum.SERVER_ERROR
