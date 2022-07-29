@@ -7,7 +7,15 @@ from rest_framework.exceptions import ParseError
 from django.db import models
 from djing2.lib import safe_int
 from djing2.models import BaseAbstractModel
-from customers.models import Customer
+try:
+    from customers.models import Customer
+except ImportError as imperr:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        '"fin_app" application depends on "customers" '
+        'application. Check if it installed'
+    ) from imperr
 
 
 _payment_types = [
@@ -134,3 +142,9 @@ def add_payment_type(code: int, gateway_model: Type[BasePaymentModel]):
 def get_payment_types() -> List[Tuple[int, str]]:
     return _payment_types
 
+
+def fetch_customer_profile(request, username: str) -> Customer:
+    customer = Customer.objects.filter(username=username, is_active=True)
+    if hasattr(request, 'site'):
+        customer = customer.filter(sites__in=[request.site])
+    return customer.get()

@@ -14,6 +14,7 @@ from rest_framework_xml.renderers import XMLRenderer
 from djing2.lib import safe_int, safe_float
 from djing2.viewsets import DjingModelViewSet
 from fin_app.serializers import alltime as alltime_serializers
+from fin_app.models.base_payment_model import fetch_customer_profile
 from fin_app.models.alltime import AllTimePaymentLog, AllTimePayGateway
 
 try:
@@ -171,7 +172,7 @@ class AllTimePay(GenericAPIView):
 
     def _fetch_user_info(self, data: dict) -> Response:
         pay_account = data.get("PAY_ACCOUNT")
-        customer = Customer.objects.get(username=pay_account, sites__in=[self.request.site], is_active=True)
+        customer = fetch_customer_profile(request, username=pay_account)
         return Response(
             {
                 "balance": round(customer.balance, 2),
@@ -191,10 +192,7 @@ class AllTimePay(GenericAPIView):
         pay_account = data.get("PAY_ACCOUNT")
         pay_id = data.get("PAY_ID")
         pay_amount = safe_float(data.get("PAY_AMOUNT"))
-        customer = Customer.objects.filter(username=pay_account, is_active=True)
-        if hasattr(self.request, 'site'):
-            customer = customer.filter(sites__in=[self.request.site])
-        customer = customer.get()
+        customer = fetch_customer_profile(request, username=pay_account)
         if pay_id is None:
             return self._bad_ret(
                 AllTimeStatusCodeEnum.BAD_REQUEST, "Bad PAY_ID"

@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from djing2.viewsets import DjingModelViewSet
+from fin_app.models.base_payment_model import fetch_customer_profile
 from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
 from fin_app.serializers import rncb as serializers_rncb
 try:
@@ -157,11 +158,7 @@ class RNCBPaymentViewSet(GenericAPIView):
     )
     def _check(self, data: dict, *args, **kwargs):
         account = data['Account']
-
-        customer = Customer.objects.filter(username=account)
-        if hasattr(self.request, 'site'):
-            customer = customer.filter(sites__in=[self.request.site])
-        customer = customer.get()
+        customer = fetch_customer_profile(request, username=account)
 
         return {
             # 'fio': customer.get_full_name(),
@@ -184,10 +181,7 @@ class RNCBPaymentViewSet(GenericAPIView):
             exec_date = datetime.strptime(exec_date, serializers_rncb.date_format)
         #  inn = data['inn']
 
-        customer = Customer.objects.filter(username=account, is_active=True)
-        if hasattr(self.request, 'site'):
-            customer = customer.filter(sites__in=[self.request.site])
-        customer = customer.get()
+        customer = fetch_customer_profile(request, username=account)
 
         pay = RNCBPaymentLog.objects.filter(
             pay_id=payment_id
