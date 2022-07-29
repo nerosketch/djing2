@@ -158,7 +158,7 @@ class RNCBPaymentViewSet(GenericAPIView):
     )
     def _check(self, data: dict, *args, **kwargs):
         account = data['Account']
-        customer = fetch_customer_profile(request, username=account)
+        customer = fetch_customer_profile(self.request, username=account)
 
         return {
             # 'fio': customer.get_full_name(),
@@ -181,7 +181,7 @@ class RNCBPaymentViewSet(GenericAPIView):
             exec_date = datetime.strptime(exec_date, serializers_rncb.date_format)
         #  inn = data['inn']
 
-        customer = fetch_customer_profile(request, username=account)
+        customer = fetch_customer_profile(self.request, username=account)
 
         pay = RNCBPaymentLog.objects.filter(
             pay_id=payment_id

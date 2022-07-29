@@ -172,7 +172,7 @@ class AllTimePay(GenericAPIView):
 
     def _fetch_user_info(self, data: dict) -> Response:
         pay_account = data.get("PAY_ACCOUNT")
-        customer = fetch_customer_profile(request, username=pay_account)
+        customer = fetch_customer_profile(self.request, username=pay_account)
         return Response(
             {
                 "balance": round(customer.balance, 2),
@@ -192,7 +192,7 @@ class AllTimePay(GenericAPIView):
         pay_account = data.get("PAY_ACCOUNT")
         pay_id = data.get("PAY_ID")
         pay_amount = safe_float(data.get("PAY_AMOUNT"))
-        customer = fetch_customer_profile(request, username=pay_account)
+        customer = fetch_customer_profile(self.request, username=pay_account)
         if pay_id is None:
             return self._bad_ret(
                 AllTimeStatusCodeEnum.BAD_REQUEST, "Bad PAY_ID"
