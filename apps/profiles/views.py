@@ -196,7 +196,7 @@ class SitesObtainAuthToken(ObtainAuthToken):
 
 
 class ProfileAuthLogViewSet(ReadOnlyModelViewSet):
-    queryset = ProfileAuthLog.objects.all()
+    queryset = ProfileAuthLog.objects.order_by('-id')
     serializer_class = ProfileAuthLogSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
     filter_backends = [DjangoFilterBackend]
