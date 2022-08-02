@@ -47,7 +47,9 @@ class PaymePaymentEndpoint(GenericAPIView):
             err_data = err.get_data()
             if err_data is not None and isinstance(err_data, dict):
                 err_dict.update({
-                    'data': err_data
+                    'data': {
+                        'account': err_data
+                    }
                 })
             return Response({
                 'error': err_dict,
@@ -84,8 +86,12 @@ class PaymePaymentEndpoint(GenericAPIView):
     )
     def check_perform_transaction(self, data) -> dict:
         # TODO: ...
-        uname = data['account']['username']
+        params = data['params']
+        uname = params['account']['username']
         customer = fetch_customer_profile(self.request, username=uname)
+        return {
+            "result": {"allow": True}
+        }
 
 
     @_payment_method_wrapper(
