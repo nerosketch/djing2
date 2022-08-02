@@ -1,4 +1,5 @@
 from typing import Dict
+from datetime import datetime
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
@@ -8,6 +9,7 @@ from .base_payment_model import (
     BasePaymentLogModel,
     add_payment_type
 )
+from customers.models import Customer
 
 
 PAYME_DB_TYPE_ID = 4
@@ -75,18 +77,52 @@ class PaymePaymentGatewayModel(BasePaymentModel):
 
 class TransactionStatesEnum(IntEnumEx):
     START = 1
-    CANCELLED = 2
-    PERFORMED = 3
+    CANCELLED = -1
+    PERFORMED = 2
 
 
 class PaymePaymentLogModel(BasePaymentLogModel):
-    transaction_state = models.IntegerField(
-        choices=TransactionStatesEnum.choices,
-        default=TransactionStatesEnum.START
-    )
+    pass
 
     def __str__(self):
         return f'PaymeLog{self.pk}: {self.get_transaction_state_display()}'
 
 
 add_payment_type(PAYME_DB_TYPE_ID, PaymePaymentGatewayModel)
+
+
+class PaymePaymentLogModelManager(models.Manager):
+    def start_transaction(self, external_id: str, customer, external_time: datetime, amount: float):
+        return self.create(
+            transaction_state=TransactionStatesEnum.START,
+            external_id=external_id,
+            customer=customer,
+            external_time=external_time,
+            amount=amount
+        )
+
+
+class PaymeTransactionModel(models.Model):
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.SET_DEFAULT,
+        blank=True, null=True, default=None
+    )
+    transaction_state = models.IntegerField(
+        choices=TransactionStatesEnum.choices,
+        default=TransactionStatesEnum.START
+    )
+    external_id = models.CharField(max_length=25, unique=True)
+    external_time = models.DateTimeField()
+    date_add = models.DateTimeField(auto_now_add=True)
+    amount = models.DecimalField(
+        _("Cost"),
+        default=0.0,
+        max_digits=19,
+        decimal_places=6
+    )
+
+    objects = PaymePaymentLogModelManager()
+
+    def __str__(self):
+        return self.external_id

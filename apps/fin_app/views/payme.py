@@ -7,7 +7,7 @@ from rest_framework import status
 from fin_app.models.base_payment_model import fetch_customer_profile, Customer
 from fin_app.models.payme import (
     PaymeRPCMethodNames, PaymeRpcMethodError,
-    PeymeBaseRPCException, PaymeErrorsEnum
+    PaymeBaseRPCException, PaymeErrorsEnum, PaymeTransactionModel
 )
 from fin_app.serializers import payme as payme_serializers
 
@@ -39,7 +39,7 @@ class PaymePaymentEndpoint(GenericAPIView):
             rpc_method = self.rpc_methods.get(rpc_method_name, self._no_method_found)
             r = rpc_method(self, data)
             return Response(r, status=status.HTTP_200_OK)
-        except PeymeBaseRPCException as err:
+        except PaymeBaseRPCException as err:
             err_dict = {
                 'code': err.get_code().value,
                 'message': err.get_msg()
@@ -95,11 +95,23 @@ class PaymePaymentEndpoint(GenericAPIView):
 
 
     @_payment_method_wrapper(
-        payme_serializers.
+        payme_serializers.PaymeCreateTransactionRequestSerializer
     )
     def create_transaction(self, data) -> dict:
-        # TODO: ...
-        pass
+        params = data['params']
+        uname = params['account']['username']
+        customer = fetch_customer_profile(self.request, username=uname)
+        transaction = PaymeTransactionModel.objects.start_transaction(
+            external_id=params['id'],
+            customer=customer,
+            external_time=params['time'],
+            amount=params['amount']
+        )
+        return {'result': {
+            'create_time': transaction.date_add.timestamp(),
+            'transaction': str(transaction.pk),
+            'state': transaction.transaction_state
+        }}
 
     @_payment_method_wrapper(
         payme_serializers.

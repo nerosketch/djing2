@@ -1,8 +1,11 @@
+from django.utils.translation import gettext_lazy as _
+from django.utils.regex_helper import _lazy_re_compile
+from django.core.validators import integer_validator, RegexValidator
 from rest_framework import serializers
 from rest_framework import status
-from django.core.validators import integer_validator
 from djing2.lib import IntEnumEx
 from djing2.lib.mixins import BaseCustomModelSerializer
+from djing2.serializers import TimestampField
 from fin_app.models.payme import PaymePaymentGatewayModel, PaymeErrorsEnum
 
 
@@ -15,8 +18,9 @@ def _base_request_wrapper(cls):
     return _PaymeBaseRequestSerializer
 
 
-class PaymeCheckPerformTransactionAccountRequestSerializer(serializers.Serializer):
+class TransactionAccountRequestSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=64, validators=[integer_validator])
+
 
 @_base_request_wrapper
 class PaymeCheckPerformTransactionRequestSerializer(serializers.Serializer):
@@ -26,11 +30,24 @@ class PaymeCheckPerformTransactionRequestSerializer(serializers.Serializer):
         max_digits=12,
         decimal_places=4
     )
-    account = PaymeCheckPerformTransactionAccountRequestSerializer()
+    account = TransactionAccountRequestSerializer()
+
+
+payment_id_validator = RegexValidator(
+    _lazy_re_compile(r'^[0-9a-fA-F]{1,25}$'),
+    message=_('Enter a valid ID value.'),
+    code='invalid',
+)
 
 
 @_base_request_wrapper
 class PaymeCreateTransactionRequestSerializer(serializers.Serializer):
-    pass
+    id = serializers.CharField(
+        max_length=25,
+        label="Transaction id",
+        validators=[payment_id_validator]
+    )
+    time = TimestampField("Time")
+    amount = serializers.DecimalField(max_digits=12, decimal_places=4)
+    account = TransactionAccountRequestSerializer()
 
-# TODO: ...
