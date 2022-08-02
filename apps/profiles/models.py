@@ -80,6 +80,7 @@ def birth_day_too_old_validator(val: date) -> None:
     if val <= low_bound.date():
         raise ValidationError(_('Account is too old, birth_day "%s"') % val)
 
+
 class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
     username = models.CharField(_("profile username"), max_length=127, unique=True, validators=(latinValidator,))
     fio = models.CharField(_("fio"), max_length=256)
