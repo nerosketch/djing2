@@ -131,18 +131,24 @@ class PaymePaymentEndpoint(GenericAPIView):
         )
 
     @_payment_method_wrapper(
-        payme_serializers.
+        payme_serializers.PaymeCancelTransactionRequestSerializer
     )
     def cancel_transaction(self, data) -> dict:
-        # TODO: ...
-        pass
+        params = data['params']
+        trans_id = params['id']
+        return pmodels.PaymeTransactionModel.objects.cancel_transaction(
+            transaction_id=trans_id,
+        )
 
     @_payment_method_wrapper(
-        payme_serializers.
+        payme_serializers.PaymeCheckTransactionRequestSerializer
     )
     def check_transaction(self, data) -> dict:
-        # TODO: ...
-        pass
+        params = data['params']
+        trans_id = params['id']
+        return pmodels.PaymeTransactionModel.objects.check_payment(
+            transaction_id=trans_id,
+        )
 
     @_payment_method_wrapper(
         payme_serializers.

@@ -6,7 +6,7 @@ from rest_framework import status
 from djing2.lib import IntEnumEx
 from djing2.lib.mixins import BaseCustomModelSerializer
 from djing2.serializers import TimestampField
-from fin_app.models.payme import PaymePaymentGatewayModel, PaymeErrorsEnum
+from fin_app.models.payme import PaymeCancelReasonEnum
 
 
 def _base_request_wrapper(cls):
@@ -59,4 +59,17 @@ class PaymePerformTransactionRequestSerializer(serializers.Serializer):
         label="Transaction id",
         validators=[payment_id_validator]
     )
+
+
+PaymeCheckTransactionRequestSerializer = PaymePerformTransactionRequestSerializer
+
+
+@_base_request_wrapper
+class PaymeCancelTransactionRequestSerializer(serializers.Serializer):
+    id = serializers.CharField(
+        max_length=25,
+        label="Transaction id",
+        validators=[payment_id_validator]
+    )
+    reason = serializers.ChoiceField(choices=PaymeCancelReasonEnum.choices)
 

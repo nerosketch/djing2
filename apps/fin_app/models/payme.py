@@ -16,6 +16,15 @@ from customers.tasks import customer_check_service_for_expiration
 PAYME_DB_TYPE_ID = 4
 
 
+class PaymeCancelReasonEnum(IntEnumEx):
+    SOME_REMOTE_CUSTOMERS_INACTIVE = 1
+    PROCESSING_OPERATION_ERROR = 2
+    TRANSACTION_PROVIDE_ERROR = 3
+    TRANSACTION_CANCELLED_BY_TIMEOUT = 4
+    CASH_REFUND = 5
+    UNKNOWN_ERROR = 10
+
+
 class PaymeErrorsEnum(IntEnumEx):
     METHOD_IS_NO_POST = -32300
     JSON_PARSE_ERROR = -32700
@@ -29,6 +38,7 @@ class PaymeErrorsEnum(IntEnumEx):
     TRANSACTION_NOT_FOUND = -31003
     TRANSACTION_STATE_ERROR = -31008
     TRANSACTION_TIMEOUT = -31008
+    TRANSACTION_NOT_ALLOWED = -31007
 
 
 class PaymeBaseRPCException(APIException):
@@ -85,6 +95,13 @@ class PaymeCustomerNotFound(PaymeBaseRPCException):
     }
 
 
+class PaymeTransactionCancelNotAllowed(PaymeBaseRPCException):
+    code = PaymeErrorsEnum.TRANSACTION_NOT_ALLOWED
+    msg = {
+        'ru': 'Запрещено отменять транзакцию',
+        'en': 'Not allowed to cancel transaction'
+    }
+
 class PaymeRPCMethodNames(models.TextChoices):
     CHECK_PERFORM_TRANSACTION = 'CheckPerformTransaction'
     CREATE_TRANSACTION = 'CreateTransaction'
@@ -114,16 +131,15 @@ class PaymePaymentGatewayModel(BasePaymentModel):
 
 
 class TransactionStatesEnum(IntEnumEx):
+    INITIAL = 0
     START = 1
     CANCELLED = -1
     PERFORMED = 2
+    CANCELLED_AFTER_PERFORMED = -2
 
 
 class PaymePaymentLogModel(BasePaymentLogModel):
     pass
-
-    def __str__(self):
-        return f'PaymeLog{self.pk}: {self.get_transaction_state_display()}'
 
     class Meta:
         proxy = True
@@ -183,7 +199,27 @@ class PaymeTransactionModelManager(models.Manager):
         return {'result': {
             'transaction': str(trans.pk),
             'perform_time': trans.date_add.timestamp(),
-            'state': TransactionStatesEnum.PERFORMED
+            'state': trans.transaction_state
+        }}
+
+    def cancel_transaction(self, transaction_id: str) -> dict:
+        # trans = self.filter(external_id=transaction_id).first()
+        # if trans is None:
+        #     raise PaymeTransactionNotFound
+        # TODO: Do it
+        raise PaymeTransactionCancelNotAllowed
+
+    def check_payment(self, transaction_id: str) -> dict:
+        trans = self.filter(external_id=transaction_id).first()
+        if trans is None:
+            raise PaymeTransactionNotFound
+        return {'result': {
+            'create_time': trans.date_add.timestamp(),
+            'perform_time': trans.perform_time.timestamp if trans.perform_time else 0,
+            'cancel_time': trans.cancel_time.timestamp if trans.cancel_time else 0,
+            'transaction': trans.pk,
+            'state': trans.transaction_state,
+            'reason': None
         }}
 
 
@@ -195,11 +231,13 @@ class PaymeTransactionModel(models.Model):
     )
     transaction_state = models.IntegerField(
         choices=TransactionStatesEnum.choices,
-        default=TransactionStatesEnum.START
+        default=TransactionStatesEnum.INITIAL
     )
     external_id = models.CharField(max_length=25, unique=True)
     external_time = models.DateTimeField()
     date_add = models.DateTimeField(auto_now_add=True)
+    cancel_time = models.DateTimeField(null=True, blank=True, default=None)
+    perform_time = models.DateTimeField(null=True, blank=True, default=None)
     amount = models.DecimalField(
         _("Cost"),
         default=0.0,
@@ -217,7 +255,8 @@ class PaymeTransactionModel(models.Model):
 
     def perform(self):
         self.transaction_state = TransactionStatesEnum.PERFORMED
-        self.save(update_fields=['transaction_state'])
+        self.perform_time = datetime.now()
+        self.save(update_fields=['transaction_state', 'perform_time'])
 
     objects = PaymeTransactionModelManager()
 
