@@ -51,3 +51,12 @@ class PaymeCreateTransactionRequestSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=12, decimal_places=4)
     account = TransactionAccountRequestSerializer()
 
+
+@_base_request_wrapper
+class PaymePerformTransactionRequestSerializer(serializers.Serializer):
+    id = serializers.CharField(
+        max_length=25,
+        label="Transaction id",
+        validators=[payment_id_validator]
+    )
+

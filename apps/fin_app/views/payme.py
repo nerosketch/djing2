@@ -4,11 +4,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.response import Response
 from rest_framework import status
+from ._general import cached_property
 from fin_app.models.base_payment_model import fetch_customer_profile, Customer
-from fin_app.models.payme import (
-    PaymeRPCMethodNames, PaymeRpcMethodError,
-    PaymeBaseRPCException, PaymeErrorsEnum, PaymeTransactionModel
-)
+from fin_app.models import payme as pmodels
 from fin_app.serializers import payme as payme_serializers
 
 
@@ -29,17 +27,28 @@ class PaymePaymentEndpoint(GenericAPIView):
     http_method_names = ['post']
     permission_classes = [AllowAny]
     #  serializer_class =
+    queryset = pmodels.PaymePaymentGatewayModel.objects.all()
+    lookup_field = "slug"
+    lookup_url_kwarg = "pay_slug"
+
+    @cached_property
+    def _lazy_object(self):
+        return self.get_object()
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(sites__in=[self.request.site])
 
     def post(self, request, *args, **kwargs):
         try:
             data = request.data
             rpc_method_name = data.get('method')
-            if rpc_method_name not in PaymeRPCMethodNames.values:
-                raise PaymeRpcMethodError
+            if rpc_method_name not in pmodels.PaymeRPCMethodNames.values:
+                raise pmodels.PaymeRpcMethodError
             rpc_method = self.rpc_methods.get(rpc_method_name, self._no_method_found)
             r = rpc_method(self, data)
             return Response(r, status=status.HTTP_200_OK)
-        except PaymeBaseRPCException as err:
+        except pmodels.PaymeBaseRPCException as err:
             err_dict = {
                 'code': err.get_code().value,
                 'message': err.get_msg()
@@ -58,18 +67,15 @@ class PaymePaymentEndpoint(GenericAPIView):
         except Customer.DoesNotExists:
             return Response({
                 'error': {
-                    'code': PaymeErrorsEnum.CUSTOMER_DOES_NOT_EXISTS.value,
-                    'message': {
-                        'ru': 'Абонент не найден',
-                        'en': 'Customer does not exists'
-                    }
+                    'code': pmodels.PaymeCustomerNotFound.code.value,
+                    'message': pmodels.PaymeCustomerNotFound.msg
                 },
                 'id': request.data.get('id')
             })
         except MethodNotAllowed:
             return Response({
                 'error': {
-                    'code': PaymeErrorsEnum.METHOD_IS_NO_POST.value,
+                    'code': pmodels.PaymeErrorsEnum.METHOD_IS_NO_POST.value,
                     'message': {
                         'ru': 'HTTP Метод не допустим',
                         'en': 'HTTP Method is not allowed'
@@ -79,7 +85,7 @@ class PaymePaymentEndpoint(GenericAPIView):
             }, status=status.HTTP_200_OK)
 
     def _no_method_found(self, _):
-        raise PaymeRpcMethodError
+        raise pmodels.PaymeRpcMethodError
 
     @_payment_method_wrapper(
         payme_serializers.PaymeCheckPerformTransactionRequestSerializer
@@ -88,7 +94,7 @@ class PaymePaymentEndpoint(GenericAPIView):
         # TODO: ...
         params = data['params']
         uname = params['account']['username']
-        customer = fetch_customer_profile(self.request, username=uname)
+        fetch_customer_profile(self.request, username=uname)
         return {
             "result": {"allow": True}
         }
@@ -101,7 +107,7 @@ class PaymePaymentEndpoint(GenericAPIView):
         params = data['params']
         uname = params['account']['username']
         customer = fetch_customer_profile(self.request, username=uname)
-        transaction = PaymeTransactionModel.objects.start_transaction(
+        transaction = pmodels.PaymeTransactionModel.objects.start_transaction(
             external_id=params['id'],
             customer=customer,
             external_time=params['time'],
@@ -114,11 +120,15 @@ class PaymePaymentEndpoint(GenericAPIView):
         }}
 
     @_payment_method_wrapper(
-        payme_serializers.
+        payme_serializers.PaymePerformTransactionRequestSerializer
     )
     def perform_transaction(self, data) -> dict:
-        # TODO: ...
-        pass
+        params = data['params']
+        trans_id = params['id']
+        return pmodels.PaymeTransactionModel.objects.provide_payment(
+            transaction_id=trans_id,
+            gw=self._lazy_object
+        )
 
     @_payment_method_wrapper(
         payme_serializers.

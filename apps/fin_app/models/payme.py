@@ -1,6 +1,6 @@
 from typing import Dict
-from datetime import datetime
-from django.db import models
+from datetime import datetime, timedelta
+from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
 from djing2.lib import IntEnumEx
@@ -10,6 +10,7 @@ from .base_payment_model import (
     add_payment_type
 )
 from customers.models import Customer
+from customers.tasks import customer_check_service_for_expiration
 
 
 PAYME_DB_TYPE_ID = 4
@@ -24,6 +25,10 @@ class PaymeErrorsEnum(IntEnumEx):
     SERVER_ERROR = -32400
 
     CUSTOMER_DOES_NOT_EXISTS = -31050
+
+    TRANSACTION_NOT_FOUND = -31003
+    TRANSACTION_STATE_ERROR = -31008
+    TRANSACTION_TIMEOUT = -31008
 
 
 class PaymeBaseRPCException(APIException):
@@ -43,8 +48,40 @@ class PaymeBaseRPCException(APIException):
 class PaymeRpcMethodError(PaymeBaseRPCException):
     code = PaymeErrorsEnum.RPC_METHOD_NOT_FOUND
     msg = {
-        'ru': '',
-        'en': ''
+        'ru': 'Метод не найден',
+        'en': 'Method not found'
+    }
+
+
+class PaymeTransactionNotFound(PaymeBaseRPCException):
+    code = PaymeErrorsEnum.TRANSACTION_NOT_FOUND
+    msg = {
+        'ru': 'Транзакция не найдена',
+        'en': 'Transaction not found',
+    }
+
+
+class PaymeTransactionStateBad(PaymeBaseRPCException):
+    code = PaymeErrorsEnum.TRANSACTION_STATE_ERROR
+    msg = {
+        'ru': 'Не правильный тип транзакции',
+        'en': 'Bad transaction type',
+    }
+
+
+class PaymeTransactionTimeout(PaymeBaseRPCException):
+    code = PaymeErrorsEnum.TRANSACTION_TIMEOUT
+    msg = {
+        'ru': 'Транзакция устарела',
+        'en': 'Transaction is timed out',
+    }
+
+
+class PaymeCustomerNotFound(PaymeBaseRPCException):
+    code = PaymeErrorsEnum.CUSTOMER_DOES_NOT_EXISTS
+    msg = {
+        'ru': 'Абонент не найден',
+        'en': 'Customer does not exists'
     }
 
 
@@ -72,7 +109,8 @@ class PaymePaymentGatewayModel(BasePaymentModel):
         return super().save(*args, **kwargs)
 
     class Meta:
-        db_table = 'payme_payment_gateway'
+        proxy = True
+        #  db_table = 'payme_payment_gateway'
 
 
 class TransactionStatesEnum(IntEnumEx):
@@ -87,19 +125,66 @@ class PaymePaymentLogModel(BasePaymentLogModel):
     def __str__(self):
         return f'PaymeLog{self.pk}: {self.get_transaction_state_display()}'
 
+    class Meta:
+        proxy = True
+
 
 add_payment_type(PAYME_DB_TYPE_ID, PaymePaymentGatewayModel)
 
 
-class PaymePaymentLogModelManager(models.Manager):
+class PaymeTransactionModelManager(models.Manager):
     def start_transaction(self, external_id: str, customer, external_time: datetime, amount: float):
-        return self.create(
-            transaction_state=TransactionStatesEnum.START,
+        trans, created = self.get_or_create(
             external_id=external_id,
-            customer=customer,
-            external_time=external_time,
-            amount=amount
+            defaults={
+                'transaction_state': TransactionStatesEnum.START,
+                'customer': customer,
+                'external_time': external_time,
+                'amount': amount
+            }
         )
+        if not created:
+            if trans.transaction_state != TransactionStatesEnum.START:
+                raise PaymeTransactionStateBad
+            if trans.is_timed_out():
+                trans.cancel()
+                raise PaymeTransactionTimeout
+        return trans
+
+    def provide_payment(self, transaction_id: str, gw: PaymePaymentGatewayModel) -> dict:
+        trans = self.filter(external_id=transaction_id).first()
+        if trans is None:
+            raise PaymeTransactionNotFound
+        if trans.transaction_state == TransactionStatesEnum.CANCELLED:
+            raise PaymeTransactionStateBad
+        elif trans.transaction_state == TransactionStatesEnum.START:
+            if trans.is_timed_out(trans):
+                trans.cancel()
+                raise PaymeTransactionTimeout
+            else:
+                customer = trans.customer
+                if not customer:
+                    raise PaymeCustomerNotFound
+                pay_amount = trans.amount
+                with transaction.atomic():
+                    customer.add_balance(
+                        profile=None,
+                        cost=pay_amount,
+                        comment=f"{gw.title} {pay_amount:.2f}"
+                    )
+                    customer.save(update_fields=["balance"])
+                    PaymePaymentLogModel.objects.create(
+                        customer=customer,
+                        pay_gw=gw,
+                        amount=pay_amount,
+                    )
+                    trans.perform()
+                customer_check_service_for_expiration(customer_id=customer.pk)
+        return {'result': {
+            'transaction': str(trans.pk),
+            'perform_time': trans.date_add.timestamp(),
+            'state': TransactionStatesEnum.PERFORMED
+        }}
 
 
 class PaymeTransactionModel(models.Model):
@@ -122,7 +207,19 @@ class PaymeTransactionModel(models.Model):
         decimal_places=6
     )
 
-    objects = PaymePaymentLogModelManager()
+    def is_timed_out(self) -> bool:
+        transaction_deadline = self.date_add + timedelta(days=1)
+        return datetime.now() >= transaction_deadline
+
+    def cancel(self):
+        self.transaction_state = TransactionStatesEnum.CANCELLED
+        self.save(update_fields=['transaction_state'])
+
+    def perform(self):
+        self.transaction_state = TransactionStatesEnum.PERFORMED
+        self.save(update_fields=['transaction_state'])
+
+    objects = PaymeTransactionModelManager()
 
     def __str__(self):
         return self.external_id
