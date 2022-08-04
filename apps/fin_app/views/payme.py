@@ -91,7 +91,6 @@ class PaymePaymentEndpoint(GenericAPIView):
         payme_serializers.PaymeCheckPerformTransactionRequestSerializer
     )
     def check_perform_transaction(self, data) -> dict:
-        # TODO: ...
         params = data['params']
         uname = params['account']['username']
         fetch_customer_profile(self.request, username=uname)
@@ -167,7 +166,6 @@ class PaymePaymentEndpoint(GenericAPIView):
         }}
 
     rpc_methods = {
-        # TODO: ...
         pmodels.PaymeRPCMethodNames.CHECK_PERFORM_TRANSACTION.value: check_perform_transaction,
         pmodels.PaymeRPCMethodNames.CREATE_TRANSACTION.value: create_transaction,
         pmodels.PaymeRPCMethodNames.PERFORM_TRANSACTION.value: perform_transaction,

@@ -215,7 +215,6 @@ class PaymeTransactionModelManager(models.Manager):
         # trans = self.filter(external_id=transaction_id).first()
         # if trans is None:
         #     raise PaymeTransactionNotFound
-        # TODO: Do it
         raise PaymeTransactionCancelNotAllowed
 
     def check_payment(self, transaction_id: str) -> dict:
