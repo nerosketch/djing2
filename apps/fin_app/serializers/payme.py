@@ -7,7 +7,8 @@ from djing2.lib.mixins import BaseCustomModelSerializer
 from djing2.serializers import TimestampField
 from fin_app.models.payme import (
     PaymeCancelReasonEnum, PaymeTransactionModel,
-    PaymeValidationError
+    PaymeValidationError, PaymePaymentLogModel,
+    PaymePaymentGatewayModel
 )
 
 
@@ -103,5 +104,18 @@ class PaymeTransactionStatementSerializer(BaseCustomModelSerializer):
 
     class Meta:
         model = PaymeTransactionModel
+        fields = '__all__'
+
+
+
+class PaymePaymentLogModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = PaymePaymentLogModel
+        fields = '__all__'
+
+
+class PaymePaymentGatewayModelSerializer(BaseCustomModelSerializer):
+    class Meta:
+        model = PaymePaymentGatewayModel
         fields = '__all__'
 

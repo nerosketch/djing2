@@ -4,6 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.response import Response
 from rest_framework import status
+from djing2.viewsets import DjingModelViewSet
 from ._general import cached_property
 from fin_app.models.base_payment_model import fetch_customer_profile, Customer
 from fin_app.models import payme as pmodels
@@ -27,7 +28,7 @@ class PaymePaymentEndpoint(GenericAPIView):
     http_method_names = ['post']
     permission_classes = [AllowAny]
     #  serializer_class =
-    queryset = pmodels.PaymePaymentGatewayModel.objects.all()
+    #  queryset = pmodels.PaymePaymentGatewayModel.objects.all()
     lookup_field = "slug"
     lookup_url_kwarg = "pay_slug"
 
@@ -173,4 +174,14 @@ class PaymePaymentEndpoint(GenericAPIView):
         pmodels.PaymeRPCMethodNames.CHECK_TRANSACTION.value: check_transaction,
         pmodels.PaymeRPCMethodNames.GET_STATEMENT.value: get_statement,
     }
+
+
+class PaymeLogModelViewSet(DjingModelViewSet):
+    queryset = pmodels.PaymePaymentLogModel
+    serializer_class = payme_serializers.PaymePaymentLogModelSerializer
+
+
+class PaymePaymentGatewayModelViewSet(DjingModelViewSet):
+    queryset = pmodels.PaymePaymentGatewayModel.objects.all()
+    serializer_class = payme_serializers.PaymePaymentGatewayModelSerializer
 
