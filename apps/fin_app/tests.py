@@ -16,6 +16,7 @@ from fin_app.views.alltime import (
     AllTimeStatusCodeEnum
 )
 from fin_app.models import rncb as models_rncb
+from fin_app.models import payme as models_payme
 
 
 def _make_sign(act: AllTimePayActEnum, pay_account: str, serv_id: str, pay_id, secret: str):
@@ -422,3 +423,177 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.maxDiff = None
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
+
+
+class PaymeMerchantApiTestCase(APITestCase):
+    url = '/api/fin/payme/pay_gw_slug/pay/'
+
+    # def get(self, *args, **kwargs):
+    #     return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
+
+    def post(self, *args, **kwargs):
+        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+
+    def setUp(self):
+        self.admin = UserProfile.objects.create_superuser(
+            username="admin",
+            password="admin",
+            telephone="+797812345678",
+            is_active=True
+        )
+        # customer for tests
+        custo1 = Customer.objects.create_user(
+            telephone="+79782345678",
+            username="1234567",
+            password="passw",
+            is_active=True
+        )
+        custo1.balance = -13.12
+        custo1.fio = "Test Name"
+        custo1.save(update_fields=("balance", "fio"))
+        custo1.refresh_from_db()
+        self.customer = custo1
+
+        # Pay System
+        pay_system = models_payme.PaymePaymentGatewayModel.objects.create(
+            title="Test pay alltime system",
+            slug="pay_gw_slug"
+        )
+        example_site = Site.objects.first()
+        pay_system.sites.add(example_site)
+        custo1.sites.add(example_site)
+        pay_system.refresh_from_db()
+        self.pay_system = pay_system
+
+    def test_check_perform_transaction(self):
+        r = self.post(self.url, data={
+            "method" : "CheckPerformTransaction",
+            "params" : {
+                "amount" : 5000,
+                "account" : {
+                    "username" : "1234567"
+                }
+            },
+            'id': 19283
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            "result" : {
+                "allow" : True
+            }
+        }, msg=r.data)
+
+    def test_check_perform_transaction_no_account(self):
+        r = self.post(self.url, data={
+            "method" : "CheckPerformTransaction",
+            "params" : {
+                "amount" : 5000,
+                "account" : {
+                    "username" : "12222222"
+                }
+            },
+            'id': 19283
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            "error" : {
+                "code" : -31050,
+                "message": {
+                    'ru': 'Абонент не найден',
+                    'en': 'Customer does not exists'
+                },
+                "data": 'username'
+            },
+            'id': 19283
+        }, msg=r.data)
+
+    def test_check_perform_transaction_disabled_customer(self):
+        self.customer.is_active = False
+        self.customer.save(update_fields=['is_active'])
+        r = self.post(self.url, data={
+            "method" : "CheckPerformTransaction",
+            "params" : {
+                "amount" : 5000,
+                "account" : {
+                    "username" : "1234567"
+                }
+            },
+            'id': 19283
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            "error" : {
+                "code" : -31050,
+                "message": {
+                    'ru': 'Абонент не найден',
+                    'en': 'Customer does not exists'
+                },
+                "data": 'username'
+            },
+            'id': 19283
+        }, msg=r.data)
+
+    def test_check_perform_transaction_bad_request(self):
+        r = self.post(self.url, data={
+            "method" : "CheckPerformTransaction",
+            "params" : {
+                "amjount" : 'aosid',
+                "account" : {
+                    "nbv" : "1234567"
+                }
+            },
+            'id': 19283
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            'error': {
+                'code': -32700,
+                'message': {
+                    'ru': 'Ошибка валидации данных',
+                    'en': 'Data validation error'
+                },
+                'data': 'username'
+            }
+        }, msg=r.data)
+
+    def test_check_perform_transaction_no_post(self):
+        def _assert_no_post(dct):
+            self.assertDictEqual(dct, {
+                'error': {
+                    'code': -32300,
+                    'message': {
+                        'ru': 'HTTP Метод не допустим',
+                        'en': 'HTTP Method is not allowed'
+                    },
+                    'data': 'username'
+                }
+            })
+
+        r = self.client.get(self.url, SERVER_NAME="example.com")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.put(self.url, {}, SERVER_NAME="example.com")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.delete(self.url, {}, SERVER_NAME="example.com")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.head(self.url, {}, SERVER_NAME="example.com")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.options(self.url, {}, SERVER_NAME="example.com")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.trace(self.url, {}, SERVER_NAME="example.com")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.patch(self.url, {}, SERVER_NAME="example.com")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+

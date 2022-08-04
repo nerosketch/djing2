@@ -1,7 +1,7 @@
 from functools import wraps
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
-from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework import status
 from djing2.viewsets import DjingModelViewSet
@@ -18,7 +18,7 @@ def _payment_method_wrapper(request_serializer):
             ser = request_serializer(data=data)
             ser.is_valid(raise_exception=True)
             res = fn(self, data=ser.data, *args, **kwargs)
-            return Response(res)
+            return res
 
         return _wrapper
     return _fn
@@ -40,6 +40,18 @@ class PaymePaymentEndpoint(GenericAPIView):
         qs = super().get_queryset()
         return qs.filter(sites__in=[self.request.site])
 
+    def http_method_not_allowed(self, request, *args, **kwargs):
+        return Response({
+            'error': {
+                'code': pmodels.PaymeErrorsEnum.METHOD_IS_NO_POST.value,
+                'message': {
+                    'ru': 'HTTP Метод не допустим',
+                    'en': 'HTTP Method is not allowed'
+                },
+                'data': 'username'
+            },
+        }, status=status.HTTP_200_OK)
+
     def post(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -52,7 +64,8 @@ class PaymePaymentEndpoint(GenericAPIView):
         except pmodels.PaymeBaseRPCException as err:
             err_dict = {
                 'code': err.get_code().value,
-                'message': err.get_msg()
+                'message': err.get_msg(),
+                'data': 'username'
             }
             err_data = err.get_data()
             if err_data is not None and isinstance(err_data, dict):
@@ -65,24 +78,25 @@ class PaymePaymentEndpoint(GenericAPIView):
                 'error': err_dict,
                 'id': request.data.get('id')
             }, status=status.HTTP_200_OK)
-        except Customer.DoesNotExists:
+        except Customer.DoesNotExist:
             return Response({
                 'error': {
                     'code': pmodels.PaymeCustomerNotFound.code.value,
-                    'message': pmodels.PaymeCustomerNotFound.msg
+                    'message': pmodels.PaymeCustomerNotFound.msg,
+                    'data': 'username'
                 },
                 'id': request.data.get('id')
             })
-        except MethodNotAllowed:
+        except ValidationError:
             return Response({
                 'error': {
-                    'code': pmodels.PaymeErrorsEnum.METHOD_IS_NO_POST.value,
+                    'code': pmodels.PaymeErrorsEnum.JSON_PARSE_ERROR.value,
                     'message': {
-                        'ru': 'HTTP Метод не допустим',
-                        'en': 'HTTP Method is not allowed'
-                    }
+                        'ru': 'Ошибка валидации данных',
+                        'en': 'Data validation error'
+                    },
+                    'data': 'username'
                 },
-                'id': request.data.get('id')
             }, status=status.HTTP_200_OK)
 
     def _no_method_found(self, _):

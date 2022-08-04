@@ -110,6 +110,7 @@ class PaymeValidationError(PaymeBaseRPCException):
         'en': 'Validation error'
     }
 
+
 class PaymeRPCMethodNames(models.TextChoices):
     CHECK_PERFORM_TRANSACTION = 'CheckPerformTransaction'
     CREATE_TRANSACTION = 'CreateTransaction'

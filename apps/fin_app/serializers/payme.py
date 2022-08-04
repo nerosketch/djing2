@@ -16,7 +16,7 @@ def _base_request_wrapper(cls):
     class _PaymeBaseRequestSerializer(serializers.Serializer):
         method = serializers.CharField(label='Method', max_length=64)
         #  id = serializers.IntegerField(label='ID')
-        params = cls
+        params = cls()
 
     return _PaymeBaseRequestSerializer
 
