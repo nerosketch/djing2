@@ -91,16 +91,16 @@ class PaymeGetStatementMethodRequestSerializer(serializers.Serializer):
 
 
 class PaymeTransactionStatementSerializer(BaseCustomModelSerializer):
-    id = serializers.CharField(max_length=25, source='external_id', readonly=True)
-    time = TimestampField(source='external_time', readonly=True)
-    amount = serializers.IntegerField(source='amount', readonly=True)
-    account = TransactionAccountRequestSerializer(source='customer', readonly=True)
-    create_time = TimestampField(default=0, source='create_time', readonly=True)
-    perform_time = TimestampField(default=0, source='perform_time', readonly=True)
-    cancel_time = TimestampField(default=0, source='cancel_time', readonly=True)
-    transaction = serializers.CharField(source='pk', readonly=True)
-    state = serializers.IntegerField(source='transaction_state', readonly=True)
-    reason = serializers.IntegerField(null=True, default=None, readonly=True)
+    id = serializers.CharField(max_length=25, source='external_id', read_only=True)
+    time = TimestampField(source='external_time', read_only=True)
+    amount = serializers.IntegerField(source='amount', read_only=True)
+    account = TransactionAccountRequestSerializer(source='customer', read_only=True)
+    create_time = TimestampField(default=0, source='create_time', read_only=True)
+    perform_time = TimestampField(default=0, source='perform_time', read_only=True)
+    cancel_time = TimestampField(default=0, source='cancel_time', read_only=True)
+    transaction = serializers.CharField(source='pk', read_only=True)
+    state = serializers.IntegerField(source='transaction_state', read_only=True)
+    reason = serializers.IntegerField(allow_null=True, default=None, read_only=True)
 
     class Meta:
         model = PaymeTransactionModel

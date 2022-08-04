@@ -177,7 +177,7 @@ class PaymePaymentEndpoint(GenericAPIView):
 
 
 class PaymeLogModelViewSet(DjingModelViewSet):
-    queryset = pmodels.PaymePaymentLogModel
+    queryset = pmodels.PaymePaymentLogModel.objects.all()
     serializer_class = payme_serializers.PaymePaymentLogModelSerializer
 
 

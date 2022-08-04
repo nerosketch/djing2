@@ -38,7 +38,6 @@ class PaymeErrorsEnum(IntEnumEx):
 
     TRANSACTION_NOT_FOUND = -31003
     TRANSACTION_STATE_ERROR = -31008
-    TRANSACTION_TIMEOUT = -31008
     TRANSACTION_NOT_ALLOWED = -31007
 
 
@@ -81,7 +80,7 @@ class PaymeTransactionStateBad(PaymeBaseRPCException):
 
 
 class PaymeTransactionTimeout(PaymeBaseRPCException):
-    code = PaymeErrorsEnum.TRANSACTION_TIMEOUT
+    code = PaymeErrorsEnum.TRANSACTION_STATE_ERROR
     msg = {
         'ru': 'Транзакция устарела',
         'en': 'Transaction is timed out',
