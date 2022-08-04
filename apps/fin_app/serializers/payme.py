@@ -1,12 +1,14 @@
+from collections import OrderedDict
 from django.utils.translation import gettext_lazy as _
 from django.utils.regex_helper import _lazy_re_compile
 from django.core.validators import integer_validator, RegexValidator
 from rest_framework import serializers
-from rest_framework import status
-from djing2.lib import IntEnumEx
 from djing2.lib.mixins import BaseCustomModelSerializer
 from djing2.serializers import TimestampField
-from fin_app.models.payme import PaymeCancelReasonEnum
+from fin_app.models.payme import (
+    PaymeCancelReasonEnum, PaymeTransactionModel,
+    PaymeValidationError
+)
 
 
 def _base_request_wrapper(cls):
@@ -72,4 +74,34 @@ class PaymeCancelTransactionRequestSerializer(serializers.Serializer):
         validators=[payment_id_validator]
     )
     reason = serializers.ChoiceField(choices=PaymeCancelReasonEnum.choices)
+
+
+@_base_request_wrapper
+class PaymeGetStatementMethodRequestSerializer(serializers.Serializer):
+    from_time = TimestampField(source='from')
+    to_time = TimestampField(source='to')
+
+    def validate(self, data: OrderedDict):
+        from_time = data['from_time']
+        to_time = data['to_time']
+        if from_time >= to_time:
+            raise PaymeValidationError
+        return data
+
+
+class PaymeTransactionStatementSerializer(BaseCustomModelSerializer):
+    id = serializers.CharField(max_length=25, source='external_id', readonly=True)
+    time = TimestampField(source='external_time', readonly=True)
+    amount = serializers.IntegerField(source='amount', readonly=True)
+    account = TransactionAccountRequestSerializer(source='customer', readonly=True)
+    create_time = TimestampField(default=0, source='create_time', readonly=True)
+    perform_time = TimestampField(default=0, source='perform_time', readonly=True)
+    cancel_time = TimestampField(default=0, source='cancel_time', readonly=True)
+    transaction = serializers.CharField(source='pk', readonly=True)
+    state = serializers.IntegerField(source='transaction_state', readonly=True)
+    reason = serializers.IntegerField(null=True, default=None, readonly=True)
+
+    class Meta:
+        model = PaymeTransactionModel
+        fields = '__all__'
 

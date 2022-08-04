@@ -151,18 +151,28 @@ class PaymePaymentEndpoint(GenericAPIView):
         )
 
     @_payment_method_wrapper(
-        payme_serializers.
+        payme_serializers.PaymeGetStatementMethodRequestSerializer
     )
     def get_statement(self, data) -> dict:
-        # TODO: ...
-        pass
+        from_time = data['from_time']
+        to_time = data['to_time']
+        statement_queryset = pmodels.PaymeTransactionModel.objects.filter(
+            external_time__lte=from_time, external_time__gte=to_time
+        )
+        statement_serializer = payme_serializers.PaymeTransactionStatementSerializer(
+            statement_queryset, many=True
+        )
+        return {'result': {
+            'transactions': statement_serializer.data
+        }}
 
     rpc_methods = {
         # TODO: ...
-        PaymeRPCMethodNames.CHECK_PERFORM_TRANSACTION.value: check_perform_transaction,
-        PaymeRPCMethodNames.CREATE_TRANSACTION.value: create_transaction,
-        PaymeRPCMethodNames.PERFORM_TRANSACTION.value: perform_transaction,
-        PaymeRPCMethodNames.CANCEL_TRANSACTION.value: cancel_transaction,
-        PaymeRPCMethodNames.CHECK_TRANSACTION.value: check_transaction,
-        PaymeRPCMethodNames.GET_STATEMENT.value: get_statement,
+        pmodels.PaymeRPCMethodNames.CHECK_PERFORM_TRANSACTION.value: check_perform_transaction,
+        pmodels.PaymeRPCMethodNames.CREATE_TRANSACTION.value: create_transaction,
+        pmodels.PaymeRPCMethodNames.PERFORM_TRANSACTION.value: perform_transaction,
+        pmodels.PaymeRPCMethodNames.CANCEL_TRANSACTION.value: cancel_transaction,
+        pmodels.PaymeRPCMethodNames.CHECK_TRANSACTION.value: check_transaction,
+        pmodels.PaymeRPCMethodNames.GET_STATEMENT.value: get_statement,
     }
+

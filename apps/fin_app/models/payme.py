@@ -34,6 +34,7 @@ class PaymeErrorsEnum(IntEnumEx):
     SERVER_ERROR = -32400
 
     CUSTOMER_DOES_NOT_EXISTS = -31050
+    VALIDATION_ERROR = -31051
 
     TRANSACTION_NOT_FOUND = -31003
     TRANSACTION_STATE_ERROR = -31008
@@ -100,6 +101,14 @@ class PaymeTransactionCancelNotAllowed(PaymeBaseRPCException):
     msg = {
         'ru': 'Запрещено отменять транзакцию',
         'en': 'Not allowed to cancel transaction'
+    }
+
+
+class PaymeValidationError(PaymeBaseRPCException):
+    code = PaymeErrorsEnum.VALIDATION_ERROR
+    msg = {
+        'ru': 'Ошибка валидации',
+        'en': 'Validation error'
     }
 
 class PaymeRPCMethodNames(models.TextChoices):
@@ -251,6 +260,7 @@ class PaymeTransactionModel(models.Model):
 
     def cancel(self):
         self.transaction_state = TransactionStatesEnum.CANCELLED
+        self.cancel_time = datetime.now()
         self.save(update_fields=['transaction_state'])
 
     def perform(self):
