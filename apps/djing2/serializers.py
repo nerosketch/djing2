@@ -26,20 +26,14 @@ class RequestObjectsPermsSerializer(serializers.Serializer):
 class TimestampField(serializers.DateTimeField):
     """Convert a django datetime to/from timestamp"""
 
-    def to_representation(self, value) -> float:
-        """Convert the field to its internal representation (aka timestamp)
-        :param value: the DateTime value
-        :return: a UTC timestamp integer
-        """
-        result = super().to_representation(value)
-        return result.timestamp()
-
-    def to_internal_value(self, value):
+    def to_internal_value(self, value: float) -> datetime:
         """
         deserialize a timestamp to a DateTime value
         :param value: the timestamp value
         :return: a django DateTime value
         """
-        converted = datetime.fromtimestamp(float('%s' % value))
-        return super().to_representation(converted)
-
+        if not isinstance(value, (int, float, str)):
+            raise serializers.ValidationError('Must be int')
+        value = float(value)
+        converted = datetime.fromtimestamp(value)
+        return converted

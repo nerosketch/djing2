@@ -1,3 +1,4 @@
+from datetime import datetime
 from collections import OrderedDict
 from django.utils.translation import gettext_lazy as _
 from django.utils.regex_helper import _lazy_re_compile
@@ -10,6 +11,12 @@ from fin_app.models.payme import (
     PaymeValidationError, PaymePaymentLogModel,
     PaymePaymentGatewayModel
 )
+
+
+class MilisecTimestampField(TimestampField):
+    def to_internal_value(self, value: float) -> datetime:
+        value = float(value)
+        return super().to_internal_value(value / 1000)
 
 
 def _base_request_wrapper(cls):
@@ -50,7 +57,7 @@ class PaymeCreateTransactionRequestSerializer(serializers.Serializer):
         label="Transaction id",
         validators=[payment_id_validator]
     )
-    time = TimestampField("Time")
+    time = MilisecTimestampField(label="Time")
     amount = serializers.DecimalField(max_digits=12, decimal_places=4)
     account = TransactionAccountRequestSerializer()
 
@@ -79,8 +86,8 @@ class PaymeCancelTransactionRequestSerializer(serializers.Serializer):
 
 @_base_request_wrapper
 class PaymeGetStatementMethodRequestSerializer(serializers.Serializer):
-    from_time = TimestampField(source='from')
-    to_time = TimestampField(source='to')
+    from_time = MilisecTimestampField(source='from')
+    to_time = MilisecTimestampField(source='to')
 
     def validate(self, data: OrderedDict):
         from_time = data['from_time']
@@ -92,12 +99,12 @@ class PaymeGetStatementMethodRequestSerializer(serializers.Serializer):
 
 class PaymeTransactionStatementSerializer(BaseCustomModelSerializer):
     id = serializers.CharField(max_length=25, source='external_id', read_only=True)
-    time = TimestampField(source='external_time', read_only=True)
+    time = MilisecTimestampField(source='external_time', read_only=True)
     amount = serializers.IntegerField(source='amount', read_only=True)
     account = TransactionAccountRequestSerializer(source='customer', read_only=True)
-    create_time = TimestampField(default=0, source='create_time', read_only=True)
-    perform_time = TimestampField(default=0, source='perform_time', read_only=True)
-    cancel_time = TimestampField(default=0, source='cancel_time', read_only=True)
+    create_time = MilisecTimestampField(default=0, source='create_time', read_only=True)
+    perform_time = MilisecTimestampField(default=0, source='perform_time', read_only=True)
+    cancel_time = MilisecTimestampField(default=0, source='cancel_time', read_only=True)
     transaction = serializers.CharField(source='pk', read_only=True)
     state = serializers.IntegerField(source='transaction_state', read_only=True)
     reason = serializers.IntegerField(allow_null=True, default=None, read_only=True)

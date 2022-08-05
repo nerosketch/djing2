@@ -128,9 +128,9 @@ class PaymePaymentEndpoint(GenericAPIView):
             amount=params['amount']
         )
         return {'result': {
-            'create_time': transaction.date_add.timestamp(),
-            'transaction': str(transaction.pk),
-            'state': transaction.transaction_state
+            'create_time': int(transaction.date_add.timestamp() * 1000),
+            'transaction': transaction.pk,
+            'state': transaction.transaction_state.value
         }}
 
     @_payment_method_wrapper(

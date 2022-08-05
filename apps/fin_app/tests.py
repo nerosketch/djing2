@@ -597,3 +597,22 @@ class PaymeMerchantApiTestCase(APITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         _assert_no_post(r.data)
 
+    def test_create_transaction(self):
+        now = datetime.now()
+        r = self.post(self.url, {
+            "method": "CreateTransaction",
+            "params": {
+                "id": "5305e3bab097f420a62ced0b",
+                "time" : 1399114284039,
+                "amount" : 500000,
+                "account" : {
+                    "username" : "1234567"
+                }
+            }
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        res = r.data['result']
+        self.assertEqual(res['transaction'], 1)
+        self.assertEqual(res['state'], 1)
+        # Compare create time with accuracy to seconds
+        self.assertEqual(int(res['create_time'] / 1000), int(now.timestamp()))
