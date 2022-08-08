@@ -5,6 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework import status
 from djing2.viewsets import DjingModelViewSet
+from djing2.lib.mixins import SitesFilterMixin
 from ._general import cached_property
 from fin_app.models.base_payment_model import fetch_customer_profile, Customer
 from fin_app.models import payme as pmodels
@@ -24,11 +25,11 @@ def _payment_method_wrapper(request_serializer):
     return _fn
 
 
-class PaymePaymentEndpoint(GenericAPIView):
+class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
     http_method_names = ['post']
     permission_classes = [AllowAny]
     #  serializer_class =
-    #  queryset = pmodels.PaymePaymentGatewayModel.objects.all()
+    queryset = pmodels.PaymePaymentGatewayModel.objects.all()
     lookup_field = "slug"
     lookup_url_kwarg = "pay_slug"
 
@@ -36,9 +37,8 @@ class PaymePaymentEndpoint(GenericAPIView):
     def _lazy_object(self):
         return self.get_object()
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(sites__in=[self.request.site])
+    def filter_queryset(self, queryset):
+        return queryset
 
     def http_method_not_allowed(self, request, *args, **kwargs):
         return Response({
@@ -130,7 +130,7 @@ class PaymePaymentEndpoint(GenericAPIView):
         return {'result': {
             'create_time': int(transaction.date_add.timestamp() * 1000),
             'transaction': transaction.pk,
-            'state': transaction.transaction_state.value
+            'state': transaction.transaction_state
         }}
 
     @_payment_method_wrapper(

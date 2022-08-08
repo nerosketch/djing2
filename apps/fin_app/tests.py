@@ -43,7 +43,7 @@ class CustomAPITestCase(APITestCase):
         # customer for tests
         custo1 = Customer.objects.create_user(
             telephone="+79782345678",
-            username="custo1",
+            username="1234567",
             password="passw",
             is_active=True
         )
@@ -76,17 +76,17 @@ class AllPayTestCase(CustomAPITestCase):
         service_id = self.pay_system.service_id
         r = self.get(self.url, {
             "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
-            "PAY_ACCOUNT": "custo1",
+            "PAY_ACCOUNT": "1234567",
             "SIGN": _make_sign(
                 AllTimePayActEnum.ACT_VIEW_INFO,
-                "custo1", "", "", self.pay_system.secret
+                "1234567", "", "", self.pay_system.secret
             )
         })
         o = "".join((
             "<pay-response>",
             "<balance>-13.12</balance>",
             "<name>Test Name</name>",
-            "<account>custo1</account>",
+            "<account>1234567</account>",
             "<service_id>%s</service_id>" % escape(service_id),
             "<min_amount>10.0</min_amount>",
             "<max_amount>15000</max_amount>",
@@ -103,7 +103,7 @@ class AllPayTestCase(CustomAPITestCase):
         service_id = self.pay_system.service_id
         r = self.get(self.url, {
             "ACT": AllTimePayActEnum.ACT_PAY_DO.value,
-            "PAY_ACCOUNT": "custo1",
+            "PAY_ACCOUNT": "1234567",
             "PAY_AMOUNT": 18.21,
             "RECEIPT_NUM": 2126235,
             "SERVICE_ID": service_id,
@@ -111,7 +111,7 @@ class AllPayTestCase(CustomAPITestCase):
             "TRADE_POINT": "term1",
             "SIGN": _make_sign(
                 AllTimePayActEnum.ACT_PAY_DO,
-                "custo1", service_id,
+                "1234567", service_id,
                 "840ab457-e7d1-4494-8197-9570da035170",
                 self.pay_system.secret
             )
@@ -176,10 +176,10 @@ class SitesAllPayTestCase(CustomAPITestCase):
         current_date = timezone.now().strftime(time_format)
         r = self.get(self.url, {
             "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
-            "PAY_ACCOUNT": "custo1",
+            "PAY_ACCOUNT": "1234567",
             "SIGN": _make_sign(
                 AllTimePayActEnum.ACT_VIEW_INFO,
-                "custo1", "", "", self.pay_system.secret
+                "1234567", "", "", self.pay_system.secret
             )
         })
         o = "".join((
@@ -425,45 +425,20 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
 
 
-class PaymeMerchantApiTestCase(APITestCase):
+class PaymeMerchantApiTestCase(CustomAPITestCase):
     url = '/api/fin/payme/pay_gw_slug/pay/'
 
-    # def get(self, *args, **kwargs):
-    #     return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
-
-    def post(self, *args, **kwargs):
-        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
-
     def setUp(self):
-        self.admin = UserProfile.objects.create_superuser(
-            username="admin",
-            password="admin",
-            telephone="+797812345678",
-            is_active=True
-        )
-        # customer for tests
-        custo1 = Customer.objects.create_user(
-            telephone="+79782345678",
-            username="1234567",
-            password="passw",
-            is_active=True
-        )
-        custo1.balance = -13.12
-        custo1.fio = "Test Name"
-        custo1.save(update_fields=("balance", "fio"))
-        custo1.refresh_from_db()
-        self.customer = custo1
-
+        super().setUp()
         # Pay System
         pay_system = models_payme.PaymePaymentGatewayModel.objects.create(
-            title="Test pay alltime system",
+            title="Test pay payme system",
             slug="pay_gw_slug"
         )
         example_site = Site.objects.first()
         pay_system.sites.add(example_site)
-        custo1.sites.add(example_site)
         pay_system.refresh_from_db()
-        self.pay_system = pay_system
+        self.payme_pay_system = pay_system
 
     def test_check_perform_transaction(self):
         r = self.post(self.url, data={
@@ -611,8 +586,35 @@ class PaymeMerchantApiTestCase(APITestCase):
             }
         })
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        res = r.data['result']
-        self.assertEqual(res['transaction'], 1)
+        res = r.data.get('result')
+        self.assertIsNotNone(res, msg=r.data)
+        self.assertIsInstance(res['transaction'], int)
+        self.assertTrue(res['transaction'] > 0)
         self.assertEqual(res['state'], 1)
         # Compare create time with accuracy to seconds
         self.assertEqual(int(res['create_time'] / 1000), int(now.timestamp()))
+
+    def test_create_transaction_duplicate(self):
+        self.test_create_transaction()
+        self.test_create_transaction()
+        self.test_create_transaction()
+        self.test_create_transaction()
+
+    def test_perform_transaction(self):
+        # create transaction
+        self.test_create_transaction()
+        # perform transaction
+        r = self.post(self.url, {
+            "method": "PerformTransaction",
+            "params": {
+                "id": "5305e3bab097f420a62ced0b",
+            }
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        res = r.data.get('result')
+        self.assertIsNotNone(res, msg=r.data)
+        self.assertIsInstance(res['transaction'], int)
+        self.assertTrue(res['transaction'] > 0)
+        self.assertIsInstance(res['perform_time'], int)
+        self.assertTrue(res['perform_time'] > 0)
+        self.assertEqual(res['state'], 2)

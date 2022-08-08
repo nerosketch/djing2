@@ -183,7 +183,7 @@ class PaymeTransactionModelManager(models.Manager):
         if trans.transaction_state == TransactionStatesEnum.CANCELLED:
             raise PaymeTransactionStateBad
         elif trans.transaction_state == TransactionStatesEnum.START:
-            if trans.is_timed_out(trans):
+            if trans.is_timed_out():
                 trans.cancel()
                 raise PaymeTransactionTimeout
             else:
@@ -194,7 +194,8 @@ class PaymeTransactionModelManager(models.Manager):
                 with transaction.atomic():
                     customer.add_balance(
                         profile=None,
-                        cost=pay_amount,
+                        # TODO: change to Decimal
+                        cost=float(pay_amount),
                         comment=f"{gw.title} {pay_amount:.2f}"
                     )
                     customer.save(update_fields=["balance"])
@@ -206,8 +207,8 @@ class PaymeTransactionModelManager(models.Manager):
                     trans.perform()
                 customer_check_service_for_expiration(customer_id=customer.pk)
         return {'result': {
-            'transaction': str(trans.pk),
-            'perform_time': trans.date_add.timestamp(),
+            'transaction': trans.pk,
+            'perform_time': int(trans.date_add.timestamp() * 1000),
             'state': trans.transaction_state
         }}
 
