@@ -529,7 +529,8 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
                     'ru': 'Ошибка валидации данных',
                 },
                 'data': 'username'
-            }
+            },
+            'id': 19283
         }, msg=r.data)
 
     def test_check_perform_transaction_no_post(self):
@@ -722,4 +723,49 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
                 'data': 'username',
             },
             'id': 18297
+        })
+
+    def test_check_transaction(self):
+        # create and perform transaction
+        self.test_perform_transaction()
+
+        r = self.post(self.url, {
+            'method': 'CheckTransaction',
+            'params': {
+                'id': '5305e3bab097f420a62ced0b'
+            },
+            'id': 128463
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        res = r.data.get('result')
+        self.assertIsNotNone(res, msg=r.data)
+        self.assertIsInstance(res['transaction'], int)
+        self.assertTrue(res['transaction'] > 0)
+        self.assertIsInstance(res['perform_time'], int)
+        self.assertTrue(res['perform_time'] > 0)
+        self.assertIsInstance(res['create_time'], int)
+        self.assertTrue(res['create_time'] > 0)
+        self.assertEqual(res['cancel_time'], 0)
+        self.assertEqual(res['state'], 2)
+        self.assertIsNone(res['reason'])
+
+    def test_check_transaction_not_found(self):
+        r = self.post(self.url, {
+            'method': 'CheckTransaction',
+            'params': {
+                'id': '5305e3bab097f420a62ced0c'
+            },
+            'id': 128463
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            'error': {
+                'code': -31003,
+                'message': {
+                    'ru': 'Транзакция не найдена',
+                    'en': 'Transaction not found',
+                },
+                'data': 'username',
+            },
+            'id': 128463
         })

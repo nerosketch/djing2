@@ -93,6 +93,7 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
                     },
                     'data': pmodels.PaymeBaseRPCException.get_data()
                 },
+                'id': data.get('id')
             }, status=status.HTTP_200_OK)
 
     def _no_method_found(self, _):

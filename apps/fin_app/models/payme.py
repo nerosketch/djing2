@@ -230,9 +230,9 @@ class PaymeTransactionModelManager(models.Manager):
         if trans is None:
             raise PaymeTransactionNotFound
         return {'result': {
-            'create_time': trans.date_add.timestamp(),
-            'perform_time': trans.perform_time.timestamp if trans.perform_time else 0,
-            'cancel_time': trans.cancel_time.timestamp if trans.cancel_time else 0,
+            'create_time': int(trans.date_add.timestamp() * 1000),
+            'perform_time': int(trans.perform_time.timestamp() * 1000) if trans.perform_time else 0,
+            'cancel_time': int(trans.cancel_time.timestamp() * 1000) if trans.cancel_time else 0,
             'transaction': trans.pk,
             'state': trans.transaction_state,
             'reason': None
