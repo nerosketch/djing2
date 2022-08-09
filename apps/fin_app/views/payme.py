@@ -18,7 +18,7 @@ def _payment_method_wrapper(request_serializer):
         def _wrapper(self, data, *args, **kwargs):
             ser = request_serializer(data=data)
             ser.is_valid(raise_exception=True)
-            res = fn(self, data=ser.data, *args, **kwargs)
+            res = fn(self, data=ser.validated_data, *args, **kwargs)
             return res
 
         return _wrapper
@@ -165,10 +165,11 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
         payme_serializers.PaymeGetStatementMethodRequestSerializer
     )
     def get_statement(self, data) -> dict:
-        from_time = data['from_time']
-        to_time = data['to_time']
+        params = data['params']
+        from_time = params['from']
+        to_time = params['to']
         statement_queryset = pmodels.PaymeTransactionModel.objects.filter(
-            external_time__lte=from_time, external_time__gte=to_time
+            external_time__gte=from_time, external_time__lte=to_time
         )
         statement_serializer = payme_serializers.PaymeTransactionStatementSerializer(
             statement_queryset, many=True

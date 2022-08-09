@@ -769,3 +769,44 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
             },
             'id': 128463
         })
+
+    def test_get_statement(self):
+        # create transaction
+        self.test_create_transaction()
+
+        start_time = datetime.strptime('2014-05-03 14:50:00', '%Y-%m-%d %H:%M:%S')
+        end_time = start_time + timedelta(hours=1)
+
+        r = self.post(self.url, {
+            'method': 'GetStatement',
+            'params': {
+                'from': int(start_time.timestamp() * 1000),
+                'to': int(end_time.timestamp() * 1000)
+            },
+            'id': 987234
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertEqual(r.data.get('id'), 987234)
+        res = r.data.get('result')
+        self.assertIsNotNone(res, msg=r.data)
+        trans = res.get('transactions')
+        self.assertIsNotNone(trans)
+        ln = len(trans)
+        self.assertEqual(ln, 1)
+        tr = trans[0]
+        self.assertEqual(tr['id'], '5305e3bab097f420a62ced0b')
+        self.assertIsInstance(tr['time'], int)
+        #  self.assertGreater(tr['time'], 0)
+        self.assertEqual(tr['time'], 1399114284039)
+        self.assertIsInstance(res['create_time'], int)
+        self.assertTrue(res['create_time'] > 0)
+        self.assertIsInstance(res['perform_time'], int)
+        self.assertTrue(res['perform_time'] > 0)
+        self.assertEqual(tr['amount'], 500000)
+        self.assertDictEqual(tr['account'], {
+            "username" : "1234567"
+        })
+        self.assertIsInstance(tr['transaction'], int)
+        self.assertTrue(tr['transaction'] > 0)
+        self.assertEqual(tr['state'], 2)
+        self.assertIsNone(res['reason'])

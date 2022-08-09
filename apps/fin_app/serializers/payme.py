@@ -15,8 +15,9 @@ from fin_app.models.payme import (
 
 class MilisecTimestampField(TimestampField):
     def to_internal_value(self, value: float) -> datetime:
-        value = float(value)
-        return super().to_internal_value(value / 1000)
+        if isinstance(value, (float, int)):
+            value = float(value) / 1000
+        return super().to_internal_value(value)
 
 
 def _base_request_wrapper(cls):
@@ -90,11 +91,19 @@ class PaymeGetStatementMethodRequestSerializer(serializers.Serializer):
     to_time = MilisecTimestampField(source='to')
 
     def validate(self, data: OrderedDict):
-        from_time = data['from_time']
-        to_time = data['to_time']
+        from_time = data['from']
+        to_time = data['to']
         if from_time >= to_time:
             raise PaymeValidationError
         return data
+
+    def get_fields(self):
+        fields = super().get_fields()
+        fields.update({
+            'from': fields['from_time'],
+            'to': fields['to_time'],
+        })
+        return fields
 
 
 class PaymeTransactionStatementSerializer(BaseCustomModelSerializer):
@@ -112,7 +121,6 @@ class PaymeTransactionStatementSerializer(BaseCustomModelSerializer):
     class Meta:
         model = PaymeTransactionModel
         fields = '__all__'
-
 
 
 class PaymePaymentLogModelSerializer(BaseCustomModelSerializer):
