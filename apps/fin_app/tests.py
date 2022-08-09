@@ -592,7 +592,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         res = r.data.get('result')
         self.assertIsNotNone(res, msg=r.data)
         self.assertIsInstance(res['transaction'], int)
-        self.assertTrue(res['transaction'] > 0)
+        self.assertGreater(res['transaction'], 0)
         self.assertEqual(res['state'], 1)
         # Compare create time with accuracy to seconds
         self.assertEqual(int(res['create_time'] / 1000), int(now.timestamp()))
@@ -619,9 +619,9 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         res = r.data.get('result')
         self.assertIsNotNone(res, msg=r.data)
         self.assertIsInstance(res['transaction'], int)
-        self.assertTrue(res['transaction'] > 0)
+        self.assertGreater(res['transaction'], 0)
         self.assertIsInstance(res['perform_time'], int)
-        self.assertTrue(res['perform_time'] > 0)
+        self.assertGreater(res['perform_time'], 0)
         self.assertEqual(res['state'], 2)
         self.assertEqual(r.data['id'], 978123)
 
@@ -638,9 +638,9 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         res = r.data.get('result')
         self.assertIsNotNone(res, msg=r.data)
         self.assertIsInstance(res['transaction'], int)
-        self.assertTrue(res['transaction'] > 0)
+        self.assertGreater(res['transaction'], 0)
         self.assertIsInstance(res['perform_time'], int)
-        self.assertTrue(res['perform_time'] > 0)
+        self.assertGreater(res['perform_time'], 0)
         self.assertEqual(res['state'], 2)
 
     def test_perform_transaction_not_found(self):
@@ -740,11 +740,11 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         res = r.data.get('result')
         self.assertIsNotNone(res, msg=r.data)
         self.assertIsInstance(res['transaction'], int)
-        self.assertTrue(res['transaction'] > 0)
+        self.assertGreater(res['transaction'], 0)
         self.assertIsInstance(res['perform_time'], int)
-        self.assertTrue(res['perform_time'] > 0)
+        self.assertGreater(res['perform_time'], 0)
         self.assertIsInstance(res['create_time'], int)
-        self.assertTrue(res['create_time'] > 0)
+        self.assertGreater(res['create_time'], 0)
         self.assertEqual(res['cancel_time'], 0)
         self.assertEqual(res['state'], 2)
         self.assertIsNone(res['reason'])
@@ -772,7 +772,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
 
     def test_get_statement(self):
         # create transaction
-        self.test_create_transaction()
+        self.test_perform_transaction()
 
         start_time = datetime.strptime('2014-05-03 14:50:00', '%Y-%m-%d %H:%M:%S')
         end_time = start_time + timedelta(hours=1)
@@ -798,15 +798,16 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertIsInstance(tr['time'], int)
         #  self.assertGreater(tr['time'], 0)
         self.assertEqual(tr['time'], 1399114284039)
-        self.assertIsInstance(res['create_time'], int)
-        self.assertTrue(res['create_time'] > 0)
-        self.assertIsInstance(res['perform_time'], int)
-        self.assertTrue(res['perform_time'] > 0)
-        self.assertEqual(tr['amount'], 500000)
+        self.assertIsInstance(tr['create_time'], int)
+        self.assertGreater(tr['create_time'], 0)
+        self.assertIsInstance(tr['perform_time'], int)
+        self.assertGreater(tr['perform_time'], 0)
+        self.assertIsNone(tr['cancel_time'])
+        self.assertEqual(tr['amount'], 500000.0)
         self.assertDictEqual(tr['account'], {
             "username" : "1234567"
         })
         self.assertIsInstance(tr['transaction'], int)
-        self.assertTrue(tr['transaction'] > 0)
+        self.assertGreater(tr['transaction'], 0)
         self.assertEqual(tr['state'], 2)
-        self.assertIsNone(res['reason'])
+        self.assertIsNone(tr['reason'])

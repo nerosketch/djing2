@@ -26,6 +26,16 @@ class RequestObjectsPermsSerializer(serializers.Serializer):
 class TimestampField(serializers.DateTimeField):
     """Convert a django datetime to/from timestamp"""
 
+    def to_representation(self, value):
+        #  if isinstance
+        if isinstance(value, datetime):
+            return value.timestamp()
+        elif isinstance(value, (float, int)):
+            return value
+        elif isinstance(value, str):
+            return super().to_representation(value).timestamp()
+        raise serializers.ValidationError('Bad type for timestamp')
+
     def to_internal_value(self, value: float) -> datetime:
         """
         deserialize a timestamp to a DateTime value
