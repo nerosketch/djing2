@@ -48,13 +48,13 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
                     'ru': 'HTTP Метод не допустим',
                     'en': 'HTTP Method is not allowed'
                 },
-                'data': 'username'
+                'data': pmodels.PaymeBaseRPCException.get_data()
             },
         }, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
+        data = request.data
         try:
-            data = request.data
             rpc_method_name = data.get('method')
             if rpc_method_name not in pmodels.PaymeRPCMethodNames.values:
                 raise pmodels.PaymeRpcMethodError
@@ -65,27 +65,20 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
             err_dict = {
                 'code': err.get_code().value,
                 'message': err.get_msg(),
-                'data': 'username'
+                'data': err.get_data()
             }
-            err_data = err.get_data()
-            if err_data is not None and isinstance(err_data, dict):
-                err_dict.update({
-                    'data': {
-                        'account': err_data
-                    }
-                })
             return Response({
                 'error': err_dict,
-                'id': request.data.get('id')
+                'id': data.get('id')
             }, status=status.HTTP_200_OK)
         except Customer.DoesNotExist:
             return Response({
                 'error': {
                     'code': pmodels.PaymeCustomerNotFound.code.value,
                     'message': pmodels.PaymeCustomerNotFound.msg,
-                    'data': 'username'
+                    'data': pmodels.PaymeBaseRPCException.get_data()
                 },
-                'id': request.data.get('id')
+                'id': data.get('id')
             })
         except ValidationError:
             return Response({
@@ -95,7 +88,7 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
                         'ru': 'Ошибка валидации данных',
                         'en': 'Data validation error'
                     },
-                    'data': 'username'
+                    'data': pmodels.PaymeBaseRPCException.get_data()
                 },
             }, status=status.HTTP_200_OK)
 

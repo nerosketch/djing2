@@ -48,11 +48,17 @@ class PaymeBaseRPCException(APIException):
         'en': 'Unknown error',
     }
 
-    def get_code(self) -> PaymeErrorsEnum:
-        return self.code
+    @classmethod
+    def get_code(cls) -> PaymeErrorsEnum:
+        return cls.code
 
-    def get_msg(self) -> Dict[str, str]:
-        return self.msg
+    @classmethod
+    def get_msg(cls) -> Dict[str, str]:
+        return cls.msg
+
+    @classmethod
+    def get_data(cls):
+        return 'username'
 
 
 class PaymeRpcMethodError(PaymeBaseRPCException):

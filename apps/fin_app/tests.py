@@ -524,8 +524,8 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
             'error': {
                 'code': -32700,
                 'message': {
+                    'en': 'Data validation error',
                     'ru': 'Ошибка валидации данных',
-                    'en': 'Data validation error'
                 },
                 'data': 'username'
             }
@@ -604,6 +604,24 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         # create transaction
         self.test_create_transaction()
         # perform transaction
+        r = self.post(self.url, {
+            "method": "PerformTransaction",
+            "params": {
+                "id": "5305e3bab097f420a62ced0b",
+            }
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        res = r.data.get('result')
+        self.assertIsNotNone(res, msg=r.data)
+        self.assertIsInstance(res['transaction'], int)
+        self.assertTrue(res['transaction'] > 0)
+        self.assertIsInstance(res['perform_time'], int)
+        self.assertTrue(res['perform_time'] > 0)
+        self.assertEqual(res['state'], 2)
+
+    def test_perform_transaction_duplication(self):
+        self.test_perform_transaction()
+        # perform transaction duplicate
         r = self.post(self.url, {
             "method": "PerformTransaction",
             "params": {
