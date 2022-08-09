@@ -455,7 +455,8 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertDictEqual(r.data, {
             "result" : {
                 "allow" : True
-            }
+            },
+            "id": 19283
         }, msg=r.data)
 
     def test_check_perform_transaction_no_account(self):
@@ -583,7 +584,8 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
                 "account" : {
                     "username" : "1234567"
                 }
-            }
+            },
+            "id": 978123
         })
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         res = r.data.get('result')
@@ -593,6 +595,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertEqual(res['state'], 1)
         # Compare create time with accuracy to seconds
         self.assertEqual(int(res['create_time'] / 1000), int(now.timestamp()))
+        self.assertEqual(r.data['id'], 978123)
 
     def test_create_transaction_duplicate(self):
         self.test_create_transaction()
@@ -608,7 +611,8 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
             "method": "PerformTransaction",
             "params": {
                 "id": "5305e3bab097f420a62ced0b",
-            }
+            },
+            "id": 978123
         })
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         res = r.data.get('result')
@@ -618,6 +622,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertIsInstance(res['perform_time'], int)
         self.assertTrue(res['perform_time'] > 0)
         self.assertEqual(res['state'], 2)
+        self.assertEqual(r.data['id'], 978123)
 
     def test_perform_transaction_duplication(self):
         self.test_perform_transaction()
@@ -637,12 +642,13 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertTrue(res['perform_time'] > 0)
         self.assertEqual(res['state'], 2)
 
-    def perform_transaction_not_found(self):
+    def test_perform_transaction_not_found(self):
         r = self.post(self.url, {
             "method": "PerformTransaction",
             "params": {
                 "id": "5305e3bab097f420a62ced0c",
-            }
+            },
+            'id': 12345
         })
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertDictEqual(r.data, {
@@ -652,6 +658,68 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
                     'ru': 'Транзакция не найдена',
                     'en': 'Transaction not found',
                 },
+                'data': 'username',
+            },
+            'id': 12345
+        })
+
+    def _perform_transaction_bad_state(self):
+        r = self.post(self.url, {
+            "method": "PerformTransaction",
+            "params": {
+                "id": "5305e3bab097f420a62ced0a",
+            },
+            'id': 7823
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            'error': {
+                'code': -31008,
+                'message': {
+                    'ru': 'Не правильный тип транзакции',
+                    'en': 'Bad transaction type',
+                },
                 'data': 'username'
-            }
+            },
+            'id': 7823
+        })
+
+    def test_perform_transaction_bad_state(self):
+        edatetime = datetime.now() + timedelta(days=1)
+        trans = models_payme.PaymeTransactionModel.objects.create(
+            customer=self.customer,
+            transaction_state=models_payme.TransactionStatesEnum.INITIAL,
+            external_id='5305e3bab097f420a62ced0a',
+            external_time=edatetime,
+            perform_time=edatetime + timedelta(days=3),
+            amount=0.34
+        )
+        self._perform_transaction_bad_state()
+        trans.transaction_state = models_payme.TransactionStatesEnum.CANCELLED
+        trans.save(update_fields=['transaction_state'])
+        self._perform_transaction_bad_state()
+        trans.transaction_state = models_payme.TransactionStatesEnum.CANCELLED_AFTER_PERFORMED
+        trans.save(update_fields=['transaction_state'])
+        self._perform_transaction_bad_state()
+
+    def test_cancel_transaction(self):
+        r = self.post(self.url, {
+            'method': 'CancelTransaction',
+            'params': {
+                'id': '5305e3bab097f420a62ced0b',
+                'reason': models_payme.PaymeCancelReasonEnum.SOME_REMOTE_CUSTOMERS_INACTIVE.value
+            },
+            'id': 18297
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            'error': {
+                'code': -31007,
+                'message': {
+                    'ru': 'Запрещено отменять транзакцию',
+                    'en': 'Not allowed to cancel transaction'
+                },
+                'data': 'username',
+            },
+            'id': 18297
         })

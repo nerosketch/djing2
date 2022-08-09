@@ -186,9 +186,7 @@ class PaymeTransactionModelManager(models.Manager):
         trans = self.filter(external_id=transaction_id).first()
         if trans is None:
             raise PaymeTransactionNotFound
-        if trans.transaction_state == TransactionStatesEnum.CANCELLED:
-            raise PaymeTransactionStateBad
-        elif trans.transaction_state == TransactionStatesEnum.START:
+        if trans.transaction_state == TransactionStatesEnum.START:
             if trans.is_timed_out():
                 trans.cancel()
                 raise PaymeTransactionTimeout
@@ -212,11 +210,14 @@ class PaymeTransactionModelManager(models.Manager):
                     )
                     trans.perform()
                 customer_check_service_for_expiration(customer_id=customer.pk)
-        return {'result': {
-            'transaction': trans.pk,
-            'perform_time': int(trans.date_add.timestamp() * 1000),
-            'state': trans.transaction_state
-        }}
+        if trans.transaction_state in [TransactionStatesEnum.START, TransactionStatesEnum.PERFORMED]:
+            return {'result': {
+                'transaction': trans.pk,
+                'perform_time': int(trans.date_add.timestamp() * 1000),
+                'state': trans.transaction_state
+            }}
+
+        raise PaymeTransactionStateBad
 
     def cancel_transaction(self, transaction_id: str) -> dict:
         # trans = self.filter(external_id=transaction_id).first()

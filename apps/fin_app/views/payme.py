@@ -60,6 +60,9 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
                 raise pmodels.PaymeRpcMethodError
             rpc_method = self.rpc_methods.get(rpc_method_name, self._no_method_found)
             r = rpc_method(self, data)
+            r.update({
+                'id': data.get('id')
+            })
             return Response(r, status=status.HTTP_200_OK)
         except pmodels.PaymeBaseRPCException as err:
             err_dict = {
