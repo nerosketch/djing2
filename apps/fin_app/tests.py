@@ -636,3 +636,22 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertIsInstance(res['perform_time'], int)
         self.assertTrue(res['perform_time'] > 0)
         self.assertEqual(res['state'], 2)
+
+    def perform_transaction_not_found(self):
+        r = self.post(self.url, {
+            "method": "PerformTransaction",
+            "params": {
+                "id": "5305e3bab097f420a62ced0c",
+            }
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            'error': {
+                'code': -31003,
+                'message': {
+                    'ru': 'Транзакция не найдена',
+                    'en': 'Transaction not found',
+                },
+                'data': 'username'
+            }
+        })
