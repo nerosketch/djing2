@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 from datetime import datetime, timedelta
 from django.db import models, transaction
-from django.utils.translation import override, gettext_lazy as _
+from django.utils.translation import override, gettext_lazy as _, gettext
 from rest_framework.exceptions import APIException
 from rest_framework import status
 from djing2.lib import IntEnumEx
@@ -19,7 +19,7 @@ PAYME_DB_TYPE_ID = 4
 
 def lang_translate(text: str, lang: str) -> str:
     with override(lang):
-        return _(text)
+        return gettext(text)
 
 
 def ugettext_lazy(text: str):
