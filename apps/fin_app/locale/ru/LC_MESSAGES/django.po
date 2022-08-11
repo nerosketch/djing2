@@ -96,7 +96,7 @@ msgstr "Абонент не найден"
 
 #: apps/fin_app/models/payme.py:120
 msgid "Not allowed to cancel transaction"
-msgstr "Запрещено отменять транцакции"
+msgstr "Запрещено отменять транзакции"
 
 #: apps/fin_app/models/payme.py:125
 msgid "Validation error"

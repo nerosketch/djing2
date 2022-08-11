@@ -2,6 +2,7 @@ from functools import wraps
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
+from django.http import Http404
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import ValidationError
@@ -87,7 +88,10 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
 
     @cached_property
     def _lazy_object(self):
-        return self.get_object()
+        try:
+            return self.get_object()
+        except Http404:
+            raise pmodels.PaymeCustomerNotFound
 
     def filter_queryset(self, queryset):
         return queryset
@@ -151,6 +155,7 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
     def check_perform_transaction(self, data) -> dict:
         params = data['params']
         uname = params['account']['username']
+        self._lazy_object
         fetch_customer_profile(self.request, username=uname)
         return {
             "result": {"allow": True}
