@@ -1,9 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from fin_app.views import base
 from fin_app.views import alltime
 from fin_app.views import rncb
 from fin_app.views import payme
-from fin_app.views import base
 
 app_name = "fin_app"
 

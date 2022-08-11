@@ -28,7 +28,7 @@ def _payment_method_wrapper(request_serializer):
 class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
     http_method_names = ['post']
     permission_classes = [AllowAny]
-    #  serializer_class =
+    serializer_class = payme_serializers.PaymePaymentGatewayModelSerializer
     queryset = pmodels.PaymePaymentGatewayModel.objects.all()
     lookup_field = "slug"
     lookup_url_kwarg = "pay_slug"
