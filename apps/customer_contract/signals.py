@@ -3,20 +3,8 @@ from django.dispatch.dispatcher import receiver
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 from customers.models import Customer
-# from customer_contract.tasks import create_customer_default_contract_task
 from customer_contract.custom_signals import finish_customer_contract_signal
 from customer_contract.models import CustomerContractModel
-
-
-# @receiver(post_save, sender=Customer)
-# def customer_profile_post_save(sender, instance: Customer, created=False, **kwargs):
-#     if not created:
-#         return
-#     create_customer_default_contract_task(
-#         customer_id=instance.pk,
-#         start_service_time=instance.create_date,
-#         contract_number=instance.username
-#     )
 
 
 @receiver(finish_customer_contract_signal, sender=CustomerContractModel)
