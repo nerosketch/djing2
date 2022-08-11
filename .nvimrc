@@ -374,10 +374,7 @@ nnoremap <silent> \ :Rg<CR>
 nnoremap <silent> <c-o> :CocList outline<CR>
 " Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
 " Coc only does snippet and additional edit on confirm.
-inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
-
-" Use <c-space> to trigger completion.
-inoremap <silent><expr> <c-space> coc#refresh()
+inoremap <silent><expr> <tab> coc#pum#visible() ? coc#pum#confirm() : "\<tab>"
 
 " Remap keys for gotos
 nmap <silent> gd <Plug>(coc-definition)
