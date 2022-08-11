@@ -96,10 +96,7 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
         return Response({
             'error': {
                 'code': pmodels.PaymeErrorsEnum.METHOD_IS_NO_POST.value,
-                'message': {
-                    'ru': 'HTTP Метод не допустим',
-                    'en': 'HTTP Method is not allowed'
-                },
+                'message': pmodels.ugettext_lazy('HTTP Method is not allowed'),
                 'data': pmodels.PaymeBaseRPCException.get_data()
             },
         }, status=status.HTTP_200_OK)
@@ -139,10 +136,7 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
             return Response({
                 'error': {
                     'code': pmodels.PaymeErrorsEnum.JSON_PARSE_ERROR.value,
-                    'message': {
-                        'ru': 'Ошибка валидации данных',
-                        'en': 'Data validation error'
-                    },
+                    'message': pmodels.ugettext_lazy('Data validation error'),
                     'data': pmodels.PaymeBaseRPCException.get_data()
                 },
                 'id': data.get('id')

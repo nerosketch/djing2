@@ -1,7 +1,7 @@
-from typing import Dict
+from typing import Dict, Optional
 from datetime import datetime, timedelta
 from django.db import models, transaction
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import override, gettext_lazy as _
 from rest_framework.exceptions import APIException
 from rest_framework import status
 from djing2.lib import IntEnumEx
@@ -15,6 +15,19 @@ from customers.tasks import customer_check_service_for_expiration
 
 
 PAYME_DB_TYPE_ID = 4
+
+
+def lang_translate(text: str, lang: str) -> str:
+    with override(lang):
+        return _(text)
+
+
+def ugettext_lazy(text: str):
+    return {
+        'ru': lang_translate(text, 'ru'),
+        'en': lang_translate(text, 'en'),
+        'uz': lang_translate(text, 'uz'),
+    }
 
 
 class PaymeCancelReasonEnum(IntEnumEx):
@@ -42,12 +55,11 @@ class PaymeErrorsEnum(IntEnumEx):
     TRANSACTION_NOT_ALLOWED = -31007
 
 
+
+
 class PaymeBaseRPCException(APIException):
     code: PaymeErrorsEnum = PaymeErrorsEnum.SERVER_ERROR
-    msg = {
-        'ru': 'Не известная ошибка',
-        'en': 'Unknown error',
-    }
+    msg = ugettext_lazy('Unknown error')
 
     @classmethod
     def get_code(cls) -> PaymeErrorsEnum:
@@ -67,75 +79,50 @@ class PaymeAuthenticationFailed(APIException):
     default_detail = {
         'error': {
             'code': PaymeErrorsEnum.PERMISSION_DENIED.value,
-            'message': {
-                'ru': 'Не получается войти с предоставленными учётными данными',
-                'en': 'Incorrect authentication credentials.'
-            },
+            'message': ugettext_lazy('Incorrect authentication credentials.'),
             'data': PaymeBaseRPCException.get_data()
         },
     }
 
-    def __init__(self, detail=None):
+    def __init__(self, detail: Optional[str] = None):
         self.detail = self.default_detail
-
-        dmsg = self.detail['error']['message']
-        dmsg['ru'] = detail
+        if detail:
+            self.detail['error']['message'] = ugettext_lazy(detail)
 
 
 class PaymeRpcMethodError(PaymeBaseRPCException):
     code = PaymeErrorsEnum.RPC_METHOD_NOT_FOUND
-    msg = {
-        'ru': 'Метод не найден',
-        'en': 'Method not found'
-    }
+    msg = ugettext_lazy('Method not found')
 
 
 class PaymeTransactionNotFound(PaymeBaseRPCException):
     code = PaymeErrorsEnum.TRANSACTION_NOT_FOUND
-    msg = {
-        'ru': 'Транзакция не найдена',
-        'en': 'Transaction not found',
-    }
+    msg = ugettext_lazy('Transaction not found')
 
 
 class PaymeTransactionStateBad(PaymeBaseRPCException):
     code = PaymeErrorsEnum.TRANSACTION_STATE_ERROR
-    msg = {
-        'ru': 'Не правильный тип транзакции',
-        'en': 'Bad transaction type',
-    }
+    msg = ugettext_lazy('Bad transaction type')
 
 
 class PaymeTransactionTimeout(PaymeBaseRPCException):
     code = PaymeErrorsEnum.TRANSACTION_STATE_ERROR
-    msg = {
-        'ru': 'Транзакция устарела',
-        'en': 'Transaction is timed out',
-    }
+    msg = ugettext_lazy('Transaction is timed out')
 
 
 class PaymeCustomerNotFound(PaymeBaseRPCException):
     code = PaymeErrorsEnum.CUSTOMER_DOES_NOT_EXISTS
-    msg = {
-        'ru': 'Абонент не найден',
-        'en': 'Customer does not exists'
-    }
+    msg = ugettext_lazy('Customer does not exists')
 
 
 class PaymeTransactionCancelNotAllowed(PaymeBaseRPCException):
     code = PaymeErrorsEnum.TRANSACTION_NOT_ALLOWED
-    msg = {
-        'ru': 'Запрещено отменять транзакцию',
-        'en': 'Not allowed to cancel transaction'
-    }
+    msg = ugettext_lazy('Not allowed to cancel transaction')
 
 
 class PaymeValidationError(PaymeBaseRPCException):
     code = PaymeErrorsEnum.VALIDATION_ERROR
-    msg = {
-        'ru': 'Ошибка валидации',
-        'en': 'Validation error'
-    }
+    msg = ugettext_lazy('Validation error')
 
 
 class PaymeRPCMethodNames(models.TextChoices):
