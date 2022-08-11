@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from django.contrib.sites.models import Site
 from django.utils import timezone
 from django.utils.html import escape
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, override_settings
 from rest_framework import status
 
 from customers.models import Customer
@@ -425,8 +425,16 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
 
 
+@override_settings(PAYME_CREDENTIALS='TG9naW46UGFzcw==')
 class PaymeMerchantApiTestCase(CustomAPITestCase):
     url = '/api/fin/payme/pay_gw_slug/pay/'
+
+    def post(self, *args, **kwargs):
+        headers = {
+            'HTTP_AUTHORIZATION': 'Basic TG9naW46UGFzcw=='
+        }
+        kwargs.update(headers)
+        return super().post(*args, **kwargs)
 
     def setUp(self):
         super().setUp()
