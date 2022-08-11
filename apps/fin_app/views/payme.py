@@ -172,7 +172,7 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
         )
         return {'result': {
             'create_time': int(transaction.date_add.timestamp() * 1000),
-            'transaction': transaction.pk,
+            'transaction': str(transaction.pk),
             'state': transaction.transaction_state
         }}
 

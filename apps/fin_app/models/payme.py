@@ -220,7 +220,7 @@ class PaymeTransactionModelManager(models.Manager):
                 customer_check_service_for_expiration(customer_id=customer.pk)
         if trans.transaction_state in [TransactionStatesEnum.START, TransactionStatesEnum.PERFORMED]:
             return {'result': {
-                'transaction': trans.pk,
+                'transaction': str(trans.pk),
                 'perform_time': int(trans.date_add.timestamp() * 1000),
                 'state': trans.transaction_state
             }}
@@ -241,7 +241,7 @@ class PaymeTransactionModelManager(models.Manager):
             'create_time': int(trans.date_add.timestamp() * 1000),
             'perform_time': int(trans.perform_time.timestamp() * 1000) if trans.perform_time else 0,
             'cancel_time': int(trans.cancel_time.timestamp() * 1000) if trans.cancel_time else 0,
-            'transaction': trans.pk,
+            'transaction': str(trans.pk),
             'state': trans.transaction_state,
             'reason': None
         }}

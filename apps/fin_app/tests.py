@@ -474,10 +474,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertDictEqual(r.data, {
             "error" : {
                 "code" : -31050,
-                "message": {
-                    'ru': 'Абонент не найден',
-                    'en': 'Customer does not exists'
-                },
+                "message": models_payme.ugettext_lazy('Customer does not exists'),
                 "data": 'username'
             },
             'id': 19283
@@ -500,10 +497,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertDictEqual(r.data, {
             "error" : {
                 "code" : -31050,
-                "message": {
-                    'ru': 'Абонент не найден',
-                    'en': 'Customer does not exists'
-                },
+                "message": models_payme.ugettext_lazy('Customer does not exists'),
                 "data": 'username'
             },
             'id': 19283
@@ -524,10 +518,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertDictEqual(r.data, {
             'error': {
                 'code': -32700,
-                'message': {
-                    'en': 'Data validation error',
-                    'ru': 'Ошибка валидации данных',
-                },
+                "message": models_payme.ugettext_lazy('Data validation error'),
                 'data': 'username'
             },
             'id': 19283
@@ -538,10 +529,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
             self.assertDictEqual(dct, {
                 'error': {
                     'code': -32300,
-                    'message': {
-                        'ru': 'HTTP Метод не допустим',
-                        'en': 'HTTP Method is not allowed'
-                    },
+                    "message": models_payme.ugettext_lazy('HTTP Method is not allowed'),
                     'data': 'username'
                 }
             })
@@ -591,8 +579,8 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         res = r.data.get('result')
         self.assertIsNotNone(res, msg=r.data)
-        self.assertIsInstance(res['transaction'], int)
-        self.assertGreater(res['transaction'], 0)
+        self.assertIsInstance(res['transaction'], str)
+        self.assertGreater(int(res['transaction']), 0)
         self.assertEqual(res['state'], 1)
         # Compare create time with accuracy to seconds
         self.assertEqual(int(res['create_time'] / 1000), int(now.timestamp()))
@@ -618,8 +606,8 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         res = r.data.get('result')
         self.assertIsNotNone(res, msg=r.data)
-        self.assertIsInstance(res['transaction'], int)
-        self.assertGreater(res['transaction'], 0)
+        self.assertIsInstance(res['transaction'], str)
+        self.assertGreater(int(res['transaction']), 0)
         self.assertIsInstance(res['perform_time'], int)
         self.assertGreater(res['perform_time'], 0)
         self.assertEqual(res['state'], 2)
@@ -637,8 +625,8 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         res = r.data.get('result')
         self.assertIsNotNone(res, msg=r.data)
-        self.assertIsInstance(res['transaction'], int)
-        self.assertGreater(res['transaction'], 0)
+        self.assertIsInstance(res['transaction'], str)
+        self.assertGreater(int(res['transaction']), 0)
         self.assertIsInstance(res['perform_time'], int)
         self.assertGreater(res['perform_time'], 0)
         self.assertEqual(res['state'], 2)
@@ -655,10 +643,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertDictEqual(r.data, {
             'error': {
                 'code': -31003,
-                'message': {
-                    'ru': 'Транзакция не найдена',
-                    'en': 'Transaction not found',
-                },
+                "message": models_payme.ugettext_lazy('Transaction not found'),
                 'data': 'username',
             },
             'id': 12345
@@ -676,10 +661,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertDictEqual(r.data, {
             'error': {
                 'code': -31008,
-                'message': {
-                    'ru': 'Не правильный тип транзакции',
-                    'en': 'Bad transaction type',
-                },
+                "message": models_payme.ugettext_lazy('Bad transaction type'),
                 'data': 'username'
             },
             'id': 7823
@@ -716,10 +698,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertDictEqual(r.data, {
             'error': {
                 'code': -31007,
-                'message': {
-                    'ru': 'Запрещено отменять транзакцию',
-                    'en': 'Not allowed to cancel transaction'
-                },
+                "message": models_payme.ugettext_lazy('Not allowed to cancel transaction'),
                 'data': 'username',
             },
             'id': 18297
@@ -739,8 +718,8 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         res = r.data.get('result')
         self.assertIsNotNone(res, msg=r.data)
-        self.assertIsInstance(res['transaction'], int)
-        self.assertGreater(res['transaction'], 0)
+        self.assertIsInstance(res['transaction'], str)
+        self.assertGreater(int(res['transaction']), 0)
         self.assertIsInstance(res['perform_time'], int)
         self.assertGreater(res['perform_time'], 0)
         self.assertIsInstance(res['create_time'], int)
@@ -761,10 +740,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertDictEqual(r.data, {
             'error': {
                 'code': -31003,
-                'message': {
-                    'ru': 'Транзакция не найдена',
-                    'en': 'Transaction not found',
-                },
+                "message": models_payme.ugettext_lazy('Transaction not found'),
                 'data': 'username',
             },
             'id': 128463
@@ -807,7 +783,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertDictEqual(tr['account'], {
             "username" : "1234567"
         })
-        self.assertIsInstance(tr['transaction'], int)
-        self.assertGreater(tr['transaction'], 0)
+        self.assertIsInstance(tr['transaction'], str)
+        self.assertGreater(int(tr['transaction']), 0)
         self.assertEqual(tr['state'], 2)
         self.assertIsNone(tr['reason'])

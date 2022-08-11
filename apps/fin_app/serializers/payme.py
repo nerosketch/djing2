@@ -118,7 +118,7 @@ class PaymeTransactionStatementSerializer(BaseCustomModelSerializer):
     create_time = MilisecTimestampField(default=0, source='date_add', read_only=True)
     perform_time = MilisecTimestampField(default=0, source='perform_time', read_only=True)
     cancel_time = MilisecTimestampField(default=0, source='cancel_time', read_only=True)
-    transaction = serializers.IntegerField(source='pk', read_only=True)
+    transaction = serializers.CharField(source='pk', read_only=True)
     state = serializers.IntegerField(source='transaction_state', read_only=True)
     reason = serializers.IntegerField(allow_null=True, default=None, read_only=True)
 
