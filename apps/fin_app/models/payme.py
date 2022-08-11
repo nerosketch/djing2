@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
+from rest_framework import status
 from djing2.lib import IntEnumEx
 from .base_payment_model import (
     BasePaymentModel,
@@ -59,6 +60,26 @@ class PaymeBaseRPCException(APIException):
     @classmethod
     def get_data(cls):
         return 'username'
+
+
+class PaymeAuthenticationFailed(APIException):
+    status_code = status.HTTP_200_OK
+    default_detail = {
+        'error': {
+            'code': PaymeErrorsEnum.PERMISSION_DENIED.value,
+            'message': {
+                'ru': 'Не получается войти с предоставленными учётными данными',
+                'en': 'Incorrect authentication credentials.'
+            },
+            'data': PaymeBaseRPCException.get_data()
+        },
+    }
+
+    def __init__(self, detail=None):
+        self.detail = self.default_detail
+
+        dmsg = self.detail['error']['message']
+        dmsg['ru'] = detail
 
 
 class PaymeRpcMethodError(PaymeBaseRPCException):

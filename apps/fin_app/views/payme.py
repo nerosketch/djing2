@@ -1,8 +1,12 @@
 from functools import wraps
+from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import AnonymousUser
+from django.conf import settings
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.authentication import BaseAuthentication, get_authorization_header
 from rest_framework import status
 from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SitesFilterMixin
@@ -25,9 +29,57 @@ def _payment_method_wrapper(request_serializer):
     return _fn
 
 
+_paymeAnonUser = AnonymousUser()
+
+class PaymeBasicAuthentication(BaseAuthentication):
+    """
+    Simple base64 authentication.
+
+    Pay system should authenticate by passing the base64(login:password) key in the "Authorization"
+    HTTP header, prepended with the string "Basic ".  For example:
+
+        Authorization: Basic TG9naW46UGFzcw==
+    """
+
+    keyword = 'Basic'
+    model = None
+
+    def authenticate(self, request):
+        auth = get_authorization_header(request).split()
+
+        if not auth or auth[0].lower() != self.keyword.lower().encode() or len(auth) == 1:
+            msg = _('Invalid login header. No credentials provided.')
+            raise pmodels.PaymeAuthenticationFailed(msg)
+        elif len(auth) > 2:
+            msg = _('Invalid login header. Credentials string should not contain spaces.')
+            raise pmodels.PaymeAuthenticationFailed(msg)
+
+        try:
+            credentials_base64 = auth[1].decode()
+        except UnicodeError:
+            msg = _('Invalid credentials header. Credentials string should not contain invalid characters.')
+            raise pmodels.PaymeAuthenticationFailed(msg)
+
+        return self.authenticate_credentials(credentials_base64)
+
+    def authenticate_credentials(self, key):
+        payme_credentials = getattr(settings, 'PAYME_CREDENTIALS')
+        if not payme_credentials:
+            raise pmodels.PaymeAuthenticationFailed('PAYME_CREDENTIALS is not specified in settings')
+
+        if payme_credentials != key:
+            raise pmodels.PaymeAuthenticationFailed(_('Invalid username/password.'))
+
+        return (_paymeAnonUser, None)
+
+    def authenticate_header(self, request):
+        return self.keyword
+
+
 class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
     http_method_names = ['post']
     permission_classes = [AllowAny]
+    authentication_classes = [PaymeBasicAuthentication]
     serializer_class = payme_serializers.PaymePaymentGatewayModelSerializer
     queryset = pmodels.PaymePaymentGatewayModel.objects.all()
     lookup_field = "slug"
