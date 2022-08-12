@@ -219,35 +219,26 @@ class PaymeTransactionModelManager(models.Manager):
                     trans.perform()
                 customer_check_service_for_expiration(customer_id=customer.pk)
         if trans.transaction_state in [TransactionStatesEnum.START, TransactionStatesEnum.PERFORMED]:
-            return {'result': {
-                'create_time': int(trans.date_add.timestamp() * 1000),
-                'perform_time': int(trans.perform_time.timestamp() * 1000) if trans.perform_time else 0,
-                'cancel_time': int(trans.cancel_time.timestamp() * 1000) if trans.cancel_time else 0,
-                'transaction': str(trans.pk),
-                'state': trans.transaction_state,
-                'reason': None
-            }}
+            return trans.as_dict()
 
         raise PaymeTransactionStateBad
 
     def cancel_transaction(self, transaction_id: str) -> dict:
-        # trans = self.filter(external_id=transaction_id).first()
-        # if trans is None:
-        #     raise PaymeTransactionNotFound
+        trans = self.filter(
+            external_id=transaction_id,
+        ).first()
+        if trans is None:
+           raise PaymeTransactionNotFound
+        if trans.transaction_state == TransactionStatesEnum.START:
+           trans.cancel()
+           return trans.as_dict()
         raise PaymeTransactionCancelNotAllowed
 
     def check_payment(self, transaction_id: str) -> dict:
         trans = self.filter(external_id=transaction_id).first()
         if trans is None:
             raise PaymeTransactionNotFound
-        return {'result': {
-            'create_time': int(trans.date_add.timestamp() * 1000),
-            'perform_time': int(trans.perform_time.timestamp() * 1000) if trans.perform_time else 0,
-            'cancel_time': int(trans.cancel_time.timestamp() * 1000) if trans.cancel_time else 0,
-            'transaction': str(trans.pk),
-            'state': trans.transaction_state,
-            'reason': None
-        }}
+        return trans.as_dict()
 
 
 class PaymeTransactionModel(models.Model):
@@ -279,12 +270,23 @@ class PaymeTransactionModel(models.Model):
     def cancel(self):
         self.transaction_state = TransactionStatesEnum.CANCELLED
         self.cancel_time = datetime.now()
-        self.save(update_fields=['transaction_state'])
+        self.save(update_fields=['transaction_state', 'cancel_time'])
 
     def perform(self):
         self.transaction_state = TransactionStatesEnum.PERFORMED
         self.perform_time = datetime.now()
         self.save(update_fields=['transaction_state', 'perform_time'])
+
+    def as_dict(self) -> dict:
+        return {'result': {
+            'create_time': int(self.date_add.timestamp() * 1000),
+            'perform_time': int(self.perform_time.timestamp() * 1000) if self.perform_time else 0,
+            'cancel_time': int(self.cancel_time.timestamp() * 1000) if self.cancel_time else 0,
+            'transaction': str(self.pk),
+            'state': self.transaction_state,
+            'reason': None
+        }}
+
 
     objects = PaymeTransactionModelManager()
 

@@ -161,7 +161,6 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
             "result": {"allow": True}
         }
 
-
     @_payment_method_wrapper(
         payme_serializers.PaymeCreateTransactionRequestSerializer
     )
@@ -175,11 +174,7 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
             external_time=params['time'],
             amount=params['amount']
         )
-        return {'result': {
-            'create_time': int(transaction.date_add.timestamp() * 1000),
-            'transaction': str(transaction.pk),
-            'state': transaction.transaction_state
-        }}
+        return transaction.as_dict()
 
     @_payment_method_wrapper(
         payme_serializers.PaymePerformTransactionRequestSerializer

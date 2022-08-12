@@ -694,6 +694,10 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self._perform_transaction_bad_state()
 
     def test_cancel_transaction(self):
+        # create transaction
+        self.test_create_transaction()
+
+        # try to cancel transaction
         r = self.post(self.url, {
             'method': 'CancelTransaction',
             'params': {
@@ -702,6 +706,30 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
             },
             'id': 18297
         })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        res = r.data.get('result')
+        self.assertIsInstance(res['create_time'], int)
+        self.assertGreater(res['create_time'], 0)
+        self.assertEqual(res['perform_time'], 0)
+        self.assertIsInstance(res['cancel_time'], int)
+        self.assertGreater(res['cancel_time'], 0)
+        self.assertEqual(res['state'], -1)
+        self.assertIsNone(res['reason'])
+
+    def test_cancel_confirmed_transaction(self):
+        # create and perform transaction
+        self.test_perform_transaction()
+
+        # try to cancel transaction
+        r = self.post(self.url, {
+            'method': 'CancelTransaction',
+            'params': {
+                'id': '5305e3bab097f420a62ced0b',
+                'reason': models_payme.PaymeCancelReasonEnum.SOME_REMOTE_CUSTOMERS_INACTIVE.value
+            },
+            'id': 18297
+        })
+
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertDictEqual(r.data, {
             'error': {
