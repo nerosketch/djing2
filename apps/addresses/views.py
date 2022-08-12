@@ -4,11 +4,16 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from fastapi import APIRouter
+
 from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.serializers import AddressModelSerializer
 from addresses.fias_socrbase import AddressFIASInfo
+
+
+router = APIRouter()
 
 
 class AddressModelViewSet(DjingModelViewSet):
@@ -93,3 +98,9 @@ class AddressModelViewSet(DjingModelViewSet):
         obj = self.get_object()
         ids_hierarchy = tuple(i for i in obj.get_id_hierarchy_gen())
         return Response(ids_hierarchy)
+
+
+@router.get("/api/test/")
+async def read_test():
+    return [2,23,4,4,4,89]
+

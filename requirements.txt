@@ -72,3 +72,8 @@ pyftpdlib==1.5.6
 
 # Csv and excel
 djangorestframework-csv>=2.1.1
+
+# fastapi
+fastapi
+uvicorn[standard]
+

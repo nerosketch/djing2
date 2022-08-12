@@ -30,5 +30,6 @@ CMD ./manage.py migrate \
     && ./manage.py loaddata initial_data \
     # && ./manage.py compilemessages -l ru \
     # && ./manage.py shell -c "from create_initial_user import *; make_initial_user()"
-    && exec uwsgi --ini /var/www/djing2/uwsgi_djing2.ini
+    #&& exec uwsgi --ini /var/www/djing2/uwsgi_djing2.ini
+    && exec uvicorn fastapi_app:app --reload
 

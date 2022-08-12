@@ -48,7 +48,7 @@ if SECRET_KEY is None:
 DEBUG = os.getenv("APP_DEBUG", False)
 DEBUG = bool(DEBUG)
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS")
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", ())
 if ALLOWED_HOSTS:
     ALLOWED_HOSTS = ALLOWED_HOSTS.split('|')
 
