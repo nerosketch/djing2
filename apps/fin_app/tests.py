@@ -542,31 +542,35 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
                 }
             })
 
-        r = self.client.get(self.url, SERVER_NAME="example.com")
+        hdr = {
+            'HTTP_AUTHORIZATION': 'Basic TG9naW46UGFzcw=='
+        }
+
+        r = self.client.get(self.url, SERVER_NAME="example.com", **hdr)
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         _assert_no_post(r.data)
 
-        r = self.client.put(self.url, {}, SERVER_NAME="example.com")
+        r = self.client.put(self.url, {}, SERVER_NAME="example.com", **hdr)
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         _assert_no_post(r.data)
 
-        r = self.client.delete(self.url, {}, SERVER_NAME="example.com")
+        r = self.client.delete(self.url, {}, SERVER_NAME="example.com", **hdr)
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         _assert_no_post(r.data)
 
-        r = self.client.head(self.url, {}, SERVER_NAME="example.com")
+        r = self.client.head(self.url, {}, SERVER_NAME="example.com", **hdr)
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         _assert_no_post(r.data)
 
-        r = self.client.options(self.url, {}, SERVER_NAME="example.com")
+        r = self.client.options(self.url, {}, SERVER_NAME="example.com", **hdr)
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         _assert_no_post(r.data)
 
-        r = self.client.trace(self.url, {}, SERVER_NAME="example.com")
+        r = self.client.trace(self.url, {}, SERVER_NAME="example.com", **hdr)
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         _assert_no_post(r.data)
 
-        r = self.client.patch(self.url, {}, SERVER_NAME="example.com")
+        r = self.client.patch(self.url, {}, SERVER_NAME="example.com", **hdr)
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         _assert_no_post(r.data)
 
@@ -714,7 +718,7 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         self.assertIsInstance(res['cancel_time'], int)
         self.assertGreater(res['cancel_time'], 0)
         self.assertEqual(res['state'], -1)
-        self.assertIsNone(res['reason'])
+        self.assertEqual(res['reason'], 1)
 
     def test_cancel_confirmed_transaction(self):
         # create and perform transaction

@@ -195,6 +195,7 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
         trans_id = params['id']
         return pmodels.PaymeTransactionModel.objects.cancel_transaction(
             transaction_id=trans_id,
+            reason=params['reason']
         )
 
     @_payment_method_wrapper(

@@ -37,20 +37,36 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='basepaymentmodel',
             name='payment_type',
-            field=models.PositiveSmallIntegerField(choices=[(0, 'Unknown'), (3, '24 All Time'), (2, 'RNCB'), (4, 'Payme')], default=0),
+            field=models.PositiveSmallIntegerField(
+                choices=[(0, 'Unknown'), (3, '24 All Time'), (2, 'RNCB'), (4, 'Payme')],
+                default=0
+            ),
         ),
         migrations.CreateModel(
             name='PaymeTransactionModel',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('transaction_state', models.IntegerField(choices=[(0, 'Initial'), (1, 'Start'), (-1, 'Cancelled'), (2, 'Performed'), (-2, 'Cancelled After Performed')], default=0)),
+                ('transaction_state', models.IntegerField(
+                    choices=[(0, 'Initial'), (1, 'Start'), (-1, 'Cancelled'), (2, 'Performed'),
+                        (-2, 'Cancelled After Performed')],
+                    default=0
+                )),
                 ('external_id', models.CharField(max_length=25, unique=True)),
                 ('external_time', models.DateTimeField()),
                 ('date_add', models.DateTimeField(auto_now_add=True)),
                 ('cancel_time', models.DateTimeField(blank=True, default=None, null=True)),
+                ('reason', models.IntegerField(
+                    choices=[(1, 'some_remote_customers_inactive'), (2, 'processing_operation_error'),
+                        (3, 'TRANSACTION_PROVIDE_ERROR'), (4, 'TRANSACTION_CANCELLED_BY_TIMEOUT'),
+                        (5, 'CASH_REFUND'), (10, 'UNKNOWN_ERROR')],
+                    null=True, blank=True, default=None
+                )),
                 ('perform_time', models.DateTimeField(blank=True, default=None, null=True)),
                 ('amount', models.DecimalField(decimal_places=6, default=0.0, max_digits=19, verbose_name='Cost')),
-                ('customer', models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_DEFAULT, to='customers.customer')),
+                ('customer', models.ForeignKey(
+                    blank=True, default=None, null=True,
+                    on_delete=django.db.models.deletion.SET_DEFAULT, to='customers.customer'
+                )),
             ],
         ),
     ]
