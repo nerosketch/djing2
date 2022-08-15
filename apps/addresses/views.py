@@ -1,3 +1,4 @@
+from enum import Enum
 from dataclasses import asdict
 from django.db.models import Count
 from rest_framework import status
@@ -7,10 +8,12 @@ from rest_framework.response import Response
 from fastapi import APIRouter
 
 from djing2.lib import safe_int
+from djing2.lib.fastapi.crud import crud_decorator, CRUD
 from djing2.viewsets import DjingModelViewSet
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.serializers import AddressModelSerializer
 from addresses.fias_socrbase import AddressFIASInfo
+from addresses import schemas
 
 
 router = APIRouter()
@@ -100,6 +103,17 @@ class AddressModelViewSet(DjingModelViewSet):
         return Response(ids_hierarchy)
 
 
-@router.get("/test/")
-async def read_test():
+class AddrEnum(str, Enum):
+    ADDR = 'Addr'
+
+
+@crud_decorator(path="/test/", router=router, schema=schemas.AddressBaseSchema, tag=AddrEnum.ADDR)
+class AddrsCrud(CRUD):
+    pass
+
+
+
+@router.get("/test/", tags=["addr"], response_model=schemas.AddressModelSchema)
+async def new_address(addr_body: schemas.AddressBaseSchema):
+    """Creating new AddressModel object and return it instance from db"""
     return [2,23,4,4,4,89]
