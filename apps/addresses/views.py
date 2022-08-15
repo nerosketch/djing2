@@ -100,7 +100,6 @@ class AddressModelViewSet(DjingModelViewSet):
         return Response(ids_hierarchy)
 
 
-@router.get("/api/test/")
+@router.get("/test/")
 async def read_test():
     return [2,23,4,4,4,89]
-

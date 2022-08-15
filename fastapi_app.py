@@ -2,7 +2,7 @@
 
 import os
 import sys
-from importlib.util import find_spec
+#  from importlib.util import find_spec
 from django.apps import apps
 from django.conf import settings
 from django.core.wsgi import get_wsgi_application
@@ -22,7 +22,13 @@ def get_application() -> FastAPI:
     app = FastAPI(title='djing2', openapi_url="/api_v2/openapi.json", debug=settings.DEBUG)
 
     # Set all CORS enabled origins
-    app.add_middleware(CORSMiddleware, allow_origins = [str(origin) for origin in settings.ALLOWED_HOSTS or []] or ["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins = [str(origin) for origin in settings.ALLOWED_HOSTS or []] or ["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     # Include all api endpoints
     app.include_router(router, prefix='/api_v2')
