@@ -25,23 +25,23 @@ msgstr ""
 
 #: apps/fin_app/models/alltime.py:33
 msgid "All time gateway"
-msgstr ""
+msgstr "All time шлюз"
 
 #: apps/fin_app/models/alltime.py:40
 msgid "Trade point"
-msgstr ""
+msgstr "Савдо шахобчаси"
 
 #: apps/fin_app/models/alltime.py:46
 msgid "Receipt number"
-msgstr ""
+msgstr "Квитанция номери"
 
 #: apps/fin_app/models/base_payment_model.py:22
 msgid "Unknown"
-msgstr ""
+msgstr "Номаълум"
 
 #: apps/fin_app/models/base_payment_model.py:30
 msgid "Title"
-msgstr ""
+msgstr "Ном"
 
 #: apps/fin_app/models/base_payment_model.py:31
 msgid "Slug"
@@ -49,68 +49,68 @@ msgstr ""
 
 #: apps/fin_app/models/base_payment_model.py:39
 msgid "Base gateway"
-msgstr ""
+msgstr "Базавий шлюз"
 
 #: apps/fin_app/models/base_payment_model.py:120
 msgid "Pay gateway"
-msgstr ""
+msgstr "Тулов шлюзи"
 
 #: apps/fin_app/models/base_payment_model.py:125
 #: apps/fin_app/models/payme.py:266
 msgid "Cost"
-msgstr ""
+msgstr "Қиймат"
 
 #: apps/fin_app/models/base_payment_model.py:133
 msgid "Base payment log"
-msgstr ""
+msgstr "Туловларнинг базавий журнали"
 
 #: apps/fin_app/models/payme.py:62
 msgid "Unknown error"
-msgstr ""
+msgstr "Номалум хатолик"
 
 #: apps/fin_app/models/payme.py:82
 msgid "Incorrect authentication credentials."
-msgstr ""
+msgstr "Хисоб маълумотларининг аутентификацияси учун нотуғри маълумотлар"
 
 #: apps/fin_app/models/payme.py:95
 msgid "Method not found"
-msgstr ""
+msgstr "Услуб топилмади"
 
 #: apps/fin_app/models/payme.py:100
 msgid "Transaction not found"
-msgstr ""
+msgstr "Транзакция топилмади"
 
 #: apps/fin_app/models/payme.py:105
 msgid "Bad transaction type"
-msgstr ""
+msgstr "Транзакциянинг номаъқул тури "
 
 #: apps/fin_app/models/payme.py:110
 msgid "Transaction is timed out"
-msgstr ""
+msgstr "Транзакция вақтга бўйича тугалланди"
 
 #: apps/fin_app/models/payme.py:115
 msgid "Customer does not exists"
-msgstr ""
+msgstr "Мижоз мавжуд эмас"
 
 #: apps/fin_app/models/payme.py:120
 msgid "Not allowed to cancel transaction"
-msgstr ""
+msgstr "Транзакцияни ортга қайтариш мумкин эмас"
 
 #: apps/fin_app/models/payme.py:125
 msgid "Validation error"
-msgstr ""
+msgstr "Валидация хатолиги"
 
 #: apps/fin_app/models/rncb.py:29
 msgid "RNCB gateway"
-msgstr ""
+msgstr "РНКБ шлюзи"
 
 #: apps/fin_app/models/rncb.py:35
 msgid "Act time from payment system"
-msgstr ""
+msgstr "Тўлов системасининг ишлаш вақти"
 
 #: apps/fin_app/serializers/payme.py:53
 msgid "Enter a valid ID value."
-msgstr ""
+msgstr "ID нинг амалдаги сонини киритинг"
 
 #: apps/fin_app/views/payme.py:51
 msgid "Invalid login header. No credentials provided."
@@ -118,22 +118,22 @@ msgstr "Kirish sarlavhasi xato. Yo'q, hisobga olish ma'lumotlari taqdim."
 
 #: apps/fin_app/views/payme.py:54
 msgid "Invalid login header. Credentials string should not contain spaces."
-msgstr ""
+msgstr "Логин номи нотуғри. Хисобга олиш қаторида оралиқ қолидириш мумкин мумкин эмас."
 
 #: apps/fin_app/views/payme.py:60
 msgid ""
 "Invalid credentials header. Credentials string should not contain invalid "
 "characters."
-msgstr ""
+msgstr "Логин номи нотуғри. Хисобга олиш қаторида маън этилган катталик киритилиши мумкин эмас."
 
 #: apps/fin_app/views/payme.py:71
 msgid "Invalid username/password."
-msgstr ""
+msgstr "Фойдаланувчи исми / пароли нотўғри."
 
 #: apps/fin_app/views/payme.py:99
 msgid "HTTP Method is not allowed"
-msgstr ""
+msgstr "НТТР методи таъқиқланан"
 
 #: apps/fin_app/views/payme.py:139
 msgid "Data validation error"
-msgstr ""
+msgstr "Маълумотлар текширишдаги хатолик"
