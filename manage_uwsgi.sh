@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 DIR="/var/www/djing2"

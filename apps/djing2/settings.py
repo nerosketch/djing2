@@ -322,6 +322,7 @@ REST_FRAMEWORK = {
     "DATETIME_INPUT_FORMATS": [
         "%Y-%m-%d %H:%M",
         "%Y-%m-%dT%H:%M",
+        "%Y-%m-%dT%H:%M:%S.%f",
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%d",
     ],
@@ -406,3 +407,6 @@ SORM_REPORTING_EMAILS = []
 CONTRACTS_OPTIONS = {
     'DEFAULT_TITLE': os.getenv('CONTRACT_DEFAULT_TITLE', 'Contract default title')
 }
+
+# PAYME_CREDENTIALS = base64(login:password)
+PAYME_CREDENTIALS = get_secret("PAYME_CREDENTIALS")

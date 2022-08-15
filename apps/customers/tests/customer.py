@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from django.contrib.sites.models import Site
+from django.utils.translation import gettext_lazy as _
 from rest_framework.settings import api_settings
 from rest_framework.test import APITestCase
 from rest_framework import status
@@ -42,14 +43,14 @@ class CustomAPITestCase(APITestCase):
 class CustomerServiceTestCase(CustomAPITestCase):
     def test_direct_create(self):
         r = self.post("/api/customers/customer-service/")
-        self.assertEqual(r.data, "Not allowed to direct create Customer service, use 'pick_service' url")
+        self.assertEqual(r.data, _("Not allowed to direct create Customer service, use 'pick_service' url"))
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class CustomerLogAPITestCase(CustomAPITestCase):
     def test_direct_create(self):
         r = self.post("/api/customers/customer-log/")
-        self.assertEqual(r.data, "Not allowed to direct create Customer log")
+        self.assertEqual(r.data, _("Not allowed to direct create Customer log"))
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
 
@@ -100,7 +101,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             "/api/customers/%d/pick_service/" % self.customer.pk,
             {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
         )
-        self.assertEqual(r.content, b'"That service already activated"')
+        self.assertEqual(r.data, _('That service already activated'))
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_stop_service(self):
@@ -112,7 +113,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
     def test_stop_not_exists_service(self):
         models.Customer.objects.filter(username="custo1").update(current_service=None)
         r = self.get("/api/customers/%d/stop_service/" % self.customer.pk)
-        self.assertEqual(r.data, "Service not connected")
+        self.assertEqual(r.data, _("Service not connected"))
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_pick_admin_service_by_customer(self):
@@ -134,7 +135,10 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.customer.refresh_from_db()
         r = self.post("/api/customers/users/me/buy_service/", {"service_id": self.service.pk})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, f"{self.customer.username} not enough money for service {self.service}")
+        self.assertEqual(r.data, _("%(uname)s not enough money for service %(srv_name)s") %{
+            'uname': self.customer.username,
+            'srv_name': self.service
+        })
 
     def test_pick_service_by_customer(self):
         self.client.logout()
@@ -144,7 +148,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.customer.refresh_from_db()
         r = self.post("/api/customers/users/me/buy_service/", {"service_id": self.service.pk})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data, "The service '%s' was successfully activated" % self.service)
+        self.assertEqual(r.data, _("The service '%s' was successfully activated") % self.service)
 
     def test_add_balance_negative(self):
         r = self.post("/api/customers/%d/add_balance/" % self.customer.pk, {"cost": -10})
@@ -195,7 +199,7 @@ class InvoiceForPaymentAPITestCase(CustomAPITestCase):
         self.assertTrue(login_r)
         r = self.post("/api/customers/users/debts/%d/buy/" % self.inv1.pk)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, "Are you not sure that you want buy the service?")
+        self.assertEqual(r.data, _("Are you not sure that you want buy the service?"))
 
     def test_buy_not_enough_money(self):
         self.client.logout()
@@ -203,7 +207,7 @@ class InvoiceForPaymentAPITestCase(CustomAPITestCase):
         self.assertTrue(login_r)
         r = self.post("/api/customers/users/debts/%d/buy/" % self.inv1.pk, {"sure": "on"})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, "Your account have not enough money")
+        self.assertEqual(r.data, _("Your account have not enough money"))
 
     def test_buy(self):
         self.client.logout()
