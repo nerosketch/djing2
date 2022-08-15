@@ -4,11 +4,11 @@ from datetime import datetime, timedelta
 from django.contrib.sites.models import Site
 from django.utils import timezone
 from django.utils.html import escape
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, override_settings
 from rest_framework import status
 
 from customers.models import Customer
-from fin_app.models.alltime import PayAllTimeGateway
+from fin_app.models.alltime import AllTimePayGateway
 from profiles.models import UserProfile
 from fin_app.views.alltime import (
     AllTimePayActEnum,
@@ -16,6 +16,7 @@ from fin_app.views.alltime import (
     AllTimeStatusCodeEnum
 )
 from fin_app.models import rncb as models_rncb
+from fin_app.models import payme as models_payme
 
 
 def _make_sign(act: AllTimePayActEnum, pay_account: str, serv_id: str, pay_id, secret: str):
@@ -42,7 +43,7 @@ class CustomAPITestCase(APITestCase):
         # customer for tests
         custo1 = Customer.objects.create_user(
             telephone="+79782345678",
-            username="custo1",
+            username="1234567",
             password="passw",
             is_active=True
         )
@@ -53,7 +54,7 @@ class CustomAPITestCase(APITestCase):
         self.customer = custo1
 
         # Pay System
-        pay_system = PayAllTimeGateway.objects.create(
+        pay_system = AllTimePayGateway.objects.create(
             title="Test pay alltime system", secret="secret",
             service_id="service_id", slug="pay_gw_slug"
         )
@@ -75,17 +76,17 @@ class AllPayTestCase(CustomAPITestCase):
         service_id = self.pay_system.service_id
         r = self.get(self.url, {
             "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
-            "PAY_ACCOUNT": "custo1",
+            "PAY_ACCOUNT": "1234567",
             "SIGN": _make_sign(
                 AllTimePayActEnum.ACT_VIEW_INFO,
-                "custo1", "", "", self.pay_system.secret
+                "1234567", "", "", self.pay_system.secret
             )
         })
         o = "".join((
             "<pay-response>",
             "<balance>-13.12</balance>",
             "<name>Test Name</name>",
-            "<account>custo1</account>",
+            "<account>1234567</account>",
             "<service_id>%s</service_id>" % escape(service_id),
             "<min_amount>10.0</min_amount>",
             "<max_amount>15000</max_amount>",
@@ -102,7 +103,7 @@ class AllPayTestCase(CustomAPITestCase):
         service_id = self.pay_system.service_id
         r = self.get(self.url, {
             "ACT": AllTimePayActEnum.ACT_PAY_DO.value,
-            "PAY_ACCOUNT": "custo1",
+            "PAY_ACCOUNT": "1234567",
             "PAY_AMOUNT": 18.21,
             "RECEIPT_NUM": 2126235,
             "SERVICE_ID": service_id,
@@ -110,7 +111,7 @@ class AllPayTestCase(CustomAPITestCase):
             "TRADE_POINT": "term1",
             "SIGN": _make_sign(
                 AllTimePayActEnum.ACT_PAY_DO,
-                "custo1", service_id,
+                "1234567", service_id,
                 "840ab457-e7d1-4494-8197-9570da035170",
                 self.pay_system.secret
             )
@@ -175,10 +176,10 @@ class SitesAllPayTestCase(CustomAPITestCase):
         current_date = timezone.now().strftime(time_format)
         r = self.get(self.url, {
             "ACT": AllTimePayActEnum.ACT_VIEW_INFO.value,
-            "PAY_ACCOUNT": "custo1",
+            "PAY_ACCOUNT": "1234567",
             "SIGN": _make_sign(
                 AllTimePayActEnum.ACT_VIEW_INFO,
-                "custo1", "", "", self.pay_system.secret
+                "1234567", "", "", self.pay_system.secret
             )
         })
         o = "".join((
@@ -216,14 +217,14 @@ class RNCBPaymentAPITestCase(APITestCase):
             password="passw",
             is_active=True
         )
-        custo1.balance = -13.12
+        custo1.balance = -13.12109349
         custo1.fio = "Test Name"
         custo1.save(update_fields=("balance", "fio"))
         custo1.refresh_from_db()
         self.customer = custo1
 
         # RNCB Pay system
-        pay_system = models_rncb.PayRNCBGateway.objects.create(
+        pay_system = models_rncb.RNCBPaymentGateway.objects.create(
             title="Test pay rncb system",
             slug="rncb_gw_slug"
         )
@@ -240,12 +241,12 @@ class RNCBPaymentAPITestCase(APITestCase):
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
-            "<checkresponse>"
-            "<fio>Test Name</fio>"
-            "<balance>13.120000</balance>"
-            "<error>0</error>"
-            "<comments>Ok</comments>"
-            "</checkresponse>"
+            "<CHECKRESPONSE>"
+            #  "<FIO>Test Name</FIO>"
+            "<BALANCE>-13.12</BALANCE>"
+            "<ERROR>0</ERROR>"
+            "<COMMENTS>Ok</COMMENTS>"
+            "</CHECKRESPONSE>"
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
@@ -257,20 +258,28 @@ class RNCBPaymentAPITestCase(APITestCase):
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
-            "<checkresponse>"
-            "<error>1</error>"
-            "<comments>Customer does not exists</comments>"
-            "</checkresponse>"
+            "<CHECKRESPONSE>"
+            "<ERROR>1</ERROR>"
+            "<COMMENTS>Customer does not exists</COMMENTS>"
+            "</CHECKRESPONSE>"
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        self.assertXMLEqual(r.content.decode("utf-8"), xml)
+        self.assertXMLEqual(r.content.decode("utf-8"), xml, r.data)
 
     def test_pay_view_bad_account(self):
         r = self.get(self.url, {
             "QueryType": 'check',
             "Account": "*7867^&a",
         })
-        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, msg=r.data)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        xml = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            "<CHECKRESPONSE>"
+            "<ERROR>1</ERROR>"
+            "<COMMENTS>Account: Введите правильное число.</COMMENTS>"
+            "</CHECKRESPONSE>"
+        )
+        self.assertXMLEqual(r.content.decode("utf-8"), xml, r.data)
 
     def test_pay(self):
         r = self.get(self.url, {
@@ -283,18 +292,18 @@ class RNCBPaymentAPITestCase(APITestCase):
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
-            "<payresponse>"
-            "<out_payment_id>1</out_payment_id>"
-            "<error>0</error>"
-            "<comments>Success</comments>"
-            "</payresponse>"
+            "<PAYRESPONSE>"
+            "<OUT_PAYMENT_ID>2</OUT_PAYMENT_ID>"
+            "<ERROR>0</ERROR>"
+            "<COMMENTS>Success</COMMENTS>"
+            "</PAYRESPONSE>"
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
 
     def test_pay_already_provided(self):
         now = datetime.now()
-        pay = models_rncb.RNCBPayLog.objects.create(
+        pay = models_rncb.RNCBPaymentLog.objects.create(
             customer=self.customer,
             pay_id=1927863123,
             acct_time=now,
@@ -311,11 +320,11 @@ class RNCBPaymentAPITestCase(APITestCase):
         })
         xml = ''.join((
             '<?xml version="1.0" encoding="utf-8"?>\n',
-            "<payresponse>",
-            "<out_payment_id>%d</out_payment_id>" % pay.pk,
-            "<error>10</error>",
-            "<comments>Payment duplicate</comments>",
-            "</payresponse>"
+            "<PAYRESPONSE>",
+            "<OUT_PAYMENT_ID>%d</OUT_PAYMENT_ID>" % pay.pk,
+            "<ERROR>10</ERROR>",
+            "<COMMENTS>Payment duplicate</COMMENTS>",
+            "</PAYRESPONSE>"
         ))
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
@@ -345,7 +354,7 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         self.customer = custo1
 
         # RNCB Pay system
-        pay_system = models_rncb.PayRNCBGateway.objects.create(
+        pay_system = models_rncb.RNCBPaymentGateway.objects.create(
             title="Test pay rncb system",
             slug="rncb_gw_slug"
         )
@@ -358,28 +367,28 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         now = datetime(year=2017, month=1, day=1)
 
         logs = [
-            models_rncb.RNCBPayLog(
+            models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12837,
                 acct_time=now,
                 amount=1,
                 pay_gw=self.pay_system
             ),
-            models_rncb.RNCBPayLog(
+            models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12838,
                 acct_time=now + timedelta(days=2),
                 amount=2,
                 pay_gw=self.pay_system
             ),
-            models_rncb.RNCBPayLog(
+            models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12839,
                 acct_time=now + timedelta(days=6),
                 amount=3,
                 pay_gw=self.pay_system
             ),
-            models_rncb.RNCBPayLog(
+            models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12840,
                 acct_time=now + timedelta(days=8),
@@ -387,7 +396,8 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
                 pay_gw=self.pay_system
             )
         ]
-        models_rncb.RNCBPayLog.objects.bulk_create(logs)
+        for log in logs:
+            log.save()
 
     def test_pay_balance_check(self):
         r = self.get(self.url, {
@@ -398,18 +408,422 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
         })
         xml = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
-            "<balanceresponse>"
-              "<full_summa>11.000000</full_summa>"
-              "<number_of_payments>4</number_of_payments>"
-              "<error>0</error>"
-              "<payments>"
-                "<payment_row>12837;3;129386;1.00;20170101000000</payment_row>"
-                "<payment_row>12838;4;129386;2.00;20170103000000</payment_row>"
-                "<payment_row>12839;5;129386;3.00;20170107000000</payment_row>"
-                "<payment_row>12840;6;129386;5.00;20170109000000</payment_row>"
-              "</payments>"
-            "</balanceresponse>"
+            "<BALANCERESPONSE>"
+              "<FULL_SUMMA>11.00</FULL_SUMMA>"
+              "<NUMBER_OF_PAYMENTS>4</NUMBER_OF_PAYMENTS>"
+              "<ERROR>0</ERROR>"
+              "<PAYMENTS>"
+                "<PAYMENT_ROW>12837;4;129386;1.00;20170101000000</PAYMENT_ROW>"
+                "<PAYMENT_ROW>12838;5;129386;2.00;20170103000000</PAYMENT_ROW>"
+                "<PAYMENT_ROW>12839;6;129386;3.00;20170107000000</PAYMENT_ROW>"
+                "<PAYMENT_ROW>12840;7;129386;5.00;20170109000000</PAYMENT_ROW>"
+              "</PAYMENTS>"
+            "</BALANCERESPONSE>"
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
         self.maxDiff = None
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
+
+
+@override_settings(PAYME_CREDENTIALS='TG9naW46UGFzcw==')
+class PaymeMerchantApiTestCase(CustomAPITestCase):
+    url = '/api/fin/payme/pay_gw_slug/pay/'
+
+    def post(self, *args, **kwargs):
+        headers = {
+            'HTTP_AUTHORIZATION': 'Basic TG9naW46UGFzcw=='
+        }
+        kwargs.update(headers)
+        return super().post(*args, **kwargs)
+
+    def setUp(self):
+        super().setUp()
+        # Pay System
+        pay_system = models_payme.PaymePaymentGatewayModel.objects.create(
+            title="Test pay payme system",
+            slug="pay_gw_slug"
+        )
+        example_site = Site.objects.first()
+        pay_system.sites.add(example_site)
+        pay_system.refresh_from_db()
+        self.payme_pay_system = pay_system
+
+    def test_check_perform_transaction(self):
+        r = self.post(self.url, data={
+            "method" : "CheckPerformTransaction",
+            "params" : {
+                "amount" : 5000,
+                "account" : {
+                    "username" : "1234567"
+                }
+            },
+            'id': 19283
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            "result" : {
+                "allow" : True
+            },
+            "id": 19283
+        }, msg=r.data)
+
+    def test_check_perform_transaction_no_account(self):
+        r = self.post(self.url, data={
+            "method" : "CheckPerformTransaction",
+            "params" : {
+                "amount" : 5000,
+                "account" : {
+                    "username" : "12222222"
+                }
+            },
+            'id': 19283
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            "error" : {
+                "code" : -31050,
+                "message": models_payme.ugettext_lazy('Customer does not exists'),
+                "data": 'username'
+            },
+            'id': 19283
+        }, msg=r.data)
+
+    def test_check_perform_transaction_disabled_customer(self):
+        self.customer.is_active = False
+        self.customer.save(update_fields=['is_active'])
+        r = self.post(self.url, data={
+            "method" : "CheckPerformTransaction",
+            "params" : {
+                "amount" : 5000,
+                "account" : {
+                    "username" : "1234567"
+                }
+            },
+            'id': 19283
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            "error" : {
+                "code" : -31050,
+                "message": models_payme.ugettext_lazy('Customer does not exists'),
+                "data": 'username'
+            },
+            'id': 19283
+        }, msg=r.data)
+
+    def test_check_perform_transaction_bad_request(self):
+        r = self.post(self.url, data={
+            "method" : "CheckPerformTransaction",
+            "params" : {
+                "amjount" : 'aosid',
+                "account" : {
+                    "nbv" : "1234567"
+                }
+            },
+            'id': 19283
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            'error': {
+                'code': -32700,
+                "message": models_payme.ugettext_lazy('Data validation error'),
+                'data': 'username'
+            },
+            'id': 19283
+        }, msg=r.data)
+
+    def test_check_perform_transaction_no_post(self):
+        def _assert_no_post(dct):
+            self.assertDictEqual(dct, {
+                'error': {
+                    'code': -32300,
+                    "message": models_payme.ugettext_lazy('HTTP Method is not allowed'),
+                    'data': 'username'
+                }
+            })
+
+        hdr = {
+            'HTTP_AUTHORIZATION': 'Basic TG9naW46UGFzcw=='
+        }
+
+        r = self.client.get(self.url, SERVER_NAME="example.com", **hdr)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.put(self.url, {}, SERVER_NAME="example.com", **hdr)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.delete(self.url, {}, SERVER_NAME="example.com", **hdr)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.head(self.url, {}, SERVER_NAME="example.com", **hdr)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.options(self.url, {}, SERVER_NAME="example.com", **hdr)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.trace(self.url, {}, SERVER_NAME="example.com", **hdr)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+        r = self.client.patch(self.url, {}, SERVER_NAME="example.com", **hdr)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        _assert_no_post(r.data)
+
+    def test_create_transaction(self):
+        now = datetime.now()
+        r = self.post(self.url, {
+            "method": "CreateTransaction",
+            "params": {
+                "id": "5305e3bab097f420a62ced0b",
+                "time" : 1399114284039,
+                "amount" : 500000,
+                "account" : {
+                    "username" : "1234567"
+                }
+            },
+            "id": 978123
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        res = r.data.get('result')
+        self.assertIsNotNone(res, msg=r.data)
+        self.assertIsInstance(res['transaction'], str)
+        self.assertGreater(int(res['transaction']), 0)
+        self.assertEqual(res['state'], 1)
+        # Compare create time with accuracy to seconds
+        self.assertEqual(int(res['create_time'] / 1000), int(now.timestamp()))
+        self.assertEqual(r.data['id'], 978123)
+
+    def test_create_transaction_duplicate(self):
+        self.test_create_transaction()
+        self.test_create_transaction()
+        self.test_create_transaction()
+        self.test_create_transaction()
+
+    def test_perform_transaction(self):
+        # create transaction
+        self.test_create_transaction()
+        # perform transaction
+        r = self.post(self.url, {
+            "method": "PerformTransaction",
+            "params": {
+                "id": "5305e3bab097f420a62ced0b",
+            },
+            "id": 978123
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        res = r.data.get('result')
+        self.assertIsNotNone(res, msg=r.data)
+        self.assertIsInstance(res['transaction'], str)
+        self.assertGreater(int(res['transaction']), 0)
+        self.assertIsInstance(res['perform_time'], int)
+        self.assertGreater(res['perform_time'], 0)
+        self.assertEqual(res['state'], 2)
+        self.assertEqual(r.data['id'], 978123)
+
+    def test_perform_transaction_duplication(self):
+        self.test_perform_transaction()
+        # perform transaction duplicate
+        r = self.post(self.url, {
+            "method": "PerformTransaction",
+            "params": {
+                "id": "5305e3bab097f420a62ced0b",
+            }
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        res = r.data.get('result')
+        self.assertIsNotNone(res, msg=r.data)
+        self.assertIsInstance(res['transaction'], str)
+        self.assertGreater(int(res['transaction']), 0)
+        self.assertIsInstance(res['perform_time'], int)
+        self.assertGreater(res['perform_time'], 0)
+        self.assertEqual(res['state'], 2)
+
+    def test_perform_transaction_not_found(self):
+        r = self.post(self.url, {
+            "method": "PerformTransaction",
+            "params": {
+                "id": "5305e3bab097f420a62ced0c",
+            },
+            'id': 12345
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            'error': {
+                'code': -31003,
+                "message": models_payme.ugettext_lazy('Transaction not found'),
+                'data': 'username',
+            },
+            'id': 12345
+        })
+
+    def _perform_transaction_bad_state(self):
+        r = self.post(self.url, {
+            "method": "PerformTransaction",
+            "params": {
+                "id": "5305e3bab097f420a62ced0a",
+            },
+            'id': 7823
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            'error': {
+                'code': -31008,
+                "message": models_payme.ugettext_lazy('Bad transaction type'),
+                'data': 'username'
+            },
+            'id': 7823
+        })
+
+    def test_perform_transaction_bad_state(self):
+        edatetime = datetime.now() + timedelta(days=1)
+        trans = models_payme.PaymeTransactionModel.objects.create(
+            customer=self.customer,
+            transaction_state=models_payme.TransactionStatesEnum.INITIAL,
+            external_id='5305e3bab097f420a62ced0a',
+            external_time=edatetime,
+            perform_time=edatetime + timedelta(days=3),
+            amount=0.34
+        )
+        self._perform_transaction_bad_state()
+        trans.transaction_state = models_payme.TransactionStatesEnum.CANCELLED
+        trans.save(update_fields=['transaction_state'])
+        self._perform_transaction_bad_state()
+        trans.transaction_state = models_payme.TransactionStatesEnum.CANCELLED_AFTER_PERFORMED
+        trans.save(update_fields=['transaction_state'])
+        self._perform_transaction_bad_state()
+
+    def test_cancel_transaction(self):
+        # create transaction
+        self.test_create_transaction()
+
+        # try to cancel transaction
+        r = self.post(self.url, {
+            'method': 'CancelTransaction',
+            'params': {
+                'id': '5305e3bab097f420a62ced0b',
+                'reason': models_payme.PaymeCancelReasonEnum.SOME_REMOTE_CUSTOMERS_INACTIVE.value
+            },
+            'id': 18297
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        res = r.data.get('result')
+        self.assertIsInstance(res['create_time'], int)
+        self.assertGreater(res['create_time'], 0)
+        self.assertEqual(res['perform_time'], 0)
+        self.assertIsInstance(res['cancel_time'], int)
+        self.assertGreater(res['cancel_time'], 0)
+        self.assertEqual(res['state'], -1)
+        self.assertEqual(res['reason'], 1)
+
+    def test_cancel_confirmed_transaction(self):
+        # create and perform transaction
+        self.test_perform_transaction()
+
+        # try to cancel transaction
+        r = self.post(self.url, {
+            'method': 'CancelTransaction',
+            'params': {
+                'id': '5305e3bab097f420a62ced0b',
+                'reason': models_payme.PaymeCancelReasonEnum.SOME_REMOTE_CUSTOMERS_INACTIVE.value
+            },
+            'id': 18297
+        })
+
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            'error': {
+                'code': -31007,
+                "message": models_payme.ugettext_lazy('Not allowed to cancel transaction'),
+                'data': 'username',
+            },
+            'id': 18297
+        })
+
+    def test_check_transaction(self):
+        # create and perform transaction
+        self.test_perform_transaction()
+
+        r = self.post(self.url, {
+            'method': 'CheckTransaction',
+            'params': {
+                'id': '5305e3bab097f420a62ced0b'
+            },
+            'id': 128463
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        res = r.data.get('result')
+        self.assertIsNotNone(res, msg=r.data)
+        self.assertIsInstance(res['transaction'], str)
+        self.assertGreater(int(res['transaction']), 0)
+        self.assertIsInstance(res['perform_time'], int)
+        self.assertGreater(res['perform_time'], 0)
+        self.assertIsInstance(res['create_time'], int)
+        self.assertGreater(res['create_time'], 0)
+        self.assertEqual(res['cancel_time'], 0)
+        self.assertEqual(res['state'], 2)
+        self.assertIsNone(res['reason'])
+
+    def test_check_transaction_not_found(self):
+        r = self.post(self.url, {
+            'method': 'CheckTransaction',
+            'params': {
+                'id': '5305e3bab097f420a62ced0c'
+            },
+            'id': 128463
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertDictEqual(r.data, {
+            'error': {
+                'code': -31003,
+                "message": models_payme.ugettext_lazy('Transaction not found'),
+                'data': 'username',
+            },
+            'id': 128463
+        })
+
+    def test_get_statement(self):
+        # create transaction
+        self.test_perform_transaction()
+
+        start_time = datetime.strptime('2014-05-03 14:50:00', '%Y-%m-%d %H:%M:%S')
+        end_time = start_time + timedelta(hours=1)
+
+        r = self.post(self.url, {
+            'method': 'GetStatement',
+            'params': {
+                'from': int(start_time.timestamp() * 1000),
+                'to': int(end_time.timestamp() * 1000)
+            },
+            'id': 987234
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
+        self.assertEqual(r.data.get('id'), 987234)
+        res = r.data.get('result')
+        self.assertIsNotNone(res, msg=r.data)
+        trans = res.get('transactions')
+        self.assertIsNotNone(trans)
+        ln = len(trans)
+        self.assertEqual(ln, 1)
+        tr = trans[0]
+        self.assertEqual(tr['id'], '5305e3bab097f420a62ced0b')
+        self.assertIsInstance(tr['time'], int)
+        #  self.assertGreater(tr['time'], 0)
+        self.assertEqual(tr['time'], 1399114284039)
+        self.assertIsInstance(tr['create_time'], int)
+        self.assertGreater(tr['create_time'], 0)
+        self.assertIsInstance(tr['perform_time'], int)
+        self.assertGreater(tr['perform_time'], 0)
+        self.assertIsNone(tr['cancel_time'])
+        self.assertEqual(tr['amount'], 500000.0)
+        self.assertDictEqual(tr['account'], {
+            "username" : "1234567"
+        })
+        self.assertIsInstance(tr['transaction'], str)
+        self.assertGreater(int(tr['transaction']), 0)
+        self.assertEqual(tr['state'], 2)
+        self.assertIsNone(tr['reason'])

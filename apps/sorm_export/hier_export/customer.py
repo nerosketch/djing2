@@ -482,6 +482,6 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
             "contract_start_date": contract.start_service_time.date(),
             'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
             "contract_number": contract.contract_number,
-            "contract_title": "Договор на оказание услуг связи",
+            "contract_title": _('Contract default title'),
             # "contract_title": contract.title,
         }

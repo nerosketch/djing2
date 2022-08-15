@@ -1,48 +1,44 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.contrib.sites.models import Site
-from djing2.models import BaseAbstractModel
-from customers.models import Customer
+from .base_payment_model import (
+    BasePaymentModel,
+    BasePaymentLogModel,
+    add_payment_type
+)
 
 
-class PayRNCBGateway(BaseAbstractModel):
+RNCB_DB_TYPE_ID = 2
+
+
+class RNCBPaymentGatewayModelManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(payment_type=RNCB_DB_TYPE_ID)
+
+
+class RNCBPaymentGateway(BasePaymentModel):
     pay_system_title = "RNCB"
 
-    title = models.CharField(_("Title"), max_length=64)
-    slug = models.SlugField(_("Slug"), max_length=32, unique=True, allow_unicode=False)
-    sites = models.ManyToManyField(Site, blank=True)
+    objects = RNCBPaymentGatewayModelManager()
 
-    def __str__(self):
-        return self.title
+    def save(self, *args, **kwargs):
+        self.payment_type = RNCB_DB_TYPE_ID
+        return super().save(*args, **kwargs)
 
     class Meta:
-        db_table = "pay_rncb_gateways"
+        #  db_table = "pay_rncb_gateways"
         verbose_name = _("RNCB gateway")
+        proxy = True
 
 
-class RNCBPayLog(BaseAbstractModel):
-    customer = models.ForeignKey(
-        Customer,
-        on_delete=models.SET_DEFAULT,
-        blank=True, null=True, default=None
-    )
+class RNCBPaymentLog(BasePaymentLogModel):
     pay_id = models.IntegerField(unique=True)
-    date_add = models.DateTimeField(auto_now_add=True)
-    acct_time = models.DateTimeField(_('Act time from paument system'))
-    amount = models.DecimalField(
-        _("Cost"),
-        default=0.0,
-        max_digits=19,
-        decimal_places=6
-    )
-    pay_gw = models.ForeignKey(
-        PayRNCBGateway,
-        verbose_name=_("Pay gateway"),
-        on_delete=models.CASCADE
-    )
+    acct_time = models.DateTimeField(_('Act time from payment system'))
 
     def __str__(self):
         return str(self.pay_id)
 
     class Meta:
-        db_table = "rncb_pay_log"
+        db_table = "rncb_payment_log"
+
+
+add_payment_type(RNCB_DB_TYPE_ID, RNCBPaymentGateway)

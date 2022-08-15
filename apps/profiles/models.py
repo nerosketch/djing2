@@ -75,9 +75,11 @@ def birth_day_18yo_validator(val: date) -> None:
 
 
 def birth_day_too_old_validator(val: date) -> None:
-    low_bound = datetime(year=1900, month=1, day=1).date()
-    if val <= low_bound:
+    # 110 years
+    low_bound = datetime.now() - timedelta(days=40150)
+    if val <= low_bound.date():
         raise ValidationError(_('Account is too old, birth_day "%s"') % val)
+
 
 class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
     username = models.CharField(_("profile username"), max_length=127, unique=True, validators=(latinValidator,))
@@ -112,6 +114,7 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
 
     def auth_log(self, user_agent: str, remote_ip: str):
         ProfileAuthLog.objects.create(profile=self, user_agent=user_agent, remote_ip=remote_ip)
+        BaseAccount.objects.filter(pk=self.pk).update(last_login=datetime.now())
 
     def split_fio(self):
         """Try to split name, last_name, and surname."""

@@ -22,19 +22,17 @@ class DjingAuthBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         if username is None:
             username = kwargs.get(BaseAccount.USERNAME_FIELD)
-        if username is None:
-            return
+        if username is None or password is None:
+            return None
         try:
             user = BaseAccount._default_manager.get_by_natural_key(username)
         except BaseAccount.DoesNotExist:
-            # Run the default password hasher once to reduce the timing
-            # difference between an existing and a non-existing user (#20760).
-            BaseAccount().set_password(password)
+            return None
         else:
             if not user.check_password(password):
-                return
+                return None
             if not self.user_can_authenticate(user):
-                return
+                return None
             if user.is_staff:
                 auser = UserProfile.objects.get_by_natural_key(username)
             else:

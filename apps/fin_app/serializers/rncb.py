@@ -4,7 +4,7 @@ from rest_framework import status
 from django.core.validators import integer_validator
 from djing2.lib import IntEnumEx
 from djing2.lib.mixins import BaseCustomModelSerializer
-from fin_app.models.rncb import PayRNCBGateway, RNCBPayLog
+from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
 
 
 date_format = '%Y%m%d%H%M%S'
@@ -32,12 +32,14 @@ class RNCBProtocolErrorException(serializers.ValidationError):
 
 class PayRNCBGatewayModelSerializer(BaseCustomModelSerializer):
     class Meta:
-        model = PayRNCBGateway
+        model = RNCBPaymentGateway
+        fields = "__all__"
 
 
 class RNCBPayLogModelSerializer(BaseCustomModelSerializer):
     class Meta:
-        model = RNCBPayLog
+        model = RNCBPaymentLog
+        fields = "__all__"
 
 
 class RNCBPaymentCheckSerializer(serializers.Serializer):
@@ -45,17 +47,16 @@ class RNCBPaymentCheckSerializer(serializers.Serializer):
 
 
 class RNCBPaymentCheckResponseSerializer(serializers.Serializer):
-    fio = serializers.CharField()
+    #  fio = serializers.CharField()
 
-    # Negative from customer balance.
-    balance = serializers.DecimalField(max_digits=12, decimal_places=6, coerce_to_string=False, required=False)
+    BALANCE = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
 
-    error = serializers.ChoiceField(
+    ERROR = serializers.ChoiceField(
         choices=RNCBPaymentErrorEnum.choices,
         default=RNCBPaymentErrorEnum.OK,
     )
 
-    comments = serializers.CharField(required=False)
+    COMMENTS = serializers.CharField(required=False)
     #  inn = serializers.IntegerField(min_value=1000000000, max_value=999999999999)
 
 
@@ -70,12 +71,12 @@ class RNCBPaymentPaySerializer(serializers.Serializer):
 
 
 class RNCBPaymentPayResponseSerializer(serializers.Serializer):
-    out_payment_id = serializers.IntegerField() # Уникальный идентификатор Перевода в ИС Клиента
-    error = serializers.ChoiceField(
+    OUT_PAYMENT_ID = serializers.IntegerField() # Уникальный идентификатор Перевода в ИС Клиента
+    ERROR = serializers.ChoiceField(
         choices=RNCBPaymentErrorEnum.choices,
         default=RNCBPaymentErrorEnum.OK.value,
     )
-    comments = serializers.CharField(required=False)
+    COMMENTS = serializers.CharField(required=False)
 
 
 class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
@@ -93,11 +94,11 @@ class RNCBPaymentTransactionCheckSerializer(serializers.Serializer):
 
 
 class RNCBPaymentTransactionCheckResponseSerializer(serializers.Serializer):
-    full_summa = serializers.DecimalField(max_digits=12, decimal_places=6, coerce_to_string=False, required=False)
-    number_of_payments = serializers.IntegerField()
-    error = serializers.ChoiceField(
+    FULL_SUMMA = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
+    NUMBER_OF_PAYMENTS = serializers.IntegerField()
+    ERROR = serializers.ChoiceField(
         choices=RNCBPaymentErrorEnum.choices,
         default=RNCBPaymentErrorEnum.OK.value,
     )
-    payments = serializers.ListField()
+    PAYMENTS = serializers.ListField()
 

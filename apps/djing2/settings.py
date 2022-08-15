@@ -98,9 +98,6 @@ INSTALLED_APPS = [
     "customers_legal.apps.CustomersLegalConfig",
     "customer_contract.apps.CustomerContractConfig",
 
-    # Monitoring
-    "django_statsd",
-
     #"webhooks.apps.WebhooksConfig",
 ]
 
@@ -116,10 +113,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-
-    # Monitoring
-    "django_statsd.middleware.GraphiteRequestTimingMiddleware",
-    "django_statsd.middleware.GraphiteMiddleware",
 
     "djing2.lib.mixins.CustomCurrentSiteMiddleware",
 ]
@@ -329,6 +322,7 @@ REST_FRAMEWORK = {
     "DATETIME_INPUT_FORMATS": [
         "%Y-%m-%d %H:%M",
         "%Y-%m-%dT%H:%M",
+        "%Y-%m-%dT%H:%M:%S.%f",
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%d",
     ],
@@ -341,6 +335,7 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         # 'djing2.lib.renderer.ExtendedRenderer',
         'rest_framework.renderers.JSONRenderer',
+        'rest_framework_csv.renderers.CSVRenderer',
     ]
 }
 
@@ -413,7 +408,5 @@ CONTRACTS_OPTIONS = {
     'DEFAULT_TITLE': os.getenv('CONTRACT_DEFAULT_TITLE', 'Contract default title')
 }
 
-STATSD_HOST = os.getenv("GRAPHITE_HOST", default='djing2_graphite_stats')
-STATSD_PORT = os.getenv("GRAPHITE_PORT", default=8125)
-STATSD_MODEL_SIGNALS = True
-
+# PAYME_CREDENTIALS = base64(login:password)
+PAYME_CREDENTIALS = get_secret("PAYME_CREDENTIALS")
