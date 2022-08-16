@@ -5,13 +5,13 @@ from django.db.models import Q, Count
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
-from djing2.lib import safe_int
+from djing2.lib import safe_int, IntEnumEx
 from djing2.models import BaseAbstractModel
 from .interfaces import IAddressObject
 from .fias_socrbase import AddressFIASInfo, AddressFIASLevelType
 
 
-class AddressModelTypes(models.IntegerChoices):
+class AddressModelTypes(IntEnumEx):
     UNKNOWN = 0, _('Unknown')
     LOCALITY = 4, _('Locality')
     STREET = 8, _('Street')
