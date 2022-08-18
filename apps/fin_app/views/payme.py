@@ -158,7 +158,19 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
         self._lazy_object
         fetch_customer_profile(self.request, username=uname)
         return {
-            "result": {"allow": True}
+            "result": {
+                "allow": True,
+                "detail": {"items": [{
+                    "title": "Internet", # нааименование товара или услуги
+                    "price": 505000, # цена за единицу товара или услуги, сумма указана в тийинах
+                    "count": 1, # кол-во товаров или услуг
+                    "code": "00702001001000001", #  код *ИКПУ обязательное поле
+                    "units": 241092, # значение изменится в зависимости от вида товара, обязательно поле
+                    "vat_percent": 15, # обязательное поле, процент уплачиваемого НДС для данного товара или услуги
+                    "package_code": "123456", # Код упаковки для конкретного товара или услуги, содержится на сайте в деталях найденного ИКПУ.
+                    "tin": "123456789" # ИНН организации
+                }]}
+            }
         }
 
     @_payment_method_wrapper(
