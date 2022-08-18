@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from fastapi import APIRouter
 
 from djing2.lib import safe_int
-from djing2.lib.fastapi.crud import crud_decorator, CRUD
+from djing2.lib.fastapi.crud import DjangoCrudRouter
 from djing2.viewsets import DjingModelViewSet
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.serializers import AddressModelSerializer
@@ -107,13 +107,18 @@ class AddrEnum(str, Enum):
     ADDR = 'Addr'
 
 
-@crud_decorator(path="/test/", router=router, schema=schemas.AddressBaseSchema, tag=AddrEnum.ADDR)
-class AddrsCrud(CRUD):
-    pass
+#  define_crud(path="/test/", router=router, schema=schemas.AddressBaseSchema, tag=AddrEnum.ADDR)
 
 
+router.include_router(DjangoCrudRouter(
+    schema=schemas.AddressModelSchema,
+    create_schema=schemas.AddressBaseSchema,
+    queryset=AddressModel.objects.all(),
+    prefix='address'
+))
 
-@router.get("/test/", tags=["addr"], response_model=schemas.AddressModelSchema)
+
+@router.post("/test/", tags=["addr"], response_model=schemas.AddressModelSchema)
 async def new_address(addr_body: schemas.AddressBaseSchema):
     """Creating new AddressModel object and return it instance from db"""
     return [2,23,4,4,4,89]
