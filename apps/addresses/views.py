@@ -102,12 +102,23 @@ class AddressModelViewSet(DjingModelViewSet):
         ids_hierarchy = tuple(i for i in obj.get_id_hierarchy_gen())
         return Response(ids_hierarchy)
 
+    @action(methods=['get'], detail=True)
+    def get_address_by_type(self, request, pk=None):
+        addr_type = request.query_params.get('addr_type')
+        if not addr_type:
+            return Response(None)
+        addr_type = safe_int(addr_type)
+        if not AddressModelTypes.in_range(addr_type):
+            return Response('Addr type not in range', status=status.HTTP_400_BAD_REQUEST)
+        a = AddressModel.objects.get_address_by_type(addr_id=pk, addr_type=addr_type).first()
+        if not a:
+            return Response(None)
+        ser = self.serializer_class(instance=a)
+        return Response(ser.data)
+
 
 class AddrEnum(str, Enum):
     ADDR = 'Addr'
-
-
-#  define_crud(path="/test/", router=router, schema=schemas.AddressBaseSchema, tag=AddrEnum.ADDR)
 
 
 router.include_router(DjangoCrudRouter(
@@ -115,10 +126,4 @@ router.include_router(DjangoCrudRouter(
     create_schema=schemas.AddressBaseSchema,
     queryset=AddressModel.objects.all(),
     prefix='address'
-))
-
-
-@router.post("/test/", tags=["addr"], response_model=schemas.AddressModelSchema)
-async def new_address(addr_body: schemas.AddressBaseSchema):
-    """Creating new AddressModel object and return it instance from db"""
-    return [2,23,4,4,4,89]
+), tags=[AddrEnum.ADDR])
