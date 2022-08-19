@@ -127,10 +127,13 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
         return route
 
     def _delete_one(self, *args: Any, **kwargs: Any):
-        def route(item_id: int) -> QuerySet[Model]:
+        def route(item_id: int) -> None:
             model = self._queryset.model
-            model.objects.filter(pk=item_id).delete()
-            return True
+            rq = model.objects.filter(pk=item_id)
+            if not rq.exists():
+                raise NOT_FOUND
+            rq.delete()
+            return None
         return route
 
     @staticmethod

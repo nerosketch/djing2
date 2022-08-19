@@ -111,11 +111,11 @@ class CRUDGenerator(Generic[T], APIRouter, ABC):
                 "/{item_id}/",
                 self._delete_one(),
                 methods=["DELETE"],
-                response_model=self.schema,
+                response_model=str,
                 summary="Delete One",
                 dependencies=delete_one_route,
                 error_responses=[NOT_FOUND],
-                status_code=status.HTTP_200_OK,
+                status_code=status.HTTP_204_NO_CONTENT,
             )
 
     def _add_api_route(
