@@ -45,7 +45,6 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
             create_route=create_route,
             update_route=update_route,
             delete_one_route=delete_one_route,
-            delete_all_route=False,
             **kwargs
         )
 
@@ -112,9 +111,19 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
         return route
 
     def _update(self, *args: Any, **kwargs: Any):
-        def route(item_id: int, model: self.update_schema) -> OrderedDict:
-            model = self._queryset.model
-            model.objects.filter(pk=item_id).update()
+        def route(item_id: int, model: dict[str, Union[str, int, float]]) -> OrderedDict:
+            qs = self.filter_qs()
+            model_fields = tuple(fname for fname, _ in model.items())
+            update_fields = tuple(fname for fname, _ in self._field_objects.items() if fname in model_fields)
+            try:
+                obj = qs.get(pk=item_id)
+                for fname in update_fields:
+                    value = model.get(fname)
+                    setattr(obj, fname, value)
+                obj.save(update_fields=update_fields)
+                return self.format_object(obj)
+            except qs.model.DoesNotExist:
+                raise NOT_FOUND from None
         return route
 
     def _delete_one(self, *args: Any, **kwargs: Any):

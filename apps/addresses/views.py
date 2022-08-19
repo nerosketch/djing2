@@ -125,5 +125,6 @@ router.include_router(DjangoCrudRouter(
     schema=schemas.AddressModelSchema,
     create_schema=schemas.AddressBaseSchema,
     queryset=AddressModel.objects.all(),
-    prefix='address'
-), tags=[AddrEnum.ADDR])
+    prefix='address',
+    tags=[AddrEnum.ADDR],
+))

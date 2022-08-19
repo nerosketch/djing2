@@ -99,7 +99,7 @@ class CRUDGenerator(Generic[T], APIRouter, ABC):
             self._add_api_route(
                 "/{item_id}/",
                 self._update(),
-                methods=["PUT"],
+                methods=["PATCH"],
                 response_model=self.schema,
                 summary="Update One",
                 dependencies=update_route,
