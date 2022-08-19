@@ -6,7 +6,7 @@ import sys
 from django.apps import apps
 from django.conf import settings
 from django.core.wsgi import get_wsgi_application
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
 
@@ -15,11 +15,17 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apps.djing2.settings")
 apps.populate(settings.INSTALLED_APPS)
 
 from apps.addresses.views import router
+from djing2.lib.fastapi.auth import token_auth_dep
 
 
 def get_application() -> FastAPI:
     # Main Fast API application
-    app = FastAPI(title='djing2', openapi_url="/api_v2/openapi.json", debug=settings.DEBUG)
+    app = FastAPI(
+        title='djing2',
+        openapi_url="/api_v2/openapi.json",
+        debug=settings.DEBUG,
+        dependencies=[Depends(token_auth_dep)]
+    )
 
     # Set all CORS enabled origins
     app.add_middleware(

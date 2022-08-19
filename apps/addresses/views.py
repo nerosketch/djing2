@@ -22,7 +22,10 @@ class AddrEnum(str, Enum):
     ADDR = 'Addresses'
 
 
-router = APIRouter(prefix='/addrs', tags=[AddrEnum.ADDR])
+router = APIRouter(
+    prefix='/addrs',
+    tags=[AddrEnum.ADDR],
+)
 
 
 class AddressModelViewSet(DjingModelViewSet):
@@ -37,11 +40,6 @@ class AddressModelViewSet(DjingModelViewSet):
         if parent_addr == 0:
             return queryset.filter(parent_addr=None)
         return super().filter_queryset(queryset)
-
-    @action(methods=['get'], detail=False)
-    def get_addr_types(self, request):
-        types = [{'value': value, 'label': label} for value, label in AddressModelTypes.choices]
-        return Response(types)
 
     @action(methods=['get'], detail=False)
     def get_all_children(self, request):

@@ -1,9 +1,10 @@
+from typing import Optional
 from pydantic import BaseModel
 from addresses.models import AddressModelTypes
 
 
 class AddressBaseSchema(BaseModel):
-    parent_addr: int
+    parent_addr: Optional[int] = None
     address_type: AddressModelTypes
     fias_address_level: int
     fias_address_type: int

@@ -7,6 +7,7 @@ from djing2.lib.auth_backends import _get_right_user
 
 class CustomTokenAuthentication(TokenAuthentication):
     def authenticate_credentials(self, key):
+        # TODO: deprecated
         token_model = self.get_model()
         try:
             token = token_model.objects.select_related("user").get(key=key)
