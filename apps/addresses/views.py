@@ -1,5 +1,7 @@
 from enum import Enum
+from typing import List
 from dataclasses import asdict
+from pydantic import BaseModel
 from django.db.models import Count
 from rest_framework import status
 from rest_framework.decorators import action
@@ -16,7 +18,11 @@ from addresses.fias_socrbase import AddressFIASInfo
 from addresses import schemas
 
 
-router = APIRouter()
+class AddrEnum(str, Enum):
+    ADDR = 'Addresses'
+
+
+router = APIRouter(prefix='/addrs', tags=[AddrEnum.ADDR])
 
 
 class AddressModelViewSet(DjingModelViewSet):
@@ -117,14 +123,26 @@ class AddressModelViewSet(DjingModelViewSet):
         return Response(ser.data)
 
 
-class AddrEnum(str, Enum):
-    ADDR = 'Addr'
-
-
 router.include_router(DjangoCrudRouter(
     schema=schemas.AddressModelSchema,
     create_schema=schemas.AddressBaseSchema,
     queryset=AddressModel.objects.all(),
-    prefix='address',
     tags=[AddrEnum.ADDR],
 ))
+
+
+class AddrTypeValLabel(BaseModel):
+    value: int
+    label: str
+
+
+@router.get('/get_addr_types/', response_model=List[AddrTypeValLabel])
+def get_addr_types():
+    """Return all possible variants for address model types"""
+
+    model_types = (AddrTypeValLabel(
+        value=value,
+        label=str(label)
+    ) for value, label in AddressModelTypes.choices)
+    return model_types
+
