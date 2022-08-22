@@ -41,7 +41,7 @@ def get_application() -> FastAPI:
 
     application = get_wsgi_application()
     # Mounts an independent web URL for Django WSGI application
-    app.mount("/api/", WSGIMiddleware(application))
+    app.mount("/", WSGIMiddleware(application))
 
     return app
 
