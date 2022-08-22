@@ -22,7 +22,7 @@ def get_application() -> FastAPI:
     # Main Fast API application
     app = FastAPI(
         title='djing2',
-        openapi_url="/api_v2/openapi.json",
+        openapi_url="/api/openapi.json",
         debug=settings.DEBUG,
         dependencies=[Depends(token_auth_dep)]
     )
@@ -37,7 +37,7 @@ def get_application() -> FastAPI:
     )
 
     # Include all api endpoints
-    app.include_router(router, prefix='/api_v2')
+    app.include_router(router, prefix='/api')
 
     application = get_wsgi_application()
     # Mounts an independent web URL for Django WSGI application
