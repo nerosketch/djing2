@@ -55,8 +55,6 @@ class PaymeErrorsEnum(IntEnumEx):
     TRANSACTION_NOT_ALLOWED = -31007
 
 
-
-
 class PaymeBaseRPCException(APIException):
     code: PaymeErrorsEnum = PaymeErrorsEnum.SERVER_ERROR
     msg = ugettext_lazy('Unknown error')
@@ -186,7 +184,7 @@ class PaymeTransactionModelManager(models.Manager):
             if trans.transaction_state != TransactionStatesEnum.START:
                 raise PaymeTransactionStateBad
             if trans.is_timed_out():
-                trans.cancel()
+                trans.cancel(PaymeCancelReasonEnum.TRANSACTION_CANCELLED_BY_TIMEOUT)
                 raise PaymeTransactionTimeout
         return trans
 
@@ -196,7 +194,7 @@ class PaymeTransactionModelManager(models.Manager):
             raise PaymeTransactionNotFound
         if trans.transaction_state == TransactionStatesEnum.START:
             if trans.is_timed_out():
-                trans.cancel()
+                trans.cancel(PaymeCancelReasonEnum.TRANSACTION_CANCELLED_BY_TIMEOUT)
                 raise PaymeTransactionTimeout
             else:
                 customer = trans.customer
@@ -228,12 +226,12 @@ class PaymeTransactionModelManager(models.Manager):
             external_id=transaction_id,
         ).first()
         if trans is None:
-           raise PaymeTransactionNotFound
+            raise PaymeTransactionNotFound
         if trans.transaction_state == TransactionStatesEnum.START:
-           trans.cancel(reason=reason)
-           return trans.as_dict()
+            trans.cancel(reason=reason)
+            return trans.as_dict()
         elif trans.transaction_state == TransactionStatesEnum.CANCELLED:
-           return trans.as_dict()
+            return trans.as_dict()
         raise PaymeTransactionCancelNotAllowed
 
     def check_payment(self, transaction_id: str) -> dict:
@@ -297,7 +295,6 @@ class PaymeTransactionModel(models.Model):
             'state': self.transaction_state,
             'reason': self.reason or None
         }}
-
 
     objects = PaymeTransactionModelManager()
 
