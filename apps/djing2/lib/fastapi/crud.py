@@ -1,4 +1,4 @@
-from typing import Type, Optional, List, Union, Any
+from typing import Type, Optional, List, Union, Any, Dict
 from collections import OrderedDict
 from django.db.models import QuerySet, Model
 from django.db.utils import IntegrityError
@@ -111,7 +111,7 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
         return route
 
     def _update(self, *args: Any, **kwargs: Any):
-        def route(item_id: int, model: dict[str, Union[str, int, float]]) -> OrderedDict:
+        def route(item_id: int, model: Dict[str, Union[str, int, float]]) -> OrderedDict:
             qs = self.filter_qs()
             model_fields = tuple(fname for fname, _ in model.items())
             update_fields = tuple(fname for fname, _ in self._field_objects.items() if fname in model_fields)

@@ -111,7 +111,7 @@ class CRUDGenerator(Generic[T], APIRouter, ABC):
                 "/{item_id}/",
                 self._delete_one(),
                 methods=["DELETE"],
-                response_model=str,
+                response_model=None,
                 summary="Delete One",
                 dependencies=delete_one_route,
                 error_responses=[NOT_FOUND],
@@ -196,7 +196,7 @@ class CRUDGenerator(Generic[T], APIRouter, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _delete_one(self, *args: Any, **kwargs: Any) -> Callable[..., Any]:
+    def _delete_one(self, *args: Any, **kwargs: Any) -> Callable[..., None]:
         raise NotImplementedError
 
     def _raise(self, e: Exception, status_code: int = 422) -> HTTPException:

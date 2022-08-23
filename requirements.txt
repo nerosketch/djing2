@@ -77,3 +77,4 @@ djangorestframework-csv>=2.1.1
 fastapi
 uvicorn[standard]
 
+celery

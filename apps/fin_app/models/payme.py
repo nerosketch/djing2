@@ -11,7 +11,7 @@ from .base_payment_model import (
     add_payment_type
 )
 from customers.models import Customer
-from customers.tasks import customer_check_service_for_expiration
+from customers.tasks import customer_check_service_for_expiration_task
 
 
 PAYME_DB_TYPE_ID = 4
@@ -215,7 +215,7 @@ class PaymeTransactionModelManager(models.Manager):
                         amount=pay_amount,
                     )
                     trans.perform()
-                customer_check_service_for_expiration(customer_id=customer.pk)
+                customer_check_service_for_expiration_task.delay(customer_id=customer.pk)
         if trans.transaction_state in [TransactionStatesEnum.START, TransactionStatesEnum.PERFORMED]:
             return trans.as_dict()
 
