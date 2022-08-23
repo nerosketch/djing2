@@ -413,3 +413,5 @@ PAYME_CREDENTIALS = get_secret("PAYME_CREDENTIALS")
 
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'pyamqp://user:passw@djing2rabbitmq/')
+REDIS_URL = os.getenv('REDIS_URL', 'redis://djing2redis')

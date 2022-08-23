@@ -6,7 +6,7 @@ import sys
 from django.apps import apps
 from django.conf import settings
 from django.core.wsgi import get_wsgi_application
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
 
@@ -16,6 +16,7 @@ apps.populate(settings.INSTALLED_APPS)
 
 from apps.addresses.views import router
 from djing2.lib.fastapi.auth import token_auth_dep
+from djing2.celery import redis_cache
 
 
 def get_application() -> FastAPI:
@@ -30,7 +31,7 @@ def get_application() -> FastAPI:
     # Set all CORS enabled origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origins = [str(origin) for origin in settings.ALLOWED_HOSTS or []] or ["*"],
+        allow_origins=[str(origin) for origin in settings.ALLOWED_HOSTS or []] or ["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -45,20 +46,31 @@ def get_application() -> FastAPI:
 
     return app
 
+
 app = get_application()
+
+
+@app.on_event("startup")
+def startup():
+    redis_cache.init(
+        host_url=getattr(settings, 'REDIS_URL', 'redis://djing2redis:6379'),
+        prefix="djing2-cache",
+        response_header="X-Djing2-Cache",
+        ignore_arg_types=[Request, Response]
+    )
 
 
 #  from fastapi.staticfiles import StaticFiles
 #  from api import router
-#os.environ.setdefault("DJANGO_CONFIGURATION", "Localdev")
-#app = FastAPI()
-#app.mount("/admin", WSGIMiddleware(application))
-#app.mount("/static",
-#    StaticFiles(
-#         directory=os.path.normpath(
-#              os.path.join(find_spec("django.contrib.admin").origin, "..", "static")
-#         )
-#   ),
-#   name="static",
-#)
-#app.include_router(router)
+# os.environ.setdefault("DJANGO_CONFIGURATION", "Localdev")
+# app = FastAPI()
+# app.mount("/admin", WSGIMiddleware(application))
+# app.mount("/static",
+#     StaticFiles(
+#          directory=os.path.normpath(
+#               os.path.join(find_spec("django.contrib.admin").origin, "..", "static")
+#          )
+#    ),
+#    name="static",
+# )
+# app.include_router(router)
