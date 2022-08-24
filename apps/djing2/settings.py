@@ -213,12 +213,12 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
-        'file': {
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'class': 'logging.FileHandler',
-            'filename': os.getenv('DJING2_LOG_FILE', '/tmp/djing2.log'),
-            'formatter': 'simple'
-        }
+        # 'file': {
+        #     'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        #     'class': 'logging.FileHandler',
+        #     'filename': os.getenv('DJING2_LOG_FILE', '/tmp/djing2.log'),
+        #     'formatter': 'simple'
+        # }
     },
     'root': {
         'handlers': ['console'],
@@ -226,12 +226,14 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'console'],
+            # 'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False
         },
         'djing2_logger': {
-            'handlers': ['file', 'console'],
+            # 'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False
         }
