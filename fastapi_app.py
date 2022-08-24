@@ -6,7 +6,7 @@ import sys
 from django.apps import apps
 from django.conf import settings
 from django.core.wsgi import get_wsgi_application
-from fastapi import FastAPI, Depends, Request, Response
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
 
@@ -16,7 +16,6 @@ apps.populate(settings.INSTALLED_APPS)
 
 from apps.addresses.views import router
 from djing2.lib.fastapi.auth import token_auth_dep
-from djing2.celery import redis_cache
 
 
 def get_application() -> FastAPI:
@@ -48,16 +47,6 @@ def get_application() -> FastAPI:
 
 
 app = get_application()
-
-
-@app.on_event("startup")
-def startup():
-    redis_cache.init(
-        host_url=getattr(settings, 'REDIS_URL', 'redis://djing2redis:6379'),
-        prefix="djing2-cache",
-        response_header="X-Djing2-Cache",
-        ignore_arg_types=[Request, Response]
-    )
 
 
 #  from fastapi.staticfiles import StaticFiles

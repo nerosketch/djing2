@@ -3,7 +3,6 @@ from functools import wraps
 from uwsgi_tasks import task, cron, TaskExecutor
 
 from djing2.lib.logger import logger
-from djing2.lib.uwsgi_lock import uwsgi
 from networks import radius_commands as rc
 from networks.models import CustomerIpLeaseModel
 
