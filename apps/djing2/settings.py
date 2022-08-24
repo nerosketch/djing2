@@ -54,11 +54,12 @@ if ALLOWED_HOSTS:
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_EMAIL")
 
-# ADMINS = os.getenv("ADMINS")
-# if isinstance(ADMINS, str):
-#    ADMINS = json.loads(ADMINS)
-# else:
-ADMINS = [("Admin", "admin@localhost")]
+ADMINS = os.getenv("ADMINS")
+if isinstance(ADMINS, str):
+    import json
+    ADMINS = json.loads(ADMINS)
+else:
+    ADMINS = [("Admin", "admin@localhost")]
 
 # Application definition
 
