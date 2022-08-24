@@ -1,5 +1,4 @@
 #from typing import Optional
-#from uwsgi_tasks import task, TaskExecutor
 #from datetime import datetime, date
 #from customers.models import AdditionalTelephone
 #from addresses.models import AddressModelTypes, AddressModel

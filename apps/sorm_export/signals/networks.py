@@ -23,7 +23,7 @@ from sorm_export.tasks.networks import (
 @receiver(pre_delete, sender=CustomerIpLeaseModel)
 def customer_ip_deleted(sender, instance, *args, **kwargs):
     if not instance.is_dynamic:
-        export_static_ip_leases_task_finish(
+        export_static_ip_leases_task_finish.delay(
             customer_id=instance.customer_id,
             ip_address=instance.ip_address,
             lease_time=instance.lease_time,

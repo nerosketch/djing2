@@ -1,5 +1,5 @@
 from datetime import datetime
-from uwsgi_tasks import task
+from djing2 import celery_app
 from devices.models import Device
 from sorm_export.hier_export.devices import (
     DeviceExportTree,
@@ -9,7 +9,7 @@ from sorm_export.models import CommunicationStandardChoices
 from sorm_export.serializers.devices import DeviceSwitchTypeChoices
 
 
-@task()
+@celery_app.task
 def send_device_on_delete_task(device_id: int,
                                switch_type: DeviceSwitchTypeChoices,
                                network_type: CommunicationStandardChoices,
@@ -26,7 +26,7 @@ def send_device_on_delete_task(device_id: int,
     )
 
 
-@task()
+@celery_app.task
 def send_device_update_task(device_id: int, event_time=None):
     dev_qs = Device.objects.filter(pk=device_id)
     if dev_qs.exists():

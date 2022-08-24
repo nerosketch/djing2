@@ -9,7 +9,7 @@ from sorm_export.tasks.gateways import export_gateway_task, export_gateway_stop_
 def on_gateway_save(sender, instance: Gateway, *args, **kwargs):
     if not instance.place:
         return
-    export_gateway_task(
+    export_gateway_task.delay(
         gw_id=instance.pk,
         event_time=datetime.now(),
     )
@@ -19,7 +19,7 @@ def on_gateway_save(sender, instance: Gateway, *args, **kwargs):
 def on_gateway_delete(sender, instance: Gateway, *args, **kwargs):
     if not instance.place:
         return
-    export_gateway_stop_using_task(
+    export_gateway_stop_using_task.delay(
         gw_id=instance.pk,
         gw_type=instance.get_gw_class_display(),
         descr=instance.title,

@@ -25,7 +25,7 @@ def _save_aaa_log(event_time: datetime, **serializer_keys):
             data=serializer_keys
         )
         ser.is_valid(raise_exception=True)
-        return save_radius_acct(event_time=event_time, data=ser.data)
+        return save_radius_acct.delay(event_time=event_time, data=ser.data)
     except ValidationError as err:
         sorm_reporting_emails = getattr(settings, 'SORM_REPORTING_EMAILS', None)
         if sorm_reporting_emails is not None:
