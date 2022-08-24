@@ -35,7 +35,7 @@ def process_lock_cm(lock_name: LOCK_FN_TYPE = None, wait=False):
                 try:
                     s.bind('\0djing2_lock_%s' % really_lock_name)
                     break
-                except OSError as err:
+                except OSError:
                     sleep(0.2)
         else:
             s.bind('\0djing2_lock_%s' % really_lock_name)
