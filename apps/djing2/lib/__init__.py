@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.db.models import IntegerChoices
 from rest_framework.exceptions import ParseError, APIException
-from .process_lock import process_lock, ProcessLocked
+from .process_lock import process_lock_decorator, ProcessLocked
 
 
 def safe_float(fl: Any, default=0.0) -> float:
@@ -141,5 +141,5 @@ __all__ = (
     'safe_float', 'safe_int', 'LogicError', 'DuplicateEntry',
     'MyChoicesAdapter', 'RuTimedelta', 'bytes2human', 'calc_hash',
     'check_sign', 'macbin2str', 'time2utctime', 'IntEnumEx',
-    'process_lock', 'ProcessLocked'
+    'process_lock_decorator', 'ProcessLocked'
 )
