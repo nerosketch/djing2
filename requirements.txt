@@ -68,4 +68,4 @@ djangorestframework-csv>=2.1.1
 # fastapi
 fastapi
 uvicorn[standard]
-celery[librabbitmq]
+celery
