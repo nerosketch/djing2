@@ -1,13 +1,13 @@
 import os
 import csv
 from datetime import datetime
-from uwsgi_tasks import task, cron
+from djing2 import celery_app
 from sorm_export.serializers.aaa import AAA_EXPORT_FNAME
 from sorm_export.ftp_worker.func import send_file2ftp
 from sorm_export.hier_export.base import format_fname
 
 
-@task()
+@celery_app.task
 def save_radius_acct(event_time: datetime, data: dict) -> None:
     line = [v for k, v in data.items()]
     with open(AAA_EXPORT_FNAME, "a") as f:
@@ -15,8 +15,8 @@ def save_radius_acct(event_time: datetime, data: dict) -> None:
         csv_writer.writerow(line)
 
 
-@cron(minute=-15)
-def upload_aaa_2_ftp(signal_number):
+@celery_app.task
+def upload_aaa_2_ftp():
     try:
         if os.path.getsize(AAA_EXPORT_FNAME) > 0:
             now = datetime.now()
@@ -30,3 +30,10 @@ def upload_aaa_2_ftp(signal_number):
     # Erase all content
     with open(AAA_EXPORT_FNAME, 'w'):
         pass
+
+
+celery_app.add_periodic_task(
+    60*15,
+    upload_aaa_2_ftp.s(),
+    name='Upload aaa to ftp'
+)

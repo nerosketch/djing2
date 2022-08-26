@@ -1,14 +1,31 @@
+from enum import Enum
+from typing import List
 from dataclasses import asdict
+from pydantic import BaseModel
 from django.db.models import Count
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from fastapi import APIRouter
+
 from djing2.lib import safe_int
+from djing2.lib.fastapi.crud import DjangoCrudRouter
 from djing2.viewsets import DjingModelViewSet
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.serializers import AddressModelSerializer
 from addresses.fias_socrbase import AddressFIASInfo
+from addresses import schemas
+
+
+class AddrEnum(str, Enum):
+    ADDR = 'Addresses'
+
+
+router = APIRouter(
+    prefix='/addrs',
+    tags=[AddrEnum.ADDR],
+)
 
 
 class AddressModelViewSet(DjingModelViewSet):
@@ -23,11 +40,6 @@ class AddressModelViewSet(DjingModelViewSet):
         if parent_addr == 0:
             return queryset.filter(parent_addr=None)
         return super().filter_queryset(queryset)
-
-    @action(methods=['get'], detail=False)
-    def get_addr_types(self, request):
-        types = [{'value': value, 'label': label} for value, label in AddressModelTypes.choices]
-        return Response(types)
 
     @action(methods=['get'], detail=False)
     def get_all_children(self, request):
@@ -107,3 +119,28 @@ class AddressModelViewSet(DjingModelViewSet):
             return Response(None)
         ser = self.serializer_class(instance=a)
         return Response(ser.data)
+
+
+router.include_router(DjangoCrudRouter(
+    schema=schemas.AddressModelSchema,
+    create_schema=schemas.AddressBaseSchema,
+    queryset=AddressModel.objects.all(),
+    tags=[AddrEnum.ADDR],
+))
+
+
+class AddrTypeValLabel(BaseModel):
+    value: int
+    label: str
+
+
+@router.get('/get_addr_types/', response_model=List[AddrTypeValLabel])
+def get_addr_types():
+    """Return all possible variants for address model types"""
+
+    model_types = (AddrTypeValLabel(
+        value=value,
+        label=str(label)
+    ) for value, label in AddressModelTypes.choices)
+    return model_types
+

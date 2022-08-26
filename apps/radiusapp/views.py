@@ -687,7 +687,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                     customer = self._find_customer(data=dat)
                 if not customer.is_access():
                     logger.info("COA: inet->guest uname=%s" % radius_username)
-                    async_change_session_inet2guest(
+                    async_change_session_inet2guest.delay(
                         radius_uname=radius_username
                     )
             elif 'SERVICE-GUEST' in bras_service_name:
@@ -705,7 +705,7 @@ class RadiusCustomerServiceRequestViewSet(AllowedSubnetMixin, GenericViewSet):
                         burst_out=float(service.speed_burst),
                     )
                     speed = vendor_manager.get_speed(speed=speed)
-                    async_change_session_guest2inet(
+                    async_change_session_guest2inet.delay(
                         radius_uname=radius_username,
                         speed_in=speed.speed_in,
                         speed_out=speed.speed_out,

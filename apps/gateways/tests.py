@@ -17,7 +17,9 @@ class FetchCredentialsTestCase(CustomAPITestCase):
         DeviceTestCase.setUp(self)
 
         self.service = Service.objects.create(
-            title="test", descr="test", speed_in=10.0, speed_out=10.0, cost=10.0, calc_type=SERVICE_CHOICE_DEFAULT
+            title="test", descr="test",
+            speed_in=10.0, speed_out=10.0, cost=10.0,
+            calc_type=SERVICE_CHOICE_DEFAULT
         )
         self.ippool = NetworkIpPool.objects.create(
             network="10.11.12.0/24",
@@ -62,6 +64,16 @@ class FetchCredentialsTestCase(CustomAPITestCase):
 
         self.customer.gateway = gw
         self.customer.save(update_fields=["gateway"])
+
+    def test_customer_contains_all_required(self):
+        c = self.customer
+        self.assertIsNotNone(c)
+        self.assertTrue(c.is_active)
+        self.assertIsNotNone(c.gateway)
+        self.assertIsNotNone(c.active_service())
+        ips = c.customeripleasemodel_set.all()
+        self.assertTrue(ips.exists())
+        self.assertGreater(ips.count(), 0, msg=str(ips))
 
     def test_get_credentials(self):
         r = self.get("/api/gateways/fetch_customers_srvnet_credentials_by_gw/", {"gw_id": self.gw.pk})

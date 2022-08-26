@@ -12,6 +12,7 @@ def on_device_monitoring_event(sender, instance, recipients: List[int], text: st
     :param recipients: List of UserProfile id.
     :param text: Message text.
     """
+    # TODO: move to task server
     send_messenger_broadcast_message_task(
         text=text,
         recipients=recipients

@@ -14,4 +14,4 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
     # run resize avatar task
     # TODO: not resize when it not changed
     if instance.avatar and os.path.isfile(instance.avatar.path):
-        resize_profile_avatar(instance.avatar.path)
+        resize_profile_avatar.delay(instance.avatar.path)

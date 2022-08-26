@@ -20,8 +20,8 @@ class UnknownPaymentExportFormat(serializers.Serializer):
     amount = serializers.DecimalField(
         label=_('Pay amount'),
         required=True,
-        max_digits=9,
-        decimal_places=2
+        max_digits=11,
+        decimal_places=6
     )
     """
     https://wiki.vasexperts.ru/doku.php?id=sorm:sorm3:sorm3_subs_dump:sorm3_subs_pays:unknown_payment

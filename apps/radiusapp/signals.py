@@ -34,7 +34,7 @@ def customer_post_pick_service_signal_handler(sender, instance: Customer, servic
 
     leases = CustomerIpLeaseModel.objects.filter(customer=instance, state=True).exclude(radius_username=None)
     for lease in leases:
-        tasks.async_change_session_guest2inet(
+        tasks.async_change_session_guest2inet.delay(
             radius_uname=str(lease.radius_username),
             speed_in=speed.speed_in,
             speed_out=speed.speed_out,
@@ -53,7 +53,7 @@ def customer_post_pick_service_signal_handler(sender, instance: Customer, servic
 #    """
 #    leases = CustomerIpLeaseModel.objects.filter(customer=customer, state=True).exclude(radius_username=None)
 #    for lease in leases:
-#        tasks.async_change_session_inet2guest(
+#        tasks.async_change_session_inet2guest.delay(
 #            radius_uname=str(lease.radius_username)
 #        )
 

@@ -11,7 +11,7 @@ from django.db import models, connection, InternalError
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField, CidrAddressField
 from djing2 import ping as icmp_ping
-from djing2.lib import process_lock, LogicError, safe_int
+from djing2.lib import process_lock_decorator, LogicError, safe_int
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from customers.models import Customer
@@ -39,6 +39,7 @@ def _human_readable_int(num: int, u="b") -> str:
             num = round(num / dec, 2)
             return f"{num} {pref}{u}"
     return str(num)
+
 
 class VlanIf(BaseAbstractModel):
     """802.1q, vlan information for bindings"""
@@ -342,7 +343,7 @@ class CustomerIpLeaseModel(models.Model):
             res = cur.fetchone()
         return res[0] if len(res) > 0 else False
 
-    @process_lock()
+    @process_lock_decorator()
     def ping_icmp(self, num_count=10, arp=False) -> bool:
         host_ip = str(self.ip_address)
         return icmp_ping(ip_addr=host_ip, count=num_count, arp=arp)

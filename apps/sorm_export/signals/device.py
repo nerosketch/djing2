@@ -13,7 +13,7 @@ from sorm_export.tasks.device import (
 @receiver(post_delete, sender=Device)
 def on_delete_device(sender, instance: Device, *args, **kwargs):
     if instance.address:
-        send_device_on_delete_task(
+        send_device_on_delete_task.delay(
             device_id=instance.pk,
             switch_type=DeviceSwitchTypeChoices.INTERNAL,        # TODO: change this hard coding
             network_type=CommunicationStandardChoices.ETHERNET,  # TODO: change this hard coding
@@ -27,7 +27,7 @@ def on_delete_device(sender, instance: Device, *args, **kwargs):
 @receiver(post_save, sender=Device)
 def on_update_device(sender, instance=Device, created=False, *args, **kwargs):
     if instance.address:
-        send_device_update_task(
+        send_device_update_task.delay(
             device_id=int(instance.pk),
             event_time=datetime.now()
         )

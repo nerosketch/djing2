@@ -1,11 +1,11 @@
 import re
 from django.utils.translation import gettext
-from djing2.lib import process_lock, safe_int
+from djing2.lib import process_lock_decorator, safe_int
 from devices.device_config.base import DeviceConsoleError, DeviceImplementationError
 from devices.device_config import expect_util
 
 
-@process_lock()
+@process_lock_decorator()
 def remove_from_olt(ip_addr: str, telnet_login: str, telnet_passw: str, telnet_prompt: str, int_name: str):
     if not re.match(expect_util.IP4_ADDR_REGEX, ip_addr):
         raise expect_util.ExpectValidationError("ip address for OLT not valid")

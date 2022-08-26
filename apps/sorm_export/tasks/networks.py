@@ -1,6 +1,6 @@
 from datetime import datetime
-from uwsgi_tasks import task
 
+from djing2 import celery_app
 from sorm_export.hier_export.base import format_fname
 from sorm_export.hier_export.networks import get_addr_type
 from sorm_export.models import ExportStampTypeEnum
@@ -8,7 +8,7 @@ from sorm_export.tasks.task_export import task_export
 from sorm_export.serializers import networks as sorm_networks_serializers
 
 
-#@task()
+#@celery_app.task
 #def export_static_ip_leases_task(customer_lease_id_list: List[int], event_time=None):
 #    leases = CustomerIpLeaseModel.objects.filter(pk__in=customer_lease_id_list).exclude(customer=None)
 #    try:
@@ -17,7 +17,7 @@ from sorm_export.serializers import networks as sorm_networks_serializers
 #        logger.error(err)
 
 
-@task()
+@celery_app.task
 def export_static_ip_leases_task_finish(customer_id: int, ip_address: str, lease_time: datetime,
                                         mac_address: str, event_time=None):
     if event_time is None:
