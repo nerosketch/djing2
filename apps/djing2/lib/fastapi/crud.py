@@ -39,7 +39,7 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
             update_schema=update_schema,
             prefix=prefix,
             tags=tags,
-            paginate=1000,
+            paginate=10,
             get_all_route=get_all_route,
             get_one_route=get_one_route,
             create_route=create_route,
