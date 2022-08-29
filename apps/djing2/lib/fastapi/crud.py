@@ -17,7 +17,7 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
         queryset: QuerySet,
         create_schema: Optional[Type[SCHEMA]] = None,
         update_schema: Optional[Type[SCHEMA]] = None,
-        prefix: Optional[str] = None,
+        # prefix: Optional[str] = None,
         tags: Optional[List[str]] = None,
         #  paginate: Optional[int] = None,
         get_all_route: Union[bool, DEPENDENCIES] = True,
@@ -37,7 +37,7 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
             schema=schema,
             create_schema=create_schema,
             update_schema=update_schema,
-            prefix=prefix,
+            # prefix=prefix,
             tags=tags,
             paginate=10,
             get_all_route=get_all_route,
@@ -48,7 +48,8 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
             **kwargs
         )
 
-    def paginate(self, qs: QuerySet[Model], skip: Optional[int], limit: Optional[int]) -> QuerySet[Model]:
+    @staticmethod
+    def paginate(qs: QuerySet[Model], skip: Optional[int], limit: Optional[int]) -> QuerySet[Model]:
         if skip is not None:
             qs = qs[int(skip):]
 
