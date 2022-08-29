@@ -106,20 +106,6 @@ class AddressModelViewSet(DjingModelViewSet):
         ids_hierarchy = tuple(i for i in obj.get_id_hierarchy_gen())
         return Response(ids_hierarchy)
 
-    #@action(methods=['get'], detail=True)
-    #def get_address_by_type(self, request, pk=None):
-    #    addr_type = request.query_params.get('addr_type')
-    #    if not addr_type:
-    #        return Response(None)
-    #    addr_type = safe_int(addr_type)
-    #    if not AddressModelTypes.in_range(addr_type):
-    #        return Response('Addr type not in range', status=status.HTTP_400_BAD_REQUEST)
-    #    a = AddressModel.objects.get_address_by_type(addr_id=pk, addr_type=addr_type).first()
-    #    if not a:
-    #        return Response(None)
-    #    ser = self.serializer_class(instance=a)
-    #    return Response(ser.data)
-
 
 router.include_router(DjangoCrudRouter(
     schema=schemas.AddressModelSchema,
@@ -144,11 +130,23 @@ def get_addr_types():
     return model_types
 
 
+addr_field_names = tuple(fname for fname, v in schemas.AddressModelSchema.__fields__.items())
+
+
 @router.get('/{addr_id}/get_address_by_type/', response_model=Optional[schemas.AddressModelSchema])
 def get_address_by_type(addr_id: int, addr_type: AddressModelTypes) -> Optional[schemas.AddressModelSchema]:
-    """Get full address by it's type."""
+    """
+    **Get parent address by type.**
+
+    For example, we have house number with id 194, and we need to get its street.
+
+    Then we can _get_address_by_type(194, AddressModelTypesn.STREET)_
+    """
+
     a = AddressModel.objects.get_address_by_type(
         addr_id=addr_id,
         addr_type=addr_type
-    ).first()
-    return a
+    ).values(*addr_field_names).first()
+    if not a:
+        return None
+    return schemas.AddressModelSchema(**a)
