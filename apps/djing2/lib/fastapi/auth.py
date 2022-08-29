@@ -1,20 +1,10 @@
-from fastapi import Header, HTTPException
+from fastapi import HTTPException
 from fastapi.security import APIKeyHeader
 from starlette import status
 from starlette.requests import Request
 from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 from djing2.lib.auth_backends import _get_right_user
-
-
-def_auth_hdr = Header(
-    title="Authorization header with token",
-    description="Contain auth token like: Authorization: Token ########################################",
-    regex=r'^Token\ [0-9a-f]{40}$',
-    example="Token 0000000000000000000000000000000000000000"
-)
-
-_keyword = 'Token'
 
 
 class TokenAPIKeyHeader(APIKeyHeader):
@@ -36,7 +26,7 @@ class TokenAPIKeyHeader(APIKeyHeader):
                 return None
 
         divided_auth = token.split(' ')
-        if not divided_auth or divided_auth[0].lower() != _keyword.lower():
+        if not divided_auth or divided_auth[0].lower() != 'token':
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Bad auth'
