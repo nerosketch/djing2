@@ -6,7 +6,7 @@ import sys
 from django.apps import apps
 from django.conf import settings
 from django.core.wsgi import get_wsgi_application
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
 
@@ -15,7 +15,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apps.djing2.settings")
 apps.populate(settings.INSTALLED_APPS)
 
 from apps.addresses.views import router
-from djing2.lib.fastapi.auth import token_auth_dep
+from djing2.lib.fastapi.auth import TokenAPIKeyHeader
+
+token_auth_dep = TokenAPIKeyHeader(name='Authorization')
 
 
 def get_application() -> FastAPI:
@@ -47,6 +49,15 @@ def get_application() -> FastAPI:
 
 
 app = get_application()
+
+
+@app.middleware('http')
+def x_real_ip_middleware(request: Request, call_next):
+    real_ip = request.headers.get('HTTP_X_REAL_IP')
+    if real_ip is not None:
+        request.headers['REMOTE_ADDR'] = real_ip
+    response = call_next(request)
+    return response
 
 
 #  from fastapi.staticfiles import StaticFiles
