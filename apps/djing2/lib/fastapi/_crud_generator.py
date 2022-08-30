@@ -8,7 +8,7 @@ from fastapi.types import DecoratedCallable
 from ._types import T, DEPENDENCIES
 from ._utils import pagination_factory, schema_factory
 
-NOT_FOUND = HTTPException(404, "Item not found")
+NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
 
 
 class CRUDGenerator(Generic[T], APIRouter, ABC):
@@ -53,27 +53,6 @@ class CRUDGenerator(Generic[T], APIRouter, ABC):
 
         super().__init__(**kwargs)
 
-        if get_all_route:
-            self._add_api_route(
-                "/",
-                self._get_all(),
-                methods=["GET"],
-                response_model=Optional[List[self.schema]],  # type: ignore
-                summary="Get All",
-                dependencies=get_all_route,
-            )
-
-        if create_route:
-            self._add_api_route(
-                "/",
-                self._create(),
-                methods=["POST"],
-                response_model=self.schema,
-                summary="Create One",
-                dependencies=create_route,
-                status_code=status.HTTP_201_CREATED
-            )
-
         # if delete_all_route:
         #     self._add_api_route(
         #         "",
@@ -116,6 +95,27 @@ class CRUDGenerator(Generic[T], APIRouter, ABC):
                 dependencies=delete_one_route,
                 error_responses=[NOT_FOUND],
                 status_code=status.HTTP_204_NO_CONTENT,
+            )
+
+        if get_all_route:
+            self._add_api_route(
+                "/",
+                self._get_all(),
+                methods=["GET"],
+                response_model=Optional[List[self.schema]],  # type: ignore
+                summary="Get All",
+                dependencies=get_all_route,
+            )
+
+        if create_route:
+            self._add_api_route(
+                "/",
+                self._create(),
+                methods=["POST"],
+                response_model=self.schema,
+                summary="Create One",
+                dependencies=create_route,
+                status_code=status.HTTP_201_CREATED
             )
 
     def _add_api_route(
