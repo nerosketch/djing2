@@ -11,10 +11,8 @@ from starlette import status
 from djing2.lib.fastapi.crud import DjangoCrudRouter
 from djing2.lib.fastapi._crud_generator import NOT_FOUND
 from django.db.models import QuerySet, Model
-from djing2.viewsets import DjingModelViewSet
 from addresses.models import AddressModel, AddressModelTypes
-from addresses.serializers import AddressModelSerializer
-from addresses.fias_socrbase import AddressFIASInfo, AddressFIASLevelType
+from addresses.fias_socrbase import AddressFIASInfo, AddressFIASLevelType, IAddressFIASType
 from addresses import schemas
 
 
@@ -26,11 +24,6 @@ router = APIRouter(
 _base_addr_queryset = AddressModel.objects.annotate(
     children_count=Count('addressmodel'),
 ).order_by('title')
-
-
-# class AddressModelViewSet(DjingModelViewSet):
-#     serializer_class = AddressModelSerializer
-#     filterset_fields = ['address_type', 'parent_addr', 'fias_address_type']
 
 
 class AddrTypeValLabel(BaseModel):
@@ -106,12 +99,10 @@ def filter_by_fias_level(level: AddressFIASLevelType):
     )
 
 
-@router.get('/get_ao_types/', response_model=List[Tuple[AddressFIASLevelType, str]])
+@router.get('/get_ao_types/', response_model=List[IAddressFIASType])
 def get_ao_types(level: AddressFIASLevelType):
     """Get all address object types."""
-    return tuple(
-        asdict(a) for a in AddressFIASInfo.get_address_types_by_level(level=level)
-    )
+    return AddressFIASInfo.get_address_types_by_level(level=level)
 
 
 @router.get('/{addr_id}/get_parent/', response_model=Optional[schemas.AddressModelSchema])
