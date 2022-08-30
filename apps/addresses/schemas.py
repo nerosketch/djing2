@@ -32,25 +32,13 @@ class AddressBaseSchema(BaseModel):
         return values
 
 
-class AddressModelSchema(AddressBaseSchema):
-    id: int
-
-    @property
-    def parent_addr_title(self):
-        return getattr(self, 'parent_addr').title
-        # return self.parent_addr.title
-
-    @property
-    def fias_address_level_name(self):
-        return self.get_fias_address_level_display()
-
-    @property
-    def fias_address_type_name(self):
-        return 'fias_address_type_name'
-
-    @property
-    def children_count(self):
-        return 12
+class AddressModelSchema(BaseModel):
+    id: Optional[int]
+    parent_addr: Optional[int] = None
+    title: Optional[str]
+    address_type: Optional[AddressModelTypes]
+    fias_address_level: Optional[int] = Field(None, gt=0)
+    fias_address_type: Optional[int] = Field(None, gt=0)
 
     class Config:
         orm_mode = True

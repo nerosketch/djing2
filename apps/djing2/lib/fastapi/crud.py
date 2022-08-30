@@ -2,6 +2,7 @@ from typing import Type, Optional, List, Union, Any, Dict, OrderedDict as Ordere
 from collections import OrderedDict
 from django.db.models import QuerySet, Model
 from django.db.utils import IntegrityError
+from django.core.exceptions import FieldDoesNotExist
 from djing2.lib.fastapi._types import IListResponse
 from fastapi import HTTPException, status, Request
 
@@ -68,7 +69,11 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
             qs = self._queryset
         return qs
 
-    def format_object(self, model_item: Model, fields_list: Optional[List[str]]=()) -> OrderedDictType:
+    def format_object(self, model_item: Model, fields_list: Optional[List[str]] = None) -> OrderedDictType:
+        if fields_list is None:
+            return OrderedDict(
+                (fname, fobject.value_from_object(model_item)) for fname, fobject in self._field_objects.items()
+            )
         return OrderedDict(
             (fname, fobject.value_from_object(model_item)) for fname, fobject in self._field_objects.items() if fname in fields_list
         )
@@ -96,17 +101,22 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
         ) -> IListResponse[self.schema]:
 
             page, page_size = pagination.get("page"), pagination.get("page_size")
+            if not page_size or page_size == 0:
+                page_size = 100
 
             qs = self.filter_qs(request=request)
             all_count = qs.count()
-            qs = self.paginate(qs=qs, page=page, page_size=page_size)
 
             fields_list = None
             if fields:
                 fields_list = fields.split(',')
                 if len(fields_list) > 0:
-                    qs = qs.only(*fields_list)
+                    param_fields_list = set(fields_list)
+                    model_fields_list = {fname for fname, fobject in self._field_objects.items()}
+                    fields_list = param_fields_list & model_fields_list
+                    # TODO: use computed fields from DRF serializer
 
+            qs = self.paginate(qs=qs, page=page, page_size=page_size)
             return IListResponse[self.schema](
                 count=all_count,
                 next=self.get_next_url(r=request, current_page=page, all_count=all_count, limit=page_size),

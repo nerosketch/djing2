@@ -1,14 +1,16 @@
 from typing import List, Optional, Tuple
 from dataclasses import asdict
 
+from djing2.lib import safe_int
 from pydantic import BaseModel
 from django.db.models import Count
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from starlette import status
 
 from djing2.lib.fastapi.crud import DjangoCrudRouter
 from djing2.lib.fastapi._crud_generator import NOT_FOUND
+from django.db.models import QuerySet, Model
 from djing2.viewsets import DjingModelViewSet
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.serializers import AddressModelSerializer
@@ -24,12 +26,6 @@ router = APIRouter(
 _base_addr_queryset = AddressModel.objects.annotate(
     children_count=Count('addressmodel'),
 ).order_by('title')
-
-
-def _filter_addr_queryset(queryset, parent_addr: Optional[int]=None):
-    if not parent_addr:
-        return queryset.filter(parent_addr=None)
-    return queryset
 
 
 class AddressModelViewSet(DjingModelViewSet):
@@ -141,7 +137,25 @@ def get_all_children(addr_type: AddressModelTypes, parent_addr: int,
     return [schemas.AddressModelSchema.from_orm(a) for a in qs.iterator()]
 
 
-router.include_router(DjangoCrudRouter(
+class AddressCrudRouter(DjangoCrudRouter):
+    def filter_qs(self, request: Request, qs: Optional[QuerySet] = None) -> QuerySet[Model]:
+        qs = super().filter_qs(qs=qs, request=request)
+        parent_addr = request.query_params.get('parent_addr')
+        if parent_addr is not None and safe_int(parent_addr) == 0:
+            return qs.filter(parent_addr=None)
+        parent_addr = safe_int(parent_addr)
+
+        address_type = request.query_params.get('address_type')
+        if address_type:
+            qs = qs.filter(address_type=address_type)
+
+        if parent_addr > 0:
+            qs = qs.filter(parent_addr_id=parent_addr)
+
+        return qs
+
+
+router.include_router(AddressCrudRouter(
     schema=schemas.AddressModelSchema,
     create_schema=schemas.AddressBaseSchema,
     queryset=AddressModel.objects.annotate(

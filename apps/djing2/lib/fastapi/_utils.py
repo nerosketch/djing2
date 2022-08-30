@@ -61,9 +61,9 @@ def pagination_factory(max_limit: Optional[int] = None) -> Any:
             )
 
         if page_size is not None:
-            if page_size <= 0:
+            if page_size < 0:
                 raise create_query_validation_exception(
-                    field="page_size", msg="page_size query parameter must be greater then zero"
+                    field="page_size", msg="page_size query parameter must be greater then or equal zero"
                 )
 
             elif max_limit and max_limit < page_size:
