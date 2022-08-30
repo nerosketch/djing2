@@ -89,7 +89,7 @@ class AddressesAPITestCase(APITestCase):
 
     def test_creating(self):
         r = self.post("/api/addrs/", {
-            'parent_addr': self.office_addr.pk,
+            'parent_addr_id': self.office_addr.pk,
             'address_type': 64,
             'fias_address_level': 9,
             'fias_address_type': 905,
@@ -104,13 +104,13 @@ class AddressesAPITestCase(APITestCase):
         self.assertEqual(data['fias_address_level'], 9)
         self.assertEqual(data['fias_address_type'], 905)
         self.assertEqual(data['title'], 'винный подвал')
-        self.assertEqual(data['parent_addr'], self.office_addr.pk)
+        self.assertEqual(data['parent_addr_id'], self.office_addr.pk)
 
     def _all_children_request(self, parent_addr):
         r = self.get("/api/addrs/get_all_children/", {
             'addr_type': AddressModelTypes.STREET.value,
             'parent_type': AddressModelTypes.LOCALITY.value,
-            'parent_addr': parent_addr
+            'parent_addr_id': parent_addr
         })
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         return r.data

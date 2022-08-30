@@ -6,7 +6,7 @@ from addresses.models import AddressModelTypes
 
 
 class AddressBaseSchema(BaseModel):
-    parent_addr: Optional[int] = None
+    parent_addr_id: Optional[int] = None
     title: str
     address_type: AddressModelTypes
     fias_address_level: int = Field(0, gt=0)
@@ -34,7 +34,7 @@ class AddressBaseSchema(BaseModel):
 
 class AddressModelSchema(BaseModel):
     id: Optional[int]
-    parent_addr: Optional[int] = None
+    parent_addr_id: Optional[int] = None
     title: Optional[str]
     address_type: Optional[AddressModelTypes]
     fias_address_level: Optional[int] = Field(None, gt=0)

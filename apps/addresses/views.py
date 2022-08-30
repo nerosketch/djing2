@@ -28,9 +28,9 @@ _base_addr_queryset = AddressModel.objects.annotate(
 ).order_by('title')
 
 
-class AddressModelViewSet(DjingModelViewSet):
-    serializer_class = AddressModelSerializer
-    filterset_fields = ['address_type', 'parent_addr', 'fias_address_type']
+# class AddressModelViewSet(DjingModelViewSet):
+#     serializer_class = AddressModelSerializer
+#     filterset_fields = ['address_type', 'parent_addr', 'fias_address_type']
 
 
 class AddrTypeValLabel(BaseModel):
@@ -126,12 +126,12 @@ def get_parent(addr_id: int) -> Optional[schemas.AddressModelSchema]:
 
 
 @router.get('/get_all_children/', response_model=Optional[schemas.AddressModelSchema])
-def get_all_children(addr_type: AddressModelTypes, parent_addr: int,
+def get_all_children(addr_type: AddressModelTypes, parent_addr_id: int,
                      parent_type: Optional[AddressModelTypes] = None
                      ) -> List[schemas.AddressModelSchema]:
     qs = AddressModel.objects.filter_from_parent(
         addr_type,
-        parent_id=parent_addr,
+        parent_id=parent_addr_id,
         parent_type=parent_type
     )
     return [schemas.AddressModelSchema.from_orm(a) for a in qs.iterator()]
@@ -140,17 +140,17 @@ def get_all_children(addr_type: AddressModelTypes, parent_addr: int,
 class AddressCrudRouter(DjangoCrudRouter):
     def filter_qs(self, request: Request, qs: Optional[QuerySet] = None) -> QuerySet[Model]:
         qs = super().filter_qs(qs=qs, request=request)
-        parent_addr = request.query_params.get('parent_addr')
-        if parent_addr is not None and safe_int(parent_addr) == 0:
+        parent_addr_id = request.query_params.get('parent_addr_id')
+        if parent_addr_id is not None and safe_int(parent_addr_id) == 0:
             return qs.filter(parent_addr=None)
-        parent_addr = safe_int(parent_addr)
+        parent_addr_id = safe_int(parent_addr_id)
 
         address_type = request.query_params.get('address_type')
         if address_type:
             qs = qs.filter(address_type=address_type)
 
-        if parent_addr > 0:
-            qs = qs.filter(parent_addr_id=parent_addr)
+        if parent_addr_id > 0:
+            qs = qs.filter(parent_addr_id=parent_addr_id)
 
         return qs
 
