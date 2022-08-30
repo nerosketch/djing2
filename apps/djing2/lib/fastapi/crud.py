@@ -1,15 +1,17 @@
-from typing import Type, Optional, List, Union, Any, Dict
+from typing import Type, Optional, List, Union, Any, Dict, OrderedDict as OrderedDictType
 from collections import OrderedDict
 from django.db.models import QuerySet, Model
 from django.db.utils import IntegrityError
-from fastapi import HTTPException, status
+from djing2.lib.fastapi._types import IListResponse
+from fastapi import HTTPException, status, Request
+
 from ._crud_generator import CRUDGenerator, NOT_FOUND
 from ._types import DEPENDENCIES, PAGINATION, PYDANTIC_SCHEMA as SCHEMA
 
 
 class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
     _queryset: QuerySet
-    _field_objects: OrderedDict
+    _field_objects: OrderedDictType
 
     def __init__(
         self,
@@ -39,7 +41,7 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
             update_schema=update_schema,
             # prefix=prefix,
             tags=tags,
-            paginate=10,
+            paginate=100,
             get_all_route=get_all_route,
             get_one_route=get_one_route,
             create_route=create_route,
@@ -49,12 +51,12 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
         )
 
     @staticmethod
-    def paginate(qs: QuerySet[Model], skip: Optional[int], limit: Optional[int]) -> QuerySet[Model]:
-        if skip is not None:
-            qs = qs[int(skip):]
+    def paginate(qs: QuerySet[Model], page: Optional[int], page_size: Optional[int]) -> QuerySet[Model]:
+        if page is not None:
+            qs = qs[int(page):]
 
-        if limit is not None:
-            qs = qs[:int(limit)]
+        if page_size is not None:
+            qs = qs[:int(page_size)]
 
         return qs
 
@@ -63,26 +65,45 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
             qs = self._queryset
         return qs.all()
 
-    def format_object(self, model_item: Model) -> OrderedDict:
+    def format_object(self, model_item: Model) -> OrderedDictType:
         return OrderedDict(
             (fname, fobject.value_from_object(model_item)) for fname, fobject in self._field_objects.items()
         )
 
+    @staticmethod
+    def get_next_url(r: Request, current_page: int) -> str:
+        u = r.url
+        return str(u.include_query_params(page=current_page + 1))
+
+    @staticmethod
+    def get_prev_url(r: Request, current_page: int) -> Optional[str]:
+        u = r.url
+        if current_page > 0:
+            page = current_page - 1
+            return str(u.include_query_params(page=page))
+
     def _get_all(self, *args: Any, **kwargs: Any):
         def route(
+            request: Request,
             pagination: PAGINATION = self.pagination,
-        ) -> List[OrderedDict]:
-            skip, limit = pagination.get("skip"), pagination.get("limit")
+        ) -> IListResponse[self.schema]:
+            page, page_size = pagination.get("page"), pagination.get("page_size")
 
             qs = self.filter_qs()
-            qs = self.paginate(qs=qs, skip=skip, limit=limit)
+            all_count = qs.count()
+            qs = self.paginate(qs=qs, page=page, page_size=page_size)
 
-            return [self.format_object(m) for m in qs]
+            return IListResponse[self.schema](
+                count=all_count,
+                next=self.get_next_url(r=request, current_page=page) if all_count > page_size else None,
+                previous=self.get_prev_url(r=request, current_page=page),
+                results=[self.format_object(m) for m in qs]
+            )
 
         return route
 
     def _get_one(self, *args: Any, **kwargs: Any):
-        def route(item_id: int) -> OrderedDict:
+        def route(item_id: int) -> OrderedDictType:
             qs = self.filter_qs()
             try:
                 obj = qs.get(pk=item_id)
@@ -92,7 +113,7 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
         return route
 
     def _create(self, *args: Any, **kwargs: Any):
-        def route(payload: self.create_schema) -> OrderedDict:
+        def route(payload: self.create_schema) -> OrderedDictType:
             pdict = payload.dict()
             for fname, fobject in self._field_objects.items():
                 value = pdict.get(fname)
@@ -112,7 +133,7 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
         return route
 
     def _update(self, *args: Any, **kwargs: Any):
-        def route(item_id: int, model: Dict[str, Union[str, int, float]]) -> OrderedDict:
+        def route(item_id: int, model: Dict[str, Union[str, int, float]]) -> OrderedDictType:
             qs = self.filter_qs()
             model_fields = tuple(fname for fname, _ in model.items())
             update_fields = tuple(fname for fname, _ in self._field_objects.items() if fname in model_fields)

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Generic, List, Optional, Type, Union
 
+from djing2.lib.fastapi._types import IListResponse
 from starlette import status
 from fastapi import APIRouter, HTTPException
 from fastapi.types import DecoratedCallable
@@ -102,7 +103,7 @@ class CRUDGenerator(Generic[T], APIRouter, ABC):
                 "/",
                 self._get_all(),
                 methods=["GET"],
-                response_model=Optional[List[self.schema]],  # type: ignore
+                response_model=Optional[IListResponse[self.schema]],  # type: ignore
                 summary="Get All",
                 dependencies=get_all_route,
             )
@@ -180,7 +181,7 @@ class CRUDGenerator(Generic[T], APIRouter, ABC):
                 self.routes.remove(route)
 
     @abstractmethod
-    def _get_all(self, *args: Any, **kwargs: Any) -> Callable[..., Any]:
+    def _get_all(self, *args: Any, **kwargs: Any) -> Callable[..., IListResponse[T]]:
         raise NotImplementedError
 
     @abstractmethod
