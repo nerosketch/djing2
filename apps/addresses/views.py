@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from typing import List, Optional
 
 from djing2.lib import safe_int
@@ -19,7 +18,7 @@ from addresses import schemas
 
 router = APIRouter(
     prefix='/addrs',
-    tags=['addr'],
+    tags=['address'],
 )
 
 _base_addr_queryset = AddressModel.objects.annotate(
