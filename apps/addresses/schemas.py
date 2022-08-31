@@ -39,6 +39,10 @@ class AddressModelSchema(BaseModel):
     address_type: Optional[AddressModelTypes]
     fias_address_level: Optional[int] = Field(None, gt=0)
     fias_address_type: Optional[int] = Field(None, gt=0)
+    parent_addr_title: Optional[str]
+    fias_address_level_name: Optional[str]
+    fias_address_type_name: Optional[str]
+    children_count: Optional[int]
 
     class Config:
         orm_mode = True

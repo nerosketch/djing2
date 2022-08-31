@@ -233,6 +233,25 @@ class AddressModel(IAddressObject, BaseAbstractModel):
     def __repr__(self):
         return "<%s> %s" % (self.get_address_type_display(), self.title)
 
+    @property
+    def parent_addr_title(self) -> Optional[str]:
+        if self.parent_addr:
+            return str(self.parent_addr.title)
+
+    @property
+    def fias_address_level_name(self):
+        fn = getattr(self, 'get_fias_address_level_display', None)
+        if fn is None:
+            return
+        return fn()
+
+    @property
+    def fias_address_type_name(self):
+        fn = getattr(self, 'get_fias_address_type_display', None)
+        if fn is None:
+            return
+        return fn()
+
     class Meta:
         db_table = 'addresses'
         unique_together = ('parent_addr', 'address_type', 'fias_address_type', 'title')
