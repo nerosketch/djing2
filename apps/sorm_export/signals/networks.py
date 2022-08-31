@@ -26,7 +26,7 @@ def customer_ip_deleted(sender, instance, *args, **kwargs):
         export_static_ip_leases_task_finish.delay(
             customer_id=instance.customer_id,
             ip_address=instance.ip_address,
-            lease_time=instance.lease_time,
+            lease_time=instance.lease_time.timestamp(),
             mac_address=instance.mac_address,
-            event_time=datetime.now()
+            event_time=datetime.now().timestamp()
         )
