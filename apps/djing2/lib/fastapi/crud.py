@@ -2,7 +2,6 @@ from typing import Type, Optional, List, Union, Any, Dict, OrderedDict as Ordere
 from collections import OrderedDict
 from django.db.models import QuerySet, Model
 from django.db.utils import IntegrityError
-from django.core.exceptions import FieldDoesNotExist
 from djing2.lib.fastapi._types import IListResponse
 from fastapi import HTTPException, status, Request
 
@@ -22,7 +21,7 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
         update_schema: Optional[Type[SCHEMA]] = None,
         # prefix: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        #  paginate: Optional[int] = None,
+        # paginate: Optional[int] = None,
         get_all_route: Union[bool, DEPENDENCIES] = True,
         get_one_route: Union[bool, DEPENDENCIES] = True,
         create_route: Union[bool, DEPENDENCIES] = True,

@@ -1,5 +1,5 @@
-from typing import List, Optional, Tuple
-from dataclasses import asdict
+from collections import OrderedDict
+from typing import List, Optional
 
 from djing2.lib import safe_int
 from pydantic import BaseModel
@@ -10,6 +10,7 @@ from starlette import status
 
 from djing2.lib.fastapi.crud import DjangoCrudRouter
 from djing2.lib.fastapi._crud_generator import NOT_FOUND
+from djing2.lib.fastapi._types import PAGINATION
 from django.db.models import QuerySet, Model
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.fias_socrbase import AddressFIASInfo, AddressFIASLevelType, IAddressFIASType
@@ -90,7 +91,7 @@ def get_full_title(addr_id: int):
 @router.get('/filter_by_fias_level/', response_model=List[schemas.AddressModelSchema])
 def filter_by_fias_level(level: AddressFIASLevelType):
     if level and level > 0:
-        qs = AddressModel.objects.filter_by_fias_level(level=level)
+        qs = AddressModel.objects.filter_by_fias_level(level=level).order_by('title')
         return [schemas.AddressModelSchema.from_orm(a) for a in qs.iterator()]
 
     raise HTTPException(
@@ -124,7 +125,7 @@ def get_all_children(addr_type: AddressModelTypes, parent_addr_id: int,
         addr_type,
         parent_id=parent_addr_id,
         parent_type=parent_type
-    )
+    ).order_by('title')
     return [schemas.AddressModelSchema.from_orm(a) for a in qs.iterator()]
 
 
@@ -144,6 +145,20 @@ class AddressCrudRouter(DjangoCrudRouter):
             qs = qs.filter(parent_addr_id=parent_addr_id)
 
         return qs
+
+    def _get_all(self, *args, **kwargs):
+        fn = super()._get_all(*args, **kwargs)
+
+        def route(
+            request: Request,
+            parent_addr_id: Optional[int] = None,
+            address_type: Optional[AddressModelTypes] = None,
+            pagination: PAGINATION = self.pagination,
+            fields: Optional[str] = None,
+        ):
+            """Get all address objects."""
+            return fn(request, pagination, fields)
+        return route
 
 
 router.include_router(AddressCrudRouter(
