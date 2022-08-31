@@ -159,7 +159,7 @@ class DjangoCrudRouter(CRUDGenerator[SCHEMA]):
             for fname, fobject in self._field_objects.items():
                 value = pdict.get(fname)
                 if isinstance(value, int):
-                    if fobject.is_relation:
+                    if fobject.is_relation and not fname.endswith('_id'):
                         del pdict[fname]
                         pdict['%s_id' % fname] = value
 
