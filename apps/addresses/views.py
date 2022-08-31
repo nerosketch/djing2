@@ -116,7 +116,7 @@ def get_parent(addr_id: int) -> Optional[schemas.AddressModelSchema]:
         raise NOT_FOUND
 
 
-@router.get('/get_all_children/', response_model=Optional[schemas.AddressModelSchema])
+@router.get('/get_all_children/', response_model=List[schemas.AddressModelSchema])
 def get_all_children(addr_type: AddressModelTypes, parent_addr_id: int,
                      parent_type: Optional[AddressModelTypes] = None
                      ) -> List[schemas.AddressModelSchema]:
