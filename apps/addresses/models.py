@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Optional
 from django.db import models, connection
 from django.db.models import Q, Count
@@ -178,7 +177,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         for addr in AddressModel.objects.filter(pk__in=ids_tree_query):
             yield addr.pk
 
-    def get_address_item_by_type(self, addr_type: AddressModelTypes) -> Optional[AddressModel]:
+    def get_address_item_by_type(self, addr_type: AddressModelTypes) -> Optional['AddressModel']:
         """
         :param addr_type: Id нижнего адресного объекта.
 
@@ -214,9 +213,11 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         """
         qs = AddressModel.objects.annotate(
             # Считаем всех потомков, у которых тип адреса как а родителя
-            children_addrs_count=Count('addressmodel', filter=Q(addressmodel__fias_address_type=self.fias_address_type))
+            children_addrs_count=Count('addressmodel', filter=Q(
+                addressmodel__fias_address_type=self.fias_address_type
+            ))
         ).filter(
-            Q(parent_addr__fias_address_type=self.fias_address_type) | # Сверяемся с родителем
+            Q(parent_addr__fias_address_type=self.fias_address_type) |  # Сверяемся с родителем
             Q(children_addrs_count__gt=0),
             pk=self.pk
         )
@@ -255,4 +256,3 @@ class AddressModel(IAddressObject, BaseAbstractModel):
     class Meta:
         db_table = 'addresses'
         unique_together = ('parent_addr', 'address_type', 'fias_address_type', 'title')
-
