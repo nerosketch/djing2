@@ -6,7 +6,7 @@ import sys
 from django.apps import apps
 from django.conf import settings
 from django.core.wsgi import get_wsgi_application
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
 
@@ -14,10 +14,7 @@ sys.path.insert(0, os.path.abspath("apps"))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apps.djing2.settings")
 apps.populate(settings.INSTALLED_APPS)
 
-from apps.addresses.views import router
-from djing2.lib.fastapi.auth import TokenAPIKeyHeader
-
-token_auth_dep = TokenAPIKeyHeader(name='Authorization')
+from djing2.routers import router
 
 
 def get_application() -> FastAPI:
@@ -26,7 +23,6 @@ def get_application() -> FastAPI:
         title='djing2',
         openapi_url="/api/openapi.json",
         debug=settings.DEBUG,
-        dependencies=[Depends(token_auth_dep)]
     )
 
     # Set all CORS enabled origins
@@ -39,7 +35,7 @@ def get_application() -> FastAPI:
     )
 
     # Include all api endpoints
-    app.include_router(router, prefix='/api')
+    app.include_router(router)
 
     application = get_wsgi_application()
     # Mounts an independent web URL for Django WSGI application
@@ -49,14 +45,6 @@ def get_application() -> FastAPI:
 
 
 app = get_application()
-
-
-# @app.middleware('http')
-# async def x_real_ip_middleware(request: Request, call_next):
-#     real_ip = request.headers.get('HTTP_X_REAL_IP')
-#     if real_ip is not None:
-#         request.headers['REMOTE_ADDR'] = real_ip
-#     return await call_next(request)
 
 
 #  from fastapi.staticfiles import StaticFiles
