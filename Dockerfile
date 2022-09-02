@@ -4,7 +4,6 @@ LABEL maintainer="nerosketch@gmail.com"
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONOPTIMIZE=1
-ENV DJING2_LOG_FILE=/var/log/djing2/main.log
 ENV PYTHONIOENCODING=UTF-8
 
 RUN ["apk", "add", "py3-psycopg2", "net-snmp-dev", "arping", "gettext", "inetutils-telnet", "gcc", "git", "musl-dev", "libffi-dev", "libpq-dev", "make", "--no-cache"]

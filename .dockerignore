@@ -3,12 +3,14 @@
 **/static
 **/venv
 **/__pycache__
+**/.git
+**/.github
 install/
 pyrightconfig.json
 .git/
 .vscode/
 .github/
 *.pyc
-.git/
 .gitignore
 .gitmodules
+Dockerfile
