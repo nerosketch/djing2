@@ -23,8 +23,6 @@ class CRUDGenerator(Generic[T], APIRouter, ABC):
         schema: Type[T],
         create_schema: Optional[Type[T]] = None,
         update_schema: Optional[Type[T]] = None,
-        # prefix: Optional[str] = None,
-        # tags: Optional[List[str]] = None,
         paginate: Optional[int] = None,
         get_all_route: Union[bool, DEPENDENCIES] = True,
         get_one_route: Union[bool, DEPENDENCIES] = True,
@@ -53,16 +51,6 @@ class CRUDGenerator(Generic[T], APIRouter, ABC):
         # tags = tags or [prefix.strip("/").capitalize()]
 
         super().__init__(**kwargs)
-
-        # if delete_all_route:
-        #     self._add_api_route(
-        #         "",
-        #         self._delete_all(),
-        #         methods=["DELETE"],
-        #         response_model=Optional[List[self.schema]],  # type: ignore
-        #         summary="Delete All",
-        #         dependencies=delete_all_route,
-        #     )
 
         if get_one_route:
             self._add_api_route(
