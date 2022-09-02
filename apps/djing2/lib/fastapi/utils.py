@@ -3,20 +3,7 @@ from typing import Optional, Type, Any
 from fastapi import Depends, HTTPException
 from pydantic import create_model
 
-from ._types import T, PAGINATION
-
-
-# class AttrDict(dict):  # type: ignore
-#     def __init__(self, *args, **kwargs) -> None:  # type: ignore
-#         super(AttrDict, self).__init__(*args, **kwargs)
-#         self.__dict__ = self
-
-
-# def get_pk_type(schema: Type[PYDANTIC_SCHEMA], pk_field: str) -> Any:
-#     try:
-#         return schema.__fields__[pk_field].type_
-#     except KeyError:
-#         return int
+from .types import T, PAGINATION
 
 
 def schema_factory(
@@ -63,7 +50,8 @@ def pagination_factory(max_limit: Optional[int] = None) -> Any:
         if page_size is not None:
             if page_size < 0:
                 raise create_query_validation_exception(
-                    field="page_size", msg="page_size query parameter must be greater then or equal zero"
+                    field="page_size",
+                    msg="page_size query parameter must be greater then or equal zero"
                 )
 
             elif max_limit and max_limit < page_size:
