@@ -1,4 +1,5 @@
 from ipaddress import ip_address, AddressValueError
+from typing import Optional
 
 from django.contrib.auth.backends import ModelBackend
 
@@ -7,7 +8,7 @@ from networks.models import CustomerIpLeaseModel
 from profiles.models import BaseAccount, UserProfile
 
 
-def _get_right_user(base_user: BaseAccount):
+def get_right_user(base_user: BaseAccount) -> Optional[BaseAccount]:
     try:
         if base_user.is_staff:
             amodel = UserProfile
@@ -45,9 +46,9 @@ class DjingAuthBackend(ModelBackend):
             )
             return auser
 
-    def get_user(self, user_id):
+    def get_user(self, user_id) -> Optional[BaseAccount]:
         user = BaseAccount._default_manager.get(pk=user_id)
-        return _get_right_user(user)
+        return get_right_user(user)
 
 
 class LocationAuthBackend(DjingAuthBackend):
