@@ -110,7 +110,7 @@ class SearchApiView(DjingListAPIView):
 def can_login_by_location(request):
     """Can account login by his ip address."""
     try:
-        remote_ip = ip_address(request.META.get("REMOTE_ADDR"))
+        remote_ip = ip_address(request.META.get("HTTP_X_REAL_IP"))
         if remote_ip.version == 4:
             ips_exists = CustomerIpLeaseModel.objects.filter(ip_address=str(remote_ip)).exists()
             return Response(ips_exists)

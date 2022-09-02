@@ -77,7 +77,7 @@ class CustomerContractModel(BaseAbstractModel):
         if hasattr(self, '__from_finish'):
             delattr(self, '__from_finish')
         elif self.__before_is_active != self.is_active:
-            # prevent directly change is_active field
+            # prevent direct change is_active field
             raise ValidationError(_('Direct change is_active is not allowed'))
         return super().save(*args, **kwargs)
 

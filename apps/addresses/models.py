@@ -1,15 +1,16 @@
-from __future__ import annotations
 from typing import Optional
 from django.db import models, connection
+from django.db.models import Q, Count
 from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ValidationError
 
-from djing2.lib import safe_int
+from djing2.lib import safe_int, IntEnumEx
 from djing2.models import BaseAbstractModel
 from .interfaces import IAddressObject
 from .fias_socrbase import AddressFIASInfo, AddressFIASLevelType
 
 
-class AddressModelTypes(models.IntegerChoices):
+class AddressModelTypes(IntEnumEx):
     UNKNOWN = 0, _('Unknown')
     LOCALITY = 4, _('Locality')
     STREET = 8, _('Street')
@@ -134,7 +135,6 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         choices=AddressModelTypes.choices,
         default=AddressModelTypes.UNKNOWN.value
     )
-
     fias_address_level = models.IntegerField(
         _('Address Level'),
         choices=((num, name) for num, name in AddressFIASInfo.get_levels()),
@@ -145,7 +145,6 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         choices=AddressFIASInfo.get_address_type_choices(),
         default=0
     )
-
     title = models.CharField(_('Title'), max_length=128)
 
     objects = AddressModelManager.from_queryset(AddressModelQuerySet)()
@@ -178,7 +177,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         for addr in AddressModel.objects.filter(pk__in=ids_tree_query):
             yield addr.pk
 
-    def get_address_item_by_type(self, addr_type: AddressModelTypes) -> Optional[AddressModel]:
+    def get_address_item_by_type(self, addr_type: AddressModelTypes) -> Optional['AddressModel']:
         """
         :param addr_type: Id нижнего адресного объекта.
 
@@ -207,6 +206,52 @@ class AddressModel(IAddressObject, BaseAbstractModel):
     #             # res: street_id, parent_ao_id, parent_ao_type, street_name
     #             yield res
     #             res = cur.fetchone()
+
+    def save(self, *args, **kwargs):
+        """Нельзя чтобы у адресного объекта его тип был таким же как и у родителя.
+           Например улица не может находится в улице, дом в доме, а город в городе.
+        """
+        qs = AddressModel.objects.annotate(
+            # Считаем всех потомков, у которых тип адреса как а родителя
+            children_addrs_count=Count('addressmodel', filter=Q(
+                addressmodel__fias_address_type=self.fias_address_type
+            ))
+        ).filter(
+            Q(parent_addr__fias_address_type=self.fias_address_type) |  # Сверяемся с родителем
+            Q(children_addrs_count__gt=0),
+            pk=self.pk
+        )
+        if qs.exists():
+            raise ValidationError(
+                'У родительского адресного объекта не может '
+                'быть такой же тип как у родителя'
+            )
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+    def __repr__(self):
+        return "<%s> %s" % (self.get_address_type_display(), self.title)
+
+    @property
+    def parent_addr_title(self) -> Optional[str]:
+        if self.parent_addr:
+            return str(self.parent_addr.title)
+
+    @property
+    def fias_address_level_name(self):
+        fn = getattr(self, 'get_fias_address_level_display', None)
+        if fn is None:
+            return
+        return fn()
+
+    @property
+    def fias_address_type_name(self):
+        fn = getattr(self, 'get_fias_address_type_display', None)
+        if fn is None:
+            return
+        return fn()
 
     class Meta:
         db_table = 'addresses'

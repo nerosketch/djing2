@@ -355,16 +355,16 @@ class CustomerManager(MyUserManager):
         if comment is None:
             comment = _("Service for customer %(customer_name)s with name '%(service_name)s' has expired")
         now = datetime.now()
-        expired_service = CustomerService.objects.filter(
+        expired_services = CustomerService.objects.filter(
             deadline__lt=now,
             customer__auto_renewal_service=False
         )
         if customer is not None and isinstance(customer, Customer):
-            expired_service = expired_service.filter(customer=customer)
-        if expired_service.exists():
-            expired_service = expired_service.select_related("customer", "service")
+            expired_services = expired_services.filter(customer=customer)
+        if expired_services.exists():
+            expired_services = expired_services.select_related("customer", "service")
             # TODO: Replace it logging by trigger from db
-            for exp_srv in expired_service.iterator():
+            for exp_srv in expired_services.iterator():
                 if not hasattr(exp_srv, "customer"):
                     continue
                 exp_srv_customer = exp_srv.customer
@@ -377,13 +377,12 @@ class CustomerManager(MyUserManager):
                                 % {"customer_name": exp_srv_customer.get_short_name(),
                                    "service_name": exp_srv.service.title},
                     )
-            custom_signals.customer_service_batch_pre_stop.send(
-                sender=CustomerService, expired_services=expired_service
-            )
-            expired_service.delete()
-            custom_signals.customer_service_batch_post_stop.send(
-                sender=CustomerService, expired_services=expired_service
-            )
+                custom_signals.customer_service_post_stop.send(
+                    sender=CustomerService,
+                    instance=exp_srv,
+                    customer=exp_srv_customer
+                )
+            expired_services.delete()
 
     @staticmethod
     def continue_services_if_autoconnect(customer=None) -> None:
@@ -436,7 +435,8 @@ class CustomerManager(MyUserManager):
                 # finish service otherwise
                 custom_signals.customer_service_pre_stop.send(
                     sender=CustomerService,
-                    expired_service=expired_service
+                    instance=expired_service,
+                    customer=expired_service_customer
                 )
                 with transaction.atomic():
                     expired_service.delete()
@@ -448,11 +448,19 @@ class CustomerManager(MyUserManager):
                         },
                     )
                     custom_signals.customer_service_post_stop.send(
-                        sender=CustomerService, expired_service=expired_service
+                        sender=CustomerService,
+                        instance=expired_service,
+                        customer=expired_service_customer,
                     )
 
 
 class Customer(IAddressContaining, BaseAccount):
+    __before_is_active: bool
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__before_is_active = bool(self.is_active)
+
     current_service = models.OneToOneField(
         CustomerService,
         null=True,
@@ -541,12 +549,32 @@ class Customer(IAddressContaining, BaseAccount):
 
     objects = CustomerManager.from_queryset(CustomerQuerySet)()
 
+    passportinfo: 'PassportInfo'
+
+    def save(self, *args, **kwargs):
+        curr_is_active = bool(self.is_active)
+        if self.__before_is_active and not curr_is_active:
+            # Disabling customer
+            custom_signals.customer_turns_off.send(
+                sender=self.__class__,
+                instance=self
+            )
+        elif not self.__before_is_active and curr_is_active:
+            # Enabling customer
+            custom_signals.customer_turns_on.send(
+                sender=self.__class__,
+                instance=self
+            )
+        return super().save(*args, **kwargs)
+
     def get_flag_icons(self) -> tuple:
         """
         Return icon list of set flags from self.markers
         :return: ['icon-donkey', 'icon-tv', ...]
         """
-        return tuple(name for name, state in self.markers if state)
+        if self.markers:
+            return tuple(name for name, state in self.markers if state)
+        return ()
 
     def set_markers(self, flag_names: List[str]):
         flags = None
@@ -563,7 +591,7 @@ class Customer(IAddressContaining, BaseAccount):
     def active_service(self) -> CustomerService:
         return self.current_service
 
-    def add_balance(self, profile: UserProfile, cost: float, comment: str) -> None:
+    def add_balance(self, profile: Optional[UserProfile], cost: float, comment: str) -> None:
         old_balance = self.balance
         CustomerLog.objects.create(
             customer=self,
@@ -571,7 +599,7 @@ class Customer(IAddressContaining, BaseAccount):
             from_balance=old_balance,
             to_balance=old_balance + cost,
             author=profile if isinstance(profile, UserProfile) else None,
-            comment=re.sub(r"\W{1,128}", " ", comment),
+            comment=re.sub(r"\W{1,128}", " ", comment)[:128] if comment else '-'
         )
         self.balance += cost
 
@@ -587,10 +615,10 @@ class Customer(IAddressContaining, BaseAccount):
         :param allow_negative: Allows negative balance
         :param service: instance of services.models.Service.
         :param author: Instance of profiles.models.UserProfile.
-        Who connected this service. May be None if author is a system.
+         Who connected this service. May be None if author is a system.
         :param comment: Optional text for logging this pay.
         :param deadline: Instance of datetime.datetime. Date when service is
-        expired.
+         expired.
         :return: Nothing
         """
         if not isinstance(service, Service):
@@ -610,7 +638,7 @@ class Customer(IAddressContaining, BaseAccount):
             # if service is present then speak about it
             raise LogicError(_("Service already activated"))
 
-        if allow_negative and not author.is_staff:
+        if allow_negative and (author is None or not author.is_staff):
             raise LogicError(_("User, who is no staff, can not be buy services on credit"))
 
         # if not enough money
@@ -622,7 +650,7 @@ class Customer(IAddressContaining, BaseAccount):
 
         custom_signals.customer_service_pre_pick.send(
             sender=Customer,
-            customer=self,
+            instance=self,
             service=service
         )
         old_balance = self.balance
@@ -653,7 +681,7 @@ class Customer(IAddressContaining, BaseAccount):
             )
         custom_signals.customer_service_post_pick.send(
             sender=Customer,
-            customer=self,
+            instance=self,
             service=service
         )
 
@@ -666,7 +694,8 @@ class Customer(IAddressContaining, BaseAccount):
         customer_service = self.active_service()
         custom_signals.customer_service_pre_stop.send(
             sender=CustomerService,
-            expired_service=customer_service
+            instance=customer_service,
+            customer=self
         )
         with transaction.atomic():
             cost_to_return = self.calc_cost_to_return()
@@ -688,7 +717,8 @@ class Customer(IAddressContaining, BaseAccount):
             customer_service.delete()
         custom_signals.customer_service_post_stop.send(
             sender=CustomerService,
-            expired_service=customer_service
+            instance=customer_service,
+            customer=self
         )
 
     def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
@@ -708,7 +738,7 @@ class Customer(IAddressContaining, BaseAccount):
         # if not enough money
         if not allow_negative and self.balance < cost:
             raise NotEnoughMoney(
-                _("%(uname)s not enough money for service %(srv_name)s")
+                detail=_("%(uname)s not enough money for service %(srv_name)s")
                 % {"uname": self.username, "srv_name": shot.name}
             )
         old_balance = self.balance
@@ -834,6 +864,45 @@ class Customer(IAddressContaining, BaseAccount):
             return _("Process locked by another process"), False
         except ValueError as err:
             return str(err), False
+
+    @property
+    def group_title(self) -> Optional[str]:
+        if self.group:
+            return str(self.group.title)
+
+    @property
+    def address_title(self):
+        return self.full_address
+
+    @property
+    def device_comment(self):
+        if self.device:
+            return str(self.device.comment)
+
+    @property
+    def last_connected_service_title(self):
+        if self.last_connected_service:
+            return str(self.last_connected_service.title)
+
+    @property
+    def current_service_title(self):
+        if self.current_service and self.current_service.service:
+            return str(self.current_service.service.title)
+
+    @property
+    def service_id(self) -> Optional[int]:
+        if self.current_service:
+            return int(self.current_service.pk)
+
+    @property
+    def raw_password(self) -> Optional[str]:
+        raw_passw = getattr(self, 'customerrawpassword', None)
+        if raw_passw is not None:
+            return str(raw_passw.passw_text)
+
+    @property
+    def marker_icons(self) -> List[str]:
+        return [i for i in self.get_flag_icons()]
 
     class Meta:
         db_table = "customers"
@@ -979,6 +1048,7 @@ class AdditionalTelephone(BaseAbstractModel):
 
     class Meta:
         db_table = "additional_telephones"
+        unique_together = ('customer', 'telephone')
         verbose_name = _("Additional telephone")
         verbose_name_plural = _("Additional telephones")
 

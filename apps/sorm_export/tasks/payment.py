@@ -1,31 +1,35 @@
-from uwsgi_tasks import task
+from sorm_export.models import (
+    ExportStampModel,
+    ExportStampTypeEnum,
+    ExportStampStatusEnum
+)
 
-from fin_app.models.alltime import AllTimePayLog
-from sorm_export.hier_export.payment import export_customer_unknown_payment
-from sorm_export.models import ExportStampTypeEnum
-from sorm_export.tasks.task_export import task_export
+from celery.schedules import crontab
+from djing2 import celery_app
+from djing2.lib.logger import logger
+from fin_app.models.alltime import AllTimePaymentLog
+from sorm_export.hier_export.payment import CustomerUnknownPaymentExportTree
 
 
-@task()
-def export_customer_payment_task(
-    customer_id,
-    pay_id,
-    date_add,
-    summ,
-    trade_point,
-    receipt_num,
-    pay_gw,
-    event_time=None
-):
-    pay_logs = (AllTimePayLog(
-        customer_id=customer_id,
-        pay_id=pay_id,
-        date_add=date_add,
-        sum=summ,
-        trade_point=trade_point,
-        receipt_num=receipt_num,
-        pay_gw=pay_gw
-    ),)
-    data, fname = export_customer_unknown_payment(pays=pay_logs, event_time=event_time)
-    task_export(data, fname, ExportStampTypeEnum.PAYMENT_UNKNOWN)
+@celery_app.task
+def export_customer_payments_periodic_task():
+    last_export_pay_row = ExportStampModel.objects.filter(
+        export_type=ExportStampTypeEnum.PAYMENT_UNKNOWN,
+        export_status=ExportStampStatusEnum.SUCCESSFUL
+    ).only('last_attempt_time').order_by('-id').first()
 
+    if last_export_pay_row is None:
+        logger.warning("No one previews export stamp found. May be you don't yet exported payments.")
+        return
+    pay_logs = AllTimePaymentLog.objects.exclude(customer=None).filter(
+        customer__is_active=True,
+        date_add__gte=last_export_pay_row.last_attempt_time,
+    )
+    CustomerUnknownPaymentExportTree(recursive=False).exportNupload(queryset=pay_logs)
+
+
+celery_app.add_periodic_task(
+    crontab(hour=1, minute=0),
+    export_customer_payments_periodic_task.s(),
+    name='Export customer payments periodic task'
+)

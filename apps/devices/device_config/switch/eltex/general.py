@@ -3,7 +3,7 @@ from typing import Generator, Iterable, Dict
 
 from django.utils.translation import gettext_lazy as _
 
-from djing2.lib import safe_int, RuTimedelta, process_lock
+from djing2.lib import safe_int, RuTimedelta, process_lock_decorator
 from devices.device_config.base import (
     Vlans,
     Vlan,
@@ -160,7 +160,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
             name = self.get_vid_name(vid=vid)
             yield Vlan(vid=vid, title=name)
 
-    @process_lock()
+    @process_lock_decorator()
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)

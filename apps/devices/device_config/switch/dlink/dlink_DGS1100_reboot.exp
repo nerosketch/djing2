@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
 
-if { $argc <4 } {
+if { $argc < 4 } {
     puts "Usage: dlink_reboot.exp <ip addr> <login> <passw> <is save 0 or 1>\n"
     exit 2
 }

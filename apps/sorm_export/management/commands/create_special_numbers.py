@@ -4,12 +4,10 @@ from django.core.management.base import CommandError
 
 from sorm_export.hier_export.special_numbers import store_fname
 from sorm_export.serializers.special_numbers import SpecialNumbersSerializerFormat
-from sorm_export.hier_export.base import simple_export_decorator
 from sorm_export.models import datetime_format
 from ._base_file_based_cmd import BaseFileBasedCommand
 
 
-@simple_export_decorator
 def _make_special_number_data(tel_number: str, description: str, start_time: datetime, event_time=None):
     dat = [{
         'tel_number': tel_number,
@@ -17,10 +15,12 @@ def _make_special_number_data(tel_number: str, description: str, start_time: dat
         'description': description,  # 'Телефон службы поддержки',
         'start_time': start_time,    # '29.01.2017T12:00:00',
         # 'end_time': ''
+        # TODO: Выгружать дату, когда номер перестанет быть актуальным.
     }]
 
     ser = SpecialNumbersSerializerFormat(data=dat, many=True)
-    return ser, store_fname
+    ser.is_valid(raise_exception=True)
+    return ser.data
 
 
 class Command(BaseFileBasedCommand):
@@ -56,7 +56,7 @@ class Command(BaseFileBasedCommand):
     def add(self, val):
         telephone_num, descr, start_time = self._split_args_data(val)
         self.check_unique(telephone_num)
-        data, fname = _make_special_number_data(
+        data = _make_special_number_data(
             tel_number=telephone_num,
             description=descr,
             start_time=start_time

@@ -1,7 +1,22 @@
 import abc
 import csv
 from typing import Iterable, Dict
+from contextlib import contextmanager
 from django.core.management.base import BaseCommand, no_translations, CommandError
+
+
+@contextmanager
+def _ropen(fname: str, mode: str = 'r'):
+    r = None
+    try:
+        r = open(fname, mode)
+        yield r
+    except FileNotFoundError:
+        with open(fname, 'w'):
+            pass
+    finally:
+        if r:
+            r.close()
 
 
 class BaseFileBasedCommand(BaseCommand):
@@ -27,24 +42,20 @@ class BaseFileBasedCommand(BaseCommand):
         raise NotImplementedError
 
     def check_unique(self, val: str, err_str='Line with "%s" already exists'):
-        try:
-            with open(self.store_fname, 'r') as f:
-                content = f.read()
-            if val in content:
-                raise CommandError(err_str % val)
-        except FileNotFoundError:
-            with open(self.store_fname, 'w') as f:
-                pass
+        with _ropen(self.store_fname) as f:
+            content = f.read()
+        if val in content:
+            raise CommandError(err_str % val)
 
     def write2file(self, data: Iterable[Dict[str, str]]):
-        with open(self.store_fname, 'a') as f:
+        with _ropen(self.store_fname, 'a') as f:
             csv_writer = csv.writer(f, dialect="unix", delimiter=";")
             for row_data in data:
                 row = (eld for elt, eld in row_data.items())
                 csv_writer.writerow(row)
 
     def del_from_file(self, val: str):
-        with open(self.store_fname, 'r') as f:
+        with _ropen(self.store_fname) as f:
             csv_reader = csv.reader(f, dialect="unix", delimiter=";")
             filtered_lines = tuple(ln for ln in csv_reader if val not in ln)
         with open(self.store_fname, 'w') as f:
@@ -54,7 +65,7 @@ class BaseFileBasedCommand(BaseCommand):
 
     def show(self):
         try:
-            with open(self.store_fname, 'r') as f:
+            with _ropen(self.store_fname, 'r') as f:
                 content = f.read()
             print(content, end='')
         except FileNotFoundError:

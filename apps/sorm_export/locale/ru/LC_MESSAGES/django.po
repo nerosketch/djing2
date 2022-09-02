@@ -23,6 +23,22 @@ msgstr ""
 msgid "Customer \"%s\" [%s] has no address"
 msgstr "Абонент не имеет адрес; \"%s\" [%s]"
 
+#, python-format
+msgid "Customer \"%s\" [%s] has no contract"
+msgstr "У абонента \"%s\" [%s] нет информации о договоре."
+
+#, python-format
+msgid "Individual customer \"%s\" [%s] has relation to legal [%s]"
+msgstr "Учётка физика \"%s\" [%s] имеет отношение к Юр лицу [%s]"
+
+#, python-format
+msgid "Legal customer \"%s\" [%s] has individual contract"
+msgstr "Юр учётка \"%s\" [%s] имеет договор физ лица."
+
+#, python-format
+msgid "Legal customer \"%s\" [%s] has no one relation to legal"
+msgstr "Учётка юрика \"%s\" [%s] не имеет отношений к Юр учёткам"
+
 #: apps/sorm_export/hier_export/customer.py:117
 #, python-format
 msgid "Customer \"%s\" has address without parent address object"
@@ -39,9 +55,8 @@ msgid "Customer \"%s\" with login \"%s\" address has no parent street element"
 msgstr "Абонент не имеет улицы в адресе; %s; %s"
 
 #: apps/sorm_export/hier_export/customer.py:213
-#, fuzzy, python-format
 msgid "Customer \"%s\" [%s] has no address in passport"
-msgstr "Абонент не имеет адреса регистрации; %s; %s"
+msgstr "Абонент не имеет адреса регистрации в паспорте; %s; %s"
 
 msgid "Customer \"%s\" [%s] has no passport info"
 msgstr "Абонент не имеет паспортных данных; %s; %s"
@@ -365,6 +380,13 @@ msgstr "Описание тарифа"
 msgid "Operator type id"
 msgstr "Тип оператора"
 
+msgid "Prevent to remove customer profile due to sorm export"
+msgstr "Удаление профиля абонента запрещено. [СОРМ]"
+
+#, python-format
+msgid "Customer username changing is prevented due to SORM rules [%(url)s]"
+msgstr "Изменение логина абонента запрещено условиями СОРМ [%(url)s]"
+
 #~ msgid "Parent AO"
 #~ msgstr "Родительский адресный объект"
 
@@ -373,3 +395,7 @@ msgstr "Тип оператора"
 
 #~ msgid "AO Type"
 #~ msgstr "Тип адресного объекта"
+
+msgid "Changing username is forbidden due to СОРМ rules"
+msgstr "Изменение логина запрещено по условиям использования СОРМ"
+

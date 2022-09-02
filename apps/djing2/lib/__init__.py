@@ -1,15 +1,16 @@
-import socket
 import pytz
+from enum import IntEnum
 from collections.abc import Iterator
 from datetime import timedelta, datetime
-from functools import wraps
 from hashlib import sha256
-from typing import Any, Union
+from typing import Any, Union, Optional
 
 from django.conf import settings
+from django.db.models.enums import ChoicesMeta
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ParseError, APIException
+from .process_lock import process_lock_decorator, ProcessLocked
 
 
 def safe_float(fl: Any, default=0.0) -> float:
@@ -33,6 +34,11 @@ def safe_int(i: Any, default=0) -> int:
 # Exceptions
 class LogicError(ParseError):
     default_detail = _("Internal logic error")
+
+    def __init__(self, detail=None, code=None, status_code: Optional[int] = None):
+        super().__init__(detail=detail, code=code)
+        if status_code is not None:
+            self.status_code = status_code
 
 
 class DuplicateEntry(APIException):
@@ -89,15 +95,6 @@ def bytes2human(bytes_len: Union[int, float], bsize=1024) -> str:
     return "{:.2f} {}".format(curr_len, a.get(notation, "X3"))
 
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super().__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
 #
 # Function for hash auth
 #
@@ -122,32 +119,6 @@ def check_sign(get_values: dict, external_sign: str) -> bool:
     return external_sign == my_sign
 
 
-class ProcessLocked(OSError):
-    """only one process for function"""
-
-
-def process_lock(lock_name=None):
-    def process_lock_wrap(fn):
-        @wraps(fn)
-        def wrapped(*args, **kwargs):
-            s = None
-            try:
-                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                # Create an abstract socket, by prefixing it with null.
-                lock_fn_name = lock_name if lock_name is not None else fn.__name__
-                s.bind("\0postconnect_djing2_lock_func_%s" % lock_fn_name)
-                return fn(*args, **kwargs)
-            except OSError as err:
-                raise ProcessLocked from err
-            finally:
-                if s is not None:
-                    s.close()
-
-        return wrapped
-
-    return process_lock_wrap
-
-
 # TODO: Replace it by netaddr.EUI
 def macbin2str(bin_mac: bytes) -> str:
     if isinstance(bin_mac, (bytes, bytearray)):
@@ -159,3 +130,17 @@ def time2utctime(src_datetime) -> datetime:
     """Convert datetime from local tz to UTC"""
     tz = timezone.get_current_timezone()
     return tz.localize(src_datetime, is_dst=None).astimezone(pytz.utc)
+
+
+class IntEnumEx(IntEnum, metaclass=ChoicesMeta):
+    @classmethod
+    def in_range(cls, value: int):
+        return value in cls._value2member_map_
+
+
+__all__ = (
+    'safe_float', 'safe_int', 'LogicError', 'DuplicateEntry',
+    'MyChoicesAdapter', 'RuTimedelta', 'bytes2human', 'calc_hash',
+    'check_sign', 'macbin2str', 'time2utctime', 'IntEnumEx',
+    'process_lock_decorator', 'ProcessLocked'
+)

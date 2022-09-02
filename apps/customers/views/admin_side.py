@@ -14,15 +14,17 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
 
 from djing2.lib.filters import CustomSearchFilter
-from customers import models, serializers
-from customers.models import CustomerQuerySet
-from customers.views.view_decorators import catch_customers_errs
+from djing2.permissions import IsSuperUser
 from djing2.lib import safe_float, safe_int
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import DjingModelViewSet
+from customers import models, serializers
+from customers.models import CustomerQuerySet
+from customers.views.view_decorators import catch_customers_errs
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 from groupapp.models import Group
 from profiles.models import UserProfileLogActionType
@@ -246,16 +248,8 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # if customer.gateway:
-        #     customer_gw_remove.delay(
-        #         customer_uid=int(customer.pk),
-        #         ip_addr=str(customer.ip_address),
-        #         speed=(srv.speed_in, srv.speed_out),
-        #         is_access=customer.is_access(),
-        #         gw_pk=int(customer.gateway_id)
-        #     )
         customer.stop_service(request.user)
-        return Response()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True)
     @catch_customers_errs
@@ -592,3 +586,26 @@ def groups_with_customers(request):
     ).order_by('title')
     ser = serializers.GroupsWithCustomersSerializer(instance=grps, many=True)
     return Response(ser.data)
+
+
+class SuperUserGetCustomerTokenByPhoneAPIView(APIView):
+    throttle_classes = ()
+    permission_classes = (IsAuthenticated, IsSuperUser)
+    serializer_class = serializers.SuperUserGetCustomerTokenByPhoneSerializer
+
+    def get(self, request, *args, **kwargs):
+        ser = self.serializer_class(data=request.query_params)
+        ser.is_valid(raise_exception=True)
+        dat = ser.data
+        tel = dat.get('telephone')
+        #  customers = models.Customer.objects.filter(telephone=)
+        tel = models.AdditionalTelephone.objects.filter(
+            Q(telephone=tel), Q(customer__telephone=tel)
+        ).select_related('customer').first()
+        if tel:
+            user = tel.customer
+            token = Token.objects.filter(user=user).first()
+            if token:
+                return Response({"token": token.key})
+        return Response(status=status.HTTP_204_NO_CONTENT)
+

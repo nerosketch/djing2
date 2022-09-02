@@ -11,6 +11,7 @@ from profiles.models import split_fio
 from profiles.serializers import BaseAccountSerializer, generate_random_password
 from customers import models
 from djing2.lib.mixins import BaseCustomModelSerializer
+from djing2.lib.validators import telephoneValidator
 from services.serializers import ServiceModelSerializer
 
 
@@ -46,6 +47,7 @@ def update_passw(acc, raw_password):
             models.CustomerRawPassword.objects.create(customer=acc, passw_text=raw_password)
 
 
+# TODO: deprecated: defined in customers.schemas.CustomerModelSchema
 class CustomerModelSerializer(BaseAccountSerializer):
     group_title = serializers.CharField(source="group.title", read_only=True)
 
@@ -179,7 +181,10 @@ class PassportInfoModelSerializer(BaseCustomModelSerializer):
         exclude = ("customer",)
         extra_kwargs = {
             'distributor': {
-                'initial': os.getenv('CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR')
+                'initial': os.getenv(
+                    'CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR',
+                    'customers passport default distributor'
+                )
             }
         }
 
@@ -262,3 +267,10 @@ class GroupsWithCustomersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ("id", "title", "customer_count")
+
+
+class SuperUserGetCustomerTokenByPhoneSerializer(serializers.Serializer):
+    telephone = serializers.CharField(
+        validators=(telephoneValidator,)
+    )
+

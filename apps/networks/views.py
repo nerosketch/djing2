@@ -17,6 +17,7 @@ from djing2.lib.logger import logger
 from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
 from networks import serializers
+from networks import radius_commands
 from customers.serializers import CustomerModelSerializer
 
 
@@ -31,7 +32,7 @@ class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
     serializer_class = serializers.NetworkIpPoolModelSerializer
     filter_backends = (CustomObjectPermissionsFilter, OrderingFilter, DjangoFilterBackend)
     ordering_fields = ("network", "ip_start", "ip_end", "gateway")
-    filterset_fields = ("groups",)
+    filterset_fields = ("groups", "is_dynamic")
 
     @action(detail=True, methods=["post"])
     def group_attach(self, request, pk=None):
@@ -63,7 +64,7 @@ class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
 
 class FindCustomerByCredentials(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
-    http_method_names = ('get',)
+    http_method_names = ['get']
 
     def get(self, request, format=None):
         request_serializer = serializers.FindCustomerByDeviceCredentialsParams(
@@ -71,9 +72,10 @@ class FindCustomerByCredentials(APIView):
             context={'request': request}
         )
         request_serializer.is_valid(raise_exception=True)
-        customer = NetworkIpPool.find_customer_by_device_credentials(
-            device_mac=request_serializer.data.get('mac'),
-            device_port=request_serializer.data.get('dev_port')
+        dat = request_serializer.data
+        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+            device_mac=dat.get('mac'),
+            device_port=int(dat.get('dev_port'))
         )
         if not customer:
             return Response('Not found', status=status.HTTP_404_NOT_FOUND)
@@ -118,6 +120,16 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
         except ValueError as err:
             return Response({"text": str(err), "status": False})
         return Response({"text": text, "status": is_pinged})
+
+    @action(detail=True, methods=['get'])
+    def free_session(self, request, pk=None):
+        lease = self.get_object()
+        if not lease.radius_username:
+            return Response('Lease has not contain username', status=status.HTTP_403_FORBIDDEN)
+        r = radius_commands.finish_session(radius_uname=str(lease.radius_username))
+        if r is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(str(r))
 
 
 class DhcpLever(SecureApiViewMixin, APIView):
