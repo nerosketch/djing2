@@ -1,5 +1,5 @@
 import logging
 
 
-logger = logging.getLogger('djing2.logger')
+logger = logging.getLogger('djing2_logger')
 

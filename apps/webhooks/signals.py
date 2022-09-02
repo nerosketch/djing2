@@ -40,7 +40,7 @@ def _send2task(notify_type: HookObserverNotificationTypes, instance: Optional[An
     else:
         instance_data = None
 
-    send_update2observers_task(
+    send_update2observers_task.delay(
         notification_type=notify_type.value,
         app_label=app_label_str,
         model_str=model_str,

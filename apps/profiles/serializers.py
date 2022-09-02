@@ -31,7 +31,7 @@ def generate_random_password():
 
 
 class BaseAccountSerializer(BaseCustomModelSerializer):
-    is_active = serializers.BooleanField(initial=True, default=True)
+    is_active = serializers.BooleanField(initial=False, default=False)
     username = serializers.CharField(initial=generate_random_username)
     password = serializers.CharField(
         write_only=True, required=False, initial=generate_random_password

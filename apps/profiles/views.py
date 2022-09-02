@@ -97,8 +97,6 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
         if not request.user.is_superuser:
             if request.user.pk != profile.pk:
                 return Response(status=status.HTTP_403_FORBIDDEN)
-            if old_passw != new_passw:
-                return Response(_("Passwords must be same"), status=status.HTTP_400_BAD_REQUEST)
             if not profile.check_password(old_passw):
                 return Response(_("Wrong old password"), status=status.HTTP_400_BAD_REQUEST)
         # validate_password(old_passw, profile)
@@ -121,7 +119,7 @@ class UserProfileViewSet(SitesFilterMixin, DjingModelViewSet):
 
 
 class UserProfileLogViewSet(DjingModelViewSet):
-    queryset = UserProfileLog.objects.all()
+    queryset = UserProfileLog.objects.order_by('-id')
     serializer_class = UserProfileLogSerializer
     filterset_fields = ("account",)
 
@@ -138,8 +136,7 @@ class LocationAuth(APIView):
     schema = AutoSchema()
     __doc__ = gettext("Login profile via customer's ip address")
 
-    @staticmethod
-    def get(request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         user = authenticate(request=request, byip=True)
 
         if not user:
@@ -199,7 +196,7 @@ class SitesObtainAuthToken(ObtainAuthToken):
 
 
 class ProfileAuthLogViewSet(ReadOnlyModelViewSet):
-    queryset = ProfileAuthLog.objects.all()
+    queryset = ProfileAuthLog.objects.order_by('-id')
     serializer_class = ProfileAuthLogSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
     filter_backends = [DjangoFilterBackend]

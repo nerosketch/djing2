@@ -120,9 +120,6 @@ class TaskStateChangeLogModel(BaseAbstractModel):
 
         return self._human_log_text_state_change()
 
-    def __str__(self):
-        return self.get_act_type_display()
-
     class Meta:
         db_table = "task_state_change_log"
         verbose_name = _("Change log")

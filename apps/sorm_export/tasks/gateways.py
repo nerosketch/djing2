@@ -1,26 +1,26 @@
 from datetime import datetime
-from uwsgi_tasks import task
+from typing import Optional
+
+from djing2 import celery_app
 from gateways.models import Gateway
-from sorm_export.tasks.task_export import task_export
-from sorm_export.models import ExportStampTypeEnum
-from sorm_export.hier_export.gateways import export_gateways, export_gateway_stop_using
+from sorm_export.hier_export.gateways import GatewayStopUsingSimpleExportTree, GatewayExportTree
 
 
-@task()
-def export_gateway_task(gw_id: int, event_time=None):
+@celery_app.task
+def export_gateway_task(gw_id: int, event_time: Optional[float] = None):
+    if event_time is not None:
+        event_time = datetime.fromtimestamp(event_time)
     gws = Gateway.objects.filter(pk=gw_id).exclude(place=None)
-    if gws.exists():
-        dat, fname = export_gateways(
-            event_time=event_time,
-            gateways_qs=gws
-        )
-        task_export(dat, fname, ExportStampTypeEnum.GATEWAYS)
+    GatewayExportTree(event_time=event_time).exportNupload(queryset=gws)
 
 
-@task()
-def export_gateway_stop_using_task(gw_id: int, gw_type: str, descr: str, gw_place: str, start_use_time: datetime,
-                                   ip_addr: str, ip_port: int, event_time: datetime):
-    dat, fname = export_gateway_stop_using(
+@celery_app.task
+def export_gateway_stop_using_task(gw_id: int, gw_type: str, descr: str, gw_place: str, start_use_time: float,
+                                   ip_addr: str, ip_port: int, event_time: Optional[float] = None):
+    if event_time is not None:
+        event_time = datetime.fromtimestamp(event_time)
+    start_use_time = datetime.fromtimestamp(start_use_time)
+    GatewayStopUsingSimpleExportTree(event_time=event_time).exportNupload(
         gw_id=gw_id,
         gw_type=gw_type,
         descr=descr,
@@ -30,4 +30,3 @@ def export_gateway_stop_using_task(gw_id: int, gw_type: str, descr: str, gw_plac
         ip_port=ip_port,
         event_time=event_time,
     )
-    task_export(dat, fname, ExportStampTypeEnum.GATEWAYS)

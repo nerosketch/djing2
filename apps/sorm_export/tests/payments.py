@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from django.test import override_settings
 from django.contrib.sites.models import Site
-from fin_app.models.alltime import PayAllTimeGateway
+from fin_app.models.alltime import AllTimePayGateway
 from customers.tests.customer import CustomAPITestCase
 from .test_ftp_server import FtpTest, FtpTestCaseMixin
 from sorm_export.hier_export.base import format_fname
@@ -20,8 +20,8 @@ from fin_app.tests import _make_sign
     },
     SORM_EXPORT_FTP_DISABLE=False
 )
-class PaymentsExportAPITestCase(CustomAPITestCase ,FtpTestCaseMixin):
-    payment_url = "/api/fin/asd/pay/"
+class PaymentsExportAPITestCase(CustomAPITestCase, FtpTestCaseMixin):
+    payment_url = "/api/fin/alltime/asd/pay/"
 
     @classmethod
     def setUpClass(cls):
@@ -38,7 +38,7 @@ class PaymentsExportAPITestCase(CustomAPITestCase ,FtpTestCaseMixin):
     def setUp(self):
         super().setUp()
         example_site = Site.objects.first()
-        gw = PayAllTimeGateway.objects.create(
+        gw = AllTimePayGateway.objects.create(
             title='asd',
             secret='secretasd',
             service_id='serviceasd',

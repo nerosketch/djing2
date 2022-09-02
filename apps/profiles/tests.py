@@ -15,7 +15,10 @@ class ProfileApiTestCase(APITestCase):
 
     def setUp(self):
         self.admin = UserProfile.objects.create_superuser(
-            username="admin", password="admin", telephone="+797812345678"
+            username="admin",
+            password="admin",
+            telephone="+797812345678",
+            is_active=True
         )
         self.client.login(username="admin", password="admin")
 

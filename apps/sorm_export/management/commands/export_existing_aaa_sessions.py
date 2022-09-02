@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.core.management.base import BaseCommand, no_translations
 from djing2.lib import time2utctime
-from radiusapp.models import CustomerRadiusSession
+from networks.models import CustomerIpLeaseModel
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
 from sorm_export.ftp_worker.func import send_file2ftp
 from sorm_export.hier_export.base import format_fname
@@ -25,21 +25,21 @@ class Command(BaseCommand):
 
     @no_translations
     def handle(self, fname=None, send2ftp=None, *args, **options):
-        sessions = CustomerRadiusSession.objects.exclude(customer=None).only(
-            'customer', 'assign_time', 'session_id', 'ip_lease',
+        leases = CustomerIpLeaseModel.objects.exclude(customer=None).only(
+            'customer', 'lease_time', 'session_id',
             'input_octets', 'output_octets'
-        ).select_related('customer', 'ip_lease').iterator()
+        ).select_related('customer').iterator()
 
         dat = [{
-            "event_time": time2utctime(ses.assign_time),
+            "event_time": time2utctime(l.lease_time),
             "event_type": AAAEventType.RADIUS_AUTH_START,
-            "session_id": str(ses.session_id),
-            "customer_ip": ses.ip_lease.ip_address,
-            "customer_db_username": ses.customer.username,
-            'input_octets': ses.input_octets,
-            'output_octets': ses.output_octets,
-            "customer_device_mac": ses.ip_lease.mac_address.format(dialect=mac_unix_common) if ses.ip_lease.mac_address else ''
-        } for ses in sessions]
+            "session_id": str(l.session_id),
+            "customer_ip": l.ip_address,
+            "customer_db_username": l.customer.username,
+            'input_octets': l.input_octets,
+            'output_octets': l.output_octets,
+            "customer_device_mac": l.mac_address.format(dialect=mac_unix_common) if l.mac_address else ''
+        } for l in leases]
 
         ser = AAAExportSerializer(data=dat, many=True)
         ser.is_valid(raise_exception=True)

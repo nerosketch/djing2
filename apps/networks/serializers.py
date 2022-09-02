@@ -38,6 +38,16 @@ class VlanIfModelSerializer(BaseCustomModelSerializer):
 
 class CustomerIpLeaseModelSerializer(BaseCustomModelSerializer):
     is_dynamic = serializers.BooleanField(read_only=True)
+    lease_state = serializers.BooleanField(read_only=True, source='state', default=None)
+    h_input_octets = serializers.CharField(read_only=True)
+    h_output_octets = serializers.CharField(read_only=True)
+    h_input_packets = serializers.CharField(read_only=True)
+    h_output_packets = serializers.CharField(read_only=True)
+
+    def validate_pool(self, val):
+        if val.is_dynamic:
+            raise serializers.ValidationError('Not allowed to add ip from dynamic pool as static')
+        return val
 
     class Meta:
         model = CustomerIpLeaseModel

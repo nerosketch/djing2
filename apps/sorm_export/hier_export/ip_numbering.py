@@ -1,8 +1,8 @@
-from typing import Iterable
 from datetime import datetime
-from sorm_export.hier_export.base import simple_export_decorator, format_fname, iterable_export_decorator
+from sorm_export.hier_export.base import SimpleExportTree, format_fname, ExportTree
 from networks.models import NetworkIpPool
 from sorm_export.serializers.ip_numbering import IpNumberingExportFormatSerializer
+from sorm_export.models import ExportStampTypeEnum
 
 
 def make_ip_numbering_description(pool: NetworkIpPool) -> str:
@@ -11,35 +11,51 @@ def make_ip_numbering_description(pool: NetworkIpPool) -> str:
     return "Статические;ШПД"
 
 
-@iterable_export_decorator
-def export_ip_numbering(pools: Iterable[NetworkIpPool], event_time: datetime):
+class IpNumberingExportTree(ExportTree[NetworkIpPool]):
     """
     В этом файле выгружаются вся IP-нумерация, используемая оператором.
     """
-    def _gen(pool: NetworkIpPool):
+    def get_remote_ftp_file_name(self):
+        return f"ISP/dict/ip_numbering_{format_fname(self._event_time)}.txt"
+
+    @classmethod
+    def get_export_format_serializer(cls):
+        return IpNumberingExportFormatSerializer
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.IP_NUMBERING
+
+    def get_item(self, pool: NetworkIpPool, *args, **kwargs):
         return {
             'ip_net': pool.network,
             'descr': make_ip_numbering_description(pool),
             'start_usage_time': pool.create_time,
         }
 
-    return IpNumberingExportFormatSerializer, _gen, pools, f"ISP/dict/ip_numbering_{format_fname(event_time)}.txt"
 
-
-@simple_export_decorator
-def export_ip_numbering_stop_using(ip_net: str, descr: str, start_usage_time: datetime, event_time: datetime):
+class IpNumberingStopUsageSimpleExportTree(SimpleExportTree):
     """
     В этом файле выгружаются вся IP-нумерация, используемая оператором.
     Вызывается при удалении подсети.
     """
-    dat = [{
-        'ip_net': ip_net,
-        'descr': descr,
-        'start_usage_time': start_usage_time,
-        'end_usage_time': event_time
-    }]
+    def get_remote_ftp_file_name(self):
+        return f"ISP/dict/ip_numbering_{format_fname(self._event_time)}.txt"
 
-    ser = IpNumberingExportFormatSerializer(
-        data=dat, many=True
-    )
-    return ser, f"ISP/dict/ip_numbering_{format_fname(event_time)}.txt"
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.IP_NUMBERING
+
+    def export(self, ip_net: str, descr: str, start_usage_time: datetime, event_time: datetime, *args, **kwargs):
+        dat = [{
+            'ip_net': ip_net,
+            'descr': descr,
+            'start_usage_time': start_usage_time,
+            'end_usage_time': event_time
+        }]
+
+        ser = IpNumberingExportFormatSerializer(
+            data=dat, many=True
+        )
+        ser.is_valid(raise_exception=True)
+        return ser.data

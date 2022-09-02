@@ -1,13 +1,14 @@
 from django.utils.translation import gettext as _
 from django.db.models import JSONField
 from django.db import models
+from djing2.lib import LogicError
 
 
 date_format = '%d.%m.%Y'
 datetime_format = '%d.%m.%YT%H:%M:%S'
 
 
-class ExportFailedStatus(Exception):
+class ExportFailedStatus(LogicError):
     pass
 
 
@@ -50,7 +51,7 @@ class ExportStampModel(models.Model):
         choices=ExportStampTypeEnum.choices,
         default=ExportStampTypeEnum.UNKNOWN_CHOICE
     )
-    data = JSONField(_('Export event data'))
+    data = JSONField(_('Export event data'), null=True, blank=True, default=None)
 
     class Meta:
         db_table = 'sorm_export_stamp'

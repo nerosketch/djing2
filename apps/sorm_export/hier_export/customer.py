@@ -1,8 +1,7 @@
-from datetime import datetime
-from typing import Iterable, Optional
+from typing import Optional
 
-from django.db.models import Subquery, OuterRef, Count
-from django.utils.translation import gettext_lazy as _
+from django.db.models import Subquery, OuterRef, Count, Q
+from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib.logger import logger
 from addresses.models import AddressModelTypes, AddressModel
 from customer_contract.models import CustomerContractModel
@@ -11,14 +10,45 @@ from customers.models import Customer
 from sorm_export.models import (
     CommunicationStandardChoices,
     CustomerDocumentTypeChoices,
+    ExportStampTypeEnum
 )
 from sorm_export.serializers import individual_entity_serializers
-from .base import (
-    iterable_export_decorator,
-    simple_export_decorator,
-    format_fname,
-    iterable_gen_export_decorator
+from sorm_export.checks.customer import (
+    customer_checks,
+    CheckFailedException,
+    customer_legal_checks
 )
+from .base import (
+    format_fname,
+    ExportTree, ContinueIteration,
+    SimpleExportTree
+)
+
+
+def general_customer_all_filter_queryset():
+    return Customer.objects.filter(is_active=True).annotate(
+        contr_count=Count('customercontractmodel'),
+        legals=Count('customerlegalmodel')
+    ).filter(Q(contr_count__gt=0) | Q(legals__gt=0))
+
+
+def general_customer_filter_queryset():
+    """Физ учётки только те, у которых есть хотя бы один договор, и нет
+       привязки к ЮР учётке"""
+
+    return Customer.objects.filter(is_active=True).annotate(
+        contr_count=Count('customercontractmodel'),
+        legals=Count('customerlegalmodel')
+    ).filter(contr_count__gt=0, legals=0)
+
+
+def general_legal_filter_queryset():
+    """Юр учётки только те, которые привязаны к ЮР учётке, и без договора."""
+
+    return Customer.objects.filter(is_active=True).annotate(
+        contr_count=Count('customercontractmodel'),
+        legals=Count('customerlegalmodel'),
+    ).filter(legals__gt=0, contr_count=0)
 
 
 def _addr2str(addr: Optional[AddressModel]) -> str:
@@ -27,8 +57,7 @@ def _addr2str(addr: Optional[AddressModel]) -> str:
     return str(addr.title)
 
 
-@iterable_gen_export_decorator
-def export_customer_root(customers: Iterable[Customer], event_time=None):
+class CustomerRootExportTree(ExportTree[Customer]):
     """
     Файл данных по абонентам v1.
     В этом файле выгружается корневая запись всей иерархии
@@ -37,98 +66,96 @@ def export_customer_root(customers: Iterable[Customer], event_time=None):
     :return: data, filename
     """
 
-    def _gen():
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/abonents_v1_{format_fname(self._event_time)}.txt"
+
+    @classmethod
+    def get_export_format_serializer(cls):
+        return individual_entity_serializers.CustomerRootObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_ROOT
+
+    def get_items(self, queryset):
         lgl_sb = CustomerLegalModel.objects.filter(branches__id=OuterRef('pk')).values('pk')
         # FIXME: Абоненты без договора не выгружаются.
         #  Нужно выгружать только тех, у кого есть основной договор.
         #  Нужно сделать типы договоров, чтоб проверять только по 'основному'.
         #  Типы договоров, например: Основной, iptv, voip, доп оборудование, и.т.д.
 
-        for customer in customers.annotate(
+        for customer in queryset.annotate(
             legal_id=Subquery(lgl_sb)
         ):
-            # TODO: optimize
+            try:
+                yield self.get_item(customer)
+            except ContinueIteration:
+                continue
+
+    def get_item(self, customer):
+        # TODO: optimize
+        if customer.legal_id:
+            # legal
+            customer_id = customer.legal_id
+            legal = customer.customerlegalmodel_set.first()
+            if legal:
+                contract_date = legal.actual_start_time.date()
+            else:
+                logger.error('Contract date for customer legal branch "%s" not found' % customer)
+                raise ContinueIteration
+        else:
+            # individual
+            customer_id = customer.pk
             contract = customer.customercontractmodel_set.first()
             if contract is None:
                 logger.error('Contract for customer: "%s" not found' % customer)
-                continue
-            yield {
-                "customer_id": customer.pk,
-                "legal_customer_id": customer.legal_id if customer.legal_id else customer.pk,
-                "contract_start_date": contract.start_service_time.date(),
-                "customer_login": customer.username,
-                "communication_standard": CommunicationStandardChoices.ETHERNET.value,
-            }
-
-    return (
-        individual_entity_serializers.CustomerRootObjectFormat,
-        _gen,
-        f"ISP/abonents/abonents_v1_{format_fname(event_time)}.txt",
-    )
-
-
-@iterable_export_decorator
-def export_contract(contracts, event_time=None):
-    """
-    Файл данных по договорам.
-    В этом файле выгружаются данные по договорам абонентов.
-    :return:
-    """
-
-    def gen(contract):
+                raise ContinueIteration
+            contract_date = contract.start_service_time.date()
         return {
-            "contract_id": contract.pk,
-            "customer_id": contract.customer_id,
-            "contract_start_date": contract.start_service_time.date(),
-            'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
-            "contract_number": contract.contract_number,
-            "contract_title": "Договор на оказание услуг связи",
-            # "contract_title": contract.title,
+            "customer_id": customer.pk,
+            "legal_customer_id": customer_id,
+            "contract_start_date": contract_date,
+            "customer_login": customer.username,
+            "communication_standard": CommunicationStandardChoices.ETHERNET.value,
         }
 
-    return (
-        individual_entity_serializers.CustomerContractObjectFormat,
-        gen,
-        contracts,
-        f"ISP/abonents/contracts_{format_fname(event_time)}.txt",
-    )
 
-
-def _addr_get_parent(addr: AddressModel, err_msg=None) -> Optional[AddressModel]:
-    # TODO: Cache address hierarchy
-    addr_parent_region = addr.get_address_item_by_type(
-        addr_type=AddressModelTypes.STREET
-    )
-    if not addr_parent_region:
-        if err_msg is not None:
-            logger.error(err_msg)
-        return
-    return addr_parent_region
-
-
-@iterable_export_decorator
-def export_access_point_address(customers: Iterable[Customer], event_time=None):
+class AccessPointExportTree(ExportTree[Customer]):
     """
     Файл выгрузки адресов точек подключения, версия 1.
     В этом файле выгружается информация о точках подключения оборудования - реальном адресе,
     на котором находится оборудование абонента, с помощью которого он пользуется услугами оператора связи.
     TODO: Выгружать адреса абонентов чъё это оборудование.
     TODO: Записывать адреса к устройствам абонентов. Заполнять при создании устройства.
+    TODO: Выгружать так же и оборудование юриков. сейчас только физики.
     Сейчас у нас оборудование абонента ставится у абонента дома, так что это тот же адрес
     что и у абонента.
     """
 
-    def gen(customer: Customer):
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/ap_region_v1_{format_fname(self._event_time)}.txt"
+
+    @classmethod
+    def get_export_format_serializer(cls):
+        return individual_entity_serializers.CustomerAccessPointAddressObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_AP_ADDRESS
+
+    def filter_queryset(self, queryset):
+        return queryset.select_related(
+            "address", "address__parent_addr"
+        )
+
+    def get_item(self, customer):
         if not hasattr(customer, "address"):
-            logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
+            logger.error(_('Customer "%s" [%s] has no address') % (
+                customer, customer.username
+            ))
             return
         addr = customer.address
-        if not addr:
-            logger.error(_('Customer "%s" [%s] has no address') % (customer, customer.username))
-            return
-        if not addr.parent_addr:
-            logger.error(_('Customer "%s" has address without parent address object') % customer)
-            return
+
         addr_house = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.HOUSE
         ))
@@ -140,15 +167,18 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
                 customer, customer.username, addr
             ))
             return
-        addr_parent_region = _addr_get_parent(
-            addr,
+
+        addr_parent_street = _addr2str(addr.get_address_item_by_type(
+            addr_type=AddressModelTypes.STREET
+        ))
+        if not addr_parent_street:
+            logger.error(
             _('Customer "%s" with login "%s" address has no parent street element') % (
                 customer,
                 customer.username
-            )
-        )
-        if not addr_parent_region:
+            ))
             return
+
         addr_building = _addr2str(addr.get_address_item_by_type(
             addr_type=AddressModelTypes.BUILDING
         ))
@@ -164,7 +194,7 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             "ap_id": addr.pk,
             "customer_id": customer.pk,
             "house": addr_house or addr_office,
-            "parent_id_ao": addr_parent_region.pk if addr_parent_region else None,
+            "parent_id_ao": addr_parent_street,
             "house_num": addr_house or None,
             "builing": addr_building,
             "building_corpus": addr_corpus or None,
@@ -172,15 +202,6 @@ def export_access_point_address(customers: Iterable[Customer], event_time=None):
             "actual_start_time": contract.start_service_time,
             'actual_end_time': contract.end_service_time or None
         }
-
-    return (
-        individual_entity_serializers.CustomerAccessPointAddressObjectFormat,
-        gen,
-        customers.select_related(
-            "address", "address__parent_addr"
-        ),
-        f"ISP/abonents/ap_region_v1_{format_fname(event_time)}.txt",
-    )
 
 
 def _report_about_customers_no_have_passport(customers_without_passports_qs):
@@ -195,42 +216,56 @@ def _report_about_customers_no_have_passport(customers_without_passports_qs):
         )
 
 
-@iterable_export_decorator
-def export_individual_customer(customers_queryset, event_time=None):
+class IndividualCustomersExportTree(ExportTree[Customer]):
     """
     Файл выгрузки данных о физическом лице, версия 2
     В этом файле выгружается информация об абонентах, у которых контракт заключён с физическим лицом.
     Выгружаются только абоненты с паспортными данными.
     """
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/fiz_v2_{format_fname(self._event_time)}.txt"
 
-    def gen(customer: Customer):
-        if not hasattr(customer, "passportinfo"):
-            logger.error('Customer "%s" has no passport info' % customer)
+    @classmethod
+    def get_export_format_serializer(cls):
+        return individual_entity_serializers.CustomerIndividualObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_INDIVIDUAL
+
+    def filter_queryset(self, queryset):
+        contract_start_service_time_q = CustomerContractModel.objects.filter(
+            customer_id=OuterRef('pk'),
+            is_active=True
+        ).values('start_service_time')
+        qs = queryset.select_related(
+            "group", "passportinfo"
+        ).annotate(
+            contract_date=Subquery(contract_start_service_time_q),
+            legals=Count('customerlegalmodel'),
+        ).filter(legals=0)
+        _report_about_customers_no_have_passport(
+            qs.filter(passportinfo=None)
+        )
+        return qs.exclude(passportinfo=None)
+
+    def get_item(self, customer):
+        try:
+            check_ok_res = customer_checks(customer=customer)
+        except CheckFailedException as err:
+            logger.error(str(err))
             return
-        passport = customer.passportinfo
-        if not passport:
-            logger.error(_('Customer "%s" [%s] has no passport info') % (customer, customer.username))
-            return
+
+        passport = check_ok_res.passport
         addr = passport.registration_address
-        if not addr:
-            logger.error(_('Customer "%s" [%s] has no address in passport') % (customer, customer.username))
+        if not check_ok_res.parent_street:
             return
 
-        addr_parent_region = _addr_get_parent(
-            addr,
-            _('Customer "%s" with login "%s" passport registration address has no parent street element') % (
-                customer,
-                customer.username
-            )
-        )
-        if not addr_parent_region:
+        if not customer.contract_date:
+            logger.error(_('Customer contract has no date %s [%s]') % (customer, customer.username))
             return
+        actual_start_date = customer.contract_date
 
-        actual_start_date = customer.contract_date if customer.contract_date else datetime(
-            customer.create_date.year,
-            customer.create_date.month,
-            customer.create_date.day
-        )
         full_fname = customer.get_full_name()
 
         addr_house = addr.get_address_item_by_type(
@@ -240,7 +275,7 @@ def export_individual_customer(customers_queryset, event_time=None):
             addr_type=AddressModelTypes.BUILDING
         )
         addr_corp = addr.get_address_item_by_type(
-            addr_type=AddressModelTypes.BUILDING
+            addr_type=AddressModelTypes.CORPUS
         )
         r = {
             "contract_id": customer.pk,
@@ -254,12 +289,12 @@ def export_individual_customer(customers_queryset, event_time=None):
             "passport_code": passport.division_code or "",
             "passport_date": passport.date_of_acceptance,
             "house": addr.title,
-            "parent_id_ao": addr_parent_region.pk,
+            "parent_id_ao": check_ok_res.parent_street.pk,
             "house_num": addr_house.title if addr_house else None,
             "building": addr_building.title if addr_building else None,
             "building_corpus": addr_corp.title if addr_corp else None,
             "actual_start_time": actual_start_date,
-            # 'actual_end_time':
+            # TODO: "actual_end_time":
             "customer_id": customer.pk,
         }
         surname, name, last_name = customer.split_fio()
@@ -271,78 +306,51 @@ def export_individual_customer(customers_queryset, event_time=None):
             r['last_name'] = last_name
         return r
 
-    contracts_q = CustomerContractModel.objects.filter(
-        customer_id=OuterRef('pk'),
-        is_active=True
-    ).values('start_service_time')
 
-    _report_about_customers_no_have_passport(
-        customers_queryset.filter(passportinfo=None)
-    )
-
-    return (
-        individual_entity_serializers.CustomerIndividualObjectFormat,
-        gen,
-        customers_queryset.exclude(passportinfo=None).select_related(
-            "group", "passportinfo"
-        ).annotate(
-            contract_date=Subquery(contracts_q)
-        ),
-        f"ISP/abonents/fiz_v2_{format_fname(event_time)}.txt",
-    )
-
-
-@iterable_gen_export_decorator
-def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_time=None):
+class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
     """
     Файл выгрузки данных о юридическом лице версия 5.
     В этом файле выгружается информация об абонентах у которых контракт заключён с юридическим лицом.
     """
 
-    def _iter_customers(legal):
+    def get_remote_ftp_file_name(self):
+        return f'ISP/abonents/jur_v5_{format_fname(self._event_time)}.txt'
+
+    @classmethod
+    def get_export_format_serializer(cls):
+        return individual_entity_serializers.CustomerLegalObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_LEGAL
+
+    def filter_queryset(self, queryset):
+        legals = queryset.select_related('address', 'delivery_address', 'post_address')
+        return legals
+
+    def get_items(self, queryset):
+        for legal in queryset:
+            yield from self._iter_customers(legal)
+
+    def _iter_customers(self, legal):
         # TODO: Optimize
         #  оптимизаровать запросы к бд
         #  Сейчас на каждый запрос адреса из иерархии адресов делается отдельный запрос в бд.
         for customer in legal.branches.annotate(
             contr_count=Count('customercontractmodel')
         ).filter(contr_count__gt=0, is_active=True):
-            addr: AddressModel = legal.address
-            if not addr:
-                continue
-
-            if not legal.post_address:
-                post_addr = addr
-            else:
-                post_addr = legal.post_address
-
-            if not legal.delivery_address:
-                delivery_addr = legal.address
-            else:
-                delivery_addr = legal.delivery_address
-
-            addr_parent_region = _addr_get_parent(
-                addr,
-                _('Legal customer "%s" with login "%s" address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
-            if not addr_parent_region:
+            try:
+                r = customer_legal_checks(legal=legal)
+            except CheckFailedException as err:
+                logger.error(str(err))
                 return
-            post_addr_parent_region = _addr_get_parent(
-                post_addr,
-                _('Legal customer "%s" with login "%s" post address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
-            delivery_addr_parent_region = _addr_get_parent(
-                delivery_addr,
-                _('Legal customer "%s" with login "%s" delivery address has no parent street element') % (
-                    legal,
-                    legal.username
-                )
-            )
+            addr = r.addr
+            addr_parent_region = r.parent_street
+            post_addr = r.post_addr
+            post_addr_parent_region = r.post_addr_parent_street
+            delivery_addr = r.delivery_addr
+            delivery_addr_parent_region = r.delivery_parent_street
+
             res = {
                 'legal_id': legal.pk,
                 'legal_title': legal.title,
@@ -406,25 +414,72 @@ def export_legal_customer(legal_customers: Iterable[CustomerLegalModel], event_t
                 })
             yield res
 
-    def _gen():
-        legals = legal_customers.select_related('address', 'delivery_address', 'post_address')
-        for legal in legals:
-            yield from _iter_customers(legal)
 
-    return (
-        individual_entity_serializers.CustomerLegalObjectFormat,
-        _gen,
-        f'ISP/abonents/jur_v5_{format_fname(event_time)}.txt'
-    )
-
-
-@simple_export_decorator
-def export_contact(customer_tels, event_time=None):
+class ContactSimpleExportTree(SimpleExportTree):
     """
     Файл данных по контактной информации.
     В этом файле выгружается контактная информация
     для каждого абонента - ФИО, телефон и факс контактного лица.
     """
-    ser = individual_entity_serializers.CustomerContactObjectFormat(data=customer_tels, many=True)
-    return ser, f"ISP/abonents/contact_phones_v1_{format_fname(event_time)}.txt"
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/contact_phones_v1_{format_fname(self._event_time)}.txt"
 
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_CONTACT
+
+    def export(self, data, many: bool, *args, **kwargs):
+        ser = individual_entity_serializers.CustomerContactObjectFormat(data=data, many=many)
+        ser.is_valid(raise_exception=True)
+        return ser.data
+
+
+class CustomerContractExportTree(ExportTree[CustomerContractModel]):
+    """
+    Файл данных по договорам.
+    В этом файле выгружаются данные по договорам абонентов.
+    :return:
+    """
+    parent_dependencies = ()
+
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt"
+
+    @classmethod
+    def get_export_format_serializer(cls):
+        return individual_entity_serializers.CustomerContractObjectFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.CUSTOMER_CONTRACT
+
+    #def export_dependencies(self):
+    #    # Проверить и выгрузить все зависимости, если self._recursive
+    #    for dep_class, qs in self.parent_dependencies:
+    #        Тут надо сделать queryset для зависимостей
+    #        exporter = dep_class(recursive=True, event_time=self._event_time)
+    #        data = exporter.export(queryset=qs)
+    #        exporter.upload2ftp(data=data)
+
+    def get_items(self, queryset):
+        # Проверить и выгрузить все зависимости, если self._recursive
+        #if self._recursive:
+        #    self.export_dependencies()
+
+        # Выгрузить себя
+        for item in self.filter_queryset(queryset=queryset):
+            try:
+                yield self.get_item(item)
+            except ContinueIteration:
+                continue
+
+    def get_item(self, contract: CustomerContractModel):
+        return {
+            "contract_id": contract.pk,
+            "customer_id": contract.customer_id,
+            "contract_start_date": contract.start_service_time.date(),
+            'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
+            "contract_number": contract.contract_number,
+            "contract_title": gettext('Contract default title'),
+            # "contract_title": contract.title,
+        }
