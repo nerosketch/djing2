@@ -39,7 +39,10 @@ class DjingAuthBackend(ModelBackend):
                 auser = Customer.objects.get_by_natural_key(username)
             if not request or not request.META:
                 return auser
-            auser.auth_log(user_agent=request.META.get("HTTP_USER_AGENT"), remote_ip=request.META.get("REMOTE_ADDR"))
+            auser.auth_log(
+                user_agent=request.META.get("HTTP_USER_AGENT"),
+                remote_ip=request.META.get("HTTP_X_REAL_IP")
+            )
             return auser
 
     def get_user(self, user_id):
@@ -52,7 +55,7 @@ class LocationAuthBackend(DjingAuthBackend):
         if byip is None:
             return
         try:
-            remote_ip = ip_address(request.META.get("REMOTE_ADDR"))
+            remote_ip = ip_address(request.META.get("HTTP_X_REAL_IP"))
             ip_users = CustomerIpLeaseModel.objects.filter(ip_address=str(remote_ip)).select_related('customer')
             if ip_users.exists():
                 ip_user = ip_users.first()

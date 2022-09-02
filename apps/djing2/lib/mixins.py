@@ -51,7 +51,7 @@ class AllowedSubnetMixin:
         Check if user ip in allowed subnet.
         Return 403 denied otherwise.
         """
-        ip = ip_address(request.META.get("REMOTE_ADDR"))
+        ip = ip_address(request.META.get("HTTP_X_REAL_IP"))
         api_auth_subnet = getattr(settings, "API_AUTH_SUBNET")
         if isinstance(api_auth_subnet, (str, bytes)):
             if ip in ip_network(api_auth_subnet):

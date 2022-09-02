@@ -51,13 +51,12 @@ def get_application() -> FastAPI:
 app = get_application()
 
 
-@app.middleware('http')
-def x_real_ip_middleware(request: Request, call_next):
-    real_ip = request.headers.get('HTTP_X_REAL_IP')
-    if real_ip is not None:
-        request.headers['REMOTE_ADDR'] = real_ip
-    response = call_next(request)
-    return response
+# @app.middleware('http')
+# async def x_real_ip_middleware(request: Request, call_next):
+#     real_ip = request.headers.get('HTTP_X_REAL_IP')
+#     if real_ip is not None:
+#         request.headers['REMOTE_ADDR'] = real_ip
+#     return await call_next(request)
 
 
 #  from fastapi.staticfiles import StaticFiles
