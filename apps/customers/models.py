@@ -865,6 +865,45 @@ class Customer(IAddressContaining, BaseAccount):
         except ValueError as err:
             return str(err), False
 
+    @property
+    def group_title(self) -> Optional[str]:
+        if self.group:
+            return str(self.group.title)
+
+    @property
+    def address_title(self):
+        return self.full_address
+
+    @property
+    def device_comment(self):
+        if self.device:
+            return str(self.device.comment)
+
+    @property
+    def last_connected_service_title(self):
+        if self.last_connected_service:
+            return str(self.last_connected_service.title)
+
+    @property
+    def current_service_title(self):
+        if self.current_service and self.current_service.service:
+            return str(self.current_service.service.title)
+
+    @property
+    def service_id(self) -> Optional[int]:
+        if self.current_service:
+            return int(self.current_service.pk)
+
+    @property
+    def raw_password(self) -> Optional[str]:
+        raw_passw = getattr(self, 'customerrawpassword', None)
+        if raw_passw is not None:
+            return str(raw_passw.passw_text)
+
+    @property
+    def marker_icons(self) -> List[str]:
+        return [i for i in self.get_flag_icons()]
+
     class Meta:
         db_table = "customers"
         permissions = [
