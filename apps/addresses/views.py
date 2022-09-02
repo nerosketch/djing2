@@ -7,9 +7,8 @@ from django.db.models import Count
 from fastapi import APIRouter, HTTPException, Request
 from starlette import status
 
-from djing2.lib.fastapi.crud import DjangoCrudRouter
-from djing2.lib.fastapi._crud_generator import NOT_FOUND
-from djing2.lib.fastapi._types import PAGINATION
+from djing2.lib.fastapi.crud import CrudRouter, NOT_FOUND
+from djing2.lib.fastapi.types import PAGINATION
 from django.db.models import QuerySet, Model
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.fias_socrbase import AddressFIASInfo, AddressFIASLevelType, IAddressFIASType
@@ -128,7 +127,7 @@ def get_all_children(addr_type: AddressModelTypes, parent_addr_id: int,
     return [schemas.AddressModelSchema.from_orm(a) for a in qs.iterator()]
 
 
-class AddressCrudRouter(DjangoCrudRouter):
+class AddressCrudRouter(CrudRouter):
     def filter_qs(self, request: Request, qs: Optional[QuerySet] = None) -> QuerySet[Model]:
         qs = super().filter_qs(qs=qs, request=request)
         parent_addr_id = request.query_params.get('parent_addr_id')
@@ -163,7 +162,5 @@ class AddressCrudRouter(DjangoCrudRouter):
 router.include_router(AddressCrudRouter(
     schema=schemas.AddressModelSchema,
     create_schema=schemas.AddressBaseSchema,
-    queryset=AddressModel.objects.annotate(
-        children_count=Count('addressmodel'),
-    ).order_by('title')
+    queryset=_base_addr_queryset
 ))
