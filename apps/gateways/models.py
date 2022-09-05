@@ -72,10 +72,11 @@ class Gateway(BaseAbstractModel):
                 # (customer_id, lease_id, lease_time, lease_mac, ip_address,
                 #  speed_in, speed_out, speed_burst, service_start_time,
                 #  service_deadline)
-                customer_id, *other = cur.fetchone()
+                els = cur.fetchone()
+                customer_id = els[0]
                 if customer_id is None:
                     break
-                yield [customer_id] + other
+                yield els
 
     def __str__(self):
         return self.title

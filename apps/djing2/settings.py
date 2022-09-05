@@ -48,17 +48,18 @@ if SECRET_KEY is None:
 DEBUG = os.getenv("APP_DEBUG", False)
 DEBUG = bool(DEBUG)
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS")
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", ())
 if ALLOWED_HOSTS:
     ALLOWED_HOSTS = ALLOWED_HOSTS.split('|')
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_EMAIL")
 
-# ADMINS = os.getenv("ADMINS")
-# if isinstance(ADMINS, str):
-#    ADMINS = json.loads(ADMINS)
-# else:
-ADMINS = [("Admin", "admin@localhost")]
+ADMINS = os.getenv("ADMINS")
+if isinstance(ADMINS, str):
+    import json
+    ADMINS = json.loads(ADMINS)
+else:
+    ADMINS = [("Admin", "admin@localhost")]
 
 # Application definition
 
@@ -105,6 +106,7 @@ if DEBUG:
     INSTALLED_APPS.insert(0, "django.contrib.admin")
 
 MIDDLEWARE = [
+    "djing2.middleware.XRealIPMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -212,12 +214,12 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
-        'file': {
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'class': 'logging.FileHandler',
-            'filename': os.getenv('DJING2_LOG_FILE', '/tmp/djing2.log'),
-            'formatter': 'simple'
-        }
+        # 'file': {
+        #     'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        #     'class': 'logging.FileHandler',
+        #     'filename': os.getenv('DJING2_LOG_FILE', '/tmp/djing2.log'),
+        #     'formatter': 'simple'
+        # }
     },
     'root': {
         'handlers': ['console'],
@@ -225,12 +227,14 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'console'],
+            # 'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False
         },
         'djing2_logger': {
-            'handlers': ['file', 'console'],
+            # 'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False
         }
@@ -333,7 +337,6 @@ REST_FRAMEWORK = {
         # 'djing2.permissions.CustomizedDjangoObjectPermissions'
     ],
     'DEFAULT_RENDERER_CLASSES': [
-        # 'djing2.lib.renderer.ExtendedRenderer',
         'rest_framework.renderers.JSONRenderer',
         'rest_framework_csv.renderers.CSVRenderer',
     ]
@@ -410,3 +413,7 @@ CONTRACTS_OPTIONS = {
 
 # PAYME_CREDENTIALS = base64(login:password)
 PAYME_CREDENTIALS = get_secret("PAYME_CREDENTIALS")
+
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'pyamqp://user:passw@djing2rabbitmq/')

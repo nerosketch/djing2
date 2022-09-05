@@ -1,7 +1,7 @@
 from typing import Optional
 
 from django.db.models import Subquery, OuterRef, Count, Q
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib.logger import logger
 from addresses.models import AddressModelTypes, AddressModel
 from customer_contract.models import CustomerContractModel
@@ -202,8 +202,6 @@ class AccessPointExportTree(ExportTree[Customer]):
             "actual_start_time": contract.start_service_time,
             'actual_end_time': contract.end_service_time or None
         }
-
-
 
 
 def _report_about_customers_no_have_passport(customers_without_passports_qs):
@@ -482,6 +480,6 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
             "contract_start_date": contract.start_service_time.date(),
             'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
             "contract_number": contract.contract_number,
-            "contract_title": _('Contract default title'),
+            "contract_title": gettext('Contract default title'),
             # "contract_title": contract.title,
         }

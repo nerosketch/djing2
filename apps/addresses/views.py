@@ -1,109 +1,166 @@
-from dataclasses import asdict
-from django.db.models import Count
-from rest_framework import status
-from rest_framework.decorators import action
-from rest_framework.response import Response
+from typing import List, Optional
 
 from djing2.lib import safe_int
-from djing2.viewsets import DjingModelViewSet
+from pydantic import BaseModel
+from django.db.models import Count
+
+from fastapi import APIRouter, HTTPException, Request
+from starlette import status
+
+from djing2.lib.fastapi.crud import CrudRouter, NOT_FOUND
+from djing2.lib.fastapi.types import PAGINATION
+from django.db.models import QuerySet, Model
 from addresses.models import AddressModel, AddressModelTypes
-from addresses.serializers import AddressModelSerializer
-from addresses.fias_socrbase import AddressFIASInfo
+from addresses.fias_socrbase import AddressFIASInfo, AddressFIASLevelType, IAddressFIASType
+from addresses import schemas
 
 
-class AddressModelViewSet(DjingModelViewSet):
-    queryset = AddressModel.objects.annotate(
-        children_count=Count('addressmodel'),
+router = APIRouter(
+    prefix='/addrs',
+    tags=['address'],
+)
+
+_base_addr_queryset = AddressModel.objects.annotate(
+    children_count=Count('addressmodel'),
+).order_by('title')
+
+
+class AddrTypeValLabel(BaseModel):
+    value: int
+    label: str
+
+
+@router.get('/get_addr_types/', response_model=List[AddrTypeValLabel])
+def get_addr_types():
+    """Return all possible variants for address model types"""
+
+    model_types = (AddrTypeValLabel(
+        value=value,
+        label=str(label)
+    ) for value, label in AddressModelTypes.choices)
+    return model_types
+
+
+@router.get('/{addr_id}/get_address_by_type/', response_model=Optional[schemas.AddressModelSchema])
+def get_address_by_type(addr_id: int, addr_type: AddressModelTypes) -> Optional[schemas.AddressModelSchema]:
+    """
+    **Get parent address by type.**
+
+    For example, we have house number with id 194, and we need to get its street.
+
+    Then we can _get_address_by_type(194, AddressModelTypes.STREET)_
+    """
+
+    addr = AddressModel.objects.get_address_by_type(
+        addr_id=addr_id,
+        addr_type=addr_type
+    ).first()
+    if not addr:
+        return None
+    return schemas.AddressModelSchema.from_orm(addr)
+
+
+@router.get('/get_ao_levels/')
+def get_ao_levels():
+    return ({
+        'name': name,
+        'value': val
+    } for val, name in AddressFIASInfo.get_levels())
+
+
+@router.get('/{addr_id}/get_id_hierarchy/')
+def get_id_hierarchy(addr_id: int):
+    ids_tree_query = AddressModel.objects.get_address_recursive_ids(
+        addr_id=addr_id,
+        direction_down=False
+    )
+    ids_hierarchy = (addr.pk for addr in AddressModel.objects.filter(pk__in=ids_tree_query))
+    return ids_hierarchy
+
+
+@router.get('/{addr_id}/get_full_title/')
+def get_full_title(addr_id: int):
+    full_title = AddressModel.objects.get_address_full_title(
+        addr_id=addr_id
+    )
+    return full_title
+
+
+@router.get('/filter_by_fias_level/', response_model=List[schemas.AddressModelSchema])
+def filter_by_fias_level(level: AddressFIASLevelType):
+    if level and level > 0:
+        qs = AddressModel.objects.filter_by_fias_level(level=level).order_by('title')
+        return [schemas.AddressModelSchema.from_orm(a) for a in qs.iterator()]
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Item not found"
+    )
+
+
+@router.get('/get_ao_types/', response_model=List[IAddressFIASType])
+def get_ao_types(level: AddressFIASLevelType):
+    """Get all address object types."""
+    return AddressFIASInfo.get_address_types_by_level(level=level)
+
+
+@router.get('/{addr_id}/get_parent/', response_model=Optional[schemas.AddressModelSchema])
+def get_parent(addr_id: int) -> Optional[schemas.AddressModelSchema]:
+    try:
+        obj = AddressModel.objects.filter(pk=addr_id).select_related('parent_addr').get()
+        parent = obj.parent_addr
+        if parent:
+            return schemas.AddressModelSchema.from_orm(parent)
+    except AddressModel.DoesNotExist:
+        raise NOT_FOUND
+
+
+@router.get('/get_all_children/', response_model=List[schemas.AddressModelSchema])
+def get_all_children(addr_type: AddressModelTypes, parent_addr_id: int,
+                     parent_type: Optional[AddressModelTypes] = None
+                     ) -> List[schemas.AddressModelSchema]:
+    qs = AddressModel.objects.filter_from_parent(
+        addr_type,
+        parent_id=parent_addr_id,
+        parent_type=parent_type
     ).order_by('title')
-    serializer_class = AddressModelSerializer
-    filterset_fields = ['address_type', 'parent_addr', 'fias_address_type']
+    return [schemas.AddressModelSchema.from_orm(a) for a in qs.iterator()]
 
-    def filter_queryset(self, queryset):
-        parent_addr = safe_int(self.request.query_params.get('parent_addr'), default=None)
-        if parent_addr == 0:
-            return queryset.filter(parent_addr=None)
-        return super().filter_queryset(queryset)
 
-    @action(methods=['get'], detail=False)
-    def get_addr_types(self, request):
-        types = [{'value': value, 'label': label} for value, label in AddressModelTypes.choices]
-        return Response(types)
+class AddressCrudRouter(CrudRouter):
+    def filter_qs(self, request: Request, qs: Optional[QuerySet] = None) -> QuerySet[Model]:
+        qs = super().filter_qs(qs=qs, request=request)
+        parent_addr_id = request.query_params.get('parent_addr_id')
+        if parent_addr_id is not None and safe_int(parent_addr_id) == 0:
+            return qs.filter(parent_addr=None)
+        parent_addr_id = safe_int(parent_addr_id)
 
-    @action(methods=['get'], detail=False)
-    def get_all_children(self, request):
-        # TODO: Make serializer for it
-        addr_type = safe_int(request.query_params.get('addr_type'), default=None)
-        if not addr_type:
-            return Response('addr_type parameter is required', status=status.HTTP_400_BAD_REQUEST)
-        parent_addr = safe_int(request.query_params.get('parent_addr'), default=None)
-        parent_type = safe_int(request.query_params.get('parent_type'), default=None)
-        qs = self.get_queryset()
-        qs = qs.filter_from_parent(
-            addr_type,
-            parent_id=parent_addr,
-            parent_type=parent_type
-        )
-        ser = self.get_serializer(qs, many=True)
-        return Response(ser.data)
+        address_type = request.query_params.get('address_type')
+        if address_type:
+            qs = qs.filter(address_type=address_type)
 
-    @action(methods=['get'], detail=True)
-    def get_parent(self, request, pk=None):
-        obj = self.get_object()
-        parent = obj.parent_ao
-        if not parent:
-            return Response()
-        serializer = self.get_serializer(obj)
-        return Response(serializer.data)
+        if parent_addr_id > 0:
+            qs = qs.filter(parent_addr_id=parent_addr_id)
 
-    @action(methods=['get'], detail=False)
-    def get_ao_levels(self, request):
-        return Response({
-            'name': name,
-            'value': val
-        } for val, name in AddressFIASInfo.get_levels())
+        return qs
 
-    @action(methods=['get'], detail=False)
-    def get_ao_types(self, request):
-        level = safe_int(request.query_params.get('level'), default=None)
-        if not level:
-            return Response('level parameter required', status=status.HTTP_400_BAD_REQUEST)
-        return Response(list(asdict(a) for a in AddressFIASInfo.get_address_types_by_level(level=level)))
+    def _get_all(self, *args, **kwargs):
+        fn = super()._get_all(*args, **kwargs)
 
-    @action(methods=['get'], detail=False)
-    def filter_by_fias_level(self, request):
-        level = safe_int(request.query_params.get('level'))
-        if level and level > 0:
-            qs = self.get_queryset()
-            qs = qs.filter_by_fias_level(level=level)
-            ser = self.serializer_class(instance=qs, many=True, context={
-                'request': request
-            })
-            return Response(ser.data)
-        return Response('level parameter required', status=status.HTTP_400_BAD_REQUEST)
+        def route(
+            request: Request,
+            parent_addr_id: Optional[int] = None,
+            address_type: Optional[AddressModelTypes] = None,
+            pagination: PAGINATION = self.pagination,
+            fields: Optional[str] = None,
+        ):
+            """Get all address objects."""
+            return fn(request, pagination, fields)
+        return route
 
-    @action(methods=['get'], detail=True)
-    def get_full_title(self, request, pk=None):
-        full_title = AddressModel.objects.get_address_full_title(
-            addr_id=safe_int(pk)
-        )
-        return Response(full_title)
 
-    @action(methods=['get'], detail=True)
-    def get_id_hierarchy(self, request, pk=True):
-        obj = self.get_object()
-        ids_hierarchy = tuple(i for i in obj.get_id_hierarchy_gen())
-        return Response(ids_hierarchy)
-
-    @action(methods=['get'], detail=True)
-    def get_address_by_type(self, request, pk=None):
-        addr_type = request.query_params.get('addr_type')
-        if not addr_type:
-            return Response(None)
-        addr_type = safe_int(addr_type)
-        if not AddressModelTypes.in_range(addr_type):
-            return Response('Addr type not in range', status=status.HTTP_400_BAD_REQUEST)
-        a = AddressModel.objects.get_address_by_type(addr_id=pk, addr_type=addr_type).first()
-        if not a:
-            return Response(None)
-        ser = self.serializer_class(instance=a)
-        return Response(ser.data)
+router.include_router(AddressCrudRouter(
+    schema=schemas.AddressModelSchema,
+    create_schema=schemas.AddressBaseSchema,
+    queryset=_base_addr_queryset
+))

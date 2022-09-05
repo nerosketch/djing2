@@ -16,7 +16,7 @@ from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
 from fin_app.serializers import rncb as serializers_rncb
 try:
     from customers.models import Customer
-    from customers.tasks import customer_check_service_for_expiration
+    from customers.tasks import customer_check_service_for_expiration_task
 except ImportError as imperr:
     from django.core.exceptions import ImproperlyConfigured
 
@@ -77,9 +77,9 @@ class DynamicRootXMLRenderer(XMLRenderer):
 
 
 def payment_wrapper(request_serializer, response_serializer, root_tag: str):
-    def _el(l: list):
+    def _el(lst: list):
         """Expand list"""
-        return ' '.join(s for s in l)
+        return ' '.join(s for s in lst)
 
     def _expand_str_from_err(err: ValidationError):
         if isinstance(err.detail, dict):
@@ -96,11 +96,11 @@ def payment_wrapper(request_serializer, response_serializer, root_tag: str):
                 r_ser = response_serializer(data=res)
                 r_ser.is_valid(raise_exception=True)
                 return Response({
-                    root_tag: r_ser.data
+                    root_tag: r_ser.validated_data
                 })
             except serializers_rncb.RNCBProtocolErrorException as e:
                 return Response({root_tag: {
-                    'ERROR': e.error,
+                    'ERROR': e.error.value,
                     'COMMENTS': _expand_str_from_err(e)
                 }}, status=e.status_code)
             except ValidationError as e:
@@ -208,7 +208,7 @@ class RNCBPaymentViewSet(GenericAPIView):
                 amount=pay_amount,
                 pay_gw=self._lazy_object
             )
-        customer_check_service_for_expiration(customer_id=customer.pk)
+        customer_check_service_for_expiration_task.delay(customer_id=customer.pk)
 
         return {
             'OUT_PAYMENT_ID': log.pk,

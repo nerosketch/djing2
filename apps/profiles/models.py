@@ -129,6 +129,10 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
         # Simplest possible answer: All admins are staff
         return self.is_admin
 
+    @property
+    def full_name(self):
+        return self.get_full_name()
+
     def __str__(self):
         return self.get_full_name()
 

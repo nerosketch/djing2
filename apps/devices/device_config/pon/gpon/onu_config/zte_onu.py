@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from devices.device_config import expect_util
 from devices.device_config.base import OptionalScriptCallResult, DeviceConfigurationError
 from devices.device_config.base_device_strategy import DeviceConfigType
-from djing2.lib import process_lock, safe_int
+from djing2.lib import process_lock_decorator, safe_int
 from .. import zte_utils
 from ...utils import get_all_vlans_from_config
 
@@ -45,7 +45,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         if telnet is None:
             raise DeviceConfigurationError("'telnet' parameter no passed")
 
-        @process_lock(lock_name="zte_olt")
+        @process_lock_decorator(lock_name="zte_olt")
         def _locked_register_onu(device_config_type: ZteOnuDeviceConfigType, *args, **kwargs):
             return device_config_type.register_onu(*args, **kwargs)
 

@@ -3,7 +3,7 @@ from typing import Optional, Dict
 
 from django.utils.translation import gettext_lazy as _
 
-from djing2.lib import safe_int, process_lock
+from djing2.lib import safe_int, process_lock_decorator
 from devices.device_config.base import DeviceConsoleError
 from devices.device_config import expect_util
 from .onu_config.zte_onu import ZteOnuDeviceConfigType
@@ -15,7 +15,7 @@ from ...base_device_strategy import SNMPWorker
 _DEVICE_UNIQUE_CODE = 6
 
 
-@process_lock(lock_name="zte_olt")
+@process_lock_decorator(lock_name="zte_olt")
 def _remove_zte_onu_from_olt(zte_ip_addr: str, telnet_login: str, telnet_passw: str,
                              telnet_prompt: str, snmp_info: str, *args, **kwargs):
     if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):

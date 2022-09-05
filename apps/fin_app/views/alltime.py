@@ -19,7 +19,7 @@ from fin_app.models.alltime import AllTimePaymentLog, AllTimePayGateway
 
 try:
     from customers.models import Customer
-    from customers.tasks import customer_check_service_for_expiration
+    from customers.tasks import customer_check_service_for_expiration_task
 except ImportError as imperr:
     from django.core.exceptions import ImproperlyConfigured
 
@@ -27,8 +27,6 @@ except ImportError as imperr:
         '"fin_app" application depends on "customers" '
         'application. Check if it installed'
     ) from imperr
-
-
 
 
 class AllTimePayActEnum(IntEnumEx):
@@ -153,17 +151,17 @@ class AllTimePay(GenericAPIView):
             return self._bad_ret(
                 AllTimeStatusCodeEnum.BAD_REQUEST, "Pay gateway does not exist"
             )
-        except IntegrityError as err:
+        except AllTimePaymentLog.DoesNotExist:
+            return self._bad_ret(
+                AllTimeStatusCodeEnum.TRANSACTION_NOT_FOUND
+            )
+        except IntegrityError:
             return self._bad_ret(
               AllTimeStatusCodeEnum.MORE_THAN_ONE_PAYMENTS, "Pay already exists"
             )
         except DatabaseError:
             return self._bad_ret(
                 AllTimeStatusCodeEnum.SERVICE_UNAVIALABLE
-            )
-        except AllTimePaymentLog.DoesNotExist:
-            return self._bad_ret(
-                AllTimeStatusCodeEnum.TRANSACTION_NOT_FOUND
             )
         except AttributeError as err:
             return self._bad_ret(
@@ -214,7 +212,7 @@ class AllTimePay(GenericAPIView):
                 receipt_num=receipt_num,
                 pay_gw=self._lazy_object,
             )
-        customer_check_service_for_expiration(customer_id=customer.pk)
+        customer_check_service_for_expiration_task.delay(customer_id=customer.pk)
         return Response(
             {
                 "pay_id": pay_id,

@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock
+from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock_decorator
 from devices.device_config.base import Vlans, Vlan
 from ..pon_device_strategy import PonOLTDeviceStrategyContext
 from ..epon.bdcom_p3310c import BDCOM_P3310C
@@ -50,7 +50,7 @@ class ZTE_C320(BDCOM_P3310C):
         details.update(super().get_details())
         return details
 
-    @process_lock()
+    @process_lock_decorator()
     def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
         dev = self.model_instance
         snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
@@ -131,7 +131,7 @@ class ZTE_C320(BDCOM_P3310C):
     #     out = self.read_until(self.prompt)
     #     return b'bad password' in out
 
-    @process_lock()
+    @process_lock_decorator()
     def read_all_vlan_info(self) -> Vlans:
         dev = self.model_instance
         with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
