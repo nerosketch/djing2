@@ -161,7 +161,7 @@ class PaymePaymentEndpoint(SitesFilterMixin, GenericAPIView):
             "result": {
                 "allow": True,
                 "detail": {"items": [{
-                    "title": "Internet", # нааименование товара или услуги
+                    "title": "Internet", # наименование товара или услуги
                     "price": 505000, # цена за единицу товара или услуги, сумма указана в тийинах
                     "count": 1, # кол-во товаров или услуг
                     "code": "00702001001000001", #  код *ИКПУ обязательное поле
