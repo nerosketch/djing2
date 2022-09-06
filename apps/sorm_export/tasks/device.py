@@ -13,13 +13,15 @@ from sorm_export.serializers.devices import DeviceSwitchTypeChoices
 
 @celery_app.task
 def send_device_on_delete_task(device_id: int,
-                               switch_type: DeviceSwitchTypeChoices,
-                               network_type: CommunicationStandardChoices,
+                               switch_type: int,
+                               network_type: int,
                                descr: str, place: str, start_usage_time: float,
                                event_time: Optional[float] = None):
     if event_time is not None:
         event_time = datetime.fromtimestamp(event_time)
     start_usage_time = datetime.fromtimestamp(start_usage_time)
+    switch_type = DeviceSwitchTypeChoices(switch_type)
+    network_type = CommunicationStandardChoices(network_type)
     DeviceFinishServeSimpleExportTree(event_time=event_time).exportNupload(
         dev_id=device_id,
         switch_type=switch_type,
