@@ -1,14 +1,12 @@
 from datetime import datetime, timedelta
+from typing import Optional
 
-from django.db.models import Count
+from django.db.models import Count, QuerySet, Model
 from djing2.lib.fastapi.crud import CRUDReadGenerator
 from fastapi import APIRouter, Depends, Request
-from rest_framework.viewsets import ReadOnlyModelViewSet
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from djing2.lib.mixins import SitesFilterMixin
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.types import PAGINATION
 from customers.models import Customer
-from customers.serializers import CustomerModelSerializer
 from customers import schemas as customers_schemas
 
 
@@ -40,7 +38,11 @@ class ContractsReadCRUD(CRUDReadGenerator):
     def _get_all(self, *args, **kwargs):
         ofn = super()._get_all(*args, **kwargs)
 
-        def _rar(item_id: int, request: Request):
+        def _rar(
+            request: Request,
+            pagination: PAGINATION = self.pagination,
+            fields: Optional[str] = None,
+        ):
             """
             Fetch example:
 
@@ -69,7 +71,7 @@ class ContractsReadCRUD(CRUDReadGenerator):
             >>>         writer.writerow(vals)
             >>>
             """
-            return ofn(item_id, request)
+            return ofn(request, pagination, fields)
 
         return _rar
 
@@ -91,20 +93,23 @@ router.include_router(ContractsReadCRUD(
 ))
 
 
-class SormCustomersTooOldView(SitesFilterMixin, ReadOnlyModelViewSet):
-    queryset = Customer.objects.annotate(
+class BirthDayCRUD(CRUDReadGenerator):
+    def filter_qs(self, request: Request, qs: Optional[QuerySet] = None) -> QuerySet[Model]:
+        qs = super().filter_qs(request, qs)
+        # 110 years
+        too_old = datetime.now() - timedelta(days=40150)
+        return qs.filter(
+            birth_day__lte=too_old
+        )
+
+
+router.include_router(BirthDayCRUD(
+    schema=customers_schemas.CustomerModelSchema,
+    prefix='/birth_day',
+    queryset=Customer.objects.annotate(
         legals=Count('customerlegalmodel')
     ).filter(
         legals=0,
         is_active=True
     )
-    serializer_class = CustomerModelSerializer
-    permission_classes = [IsAuthenticated, IsAdminUser]
-
-    def get_queryset(self):
-        # 110 years
-        too_old = datetime.now() - timedelta(days=40150)
-        qs = super().get_queryset()
-        return qs.filter(
-            birth_day__lte=too_old
-        )
+))
