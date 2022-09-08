@@ -212,7 +212,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
            Например улица не может находится в улице, дом в доме, а город в городе.
         """
         qs = AddressModel.objects.annotate(
-            # Считаем всех потомков, у которых тип адреса как а родителя
+            # Считаем всех потомков, у которых тип адреса как у родителя
             children_addrs_count=Count('addressmodel', filter=Q(
                 addressmodel__fias_address_type=self.fias_address_type
             ))
