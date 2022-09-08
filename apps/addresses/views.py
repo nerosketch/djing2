@@ -116,7 +116,7 @@ def get_parent(addr_id: int) -> Optional[schemas.AddressModelSchema]:
 
 
 @router.get('/get_all_children/', response_model=List[schemas.AddressModelSchema])
-def get_all_children(addr_type: AddressModelTypes, parent_addr_id: int,
+def get_all_children(addr_type: AddressModelTypes, parent_addr_id: Optional[int] = None,
                      parent_type: Optional[AddressModelTypes] = None
                      ) -> List[schemas.AddressModelSchema]:
     qs = AddressModel.objects.filter_from_parent(
