@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import datetime, timedelta
 
 from django.conf import settings
@@ -440,13 +441,23 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             date_limit=date_limit,
             out_limit=out_limit
         )
-        res_afk = [{
-            'timediff': str(r['timediff']),
-            'last_date': r['last_date'].strftime(date_fmt),
-            'customer_id': r['customer_id'],
-            'customer_uname': r['customer_uname'],
-            'customer_fio': r['customer_fio']
-        } for r in afk]
+
+        locality_addr = request.query_params.get('locality', 0)
+        locality_addr = safe_int(locality_addr)
+        if locality_addr > 0:
+            addr_filtered_customers = models.Customer.objects.filter_customers_by_addr(
+                addr_id=locality_addr
+            ).only('pk').values_list('pk', flat=True)
+            afk = tuple(c for c in afk if c.customer_id in addr_filtered_customers)
+            del addr_filtered_customers
+
+        res_afk = (OrderedDict(
+            timediff=str(r.timediff),
+            last_date=r.last_date.strftime(date_fmt),
+            customer_id=r.customer_id,
+            customer_uname=r.customer_uname,
+            customer_fio=r.customer_fio
+        ) for r in afk)
         return Response({
             'count': 1,
             'next': None,
