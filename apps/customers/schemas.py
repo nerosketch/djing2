@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from profiles.schemas import BaseAccountModelSchema, BaseAccountSchema
 
@@ -27,7 +27,7 @@ class CustomerModelSchema(BaseAccountModelSchema):
     service_id: Optional[int]
     raw_password: Optional[str]
     lease_count: Optional[int] = None
-    marker_icons: List[str] = ()
+    marker_icons: list[str] = []
 
     class Config:
         orm_mode = True
