@@ -1,14 +1,13 @@
 from typing import List, Optional
 
-from djing2.lib import safe_int
 from pydantic import BaseModel
-from django.db.models import Count
-
 from fastapi import APIRouter, HTTPException, Request
 from starlette import status
 
+from djing2.lib import safe_int
 from djing2.lib.fastapi.crud import CrudRouter, NOT_FOUND
-from django.db.models import QuerySet, Model
+from djing2.lib.fastapi.types import MAX_LIMIT
+from django.db.models import QuerySet, Model, Count
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.fias_socrbase import AddressFIASInfo, AddressFIASLevelType, IAddressFIASType
 from addresses import schemas
@@ -122,7 +121,7 @@ def get_all_children(addr_type: AddressModelTypes, parent_addr_id: Optional[int]
         addr_type,
         parent_id=parent_addr_id,
         parent_type=parent_type
-    ).order_by('title')[:50]
+    ).order_by('title')[:MAX_LIMIT]
     return [schemas.AddressModelSchema.from_orm(a) for a in qs.iterator()]
 
 
