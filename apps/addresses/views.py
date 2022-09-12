@@ -123,7 +123,7 @@ def get_all_children(addr_type: AddressModelTypes, parent_addr_id: Optional[int]
         addr_type,
         parent_id=parent_addr_id,
         parent_type=parent_type
-    ).order_by('title')
+    ).order_by('title')[:50]
     return [schemas.AddressModelSchema.from_orm(a) for a in qs.iterator()]
 
 
