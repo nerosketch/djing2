@@ -17,13 +17,12 @@ def build_model_and_schema_fields(schema: Type[BaseModel], db_model: Type[Model]
     """
     Build model fields and computed fields
     """
+    # global _db_model_cache_map, _schema_cache_map
     schema_fields = schema.__fields__
 
     field_objects = _db_model_cache_map.get(db_model, {})
     computed_field_objects = _schema_cache_map.get(schema, {})
     if all([field_objects, computed_field_objects]):
-        # print('############ Cached:', field_objects, computed_field_objects)
-        # TODO: ensure that it works
         return field_objects, computed_field_objects
 
     for fname, schema_field in schema_fields.items():
@@ -34,4 +33,6 @@ def build_model_and_schema_fields(schema: Type[BaseModel], db_model: Type[Model]
 
     _field_objects = OrderedDict(field_objects)
     _computed_field_objects = OrderedDict(computed_field_objects)
+    _db_model_cache_map[db_model] = _field_objects
+    _schema_cache_map[schema] = _computed_field_objects
     return _field_objects, _computed_field_objects
