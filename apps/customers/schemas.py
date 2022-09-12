@@ -1,4 +1,5 @@
 from typing import Optional
+from pydantic import validator
 
 from profiles.schemas import BaseAccountModelSchema, BaseAccountSchema
 
@@ -21,6 +22,7 @@ class CustomerModelSchema(BaseAccountModelSchema):
     id: int
     group_title: Optional[str]
     address_title: str
+    balance: float
     device_comment: Optional[str]
     last_connected_service_title: Optional[str]
     current_service_title: Optional[str]
@@ -28,6 +30,10 @@ class CustomerModelSchema(BaseAccountModelSchema):
     raw_password: Optional[str]
     lease_count: Optional[int] = None
     marker_icons: list[str] = []
+
+    @validator('balance')
+    def check_balance(cls, v):
+        return round(v, 2)
 
     class Config:
         orm_mode = True
