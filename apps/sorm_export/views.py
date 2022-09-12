@@ -1,11 +1,9 @@
 from datetime import datetime, timedelta
-from typing import Optional
-
-from django.db.models import Count, QuerySet, Model
-from djing2.lib.fastapi.crud import CRUDReadGenerator
+from django.db.models import Count
+from djing2.lib.fastapi.pagination import Pagination, paginate_qs_path_decorator
 from fastapi import APIRouter, Depends, Request
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
-from djing2.lib.fastapi.types import PAGINATION
+from djing2.lib.fastapi.types import IListResponse
 from customers.models import Customer
 from customers import schemas as customers_schemas
 
@@ -17,99 +15,70 @@ router = APIRouter(
 )
 
 
-class CustomerModelSchemaWLegals(customers_schemas.CustomerModelSchema):
-    legals: int
-
-
-router.include_router(CRUDReadGenerator(
-    schema=CustomerModelSchemaWLegals,
-    prefix='/passports',
-    queryset=Customer.objects.annotate(
-            legals=Count('customerlegalmodel')
-        ).filter(
-            passportinfo=None,
-            legals=0,
-            is_active=True
-        )
-))
-
-
-class ContractsReadCRUD(CRUDReadGenerator):
-    def _get_all(self, *args, **kwargs):
-        ofn = super()._get_all(*args, **kwargs)
-
-        def _rar(
-            request: Request,
-            pagination: PAGINATION = self.pagination,
-            fields: Optional[str] = None,
-        ):
-            """
-            Fetch example:
-
-            >>> import csv
-            >>> import requests
-            >>>
-            >>>
-            >>> r = requests.get('http://localhost:8000/api/sorm/contracts/', headers={
-            >>>     'Authorization': 'Token ffffffffffffffffffffffffffffffffffff',
-            >>>     'Content-type': 'application/json'
-            >>> }, params={
-            >>>     'fields': 'id,username,full_namevm ap'
-            >>> })
-            >>>
-            >>> customers = r.json()
-            >>>
-            >>> with open('customers_without_contracts.csv', 'w') as f:
-            >>>     writer = csv.DictWriter(f, fieldnames=['id', 'логин', 'фио'])
-            >>>     writer.writeheader()
-            >>>     for customer in customers:
-            >>>         vals = {
-            >>>             'id': customer.get('id'),
-            >>>             'логин': customer.get('username'),
-            >>>             'фио': customer.get('full_name')
-            >>>         }
-            >>>         writer.writerow(vals)
-            >>>
-            """
-            return ofn(request, pagination, fields)
-
-        return _rar
-
-    # def _get_one(self, *args: Any, **kwargs: Any):
-    #     pass
-
-
-router.include_router(ContractsReadCRUD(
-    schema=customers_schemas.CustomerModelSchema,
-    prefix='/contracts',
-    queryset=Customer.objects.annotate(
-            ccc=Count('customercontractmodel'),
-            legc=Count('customerlegalmodel')
-        ).filter(
-            ccc=0,
-            legc=0,
-            is_active=True
-        ),
-))
-
-
-class BirthDayCRUD(CRUDReadGenerator):
-    def filter_qs(self, request: Request, qs: Optional[QuerySet] = None) -> QuerySet[Model]:
-        qs = super().filter_qs(request, qs)
-        # 110 years
-        too_old = datetime.now() - timedelta(days=40150)
-        return qs.filter(
-            birth_day__lte=too_old
-        )
-
-
-router.include_router(BirthDayCRUD(
-    schema=customers_schemas.CustomerModelSchema,
-    prefix='/birth_day',
-    queryset=Customer.objects.annotate(
+@router.get('/passports/', response_model=IListResponse[customers_schemas.CustomerModelSchema])
+@paginate_qs_path_decorator(schema=customers_schemas.CustomerModelSchema, db_model=Customer)
+def get_bad_passports(request: Request, pagination: Pagination = Depends()):
+    qs = Customer.objects.annotate(
         legals=Count('customerlegalmodel')
     ).filter(
+        passportinfo=None,
         legals=0,
         is_active=True
     )
-))
+    return qs
+
+
+@router.get('/contracts/', response_model=IListResponse[customers_schemas.CustomerModelSchema])
+@paginate_qs_path_decorator(schema=customers_schemas.CustomerModelSchema, db_model=Customer)
+def get_contracts(request: Request, pagination: Pagination = Depends()):
+    """
+    Fetch example:
+
+    >>> import csv
+    >>> import requests
+    >>>
+    >>>
+    >>> r = requests.get('http://localhost:8000/api/sorm/contracts/', headers={
+    >>>     'Authorization': 'Token ffffffffffffffffffffffffffffffffffff',
+    >>>     'Content-type': 'application/json'
+    >>> }, params={
+    >>>     'fields': 'id,username,full_namevm ap'
+    >>> })
+    >>>
+    >>> customers = r.json()
+    >>>
+    >>> with open('customers_without_contracts.csv', 'w') as f:
+    >>>     writer = csv.DictWriter(f, fieldnames=['id', 'логин', 'фио'])
+    >>>     writer.writeheader()
+    >>>     for customer in customers:
+    >>>         vals = {
+    >>>             'id': customer.get('id'),
+    >>>             'логин': customer.get('username'),
+    >>>             'фио': customer.get('full_name')
+    >>>         }
+    >>>         writer.writerow(vals)
+    >>>
+    """
+    qs = Customer.objects.annotate(
+        ccc=Count('customercontractmodel'),
+        legc=Count('customerlegalmodel')
+    ).filter(
+        ccc=0,
+        legc=0,
+        is_active=True
+    )
+    return qs
+
+
+@router.get('/birth_day/', response_model=IListResponse[customers_schemas.CustomerModelSchema])
+@paginate_qs_path_decorator(schema=customers_schemas.CustomerModelSchema, db_model=Customer)
+def get_without_burth_day(request: Request, pagination: Pagination = Depends()):
+    too_old = datetime.now() - timedelta(days=40150)
+    qs = Customer.objects.annotate(
+        legals=Count('customerlegalmodel')
+    ).filter(
+        legals=0,
+        is_active=True,
+        birth_day__lte=too_old
+    )
+    return qs

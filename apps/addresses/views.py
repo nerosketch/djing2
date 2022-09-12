@@ -8,7 +8,6 @@ from fastapi import APIRouter, HTTPException, Request
 from starlette import status
 
 from djing2.lib.fastapi.crud import CrudRouter, NOT_FOUND
-from djing2.lib.fastapi.types import PAGINATION
 from django.db.models import QuerySet, Model
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.fias_socrbase import AddressFIASInfo, AddressFIASLevelType, IAddressFIASType
@@ -143,20 +142,6 @@ class AddressCrudRouter(CrudRouter):
             qs = qs.filter(parent_addr_id=parent_addr_id)
 
         return qs
-
-    def _get_all(self, *args, **kwargs):
-        fn = super()._get_all(*args, **kwargs)
-
-        def route(
-            request: Request,
-            parent_addr_id: Optional[int] = None,
-            address_type: Optional[AddressModelTypes] = None,
-            pagination: PAGINATION = self.pagination,
-            fields: Optional[str] = None,
-        ):
-            """Get all address objects."""
-            return fn(request, pagination, fields)
-        return route
 
 
 router.include_router(AddressCrudRouter(

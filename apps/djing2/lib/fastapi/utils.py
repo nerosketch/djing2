@@ -1,9 +1,10 @@
-from typing import Optional, Type, Any
+from typing import Type, Optional, OrderedDict as OrderedDictType
+from collections import OrderedDict
 
-from fastapi import Depends, HTTPException
 from pydantic import create_model
+from django.db.models import Model
 
-from .types import T, PAGINATION
+from .types import T, FIELD_OBJECTS_TYPE, COMPUTED_FIELD_OBJECTS_TYPE
 
 
 def schema_factory(
@@ -24,42 +25,21 @@ def schema_factory(
     return schema
 
 
-def create_query_validation_exception(field: str, msg: str) -> HTTPException:
-    return HTTPException(
-        422,
-        detail={
-            "detail": [
-                {"loc": ["query", field], "msg": msg, "type": "type_error.integer"}
-            ]
-        },
+def format_object(
+    model_item: Model,
+    field_objects: FIELD_OBJECTS_TYPE,
+    computed_field_objects: COMPUTED_FIELD_OBJECTS_TYPE,
+    fields_list: Optional[list[str]] = None
+) -> OrderedDictType:
+    result_dict_dields = (
+        (fname, fobject.value_from_object(model_item)) for fname, fobject in field_objects.items()
     )
-
-
-def pagination_factory(max_limit: Optional[int] = None) -> Any:
-    """
-    Created the pagination dependency to be used in the router
-    """
-
-    def pagination(page: int = 0, page_size: Optional[int] = 100) -> PAGINATION:
-        if page < 0:
-            raise create_query_validation_exception(
-                field="page",
-                msg="page query parameter must be greater or equal to zero",
-            )
-
-        if page_size is not None:
-            if page_size < 0:
-                raise create_query_validation_exception(
-                    field="page_size",
-                    msg="page_size query parameter must be greater then or equal zero"
-                )
-
-            elif max_limit and max_limit < page_size:
-                raise create_query_validation_exception(
-                    field="page_size",
-                    msg=f"page_size query parameter must be less then {max_limit}",
-                )
-
-        return {"page": page, "page_size": page_size}
-
-    return Depends(pagination)
+    if fields_list is not None:
+        if not isinstance(fields_list, (list, tuple, set)):
+            raise ValueError('fields_list must be list, tuple or set: %s' % fields_list)
+        result_dict_dields = ((fname, obj) for fname, obj in result_dict_dields if fields_list)
+    r = OrderedDict(result_dict_dields)
+    r.update({
+        fname: getattr(model_item, fname, None) for fname, ob in computed_field_objects.items()
+    })
+    return r
