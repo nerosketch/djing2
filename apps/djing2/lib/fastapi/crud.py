@@ -1,4 +1,4 @@
-from typing import Type, Optional, List, Union, Any, Dict, Callable, OrderedDict as OrderedDictType
+from typing import Type, Optional, Union, Any, Callable, OrderedDict as OrderedDictType
 
 from django.db.models import QuerySet, Model
 from django.db.utils import IntegrityError
@@ -65,7 +65,7 @@ class CRUDReadGenerator(APIRouter):
                 dependencies=get_all_route,
             )
 
-    def remove_api_route(self, path: str, methods: List[str]) -> None:
+    def remove_api_route(self, path: str, methods: list[str]) -> None:
         methods_ = set(methods)
 
         for route in self.routes:
@@ -88,7 +88,7 @@ class CRUDReadGenerator(APIRouter):
         path: str,
         endpoint: Callable[..., Any],
         dependencies: Union[bool, DEPENDENCIES],
-        error_responses: Optional[List[HTTPException]] = None,
+        error_responses: Optional[list[HTTPException]] = None,
         **kwargs: Any,
     ) -> None:
         dependencies = [] if isinstance(dependencies, bool) else dependencies
@@ -103,7 +103,7 @@ class CRUDReadGenerator(APIRouter):
         )
 
     @classmethod
-    def get_routes(cls) -> List[str]:
+    def get_routes(cls) -> list[str]:
         return ["get_all", "get_one"]
 
     def get(
@@ -159,7 +159,7 @@ class CrudRouter(CRUDReadGenerator):
         create_schema: Optional[Type[BaseModel]] = None,
         update_schema: Optional[Type[BaseModel]] = None,
         # prefix: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[list[str]] = None,
         get_all_route: Union[bool, DEPENDENCIES] = True,
         get_one_route: Union[bool, DEPENDENCIES] = True,
         create_route: Union[bool, DEPENDENCIES] = True,
@@ -263,7 +263,7 @@ class CrudRouter(CRUDReadGenerator):
         return route
 
     def _update(self, *args: Any, **kwargs: Any):
-        def route(item_id: int, model: Dict[str, Union[str, int, float]], request: Request) -> OrderedDictType:
+        def route(item_id: int, model: dict[str, Union[str, int, float]], request: Request) -> OrderedDictType:
             qs = self.filter_qs(request=request)
             model_fields = tuple(fname for fname, _ in model.items())
             update_fields = tuple(fname for fname, _ in self._field_objects.items() if fname in model_fields)
@@ -293,5 +293,5 @@ class CrudRouter(CRUDReadGenerator):
         return route
 
     @classmethod
-    def get_routes(cls) -> List[str]:
+    def get_routes(cls) -> list[str]:
         return super().get_routes() + ["create", "update", "delete_one"]

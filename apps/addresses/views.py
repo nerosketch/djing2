@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Request
@@ -28,7 +28,7 @@ class AddrTypeValLabel(BaseModel):
     label: str
 
 
-@router.get('/get_addr_types/', response_model=List[AddrTypeValLabel])
+@router.get('/get_addr_types/', response_model=list[AddrTypeValLabel])
 def get_addr_types():
     """Return all possible variants for address model types"""
 
@@ -84,7 +84,7 @@ def get_full_title(addr_id: int):
     return full_title
 
 
-@router.get('/filter_by_fias_level/', response_model=List[schemas.AddressModelSchema])
+@router.get('/filter_by_fias_level/', response_model=list[schemas.AddressModelSchema])
 def filter_by_fias_level(level: AddressFIASLevelType):
     if level and level > 0:
         qs = AddressModel.objects.filter_by_fias_level(level=level).order_by('title')
@@ -96,7 +96,7 @@ def filter_by_fias_level(level: AddressFIASLevelType):
     )
 
 
-@router.get('/get_ao_types/', response_model=List[IAddressFIASType])
+@router.get('/get_ao_types/', response_model=list[IAddressFIASType])
 def get_ao_types(level: AddressFIASLevelType):
     """Get all address object types."""
     return AddressFIASInfo.get_address_types_by_level(level=level)
@@ -113,10 +113,10 @@ def get_parent(addr_id: int) -> Optional[schemas.AddressModelSchema]:
         raise NOT_FOUND
 
 
-@router.get('/get_all_children/', response_model=List[schemas.AddressModelSchema])
+@router.get('/get_all_children/', response_model=list[schemas.AddressModelSchema])
 def get_all_children(addr_type: AddressModelTypes, parent_addr_id: Optional[int] = None,
                      parent_type: Optional[AddressModelTypes] = None
-                     ) -> List[schemas.AddressModelSchema]:
+                     ) -> list[schemas.AddressModelSchema]:
     qs = AddressModel.objects.filter_from_parent(
         addr_type,
         parent_id=parent_addr_id,

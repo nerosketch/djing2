@@ -1,4 +1,3 @@
-from typing import Dict
 from django.utils.translation import gettext, gettext_lazy as _
 from easysnmp import EasySNMPTimeoutError
 
@@ -111,7 +110,7 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
         except ValueError as err:
             raise ExpectValidationError(_("Onu snmp field must be en integer")) from err
 
-    def remove_from_olt(self, extra_data: Dict, **kwargs):
+    def remove_from_olt(self, extra_data: dict, **kwargs):
         dev = self.model_instance
         if not dev:
             return False

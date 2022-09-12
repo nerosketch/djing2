@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Optional
 from datetime import datetime, timedelta
 from django.db import models, transaction
 from django.utils.translation import override, gettext_lazy as _, gettext
@@ -64,7 +64,7 @@ class PaymeBaseRPCException(APIException):
         return cls.code
 
     @classmethod
-    def get_msg(cls) -> Dict[str, str]:
+    def get_msg(cls) -> dict[str, str]:
         return cls.msg
 
     @classmethod

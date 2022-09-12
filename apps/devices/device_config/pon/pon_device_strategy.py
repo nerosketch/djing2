@@ -1,4 +1,4 @@
-from typing import Dict, Generator, Tuple, Optional, Iterable
+from typing import Generator, Optional, Iterable
 from abc import abstractmethod
 
 from devices.device_config.base import UnsupportedReadingVlan
@@ -105,7 +105,7 @@ class PonOnuDeviceStrategy(BaseDeviceStrategy):
         return []
 
     @abstractmethod
-    def remove_from_olt(self, extra_data: Dict, **kwargs) -> bool:
+    def remove_from_olt(self, extra_data: dict, **kwargs) -> bool:
         """Removes device from OLT if devices is ONU"""
 
     @property
@@ -113,7 +113,7 @@ class PonOnuDeviceStrategy(BaseDeviceStrategy):
         return macbin2str(self._mac)
 
     @abstractmethod
-    def find_onu(self, *args, **kwargs) -> Tuple[Optional[int], Optional[str]]:
+    def find_onu(self, *args, **kwargs) -> tuple[Optional[int], Optional[str]]:
         """Finds onu by args on OLT, and returns its snmp_info"""
         raise NotImplementedError
 
@@ -138,10 +138,10 @@ class PonONUDeviceStrategyContext(BaseDeviceStrategyContext):
         """
         return self._current_dev_manager.get_config_types()
 
-    def remove_from_olt(self, extra_data: Dict, **kwargs) -> bool:
+    def remove_from_olt(self, extra_data: dict, **kwargs) -> bool:
         """Removes device from OLT if devices is ONU"""
         return self._current_dev_manager.remove_from_olt(extra_data, **kwargs)
 
-    def find_onu(self, *args, **kwargs) -> Tuple[Optional[int], Optional[str]]:
+    def find_onu(self, *args, **kwargs) -> tuple[Optional[int], Optional[str]]:
         """Finds onu by args on OLT, and returns its snmp_info"""
         return self._current_dev_manager.find_onu(*args, **kwargs)

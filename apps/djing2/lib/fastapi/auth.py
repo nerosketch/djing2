@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from fastapi import HTTPException, Depends
 from fastapi.security import APIKeyHeader
 from profiles.models import BaseAccount
@@ -10,7 +8,7 @@ from rest_framework.authtoken.models import Token
 from djing2.lib.auth_backends import get_right_user
 
 
-TOKEN_RESULT_TYPE = Tuple[BaseAccount, str]
+TOKEN_RESULT_TYPE = tuple[BaseAccount, str]
 
 
 class TokenAPIKeyHeader(APIKeyHeader):

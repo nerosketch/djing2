@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta, date
 from ipaddress import AddressValueError, IPv4Address
-from typing import Optional, List, Generator
+from typing import Optional, Generator
 
 from bitfield import BitField
 from pydantic import BaseModel
@@ -585,7 +585,7 @@ class Customer(IAddressContaining, BaseAccount):
             return tuple(name for name, state in self.markers if state)
         return ()
 
-    def set_markers(self, flag_names: List[str]):
+    def set_markers(self, flag_names: list[str]):
         flags = None
         for flag_name in flag_names:
             flag = getattr(Customer.markers, flag_name)
@@ -910,7 +910,7 @@ class Customer(IAddressContaining, BaseAccount):
             return str(raw_passw.passw_text)
 
     @property
-    def marker_icons(self) -> List[str]:
+    def marker_icons(self) -> list[str]:
         return [i for i in self.get_flag_icons()]
 
     class Meta:
