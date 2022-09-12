@@ -10,7 +10,6 @@ api_urls = [
     path("gateways/", include("gateways.urls", namespace="gateways")),
     path("devices/", include("devices.urls", namespace="devices")),
     path("customers/", include("customers.urls", namespace="customers")),
-    path("customer_comments/", include("customer_comments.urls", namespace="customer_comments")),
     path("customer_contract/", include("customer_contract.urls", namespace="customer_contract")),
     path("messenger/", include("messenger.urls", namespace="messenger")),
     path("tasks/", include("tasks.urls", namespace="tasks")),
