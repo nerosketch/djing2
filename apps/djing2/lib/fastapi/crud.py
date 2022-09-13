@@ -186,7 +186,11 @@ class CrudRouter(CRUDReadGenerator):
         self.update_schema = (
             update_schema
             if update_schema
-            else schema_factory(schema, pk_field_name=self._pk, name="Update")
+            else (
+                create_schema
+                if create_schema
+                else schema_factory(schema, pk_field_name=self._pk, name="Update")
+            )
         )
 
         if update_route:
