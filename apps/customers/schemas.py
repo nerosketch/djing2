@@ -1,4 +1,6 @@
 from typing import Optional
+
+from djing2.lib.fastapi.types import OrmConf
 from pydantic import validator
 
 from profiles.schemas import BaseAccountModelSchema, BaseAccountSchema
@@ -35,5 +37,4 @@ class CustomerModelSchema(BaseAccountModelSchema):
     def check_balance(cls, v):
         return round(v, 2)
 
-    class Config:
-        orm_mode = True
+    Config = OrmConf

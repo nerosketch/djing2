@@ -30,3 +30,7 @@ class Pagination(BaseModel):
 
 FIELD_OBJECTS_TYPE = OrderedDictType[str, DjangoField]
 COMPUTED_FIELD_OBJECTS_TYPE = OrderedDictType[str, PydanticField]
+
+
+class OrmConf:
+    orm_mode = True

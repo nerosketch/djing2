@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from django.utils.translation import gettext as _
+from djing2.lib.fastapi.types import OrmConf
 from pydantic import BaseModel, Field
 
 
@@ -19,8 +20,7 @@ class CustomerContractSchema(CustomerContractBaseSchema):
     id: int
     is_active: bool = False
 
-    class Config:
-        orm_mode = True
+    Config = OrmConf
 
 
 class CustomerContractAttachmentBaseSchema(BaseModel):
@@ -34,5 +34,4 @@ class CustomerContractAttachmentSchema(CustomerContractAttachmentBaseSchema):
     id: int
     create_time: datetime
 
-    class Config:
-        orm_mode = True
+    Config = OrmConf

@@ -1,5 +1,6 @@
 from datetime import date
 
+from djing2.lib.fastapi.types import OrmConf
 from pydantic import BaseModel
 
 
@@ -16,5 +17,4 @@ class CustomerCommentModelSchema(CustomerCommentModelBaseSchema):
     author_avatar: str
     can_remove: bool
 
-    class Config:
-        orm_mode = True
+    Config = OrmConf
