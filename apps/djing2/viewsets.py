@@ -19,6 +19,7 @@ from djing2.exceptions import UniqueConstraintIntegrityError
 
 
 class DjingModelViewSet(ModelViewSet):
+    # TODO: move it to FastAPI
     def perform_create(self, serializer, *args, **kwargs):
         try:
             inst = serializer.save(*args, **kwargs)

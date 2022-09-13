@@ -1,7 +1,8 @@
-from typing import Type, Optional, OrderedDict as OrderedDictType
+from typing import Type, Optional, OrderedDict as OrderedDictType, Any
 from collections import OrderedDict
 
-from pydantic import create_model
+from fastapi import APIRouter
+from pydantic import create_model, BaseModel
 from django.db.models import Model
 
 from .types import T, FIELD_OBJECTS_TYPE, COMPUTED_FIELD_OBJECTS_TYPE
@@ -43,3 +44,14 @@ def format_object(
         fname: getattr(model_item, fname, None) for fname, ob in computed_field_objects.items()
     })
     return r
+
+
+def get_initial(schema: Type[BaseModel]) -> dict:
+    return {fname: field.default for fname, field in schema.__fields__.items() if field.default}
+
+
+def create_get_initial_route(router: APIRouter, schema: Type[BaseModel], path: str = '/get_initial/'):
+    @router.get(path)
+    def get_initial_values():
+        return get_initial(schema)
+    return get_initial_values
