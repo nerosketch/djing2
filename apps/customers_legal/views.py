@@ -1,6 +1,14 @@
+from dataclasses import dataclass
+
+from customers.schemas import CustomerModelSchema
 from rest_framework.generics import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from fastapi import APIRouter, Request, Depends
+from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.crud import NOT_FOUND, CrudRouter
+from . import schemas
 
 from customers.serializers import CustomerModelSerializer
 from customers.models import Customer
@@ -8,6 +16,38 @@ from customers_legal import models
 from customers_legal import serializers
 from djing2.viewsets import DjingModelViewSet
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
+
+
+router = APIRouter(
+    prefix='/legal',
+    tags=['CustomerLegal'],
+    dependencies=[Depends(is_admin_auth_dependency)]
+)
+
+router.include_router(CrudRouter(
+    schema=schemas.CustomerLegalSchema,
+    queryset=models.CustomerLegalModel.objects.all(),
+    create_schema=schemas.CustomerLegalBaseSchema,
+    update_schema=schemas.CustomerLegalBaseSchema
+))
+
+
+@dataclass
+class LegalTypeItem:
+    value: int
+    label: str
+
+
+@router.get('/get_legal_types/', response_model=list[LegalTypeItem])
+def get_legal_types():
+    res = ({'value': k, 'label': v} for k, v in models.CustomerLegalIntegerChoices.choices)
+    return res
+
+
+@router.get('/{legal_id}/get_branches/', response_model=list[CustomerModelSchema])
+def get_branches(legal_id: int):
+    qs = Customer.objects.filter(customerlegalmodel=pk)
+    return (CustomerModelSchema.from_orm(c) for c in qs)
 
 
 class CustomerLegalDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelViewSet):
@@ -33,24 +73,6 @@ class CustomerLegalDynamicFieldContentModelViewSet(AbstractDynamicFieldContentMo
         return {
             'legal_customer_id': field_data.get('legal_customer')
         }
-
-
-class CustomerLegalModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerLegalModel.objects.all()
-    serializer_class = serializers.CustomerLegalModelSerializer
-
-    @action(methods=['get'], detail=False)
-    def get_legal_types(self, request):
-        res = ({'value': k, 'label': v} for k, v in models.CustomerLegalIntegerChoices.choices)
-        return Response(res)
-
-    @action(methods=['get'], detail=True)
-    def get_branches(self, request, pk=True):
-        qs = Customer.objects.filter(customerlegalmodel=pk)
-        ser = CustomerModelSerializer(instance=qs, many=True, context={
-            'request': request
-        })
-        return Response(ser.data)
 
 
 
