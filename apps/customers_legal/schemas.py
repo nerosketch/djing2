@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 from customers_legal.models import CustomerLegalIntegerChoices
+from django.conf import settings
 from djing2.lib.fastapi.types import OrmConf
 from profiles.schemas import BaseAccountSchema
 from pydantic import BaseModel, Field, validator

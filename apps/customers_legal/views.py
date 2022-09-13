@@ -1,22 +1,19 @@
 from dataclasses import dataclass
+from typing import Optional
 
-from customers.schemas import CustomerModelSchema
-from rest_framework.generics import get_object_or_404
-from rest_framework.decorators import action
-from rest_framework.response import Response
-
-from fastapi import APIRouter, Request, Depends
-from djing2.lib.fastapi.auth import is_admin_auth_dependency
-from djing2.lib.fastapi.crud import NOT_FOUND, CrudRouter
-from . import schemas
-
-from customers.serializers import CustomerModelSerializer
 from customers.models import Customer
+from customers.schemas import CustomerModelSchema
 from customers_legal import models
-from customers_legal import serializers
-from djing2.viewsets import DjingModelViewSet
+from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.crud import CrudRouter
+from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
+from djing2.lib.fastapi.perms import permission_check_dependency
+from djing2.lib.fastapi.types import IListResponse
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
+from fastapi import APIRouter, Depends
+from rest_framework.generics import get_object_or_404
 
+from . import schemas
 
 router = APIRouter(
     prefix='/legal',
@@ -27,8 +24,7 @@ router = APIRouter(
 router.include_router(CrudRouter(
     schema=schemas.CustomerLegalSchema,
     queryset=models.CustomerLegalModel.objects.all(),
-    create_schema=schemas.CustomerLegalBaseSchema,
-    update_schema=schemas.CustomerLegalBaseSchema
+    create_schema=schemas.CustomerLegalBaseSchema
 ))
 
 
@@ -44,9 +40,11 @@ def get_legal_types():
     return res
 
 
-@router.get('/{legal_id}/get_branches/', response_model=list[CustomerModelSchema])
+@router.get('/{legal_id}/get_branches/', response_model=list[CustomerModelSchema], dependencies=[Depends(
+    permission_check_dependency(perm_codename='customers.view_customer')
+)])
 def get_branches(legal_id: int):
-    qs = Customer.objects.filter(customerlegalmodel=pk)
+    qs = Customer.objects.filter(customerlegalmodel=legal_id)
     return (CustomerModelSchema.from_orm(c) for c in qs)
 
 
@@ -75,15 +73,27 @@ class CustomerLegalDynamicFieldContentModelViewSet(AbstractDynamicFieldContentMo
         }
 
 
+router.include_router(CrudRouter(
+    schema=schemas.LegalCustomerBankSchema,
+    queryset=models.LegalCustomerBankModel.objects.all(),
+    create_schema=schemas.LegalCustomerBankBaseSchema,
+    get_all_route=False
+), prefix='/bank')
 
 
-class LegalCustomerBankModelViewSet(DjingModelViewSet):
-    queryset = models.LegalCustomerBankModel.objects.all()
-    serializer_class = serializers.LegalCustomerBankModelSerializer
-    filterset_fields = ('legal_customer',)
+@router.get('/bank/', response_model=IListResponse[schemas.LegalCustomerBankSchema], dependencies=[Depends(
+    permission_check_dependency(perm_codename='customers_legal.view_legalcustomerbankmodel')
+)])
+@paginate_qs_path_decorator(schema=schemas.LegalCustomerBankSchema, db_model=models.LegalCustomerBankModel)
+def get_all_banks(legal_customer: Optional[int] = None):
+    qs = models.LegalCustomerBankModel.objects.all()
+    if legal_customer is not None:
+        qs = qs.filter(legal_customer_id=legal_customer)
+    return qs
 
 
-class CustomerLegalTelephoneModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerLegalTelephoneModel.objects.all()
-    serializer_class = serializers.CustomerLegalTelephoneModelSerializer
-
+router.include_router(CrudRouter(
+    schema=schemas.CustomerLegalTelephoneSchema,
+    queryset=models.CustomerLegalTelephoneModel.objects.all(),
+    create_schema=schemas.CustomerLegalTelephoneBaseSchema
+))
