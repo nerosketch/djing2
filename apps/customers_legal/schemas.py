@@ -30,6 +30,10 @@ class CustomerLegalSchema(CustomerLegalBaseSchema):
     id: int
     balance: float
 
+    @validator('fio')
+    def validate_fio(cls, full_fio: str) -> str:
+        return full_fio
+
     Config = OrmConf
 
 

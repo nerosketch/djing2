@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core import validators
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from djing2.lib import IntEnumEx
 
 from djing2.models import BaseAbstractModel
 from addresses.models import AddressModel
@@ -11,7 +12,7 @@ from groupapp.models import Group
 from customers.models import Customer
 
 
-class CustomerLegalIntegerChoices(models.IntegerChoices):
+class CustomerLegalIntegerChoices(IntEnumEx):
     NOT_CHOSEN = 0, _('Not chosen')
     LEGAL = 1, _('Legal customer')
     INDIVIDUAL = 2, _('Individual businessman')

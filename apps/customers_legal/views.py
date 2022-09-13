@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Optional
 
 from customers.models import Customer
@@ -9,8 +8,10 @@ from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
 from djing2.lib.fastapi.types import IListResponse
+from djing2.lib.fastapi.utils import create_get_initial_route
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from rest_framework.generics import get_object_or_404
 
 from . import schemas
@@ -21,24 +22,6 @@ router = APIRouter(
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
-router.include_router(CrudRouter(
-    schema=schemas.CustomerLegalSchema,
-    queryset=models.CustomerLegalModel.objects.all(),
-    create_schema=schemas.CustomerLegalBaseSchema
-))
-
-
-@dataclass
-class LegalTypeItem:
-    value: int
-    label: str
-
-
-@router.get('/get_legal_types/', response_model=list[LegalTypeItem])
-def get_legal_types():
-    res = ({'value': k, 'label': v} for k, v in models.CustomerLegalIntegerChoices.choices)
-    return res
-
 
 @router.get('/{legal_id}/get_branches/', response_model=list[CustomerModelSchema], dependencies=[Depends(
     permission_check_dependency(perm_codename='customers.view_customer')
@@ -46,6 +29,17 @@ def get_legal_types():
 def get_branches(legal_id: int):
     qs = Customer.objects.filter(customerlegalmodel=legal_id)
     return (CustomerModelSchema.from_orm(c) for c in qs)
+
+
+class LegalTypeItem(BaseModel):
+    value: int
+    label: str
+
+
+@router.get('/get_legal_types/', response_model=list[LegalTypeItem])
+def get_legal_types():
+    res = (LegalTypeItem(value=k, label=str(v)) for k, v in models.CustomerLegalIntegerChoices.choices)
+    return res
 
 
 class CustomerLegalDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelViewSet):
@@ -96,4 +90,16 @@ router.include_router(CrudRouter(
     schema=schemas.CustomerLegalTelephoneSchema,
     queryset=models.CustomerLegalTelephoneModel.objects.all(),
     create_schema=schemas.CustomerLegalTelephoneBaseSchema
+), prefix='/telephone')
+
+
+create_get_initial_route(
+    router=router,
+    schema=schemas.CustomerLegalSchema
+)
+
+router.include_router(CrudRouter(
+    schema=schemas.CustomerLegalSchema,
+    queryset=models.CustomerLegalModel.objects.all(),
+    create_schema=schemas.CustomerLegalBaseSchema
 ))
