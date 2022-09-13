@@ -54,6 +54,7 @@ class TokenAPIKeyHeader(APIKeyHeader):
                 detail=_("User inactive or deleted.")
             )
 
+        # TODO: Cash it
         user = get_right_user(token_instance.user)
         if not user:
             raise HTTPException(

@@ -112,7 +112,7 @@ class AddressesAPITestCase(APITestCase):
             'parent_type': AddressModelTypes.LOCALITY.value,
             'parent_addr_id': parent_addr
         })
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         return r.data
 
     def test_fetch_all_streets_from_region(self):
@@ -131,4 +131,3 @@ class AddressesAPITestCase(APITestCase):
         self.assertEqual(street['fias_address_level'], 7)
         self.assertEqual(street['fias_address_type'], 729)
         self.assertEqual(street['title'], 'Street12')
-
