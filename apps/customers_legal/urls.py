@@ -7,7 +7,6 @@ app_name = 'customers_legal'
 
 router = DefaultRouter()
 router.register('dynamic', views.CustomerLegalDynamicFieldContentModelViewSet)
-router.register('telephone', views.CustomerLegalTelephoneModelViewSet)
 
 urlpatterns = [
     path('', include(router.urls))
