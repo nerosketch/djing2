@@ -1,6 +1,7 @@
 from typing import Optional
 
 from django.utils.translation import gettext
+from djing2.lib.fastapi.types import OrmConf
 from pydantic import BaseModel, root_validator, Field
 from addresses.models import AddressModelTypes
 
@@ -44,5 +45,4 @@ class AddressModelSchema(BaseModel):
     fias_address_type_name: Optional[str]
     children_count: Optional[int]
 
-    class Config:
-        orm_mode = True
+    Config = OrmConf
