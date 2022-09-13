@@ -146,6 +146,7 @@ class CRUDReadGenerator(APIRouter):
         return qs
 
 
+# TODO: Make rights check for this
 class CrudRouter(CRUDReadGenerator):
     create_schema: Type[BaseModel]
     update_schema: Type[BaseModel]
