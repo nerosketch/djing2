@@ -1,3 +1,6 @@
+import pickle
+
+from django.conf import settings
 from fastapi import HTTPException, Depends
 from fastapi.security import APIKeyHeader
 from profiles.models import BaseAccount
@@ -6,9 +9,22 @@ from starlette.requests import Request
 from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 from djing2.lib.auth_backends import get_right_user
+from djing2.lib.redis import redis_proxy
 
 
 TOKEN_RESULT_TYPE = tuple[BaseAccount, str]
+REDIS_AUTH_CASHE_TTL = getattr(settings, 'REDIS_AUTH_CASHE_TTL', 3600)
+
+
+def get_token(token: str) -> Token:
+    cashe_key = f'redis_user_token_{token}'
+    data = redis_proxy.get(cashe_key)
+    if data is not None:
+        data = pickle.loads(data)
+        return data
+    token_instance = Token.objects.select_related("user").get(key=token)
+    redis_proxy.set(cashe_key, pickle.dumps(token_instance), ex=float(REDIS_AUTH_CASHE_TTL))
+    return token_instance
 
 
 class TokenAPIKeyHeader(APIKeyHeader):
@@ -41,7 +57,7 @@ class TokenAPIKeyHeader(APIKeyHeader):
         kw, token = divided_auth
 
         try:
-            token_instance = Token.objects.select_related("user").get(key=token)
+            token_instance = get_token(token)
         except Token.DoesNotExist:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
