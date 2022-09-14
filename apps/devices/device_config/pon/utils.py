@@ -1,6 +1,6 @@
-from typing import List, Optional
+from typing import Optional
 
-VlanList = List[int]
+VlanList = list[int]
 OptVlanList = Optional[VlanList]
 
 

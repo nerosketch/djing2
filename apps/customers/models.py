@@ -1,9 +1,10 @@
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from ipaddress import AddressValueError, IPv4Address
-from typing import Optional, List
+from typing import Optional, Generator
 
 from bitfield import BitField
+from pydantic import BaseModel
 from django.conf import settings
 from django.core import validators
 from django.db import connection, models, transaction
@@ -234,6 +235,14 @@ class CustomerQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
         return self.remove_filter('address_id').filter(address_id__in=addr_ids_raw_query)
 
 
+class CustomerAFKType(BaseModel):
+    timediff: timedelta
+    last_date: date
+    customer_id: int
+    customer_uname: str
+    customer_fio: str
+
+
 class CustomerManager(MyUserManager):
     def get_queryset(self):
         return super().get_queryset().filter(is_admin=False)
@@ -320,7 +329,7 @@ class CustomerManager(MyUserManager):
         }
 
     @staticmethod
-    def filter_afk(date_limit: Optional[datetime] = None, out_limit=50):
+    def filter_afk(date_limit: Optional[datetime] = None, out_limit=50) -> Generator[CustomerAFKType, None, None]:
         # TODO: кто продолжительное время не пользуется услугой
         if date_limit is None or not isinstance(date_limit, datetime):
             date_limit = datetime.now() - timedelta(days=60)
@@ -331,13 +340,13 @@ class CustomerManager(MyUserManager):
             res = cur.fetchone()
             while res is not None:
                 timediff, last_date, customer_id, customer_uname, customer_fio = res
-                yield {
-                    'timediff': timediff,
-                    'last_date': last_date,
-                    'customer_id': customer_id,
-                    'customer_uname': customer_uname,
-                    'customer_fio': customer_fio
-                }
+                yield CustomerAFKType(
+                    timediff=timediff,
+                    last_date=last_date,
+                    customer_id=customer_id,
+                    customer_uname=customer_uname,
+                    customer_fio=customer_fio
+                )
                 res = cur.fetchone()
 
     @staticmethod
@@ -576,7 +585,7 @@ class Customer(IAddressContaining, BaseAccount):
             return tuple(name for name, state in self.markers if state)
         return ()
 
-    def set_markers(self, flag_names: List[str]):
+    def set_markers(self, flag_names: list[str]):
         flags = None
         for flag_name in flag_names:
             flag = getattr(Customer.markers, flag_name)
@@ -901,7 +910,7 @@ class Customer(IAddressContaining, BaseAccount):
             return str(raw_passw.passw_text)
 
     @property
-    def marker_icons(self) -> List[str]:
+    def marker_icons(self) -> list[str]:
         return [i for i in self.get_flag_icons()]
 
     class Meta:

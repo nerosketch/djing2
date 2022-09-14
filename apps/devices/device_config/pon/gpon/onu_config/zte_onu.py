@@ -1,6 +1,6 @@
 import re
 import abc
-from typing import Optional, Tuple
+from typing import Optional
 from pexpect import TIMEOUT
 
 from django.utils.translation import gettext_lazy as _
@@ -175,7 +175,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         ch.close()
         return zte_utils.zte_onu_conv_to_num(rack_num=rack_num, fiber_num=fiber_num, port_num=free_onu_number)
 
-    def find_unregistered_onu(self, prompt: str, serial: str) -> Tuple[int, int, int]:
+    def find_unregistered_onu(self, prompt: str, serial: str) -> tuple[int, int, int]:
         # Find unregistered onu ↓
         ch = self.ch
         choice = ch.do_cmd("show gpon onu uncfg", ["No related information to show", f"{prompt}#"])

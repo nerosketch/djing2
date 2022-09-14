@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional
 
 from netfields import MACAddressField
 from django.contrib.sites.models import Site
@@ -191,7 +191,7 @@ class Device(IAddressContaining, BaseAbstractModel):
             Device.objects.filter(pk=self.pk).update(snmp_extra=None)
         return r
 
-    def fix_onu(self) -> Tuple[Optional[int], Optional[str]]:
+    def fix_onu(self) -> tuple[Optional[int], Optional[str]]:
         mng = self.get_pon_onu_device_manager()
         onu_sn, err_text = mng.find_onu()
         if onu_sn is not None:

@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, Optional
+from typing import Optional
 from datetime import datetime, date, timedelta
 from bitfield.models import BitField
 from django.core.exceptions import ValidationError
@@ -14,7 +14,7 @@ from djing2.models import BaseAbstractModel, BaseAbstractModelMixin
 from groupapp.models import Group
 
 
-def split_fio(fio: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def split_fio(fio: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """Try to split name, last_name, and surname."""
     full_fname = str(fio)
     full_name_list = full_fname.split()

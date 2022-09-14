@@ -1,5 +1,5 @@
 import abc
-from typing import Optional, Tuple, Type, TypeVar, overload
+from typing import Optional, Type, TypeVar, overload
 from dataclasses import dataclass
 from netaddr import EUI
 
@@ -69,7 +69,7 @@ class IVendorSpecific(abc.ABC):
         return default
 
     @abc.abstractmethod
-    def parse_option82(self, data) -> Optional[Tuple[str, str]]:
+    def parse_option82(self, data) -> Optional[tuple[str, str]]:
         raise NotImplementedError
 
     @abc.abstractmethod

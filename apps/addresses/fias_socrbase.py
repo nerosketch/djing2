@@ -1,4 +1,4 @@
-from typing import Generator, Any, Dict, Optional, Tuple
+from typing import Generator, Any, Optional
 from dataclasses import dataclass
 
 from djing2.lib import safe_int
@@ -493,7 +493,7 @@ class IAddressFIASType:
 
 class AddressFIASInfo:
     @staticmethod
-    def get_levels() -> Generator[Tuple[AddressFIASLevelType, str], Any, None]:
+    def get_levels() -> Generator[tuple[AddressFIASLevelType, str], Any, None]:
         for level, obj in _address_fias_info.items():
             name = obj.get('name')
             if name:
@@ -519,7 +519,7 @@ class AddressFIASInfo:
         return next(r, None)
 
     @staticmethod
-    def get_address_types_map() -> Dict[int, IAddressFIASType]:
+    def get_address_types_map() -> dict[int, IAddressFIASType]:
         levels = (level for level, _ in AddressFIASInfo.get_levels())
         return {
             a.addr_code: a for level in levels for a in AddressFIASInfo.get_address_types_by_level(level=level)

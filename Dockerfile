@@ -26,8 +26,9 @@ USER www-data
 
 CMD ./manage.py migrate \
     && ./manage.py loaddata initial_data \
-    # && ./manage.py compilemessages -l ru \
+     && ./manage.py compilemessages \
     # && ./manage.py shell -c "from create_initial_user import *; make_initial_user()"
-    #&& exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --workers 8
-    && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --reload
+    # --workers=(Total RAM in GB)
+    && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --workers $(free -g | awk 'NR == 2{print $2}')
+#    && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --reload
 

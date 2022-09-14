@@ -10,7 +10,7 @@ djangorestframework-guardian
 netaddr==0.8.0
 
 # db client for Postgres
-psycopg2-binary==2.8.6
+psycopg2-binary
 
 git+https://github.com/nerosketch/easysnmp.git#egg=easysnmp
 # pid==3.0.4
