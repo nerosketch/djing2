@@ -155,9 +155,6 @@ class AddressModel(IAddressObject, BaseAbstractModel):
     def is_locality(self):
         return self.address_type == AddressModelTypes.LOCALITY
 
-    def str_representation(self):
-        return self.full_title()
-
     def full_title(self):
         """
         Для текущего адреса получаем иерархию вверх, до страны.
