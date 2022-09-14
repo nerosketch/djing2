@@ -1,5 +1,5 @@
 import abc
-from typing import Optional, Tuple, Generator
+from typing import Optional, Generator
 from urllib.parse import urljoin
 
 from django.shortcuts import resolve_url
@@ -26,7 +26,7 @@ def get_messenger_model_by_uint(uint: int) -> Optional[ModelBase]:
     return next(fg, None)
 
 
-def get_messenger_model_info_generator() -> Generator[Tuple[str, int, ModelBase], None, None]:
+def get_messenger_model_info_generator() -> Generator[tuple[str, int, ModelBase], None, None]:
     return ((type_name, int_class[0], int_class[1]) for type_name, int_class in class_map.items())
 
 

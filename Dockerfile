@@ -29,6 +29,5 @@ CMD ./manage.py migrate \
     && ./manage.py compilemessages \
     # && ./manage.py shell -c "from create_initial_user import *; make_initial_user()"
     # --workers=(Total RAM in GB)
-    && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --workers $(vmstat -s | awk '{printf "%.0f\n", $1 / (1024 * 1024); exit}')
-    #&& exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --reload
-
+    && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --workers $(free -g | awk 'NR == 2{print $2}')
+#    && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --reload

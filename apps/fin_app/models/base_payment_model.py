@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List, Tuple, Type
+from typing import Optional, Type
 from django.utils.translation import gettext_lazy as _
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.contrib.sites.models import Site
@@ -139,7 +139,7 @@ def add_payment_type(code: int, gateway_model: Type[BasePaymentModel]):
     _payment_types.append((code, gateway_model.pay_system_title))
 
 
-def get_payment_types() -> List[Tuple[int, str]]:
+def get_payment_types() -> list[tuple[int, str]]:
     return _payment_types
 
 

@@ -1,10 +1,10 @@
-from rest_framework.test import APITestCase
-from rest_framework import status
+from djing2.lib.fastapi.test import DjingTestCase
+from starlette import status
 from addresses.models import AddressModel, AddressModelTypes
 from profiles.models import UserProfile
 
 
-class AddressesAPITestCase(APITestCase):
+class AddressesAPITestCase(DjingTestCase):
     def get(self, *args, **kwargs):
         return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
 
@@ -112,7 +112,7 @@ class AddressesAPITestCase(APITestCase):
             'parent_type': AddressModelTypes.LOCALITY.value,
             'parent_addr_id': parent_addr
         })
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         return r.data
 
     def test_fetch_all_streets_from_region(self):
@@ -131,4 +131,3 @@ class AddressesAPITestCase(APITestCase):
         self.assertEqual(street['fias_address_level'], 7)
         self.assertEqual(street['fias_address_type'], 729)
         self.assertEqual(street['title'], 'Street12')
-

@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from fastapi import HTTPException, Depends
 from fastapi.security import APIKeyHeader
 from profiles.models import BaseAccount
@@ -10,11 +8,11 @@ from rest_framework.authtoken.models import Token
 from djing2.lib.auth_backends import get_right_user
 
 
-TOKEN_API_RESULT_TYPE = Tuple[BaseAccount, str]
+TOKEN_RESULT_TYPE = tuple[BaseAccount, str]
 
 
 class TokenAPIKeyHeader(APIKeyHeader):
-    def __call__(self, request: Request) -> TOKEN_API_RESULT_TYPE:
+    def __call__(self, request: Request) -> TOKEN_RESULT_TYPE:
         token: str = request.headers.get(self.model.name)
         if not token:
             raise HTTPException(
@@ -56,6 +54,7 @@ class TokenAPIKeyHeader(APIKeyHeader):
                 detail=_("User inactive or deleted.")
             )
 
+        # TODO: Cash it
         user = get_right_user(token_instance.user)
         if not user:
             raise HTTPException(
@@ -68,9 +67,19 @@ class TokenAPIKeyHeader(APIKeyHeader):
 token_auth_dep = TokenAPIKeyHeader(name='Authorization')
 
 
-def is_admin_auth_dependency(token_auth: TOKEN_API_RESULT_TYPE = Depends(token_auth_dep)) -> TOKEN_API_RESULT_TYPE:
+def is_admin_auth_dependency(token_auth: TOKEN_RESULT_TYPE = Depends(token_auth_dep)) -> TOKEN_RESULT_TYPE:
     user, token = token_auth
     if not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Forbidden'
+        )
+    return user, token
+
+
+def is_superuser_auth_dependency(token_auth: TOKEN_RESULT_TYPE = Depends(token_auth_dep)) -> TOKEN_RESULT_TYPE:
+    user, token = token_auth
+    if not (user.is_admin and user.is_superuser):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='Forbidden'
