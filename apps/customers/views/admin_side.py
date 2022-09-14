@@ -95,12 +95,12 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         qs = super().get_queryset()
         return qs.annotate(
             lease_count=Count("customeripleasemodel"),
-            octsum=Sum(
-                "traf_cache__octets",
-                filter=Q(
-                    traf_cache__event_time__gt=datetime.now() - timedelta(minutes=5)
-                )
-            ),
+            # octsum=Sum(
+            #     "traf_cache__octets",
+            #     filter=Q(
+            #         traf_cache__event_time__gt=datetime.now() - timedelta(minutes=5)
+            #     )
+            # ),
         )
 
     def filter_queryset(self, queryset: CustomerQuerySet):
