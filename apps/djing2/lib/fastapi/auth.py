@@ -23,7 +23,7 @@ def get_token(token: str) -> Token:
         data = pickle.loads(data)
         return data
     token_instance = Token.objects.select_related("user").get(key=token)
-    redis_proxy.set(cashe_key, pickle.dumps(token_instance), ex=float(REDIS_AUTH_CASHE_TTL))
+    redis_proxy.set(cashe_key, pickle.dumps(token_instance), ex=int(REDIS_AUTH_CASHE_TTL))
     return token_instance
 
 
