@@ -1,12 +1,10 @@
-from typing import List
-
 from django.utils.translation import gettext_lazy as _
 
 from devices.device_config import expect_util
 from .zte_f601_bridge_config import ZteF601BridgeScriptModule
 
 
-VlanList = List[int]
+VlanList = list[int]
 
 
 def _get_onu_template(all_vids: VlanList, *args, **kwargs) -> tuple:

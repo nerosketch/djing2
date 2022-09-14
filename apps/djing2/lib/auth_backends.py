@@ -1,4 +1,5 @@
 from ipaddress import ip_address, AddressValueError
+from typing import Optional
 
 from django.contrib.auth.backends import ModelBackend
 
@@ -7,7 +8,7 @@ from networks.models import CustomerIpLeaseModel
 from profiles.models import BaseAccount, UserProfile
 
 
-def _get_right_user(base_user: BaseAccount):
+def get_right_user(base_user: BaseAccount) -> Optional[BaseAccount]:
     try:
         if base_user.is_staff:
             amodel = UserProfile
@@ -39,12 +40,15 @@ class DjingAuthBackend(ModelBackend):
                 auser = Customer.objects.get_by_natural_key(username)
             if not request or not request.META:
                 return auser
-            auser.auth_log(user_agent=request.META.get("HTTP_USER_AGENT"), remote_ip=request.META.get("REMOTE_ADDR"))
+            auser.auth_log(
+                user_agent=request.META.get("HTTP_USER_AGENT"),
+                remote_ip=request.META.get("HTTP_X_REAL_IP")
+            )
             return auser
 
-    def get_user(self, user_id):
+    def get_user(self, user_id) -> Optional[BaseAccount]:
         user = BaseAccount._default_manager.get(pk=user_id)
-        return _get_right_user(user)
+        return get_right_user(user)
 
 
 class LocationAuthBackend(DjingAuthBackend):
@@ -52,12 +56,14 @@ class LocationAuthBackend(DjingAuthBackend):
         if byip is None:
             return
         try:
-            remote_ip = ip_address(request.META.get("REMOTE_ADDR"))
-            ip_users = CustomerIpLeaseModel.objects.filter(
-                ip_address=str(remote_ip)
-            ).exclude(
-                customer=None
-            ).select_related('customer')
+            remote_ip = request.META.get(
+                "HTTP_X_REAL_IP",
+                request.META.get('REMOTE_ADDR')
+            )
+            if not remote_ip:
+                return
+            remote_ip = ip_address(remote_ip)
+            ip_users = CustomerIpLeaseModel.objects.filter(ip_address=str(remote_ip)).select_related('customer')
             if ip_users.exists():
                 ip_user = ip_users.first()
                 if ip_user and ip_user.customer:

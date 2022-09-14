@@ -1,13 +1,14 @@
 import pytz
+from enum import IntEnum
 from collections.abc import Iterator
 from datetime import timedelta, datetime
 from hashlib import sha256
 from typing import Any, Union, Optional
 
 from django.conf import settings
+from django.db.models.enums import ChoicesMeta
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.db.models import IntegerChoices
 from rest_framework.exceptions import ParseError, APIException
 from .process_lock import process_lock_decorator, ProcessLocked
 
@@ -131,7 +132,7 @@ def time2utctime(src_datetime) -> datetime:
     return tz.localize(src_datetime, is_dst=None).astimezone(pytz.utc)
 
 
-class IntEnumEx(IntegerChoices):
+class IntEnumEx(IntEnum, metaclass=ChoicesMeta):
     @classmethod
     def in_range(cls, value: int):
         return value in cls._value2member_map_

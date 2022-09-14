@@ -1,6 +1,6 @@
 import re
 from abc import abstractmethod
-from typing import Optional, Tuple, AnyStr
+from typing import Optional, AnyStr
 from transliterate import translit
 from django.conf import settings
 from django.utils.translation import gettext
@@ -132,7 +132,7 @@ class SwitchDeviceStrategy(BaseDeviceStrategy):
         """
         raise NotImplementedError
 
-    def reboot(self, save_before_reboot=False) -> Tuple[int, AnyStr]:
+    def reboot(self, save_before_reboot=False) -> tuple[int, AnyStr]:
         """
         Send signal reboot to device
         :param save_before_reboot:
@@ -200,7 +200,7 @@ class SwitchDeviceStrategyContext(BaseDeviceStrategyContext):
         """
         return self._current_dev_manager.read_mac_address_vlan(vid=vid)
 
-    def reboot(self, save_before_reboot=False) -> Tuple[int, AnyStr]:
+    def reboot(self, save_before_reboot=False) -> tuple[int, AnyStr]:
         """
         Send signal reboot to device
         :param save_before_reboot:

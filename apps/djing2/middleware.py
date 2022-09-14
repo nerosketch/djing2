@@ -1,3 +1,4 @@
+# TODO: deprecated, defined in 'fastapi_app.py'
 class XRealIPMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response

@@ -3,7 +3,6 @@ from functools import wraps
 
 from djing2 import celery_app
 from djing2.lib.logger import logger
-from djing2.lib.process_lock import process_lock_cm
 from networks import radius_commands as rc
 from networks.models import CustomerIpLeaseModel
 
@@ -27,8 +26,7 @@ def _radius_task_wrapper(fn):
     @wraps(fn)
     def _wrapped(*args, **kwargs):
         try:
-            with process_lock_cm(lock_name=fn.__name__):
-                return fn(*args, **kwargs)
+            return fn(*args, **kwargs)
         except rc.RadiusSessionNotFoundException as err:
             logger.error('Radius session not found: %s' % str(err))
         except rc.RadiusTimeoutException as err:

@@ -8,7 +8,7 @@ from sorm_export.hier_export.base import format_fname
 
 
 @celery_app.task
-def save_radius_acct(event_time: datetime, data: dict) -> None:
+def save_radius_acct(event_time: float, data: dict) -> None:
     line = [v for k, v in data.items()]
     with open(AAA_EXPORT_FNAME, "a") as f:
         csv_writer = csv.writer(f, dialect="unix", delimiter=";")

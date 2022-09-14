@@ -1,6 +1,6 @@
 import abc
 import csv
-from typing import Iterable, Dict
+from typing import Iterable
 from contextlib import contextmanager
 from django.core.management.base import BaseCommand, no_translations, CommandError
 
@@ -47,7 +47,7 @@ class BaseFileBasedCommand(BaseCommand):
         if val in content:
             raise CommandError(err_str % val)
 
-    def write2file(self, data: Iterable[Dict[str, str]]):
+    def write2file(self, data: Iterable[dict[str, str]]):
         with _ropen(self.store_fname, 'a') as f:
             csv_writer = csv.writer(f, dialect="unix", delimiter=";")
             for row_data in data:

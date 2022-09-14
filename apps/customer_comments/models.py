@@ -13,5 +13,13 @@ class CustomerCommentModel(models.Model):
     def __str__(self):
         return self.text
 
+    @property
+    def author_name(self) -> str:
+        return self.author.get_full_name()
+
+    @property
+    def author_avatar(self) -> str:
+        return self.author.get_avatar_url()
+
     class Meta:
         db_table = "customer_comments"

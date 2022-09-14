@@ -1,5 +1,5 @@
 import math
-from typing import Generator, Iterable, Dict
+from typing import Generator, Iterable
 
 from django.utils.translation import gettext_lazy as _
 
@@ -193,7 +193,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
     @staticmethod
-    def make_eltex_map_vlan(vids: Iterable[int]) -> Dict[int, bytes]:
+    def make_eltex_map_vlan(vids: Iterable[int]) -> dict[int, bytes]:
         """
         https://eltex-co.ru/upload/iblock/f69/MES_configuration_and_monitoring_via_SNMP_1.1.48.11,%202.5.48.11,%202.2.14.6.pdf
         :param vids: Vlan id iterable collection

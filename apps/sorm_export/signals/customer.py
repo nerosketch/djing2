@@ -111,7 +111,10 @@ def on_customer_change(instance: Customer):
 #                # 'actual_end_time':
 #            },
 #        ]
-#        customer_contact_export_task.delay(customer_tels=customer_tels, event_time=now)
+#        customer_contact_export_task.delay(
+#           customer_tels=customer_tels,
+#           event_time=now.timestamp()
+#        )
 #
 #    # export username if it changed
 #    if old_inst.username != instance.username:
@@ -150,7 +153,10 @@ def prevent_delete_customer_due2eol_export(sender, instance, **kwargs):
 #def customer_post_save_signal(sender, instance: Customer, created=False, **kwargs):
 #    if created:
 #        # export customer root record
-#        customer_root_export_task.delay(customer_id=instance.pk, event_time=datetime.now())
+#        customer_root_export_task.delay(
+#           customer_id=instance.pk,
+#           event_time=datetime.now().timestamp()
+#        )
 
 
 #@receiver(customer_service_post_pick, sender=Customer)
@@ -160,7 +166,8 @@ def prevent_delete_customer_due2eol_export(sender, instance, **kwargs):
 #
 #    # start service for customer
 #    customer_service_export_task(
-#        customer_service_id_list=[int(customer.current_service_id)], event_time=datetime.now()
+#        customer_service_id_list=[int(customer.current_service_id)],
+#        event_time=datetime.now().timestamp()
 #    )
 
 
@@ -221,7 +228,10 @@ def customer_service_deleted(sender, instance: CustomerService, **kwargs):
                 "end_time": datetime.now(),
             }
         ]
-        customer_service_manual_data_export_task.delay(data=dat, event_time=datetime.now())
+        customer_service_manual_data_export_task.delay(
+            data=dat,
+            event_time=datetime.now().timestamp()
+        )
 
 
 # @receiver(post_save, sender=CustomerRawPassword)
@@ -263,7 +273,10 @@ def customer_service_deleted(sender, instance: CustomerService, **kwargs):
 #            },
 #        ]
 #    instance.create_time = now
-#    customer_contact_export_task.delay(customer_tels=customer_tels, event_time=datetime.now())
+#    customer_contact_export_task.delay(
+#       customer_tels=customer_tels,
+#       event_time=datetime.now().timestamp()
+#    )
 
 
 #@receiver(pre_delete, sender=AdditionalTelephone)
@@ -279,7 +292,10 @@ def customer_service_deleted(sender, instance: CustomerService, **kwargs):
 #            "actual_end_time": now,
 #        }
 #    ]
-#    customer_contact_export_task.delay(customer_tels=customer_tels, event_time=now)
+#    customer_contact_export_task.delay(
+#       customer_tels=customer_tels,
+#       event_time=now.timestamp()
+#    )
 
 
 # @receiver(post_save, sender=PeriodicPayForId)

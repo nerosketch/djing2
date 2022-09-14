@@ -96,11 +96,11 @@ def payment_wrapper(request_serializer, response_serializer, root_tag: str):
                 r_ser = response_serializer(data=res)
                 r_ser.is_valid(raise_exception=True)
                 return Response({
-                    root_tag: r_ser.data
+                    root_tag: r_ser.validated_data
                 })
             except serializers_rncb.RNCBProtocolErrorException as e:
                 return Response({root_tag: {
-                    'ERROR': e.error,
+                    'ERROR': e.error.value,
                     'COMMENTS': _expand_str_from_err(e)
                 }}, status=e.status_code)
             except ValidationError as e:

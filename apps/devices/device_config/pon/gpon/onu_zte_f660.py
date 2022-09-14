@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Dict
+from typing import Optional
 
 from django.utils.translation import gettext_lazy as _
 
@@ -49,7 +49,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
     tech_code = "zte_onu"
     ports_len = 4
 
-    def get_details(self) -> Optional[Dict]:
+    def get_details(self) -> Optional[dict]:
         dev = self.model_instance
         if dev is None:
             return {}
@@ -174,7 +174,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         # for example 268501760.5
         zte_utils.split_snmp_extra(v)
 
-    def remove_from_olt(self, extra_data: Dict, **kwargs):
+    def remove_from_olt(self, extra_data: dict, **kwargs):
         dev = self.model_instance
         if not dev:
             return False

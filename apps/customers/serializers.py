@@ -47,6 +47,7 @@ def update_passw(acc, raw_password):
             models.CustomerRawPassword.objects.create(customer=acc, passw_text=raw_password)
 
 
+# TODO: deprecated: defined in customers.schemas.CustomerModelSchema
 class CustomerModelSerializer(BaseAccountSerializer):
     group_title = serializers.CharField(source="group.title", read_only=True)
 

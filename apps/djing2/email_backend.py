@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict
-from typing import List, Sequence
+from typing import Sequence
 from django.core.mail import EmailMessage
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.backends.smtp import EmailBackend
@@ -9,13 +9,13 @@ from djing2 import celery_app
 @dataclass
 class EmailMessageDataClass:
     from_email: str
-    recipients: List[str]
+    recipients: list[str]
     message: str
     subject: str = ''
 
 
 @celery_app.task
-def send_smtp_email_task(messages: List[dict]):
+def send_smtp_email_task(messages: list[dict]):
     msgs = (EmailMessageDataClass(**m) for m in messages)
     with EmailBackend() as conn:
         for msg in msgs:

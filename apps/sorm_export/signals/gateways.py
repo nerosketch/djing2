@@ -11,7 +11,7 @@ def on_gateway_save(sender, instance: Gateway, *args, **kwargs):
         return
     export_gateway_task.delay(
         gw_id=instance.pk,
-        event_time=datetime.now(),
+        event_time=datetime.now().timestamp(),
     )
 
 
@@ -24,8 +24,8 @@ def on_gateway_delete(sender, instance: Gateway, *args, **kwargs):
         gw_type=instance.get_gw_class_display(),
         descr=instance.title,
         gw_place=instance.place,
-        start_use_time=instance.create_time,
+        start_use_time=instance.create_time.timestamp(),
         ip_addr=instance.ip_address,
         ip_port=instance.ip_port,
-        event_time=datetime.now()
+        event_time=datetime.now().timestamp()
     )

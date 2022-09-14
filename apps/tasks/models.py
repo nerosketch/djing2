@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime, date
 from types import GeneratorType
-from typing import Tuple, Optional
+from typing import Optional
 
 from django.contrib.sites.models import Site
 from django.db import models, connection
@@ -139,7 +139,7 @@ class TaskQuerySet(models.QuerySet):
         return self.values("mode").annotate(task_count=models.Count("pk")).order_by("mode")
 
     @staticmethod
-    def task_state_percent(task_state: int) -> Tuple[int, float]:
+    def task_state_percent(task_state: int) -> tuple[int, float]:
         """
         Returns percent of specified task state
         :param task_state: int of task state

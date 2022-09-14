@@ -15,12 +15,12 @@ def on_delete_device(sender, instance: Device, *args, **kwargs):
     if instance.address:
         send_device_on_delete_task.delay(
             device_id=instance.pk,
-            switch_type=DeviceSwitchTypeChoices.INTERNAL,        # TODO: change this hard coding
-            network_type=CommunicationStandardChoices.ETHERNET,  # TODO: change this hard coding
+            switch_type=DeviceSwitchTypeChoices.INTERNAL.value,        # TODO: change this hard coding
+            network_type=CommunicationStandardChoices.ETHERNET.value,  # TODO: change this hard coding
             descr=instance.comment,
             place=instance.address.full_title(),
-            start_usage_time=instance.create_time,
-            event_time=datetime.now()
+            start_usage_time=instance.create_time.timestamp(),
+            event_time=datetime.now().timestamp()
         )
 
 
@@ -29,5 +29,5 @@ def on_update_device(sender, instance=Device, created=False, *args, **kwargs):
     if instance.address:
         send_device_update_task.delay(
             device_id=int(instance.pk),
-            event_time=datetime.now()
+            event_time=datetime.now().timestamp()
         )
