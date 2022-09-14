@@ -1,10 +1,10 @@
-from rest_framework.test import APITestCase
-from rest_framework import status
+from djing2.lib.fastapi.test import DjingTestCase
+from starlette import status
 from addresses.models import AddressModel, AddressModelTypes
 from profiles.models import UserProfile
 
 
-class AddressesAPITestCase(APITestCase):
+class AddressesAPITestCase(DjingTestCase):
     def get(self, *args, **kwargs):
         return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
 
