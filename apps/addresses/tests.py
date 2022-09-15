@@ -5,11 +5,11 @@ from profiles.models import UserProfile
 
 
 class AddressesAPITestCase(DjingTestCase):
-    def get(self, *args, **kwargs):
-        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
+    def get(self, url: str, data):
+        return self.c.get(url, data=data)
 
-    def post(self, *args, **kwargs):
-        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
+    def post(self, url: str, data):
+        return self.c.post(url, data=data)
 
     def setUp(self):
         # Make addr hierarchy
@@ -95,8 +95,8 @@ class AddressesAPITestCase(DjingTestCase):
             'fias_address_type': 905,
             'title': 'винный подвал'
         })
-        data = r.data
-        self.assertEqual(r.status_code, status.HTTP_201_CREATED, msg=r.data)
+        data = r.json()
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED, msg=data)
         self.assertEqual(data['parent_addr_title'], '7')
         self.assertEqual(data['fias_address_level_name'], 'Помещение в пределах здания, сооружения')
         self.assertEqual(data['fias_address_type_name'], 'п-б')
@@ -112,7 +112,7 @@ class AddressesAPITestCase(DjingTestCase):
             'parent_type': AddressModelTypes.LOCALITY.value,
             'parent_addr_id': parent_addr
         })
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.json())
         return r.data
 
     def test_fetch_all_streets_from_region(self):
