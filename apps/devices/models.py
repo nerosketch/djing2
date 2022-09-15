@@ -5,7 +5,6 @@ from netfields import MACAddressField
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import APIException
 
 from djing2.lib import MyChoicesAdapter
 from djing2.lib.mixins import RemoveFilterQuerySetMixin
@@ -48,7 +47,7 @@ class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
                 addr_type=AddressModelTypes.LOCALITY
             )
         if not addr_query.exists():
-            raise APIException('Addr locality filter is empty')
+            return self
         return self.remove_filter('address_id').filter(
             address__in=AddressModel.objects.get_address_recursive_ids(addr_query.first().pk)
         )
