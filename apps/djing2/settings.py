@@ -151,7 +151,7 @@ WSGI_APPLICATION = "djing2.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": "django.db.backends.postgresql",
         "CONN_MAX_AGE": os.getenv('CONN_MAX_AGE', 300),
         "NAME": os.getenv("POSTGRES_DB", "djing2"),
         "USER": os.getenv("POSTGRES_USER", "postgres"),
