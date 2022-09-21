@@ -296,7 +296,7 @@ class CustomerIpLeaseModel(models.Model):
             res = cur.fetchone()
         return res[0] if len(res) > 0 else False
 
-    @process_lock_decorator()
+    # @process_lock_decorator()
     def ping_icmp(self, num_count=10, arp=False) -> bool:
         host_ip = str(self.ip_address)
         return icmp_ping(ip_addr=host_ip, count=num_count, arp=arp)
