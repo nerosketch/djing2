@@ -168,9 +168,9 @@ class AccessPointExportTree(ExportTree[Customer]):
             ))
             return
 
-        addr_parent_street = _addr2str(addr.get_address_item_by_type(
+        addr_parent_street = addr.get_address_item_by_type(
             addr_type=AddressModelTypes.STREET
-        ))
+        )
         if not addr_parent_street:
             logger.error(
                 _('Customer "%s" with login "%s" address has no parent street element') % (
@@ -194,7 +194,7 @@ class AccessPointExportTree(ExportTree[Customer]):
             "ap_id": addr.pk,
             "customer_id": customer.pk,
             "house": addr_house or addr_office,
-            "parent_id_ao": addr_parent_street,
+            "parent_id_ao": addr_parent_street.pk,
             "house_num": addr_house or None,
             "builing": addr_building,
             "building_corpus": addr_corpus or None,
