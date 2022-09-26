@@ -2,6 +2,7 @@ from typing import Optional
 from django.db import models, connection
 from django.db.models import Q, Count
 from django.utils.translation import gettext_lazy as _
+from djing2.exceptions import ModelValidationError
 from rest_framework.exceptions import ValidationError
 
 from djing2.lib import safe_int, IntEnumEx
@@ -219,10 +220,21 @@ class AddressModel(IAddressObject, BaseAbstractModel):
             pk=self.pk
         )
         if qs.exists():
-            raise ValidationError(
-                'У родительского адресного объекта не может '
-                'быть такой же тип как у родителя'
+            raise ModelValidationError(
+                detail='У родительского адресного объекта не может '
+                'быть такой же тип адреса'
             )
+
+        # Нельзя чтобы address_type=OTHER был ниже чем street
+        if int(self.address_type) == AddressModelTypes.OTHER.value:
+            street_qs = AddressModel.objects.get_address_by_type(
+                addr_id=self.pk,
+                addr_type=AddressModelTypes.STREET
+            )
+            if street_qs.exists():
+                raise ModelValidationError(
+                    detail='Нельзя указывать тип OTHER ниже улицы'
+                )
         return super().save(*args, **kwargs)
 
     def __str__(self):
