@@ -55,10 +55,10 @@ def export_all_address_objects():
         address_type__in=[
             AddressModelTypes.STREET,
             AddressModelTypes.LOCALITY,
-            AddressModelTypes.HOUSE,
-            AddressModelTypes.OFFICE_NUM,
-            AddressModelTypes.BUILDING,
-            AddressModelTypes.CORPUS,
+            # AddressModelTypes.HOUSE,
+            # AddressModelTypes.OFFICE_NUM,
+            # AddressModelTypes.BUILDING,
+            # AddressModelTypes.CORPUS,
             AddressModelTypes.OTHER,
         ],
     ).order_by(

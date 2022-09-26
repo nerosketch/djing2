@@ -28,7 +28,6 @@ class ExportTree(Generic[T]):
     _recursive: bool
     _event_time: datetime
     _extra_kwargs: Optional[dict]
-    parent_dependencies = ()
 
     def __init__(self, recursive=True, event_time: Optional[datetime] = None, extra_kwargs: Optional[dict] = None):
         self._recursive = recursive

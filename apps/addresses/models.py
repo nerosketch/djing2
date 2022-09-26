@@ -3,7 +3,6 @@ from django.db import models, connection
 from django.db.models import Q, Count
 from django.utils.translation import gettext_lazy as _
 from djing2.exceptions import ModelValidationError
-from rest_framework.exceptions import ValidationError
 
 from djing2.lib import safe_int, IntEnumEx
 from djing2.models import BaseAbstractModel
@@ -222,7 +221,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         if qs.exists():
             raise ModelValidationError(
                 detail='У родительского адресного объекта не может '
-                'быть такой же тип адреса'
+                       'быть такой же тип адреса'
             )
 
         # Нельзя чтобы address_type=OTHER был ниже чем street
