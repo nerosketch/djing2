@@ -160,8 +160,9 @@ class CustomerAccessPointAddressObjectFormat(serializers.Serializer):
     # reserved, ao - address object
     id_ao = serializers.CharField(default='', required=False)
     # 7
-    parent_id_ao = serializers.IntegerField(
+    parent_id_ao = serializers.CharField(
         label=_('Parent ao id'),
+        max_length=128,
         required=True
     )  # AddressObjectFormat.address_id
     # 8
