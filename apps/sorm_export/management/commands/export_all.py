@@ -2,9 +2,10 @@ from datetime import datetime
 from typing import Any
 
 from django.core.management.base import BaseCommand
+from django.db import models
 from rest_framework.exceptions import ValidationError
 
-from addresses.models import AddressModel, AddressModelTypes
+from addresses.models import AddressModel
 from customers.models import CustomerService, AdditionalTelephone
 from customers_legal.models import CustomerLegalModel
 from devices.device_config.device_type_collection import DEVICE_TYPES
@@ -51,16 +52,21 @@ def export_all_customer_contracts():
 
 
 def export_all_address_objects():
+    query = (
+        "WITH RECURSIVE streets(id, parent_addr_id) AS ( "
+            "SELECT id, parent_addr_id "
+            "FROM addresses "
+            "WHERE fias_address_type IN (6576, 729, 762) "
+            "UNION "
+            "SELECT a.id, a.parent_addr_id "
+            "FROM streets c "
+            "LEFT JOIN addresses a ON a.id = c.parent_addr_id "
+        ") "
+        "SELECT id FROM streets WHERE id IS NOT NULL GROUP BY id"
+    )
+    under_street_ao_ids_query = models.expressions.RawSQL(sql=query, params=())
     addr_objects = AddressModel.objects.filter(
-        address_type__in=[
-            AddressModelTypes.STREET,
-            AddressModelTypes.LOCALITY,
-            # AddressModelTypes.HOUSE,
-            # AddressModelTypes.OFFICE_NUM,
-            # AddressModelTypes.BUILDING,
-            # AddressModelTypes.CORPUS,
-            AddressModelTypes.OTHER,
-        ],
+        pk__in=under_street_ao_ids_query
     ).order_by(
         "fias_address_level",
         "fias_address_type"
