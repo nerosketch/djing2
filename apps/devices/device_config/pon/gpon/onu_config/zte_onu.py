@@ -235,7 +235,5 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
 
 def build_trunk_native_from_vids(vids):
     native_vids = {vid.get("vid") for vid in vids if vid.get("native", False)}
-    native_vids = list(native_vids)
     trunk_vids = {vid.get("vid") for vid in vids if not vid.get("native", False)}
-    trunk_vids = list(trunk_vids)
-    return native_vids, trunk_vids
+    return list(native_vids), list(trunk_vids)

@@ -49,7 +49,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
     tech_code = "zte_onu"
     ports_len = 4
 
-    def get_details(self) -> Optional[dict]:
+    def get_details(self, sn_prefix='ZTEG', mac_prefix='45:47') -> Optional[dict]:
         dev = self.model_instance
         if dev is None:
             return {}
@@ -72,9 +72,9 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         sn = snmp.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
         if sn is not None:
             if isinstance(sn, bytes):
-                sn = "ZTEG%s" % "".join("%.2X" % int(x) for x in sn[-4:])
+                sn = f"{sn_prefix}%s" % "".join("%.2X" % int(x) for x in sn[-4:])
             else:
-                sn = "ZTEG%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
+                sn = f"{sn_prefix}%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
 
         status_map = {1: "ok", 2: "down"}
         return {
@@ -82,7 +82,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1" % fiber_addr)), "unknown"
             ),
             "signal": zte_utils.conv_zte_signal(signal),
-            "mac": zte_utils.sn_to_mac(sn),
+            "mac": zte_utils.sn_to_mac(sn, prefix=mac_prefix),
             "info": (
                 (_("name"), snmp.get_item(".1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s" % fiber_addr)),
                 # 'distance': safe_float(distance) / 10,
@@ -169,7 +169,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                     native=True
                 )] + _get_trunk_vlans(port_num=i),
             )
-            for i in range(1, 5)
+            for i in range(1, self.ports_len+1)
         )
 
     @staticmethod
@@ -177,7 +177,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         # for example 268501760.5
         zte_utils.split_snmp_extra(v)
 
-    def remove_from_olt(self, extra_data: dict, **kwargs):
+    def remove_from_olt(self, extra_data: dict, sn_prefix='ZTEG', mac_prefix='45:47', **kwargs):
         dev = self.model_instance
         if not dev:
             return False
@@ -195,10 +195,10 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             sn = snmp.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
         if sn is not None:
             if isinstance(sn, str):
-                sn = "ZTEG%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
+                sn = f"{sn_prefix}%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
             else:
-                sn = "ZTEG%s" % "".join("%.2X" % x for x in sn[-4:])
-            sn_mac = zte_utils.sn_to_mac(sn)
+                sn = f"{sn_prefix}%s" % "".join("%.2X" % x for x in sn[-4:])
+            sn_mac = zte_utils.sn_to_mac(sn, prefix=mac_prefix)
             if str(dev.mac_addr) != sn_mac:
                 raise expect_util.ExpectValidationError(_("Mac of device not equal mac by snmp"))
             return _remove_zte_onu_from_olt(
