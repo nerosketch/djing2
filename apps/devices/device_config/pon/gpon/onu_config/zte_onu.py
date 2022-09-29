@@ -53,8 +53,8 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         sn = self.format_sn_from_mac(mac=mac)
 
         @process_lock_decorator(lock_name="zte_olt")
-        def _locked_register_onu(device_config_type: ZteOnuDeviceConfigType, *args, **kwargs):
-            return device_config_type.register_onu(*args, **kwargs)
+        def _locked_register_onu(device_config_type: ZteOnuDeviceConfigType, *largs, **lkwargs):
+            return device_config_type.register_onu(*largs, **lkwargs)
 
         try:
             onu_snmp = _locked_register_onu(

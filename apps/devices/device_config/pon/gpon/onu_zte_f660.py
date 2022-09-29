@@ -4,11 +4,11 @@ from typing import Optional
 from django.utils.translation import gettext_lazy as _
 
 from djing2.lib import safe_int, process_lock_decorator
-from devices.device_config.base import DeviceConsoleError
+from devices.device_config.base import DeviceConsoleError, Vlan
 from devices.device_config import expect_util
 from .onu_config.zte_onu import ZteOnuDeviceConfigType
 from . import zte_utils
-from ..epon.epon_bdcom_fora import EPON_BDCOM_FORA
+from ..epon.epon_bdcom_fora import EPON_BDCOM_FORA, DefaultVlanDC
 from ..pon_device_strategy import PonONUDeviceStrategyContext
 from ...base_device_strategy import SNMPWorker
 
@@ -93,23 +93,23 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             ),
         }
 
-    def default_vlan_info(self):
+    def default_vlan_info(self) -> list[DefaultVlanDC]:
         default_vid = 1
         dev = self.model_instance
         if dev and dev.parent_dev and dev.parent_dev.extra_data:
             default_vid = dev.parent_dev.extra_data.get("default_vid", 1)
-        def_vids = [{"vid": default_vid, "native": True}]
+        def_vids = [Vlan(vid=default_vid, native=True)]
         return [
-            {"port": 1, "vids": def_vids},
-            {"port": 2, "vids": def_vids},
-            {"port": 3, "vids": def_vids},
-            {"port": 4, "vids": def_vids},
+            DefaultVlanDC(port=1, vids=def_vids),
+            DefaultVlanDC(port=2, vids=def_vids),
+            DefaultVlanDC(port=3, vids=def_vids),
+            DefaultVlanDC(port=4, vids=def_vids),
         ]
 
     def read_onu_vlan_info(self):
         dev = self.model_instance
         if dev is None:
-            return
+            return []
         snmp_extra = dev.snmp_extra
         if not snmp_extra:
             return self.default_vlan_info()
@@ -128,7 +128,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 )
             )
 
-        def _get_trunk_vlans(port_num: int) -> list:
+        def _get_trunk_vlans(port_num: int) -> list[Vlan]:
             trunk_vlans = snmp.get_item(
                 ".1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%(fiber_num)d.%(onu_num)d.1.%(port_num)d"
                 % {"port_num": port_num, "fiber_num": fiber_num, "onu_num": onu_num}
@@ -148,7 +148,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             vids = (
                 tuple(t) if isinstance(t, range) else (t,) for t in map(_rng, filter(bool, trunk_vlans.split(b",")))
             )
-            return [{"vid": v, "native": False} for i in vids for v in i]
+            return [Vlan(vid=v, native=False) for i in vids for v in i]
 
         # Result example
         # [
@@ -162,10 +162,13 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         #     }
         # ]
         return (
-            {
-                "port": i,
-                "vids": [{"vid": _get_access_vlan(port_num=i), "native": True}] + _get_trunk_vlans(port_num=i),
-            }
+            DefaultVlanDC(
+                port=i,
+                vids=[Vlan(
+                    vid=_get_access_vlan(port_num=i),
+                    native=True
+                )] + _get_trunk_vlans(port_num=i),
+            )
             for i in range(1, 5)
         )
 

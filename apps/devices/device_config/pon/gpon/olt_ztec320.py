@@ -1,8 +1,8 @@
-from typing import Iterable
+from typing import Iterable, Generator
 
 from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock_decorator
 from devices.device_config.base import Vlans, Vlan
-from ..pon_device_strategy import PonOLTDeviceStrategyContext
+from ..pon_device_strategy import PonOLTDeviceStrategyContext, FiberDataClass
 from ..epon.bdcom_p3310c import BDCOM_P3310C
 from ...base_device_strategy import SNMPWorker
 
@@ -13,14 +13,14 @@ class ZTE_C320(BDCOM_P3310C):
     description = "OLT ZTE C320"
     ports_len = 8
 
-    def get_fibers(self):
+    def get_fibers(self) -> Generator[FiberDataClass, None, None]:
         dev = self.model_instance
         snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         fibers = (
-            {
-                "fb_id": int(fiber_id),
-                "fb_name": fiber_name,
-                "fb_onu_num": safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.13.1.1.13.%d" % int(fiber_id))),
+            FiberDataClass(
+                fb_id=int(fiber_id),
+                fb_name=fiber_name,
+                fb_onu_num=safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.13.1.1.13.%d" % int(fiber_id))),
                 # 'fb_active_onu': -1,
                 # Temperature GPON SFP module
                 # 'fb_temp': safe_float(self.get_item(
@@ -30,7 +30,7 @@ class ZTE_C320(BDCOM_P3310C):
                 # 'fb_power': safe_float(self.get_item(
                 #     '.1.3.6.1.4.1.3902.1015.3.1.13.1.9.%d' % safe_int(fiber_id)
                 # )) / 1000.0
-            }
+            )
             for fiber_name, fiber_id in snmp.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.13.1.1.1")
         )
         return fibers
