@@ -16,6 +16,11 @@ def parse_opt82(remote_id: bytes, circuit_id: bytes) -> tuple[Optional[EUI], int
 
     if circuit_id.startswith(b"ZTE"):
         mac = remote_id.decode()
+    elif circuit_id.startswith(b'0x48575443'):
+        sn = int(circuit_id[2:], base=16).to_bytes(12, 'big')
+        sn = sn[4:]
+        mac = '54:43:%s' % b':'.join(sn[n:n + 2] for n in range(0, len(sn), 2)).decode()
+        del sn
     else:
         try:
             port = safe_int(circuit_id[-1:][0])
