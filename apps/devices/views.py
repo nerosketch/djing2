@@ -107,7 +107,7 @@ class DevicePONViewSet(FilterQuerySetMixin, DjingModelViewSet):
         if hasattr(manager, "get_fibers"):
             unregistered = []
             for fb in manager.get_fibers():
-                for unr in manager.get_units_unregistered(int(fb.get("fb_id"))):
+                for unr in manager.get_units_unregistered(int(fb.fb_id)):
                     unregistered.append(unr)
             return Response(unregistered)
         return DeviceImplementationError("Manager has not get_fibers attribute")

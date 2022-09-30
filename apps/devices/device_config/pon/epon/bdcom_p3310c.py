@@ -1,17 +1,32 @@
+from dataclasses import dataclass
 from typing import Generator
-from collections import namedtuple
+
 from easysnmp import EasySNMPTimeoutError
 from django.utils.translation import gettext_lazy as _
 
 from devices.device_config.base_device_strategy import SNMPWorker
 from djing2.lib import safe_int, RuTimedelta, safe_float, macbin2str
 from ...base import Vlans, Vlan
-from ...pon.pon_device_strategy import PonOltDeviceStrategy, PonOLTDeviceStrategyContext
+from ...pon.pon_device_strategy import PonOltDeviceStrategy, PonOLTDeviceStrategyContext, FiberDataClass
 
 
-ONUdevPort = namedtuple("ONUdevPort", "num name status mac signal uptime fiberid")
+@dataclass
+class ONUdevPort:
+    num: int
+    name: str
+    status: bool
+    mac: str
+    signal: float
+    uptime: int
+    fiberid: int
+
 
 _DEVICE_UNIQUE_CODE = 2
+
+
+@dataclass
+class BdcomFiberDataClass(FiberDataClass):
+    fb_active_onu: int
 
 
 class BDCOM_P3310C(PonOltDeviceStrategy):
@@ -65,19 +80,19 @@ class BDCOM_P3310C(PonOltDeviceStrategy):
         except EasySNMPTimeoutError as e:
             raise EasySNMPTimeoutError("{} ({})".format(_("wait for a reply from the SNMP Timeout"), e)) from e
 
-    def get_fibers(self):
+    def get_fibers(self) -> tuple[BdcomFiberDataClass]:
         dev = self.model_instance
         snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         fibers = tuple(
-            {
-                "fb_id": int(fiber_id),
-                "fb_name": "EPON0/%d" % fiber_num,
-                "fb_active_onu": safe_int(snmp.get_item(".1.3.6.1.4.1.3320.101.6.1.1.21.%d" % int(fiber_id))),
+            BdcomFiberDataClass(
+                fb_id=int(fiber_id),
+                fb_name="EPON0/%d" % fiber_num,
+                fb_active_onu=safe_int(snmp.get_item(".1.3.6.1.4.1.3320.101.6.1.1.21.%d" % int(fiber_id))),
                 # 'fb_onu_ids': tuple(int(i) for i in self.get_item_plain(
                 #     '.1.3.6.1.4.1.3320.101.6.1.1.23.%d' % int(fiber_id)).split(',') if i
                 # ),
-                "fb_onu_num": safe_int(registered_onu_count),
-            }
+                fb_onu_num=safe_int(registered_onu_count),
+            )
             for fiber_num, (registered_onu_count, fiber_id) in enumerate(
                 snmp.get_list_keyval(".1.3.6.1.4.1.3320.101.6.1.1.2"), 1
             )
@@ -89,7 +104,7 @@ class BDCOM_P3310C(PonOltDeviceStrategy):
         with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
             return snmp.get_item(".1.3.6.1.2.1.1.5.0")
 
-    def get_uptime(self):
+    def get_uptime(self) -> RuTimedelta:
         dev = self.model_instance
         with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:
             up_timestamp = safe_int(snmp.get_item(".1.3.6.1.2.1.1.9.1.4.1"))
