@@ -42,7 +42,6 @@ class DeviceWithoutGroupModelSerializer(BaseCustomModelSerializer):
             'vlans',
             'code',
             'create_time',
-            'place'
         ]
 
 
