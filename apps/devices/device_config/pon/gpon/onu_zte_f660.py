@@ -76,9 +76,17 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             else:
                 sn = f"{sn_prefix}%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
 
-        raw_status = snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1" % fiber_addr)
+        raw_status = snmp.get_item(".1.3.6.1.4.1.3902.1012.3.28.2.1.4.%s" % fiber_addr)
 
-        status_map = {1: "ok", 2: "down"}
+        status_map = {
+            0: "logging",
+            1: "los",
+            2: "syncMib",
+            3: "working",
+            4: "dyinggasp",
+            5: "authFailed",
+            6: "offline"
+        }
         return {
             "status": status_map.get(
                 safe_int(raw_status), "unknown"
