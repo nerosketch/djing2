@@ -76,10 +76,12 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             else:
                 sn = f"{sn_prefix}%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
 
+        raw_status = snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1" % fiber_addr)
+
         status_map = {1: "ok", 2: "down"}
         return {
             "status": status_map.get(
-                safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1" % fiber_addr)), "unknown"
+                safe_int(raw_status), "unknown"
             ),
             "signal": zte_utils.conv_zte_signal(signal),
             "mac": zte_utils.sn_to_mac(sn, prefix=mac_prefix),
