@@ -208,17 +208,14 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         """Нельзя чтобы у адресного объекта его тип был таким же как и у родителя.
            Например улица не может находится в улице, дом в доме, а город в городе.
         """
-        qs = AddressModel.objects.annotate(
-            # Считаем всех потомков, у которых тип адреса как у родителя
-            children_addrs_count=Count('addressmodel', filter=Q(
-                addressmodel__fias_address_type=self.fias_address_type
-            ))
-        ).filter(
-            Q(parent_addr__fias_address_type=self.fias_address_type) |  # Сверяемся с родителем
-            Q(children_addrs_count__gt=0),
-            pk=self.pk
+        qs = AddressModel.objects.get_address_recursive_ids(
+            addr_id=self.pk,
+            direction_down=False
         )
-        if qs.exists():
+        if AddressModel.objects.filter(
+            pk__in=qs,
+            fias_address_type=self.fias_address_type
+        ).exists():
             raise ModelValidationError(
                 detail='У родительского адресного объекта не может '
                        'быть такой же тип адреса'
@@ -232,7 +229,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
             )
             if street_qs.exists():
                 raise ModelValidationError(
-                    detail='Нельзя указывать тип OTHER ниже улицы'
+                    detail=f'Нельзя указывать тип {_("Other")} ниже улицы'
                 )
         return super().save(*args, **kwargs)
 
