@@ -23,6 +23,7 @@ def get_application() -> FastAPI:
         title='djing2',
         openapi_url="/api/openapi.json",
         debug=settings.DEBUG,
+        swagger_ui_parameters={"docExpansion": "none"},
     )
 
     # Set all CORS enabled origins

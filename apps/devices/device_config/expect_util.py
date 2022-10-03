@@ -1,4 +1,6 @@
 import sys
+from typing import Union
+
 from pexpect.pty_spawn import spawn, TIMEOUT
 
 from devices.device_config.base import DeviceTimeoutError
@@ -21,7 +23,7 @@ class MySpawn(spawn):
         super().__init__(encoding="utf-8", timeout=120, *args, **kwargs)
         self.logfile = sys.stdout
 
-    def do_cmd(self, c, prompt):
+    def do_cmd(self, c: str, prompt: Union[str, list[str]]):
         try:
             self.sendline(c)
             return self.expect_exact(prompt)

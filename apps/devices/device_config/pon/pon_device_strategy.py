@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Generator, Optional, Iterable
 from abc import abstractmethod
 
@@ -7,6 +8,13 @@ from devices.device_config.base_device_strategy import (
     BaseDeviceStrategy
 )
 from djing2.lib import macbin2str
+
+
+@dataclass
+class FiberDataClass:
+    fb_id: int
+    fb_name: str
+    fb_onu_num: int
 
 
 class PonOltDeviceStrategy(BaseDeviceStrategy):
@@ -26,7 +34,7 @@ class PonOltDeviceStrategy(BaseDeviceStrategy):
         raise NotImplementedError
 
     @abstractmethod
-    def get_fibers(self) -> Generator:
+    def get_fibers(self) -> Generator[FiberDataClass, None, None]:
         raise NotImplementedError
 
     def get_units_unregistered(self, *args, **kwargs) -> Iterable:
@@ -55,7 +63,7 @@ class PonOLTDeviceStrategyContext(BaseDeviceStrategyContext):
     def scan_onu_list(self) -> Generator:
         return self._current_dev_manager.scan_onu_list()
 
-    def get_fibers(self) -> Generator:
+    def get_fibers(self):
         return self._current_dev_manager.get_fibers()
 
     def get_units_unregistered(self, *args, **kwargs):

@@ -865,8 +865,8 @@ class Customer(IAddressContaining, BaseAccount):
                 if lease.ping_icmp():
                     return _("Ping ok"), True
                 else:
-                    arping_enabled = getattr(settings, "ARPING_ENABLED", False)
-                    if arping_enabled and lease.ping_icmp(arp=True):
+                    # arping_enabled = getattr(settings, "ARPING_ENABLED", False)
+                    if lease.ping_icmp(arp=False):
                         return _("arp ping ok"), True
             return _("no ping"), False
         except ProcessLocked:

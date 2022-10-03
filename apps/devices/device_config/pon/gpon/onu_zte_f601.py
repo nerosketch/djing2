@@ -1,3 +1,6 @@
+from devices.device_config.base import Vlan
+from devices.device_config.pon.epon.epon_bdcom_fora import DefaultVlanDC
+
 from .onu_zte_f660 import OnuZTE_F660
 from ..pon_device_strategy import PonONUDeviceStrategyContext
 
@@ -15,12 +18,14 @@ class OnuZTE_F601(OnuZTE_F660):
 
         return [ZteF601BridgeScriptModule, ZteF601StaticScriptModule]
 
-    def default_vlan_info(self):
+    def default_vlan_info(self) -> list[DefaultVlanDC]:
         default_vid = 1
         dev = self.model_instance
         if dev and dev.parent_dev and dev.parent_dev.extra_data:
             default_vid = dev.parent_dev.extra_data.get("default_vid", 1)
-        return [{"port": 1, "vids": [{"vid": default_vid, "native": True}]}]
+        return [DefaultVlanDC(port=1, vids=[
+            Vlan(vid=default_vid, native=True)
+        ])]
 
     def read_onu_vlan_info(self):
         r = super().read_onu_vlan_info()

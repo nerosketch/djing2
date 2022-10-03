@@ -63,12 +63,12 @@ def get_free_registered_onu_number(lines):
     return onu_olt_num + 1
 
 
-def sn_to_mac(sn: str):
+def sn_to_mac(sn: str, prefix='45:47:'):
     if not sn:
         return
     t = sn[4:].lower()
-    r = tuple(t[i : i + 2] for i in range(0, len(t), 2))
-    return "45:47:%s" % ":".join(r)
+    r = tuple(t[i: i + 2] for i in range(0, len(t), 2))
+    return "%s:%s" % (prefix, ":".join(r))
 
 
 def zte_onu_conv_to_num(rack_num: int, fiber_num: int, port_num: int):

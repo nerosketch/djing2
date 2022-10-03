@@ -1,3 +1,4 @@
+from django.utils.translation import gettext
 from fastapi import Depends, HTTPException
 from profiles.models import BaseAccount
 from starlette import status
@@ -6,7 +7,7 @@ from .auth import is_admin_auth_dependency
 
 PERMISSION_DENIED = HTTPException(
     status_code=status.HTTP_403_FORBIDDEN,
-    detail='Permission denied, check your rights.'
+    detail=gettext('Permission denied, check your rights.')
 )
 
 

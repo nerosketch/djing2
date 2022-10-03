@@ -337,7 +337,7 @@ REST_FRAMEWORK = {
         # 'djing2.permissions.CustomizedDjangoObjectPermissions'
     ],
     'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
+        'djing2.lib.renderer.CustomJSONRenderer',
         'rest_framework_csv.renderers.CSVRenderer',
     ]
 }
@@ -417,3 +417,8 @@ PAYME_CREDENTIALS = get_secret("PAYME_CREDENTIALS")
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'pyamqp://user:passw@djing2rabbitmq/')
+CELERY_SERIALIZER = 'msgpack'
+
+REDIS_HOST = os.getenv('REDIS_HOST', 'djing2redis')
+REDIS_PORT = os.getenv('REDIS_PORT', 6379)
+REDIS_AUTH_CASHE_TTL = os.getenv('REDIS_AUTH_CASHE_TTL', 3600)
