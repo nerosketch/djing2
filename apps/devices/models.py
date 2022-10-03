@@ -102,15 +102,6 @@ class Device(IAddressContaining, BaseAbstractModel):
         AddressModel, on_delete=models.SET_NULL, blank=True, null=True, default=None
     )
 
-    # deprecated
-    place = models.CharField(
-        _("Device place address"),
-        max_length=256,
-        null=True,
-        blank=True,
-        default=None
-    )
-
     sites = models.ManyToManyField(Site, blank=True)
 
     objects = DeviceModelQuerySet.as_manager()

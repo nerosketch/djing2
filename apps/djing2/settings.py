@@ -337,7 +337,7 @@ REST_FRAMEWORK = {
         # 'djing2.permissions.CustomizedDjangoObjectPermissions'
     ],
     'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
+        'djing2.lib.renderer.CustomJSONRenderer',
         'rest_framework_csv.renderers.CSVRenderer',
     ]
 }
