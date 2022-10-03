@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Iterable, Generator
 
 from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock_decorator
@@ -7,6 +8,16 @@ from ..epon.bdcom_p3310c import BDCOM_P3310C
 from ...base_device_strategy import SNMPWorker
 
 _DEVICE_UNIQUE_CODE = 5
+
+
+@dataclass(frozen=True)
+class UnregisteredUnitType:
+    mac: str
+    firmware_ver: str
+    loid: str
+    loid_passw: str
+    fiber: str
+    sn: str
 
 
 class ZTE_C320(BDCOM_P3310C):
@@ -81,23 +92,25 @@ class ZTE_C320(BDCOM_P3310C):
 
         return onu_list
 
-    def get_units_unregistered(self, fiber_num: int):
+    def get_units_unregistered(self, fiber: FiberDataClass) -> Generator[UnregisteredUnitType, None, None]:
+        fiber_num = fiber.fb_id
         dev = self.model_instance
         snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
-        sn_num_list = snmp.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.13.3.1.2.%d" % fiber_num)
+        sn_list = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.2.%d" % fiber_num)
         firmware_ver = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.11.%d" % fiber_num)
         loid_passws = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.9.%d" % fiber_num)
         loids = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.8.%d" % fiber_num)
 
         return (
-            {
-                "mac": macbin2str(sn[-6:]),
-                "firmware_ver": frm_ver,
-                "loid_passw": loid_passw,
-                "loid": loid,
-                "sn": "ZTEG" + "".join("%.2x" % i for i in sn[-4:]).upper(),
-            }
-            for frm_ver, loid_passw, loid, (sn, num) in zip(firmware_ver, loid_passws, loids, sn_num_list)
+            UnregisteredUnitType(
+                mac=macbin2str(sn[-6:]),
+                firmware_ver=frm_ver,
+                loid_passw=loid_passw,
+                loid=loid,
+                fiber=fiber.fb_name,
+                sn=sn[:4].decode() + ''.join('%.2x' % i for i in sn[-4:]).upper(),
+            )
+            for frm_ver, loid_passw, loid, sn in zip(firmware_ver, loid_passws, loids, sn_list)
         )
 
     def get_uptime(self):
