@@ -228,7 +228,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         if AddressModel.objects.filter(
             pk__in=qs,
             fias_address_type=self.fias_address_type
-        ).exists():
+        ).exclude(pk=self.pk).exists():
             raise ModelValidationError(
                 detail='У родительского адресного объекта не может '
                        'быть такой же тип адреса'
