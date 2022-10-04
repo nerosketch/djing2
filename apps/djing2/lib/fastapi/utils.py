@@ -1,4 +1,4 @@
-from typing import Type, Optional, OrderedDict as OrderedDictType, Any
+from typing import Type, Optional, OrderedDict as OrderedDictType
 from collections import OrderedDict
 
 from fastapi import APIRouter
