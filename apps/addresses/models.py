@@ -208,6 +208,19 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         """Нельзя чтобы у адресного объекта его тип был таким же как и у родителя.
            Например улица не может находится в улице, дом в доме, а город в городе.
         """
+
+        # Уровень родительского элемента должен быть больше чем у детей
+        if self.parent_addr.fias_address_level > int(self.fias_address_level):
+            raise ModelValidationError(
+                detail=(
+                    'Выбран уровень(%s), который выше уровня родительского элемента(%d). '
+                    'Не надо так, он должен быть меньше.' % (
+                        self.fias_address_level,
+                        self.parent_addr.fias_address_level
+                    )
+                )
+            )
+
         qs = AddressModel.objects.get_address_recursive_ids(
             addr_id=self.pk,
             direction_down=False
