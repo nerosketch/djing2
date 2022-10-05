@@ -304,10 +304,9 @@ TELEPHONE_REGEXP = os.getenv("TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
 API_AUTH_SECRET = get_secret("API_AUTH_SECRET")
 
 # Allowed subnet for api
-# API_AUTH_SUBNET = os.getenv("API_AUTH_SUBNET", ("127.0.0.0/8", "10.0.0.0/8"))
-API_AUTH_SUBNET = ('127.0.0.0/8', '172.0.0.0/8')
-# if API_AUTH_SUBNET and isinstance(API_AUTH_SUBNET, str) and '|' in API_AUTH_SUBNET:
-#     API_AUTH_SUBNET = API_AUTH_SUBNET.split('|')
+API_AUTH_SUBNET = os.getenv("API_AUTH_SUBNET", ("127.0.0.0/8", "10.0.0.0/8"))
+if API_AUTH_SUBNET and isinstance(API_AUTH_SUBNET, str) and '|' in API_AUTH_SUBNET:
+    API_AUTH_SUBNET = API_AUTH_SUBNET.split('|')
 
 
 # public url for messenger bot
