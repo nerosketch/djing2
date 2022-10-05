@@ -1,5 +1,6 @@
 from typing import Optional
 
+from djing2.lib.fastapi.auth import token_auth_dep
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
 from pydantic import BaseModel
@@ -16,6 +17,7 @@ from addresses import schemas
 router = APIRouter(
     prefix='/addrs',
     tags=['address'],
+    dependencies=[Depends(token_auth_dep)]
 )
 
 _base_addr_queryset = AddressModel.objects.annotate(
