@@ -553,6 +553,7 @@ class Customer(IAddressContaining, BaseAccount):
         ("icon_red_tel", _("Red phone")),
         ("icon_green_tel", _("Green phone")),
         ('icon_doc', _('Document')),
+        ('icon_reddoc', _('Red document')),
     )
     markers = BitField(flags=MARKER_FLAGS, default=0)
 
