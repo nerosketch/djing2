@@ -19,3 +19,5 @@ apps/devices/device_config/custom/*.py
 secrets/
 .env
 touch_reload
+.run/
+.vscode/

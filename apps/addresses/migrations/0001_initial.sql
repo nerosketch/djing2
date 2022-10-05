@@ -5,7 +5,7 @@ SELECT setval('addresses_id_seq', (SELECT max(id) as mid from addresses));
 
 -- Create country item
 INSERT INTO addresses (address_type, fias_address_level, fias_address_type, title)
-VALUES (64, 1, 1, 'Россия');
+VALUES (64, 1, 1, 'Country');
 
 -- Attach customers to addresses
 -- UPDATE customers SET address_id = group_id;

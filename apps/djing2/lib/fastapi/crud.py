@@ -2,14 +2,13 @@ from typing import Type, Optional, Union, Any, Callable, OrderedDict as OrderedD
 
 from django.db.models import QuerySet, Model
 from django.db.utils import IntegrityError
-from djing2.lib.fastapi._fields_cache import build_model_and_schema_fields
-from djing2.lib.fastapi.types import Pagination
 from fastapi.params import Depends
 from pydantic import BaseModel
 from fastapi import HTTPException, status, Request, APIRouter
 from fastapi.types import DecoratedCallable
 
-from .types import DEPENDENCIES, IListResponse
+from ._fields_cache import build_model_and_schema_fields
+from .types import DEPENDENCIES, IListResponse, Pagination
 from .utils import schema_factory, format_object
 from .pagination import paginate_qs_path_decorator
 
