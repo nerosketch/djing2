@@ -245,11 +245,6 @@ class PeriodicPayForIdRequestSerializer(serializers.Serializer):
 """
 
 
-class RadiusCustomerServiceRequestSerializer(serializers.Serializer):
-    customer_ip = serializers.CharField(max_length=32)
-    password = serializers.CharField(max_length=32)
-
-
 class CustomerAttachmentSerializer(BaseCustomModelSerializer):
     author = serializers.PrimaryKeyRelatedField(read_only=True)
     author_name = serializers.CharField(source="author.get_full_name", read_only=True)
@@ -273,4 +268,3 @@ class SuperUserGetCustomerTokenByPhoneSerializer(serializers.Serializer):
     telephone = serializers.CharField(
         validators=(telephoneValidator,)
     )
-
