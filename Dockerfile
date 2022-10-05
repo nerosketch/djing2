@@ -24,7 +24,7 @@ WORKDIR /var/www/djing2
 
 USER www-data
 
-RUN ["python", "./manage.py", "compilemessages"]
+RUN ["django-admin", "compilemessages"]
 
 CMD ./manage.py migrate \
     && ./manage.py loaddata initial_data \
