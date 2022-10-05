@@ -11,7 +11,7 @@ from django.db import models, connection, InternalError
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField, CidrAddressField
 from djing2 import ping as icmp_ping
-from djing2.lib import process_lock_decorator, LogicError, safe_int
+from djing2.lib import LogicError, safe_int
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
 from customers.models import Customer

@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
             field=models.DateTimeField(blank=True, default=datetime.now, null=True, verbose_name='Lease time'),
         ),
         migrations.RunSQL(
-            sql="DROP FUNCTION IF EXISTS find_new_ip_pool_lease(varchar, boolean, smallint, smallint)"
+            sql="DROP FUNCTION IF EXISTS find_new_ip_pool_lease(integer, boolean, smallint, smallint)"
         ),
         migrations.RunSQL(
             sql="DROP FUNCTION IF EXISTS create_lease_w_auto_pool(inet, macaddr, int, varchar, uuid, smallint, smallint)"
