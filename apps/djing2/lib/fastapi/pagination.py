@@ -1,10 +1,10 @@
 from functools import wraps
 from typing import Optional, Type
 
-from djing2.lib.fastapi._fields_cache import build_model_and_schema_fields
 from fastapi import Request, Depends
 from django.db.models import QuerySet, Model
 
+from ._fields_cache import build_model_and_schema_fields
 from .types import (
     Pagination,
     PYDANTIC_SCHEMA,

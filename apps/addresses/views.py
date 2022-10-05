@@ -99,7 +99,7 @@ def filter_by_fias_level(level: AddressFIASLevelType):
 @router.get('/get_ao_types/', response_model=list[IAddressFIASType])
 def get_ao_types(level: AddressFIASLevelType):
     """Get all address object types."""
-    return AddressFIASInfo.get_address_types_by_level(level=level)
+    return list(AddressFIASInfo.get_address_types_by_level(level=level))
 
 
 @router.get('/{addr_id}/get_parent/', response_model=Optional[schemas.AddressModelSchema])
