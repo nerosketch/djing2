@@ -1,4 +1,4 @@
-from typing import Optional, Type, overload
+from typing import Optional, Type, overload, Mapping
 from netaddr import EUI
 from djing2.lib import macbin2str, safe_int, LogicError
 
@@ -44,7 +44,7 @@ class VendorManager:
         else:
             raise RuntimeError('Something went wrong in assigning vendor class')
 
-    def get_opt82(self, data):
+    def get_opt82(self, data: Mapping[str, str]):
         if self.vendor_class:
             return self.vendor_class.parse_option82(data=data)
 
@@ -102,7 +102,7 @@ class VendorManager:
             raise RuntimeError('Vendor class not specified')
         return self.vendor_class.get_speed(speed=speed)
 
-    def get_counters(self, data: dict) -> RadiusCounters:
+    def get_counters(self, data: Mapping[str, str]) -> RadiusCounters:
         """Parse counters info from radius Acct Update request and return it"""
 
         if self.vendor_class:
@@ -118,8 +118,8 @@ class VendorManager:
                 db_result=db_result
             )
 
-    def get_acct_status_type(self, request):
+    def get_acct_status_type(self, request_data):
         if self.vendor_class:
-            return self.vendor_class.get_acct_status_type(request)
+            return self.vendor_class.get_acct_status_type(request_data)
         else:
             raise LogicError('Vendor class not instantiated')

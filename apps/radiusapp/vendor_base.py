@@ -1,8 +1,9 @@
 import abc
-from typing import Optional, Type, TypeVar, overload
 from dataclasses import dataclass
-from netaddr import EUI
+from typing import Optional, Type, TypeVar, overload, Mapping
+
 from djing2.lib import LogicError, safe_int, IntEnumEx
+from netaddr import EUI
 
 
 @dataclass
@@ -89,7 +90,7 @@ class IVendorSpecific(abc.ABC):
         return default
 
     @abc.abstractmethod
-    def parse_option82(self, data) -> Optional[tuple[str, str]]:
+    def parse_option82(self, data: Mapping[str, str]) -> Optional[tuple[str, str]]:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -115,9 +116,9 @@ class IVendorSpecific(abc.ABC):
     def get_speed(speed: SpeedInfoStruct) -> SpeedInfoStruct:
         speed_in = speed.speed_in * 1000000.0
         speed_out = speed.speed_out * 1000000.0
-        #brst_in = speed_in / 8.0 * 1.5
+        # brst_in = speed_in / 8.0 * 1.5
         brst_in = speed_in / 8.0
-        #brst_out = speed_in / 8.0 * 1.5
+        # brst_out = speed_in / 8.0 * 1.5
         brst_out = speed_in / 8.0
         return SpeedInfoStruct(
             speed_in=speed_in,
@@ -127,7 +128,7 @@ class IVendorSpecific(abc.ABC):
         )
 
     @abc.abstractmethod
-    def get_counters(self, data: dict) -> RadiusCounters:
+    def get_counters(self, data: Mapping[str, str]) -> RadiusCounters:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -137,9 +138,8 @@ class IVendorSpecific(abc.ABC):
     ) -> Optional[dict]:
         raise NotImplementedError
 
-    def get_acct_status_type(self, request) -> AcctStatusType:
-        dat = request.data
-        act_type = self.get_rad_val(dat, "Acct-Status-Type", str)
+    def get_acct_status_type(self, request_data) -> AcctStatusType:
+        act_type = self.get_rad_val(request_data, "Acct-Status-Type", str)
         if isinstance(act_type, int) or (isinstance(act_type, str) and act_type.isdigit()):
             act_type = int(act_type)
             r_map = {

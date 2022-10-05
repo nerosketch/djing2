@@ -1,3 +1,5 @@
+from typing import Mapping
+
 from netaddr import EUI
 from rest_framework import status
 from radiusapp.vendor_base import (
@@ -10,8 +12,8 @@ from radiusapp.vendor_base import (
 class JuniperVendorSpecific(IVendorSpecific):
     vendor = "juniper"
 
-    def parse_option82(self, data):
-        aget_remote_id = self.get_rad_val(data, "ADSL-Agent-Remote-Id" ,str)
+    def parse_option82(self, data: dict):
+        aget_remote_id = self.get_rad_val(data, "ADSL-Agent-Remote-Id", str)
         aget_circ_id = self.get_rad_val(data, "ADSL-Agent-Circuit-Id", str)
         return aget_remote_id, aget_circ_id
 
@@ -32,7 +34,7 @@ class JuniperVendorSpecific(IVendorSpecific):
             return int(param.split(":")[1].split("-")[0])
         return param
 
-    def get_counters(self, data: dict) -> RadiusCounters:
+    def get_counters(self, data: Mapping[str, str]) -> RadiusCounters:
         v_inp_oct = gigaword_imp(
             num=self.get_rad_val(data, "Acct-Input-Octets", int, 0),
             gwords=self.get_rad_val(data, "Acct-Input-Gigawords", int, 0),
