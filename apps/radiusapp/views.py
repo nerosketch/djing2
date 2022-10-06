@@ -3,7 +3,6 @@ from typing import Optional, Mapping, Any
 
 from customers.models import CustomerService, Customer
 from django.db import connection
-from django.db.models import F
 from django.utils.translation import gettext_lazy as _
 from djing2.lib import LogicError, safe_int
 from djing2.lib.logger import logger
@@ -73,28 +72,60 @@ def _assign_global_guest_lease(customer_mac, vlan_id: Optional[int], svid: Optio
     )
 
 
-def _update_leases(lease: CustomerIpLeaseModel, customer_mac: EUI,
-                   customer_id: int, vlan_id: int, service_vlan_id: int,
-                   radius_unique_id: str, radius_username: str,
-                   curr_time: Optional[datetime] = None):
-    if curr_time is None:
-        curr_time = datetime.now()
-    updated_lease_count = CustomerIpLeaseModel.objects.filter(pk__in=lease).update(
-        mac_address=customer_mac,
-        customer=customer_id,
-        input_octets=0,
-        output_octets=0,
-        input_packets=0,
-        output_packets=0,
-        cvid=vlan_id,
-        svid=service_vlan_id,
-        state=False,  # Set True in acct start
-        lease_time=curr_time,
-        last_update=curr_time,
-        session_id=radius_unique_id,
-        radius_username=radius_username,
-    )
-    return updated_lease_count
+def _find_and_assign_lease(customer_mac: EUI, pool_kind: NetworkIpPoolKind,
+                           customer_id: int, vlan_id: int, service_vlan_id: int,
+                           radius_unique_id: str, radius_username: str):
+    sql = """WITH lease(id, ip_address) AS (
+    SELECT nil.id, nil.ip_address
+    FROM networks_ip_leases nil
+             LEFT JOIN networks_ip_pool nip ON (nil.pool_id = nip.id)
+             LEFT JOIN networks_vlan nv ON (nip.vlan_if_id = nv.id)
+    WHERE nv.vid = %(cvid)s::smallint
+      AND nip.is_dynamic
+      AND nip.kind = %(pool_kind)s::smallint
+      AND nil.ip_address >= nip.ip_start
+      AND nil.ip_address <= nip.ip_end
+      AND nil.is_dynamic
+      AND (
+            (nil.customer_id = %(customer_id)s::integer AND nil.mac_address = %(mac_address)s::macaddr)
+                OR
+            (nil.customer_id IS NULL AND nil.mac_address IS NULL)
+        )
+      AND nil.state is false
+    LIMIT 1
+)
+UPDATE networks_ip_leases unil
+SET mac_address     = %(mac_address)s::macaddr,
+    customer_id     = %(customer_id)s::integer,
+    input_octets    = 0,
+    output_octets   = 0,
+    input_packets   = 0,
+    output_packets  = 0,
+    cvid            = %(cvid)s::smallint,
+    svid            = %(svid)s::smallint,
+    lease_time      = now(),
+    last_update     = now(),
+    session_id      = %(session_id)s::uuid,
+    radius_username = %(radius_uname)s
+WHERE unil.id IN (SELECT id FROM lease)
+RETURNING (SELECT ip_address FROM lease);
+"""
+    with connection.cursor() as cur:
+        cur.execute(sql, {
+            'mac_address': str(customer_mac),
+            'customer_id': customer_id,
+            'cvid': vlan_id,
+            'svid': service_vlan_id,
+            'session_id': radius_unique_id,
+            'pool_kind': pool_kind.value,
+            'radius_uname': radius_username
+        })
+        r = cur.fetchone()
+
+    if r and r[0]:
+        ip = r[0]
+        return ip
+    return None
 
 
 @router.post('/auth/{vendor_name}/')
@@ -144,31 +175,16 @@ def auth(vendor_name: str, request_data: Mapping[str, str] = Body(...)):
             # assign new lease
             #  with transaction.atomic():
             # find one free lease, and update it for customer
-            lease = CustomerIpLeaseModel.objects.filter(
-                pool__vlan_if__vid=vlan_id,
-                pool__is_dynamic=True,
-                pool__kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
-                ip_address__gte=F('pool__ip_start'),
-                ip_address__lte=F('pool__ip_end'),
-                is_dynamic=F('pool__is_dynamic'),
-                customer=None,
-                cvid=0, svid=0,
-                state=False
-            )[:1]
-            updated_lease_count = _update_leases(
-                lease,
+            db_info.ip_address = _find_and_assign_lease(
                 customer_mac=customer_mac,
+                pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
                 customer_id=db_info.id,
                 vlan_id=vlan_id,
                 service_vlan_id=service_vlan_id,
-                curr_time=now,
                 radius_unique_id=radius_unique_id,
                 radius_username=radius_username
             )
-            if updated_lease_count > 0:
-                lease = lease.only('ip_address').values('ip_address').first()
-                if lease is not None and lease.get('ip_address') is not None:
-                    db_info.ip_address = lease.get('ip_address')
+            db_info.mac_address = customer_mac
     else:
         # auth by mac. Find static lease.
         db_info = _get_customer_and_service_and_lease_by_mac(
@@ -188,31 +204,16 @@ def auth(vendor_name: str, request_data: Mapping[str, str] = Body(...)):
     # If ip does not exists, then assign guest lease
     if not db_info.ip_address:
         # assign new guest lease
-        lease = CustomerIpLeaseModel.objects.filter(
-            pool__vlan_if__vid=vlan_id,
-            pool__is_dynamic=True,
-            pool__kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
-            ip_address__gte=F('pool__ip_start'),
-            ip_address__lte=F('pool__ip_end'),
-            is_dynamic=True,
-            customer=None,
-            cvid=0, svid=0,
-            state=False
-        )[:1]
-        updated_lease_count = _update_leases(
-            lease,
+        db_info.ip_address = _find_and_assign_lease(
             customer_mac=customer_mac,
+            pool_kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
             customer_id=db_info.id,
             vlan_id=vlan_id,
             service_vlan_id=service_vlan_id,
-            curr_time=now,
             radius_unique_id=radius_unique_id,
-            radius_username=radius_username
+            radius_username=radius_username,
         )
-        if updated_lease_count > 0:
-            lease = lease.only('ip_address').values('ip_address').first()
-            if lease is not None and lease.get('ip_address') is not None:
-                db_info.ip_address = lease.get('ip_address')
+        db_info.mac_address = customer_mac
 
     if not db_info.ip_address:
         logger.error('Failed to assign ip address for mac: %s, opt82: %s' % (customer_mac, str(opt82)))
@@ -341,33 +342,33 @@ def _get_customer_and_service_and_lease_by_device_credentials(
 ) -> Optional[CustomerServiceLeaseResult]:
     sql = (
         "SELECT ba.id, "
-        "ba.username, "
-        "ba.is_active, "
-        "cs.balance, "
-        "cs.is_dynamic_ip, "
-        "cs.auto_renewal_service, "
-        "cs.current_service_id, "
-        "cs.dev_port_id, "
-        "cs.device_id, "
-        "cs.gateway_id, "
-        "srv.speed_in, "
-        "srv.speed_out, "
-        "srv.speed_burst, "
-        "nip.ip_address, "
-        "nip.mac_address, "
-        "nip.is_dynamic "
+          "ba.username, "
+          "ba.is_active, "
+          "cs.balance, "
+          "cs.is_dynamic_ip, "
+          "cs.auto_renewal_service, "
+          "cs.current_service_id, "
+          "cs.dev_port_id, "
+          "cs.device_id, "
+          "cs.gateway_id, "
+          "srv.speed_in, "
+          "srv.speed_out, "
+          "srv.speed_burst, "
+          "nip.ip_address, "
+          "nip.mac_address, "
+          "nip.is_dynamic "
         "FROM customers cs "
-        "LEFT JOIN device dv ON (dv.id = cs.device_id) "
-        "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
-        "LEFT JOIN device_dev_type_is_use_dev_port ddtiudptiu ON (ddtiudptiu.dev_type = dv.dev_type) "
-        "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
-        "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
-        "LEFT JOIN services srv ON srv.id = custsrv.service_id "
-        "LEFT JOIN networks_ip_leases nip ON ( "
-        "nip.customer_id = cs.baseaccount_ptr_id AND ( "
-        "nip.mac_address = %s::MACADDR OR nip.mac_address IS NULL "
-        ") "
-        ") "
+          "LEFT JOIN device dv ON (dv.id = cs.device_id) "
+          "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
+          "LEFT JOIN device_dev_type_is_use_dev_port ddtiudptiu ON (ddtiudptiu.dev_type = dv.dev_type) "
+          "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+          "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
+          "LEFT JOIN services srv ON srv.id = custsrv.service_id "
+          "LEFT JOIN networks_ip_leases nip ON ( "
+            "nip.customer_id = cs.baseaccount_ptr_id AND ( "
+              "nip.mac_address = %s::MACADDR OR nip.mac_address IS NULL "
+            ") "
+          ") "
         "WHERE dv.mac_addr = %s::MACADDR "
         "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = %s::SMALLINT) "
         "LIMIT 1;"

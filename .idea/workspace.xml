@@ -25,9 +25,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="53d358b1-7957-45e5-b887-eda12bd9bf91" name="Default Changelist" comment="revert">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7/storage_v2/_src_/database/djing2.Fr6rsA/schema/public.abK9xQ.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7/storage_v2/_src_/database/djing2.Fr6rsA/schema/public.abK9xQ.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7/storage_v2/_src_/database/djing2.Fr6rsA/schema/public.abK9xQ.zip" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7/storage_v2/_src_/database/djing2.Fr6rsA/schema/public.abK9xQ.zip" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/uvicorn.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/fastapi_app.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/djing2/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/djing2/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/radiusapp/vendor_base.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/radiusapp/vendor_base.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/radiusapp/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/radiusapp/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fastapi_app.py" beforeDir="false" afterPath="$PROJECT_DIR$/fastapi_app.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -110,7 +116,7 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="database.data.extractors.current.export.id" value="Comma-separated (CSV)_id" />
     <property name="database.data.extractors.current.id" value="Comma-separated (CSV)_id" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../docker-compose-dev.yml" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/fastapi_app.py" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
@@ -289,7 +295,8 @@
       <workItem from="1664892479556" duration="9000" />
       <workItem from="1664952345789" duration="25605000" />
       <workItem from="1665040014607" duration="5191000" />
-      <workItem from="1665046959474" duration="144000" />
+      <workItem from="1665046959474" duration="4130000" />
+      <workItem from="1665053046971" duration="9670000" />
     </task>
     <task id="LOCAL-00007" summary="fixed pays">
       <created>1661946910561</created>
@@ -699,10 +706,10 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="995" y="399" width="454" height="321" key="#Docker2/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665045289455" />
-    <state x="505" y="197" width="1027" height="671" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1665047102086">
+    <state x="825" y="164" width="1027" height="671" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1665047682198">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="505" y="197" width="1027" height="671" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665047102086" />
+    <state x="825" y="164" width="1027" height="671" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665047682198" />
     <state x="687" y="324" width="536" height="384" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1661517029331">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -724,35 +731,51 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="222" y="0" width="1083" height="934" key="EnvironmentVariablesDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046708174" />
-    <state x="737" y="274" width="424" height="478" key="FileChooserDialogImpl" timestamp="1665046767104">
+    <state x="737" y="274" width="424" height="478" key="FileChooserDialogImpl" timestamp="1665047635460">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="737" y="274" width="424" height="478" key="FileChooserDialogImpl/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046767104" />
+    <state x="737" y="274" width="424" height="478" key="FileChooserDialogImpl/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665047635460" />
     <state x="737" y="274" width="424" height="478" key="FileChooserDialogImpl/0.0.1920.1040@0.0.1920.1040" timestamp="1664892484732" />
-    <state width="1878" height="276" key="GridCell.Tab.0.bottom" timestamp="1665046943423">
+    <state width="1849" height="207" key="GridCell.Tab.0.bottom" timestamp="1665063730604">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1878" height="276" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046943423" />
+    <state width="1849" height="207" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665063730604" />
     <state width="1529" height="407" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1664525799289" />
     <state width="1529" height="407" key="GridCell.Tab.0.bottom/0.0.3840.1040@0.0.3840.1040" timestamp="1664959754397" />
-    <state width="1878" height="276" key="GridCell.Tab.0.center" timestamp="1665046943423">
+    <state width="1849" height="207" key="GridCell.Tab.0.center" timestamp="1665063730604">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1878" height="276" key="GridCell.Tab.0.center/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046943423" />
+    <state width="1849" height="207" key="GridCell.Tab.0.center/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665063730604" />
     <state width="1529" height="407" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1664525799288" />
     <state width="1529" height="407" key="GridCell.Tab.0.center/0.0.3840.1040@0.0.3840.1040" timestamp="1664959754396" />
-    <state width="1878" height="276" key="GridCell.Tab.0.left" timestamp="1665046943423">
+    <state width="1849" height="207" key="GridCell.Tab.0.left" timestamp="1665063730604">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1878" height="276" key="GridCell.Tab.0.left/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046943423" />
+    <state width="1849" height="207" key="GridCell.Tab.0.left/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665063730604" />
     <state width="1529" height="407" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1664525799288" />
     <state width="1529" height="407" key="GridCell.Tab.0.left/0.0.3840.1040@0.0.3840.1040" timestamp="1664959754395" />
-    <state width="1878" height="276" key="GridCell.Tab.0.right" timestamp="1665046943423">
+    <state width="1849" height="207" key="GridCell.Tab.0.right" timestamp="1665063730604">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1878" height="276" key="GridCell.Tab.0.right/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046943423" />
+    <state width="1849" height="207" key="GridCell.Tab.0.right/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665063730604" />
     <state width="1529" height="407" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1664525799289" />
     <state width="1529" height="407" key="GridCell.Tab.0.right/0.0.3840.1040@0.0.3840.1040" timestamp="1664959754397" />
+    <state width="1878" height="439" key="GridCell.Tab.1.bottom" timestamp="1665053025708">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1878" height="439" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665053025708" />
+    <state width="1878" height="439" key="GridCell.Tab.1.center" timestamp="1665053025707">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1878" height="439" key="GridCell.Tab.1.center/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665053025707" />
+    <state width="1878" height="439" key="GridCell.Tab.1.left" timestamp="1665053025707">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1878" height="439" key="GridCell.Tab.1.left/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665053025707" />
+    <state width="1878" height="439" key="GridCell.Tab.1.right" timestamp="1665053025707">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1878" height="439" key="GridCell.Tab.1.right/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665053025707" />
     <state x="48" y="59" width="1804" height="883" key="MergeDialog" timestamp="1664804224649">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -784,14 +807,15 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="960" height="519" key="XDebugger.FullValuePopup/0.0.1920.1040@0.0.1920.1040" timestamp="1664456896002" />
-    <state x="601" y="410" width="708" height="234" key="com.intellij.database.actions.DdlActions$DeleteProvider2$1" timestamp="1662643143248">
+    <state x="601" y="410" width="396" height="234" key="com.intellij.database.actions.DdlActions$DeleteProvider2$1" timestamp="1665063595985">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
+    <state x="601" y="410" width="396" height="234" key="com.intellij.database.actions.DdlActions$DeleteProvider2$1/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665063595985" />
     <state x="601" y="410" width="708" height="234" key="com.intellij.database.actions.DdlActions$DeleteProvider2$1/0.0.1920.1040@0.0.1920.1040" timestamp="1662643143248" />
-    <state x="1920" y="211" width="762" height="757" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1664967218064">
-      <screen x="0" y="0" width="3840" height="1040" />
+    <state x="738" y="211" width="762" height="757" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1665062633309">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="738" y="211" width="770" height="767" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1663080459909" />
+    <state x="738" y="211" width="770" height="767" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665062633309" />
     <state x="2658" y="219" width="778" height="767" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1661350770214" />
     <state x="738" y="211" width="434" height="610" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040@0.0.1920.1040" timestamp="1664958715681" />
     <state x="1920" y="211" width="762" height="757" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.3840.1040@0.0.3840.1040" timestamp="1664967218064" />
@@ -799,10 +823,10 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="945" y="267" width="645" height="199" key="com.jetbrains.plugins.remotesdk.ui.RemoteMappingsConfiguration/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1663077656238" />
-    <state x="2250" y="142" width="1230" height="753" key="find.popup" timestamp="1664983881042">
-      <screen x="0" y="0" width="3840" height="1040" />
+    <state x="2509" y="286" width="1127" height="715" key="find.popup" timestamp="1665064161315">
+      <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="347" y="258" width="1127" height="715" key="find.popup/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1663080429933" />
+    <state x="2509" y="286" width="1127" height="715" key="find.popup/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665064161315" />
     <state x="2083" y="89" width="1127" height="715" key="find.popup/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1661355490727" />
     <state x="1015" y="193" width="811" height="753" key="find.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1664955673365" />
     <state x="2250" y="142" width="1230" height="753" key="find.popup/0.0.3840.1040@0.0.3840.1040" timestamp="1664983881042" />
@@ -823,10 +847,25 @@
           <line>40</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/apps/radiusapp/views.py</url>
+          <line>133</line>
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/apps/radiusapp/views.py</url>
+          <line>181</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/apps/radiusapp/views.py</url>
+          <line>160</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/djing2$uvicorn.coverage" NAME="uvicorn Coverage Results" MODIFIED="1665046852481" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="/var/www/djing2" />
+    <SUITE FILE_PATH="coverage/djing2$uvicorn.coverage" NAME="fastapi_app Coverage Results" MODIFIED="1665050240585" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="/var/www/djing2" />
   </component>
 </project>

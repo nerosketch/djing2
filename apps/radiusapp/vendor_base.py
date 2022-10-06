@@ -149,7 +149,6 @@ class IVendorSpecific(abc.ABC):
             }
             r = r_map.get(act_type)
         elif isinstance(act_type, str):
-            act_type = str(act_type)
             r_map = {
                 "Start": AcctStatusType.START,
                 "Stop": AcctStatusType.STOP,
