@@ -25,22 +25,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="53d358b1-7957-45e5-b887-eda12bd9bf91" name="Default Changelist" comment="revert">
-      <change afterPath="$PROJECT_DIR$/apps/traf_stat/migrations/0003_end_of_life.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7/storage_v2/_src_/database/djing2.Fr6rsA/schema/public.abK9xQ.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7/storage_v2/_src_/database/djing2.Fr6rsA/schema/public.abK9xQ.meta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7/storage_v2/_src_/database/djing2.Fr6rsA/schema/public.abK9xQ.zip" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/ab4c7083-4817-48d1-ba25-d1422627a1e7/storage_v2/_src_/database/djing2.Fr6rsA/schema/public.abK9xQ.zip" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/file_watch.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/management/commands/create_db_partitions.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/traf_stat/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/on_new_dump.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/serializers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/start_collector.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/systemd/djing_backup.service" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/systemd/djing_backup.timer" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/systemd/do_backup.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/traf_stat/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/traf_stat/views.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/networks/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/networks/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/networks/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/networks/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -304,7 +291,7 @@
       <workItem from="1665040014607" duration="5191000" />
       <workItem from="1665046959474" duration="4130000" />
       <workItem from="1665053046971" duration="12008000" />
-      <workItem from="1665066918689" duration="1092000" />
+      <workItem from="1665066918689" duration="3102000" />
     </task>
     <task id="LOCAL-00007" summary="fixed pays">
       <created>1661946910561</created>
@@ -820,10 +807,10 @@
     </state>
     <state x="601" y="410" width="396" height="234" key="com.intellij.database.actions.DdlActions$DeleteProvider2$1/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665063595985" />
     <state x="601" y="410" width="708" height="234" key="com.intellij.database.actions.DdlActions$DeleteProvider2$1/0.0.1920.1040@0.0.1920.1040" timestamp="1662643143248" />
-    <state x="738" y="211" width="762" height="757" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1665066404551">
+    <state x="738" y="211" width="762" height="757" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1665069877094">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="738" y="211" width="770" height="767" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665066404551" />
+    <state x="738" y="211" width="770" height="767" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665069877094" />
     <state x="2658" y="219" width="778" height="767" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1661350770214" />
     <state x="738" y="211" width="434" height="610" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040@0.0.1920.1040" timestamp="1664958715681" />
     <state x="1920" y="211" width="762" height="757" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.3840.1040@0.0.3840.1040" timestamp="1664967218064" />
@@ -831,10 +818,10 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="945" y="267" width="645" height="199" key="com.jetbrains.plugins.remotesdk.ui.RemoteMappingsConfiguration/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1663077656238" />
-    <state x="680" y="124" width="1127" height="715" key="find.popup" timestamp="1665065928591">
+    <state x="680" y="124" width="1127" height="715" key="find.popup" timestamp="1665069651051">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="680" y="124" width="1127" height="715" key="find.popup/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665065928591" />
+    <state x="680" y="124" width="1127" height="715" key="find.popup/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665069651051" />
     <state x="2083" y="89" width="1127" height="715" key="find.popup/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1661355490727" />
     <state x="1015" y="193" width="811" height="753" key="find.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1664955673365" />
     <state x="2250" y="142" width="1230" height="753" key="find.popup/0.0.3840.1040@0.0.3840.1040" timestamp="1664983881042" />

@@ -1,6 +1,7 @@
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from ipaddress import ip_address, ip_network
-from typing import Optional, Union
+from typing import Optional, Union, Generator
 from netaddr import EUI
 
 from django.conf import settings
@@ -8,6 +9,7 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, connection, InternalError
+from django.contrib.postgres.aggregates.general import ArrayAgg
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField, CidrAddressField
 from djing2 import ping as icmp_ping
@@ -213,6 +215,13 @@ class NetworkIpPool(BaseAbstractModel):
         verbose_name_plural = _("Network ip pools")
 
 
+@dataclass
+class MacDuplicateResult:
+    mac_address: EUI
+    mac_count: int
+    customers: list[int]
+
+
 class CustomerIpLeaseModelQuerySet(models.QuerySet):
     def active_leases(self) -> models.QuerySet:
         """
@@ -221,6 +230,19 @@ class CustomerIpLeaseModelQuerySet(models.QuerySet):
         """
         expire_time = datetime.now() - timedelta(seconds=DHCP_DEFAULT_LEASE_TIME)
         return self.filter(lease_time__lt=expire_time)
+
+    @staticmethod
+    def mac_duplicates() -> Generator[MacDuplicateResult, None, None]:
+        """Get all mac address duplicates"""
+        qs = CustomerIpLeaseModel.objects.values('mac_address').annotate(
+            mac_count=models.Count('mac_address'),
+            customers=ArrayAgg('customer_id')
+        ).filter(mac_cnt__gt=1)
+        return (MacDuplicateResult(
+            mac_address=lease['mac_address'],
+            mac_count=lease['mac_count'],
+            customers=lease['customers']
+        ) for lease in qs.iterator())
 
     def release(self):
         """
