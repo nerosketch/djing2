@@ -1,0 +1,832 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:gth" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="53d358b1-7957-45e5-b887-eda12bd9bf91" name="Default Changelist" comment="revert">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/djing2/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/djing2/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/radiusapp/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/radiusapp/views.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="DjangoConsoleOptions" custom-start-script="import sys; print('Python %s on %s' % (sys.version, sys.platform))&#10;import django; print('Django %s' % django.get_version())&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;if 'setup' in dir(django): django.setup()&#10;import django_manage_shell; django_manage_shell.run(PROJECT_ROOT)" module-name="djing2" is-module-sdk="true">
+    <envs>
+      <env key="ALLOWED_HOSTS" value="*" />
+      <env key="API_AUTH_SUBNET" value="&quot;127.0.0.0/8|172.17.0.0/16&quot;" />
+      <env key="APP_DEBUG" value="y" />
+      <env key="ARPING_COMMAND" value="/usr/sbin/arping" />
+      <env key="CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR" value="&quot;Федеральной Миграционной Службой&quot;" />
+      <env key="DEFAULT_EMAIL" value="admin@tiko82.ru" />
+      <env key="DEFAULT_LANG" value="en" />
+      <env key="GRAPHITE_HOST" value="127.0.0.1" />
+      <env key="GRAPHITE_PORT" value="8125" />
+      <env key="POSTGRES_DB" value="djing2" />
+      <env key="POSTGRES_HOST" value="localhost" />
+      <env key="POSTGRES_PORT" value="5432" />
+      <env key="POSTGRES_USER" value="djing2_usr" />
+      <env key="RADIUS_APP_HOST" value="localhost" />
+      <env key="REST_SERVER_URL" value="http://djing2-front" />
+      <env key="SECRETS_DIR_PATH" value="$PROJECT_DIR$/../secrets" />
+      <env key="SORM_EXPORT_FTP_DISABLE" value="Y" />
+      <env key="SORM_EXPORT_FTP_HOST" value="127.0.0.1" />
+      <env key="SORM_EXPORT_FTP_USERNAME" value="cdr" />
+    </envs>
+    <option name="myCustomStartScript" value="import sys; print('Python %s on %s' % (sys.version, sys.platform))&#10;import django; print('Django %s' % django.get_version())&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;if 'setup' in dir(django): django.setup()&#10;import django_manage_shell; django_manage_shell.run(PROJECT_ROOT)" />
+    <option name="myUseModuleSdk" value="true" />
+    <option name="myModuleName" value="djing2" />
+    <option name="myEnvs">
+      <map>
+        <entry key="ALLOWED_HOSTS" value="*" />
+        <entry key="API_AUTH_SUBNET" value="&quot;127.0.0.0/8|172.17.0.0/16&quot;" />
+        <entry key="APP_DEBUG" value="y" />
+        <entry key="ARPING_COMMAND" value="/usr/sbin/arping" />
+        <entry key="CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR" value="&quot;Федеральной Миграционной Службой&quot;" />
+        <entry key="DEFAULT_EMAIL" value="admin@tiko82.ru" />
+        <entry key="DEFAULT_LANG" value="en" />
+        <entry key="GRAPHITE_HOST" value="127.0.0.1" />
+        <entry key="GRAPHITE_PORT" value="8125" />
+        <entry key="POSTGRES_DB" value="djing2" />
+        <entry key="POSTGRES_HOST" value="localhost" />
+        <entry key="POSTGRES_PORT" value="5432" />
+        <entry key="POSTGRES_USER" value="djing2_usr" />
+        <entry key="RADIUS_APP_HOST" value="localhost" />
+        <entry key="REST_SERVER_URL" value="http://djing2-front" />
+        <entry key="SECRETS_DIR_PATH" value="$PROJECT_DIR$/../secrets" />
+        <entry key="SORM_EXPORT_FTP_DISABLE" value="Y" />
+        <entry key="SORM_EXPORT_FTP_HOST" value="127.0.0.1" />
+        <entry key="SORM_EXPORT_FTP_USERNAME" value="cdr" />
+      </map>
+    </option>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Unit Test" />
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="27eYC9x1ZoVulX5Jw5i0Jf11tDE" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="DatabaseDriversLRU" value="postgresql" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="database.data.extractors.current.export.id" value="Comma-separated (CSV)_id" />
+    <property name="database.data.extractors.current.id" value="Comma-separated (CSV)_id" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../docker-compose-dev.yml" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="PyConsoleOptionsProvider">
+    <option name="myPythonConsoleState">
+      <console-settings custom-start-script="import sys; print('Python %s on %s' % (sys.version, sys.platform))&#10;sys.path.extend([&#10;    '/home/ns/Projects/djing2_proj/djing2',&#10;    '/home/ns/Projects/djing2_proj/djing2/apps/'&#10;])&#10;" module-name="djing2" is-module-sdk="true">
+        <option name="myCustomStartScript" value="import sys; print('Python %s on %s' % (sys.version, sys.platform))&#10;sys.path.extend([&#10;    '/home/ns/Projects/djing2_proj/djing2',&#10;    '/home/ns/Projects/djing2_proj/djing2/apps/'&#10;])&#10;" />
+        <option name="myUseModuleSdk" value="true" />
+        <option name="myModuleName" value="djing2" />
+      </console-settings>
+    </option>
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/apps/profiles/fixtures" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/apps/profiles/fixtures" />
+      <recent name="$PROJECT_DIR$/apps/profiles" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <module name="djing2" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="ALLOWED_HOSTS" value="*" />
+        <env name="DEFAULT_LANG" value="en" />
+        <env name="DEFAULT_EMAIL" value="admin@tiko82.ru" />
+        <env name="POSTGRES_DB" value="djing2" />
+        <env name="POSTGRES_USER" value="djing2_usr" />
+        <env name="POSTGRES_HOST" value="djing2db" />
+        <env name="POSTGRES_PORT" value="5432" />
+        <env name="API_AUTH_SUBNET" value="'127.0.0.0/8|10.12.1.0/24'" />
+        <env name="ARPING_COMMAND" value="/usr/sbin/arping" />
+        <env name="SORM_EXPORT_FTP_HOST" value="10.12.2.4" />
+        <env name="SORM_EXPORT_FTP_USERNAME" value="cdr" />
+        <env name="RADIUS_APP_HOST" value="localhost" />
+        <env name="REST_SERVER_URL" value="http://djing2-front" />
+        <env name="CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR" value="'FEDAral migr func'" />
+        <env name="GRAPHITE_HOST" value="127.0.0.1" />
+        <env name="GRAPHITE_PORT" value="8125" />
+        <env name="DJANGO_LOG_LEVEL" value="INFO" />
+        <env name="CELERY_BROKER_URL" value="pyamqp://user:passw@djing2rabbitmq/" />
+      </envs>
+      <option name="SDK_HOME" value="docker-compose://[$PROJECT_DIR$/../docker-compose.yml, $PROJECT_DIR$/../docker-compose-dev.yml]:djing2_app/python" />
+      <option name="WORKING_DIRECTORY" value="/var/www/djing2" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="uvicorn" />
+      <option name="PARAMETERS" value="fastapi_app:app --host 0.0.0.0 --port 8000 --reload" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="docker-deploy" factoryName="docker-image" server-name="Docker">
+      <deployment type="docker-image">
+        <settings>
+          <option name="imageTag" value="" />
+          <option name="command" value="" />
+          <option name="containerName" value="" />
+          <option name="entrypoint" value="" />
+          <option name="commandLineOptions" value="" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="docker-deploy" factoryName="dockerfile" server-name="Docker">
+      <deployment type="dockerfile">
+        <settings>
+          <option name="imageTag" value="" />
+          <option name="buildCliOptions" value="" />
+          <option name="buildOnly" value="true" />
+          <option name="command" value="" />
+          <option name="containerName" value="" />
+          <option name="entrypoint" value="" />
+          <option name="commandLineOptions" value="" />
+          <option name="sourceFilePath" value="Dockerfile" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="53d358b1-7957-45e5-b887-eda12bd9bf91" name="Default Changelist" comment="" />
+      <created>1649681888286</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1649681888286</updated>
+      <workItem from="1649681892364" duration="21000" />
+      <workItem from="1649681921651" duration="3885000" />
+      <workItem from="1650454075302" duration="20000" />
+      <workItem from="1650454106667" duration="2235000" />
+      <workItem from="1650613488149" duration="598000" />
+      <workItem from="1650640009153" duration="29000" />
+      <workItem from="1650717015779" duration="2299000" />
+      <workItem from="1651222190706" duration="850000" />
+      <workItem from="1651669616411" duration="8715000" />
+      <workItem from="1651745022265" duration="968000" />
+      <workItem from="1652264965075" duration="1789000" />
+      <workItem from="1652884097803" duration="19000" />
+      <workItem from="1652884128542" duration="74000" />
+      <workItem from="1652884208255" duration="35000" />
+      <workItem from="1653035638511" duration="66000" />
+      <workItem from="1660834154707" duration="6000" />
+      <workItem from="1660834180763" duration="1201000" />
+      <workItem from="1660835612461" duration="3005000" />
+      <workItem from="1661158175624" duration="9546000" />
+      <workItem from="1661175313923" duration="9005000" />
+      <workItem from="1661238000016" duration="22370000" />
+      <workItem from="1661326464148" duration="24607000" />
+      <workItem from="1661413331004" duration="6669000" />
+      <workItem from="1661506169399" duration="640000" />
+      <workItem from="1661516180927" duration="1113000" />
+      <workItem from="1661757955562" duration="18220000" />
+      <workItem from="1661841150044" duration="24013000" />
+      <workItem from="1661920855908" duration="26725000" />
+      <workItem from="1662098699123" duration="18899000" />
+      <workItem from="1662129408183" duration="175000" />
+      <workItem from="1662360024096" duration="2747000" />
+      <workItem from="1662375497335" duration="777000" />
+      <workItem from="1662389927856" duration="383000" />
+      <workItem from="1662390317188" duration="1183000" />
+      <workItem from="1662455760251" duration="599000" />
+      <workItem from="1662456456412" duration="78000" />
+      <workItem from="1662459485973" duration="3711000" />
+      <workItem from="1662531216825" duration="2380000" />
+      <workItem from="1662621574331" duration="19004000" />
+      <workItem from="1662704251342" duration="16686000" />
+      <workItem from="1662972071984" duration="21095000" />
+      <workItem from="1663053548800" duration="20104000" />
+      <workItem from="1663076884135" duration="969000" />
+      <workItem from="1663078171951" duration="5756000" />
+      <workItem from="1663139445599" duration="22729000" />
+      <workItem from="1663225023725" duration="1260000" />
+      <workItem from="1663232064585" duration="7598000" />
+      <workItem from="1663311333946" duration="19391000" />
+      <workItem from="1663570282000" duration="597000" />
+      <workItem from="1663576810817" duration="1192000" />
+      <workItem from="1663591153328" duration="7249000" />
+      <workItem from="1663654279372" duration="1697000" />
+      <workItem from="1663664143601" duration="105000" />
+      <workItem from="1663669057451" duration="11085000" />
+      <workItem from="1663754304141" duration="11508000" />
+      <workItem from="1663831610994" duration="5772000" />
+      <workItem from="1663851507240" duration="598000" />
+      <workItem from="1663915356408" duration="5718000" />
+      <workItem from="1663937012306" duration="2050000" />
+      <workItem from="1664175220853" duration="4931000" />
+      <workItem from="1664188507564" duration="8051000" />
+      <workItem from="1664200526796" duration="1750000" />
+      <workItem from="1664264602957" duration="2446000" />
+      <workItem from="1664269604547" duration="8592000" />
+      <workItem from="1664284380435" duration="6626000" />
+      <workItem from="1664349979276" duration="6778000" />
+      <workItem from="1664435662081" duration="17000" />
+      <workItem from="1664435694014" duration="20720000" />
+      <workItem from="1664521739748" duration="15821000" />
+      <workItem from="1664781313656" duration="53000" />
+      <workItem from="1664781374229" duration="21854000" />
+      <workItem from="1664869153135" duration="3609000" />
+      <workItem from="1664892479556" duration="9000" />
+      <workItem from="1664952345789" duration="25605000" />
+      <workItem from="1665040014607" duration="5191000" />
+      <workItem from="1665046959474" duration="144000" />
+    </task>
+    <task id="LOCAL-00007" summary="fixed pays">
+      <created>1661946910561</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1661946910561</updated>
+    </task>
+    <task id="LOCAL-00008" summary="added type hint for func">
+      <created>1662110901848</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1662110901848</updated>
+    </task>
+    <task id="LOCAL-00009" summary="removed commented">
+      <created>1662110942089</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1662110942089</updated>
+    </task>
+    <task id="LOCAL-00010" summary="maked top level router">
+      <created>1662110966405</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1662110966405</updated>
+    </task>
+    <task id="LOCAL-00011" summary="new dependency that checks is user admin">
+      <created>1662110993702</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1662110993702</updated>
+    </task>
+    <task id="LOCAL-00012" summary="upd">
+      <created>1662118282915</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1662118282915</updated>
+    </task>
+    <task id="LOCAL-00013" summary="start making schemas for customers">
+      <created>1662128744875</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1662128744875</updated>
+    </task>
+    <task id="LOCAL-00014" summary="start making schemas for customers">
+      <created>1662128775278</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1662128775278</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Added ReadCRUD">
+      <created>1662129120222</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1662129120222</updated>
+    </task>
+    <task id="LOCAL-00016" summary="maked prod config in Dockerfile">
+      <created>1662361611098</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1662361611098</updated>
+    </task>
+    <task id="LOCAL-00017" summary="maked prod config in Dockerfile">
+      <created>1662361672527</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1662361672527</updated>
+    </task>
+    <task id="LOCAL-00018" summary="maked prod config in Dockerfile">
+      <created>1662361711532</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1662361711532</updated>
+    </task>
+    <task id="LOCAL-00019" summary="maked prod config in Dockerfile">
+      <created>1662363596396</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1662363596396</updated>
+    </task>
+    <task id="LOCAL-00020" summary="fix 'customer ip deleted' signal">
+      <created>1662375669486</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1662375669486</updated>
+    </task>
+    <task id="LOCAL-00021" summary="Fix typo">
+      <created>1662390198340</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1662390198340</updated>
+    </task>
+    <task id="LOCAL-00022" summary="Fixed on_delete_device signal and task">
+      <created>1662456137017</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1662456137017</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Maked contracts route in СОРМ">
+      <created>1662456511936</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1662456511936</updated>
+    </task>
+    <task id="LOCAL-00024" summary="added superuser dependency check">
+      <created>1662625884542</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1662625884542</updated>
+    </task>
+    <task id="LOCAL-00025" summary="fixed typo">
+      <created>1662625906504</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1662625906504</updated>
+    </task>
+    <task id="LOCAL-00026" summary="fixed get_all_children route">
+      <created>1662636843251</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1662636843251</updated>
+    </task>
+    <task id="LOCAL-00027" summary="no sync requests to radius device">
+      <created>1662641588856</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1662641588856</updated>
+    </task>
+    <task id="LOCAL-00028" summary="rm List">
+      <created>1662735145609</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1662735145609</updated>
+    </task>
+    <task id="LOCAL-00029" summary="return decorator for customers_without_contracts">
+      <created>1662975422344</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1662975422344</updated>
+    </task>
+    <task id="LOCAL-00030" summary="round balance">
+      <created>1662978118196</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1662978118196</updated>
+    </task>
+    <task id="LOCAL-00031" summary="no use templates">
+      <created>1662992024066</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1662992024066</updated>
+    </task>
+    <task id="LOCAL-00032" summary="ref addr routes">
+      <created>1663141851229</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1663141851229</updated>
+    </task>
+    <task id="LOCAL-00033" summary="prettify get_all_address_duplicates route">
+      <created>1663157683566</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1663157683566</updated>
+    </task>
+    <task id="LOCAL-00034" summary="Do not show exception when not found devices by address">
+      <created>1663244804214</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1663244804214</updated>
+    </task>
+    <task id="LOCAL-00035" summary="fix">
+      <created>1663336202885</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1663336202885</updated>
+    </task>
+    <task id="LOCAL-00036" summary="change db engine">
+      <created>1663337178490</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1663337178490</updated>
+    </task>
+    <task id="LOCAL-00037" summary="decompose getting field list">
+      <created>1663758563245</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1663758563245</updated>
+    </task>
+    <task id="LOCAL-00038" summary="rename fields_cashe">
+      <created>1663760594001</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1663760594001</updated>
+    </task>
+    <task id="LOCAL-00039" summary="return annotations">
+      <created>1663760615541</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1663760615541</updated>
+    </task>
+    <task id="LOCAL-00040" summary="upd">
+      <created>1663773003118</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1663773003118</updated>
+    </task>
+    <task id="LOCAL-00041" summary="collapsed swagger_ui by default">
+      <created>1663837264943</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1663837264943</updated>
+    </task>
+    <task id="LOCAL-00042" summary="reformat">
+      <created>1664196103705</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1664196103705</updated>
+    </task>
+    <task id="LOCAL-00043" summary="reformat">
+      <created>1664197659726</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1664197659726</updated>
+    </task>
+    <task id="LOCAL-00044" summary="str type for ao_id">
+      <created>1664198346258</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1664198346258</updated>
+    </task>
+    <task id="LOCAL-00045" summary="maked export all ao under streets">
+      <created>1664278518897</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1664278518897</updated>
+    </task>
+    <task id="LOCAL-00046" summary="Refactorings">
+      <created>1664437812542</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1664437812542</updated>
+    </task>
+    <task id="LOCAL-00047" summary="Maked DRF renderer with support dataclasses">
+      <created>1664440171929</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1664440171929</updated>
+    </task>
+    <task id="LOCAL-00048" summary="Try to decode XPON onu mac">
+      <created>1664459723862</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1664459723862</updated>
+    </task>
+    <task id="LOCAL-00049" summary="Upgraded fias codes">
+      <created>1664544288841</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1664544288841</updated>
+    </task>
+    <task id="LOCAL-00050" summary="ref">
+      <created>1664786723305</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1664786723305</updated>
+    </task>
+    <task id="LOCAL-00051" summary="fix">
+      <created>1664958809008</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1664958809008</updated>
+    </task>
+    <task id="LOCAL-00052" summary="added depend">
+      <created>1664979020188</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1664979020188</updated>
+    </task>
+    <task id="LOCAL-00053" summary="removed unused">
+      <created>1664979083903</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1664979083903</updated>
+    </task>
+    <task id="LOCAL-00054" summary="moved checking subnet into separate func">
+      <created>1664979209615</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1664979209615</updated>
+    </task>
+    <task id="LOCAL-00055" summary="revert">
+      <created>1664979555139</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1664979555139</updated>
+    </task>
+    <option name="localTasksCounter" value="56" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="2" />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ORDER">
+      <list>
+        <option value="0" />
+        <option value="2" />
+        <option value="3" />
+        <option value="1" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="return decorator for customers_without_contracts" />
+    <MESSAGE value="round balance" />
+    <MESSAGE value="no use templates" />
+    <MESSAGE value="ref addr routes" />
+    <MESSAGE value="prettify get_all_address_duplicates route" />
+    <MESSAGE value="Do not show exception when not found devices by address" />
+    <MESSAGE value="change db engine" />
+    <MESSAGE value="decompose getting field list" />
+    <MESSAGE value="rename fields_cashe" />
+    <MESSAGE value="return annotations" />
+    <MESSAGE value="upd" />
+    <MESSAGE value="collapsed swagger_ui by default" />
+    <MESSAGE value="reformat" />
+    <MESSAGE value="str type for ao_id" />
+    <MESSAGE value="maked export all ao under streets" />
+    <MESSAGE value="Refactorings" />
+    <MESSAGE value="Maked DRF renderer with support dataclasses" />
+    <MESSAGE value="Try to decode XPON onu mac" />
+    <MESSAGE value="Upgraded fias codes" />
+    <MESSAGE value="ref" />
+    <MESSAGE value="fix" />
+    <MESSAGE value="added depend" />
+    <MESSAGE value="removed unused" />
+    <MESSAGE value="moved checking subnet into separate func" />
+    <MESSAGE value="revert" />
+    <option name="LAST_COMMIT_MESSAGE" value="revert" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="548" y="194" width="800" height="671" key="#Docker" timestamp="1665044747782">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="548" y="194" width="800" height="671" key="#Docker/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665044747782" />
+    <state x="995" y="399" width="454" height="321" key="#Docker2" timestamp="1665045289455">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="995" y="399" width="454" height="321" key="#Docker2/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665045289455" />
+    <state x="505" y="197" width="1027" height="671" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1665047102086">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="505" y="197" width="1027" height="671" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665047102086" />
+    <state x="687" y="324" width="536" height="384" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1661517029331">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="687" y="324" width="536" height="384" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1661517029331" />
+    <state x="693" y="269" width="524" height="494" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1663062576878">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="693" y="269" width="524" height="494" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1663062576878" />
+    <state x="693" y="269" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1662126932924" />
+    <state x="100" y="100" width="1720" height="839" key="DiffContextDialog" timestamp="1661254441808">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="100" y="100" width="1720" height="839" key="DiffContextDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1661254441808" />
+    <state x="801" y="407" width="570" height="218" key="DockerComposeFileDialog" timestamp="1665046254554">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="801" y="407" width="570" height="218" key="DockerComposeFileDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046254554" />
+    <state x="222" y="0" width="1083" height="934" key="EnvironmentVariablesDialog" timestamp="1665046708174">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="222" y="0" width="1083" height="934" key="EnvironmentVariablesDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046708174" />
+    <state x="737" y="274" width="424" height="478" key="FileChooserDialogImpl" timestamp="1665046767104">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="737" y="274" width="424" height="478" key="FileChooserDialogImpl/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046767104" />
+    <state x="737" y="274" width="424" height="478" key="FileChooserDialogImpl/0.0.1920.1040@0.0.1920.1040" timestamp="1664892484732" />
+    <state width="1878" height="276" key="GridCell.Tab.0.bottom" timestamp="1665046943423">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1878" height="276" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046943423" />
+    <state width="1529" height="407" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1664525799289" />
+    <state width="1529" height="407" key="GridCell.Tab.0.bottom/0.0.3840.1040@0.0.3840.1040" timestamp="1664959754397" />
+    <state width="1878" height="276" key="GridCell.Tab.0.center" timestamp="1665046943423">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1878" height="276" key="GridCell.Tab.0.center/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046943423" />
+    <state width="1529" height="407" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1664525799288" />
+    <state width="1529" height="407" key="GridCell.Tab.0.center/0.0.3840.1040@0.0.3840.1040" timestamp="1664959754396" />
+    <state width="1878" height="276" key="GridCell.Tab.0.left" timestamp="1665046943423">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1878" height="276" key="GridCell.Tab.0.left/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046943423" />
+    <state width="1529" height="407" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1664525799288" />
+    <state width="1529" height="407" key="GridCell.Tab.0.left/0.0.3840.1040@0.0.3840.1040" timestamp="1664959754395" />
+    <state width="1878" height="276" key="GridCell.Tab.0.right" timestamp="1665046943423">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="1878" height="276" key="GridCell.Tab.0.right/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046943423" />
+    <state width="1529" height="407" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1664525799289" />
+    <state width="1529" height="407" key="GridCell.Tab.0.right/0.0.3840.1040@0.0.3840.1040" timestamp="1664959754397" />
+    <state x="48" y="59" width="1804" height="883" key="MergeDialog" timestamp="1664804224649">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="32" y="94" width="1853" height="918" key="MergeDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1661516739551" />
+    <state x="48" y="59" width="1804" height="883" key="MergeDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1664804224649" />
+    <state x="597" y="284" width="715" height="465" key="MultipleFileMergeDialog" timestamp="1664804224649">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="597" y="284" key="MultipleFileMergeDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1661516739555" />
+    <state x="597" y="284" width="715" height="465" key="MultipleFileMergeDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1664804224649" />
+    <state x="764" y="225" width="382" height="582" key="RollbackChangesDialog" timestamp="1661269556816">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="764" y="225" width="382" height="582" key="RollbackChangesDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1661269556816" />
+    <state x="742" y="204" key="SettingsEditor" timestamp="1665046330862">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="742" y="204" key="SettingsEditor/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1665046330862" />
+    <state x="742" y="204" key="SettingsEditor/0.0.1920.1040@0.0.1920.1040" timestamp="1664781366716" />
+    <state x="682" y="220" width="545" height="592" key="VCS.ChangeListViewerDialog" timestamp="1661254429116">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="682" y="220" width="545" height="592" key="VCS.ChangeListViewerDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1661254429116" />
+    <state x="555" y="242" width="800" height="548" key="Vcs.Push.Dialog.v2" timestamp="1663773012093">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="555" y="242" width="800" height="548" key="Vcs.Push.Dialog.v2/0.0.1920.1040@0.0.1920.1040" timestamp="1663773012093" />
+    <state width="960" height="519" key="XDebugger.FullValuePopup" timestamp="1664456896002">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state width="960" height="519" key="XDebugger.FullValuePopup/0.0.1920.1040@0.0.1920.1040" timestamp="1664456896002" />
+    <state x="601" y="410" width="708" height="234" key="com.intellij.database.actions.DdlActions$DeleteProvider2$1" timestamp="1662643143248">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="601" y="410" width="708" height="234" key="com.intellij.database.actions.DdlActions$DeleteProvider2$1/0.0.1920.1040@0.0.1920.1040" timestamp="1662643143248" />
+    <state x="1920" y="211" width="762" height="757" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1664967218064">
+      <screen x="0" y="0" width="3840" height="1040" />
+    </state>
+    <state x="738" y="211" width="770" height="767" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1663080459909" />
+    <state x="2658" y="219" width="778" height="767" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1661350770214" />
+    <state x="738" y="211" width="434" height="610" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040@0.0.1920.1040" timestamp="1664958715681" />
+    <state x="1920" y="211" width="762" height="757" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.3840.1040@0.0.3840.1040" timestamp="1664967218064" />
+    <state x="945" y="267" width="645" height="199" key="com.jetbrains.plugins.remotesdk.ui.RemoteMappingsConfiguration" timestamp="1663077656238">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="945" y="267" width="645" height="199" key="com.jetbrains.plugins.remotesdk.ui.RemoteMappingsConfiguration/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1663077656238" />
+    <state x="2250" y="142" width="1230" height="753" key="find.popup" timestamp="1664983881042">
+      <screen x="0" y="0" width="3840" height="1040" />
+    </state>
+    <state x="347" y="258" width="1127" height="715" key="find.popup/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1663080429933" />
+    <state x="2083" y="89" width="1127" height="715" key="find.popup/0.0.1920.1040/1920.0.1920.1080@1920.0.1920.1080" timestamp="1661355490727" />
+    <state x="1015" y="193" width="811" height="753" key="find.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1664955673365" />
+    <state x="2250" y="142" width="1230" height="753" key="find.popup/0.0.3840.1040@0.0.3840.1040" timestamp="1664983881042" />
+    <state x="720" y="236" width="469" height="561" key="git4idea.branch.GitSmartOperationDialog" timestamp="1661926994013">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="720" y="236" width="469" height="561" key="git4idea.branch.GitSmartOperationDialog/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1661926994013" />
+    <state x="623" y="228" width="672" height="678" key="search.everywhere.popup" timestamp="1662980135637">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="623" y="228" width="672" height="678" key="search.everywhere.popup/0.0.1920.1040/1920.0.1920.1080@0.0.1920.1040" timestamp="1662980135637" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/apps/sorm_export/hier_export/addresses.py</url>
+          <line>40</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/djing2$uvicorn.coverage" NAME="uvicorn Coverage Results" MODIFIED="1665046852481" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="/var/www/djing2" />
+  </component>
+</project>
