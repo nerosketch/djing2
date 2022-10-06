@@ -4,6 +4,8 @@ from django.db import connection
 from django.conf import settings
 from fastapi.testclient import TestClient
 from fastapi_app import app
+from profiles.models import UserProfile
+from rest_framework.authtoken.models import Token
 
 
 class TClient(TestClient):
@@ -19,6 +21,22 @@ class DjingTestCase(TestCase):
         app=app,
         base_url="http://example.com"
     )
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        # Login super user
+        admin = UserProfile.objects.create_superuser(
+            username="admin",
+            password="admin",
+            telephone="+797812345678",
+            is_active=True
+        )
+        cls.admin = admin
+        token = str(Token.objects.get(user=admin).key)
+        cls.c.headers.update({
+            'Authorization': f'Token {token}'
+        })
 
 
 class TestRunner(DiscoverRunner):

@@ -1,7 +1,6 @@
 from djing2.lib.fastapi.test import DjingTestCase
 from starlette import status
 from addresses.models import AddressModel, AddressModelTypes
-from profiles.models import UserProfile
 
 
 class AddressesAPITestCase(DjingTestCase):
@@ -77,15 +76,6 @@ class AddressesAPITestCase(DjingTestCase):
             title="7"
         )
         self.office_addr = office
-
-        # Login super user
-        self.admin = UserProfile.objects.create_superuser(
-            username="admin",
-            password="admin",
-            telephone="+797812345678",
-            is_active=True
-        )
-        self.client.login(username="admin", password="admin")
 
     def test_creating(self):
         r = self.post("/api/addrs/", {
