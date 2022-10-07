@@ -19,3 +19,5 @@ secrets/
 .env
 touch_reload
 .vscode/
+.idea/workspace.xml
+.idea/inspectionProfiles/profiles_settings.xml
