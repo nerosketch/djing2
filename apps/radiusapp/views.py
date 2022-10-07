@@ -143,7 +143,7 @@ def auth(vendor_name: str, request_data: Mapping[str, str] = Body(...)):
         return _bad_ret("Customer mac is required")
 
     vlan_id = vendor_manager.get_vlan_id(request_data)
-    service_vlan_id = vendor_manager.get_vlan_id(request_data)
+    service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     radius_username = vendor_manager.get_radius_username(request_data)
     now = datetime.now()
@@ -420,7 +420,8 @@ def _get_customer_and_service_and_lease_by_mac(
     return _build_srv_result_from_db_result(row=row)
 
 
-def _update_counters(leases, data: Mapping[str, str], counters: RadiusCounters, vendor_manager: VendorManager,
+def _update_counters(leases, data: Mapping[str, str], counters: RadiusCounters,
+                     customer_ip: str, radius_unique_id: str,
                      customer_mac: Optional[EUI] = None,
                      last_event_time=None, **update_kwargs):
     if last_event_time is None:
@@ -433,8 +434,6 @@ def _update_counters(leases, data: Mapping[str, str], counters: RadiusCounters, 
         output_packets=counters.output_packets,
         **update_kwargs,
     )
-    radius_unique_id = vendor_manager.get_radius_unique_id(data)
-    ip = vendor_manager.get_rad_val(data, "Framed-IP-Address", str)
     custom_signals.radius_auth_update_signal.send(
         sender=CustomerIpLeaseModel,
         instance=None,
@@ -442,7 +441,7 @@ def _update_counters(leases, data: Mapping[str, str], counters: RadiusCounters, 
         data=data,
         counters=counters,
         radius_unique_id=radius_unique_id,
-        ip_addr=ip,
+        ip_addr=customer_ip,
         customer_mac=customer_mac
     )
 
@@ -516,6 +515,7 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) 
             input_packets=0,
             output_packets=0,
             state=True,
+            session_id=radius_unique_id,
             last_update=now,
         )
     else:
@@ -586,7 +586,6 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -
 
 
 def _find_customer(data: Mapping[str, str], vendor_manager: VendorManager) -> Customer:
-    # TODO: Optimize
     opt82 = vendor_manager.get_opt82(data=data)
     if not opt82:
         raise BadRetException(detail="Failed fetch opt82 info")
@@ -625,6 +624,11 @@ def _find_customer(data: Mapping[str, str], vendor_manager: VendorManager) -> Cu
 
 def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -> Response:
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
+    if not radius_unique_id:
+        return _bad_ret(
+            "Request has no unique id",
+            custom_status=status.HTTP_200_OK
+        )
     customer_mac = vendor_manager.get_customer_mac(request_data)
     if not customer_mac:
         return _bad_ret("Customer mac is required")
@@ -634,6 +638,7 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
             "Request has no username",
             custom_status=status.HTTP_200_OK
         )
+    ip = vendor_manager.get_rad_val(request_data, "Framed-IP-Address", str)
     now = datetime.now()
     counters = vendor_manager.get_counters(request_data)
     leases = CustomerIpLeaseModel.objects.filter(
@@ -647,11 +652,12 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
             data=request_data,
             counters=counters,
             customer_mac=customer_mac,
-            vendor_manager=vendor_manager
+            customer_ip=ip,
+            radius_unique_id=radius_unique_id,
+            last_event_time=now
         )
     else:
         # create lease on customer profile if it not exists
-        ip = vendor_manager.get_rad_val(request_data, "Framed-IP-Address", str)
         vlan_id = vendor_manager.get_vlan_id(request_data)
         service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
         customer = _find_customer(data=request_data, vendor_manager=vendor_manager)
@@ -665,7 +671,7 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
             input_packets=counters.input_packets,
             output_packets=counters.output_packets,
             state=True,
-            lease_time=now,
+            # lease_time=now,
             last_update=now,
             session_id=str(radius_unique_id),
             radius_username=radius_username,
@@ -687,6 +693,7 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
                 )
         elif 'SERVICE-GUEST' in bras_service_name:
             # bras contain guest session
+            # TODO: optimize
             if customer is None:
                 customer = _find_customer(data=request_data, vendor_manager=vendor_manager)
             if customer.is_access():
