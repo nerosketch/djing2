@@ -1,14 +1,17 @@
 from datetime import datetime
 from typing import Optional, Mapping, Any
 
-from customers.models import CustomerService, Customer
 from django.db import connection
 from django.utils.translation import gettext_lazy as _
+from fastapi import APIRouter, HTTPException, Body
+from netaddr import EUI
+from starlette import status
+from starlette.responses import Response, JSONResponse
+
+from customers.models import CustomerService, Customer
 from djing2.lib import LogicError, safe_int
 from djing2.lib.logger import logger
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
-from fastapi import APIRouter, HTTPException, Body
-from netaddr import EUI
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
 from networks.tasks import (
     async_change_session_inet2guest,
@@ -22,8 +25,6 @@ from radiusapp.vendor_base import (
     SpeedInfoStruct, RadiusCounters
 )
 from radiusapp.vendors import VendorManager
-from starlette import status
-from starlette.responses import Response, JSONResponse
 
 # TODO: Also protect requests by hash
 router = APIRouter(
@@ -388,28 +389,28 @@ def _get_customer_and_service_and_lease_by_mac(
 ) -> Optional[CustomerServiceLeaseResult]:
     sql = (
         "SELECT ba.id, "
-        "ba.username, "
-        "ba.is_active, "
-        "cs.balance, "
-        "cs.is_dynamic_ip, "
-        "cs.auto_renewal_service, "
-        "cs.current_service_id, "
-        "cs.dev_port_id, "
-        "cs.device_id, "
-        "cs.gateway_id, "
-        "srv.speed_in, "
-        "srv.speed_out, "
-        "srv.speed_burst, "
-        "nip.ip_address, "
-        "nip.mac_address, "
-        "false "
+          "ba.username, "
+          "ba.is_active, "
+          "cs.balance, "
+          "cs.is_dynamic_ip, "
+          "cs.auto_renewal_service, "
+          "cs.current_service_id, "
+          "cs.dev_port_id, "
+          "cs.device_id, "
+          "cs.gateway_id, "
+          "srv.speed_in, "
+          "srv.speed_out, "
+          "srv.speed_burst, "
+          "nip.ip_address, "
+          "nip.mac_address, "
+          "false "
         "FROM customers cs "
-        "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
-        "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
-        "LEFT JOIN services srv ON srv.id = custsrv.service_id "
-        "LEFT JOIN networks_ip_leases nip ON nip.customer_id = cs.baseaccount_ptr_id "
+          "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+          "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
+          "LEFT JOIN services srv ON srv.id = custsrv.service_id "
+          "LEFT JOIN networks_ip_leases nip ON nip.customer_id = cs.baseaccount_ptr_id "
         "WHERE "
-        "nip.mac_address = %s::MACADDR "
+          "nip.mac_address = %s::MACADDR "
         "LIMIT 1;"
     )
     with connection.cursor() as cur:
