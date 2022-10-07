@@ -283,7 +283,7 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
         return _bad_ret(str(err))
 
 
-def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST):
+def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST) -> JSONResponse:
     logger.error(text)
     return JSONResponse({
         "Reply-Message": text
@@ -447,7 +447,7 @@ def _update_counters(leases, data: Mapping[str, str], counters: RadiusCounters, 
     )
 
 
-def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]):
+def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -> Response:
     """Accounting start handler."""
     if not vendor_manager or not vendor_manager.vendor_class:
         return _bad_ret(
@@ -554,12 +554,12 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any]):
+def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -> Response:
     ip = vendor_manager.get_rad_val(request_data, "Framed-IP-Address", str)
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     customer_mac = vendor_manager.get_customer_mac(request_data)
     leases = CustomerIpLeaseModel.objects.filter(
-        session_id=radius_unique_id
+        ip_address=ip,
     )
 
     counters = vendor_manager.get_counters(data=request_data)
@@ -576,6 +576,10 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any]):
     )
     leases.update(
         state=False,
+        input_octets=counters.input_octets,
+        output_octets=counters.output_octets,
+        input_packets=counters.input_packets,
+        output_packets=counters.output_packets,
         last_update=datetime.now()
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -619,7 +623,7 @@ def _find_customer(data: Mapping[str, str], vendor_manager: VendorManager) -> Cu
     )
 
 
-def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any]):
+def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -> Response:
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     customer_mac = vendor_manager.get_customer_mac(request_data)
     if not customer_mac:
