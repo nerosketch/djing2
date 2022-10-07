@@ -267,7 +267,7 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
     vendor_manager = VendorManager(vendor_name=vendor_name)
 
     request_type = vendor_manager.get_acct_status_type(request_data)
-    if request_type is None:
+    if not request_type:
         logger.error('request_type is None')
         return _acct_unknown(None, 'request_type is None')
 
@@ -285,7 +285,9 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
 
 def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST):
     logger.error(text)
-    return Response({"Reply-Message": text}, status_code=custom_status)
+    return JSONResponse({
+        "Reply-Message": text
+    }, status_code=custom_status)
 
 
 def _update_lease_send_ws_signal(customer_id: int):
@@ -502,27 +504,19 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]):
                 custom_status=status.HTTP_404_NOT_FOUND
             )
 
-        vlan_id = vendor_manager.get_vlan_id(request_data)
-        service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
-        counters = vendor_manager.get_counters(data=request_data)
         CustomerIpLeaseModel.objects.filter(
             ip_address=ip,
             customer=customer,
-            is_dynamic=False,
-            mac_address=None
+            mac_address=customer_mac,
+            radius_username=radius_username,
         ).update(
             mac_address=customer_mac,
-            input_octets=counters.input_octets,
-            output_octets=counters.output_octets,
-            input_packets=counters.input_packets,
-            output_packets=counters.output_packets,
+            input_octets=0,
+            output_octets=0,
+            input_packets=0,
+            output_packets=0,
             state=True,
-            lease_time=now,
             last_update=now,
-            session_id=radius_unique_id,
-            radius_username=radius_username,
-            svid=safe_int(service_vlan_id),
-            cvid=safe_int(vlan_id)
         )
     else:
         # auth by mac. Find static lease.
