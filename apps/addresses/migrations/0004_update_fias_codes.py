@@ -57,7 +57,6 @@ def _update_addr_types(apps, schema_editor):
             fias_address_level=new_ao_level,
             fias_address_type=new_ao_type,
         )
-        print(f'Updated ao {old_ao_type} -> {new_ao_type} L{new_ao_level}', r)
 
 
 class Migration(migrations.Migration):

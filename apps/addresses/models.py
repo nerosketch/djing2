@@ -210,7 +210,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         """
 
         # Уровень родительского элемента должен быть больше чем у детей
-        if self.parent_addr.fias_address_level > int(self.fias_address_level):
+        if self.parent_addr and self.parent_addr.fias_address_level > int(self.fias_address_level):
             raise ModelValidationError(
                 detail=(
                     'Выбран уровень(%s), который выше уровня родительского элемента(%d). '

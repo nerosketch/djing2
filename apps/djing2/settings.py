@@ -87,7 +87,7 @@ INSTALLED_APPS = [
     "devices.apps.DevicesConfig",
     "networks.apps.NetworksConfig",
     "customers.apps.CustomersConfig",
-    "messenger.apps.MessengerConfig",
+    # "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
     "traf_stat.apps.TrafStatConfig",
@@ -151,7 +151,7 @@ WSGI_APPLICATION = "djing2.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": "django.db.backends.postgresql",
         "CONN_MAX_AGE": os.getenv('CONN_MAX_AGE', 300),
         "NAME": os.getenv("POSTGRES_DB", "djing2"),
         "USER": os.getenv("POSTGRES_USER", "postgres"),
@@ -386,6 +386,9 @@ ARPING_ENABLED = os.getenv("ARPING_ENABLED", False)
 ARPING_ENABLED = bool(ARPING_ENABLED)
 
 # SITE_ID = 1
+
+if DEBUG:
+    TEST_RUNNER = "djing2.lib.fastapi.test.TestRunner"
 
 WEBPUSH_SETTINGS = {
     "VAPID_PUBLIC_KEY": get_secret("VAPID_PUBLIC_KEY"),

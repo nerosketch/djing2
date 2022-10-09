@@ -5,8 +5,10 @@ LABEL maintainer="nerosketch@gmail.com"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONOPTIMIZE=1
 ENV PYTHONIOENCODING=UTF-8
+ENV PYTHONPATH=/var/www/djing2:/var/www/djing2/apps
+ENV DJANGO_SETTINGS_MODULE=djing2.settings
 
-RUN ["apk", "add", "py3-psycopg2", "net-snmp-dev", "arping", "gettext", "inetutils-telnet", "gcc", "git", "musl-dev", "libffi-dev", "libpq-dev", "make", "--no-cache"]
+RUN ["apk", "add", "net-snmp-dev", "arping", "gettext", "inetutils-telnet", "gcc", "git", "musl-dev", "libffi-dev", "libpq-dev", "make", "--no-cache"]
 RUN ["adduser", "-G", "www-data", "-SDH", "-h", "/var/www/djing2", "www-data"]
 RUN mkdir -p /var/www/djing2/media /var/log/djing2 \
     && chown -R www-data. /var/www/djing2 /var/log/djing2
@@ -24,12 +26,11 @@ WORKDIR /var/www/djing2
 
 USER www-data
 
-RUN ["django-admin", "compilemessages"]
+#RUN ["django-admin", "compilemessages"]
 
 CMD ./manage.py migrate \
     && ./manage.py loaddata initial_data \
     # && ./manage.py shell -c "from create_initial_user import *; make_initial_user()"
     # --workers=(Total RAM in GB)
     && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --workers $(free -g | awk 'NR == 2{print $2}')
-#    && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --reload
-
+#   && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --reload
