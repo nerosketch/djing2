@@ -1,7 +1,7 @@
 from typing import Optional
 
 from django.db.models import Subquery, OuterRef, Count, Q
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib.logger import logger
 from addresses.models import AddressModelTypes, AddressModel
 from customer_contract.models import CustomerContractModel
@@ -168,15 +168,15 @@ class AccessPointExportTree(ExportTree[Customer]):
             ))
             return
 
-        addr_parent_street = _addr2str(addr.get_address_item_by_type(
+        addr_parent_street = addr.get_address_item_by_type(
             addr_type=AddressModelTypes.STREET
-        ))
+        )
         if not addr_parent_street:
             logger.error(
-            _('Customer "%s" with login "%s" address has no parent street element') % (
-                customer,
-                customer.username
-            ))
+                _('Customer "%s" with login "%s" address has no parent street element') % (
+                    customer,
+                    customer.username
+                ))
             return
 
         addr_building = _addr2str(addr.get_address_item_by_type(
@@ -194,7 +194,7 @@ class AccessPointExportTree(ExportTree[Customer]):
             "ap_id": addr.pk,
             "customer_id": customer.pk,
             "house": addr_house or addr_office,
-            "parent_id_ao": addr_parent_street,
+            "parent_id_ao": addr_parent_street.pk,
             "house_num": addr_house or None,
             "builing": addr_building,
             "building_corpus": addr_corpus or None,
@@ -202,8 +202,6 @@ class AccessPointExportTree(ExportTree[Customer]):
             "actual_start_time": contract.start_service_time,
             'actual_end_time': contract.end_service_time or None
         }
-
-
 
 
 def _report_about_customers_no_have_passport(customers_without_passports_qs):
@@ -224,6 +222,7 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
     В этом файле выгружается информация об абонентах, у которых контракт заключён с физическим лицом.
     Выгружаются только абоненты с паспортными данными.
     """
+
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/fiz_v2_{format_fname(self._event_time)}.txt"
 
@@ -423,6 +422,7 @@ class ContactSimpleExportTree(SimpleExportTree):
     В этом файле выгружается контактная информация
     для каждого абонента - ФИО, телефон и факс контактного лица.
     """
+
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/contact_phones_v1_{format_fname(self._event_time)}.txt"
 
@@ -442,7 +442,6 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     В этом файле выгружаются данные по договорам абонентов.
     :return:
     """
-    parent_dependencies = ()
 
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt"
@@ -455,17 +454,17 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     def get_export_type(cls):
         return ExportStampTypeEnum.CUSTOMER_CONTRACT
 
-    #def export_dependencies(self):
-    #    # Проверить и выгрузить все зависимости, если self._recursive
-    #    for dep_class, qs in self.parent_dependencies:
-    #        Тут надо сделать queryset для зависимостей
-    #        exporter = dep_class(recursive=True, event_time=self._event_time)
-    #        data = exporter.export(queryset=qs)
-    #        exporter.upload2ftp(data=data)
+    # def export_dependencies(self):
+    #     # Проверить и выгрузить все зависимости, если self._recursive
+    #     for dep_class, qs in self.parent_dependencies:
+    #         Тут надо сделать queryset для зависимостей
+    #         exporter = dep_class(recursive=True, event_time=self._event_time)
+    #         data = exporter.export(queryset=qs)
+    #         exporter.upload2ftp(data=data)
 
     def get_items(self, queryset):
         # Проверить и выгрузить все зависимости, если self._recursive
-        #if self._recursive:
+        # if self._recursive:
         #    self.export_dependencies()
 
         # Выгрузить себя
@@ -482,6 +481,6 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
             "contract_start_date": contract.start_service_time.date(),
             'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
             "contract_number": contract.contract_number,
-            "contract_title": _('Contract default title'),
+            "contract_title": gettext('Contract default title'),
             # "contract_title": contract.title,
         }

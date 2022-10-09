@@ -2,16 +2,15 @@ Django==3.1.14
 django-stubs==1.10.1
 djangorestframework==3.12.4
 Pillow>=8.2.0
-uWSGI
 
 # permissions
-#django-guardian
+djangorestframework-guardian
 
 # for mac address field
 netaddr==0.8.0
 
 # db client for Postgres
-psycopg2-binary==2.8.6
+psycopg2-binary
 
 git+https://github.com/nerosketch/easysnmp.git#egg=easysnmp
 # pid==3.0.4
@@ -30,9 +29,6 @@ django-cleanup==5.1.0
 # viberbot
 git+https://github.com/Viber/viber-bot-python.git#egg=viberbot
 
-uwsgi_tasks==0.7.3
-# redis==3.5.3
-
 django-cors-headers==3.7.0
 django-encrypted-model-fields
 django-netfields==1.2.2
@@ -43,8 +39,6 @@ git+https://github.com/pexpect/pexpect.git#egg=pexpect
 django-filter==2.4.0
 #pylibmc==1.6.1
 djangorestframework-queryfields==1.0.0
-
-djangorestframework-guardian
 
 django-webpush==0.3.3
 
@@ -60,8 +54,6 @@ pyTelegramBotAPI
 # radiusapp
 git+https://github.com/pyradius/pyrad.git#egg=pyrad
 
-drf-orjson-renderer==1.1.5
-
 pyyaml
 uritemplate
 
@@ -72,3 +64,9 @@ pyftpdlib==1.5.6
 
 # Csv and excel
 djangorestframework-csv>=2.1.1
+
+# fastapi
+fastapi
+uvicorn[standard]
+celery
+redis[hiredis]

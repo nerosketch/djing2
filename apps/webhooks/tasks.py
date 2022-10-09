@@ -2,8 +2,8 @@ import requests
 from typing import Optional
 from threading import Thread
 from datetime import datetime
-from uwsgi_tasks import task, TaskExecutor, SPOOL_OK
 
+from djing2 import celery_app
 from webhooks.models import HookObserver
 
 
@@ -39,8 +39,7 @@ def _run_task_thread(notification_type: int, app_label: str, model_str: str, dat
         yield thr
 
 
-@task(executor=TaskExecutor.SPOOLER, spooler_return=True, retry_timeout=15)
+@celery_app.task
 def send_update2observers_task(notification_type: int, app_label: str, model_str: str, data: Optional[dict] = None):
     for thr in _run_task_thread(notification_type, app_label, model_str, data):
         thr.join(timeout=300)
-    return SPOOL_OK

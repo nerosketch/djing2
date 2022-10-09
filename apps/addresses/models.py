@@ -1,17 +1,16 @@
-from __future__ import annotations
 from typing import Optional
 from django.db import models, connection
 from django.db.models import Q, Count
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import ValidationError
+from djing2.exceptions import ModelValidationError
 
-from djing2.lib import safe_int
+from djing2.lib import safe_int, IntEnumEx
 from djing2.models import BaseAbstractModel
 from .interfaces import IAddressObject
 from .fias_socrbase import AddressFIASInfo, AddressFIASLevelType
 
 
-class AddressModelTypes(models.IntegerChoices):
+class AddressModelTypes(IntEnumEx):
     UNKNOWN = 0, _('Unknown')
     LOCALITY = 4, _('Locality')
     STREET = 8, _('Street')
@@ -156,9 +155,6 @@ class AddressModel(IAddressObject, BaseAbstractModel):
     def is_locality(self):
         return self.address_type == AddressModelTypes.LOCALITY
 
-    def str_representation(self):
-        return self.full_title()
-
     def full_title(self):
         """
         Для текущего адреса получаем иерархию вверх, до страны.
@@ -178,7 +174,7 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         for addr in AddressModel.objects.filter(pk__in=ids_tree_query):
             yield addr.pk
 
-    def get_address_item_by_type(self, addr_type: AddressModelTypes) -> Optional[AddressModel]:
+    def get_address_item_by_type(self, addr_type: AddressModelTypes) -> Optional['AddressModel']:
         """
         :param addr_type: Id нижнего адресного объекта.
 
@@ -212,19 +208,42 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         """Нельзя чтобы у адресного объекта его тип был таким же как и у родителя.
            Например улица не может находится в улице, дом в доме, а город в городе.
         """
-        qs = AddressModel.objects.annotate(
-            # Считаем всех потомков, у которых тип адреса как а родителя
-            children_addrs_count=Count('addressmodel', filter=Q(addressmodel__fias_address_type=self.fias_address_type))
-        ).filter(
-            Q(parent_addr__fias_address_type=self.fias_address_type) | # Сверяемся с родителем
-            Q(children_addrs_count__gt=0),
-            pk=self.pk
-        )
-        if qs.exists():
-            raise ValidationError(
-                'У родительского адресного объекта не может '
-                'быть такой же тип как у родителя'
+
+        # Уровень родительского элемента должен быть больше чем у детей
+        if self.parent_addr and self.parent_addr.fias_address_level > int(self.fias_address_level):
+            raise ModelValidationError(
+                detail=(
+                    'Выбран уровень(%s), который выше уровня родительского элемента(%d). '
+                    'Не надо так, он должен быть меньше.' % (
+                        self.fias_address_level,
+                        self.parent_addr.fias_address_level
+                    )
+                )
             )
+
+        qs = AddressModel.objects.get_address_recursive_ids(
+            addr_id=self.pk,
+            direction_down=False
+        )
+        if AddressModel.objects.filter(
+            pk__in=qs,
+            fias_address_type=self.fias_address_type
+        ).exclude(pk=self.pk).exists():
+            raise ModelValidationError(
+                detail='У родительского адресного объекта не может '
+                       'быть такой же тип адреса'
+            )
+
+        # Нельзя чтобы address_type=OTHER был ниже чем street
+        if int(self.address_type) == AddressModelTypes.OTHER.value:
+            street_qs = AddressModel.objects.get_address_by_type(
+                addr_id=self.pk,
+                addr_type=AddressModelTypes.STREET
+            )
+            if street_qs.exists():
+                raise ModelValidationError(
+                    detail=f'Нельзя указывать тип {_("Other")} ниже улицы'
+                )
         return super().save(*args, **kwargs)
 
     def __str__(self):
@@ -233,7 +252,25 @@ class AddressModel(IAddressObject, BaseAbstractModel):
     def __repr__(self):
         return "<%s> %s" % (self.get_address_type_display(), self.title)
 
+    @property
+    def parent_addr_title(self) -> Optional[str]:
+        if self.parent_addr:
+            return str(self.parent_addr.title)
+
+    @property
+    def fias_address_level_name(self):
+        fn = getattr(self, 'get_fias_address_level_display', None)
+        if fn is None:
+            return
+        return fn()
+
+    @property
+    def fias_address_type_name(self):
+        fn = getattr(self, 'get_fias_address_type_display', None)
+        if fn is None:
+            return
+        return fn()
+
     class Meta:
         db_table = 'addresses'
         unique_together = ('parent_addr', 'address_type', 'fias_address_type', 'title')
-

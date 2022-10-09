@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, Optional
+from typing import Optional
 from datetime import datetime, date, timedelta
 from bitfield.models import BitField
 from django.core.exceptions import ValidationError
@@ -14,7 +14,7 @@ from djing2.models import BaseAbstractModel, BaseAbstractModelMixin
 from groupapp.models import Group
 
 
-def split_fio(fio: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def split_fio(fio: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """Try to split name, last_name, and surname."""
     full_fname = str(fio)
     full_name_list = full_fname.split()
@@ -128,6 +128,10 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
         """ Is the user a member of staff?"""
         # Simplest possible answer: All admins are staff
         return self.is_admin
+
+    @property
+    def full_name(self):
+        return self.get_full_name()
 
     def __str__(self):
         return self.get_full_name()

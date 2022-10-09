@@ -1,26 +1,37 @@
-from typing import Iterable
+from dataclasses import dataclass
+from typing import Iterable, Generator
 
-from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock
+from djing2.lib import RuTimedelta, safe_int, macbin2str, process_lock_decorator
 from devices.device_config.base import Vlans, Vlan
-from ..pon_device_strategy import PonOLTDeviceStrategyContext
+from ..pon_device_strategy import PonOLTDeviceStrategyContext, FiberDataClass
 from ..epon.bdcom_p3310c import BDCOM_P3310C
 from ...base_device_strategy import SNMPWorker
 
 _DEVICE_UNIQUE_CODE = 5
 
 
+@dataclass(frozen=True)
+class UnregisteredUnitType:
+    mac: str
+    firmware_ver: str
+    loid: str
+    loid_passw: str
+    fiber: str
+    sn: str
+
+
 class ZTE_C320(BDCOM_P3310C):
     description = "OLT ZTE C320"
     ports_len = 8
 
-    def get_fibers(self):
+    def get_fibers(self) -> Generator[FiberDataClass, None, None]:
         dev = self.model_instance
         snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
         fibers = (
-            {
-                "fb_id": int(fiber_id),
-                "fb_name": fiber_name,
-                "fb_onu_num": safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.13.1.1.13.%d" % int(fiber_id))),
+            FiberDataClass(
+                fb_id=int(fiber_id),
+                fb_name=fiber_name,
+                fb_onu_num=safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.13.1.1.13.%d" % int(fiber_id))),
                 # 'fb_active_onu': -1,
                 # Temperature GPON SFP module
                 # 'fb_temp': safe_float(self.get_item(
@@ -30,7 +41,7 @@ class ZTE_C320(BDCOM_P3310C):
                 # 'fb_power': safe_float(self.get_item(
                 #     '.1.3.6.1.4.1.3902.1015.3.1.13.1.9.%d' % safe_int(fiber_id)
                 # )) / 1000.0
-            }
+            )
             for fiber_name, fiber_id in snmp.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.13.1.1.1")
         )
         return fibers
@@ -50,7 +61,7 @@ class ZTE_C320(BDCOM_P3310C):
         details.update(super().get_details())
         return details
 
-    @process_lock()
+    @process_lock_decorator()
     def get_ports_on_fiber(self, fiber_num: int) -> Iterable:
         dev = self.model_instance
         snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
@@ -81,23 +92,25 @@ class ZTE_C320(BDCOM_P3310C):
 
         return onu_list
 
-    def get_units_unregistered(self, fiber_num: int):
+    def get_units_unregistered(self, fiber: FiberDataClass) -> Generator[UnregisteredUnitType, None, None]:
+        fiber_num = fiber.fb_id
         dev = self.model_instance
         snmp = SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw))
-        sn_num_list = snmp.get_list_keyval(".1.3.6.1.4.1.3902.1012.3.13.3.1.2.%d" % fiber_num)
+        sn_list = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.2.%d" % fiber_num)
         firmware_ver = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.11.%d" % fiber_num)
         loid_passws = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.9.%d" % fiber_num)
         loids = snmp.get_list(".1.3.6.1.4.1.3902.1012.3.13.3.1.8.%d" % fiber_num)
 
         return (
-            {
-                "mac": macbin2str(sn[-6:]),
-                "firmware_ver": frm_ver,
-                "loid_passw": loid_passw,
-                "loid": loid,
-                "sn": "ZTEG" + "".join("%.2x" % i for i in sn[-4:]).upper(),
-            }
-            for frm_ver, loid_passw, loid, (sn, num) in zip(firmware_ver, loid_passws, loids, sn_num_list)
+            UnregisteredUnitType(
+                mac=macbin2str(sn[-6:]),
+                firmware_ver=frm_ver,
+                loid_passw=loid_passw,
+                loid=loid,
+                fiber=fiber.fb_name,
+                sn=sn[:4].decode() + ''.join('%.2x' % i for i in sn[-4:]).upper(),
+            )
+            for frm_ver, loid_passw, loid, sn in zip(firmware_ver, loid_passws, loids, sn_list)
         )
 
     def get_uptime(self):
@@ -131,7 +144,7 @@ class ZTE_C320(BDCOM_P3310C):
     #     out = self.read_until(self.prompt)
     #     return b'bad password' in out
 
-    @process_lock()
+    @process_lock_decorator()
     def read_all_vlan_info(self) -> Vlans:
         dev = self.model_instance
         with SNMPWorker(hostname=dev.ip_address, community=str(dev.man_passw)) as snmp:

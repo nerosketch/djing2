@@ -110,8 +110,8 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
         try:
             is_pinged = lease.ping_icmp()
             if not is_pinged:
-                arping_enabled = getattr(settings, "ARPING_ENABLED", False)
-                if arping_enabled and lease.ping_icmp(arp=True):
+                # arping_enabled = getattr(settings, "ARPING_ENABLED", False)
+                if lease.ping_icmp(arp=False):
                     text = _("arp ping ok")
                 else:
                     text = _("no ping")

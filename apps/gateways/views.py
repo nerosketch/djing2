@@ -26,6 +26,7 @@ class GatewayModelViewSet(DjingModelViewSet):
         gw_id = safe_int(request.query_params.get("gw_id"))
         if gw_id > 0:
             res = Gateway.get_user_credentials_by_gw(gw_id=gw_id)
+            res = tuple(res)
             # res = (customer_id, lease_id, lease_time, lease_mac, ip_address,
             #  speed_in, speed_out, speed_burst, service_start_time,
             #  service_deadline)

@@ -51,7 +51,7 @@ class ExportStampModel(models.Model):
         choices=ExportStampTypeEnum.choices,
         default=ExportStampTypeEnum.UNKNOWN_CHOICE
     )
-    data = JSONField(_('Export event data'))
+    data = JSONField(_('Export event data'), null=True, blank=True, default=None)
 
     class Meta:
         db_table = 'sorm_export_stamp'

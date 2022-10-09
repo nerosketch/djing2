@@ -21,9 +21,6 @@ class ZteF660RouterScriptModule(ZteF601BridgeScriptModule):
     accept_vlan = False
     zte_type = "ZTE-F660"
 
-    def apply_zte_bot_conf(self, *args, **kwargs) -> None:
-        pass
-
     def apply_zte_top_conf(self, *args, **kwargs) -> None:
         return super().apply_zte_top_conf(get_onu_template_fn=_get_onu_template, *args, **kwargs)
 

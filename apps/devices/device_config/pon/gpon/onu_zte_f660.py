@@ -1,21 +1,21 @@
 import re
-from typing import Optional, Dict
+from typing import Optional
 
 from django.utils.translation import gettext_lazy as _
 
-from djing2.lib import safe_int, process_lock
-from devices.device_config.base import DeviceConsoleError
+from djing2.lib import safe_int, process_lock_decorator
+from devices.device_config.base import DeviceConsoleError, Vlan
 from devices.device_config import expect_util
 from .onu_config.zte_onu import ZteOnuDeviceConfigType
 from . import zte_utils
-from ..epon.epon_bdcom_fora import EPON_BDCOM_FORA
+from ..epon.epon_bdcom_fora import EPON_BDCOM_FORA, DefaultVlanDC
 from ..pon_device_strategy import PonONUDeviceStrategyContext
 from ...base_device_strategy import SNMPWorker
 
 _DEVICE_UNIQUE_CODE = 6
 
 
-@process_lock(lock_name="zte_olt")
+@process_lock_decorator(lock_name="zte_olt")
 def _remove_zte_onu_from_olt(zte_ip_addr: str, telnet_login: str, telnet_passw: str,
                              telnet_prompt: str, snmp_info: str, *args, **kwargs):
     if not re.match(expect_util.IP4_ADDR_REGEX, zte_ip_addr):
@@ -49,7 +49,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
     tech_code = "zte_onu"
     ports_len = 4
 
-    def get_details(self) -> Optional[Dict]:
+    def get_details(self, sn_prefix='ZTEG', mac_prefix='45:47') -> Optional[dict]:
         dev = self.model_instance
         if dev is None:
             return {}
@@ -72,17 +72,27 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         sn = snmp.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
         if sn is not None:
             if isinstance(sn, bytes):
-                sn = "ZTEG%s" % "".join("%.2X" % int(x) for x in sn[-4:])
+                sn = f"{sn_prefix}%s" % "".join("%.2X" % int(x) for x in sn[-4:])
             else:
-                sn = "ZTEG%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
+                sn = f"{sn_prefix}%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
 
-        status_map = {1: "ok", 2: "down"}
+        raw_status = snmp.get_item(".1.3.6.1.4.1.3902.1012.3.28.2.1.4.%s" % fiber_addr)
+
+        status_map = {
+            0: "logging",
+            1: "los",
+            2: "syncMib",
+            3: "working",
+            4: "dyinggasp",
+            5: "authFailed",
+            6: "offline"
+        }
         return {
             "status": status_map.get(
-                safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.1.%s.1" % fiber_addr)), "unknown"
+                safe_int(raw_status), "unknown"
             ),
             "signal": zte_utils.conv_zte_signal(signal),
-            "mac": zte_utils.sn_to_mac(sn),
+            "mac": zte_utils.sn_to_mac(sn, prefix=mac_prefix),
             "info": (
                 (_("name"), snmp.get_item(".1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s" % fiber_addr)),
                 # 'distance': safe_float(distance) / 10,
@@ -93,23 +103,23 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             ),
         }
 
-    def default_vlan_info(self):
+    def default_vlan_info(self) -> list[DefaultVlanDC]:
         default_vid = 1
         dev = self.model_instance
         if dev and dev.parent_dev and dev.parent_dev.extra_data:
             default_vid = dev.parent_dev.extra_data.get("default_vid", 1)
-        def_vids = [{"vid": default_vid, "native": True}]
+        def_vids = [Vlan(vid=default_vid, native=True)]
         return [
-            {"port": 1, "vids": def_vids},
-            {"port": 2, "vids": def_vids},
-            {"port": 3, "vids": def_vids},
-            {"port": 4, "vids": def_vids},
+            DefaultVlanDC(port=1, vids=def_vids),
+            DefaultVlanDC(port=2, vids=def_vids),
+            DefaultVlanDC(port=3, vids=def_vids),
+            DefaultVlanDC(port=4, vids=def_vids),
         ]
 
     def read_onu_vlan_info(self):
         dev = self.model_instance
         if dev is None:
-            return
+            return []
         snmp_extra = dev.snmp_extra
         if not snmp_extra:
             return self.default_vlan_info()
@@ -128,7 +138,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
                 )
             )
 
-        def _get_trunk_vlans(port_num: int) -> list:
+        def _get_trunk_vlans(port_num: int) -> list[Vlan]:
             trunk_vlans = snmp.get_item(
                 ".1.3.6.1.4.1.3902.1012.3.50.15.100.1.1.7.%(fiber_num)d.%(onu_num)d.1.%(port_num)d"
                 % {"port_num": port_num, "fiber_num": fiber_num, "onu_num": onu_num}
@@ -148,7 +158,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             vids = (
                 tuple(t) if isinstance(t, range) else (t,) for t in map(_rng, filter(bool, trunk_vlans.split(b",")))
             )
-            return [{"vid": v, "native": False} for i in vids for v in i]
+            return [Vlan(vid=v, native=False) for i in vids for v in i]
 
         # Result example
         # [
@@ -162,11 +172,14 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         #     }
         # ]
         return (
-            {
-                "port": i,
-                "vids": [{"vid": _get_access_vlan(port_num=i), "native": True}] + _get_trunk_vlans(port_num=i),
-            }
-            for i in range(1, 5)
+            DefaultVlanDC(
+                port=i,
+                vids=[Vlan(
+                    vid=_get_access_vlan(port_num=i),
+                    native=True
+                )] + _get_trunk_vlans(port_num=i),
+            )
+            for i in range(1, self.ports_len+1)
         )
 
     @staticmethod
@@ -174,7 +187,7 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
         # for example 268501760.5
         zte_utils.split_snmp_extra(v)
 
-    def remove_from_olt(self, extra_data: Dict, **kwargs):
+    def remove_from_olt(self, extra_data: dict, sn_prefix='ZTEG', mac_prefix='45:47', **kwargs):
         dev = self.model_instance
         if not dev:
             return False
@@ -192,10 +205,10 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             sn = snmp.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
         if sn is not None:
             if isinstance(sn, str):
-                sn = "ZTEG%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
+                sn = f"{sn_prefix}%s" % "".join("%.2X" % ord(x) for x in sn[-4:])
             else:
-                sn = "ZTEG%s" % "".join("%.2X" % x for x in sn[-4:])
-            sn_mac = zte_utils.sn_to_mac(sn)
+                sn = f"{sn_prefix}%s" % "".join("%.2X" % x for x in sn[-4:])
+            sn_mac = zte_utils.sn_to_mac(sn, prefix=mac_prefix)
             if str(dev.mac_addr) != sn_mac:
                 raise expect_util.ExpectValidationError(_("Mac of device not equal mac by snmp"))
             return _remove_zte_onu_from_olt(

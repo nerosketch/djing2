@@ -48,17 +48,18 @@ if SECRET_KEY is None:
 DEBUG = os.getenv("APP_DEBUG", False)
 DEBUG = bool(DEBUG)
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS")
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", ())
 if ALLOWED_HOSTS:
     ALLOWED_HOSTS = ALLOWED_HOSTS.split('|')
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_EMAIL")
 
-# ADMINS = os.getenv("ADMINS")
-# if isinstance(ADMINS, str):
-#    ADMINS = json.loads(ADMINS)
-# else:
-ADMINS = [("Admin", "admin@localhost")]
+ADMINS = os.getenv("ADMINS")
+if isinstance(ADMINS, str):
+    import json
+    ADMINS = json.loads(ADMINS)
+else:
+    ADMINS = [("Admin", "admin@localhost")]
 
 # Application definition
 
@@ -86,7 +87,7 @@ INSTALLED_APPS = [
     "devices.apps.DevicesConfig",
     "networks.apps.NetworksConfig",
     "customers.apps.CustomersConfig",
-    "messenger.apps.MessengerConfig",
+    # "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
     "traf_stat.apps.TrafStatConfig",
@@ -105,6 +106,7 @@ if DEBUG:
     INSTALLED_APPS.insert(0, "django.contrib.admin")
 
 MIDDLEWARE = [
+    "djing2.middleware.XRealIPMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -149,7 +151,7 @@ WSGI_APPLICATION = "djing2.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": "django.db.backends.postgresql",
         "CONN_MAX_AGE": os.getenv('CONN_MAX_AGE', 300),
         "NAME": os.getenv("POSTGRES_DB", "djing2"),
         "USER": os.getenv("POSTGRES_USER", "postgres"),
@@ -212,12 +214,12 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
-        'file': {
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'class': 'logging.FileHandler',
-            'filename': os.getenv('DJING2_LOG_FILE', '/tmp/djing2.log'),
-            'formatter': 'simple'
-        }
+        # 'file': {
+        #     'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        #     'class': 'logging.FileHandler',
+        #     'filename': os.getenv('DJING2_LOG_FILE', '/tmp/djing2.log'),
+        #     'formatter': 'simple'
+        # }
     },
     'root': {
         'handlers': ['console'],
@@ -225,12 +227,14 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'console'],
+            # 'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False
         },
         'djing2_logger': {
-            'handlers': ['file', 'console'],
+            # 'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False
         }
@@ -322,6 +326,7 @@ REST_FRAMEWORK = {
     "DATETIME_INPUT_FORMATS": [
         "%Y-%m-%d %H:%M",
         "%Y-%m-%dT%H:%M",
+        "%Y-%m-%dT%H:%M:%S.%f",
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%d",
     ],
@@ -332,8 +337,7 @@ REST_FRAMEWORK = {
         # 'djing2.permissions.CustomizedDjangoObjectPermissions'
     ],
     'DEFAULT_RENDERER_CLASSES': [
-        # 'djing2.lib.renderer.ExtendedRenderer',
-        'rest_framework.renderers.JSONRenderer',
+        'djing2.lib.renderer.CustomJSONRenderer',
         'rest_framework_csv.renderers.CSVRenderer',
     ]
 }
@@ -382,6 +386,9 @@ ARPING_ENABLED = bool(ARPING_ENABLED)
 
 # SITE_ID = 1
 
+if DEBUG:
+    TEST_RUNNER = "djing2.lib.fastapi.test.TestRunner"
+
 WEBPUSH_SETTINGS = {
     "VAPID_PUBLIC_KEY": get_secret("VAPID_PUBLIC_KEY"),
     "VAPID_PRIVATE_KEY": get_secret("VAPID_PRIVATE_KEY"),
@@ -406,3 +413,15 @@ SORM_REPORTING_EMAILS = []
 CONTRACTS_OPTIONS = {
     'DEFAULT_TITLE': os.getenv('CONTRACT_DEFAULT_TITLE', 'Contract default title')
 }
+
+# PAYME_CREDENTIALS = base64(login:password)
+PAYME_CREDENTIALS = get_secret("PAYME_CREDENTIALS")
+
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'pyamqp://user:passw@djing2rabbitmq/')
+CELERY_SERIALIZER = 'msgpack'
+
+REDIS_HOST = os.getenv('REDIS_HOST', 'djing2redis')
+REDIS_PORT = os.getenv('REDIS_PORT', 6379)
+REDIS_AUTH_CASHE_TTL = os.getenv('REDIS_AUTH_CASHE_TTL', 3600)

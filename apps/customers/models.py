@@ -1,9 +1,10 @@
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from ipaddress import AddressValueError, IPv4Address
-from typing import Optional, List
+from typing import Optional, Generator
 
 from bitfield import BitField
+from pydantic import BaseModel
 from django.conf import settings
 from django.core import validators
 from django.db import connection, models, transaction
@@ -234,6 +235,14 @@ class CustomerQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
         return self.remove_filter('address_id').filter(address_id__in=addr_ids_raw_query)
 
 
+class CustomerAFKType(BaseModel):
+    timediff: timedelta
+    last_date: date
+    customer_id: int
+    customer_uname: str
+    customer_fio: str
+
+
 class CustomerManager(MyUserManager):
     def get_queryset(self):
         return super().get_queryset().filter(is_admin=False)
@@ -320,7 +329,7 @@ class CustomerManager(MyUserManager):
         }
 
     @staticmethod
-    def filter_afk(date_limit: Optional[datetime] = None, out_limit=50):
+    def filter_afk(date_limit: Optional[datetime] = None, out_limit=50) -> Generator[CustomerAFKType, None, None]:
         # TODO: кто продолжительное время не пользуется услугой
         if date_limit is None or not isinstance(date_limit, datetime):
             date_limit = datetime.now() - timedelta(days=60)
@@ -331,13 +340,13 @@ class CustomerManager(MyUserManager):
             res = cur.fetchone()
             while res is not None:
                 timediff, last_date, customer_id, customer_uname, customer_fio = res
-                yield {
-                    'timediff': timediff,
-                    'last_date': last_date,
-                    'customer_id': customer_id,
-                    'customer_uname': customer_uname,
-                    'customer_fio': customer_fio
-                }
+                yield CustomerAFKType(
+                    timediff=timediff,
+                    last_date=last_date,
+                    customer_id=customer_id,
+                    customer_uname=customer_uname,
+                    customer_fio=customer_fio
+                )
                 res = cur.fetchone()
 
     @staticmethod
@@ -544,6 +553,7 @@ class Customer(IAddressContaining, BaseAccount):
         ("icon_red_tel", _("Red phone")),
         ("icon_green_tel", _("Green phone")),
         ('icon_doc', _('Document')),
+        ('icon_reddoc', _('Red document')),
     )
     markers = BitField(flags=MARKER_FLAGS, default=0)
 
@@ -576,7 +586,7 @@ class Customer(IAddressContaining, BaseAccount):
             return tuple(name for name, state in self.markers if state)
         return ()
 
-    def set_markers(self, flag_names: List[str]):
+    def set_markers(self, flag_names: list[str]):
         flags = None
         for flag_name in flag_names:
             flag = getattr(Customer.markers, flag_name)
@@ -591,7 +601,7 @@ class Customer(IAddressContaining, BaseAccount):
     def active_service(self) -> CustomerService:
         return self.current_service
 
-    def add_balance(self, profile: UserProfile, cost: float, comment: str) -> None:
+    def add_balance(self, profile: Optional[UserProfile], cost: float, comment: str) -> None:
         old_balance = self.balance
         CustomerLog.objects.create(
             customer=self,
@@ -856,14 +866,53 @@ class Customer(IAddressContaining, BaseAccount):
                 if lease.ping_icmp():
                     return _("Ping ok"), True
                 else:
-                    arping_enabled = getattr(settings, "ARPING_ENABLED", False)
-                    if arping_enabled and lease.ping_icmp(arp=True):
+                    # arping_enabled = getattr(settings, "ARPING_ENABLED", False)
+                    if lease.ping_icmp(arp=False):
                         return _("arp ping ok"), True
             return _("no ping"), False
         except ProcessLocked:
             return _("Process locked by another process"), False
         except ValueError as err:
             return str(err), False
+
+    @property
+    def group_title(self) -> Optional[str]:
+        if self.group:
+            return str(self.group.title)
+
+    @property
+    def address_title(self):
+        return self.full_address
+
+    @property
+    def device_comment(self):
+        if self.device:
+            return str(self.device.comment)
+
+    @property
+    def last_connected_service_title(self):
+        if self.last_connected_service:
+            return str(self.last_connected_service.title)
+
+    @property
+    def current_service_title(self):
+        if self.current_service and self.current_service.service:
+            return str(self.current_service.service.title)
+
+    @property
+    def service_id(self) -> Optional[int]:
+        if self.current_service:
+            return int(self.current_service.pk)
+
+    @property
+    def raw_password(self) -> Optional[str]:
+        raw_passw = getattr(self, 'customerrawpassword', None)
+        if raw_passw is not None:
+            return str(raw_passw.passw_text)
+
+    @property
+    def marker_icons(self) -> list[str]:
+        return [i for i in self.get_flag_icons()]
 
     class Meta:
         db_table = "customers"

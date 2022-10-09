@@ -1,4 +1,5 @@
-from typing import Dict
+from dataclasses import dataclass
+
 from django.utils.translation import gettext, gettext_lazy as _
 from easysnmp import EasySNMPTimeoutError
 
@@ -13,6 +14,12 @@ from ..pon_device_strategy import PonOnuDeviceStrategy, PonONUDeviceStrategyCont
 from ...base_device_strategy import SNMPWorker
 
 _DEVICE_UNIQUE_CODE = 3
+
+
+@dataclass
+class DefaultVlanDC:
+    port: int
+    vids: Vlans
 
 
 class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
@@ -45,7 +52,7 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
     def get_uptime(self):
         return '0'
 
-    def get_details(self):
+    def get_details(self) -> dict:
         dev = self.model_instance
         if dev is None:
             return {}
@@ -111,7 +118,7 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
         except ValueError as err:
             raise ExpectValidationError(_("Onu snmp field must be en integer")) from err
 
-    def remove_from_olt(self, extra_data: Dict, **kwargs):
+    def remove_from_olt(self, extra_data: dict, **kwargs):
         dev = self.model_instance
         if not dev:
             return False
@@ -137,7 +144,7 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
     def read_onu_vlan_info(self):
         return []
 
-    def default_vlan_info(self):
+    def default_vlan_info(self) -> list[DefaultVlanDC]:
         return []
 
     def read_all_vlan_info(self) -> Vlans:

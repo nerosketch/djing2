@@ -1,21 +1,21 @@
 from dataclasses import dataclass, asdict
-from typing import List
+from typing import Sequence
 from django.core.mail import EmailMessage
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.backends.smtp import EmailBackend
-from uwsgi_tasks import task
+from djing2 import celery_app
 
 
 @dataclass
 class EmailMessageDataClass:
     from_email: str
-    recipients: List[str]
+    recipients: list[str]
     message: str
     subject: str = ''
 
 
-@task()
-def _send_smtp_email_task(messages: List[dict]):
+@celery_app.task
+def send_smtp_email_task(messages: list[dict]):
     msgs = (EmailMessageDataClass(**m) for m in messages)
     with EmailBackend() as conn:
         for msg in msgs:
@@ -31,8 +31,7 @@ def _send_smtp_email_task(messages: List[dict]):
 class Djing2EmailBackend(BaseEmailBackend):
     """Email backend that send mails async."""
 
-    @staticmethod
-    def send_messages(email_messages: List[EmailMessage]) -> int:
+    def send_messages(self, email_messages: Sequence[EmailMessage]) -> int:
         """
         Send one or more EmailMessage objects and return the number of email
         messages sent.
@@ -48,5 +47,5 @@ class Djing2EmailBackend(BaseEmailBackend):
             )
         ) for message in email_messages]
 
-        _send_smtp_email_task(messages=messages)
+        send_smtp_email_task.delay(messages=messages)
         return len(messages)

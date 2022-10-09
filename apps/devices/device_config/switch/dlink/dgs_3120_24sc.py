@@ -1,7 +1,7 @@
-from typing import AnyStr, List, Generator
+from typing import AnyStr, Generator
 import struct
 
-from djing2.lib import safe_int, RuTimedelta, process_lock
+from djing2.lib import safe_int, RuTimedelta, process_lock_decorator
 from devices.device_config.base_device_strategy import SNMPWorker
 from devices.device_config.switch.switch_device_strategy import (
     SwitchDeviceStrategyContext, SwitchDeviceStrategy,
@@ -52,7 +52,7 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
             yield Vlan(vid=vid, title=name, native=untagged_members[port - 1])
 
     @staticmethod
-    def _make_ports_map(data: AnyStr) -> List[bool]:
+    def _make_ports_map(data: AnyStr) -> list[bool]:
         if isinstance(data, bytes):
             data = data[:4]
         else:
@@ -61,7 +61,7 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
         return list(v == "1" for v in f"{i:032b}")
 
     @staticmethod
-    def _make_buf_from_ports_map(ports_map: List) -> bytes:
+    def _make_buf_from_ports_map(ports_map: list) -> bytes:
         i = int("".join("1" if m else "0" for m in ports_map), base=2)
         return struct.pack("!I", i)
 
@@ -75,7 +75,7 @@ class DlinkDGS_3120_24SCSwitchInterface(SwitchDeviceStrategy):
                 continue
             yield Vlan(vid=vid, title=vid_name)
 
-    @process_lock()
+    @process_lock_decorator()
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)

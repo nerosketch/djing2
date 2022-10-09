@@ -1,5 +1,4 @@
 # from typing import List
-# from uwsgi_tasks import task
 # from services.models import Service
 # from sorm_export.hier_export.service import NomenclatureSimpleExportTree
 # from sorm_export.models import ExportStampTypeEnum

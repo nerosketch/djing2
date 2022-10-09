@@ -68,7 +68,9 @@ class HookObserverModelViewSet(ModelViewSet):
         find_kwargs = self.find_hook_observer_model(request.data)
         if not find_kwargs:
             return Response('Hook observer model not found', status=status.HTTP_404_NOT_FOUND)
-        ho = get_object_or_404(HookObserver, **find_kwargs)
+        ho = HookObserver.objects.filter(**find_kwargs)
+        if not ho.exists():
+            return Response('hook not found', status=status.HTTP_404_NOT_FOUND)
         ho.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

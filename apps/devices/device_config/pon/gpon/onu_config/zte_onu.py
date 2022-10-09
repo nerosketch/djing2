@@ -1,13 +1,13 @@
 import re
 import abc
-from typing import Optional, Tuple
+from typing import Optional
 from pexpect import TIMEOUT
 
 from django.utils.translation import gettext_lazy as _
 from devices.device_config import expect_util
 from devices.device_config.base import OptionalScriptCallResult, DeviceConfigurationError
 from devices.device_config.base_device_strategy import DeviceConfigType
-from djing2.lib import process_lock, safe_int
+from djing2.lib import process_lock_decorator, safe_int
 from .. import zte_utils
 from ...utils import get_all_vlans_from_config
 
@@ -16,6 +16,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
     title = ""
     short_code = ""
     accept_vlan = False
+    sn_regexp = r"^ZTEG[0-9A-F]{8}$"
     zte_type = None
     ch = None
 
@@ -23,6 +24,13 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         if self.ch is not None and not self.ch.closed:
             self.ch.close()
             self.ch = None
+
+    @staticmethod
+    def format_sn_from_mac(mac: str) -> str:
+        # Format serial number from mac address
+        # because saved mac address got from serial number
+        sn = "ZTEG%s" % "".join("%.2X" % int(x, base=16) for x in mac.split(":")[-4:])
+        return sn
 
     def entry_point(self, config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
         extra_data = self.get_extra_data(device)
@@ -38,16 +46,15 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         if mac is None:
             raise DeviceConfigurationError(_('Devices has not mac address.'))
 
-        # Format serial number from mac address
-        # because saved mac address got from serial number
-        sn = "ZTEG%s" % "".join("%.2X" % int(x, base=16) for x in mac.split(":")[-4:])
         telnet = extra_data.get("telnet")
         if telnet is None:
             raise DeviceConfigurationError("'telnet' parameter no passed")
 
-        @process_lock(lock_name="zte_olt")
-        def _locked_register_onu(device_config_type: ZteOnuDeviceConfigType, *args, **kwargs):
-            return device_config_type.register_onu(*args, **kwargs)
+        sn = self.format_sn_from_mac(mac=mac)
+
+        @process_lock_decorator(lock_name="zte_olt")
+        def _locked_register_onu(device_config_type: ZteOnuDeviceConfigType, *largs, **lkwargs):
+            return device_config_type.register_onu(*largs, **lkwargs)
 
         try:
             onu_snmp = _locked_register_onu(
@@ -114,8 +121,8 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         *args,
         **kwargs,
     ) -> Optional[str]:
-        if not re.match(r"^ZTEG[0-9A-F]{8}$", serial):
-            raise expect_util.ExpectValidationError("Serial not valid, match: ^ZTEG[0-9A-F]{8}$")
+        if not re.match(self.sn_regexp, serial):
+            raise expect_util.ExpectValidationError(f"Serial not valid, match: {self.sn_regexp}")
 
         all_vids = get_all_vlans_from_config(config=config)
         if not all_vids:
@@ -175,7 +182,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         ch.close()
         return zte_utils.zte_onu_conv_to_num(rack_num=rack_num, fiber_num=fiber_num, port_num=free_onu_number)
 
-    def find_unregistered_onu(self, prompt: str, serial: str) -> Tuple[int, int, int]:
+    def find_unregistered_onu(self, prompt: str, serial: str) -> tuple[int, int, int]:
         # Find unregistered onu ↓
         ch = self.ch
         choice = ch.do_cmd("show gpon onu uncfg", ["No related information to show", f"{prompt}#"])
@@ -222,6 +229,11 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
     def apply_zte_top_conf(self, *args, **kwargs) -> None:
         raise NotImplementedError
 
-    @abc.abstractmethod
     def apply_zte_bot_conf(self, *args, **kwargs):
-        raise NotImplementedError
+        pass
+
+
+def build_trunk_native_from_vids(vids):
+    native_vids = {vid.get("vid") for vid in vids if vid.get("native", False)}
+    trunk_vids = {vid.get("vid") for vid in vids if not vid.get("native", False)}
+    return list(native_vids), list(trunk_vids)
