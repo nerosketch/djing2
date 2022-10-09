@@ -1,17 +1,17 @@
 from typing import Optional
 
+from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
+from djing2.lib.fastapi.perms import permission_check_dependency
 from pydantic import BaseModel
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from starlette import status
 
-from djing2.lib import safe_int
 from djing2.lib.fastapi.crud import CrudRouter, NOT_FOUND
-from djing2.lib.fastapi.types import MAX_LIMIT
-from django.db.models import QuerySet, Model, Count
+from djing2.lib.fastapi.types import MAX_LIMIT, IListResponse, Pagination
+from django.db.models import Count
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.fias_socrbase import AddressFIASInfo, AddressFIASLevelType, IAddressFIASType
 from addresses import schemas
-
 
 router = APIRouter(
     prefix='/addrs',
@@ -99,7 +99,7 @@ def filter_by_fias_level(level: AddressFIASLevelType):
 @router.get('/get_ao_types/', response_model=list[IAddressFIASType])
 def get_ao_types(level: AddressFIASLevelType):
     """Get all address object types."""
-    return AddressFIASInfo.get_address_types_by_level(level=level)
+    return list(AddressFIASInfo.get_address_types_by_level(level=level))
 
 
 @router.get('/{addr_id}/get_parent/', response_model=Optional[schemas.AddressModelSchema])
@@ -115,36 +115,42 @@ def get_parent(addr_id: int) -> Optional[schemas.AddressModelSchema]:
 
 @router.get('/get_all_children/', response_model=list[schemas.AddressModelSchema])
 def get_all_children(addr_type: AddressModelTypes, parent_addr_id: Optional[int] = None,
-                     parent_type: Optional[AddressModelTypes] = None
-                     ) -> list[schemas.AddressModelSchema]:
+                     parent_type: Optional[AddressModelTypes] = None):
     qs = AddressModel.objects.filter_from_parent(
         addr_type,
         parent_id=parent_addr_id,
         parent_type=parent_type
     ).order_by('title')[:MAX_LIMIT]
-    return [schemas.AddressModelSchema.from_orm(a) for a in qs.iterator()]
+    return (schemas.AddressModelSchema.from_orm(a) for a in qs.iterator())
 
 
-class AddressCrudRouter(CrudRouter):
-    def filter_qs(self, request: Request, qs: Optional[QuerySet] = None) -> QuerySet[Model]:
-        qs = super().filter_qs(qs=qs, request=request)
-        parent_addr_id = request.query_params.get('parent_addr_id')
-        if parent_addr_id is not None and safe_int(parent_addr_id) == 0:
-            return qs.filter(parent_addr=None)
-        parent_addr_id = safe_int(parent_addr_id)
+@router.get('/', response_model=IListResponse[schemas.AddressModelSchema], dependencies=[Depends(
+    permission_check_dependency(perm_codename='addresses.view_addressmodel')
+)])
+@paginate_qs_path_decorator(schema=schemas.AddressModelSchema, db_model=AddressModel)
+def get_all_addresses(
+    request: Request,
+    address_type: Optional[AddressModelTypes] = None,
+    parent_addr_id: Optional[int] = None,
+    pagination: Pagination = Depends()
+):
+    qs = _base_addr_queryset
 
-        address_type = request.query_params.get('address_type')
-        if address_type:
-            qs = qs.filter(address_type=address_type)
-
+    if parent_addr_id is not None:
         if parent_addr_id > 0:
             qs = qs.filter(parent_addr_id=parent_addr_id)
+        else:
+            return qs.filter(parent_addr=None)
 
-        return qs
+    if address_type is not None:
+        qs = qs.filter(address_type=address_type.value)
+
+    return qs
 
 
-router.include_router(AddressCrudRouter(
+router.include_router(CrudRouter(
     schema=schemas.AddressModelSchema,
     create_schema=schemas.AddressBaseSchema,
-    queryset=_base_addr_queryset
+    queryset=_base_addr_queryset,
+    get_all_route=False
 ))

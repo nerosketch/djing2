@@ -87,7 +87,7 @@ INSTALLED_APPS = [
     "devices.apps.DevicesConfig",
     "networks.apps.NetworksConfig",
     "customers.apps.CustomersConfig",
-    "messenger.apps.MessengerConfig",
+    # "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
     "traf_stat.apps.TrafStatConfig",
@@ -151,7 +151,7 @@ WSGI_APPLICATION = "djing2.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": "django.db.backends.postgresql",
         "CONN_MAX_AGE": os.getenv('CONN_MAX_AGE', 300),
         "NAME": os.getenv("POSTGRES_DB", "djing2"),
         "USER": os.getenv("POSTGRES_USER", "postgres"),
@@ -337,7 +337,7 @@ REST_FRAMEWORK = {
         # 'djing2.permissions.CustomizedDjangoObjectPermissions'
     ],
     'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
+        'djing2.lib.renderer.CustomJSONRenderer',
         'rest_framework_csv.renderers.CSVRenderer',
     ]
 }
@@ -386,6 +386,9 @@ ARPING_ENABLED = bool(ARPING_ENABLED)
 
 # SITE_ID = 1
 
+if DEBUG:
+    TEST_RUNNER = "djing2.lib.fastapi.test.TestRunner"
+
 WEBPUSH_SETTINGS = {
     "VAPID_PUBLIC_KEY": get_secret("VAPID_PUBLIC_KEY"),
     "VAPID_PRIVATE_KEY": get_secret("VAPID_PRIVATE_KEY"),
@@ -417,3 +420,8 @@ PAYME_CREDENTIALS = get_secret("PAYME_CREDENTIALS")
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'pyamqp://user:passw@djing2rabbitmq/')
+CELERY_SERIALIZER = 'msgpack'
+
+REDIS_HOST = os.getenv('REDIS_HOST', 'djing2redis')
+REDIS_PORT = os.getenv('REDIS_PORT', 6379)
+REDIS_AUTH_CASHE_TTL = os.getenv('REDIS_AUTH_CASHE_TTL', 3600)

@@ -15,14 +15,25 @@ def _get_onu_template(user_vid: int, onu_mac: str, *args, **kwargs) -> tuple:
     )
 
 
-class ZteF660RouterScriptModule(ZteF601BridgeScriptModule):
-    title = "Zte ONU F660 Router"
-    short_code = "zte_f660_router"
+class FD511GOnuDeviceConfigType(ZteF601BridgeScriptModule):
+    title = "FD511G IPOE Bridge"
+    short_code = "fd511g_ipoe_bridge"
+    sn_regexp = r"^HWTC[0-9A-F]{8}$"
     accept_vlan = False
-    zte_type = "ZTE-F660"
+    zte_type = 'FD511G'
+
+    @staticmethod
+    def format_sn_from_mac(mac: str) -> str:
+        # Format serial number from mac address
+        # because saved mac address got from serial number
+        sn = "HWTC%s" % "".join("%.2X" % int(x, base=16) for x in mac.split(":")[-4:])
+        return sn
 
     def apply_zte_top_conf(self, *args, **kwargs) -> None:
         return super().apply_zte_top_conf(get_onu_template_fn=_get_onu_template, *args, **kwargs)
+
+    def apply_zte_bot_conf(self, *args, **kwargs):
+        pass
 
     def register_onu_on_olt_interface(
         self, free_onu_number: int, serial: str, prompt: str, onu_type: str, int_addr: str
@@ -32,8 +43,9 @@ class ZteF660RouterScriptModule(ZteF601BridgeScriptModule):
 
         # register onu on olt interface
         self.ch.do_cmd(f"onu {free_onu_number} type {onu_type} sn {serial}", prompt)
+
         # register onu profile on olt interface
-        self.ch.do_cmd(f"onu {free_onu_number} profile line {onu_type}-LINE remote {onu_type}-ROUTER", prompt)
+        self.ch.do_cmd(f"onu {free_onu_number} profile line {onu_type}-LINE remote FD511G_BR", prompt)
 
         # Exit from int olt
         self.ch.do_cmd("exit", "%s(config)#" % prompt)

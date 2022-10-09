@@ -31,8 +31,7 @@ class SNMPWorker(Session):
 
     def get_list(self, oid) -> Generator:
         try:
-            for v in self.walk(oid):
-                yield v.value
+            return (v.value for v in self.walk(oid))
         except EasySNMPConnectionError as err:
             raise DeviceConnectionError(err) from err
 
