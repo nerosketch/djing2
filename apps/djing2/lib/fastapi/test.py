@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.test.testcases import TransactionTestCase
 from django.test.runner import DiscoverRunner
 from django.db import connection
@@ -9,7 +11,10 @@ from rest_framework.authtoken.models import Token
 
 
 class DjingTestCase(TransactionTestCase):
-    c = TestClient(app=app)
+    c = TestClient(
+        app=app,
+        base_url='http://example.com'
+    )
 
     def create_admin(self) -> None:
         # Login super user
@@ -29,7 +34,7 @@ class DjingTestCase(TransactionTestCase):
         super().setUp()
         self.create_admin()
 
-    def get(self, url: str, data: dict):
+    def get(self, url: str, data: Optional[dict] = None):
         return self.c.get(url, params=data)
 
     def post(self, url: str, data):
