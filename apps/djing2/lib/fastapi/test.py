@@ -1,4 +1,4 @@
-from django.test.testcases import TestCase
+from django.test.testcases import TransactionTestCase
 from django.test.runner import DiscoverRunner
 from django.db import connection
 from django.conf import settings
@@ -8,23 +8,10 @@ from profiles.models import UserProfile
 from rest_framework.authtoken.models import Token
 
 
-class TClient(TestClient):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.headers.update({
-            'Authorization': 'Token asdasd'
-        })
+class DjingTestCase(TransactionTestCase):
+    c = TestClient(app=app)
 
-
-class DjingTestCase(TestCase):
-    c = TClient(
-        app=app,
-        base_url="http://example.com"
-    )
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
+    def create_admin(self) -> None:
         # Login super user
         admin = UserProfile.objects.create_superuser(
             username="admin",
@@ -32,11 +19,21 @@ class DjingTestCase(TestCase):
             telephone="+797812345678",
             is_active=True
         )
-        cls.admin = admin
+        self.admin = admin
         token = str(Token.objects.get(user=admin).key)
-        cls.c.headers.update({
+        self.c.headers.update({
             'Authorization': f'Token {token}'
         })
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_admin()
+
+    def get(self, url: str, data: dict):
+        return self.c.get(url, params=data)
+
+    def post(self, url: str, data):
+        return self.c.post(url, json=data)
 
 
 class TestRunner(DiscoverRunner):
