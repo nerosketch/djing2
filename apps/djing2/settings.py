@@ -87,7 +87,7 @@ INSTALLED_APPS = [
     "devices.apps.DevicesConfig",
     "networks.apps.NetworksConfig",
     "customers.apps.CustomersConfig",
-    "messenger.apps.MessengerConfig",
+    # "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
     "traf_stat.apps.TrafStatConfig",
@@ -386,8 +386,8 @@ ARPING_ENABLED = bool(ARPING_ENABLED)
 
 # SITE_ID = 1
 
-if DEBUG:
-    TEST_RUNNER = "djing2.lib.fastapi.test.TestRunner"
+# if DEBUG:
+    # TEST_RUNNER = "djing2.lib.fastapi.test.TestRunner"
 
 WEBPUSH_SETTINGS = {
     "VAPID_PUBLIC_KEY": get_secret("VAPID_PUBLIC_KEY"),
