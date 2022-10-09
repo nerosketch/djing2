@@ -20,3 +20,5 @@ secrets/
 .vscode/
 .idea/workspace.xml
 .idea/inspectionProfiles/profiles_settings.xml
+.idea/djing2.iml
+.idea/misc.xml

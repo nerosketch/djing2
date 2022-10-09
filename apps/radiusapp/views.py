@@ -507,8 +507,6 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) 
         CustomerIpLeaseModel.objects.filter(
             ip_address=ip,
             customer=customer,
-            mac_address=customer_mac,
-            radius_username=radius_username,
         ).update(
             mac_address=customer_mac,
             input_octets=0,
@@ -517,6 +515,7 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) 
             output_packets=0,
             state=True,
             session_id=radius_unique_id,
+            radius_username=radius_username,
             last_update=now,
         )
     else:

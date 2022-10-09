@@ -29,8 +29,8 @@ class ReqMixin:
             "/api/networks/lease/",
             {'customer': customer_id}
         )
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         res = r.json()
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=res)
         self.assertGreater(len(r.json()), 0, msg=res)
         return res
 
@@ -346,7 +346,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
 
     def test_get_fixed_ip_without_mac(self):
         """Создаём фиксированный ip на учётке, а потом стартуем сессию, данные по сессии
-           должны обновиться на это ip"""
+           должны обновиться на этом ip"""
 
         ip = '10.152.65.16'
         # Создаём статический lease с ip и без мака
@@ -369,7 +369,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
             cid='0004008B0002',
             arid='0006121314151617',
             vlan_id=13,
-            #  service_vlan_id=152,
+            # service_vlan_id=152,
             ip=ip,
             mac='1c:c0:4d:95:d0:30',
             session_id=UUID('12345678123456781234567812345678')
@@ -528,7 +528,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
             vlan_id=12,
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.json())
-        self.assertEqual(r.json()['Framed-IP-Address'], '10.152.64.3', msg=r.json())
+        self.assertEqual(r.json()['Framed-IP-Address'], '10.152.64.2', msg=r.json())
         self.assertIsNotNone(r.json().get('User-Password'), msg=r.json())
 
         # Делаем ip для второй учётки
@@ -539,7 +539,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
             session_id=UUID('22345678123456781234567812345679')
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.json())
-        self.assertEqual(r.json()['Framed-IP-Address'], '10.152.64.4', msg=r.json())
+        self.assertEqual(r.json()['Framed-IP-Address'], '10.152.64.3', msg=r.json())
         self.assertIsNotNone(r.json().get('User-Password'), msg=r.json())
 
         # На первой 1 ip
@@ -567,7 +567,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
         d = r.json()
         self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,1375000,11000000,1375000)')
         # т.к. мак отличается, то выделяем новый
-        self.assertEqual(d['Framed-IP-Address'], '10.152.64.5')
+        self.assertEqual(d['Framed-IP-Address'], '10.152.64.4')
 
         # Пробуем получить ip со второй учётки, с маком абонента от первой
         r = self._send_request_auth(
@@ -899,7 +899,7 @@ class CustomerAuthTestCase(DjingTestCase, ReqMixin):
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.json())
         self.assertEqual(r.json()["User-Password"], self.service_inet_str, msg=r.json())
-        self.assertEqual(r.json()["Framed-IP-Address"], '10.152.64.3')
+        self.assertEqual(r.json()["Framed-IP-Address"], '10.152.64.2')
 
     def test_two_identical_fetch(self):
         """Repeat identical requests for same customer.
@@ -914,8 +914,8 @@ class CustomerAuthTestCase(DjingTestCase, ReqMixin):
             )
         )
         self.assertEqual(r1.status_code, status.HTTP_200_OK, msg=r1.content)
-        # self.assertEqual(r1.data["Framed-IP-Address"], "10.152.64.2")
-        self.assertEqual(r1.data["User-Password"], self.service_inet_str, msg=r1.content)
+        data = r1.json()
+        self.assertEqual(data["User-Password"], self.service_inet_str, msg=r1.content)
         r2 = self.post(
             "/api/radius/customer/auth/juniper/",
             radius_api_request_auth(
@@ -926,8 +926,9 @@ class CustomerAuthTestCase(DjingTestCase, ReqMixin):
             )
         )
         self.assertEqual(r2.status_code, status.HTTP_200_OK, msg=r2.content)
-        # self.assertEqual(r2.data["Framed-IP-Address"], "10.152.64.3")
-        self.assertEqual(r2.data["User-Password"], self.service_inet_str, msg=r2.content)
+        data = r2.json()
+        # self.assertEqual(data["Framed-IP-Address"], "10.152.64.3")
+        self.assertEqual(data["User-Password"], self.service_inet_str, msg=r2.content)
 
     def test_guest_and_inet_subnet(self):
         """Проверка гостевой и инетной сессии.
@@ -950,7 +951,7 @@ class CustomerAuthTestCase(DjingTestCase, ReqMixin):
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
         self.assertDictEqual(r.json(), {
             "User-Password": "SERVICE-GUEST",
-            "Framed-IP-Address": "10.152.64.4"
+            "Framed-IP-Address": "10.152.64.3"
         })
 
 
