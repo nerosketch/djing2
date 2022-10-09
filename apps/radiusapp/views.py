@@ -130,7 +130,7 @@ RETURNING (SELECT ip_address FROM lease);
 
 
 @router.post('/auth/{vendor_name}/')
-def auth(vendor_name: str, request_data: Mapping[str, str] = Body(...)):
+def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
     # Just find customer by credentials from request
     vendor_manager = VendorManager(vendor_name=vendor_name)
 
@@ -586,7 +586,7 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def _find_customer(data: Mapping[str, str], vendor_manager: VendorManager) -> Customer:
+def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Customer:
     opt82 = vendor_manager.get_opt82(data=data)
     if not opt82:
         raise BadRetException(detail="Failed fetch opt82 info")

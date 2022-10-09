@@ -17,7 +17,6 @@ apps/devices/device_config/custom/*.py
 !apps/devices/device_config/custom/__init__.py
 secrets/
 .env
-touch_reload
 .vscode/
 .idea/workspace.xml
 .idea/inspectionProfiles/profiles_settings.xml

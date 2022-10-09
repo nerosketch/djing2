@@ -4,8 +4,8 @@ from uuid import UUID
 from django.contrib.sites.models import Site
 from django.db.models import signals
 from django.test import SimpleTestCase, override_settings
-from rest_framework import status
-from rest_framework.test import APITestCase
+from starlette import status
+from djing2.lib.fastapi.test import DjingTestCase
 from djing2.lib.logger import logger
 from customers.models import Customer
 from devices.models import Device, Port
@@ -13,7 +13,6 @@ from devices.device_config.switch.dlink.dgs_1100_10me import DEVICE_UNIQUE_CODE 
 from groupapp.models import Group
 from services.models import Service
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
-from profiles.models import UserProfile
 from radiusapp.vendors import VendorManager, parse_opt82
 from networks.models import (
     VlanIf, NetworkIpPool,
@@ -23,21 +22,17 @@ from networks.models import (
 
 
 class ReqMixin:
-    def get(self, *args, **kwargs):
-        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
-
-    def post(self, *args, **kwargs):
-        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
-
     def _get_ip_leases(self, customer_id: Optional[int] = None) -> list:
         if customer_id is None:
             customer_id = self.full_customer.customer.pk
         r = self.get(
-            f"/api/networks/lease/?customer={customer_id}",
+            "/api/networks/lease/",
+            {'customer': customer_id}
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        self.assertGreater(len(r.data), 0, msg=r.data)
-        return r.data
+        res = r.json()
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=res)
+        self.assertGreater(len(r.json()), 0, msg=res)
+        return res
 
 
 @dataclass
@@ -59,7 +54,7 @@ def create_full_customer(uname: str,
                          service_descr: Optional[str] = None,
                          service_speed_in=11.0,
                          service_speed_out=11.0,
-                         service_cost=10,
+                         service_cost=10.0,
                          service_calc_type=SERVICE_CHOICE_DEFAULT,
                          initial_balance=0,
                          dev_comment: Optional[str] = None) -> CreateFullCustomerReturnType:
@@ -118,10 +113,12 @@ def create_full_customer(uname: str,
 
 
 def radius_api_request_auth(mac: str, vlan_id: Optional[int] = None, cid: Optional[str] = None,
-                            arid: Optional[str] = None, session_id=None,
+                            arid: Optional[str] = None, session_id: Optional[UUID] = None,
                             service_vlan_id=1011):
     if session_id is None:
         session_id = "2ea5a1843334573bd11dc15417426f36"
+    elif isinstance(session_id, UUID):
+        session_id = str(session_id)
     d = {
         "ERX-Dhcp-Mac-Addr": {"value": [mac]},
         "Acct-Unique-Session-Id": {"value": [session_id]},
@@ -200,22 +197,15 @@ class VendorsBuildDevMacByOpt82TestCase(SimpleTestCase):
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
-class CustomerAcctStartTestCase(APITestCase, ReqMixin):
-
+class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
     def setUp(self):
-        """Set up data for this tests."""
+        super().setUp()
+
+        """Set up data for tests."""
         signals.post_save.disconnect()
         signals.post_delete.disconnect()
         signals.pre_save.disconnect()
         signals.pre_delete.disconnect()
-
-        self.admin = UserProfile.objects.create_superuser(
-            username="admin",
-            password="admin",
-            telephone="+797812345678",
-            is_active=True
-        )
-        self.client.login(username="admin", password="admin")
 
         self.full_customer = create_full_customer(
             uname='custo1',
@@ -226,10 +216,6 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             dev_type=Dlink_dgs1100_10me_code,
             service_title='test',
             service_descr='test',
-            service_speed_in=11.0,
-            service_speed_out=11.0,
-            service_cost=10.0,
-            service_calc_type=SERVICE_CHOICE_DEFAULT
         )
         self.full_customer2 = create_full_customer(
             uname='custo2',
@@ -240,10 +226,6 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             dev_type=Dlink_dgs1100_10me_code,
             service_title='test',
             service_descr='test',
-            service_speed_in=11.0,
-            service_speed_out=11.0,
-            service_cost=10.0,
-            service_calc_type=SERVICE_CHOICE_DEFAULT
         )
 
         vlan12 = VlanIf.objects.create(title="Vlan12 for customer tests", vid=12)
@@ -276,8 +258,6 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
 
         self.service_inet_str = "SERVICE-INET(11000000,1375000,11000000,1375000)"
 
-        # self.client.logout()
-
         guest_pool = NetworkIpPool.objects.create(
             network="192.168.0.0/24",
             kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
@@ -291,9 +271,9 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         self.guest_pool = guest_pool
 
     def _send_request_acct_start(self, cid: str, arid: str,
-            vlan_id: int = 0, service_vlan_id=0, ip="10.152.164.2",
-            mac="18c0.4d51.dee2", session_id: Optional[UUID] = None
-        ):
+                                 vlan_id: int = 0, service_vlan_id=0, ip="10.152.164.2",
+                                 mac="18c0.4d51.dee2", session_id: Optional[UUID] = None
+                                 ):
         """Help method 4 send request to acct endpoint."""
 
         if session_id is None:
@@ -303,7 +283,6 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
                 "User-Name": {"value": [f"{mac}-ae0:{vlan_id}-{cid}-{arid}"]},
                 "Acct-Status-Type": {"value": ["Start"]},
                 "Framed-IP-Address": {"value": [ip]},
-                "NAS-Port-Id": {"value": [vlan_id]},
                 "NAS-Port-Id": {"value": [f"ae0:{service_vlan_id}-{vlan_id}"]},
                 "ADSL-Agent-Circuit-Id": {"value": [f"0x{cid}"]},
                 "ADSL-Agent-Remote-Id": {"value": [f"0x{arid}"]},
@@ -313,7 +292,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         )
 
     def _send_request_auth(self, cid: str, arid: str, mac: str, vlan_id: int = 0,
-                           session_id=None):
+                           session_id: Optional[UUID] = None):
         return self.post(
             "/api/radius/customer/auth/juniper/",
             radius_api_request_auth(
@@ -327,7 +306,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
 
     def _create_auth_session(self, vid=12, cid="0004008B0002",
                              arid="0006121314151617", mac="1c:c0:4d:95:d0:30",
-                             session_id='12345678123456781234567812345678'):
+                             session_id: Optional[UUID] = UUID('12345678123456781234567812345678')):
         r = self._send_request_auth(
             cid=cid,
             arid=arid,
@@ -336,8 +315,8 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             vlan_id=vid,
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
-        self.assertEqual(r.data['User-Password'], self.service_inet_str)
-        self.assertIsNotNone(r.data.get('Framed-IP-Address'))
+        self.assertEqual(r.json()['User-Password'], self.service_inet_str)
+        self.assertIsNotNone(r.json().get('Framed-IP-Address'))
         return r
 
     def _create_static_lease(self, ip):
@@ -349,7 +328,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
                 "pool": self.poolv13.pk
             }
         )
-        self.assertEqual(new_lease_r.status_code, status.HTTP_200_OK, msg=new_lease_r.data)
+        self.assertEqual(new_lease_r.status_code, status.HTTP_200_OK, msg=new_lease_r.json())
         return new_lease_r
 
     def test_normal_new_session(self):
@@ -456,7 +435,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             mac='1c:c0:4d:95:d0:38'
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        d = r.data
+        d = r.json()
         self.assertEqual(d['Framed-IP-Address'], '10.152.65.16')
 
         # Пробуем получить динамичекий ip vlan12
@@ -467,7 +446,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             mac='1c:c0:4d:95:d0:30'
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        d = r.data
+        d = r.json()
         self.assertEqual(d['Framed-IP-Address'], '10.152.64.2', msg=d)
         self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,1375000,11000000,1375000)', msg=d)
 
@@ -503,7 +482,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         self.assertEqual(leasev13['pool'], self.pool.pk)
         self.assertEqual(leasev13['session_id'], str(v12uuid))
 
-    #def test_guest_session_while_unknown_opt82_credentials(self):
+    # def test_guest_session_while_unknown_opt82_credentials(self):
     #    """Если по opt82 мы нашли учётку, ..."""
     #    pass
 
@@ -521,7 +500,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             session_id=UUID('12345678123456781234567812345678')
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
-        self.assertDictEqual(r.data, {
+        self.assertDictEqual(r.json(), {
             "User-Password": "SERVICE-GUEST",
             "Framed-IP-Address": "192.168.0.3"
         })
@@ -529,7 +508,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         # Получаем все гостевые аренды
         r = self.get("/api/networks/lease/guest_list/")
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
-        d = r.data
+        d = r.json()
         self.assertEqual(len(d), 1)
         d = d[0]
         self.assertTrue(d['is_dynamic'])
@@ -545,12 +524,12 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             cid='0004008B0002',
             arid='0006121314151617',
             mac='1c:c0:4d:95:d0:30',
-            session_id='12345678123456781234567812345678',
+            session_id=UUID('12345678123456781234567812345678'),
             vlan_id=12,
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        self.assertEqual(r.data['Framed-IP-Address'], '10.152.64.3', msg=r.data)
-        self.assertIsNotNone(r.data.get('User-Password'), msg=r.data)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.json())
+        self.assertEqual(r.json()['Framed-IP-Address'], '10.152.64.3', msg=r.json())
+        self.assertIsNotNone(r.json().get('User-Password'), msg=r.json())
 
         # Делаем ip для второй учётки
         r = self._create_auth_session(
@@ -559,9 +538,9 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             mac='1c:c0:4d:95:d0:36',
             session_id=UUID('22345678123456781234567812345679')
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        self.assertEqual(r.data['Framed-IP-Address'], '10.152.64.4', msg=r.data)
-        self.assertIsNotNone(r.data.get('User-Password'), msg=r.data)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.json())
+        self.assertEqual(r.json()['Framed-IP-Address'], '10.152.64.4', msg=r.json())
+        self.assertIsNotNone(r.json().get('User-Password'), msg=r.json())
 
         # На первой 1 ip
         leases4customer1 = self._get_ip_leases(
@@ -571,7 +550,7 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
         self.assertEqual(leases4customer1[0]['ip_address'], '10.152.64.2', msg=leases4customer1)
 
         leases4customer2 = self._get_ip_leases(
-        # На второй 1 ip
+            # На второй 1 ip
             customer_id=self.full_customer2.customer.pk
         )
         self.assertEqual(len(leases4customer2), 1, msg=leases4customer2)
@@ -584,8 +563,8 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             mac='1c:c0:4d:95:d0:36',
             vlan_id=12,
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        d = r.data
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.json())
+        d = r.json()
         self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,1375000,11000000,1375000)')
         # т.к. мак отличается, то выделяем новый
         self.assertEqual(d['Framed-IP-Address'], '10.152.64.5')
@@ -597,35 +576,29 @@ class CustomerAcctStartTestCase(APITestCase, ReqMixin):
             mac='1c:c0:4d:95:d0:30',
             vlan_id=12,
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        d = r.data
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.json())
+        d = r.json()
         self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,1375000,11000000,1375000)')
         # т.к. мак отличается, то говорим что на учётке нет подходящего ip, надо подбирать новый
         self.assertEqual(d['Framed-IP-Address'], '10.152.64.6')
 
     # TODO:
-    #def test_profile_with_opt82_and_bad_vid(self):
+    # def test_profile_with_opt82_and_bad_vid(self):
     #    """Если по opt82 находим учётку, но vid не существует.
     #    """
     #    pass
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
-class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
+class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
 
     def setUp(self):
+        super().setUp()
+
         signals.post_save.disconnect()
         signals.post_delete.disconnect()
         signals.pre_save.disconnect()
         signals.pre_delete.disconnect()
-
-        self.admin = UserProfile.objects.create_superuser(
-            username="admin",
-            password="admin",
-            telephone="+797812345678",
-            is_active=True
-        )
-        self.client.login(username="admin", password="admin")
 
         self.full_customer = create_full_customer(
             uname='custo1',
@@ -636,10 +609,6 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
             dev_type=Dlink_dgs1100_10me_code,
             service_title='test',
             service_descr='test',
-            service_speed_in=11.0,
-            service_speed_out=11.0,
-            service_cost=10.0,
-            service_calc_type=SERVICE_CHOICE_DEFAULT
         )
         vlan12 = VlanIf.objects.create(title="Vlan12 for customer tests", vid=12)
         pool = NetworkIpPool.objects.create(
@@ -657,13 +626,14 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
         self.pool = pool
 
     def _send_request_acct_update(self, cid: str, arid: str,
-            vlan_id: int = 0, service_vlan_id=0, ip="10.152.64.2", mac="18c0.4d51.dee2",
-            session_id: Optional[UUID] = None,
-            session_time_secs=0,
-            in_octets=0, out_octets=0,
-            in_pkts=0, out_pkts=0,
-            service_session_name=None
-            ):
+                                  vlan_id: int = 0, service_vlan_id=0,
+                                  ip="10.152.64.2", mac="18c0.4d51.dee2",
+                                  session_id: Optional[UUID] = None,
+                                  session_time_secs=0,
+                                  in_octets=0, out_octets=0,
+                                  in_pkts=0, out_pkts=0,
+                                  service_session_name=None
+                                  ):
         """Help method 4 send request to acct update endpoint.
            Важно: vlan_id (NAS-Port-Id) сейчас не влияет на логику radius accounting в билинге.
         """
@@ -718,7 +688,7 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
             out_pkts=2349616998
         )
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
-        self.assertIsNone(r.data, msg=r.content)
+        self.assertEqual(r.content, b'', msg=r.content)
 
         leases4customer = self._get_ip_leases()
         self.assertEqual(len(leases4customer), 1, msg=leases4customer)
@@ -762,8 +732,8 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
             in_pkts=1154026959,
             out_pkts=2349616998
         )
-        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.data)
-        self.assertIsNone(r.data, msg=r.data)
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
+        self.assertEqual(r.content, b'', msg=r.content)
 
         leases4customer = self._get_ip_leases()
         self.assertEqual(len(leases4customer), 1, msg=leases4customer)
@@ -809,7 +779,7 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
                 service_session_name="SERVICE-GUEST"
             )
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
-        self.assertIsNone(r.data, msg=r.content)
+        self.assertEqual(r.content, b'', msg=r.content)
         self.assertGreater(len(log_capt.records), 0)
         self.assertIn(
             'INFO:djing2_logger:COA: guest->inet uname=18c0.4d51.dee2-ae0:11421-12-0004008B0002-0006121314151617',
@@ -842,7 +812,7 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
                 service_session_name="SERVICE-INET(100000000,18750000,101000000,18937500)"
             )
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
-        self.assertIsNone(r.data, msg=r.content)
+        self.assertEqual(r.content, b'')
         self.assertGreater(len(log_capt.records), 0)
         self.assertIn(
             'INFO:djing2_logger:COA: inet->guest uname=18c0.4d51.dee2-ae0:11421-12-0004008B0002-0006121314151617',
@@ -852,18 +822,13 @@ class CustomerAcctUpdateTestCase(APITestCase, ReqMixin):
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
-class CustomerAuthTestCase(APITestCase, ReqMixin):
+class CustomerAuthTestCase(DjingTestCase, ReqMixin):
     """Main test case class."""
 
     def setUp(self):
-        """Set up data for this tests."""
-        self.admin = UserProfile.objects.create_superuser(
-            username="admin",
-            password="admin",
-            telephone="+797812345678",
-            is_active=True
-        )
-        self.client.login(username="admin", password="admin")
+        super().setUp()
+
+        """Set up data for tests."""
         self.full_customer = create_full_customer(
             uname='custo1',
             tel='+797811234567',
@@ -879,7 +844,6 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
             service_calc_type=SERVICE_CHOICE_DEFAULT
         )
         self.service_inet_str = "SERVICE-INET(11000000,1375000,11000000,1375000)"
-        #  self.client.logout()
 
         vlan12 = VlanIf.objects.create(title="Vlan12 for customer tests", vid=12)
         pool = NetworkIpPool.objects.create(
@@ -916,11 +880,11 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
                 mac="18c0.4d51.dee2",
             )
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        self.assertDictEqual(r.data, {
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.json())
+        self.assertDictEqual(r.json(), {
             "User-Password": "SERVICE-GUEST",
             "Framed-IP-Address": "192.168.0.3"
-        }, msg=r.data)
+        }, msg=r.json())
 
     def test_auth_radius_session(self):
         """Just send simple request to en existed customer."""
@@ -933,9 +897,9 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
                 mac="18c0.4d51.dee2",
             )
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        self.assertEqual(r.data["User-Password"], self.service_inet_str, msg=r.data)
-        self.assertEqual(r.data["Framed-IP-Address"], '10.152.64.3')
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.json())
+        self.assertEqual(r.json()["User-Password"], self.service_inet_str, msg=r.json())
+        self.assertEqual(r.json()["Framed-IP-Address"], '10.152.64.3')
 
     def test_two_identical_fetch(self):
         """Repeat identical requests for same customer.
@@ -949,9 +913,9 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
                 mac="18c0.4d51.dee3",
             )
         )
-        self.assertEqual(r1.status_code, status.HTTP_200_OK)
+        self.assertEqual(r1.status_code, status.HTTP_200_OK, msg=r1.content)
         # self.assertEqual(r1.data["Framed-IP-Address"], "10.152.64.2")
-        self.assertEqual(r1.data["User-Password"], self.service_inet_str)
+        self.assertEqual(r1.data["User-Password"], self.service_inet_str, msg=r1.content)
         r2 = self.post(
             "/api/radius/customer/auth/juniper/",
             radius_api_request_auth(
@@ -961,9 +925,9 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
                 mac="18c0.4d51.dee4",
             )
         )
-        self.assertEqual(r2.status_code, status.HTTP_200_OK)
+        self.assertEqual(r2.status_code, status.HTTP_200_OK, msg=r2.content)
         # self.assertEqual(r2.data["Framed-IP-Address"], "10.152.64.3")
-        self.assertEqual(r2.data["User-Password"], self.service_inet_str)
+        self.assertEqual(r2.data["User-Password"], self.service_inet_str, msg=r2.content)
 
     def test_guest_and_inet_subnet(self):
         """Проверка гостевой и инетной сессии.
@@ -984,7 +948,7 @@ class CustomerAuthTestCase(APITestCase, ReqMixin):
             )
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
-        self.assertDictEqual(r.data, {
+        self.assertDictEqual(r.json(), {
             "User-Password": "SERVICE-GUEST",
             "Framed-IP-Address": "10.152.64.4"
         })
@@ -1034,15 +998,10 @@ class Option82TestCase(SimpleTestCase):
         self.assertEqual(port, 0)
 
 
-class CustomerStaticMacAuthTestCase(APITestCase, ReqMixin):
+class CustomerStaticMacAuthTestCase(DjingTestCase, ReqMixin):
     def setUp(self):
-        self.admin = UserProfile.objects.create_superuser(
-            username="admin",
-            password="admin",
-            telephone="+797812345678",
-            is_active=True
-        )
-        self.client.login(username="admin", password="admin")
+        super().setUp()
+
         self.full_customer = create_full_customer(
             uname='custo1',
             tel='+797811234567',
@@ -1052,10 +1011,6 @@ class CustomerStaticMacAuthTestCase(APITestCase, ReqMixin):
             dev_type=Dlink_dgs1100_10me_code,
             service_title='test',
             service_descr='test',
-            service_speed_in=11.0,
-            service_speed_out=11.0,
-            service_cost=10.0,
-            service_calc_type=SERVICE_CHOICE_DEFAULT
         )
         self.service_inet_str = "SERVICE-INET(11000000,1375000,11000000,1375000)"
 
@@ -1108,7 +1063,7 @@ class CustomerStaticMacAuthTestCase(APITestCase, ReqMixin):
             )
         )
         self.assertEqual(r.status_code, 200, msg=r.content)
-        d = r.data
+        d = r.json()
         self.assertEqual(d['Framed-IP-Address'], '10.152.65.24', msg=d)
         self.assertIsNotNone(d.get('User-Password'), msg=d)
         self.assertEqual(d.get('User-Password'), self.service_inet_str, msg=d)
