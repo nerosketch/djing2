@@ -580,7 +580,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
         d = r.json()
         self.assertEqual(d['User-Password'], 'SERVICE-INET(11000000,1375000,11000000,1375000)')
         # т.к. мак отличается, то говорим что на учётке нет подходящего ip, надо подбирать новый
-        self.assertEqual(d['Framed-IP-Address'], '10.152.64.6')
+        self.assertEqual(d['Framed-IP-Address'], '10.152.64.5')
 
     # TODO:
     # def test_profile_with_opt82_and_bad_vid(self):
