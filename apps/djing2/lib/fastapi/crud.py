@@ -11,6 +11,7 @@ from ._fields_cache import build_model_and_schema_fields
 from .types import DEPENDENCIES, IListResponse, Pagination
 from .utils import schema_factory, format_object
 from .pagination import paginate_qs_path_decorator
+from djing2.exceptions import DuplicationError
 
 NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
 
@@ -261,20 +262,23 @@ class CrudRouter(CRUDReadGenerator):
                     computed_field_objects=self._computed_field_objects,
                 )
             except IntegrityError as err:
-                if 'is not present in table' in str(err):
+                serr = str(err)
+                if 'is not present in table' in serr:
                     raise NOT_FOUND
-                raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Integration error")
+                elif 'duplicate key value violates unique constraint' in serr:
+                    raise DuplicationError(detail=serr) from err
+                raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, serr)
         return route
 
     def _update(self, *args: Any, **kwargs: Any):
-        def route(item_id: int, model: dict[str, Union[str, int, float]], request: Request) -> OrderedDictType:
+        def route(item_id: int, model: self.update_schema, request: Request) -> OrderedDictType:
             qs = self.filter_qs(request=request)
-            model_fields = tuple(fname for fname, _ in model.items())
+            model_fields = tuple(fname for fname, _ in model.__fields__.items())
             update_fields = tuple(fname for fname, _ in self._field_objects.items() if fname in model_fields)
             try:
                 obj = qs.get(pk=item_id)
                 for fname in update_fields:
-                    value = model.get(fname)
+                    value = getattr(model, fname)
                     setattr(obj, fname, value)
                 obj.save(update_fields=update_fields)
                 return format_object(
