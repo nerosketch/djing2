@@ -1,8 +1,8 @@
 from collections import OrderedDict
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django.conf import settings
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
