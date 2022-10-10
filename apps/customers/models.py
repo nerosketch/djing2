@@ -1132,6 +1132,21 @@ class PeriodicPayForId(BaseAbstractModel):
     def __str__(self):
         return f"{self.periodic_pay} {self.next_pay}"
 
+    @property
+    def service_name(self):
+        if self.periodic_pay:
+            return str(self.periodic_pay.name)
+
+    @property
+    def service_calc_type(self):
+        if self.periodic_pay:
+            return self.periodic_pay.calc_type_name()
+
+    @property
+    def service_amount(self):
+        if self.periodic_pay:
+            return float(self.periodic_pay.amount)
+
     class Meta:
         db_table = "periodic_pay_for_id"
 

@@ -510,10 +510,11 @@ router.include_router(CrudRouter(
 ), prefix='/additional-telephone')
 
 
-class PeriodicPayForIdModelViewSet(DjingModelViewSet):
-    queryset = models.PeriodicPayForId.objects.defer("account").select_related("periodic_pay")
-    serializer_class = serializers.PeriodicPayForIdModelSerializer
-    filterset_fields = ("account",)
+router.include_router(CrudRouter(
+    schema=schemas.PeriodicPayForIdModelSchema,
+    create_schema=schemas.PeriodicPayForIdBaseSchema,
+    queryset=models.PeriodicPayForId.objects.defer("account").select_related("periodic_pay"),
+), prefix='/periodic-pay')
 
 
 class AttachServicesToGroups(APIView):

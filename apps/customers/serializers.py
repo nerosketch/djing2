@@ -199,16 +199,6 @@ class InvoiceForPaymentModelSerializer(BaseCustomModelSerializer):
         fields = "__all__"
 
 
-class PeriodicPayForIdModelSerializer(BaseCustomModelSerializer):
-    service_name = serializers.CharField(source="periodic_pay.name", read_only=True)
-    service_calc_type = serializers.CharField(source="periodic_pay.calc_type_name", read_only=True)
-    service_amount = serializers.FloatField(source="periodic_pay.amount", read_only=True)
-
-    class Meta:
-        model = models.PeriodicPayForId
-        exclude = ("account",)
-
-
 class PeriodicPayForIdRequestSerializer(serializers.Serializer):
     periodic_pay_id = serializers.IntegerField()
     next_pay = serializers.DateTimeField()
