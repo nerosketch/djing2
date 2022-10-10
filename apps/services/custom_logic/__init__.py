@@ -1,3 +1,5 @@
+from enum import Enum
+
 from .periodic import PeriodicPayCalcDefault, PeriodicPayCalcRandom
 from .services import ServiceDefault, TariffDp, TariffCp, TariffDaily
 from .oneshot import ShotDefault
@@ -15,6 +17,13 @@ SERVICE_CHOICES = (
     (SERVICE_CHOICE_CP, TariffCp),
     (SERVICE_CHOICE_DAILY, TariffDaily),
 )
+
+
+class ServiceChoiceEnum(str, Enum):
+    SERVICE_CHOICE_DEFAULT = ServiceDefault.description
+    SERVICE_CHOICE_DP = TariffDp.description
+    SERVICE_CHOICE_CP = TariffCp.description
+    SERVICE_CHOICE_DAILY = TariffDaily.description
 
 
 PERIODIC_PAY_CALC_DEFAULT = 0

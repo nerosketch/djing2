@@ -1,66 +1,77 @@
 from django.db import transaction
-from django.utils.translation import gettext
-from django.utils.translation import gettext_lazy as _
-from rest_framework import status
-from rest_framework.decorators import action
-from rest_framework.generics import get_object_or_404
-from rest_framework.response import Response
+from django.utils.translation import gettext, gettext_lazy as _
+from starlette import status
+from fastapi import APIRouter, Depends
 
 from customers import models, serializers
-from customers.views.view_decorators import catch_customers_errs
+from djing2.lib.fastapi.utils import get_object_or_404
+from .view_decorators import catch_customers_errs
 
 from djing2.lib import LogicError, safe_int
+from djing2.lib.fastapi.auth import is_customer_auth_dependency
 from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet, BaseNonAdminModelViewSet
 from services.models import Service
+from .. import schemas
 
 
-class SingleListObjMixin:
-    def list(self, *args, **kwargs):
-        qs = self.get_queryset().first()
-        sr = self.get_serializer(qs, many=False)
-        return Response(sr.data)
+router = APIRouter(
+    prefix='/customers/users',
+    tags=['CustomersUserSide'],
+    dependencies=[Depends(is_customer_auth_dependency)]
+)
 
 
-class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNonAdminModelViewSet):
-    queryset = models.Customer.objects.select_related("group", "gateway", "device", "current_service")
-    serializer_class = serializers.UserCustomerModelSerializer
+_base_customers_queryset = models.Customer.objects.select_related("group", "gateway", "device", "current_service")
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(username=self.request.user.username)
 
-    def get_object(self):
-        qs = self.get_queryset()
-        return qs.first()
+@router.get('/me/', response_model=schemas.UserCustomerModelSchema)
+@catch_customers_errs
+def get_me(current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    return schemas.UserCustomerModelSchema.from_orm(current_user)
 
-    @action(methods=["post"], detail=False)
-    @catch_customers_errs
-    def buy_service(self, request):
-        service_id = safe_int(request.data.get("service_id"))
-        srv = get_object_or_404(Service, pk=service_id)
-        customer = request.user
 
-        customer.pick_service(
-            service=srv,
-            author=request.user,
-            comment=_("Buy the service via user side, service '%s'") % srv,
-            allow_negative=False,
-        )
-        # customer_gw_command.delay(
-        #     customer_uid=customer.pk,
-        #     command='sync'
-        # )
-        return Response(data=_("The service '%s' was successfully activated") % srv, status=status.HTTP_200_OK)
+@router.patch('/me/', response_model=schemas.UserCustomerModelSchema)
+@catch_customers_errs
+def update_me(data: schemas.UserCustomerWritableModelSchema,
+              current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    for f_name, v_val in data.__fields__:
+        setattr(current_user, f_name, v_val)
+    current_user.save(update_fields=[f_name for f_name, _ in data.__fields__])
+    return schemas.UserCustomerModelSchema.from_orm(current_user)
 
-    @action(methods=("put",), detail=False)
-    @catch_customers_errs
-    def set_auto_new_service(self, request):
-        auto_renewal_service = bool(request.data.get("auto_renewal_service"))
-        customer = request.user
-        customer.auto_renewal_service = auto_renewal_service
-        customer.save(update_fields=["auto_renewal_service"])
-        return Response()
+
+@router.post('/me/buy_service/', response_model=str)
+@catch_customers_errs
+def buy_service(payload: schemas.UserBuyServiceSchema,
+                current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    service_id = payload.service_id
+    srv = get_object_or_404(Service, pk=service_id)
+
+    current_user.pick_service(
+        service=srv,
+        author=current_user,
+        comment=gettext("Buy the service via user side, service '%s'") % srv,
+        allow_negative=False,
+    )
+    # customer_gw_command.delay(
+    #     customer_uid=customer.pk,
+    #     command='sync'
+    # )
+    return gettext("The service '%s' was successfully activated") % srv
+
+
+@router.put('/me/set_auto_new_service/')
+@catch_customers_errs
+def set_auto_new_service(payload: schemas.UserAutoRenewalServiceSchema,
+                         current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    auto_renewal_service = bool(payload.auto_renewal_service)
+    current_user.auto_renewal_service = auto_renewal_service
+    current_user.save(update_fields=["auto_renewal_service"])
+    return 'ok'
+
+
+@router.get('/users/service/')
 
 
 class CustomerServiceModelViewSet(SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):

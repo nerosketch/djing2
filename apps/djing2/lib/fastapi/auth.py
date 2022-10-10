@@ -14,7 +14,7 @@ from djing2.lib import check_subnet
 
 
 TOKEN_RESULT_TYPE = tuple[BaseAccount, str]
-REDIS_AUTH_CASHE_TTL = getattr(settings, 'REDIS_AUTH_CASHE_TTL', 3600)
+REDIS_AUTH_CACHE_TTL = getattr(settings, 'REDIS_AUTH_CACHE_TTL', 3600)
 
 
 def get_token(token: str) -> Token:
@@ -24,7 +24,7 @@ def get_token(token: str) -> Token:
         data = pickle.loads(data)
         return data
     token_instance = Token.objects.select_related("user").get(key=token)
-    redis_proxy.set(cashe_key, pickle.dumps(token_instance), ex=int(REDIS_AUTH_CASHE_TTL))
+    redis_proxy.set(cashe_key, pickle.dumps(token_instance), ex=int(REDIS_AUTH_CACHE_TTL))
     return token_instance
 
 
@@ -96,10 +96,10 @@ def is_admin_auth_dependency(token_auth: TOKEN_RESULT_TYPE = Depends(token_auth_
     return user, token
 
 
-def is_customer_auth_dependency(token_auth: TOKEN_RESULT_TYPE = Depends(token_auth_dep)) -> TOKEN_RESULT_TYPE:
+def is_customer_auth_dependency(token_auth: TOKEN_RESULT_TYPE = Depends(token_auth_dep)) -> BaseAccount:
     user, token = token_auth
     if user and not user.is_staff:
-        return user, token
+        return user
     raise FORBIDDEN
 
 

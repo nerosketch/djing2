@@ -122,38 +122,6 @@ class CustomerModelSerializer(BaseAccountSerializer):
         )
 
 
-class UserCustomerModelSerializer(CustomerModelSerializer):
-    marker_icons = None
-    group_title = None
-    full_name = None
-    raw_password = None
-
-    class Meta:
-        model = models.Customer
-        # depth = 1
-        exclude = (
-            'groups',
-            'user_permissions',
-            'markers',
-            'is_superuser',
-            'is_admin',
-            'description',
-            'sites',
-        )
-        read_only_fields = (
-            'current_service',
-            'group',
-            'balance',
-            'device',
-            'dev_port'
-            'is_active',
-            'is_dynamic_ip',
-            'gateway',
-            'markers',
-            'last_update_time'
-        )
-
-
 class PassportInfoModelSerializer(BaseCustomModelSerializer):
     registration_address_title = serializers.CharField(source='full_address', read_only=True)
 
