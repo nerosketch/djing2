@@ -81,3 +81,11 @@ class InvoiceForPaymentModelSchema(BaseModel):
     cost: Decimal = 0.0
 
     Config = OrmConf
+
+
+class CustomerRawPasswordModelSchema(BaseModel):
+    id: int
+    customer_id: int
+    passw_text: str
+
+    Config = OrmConf

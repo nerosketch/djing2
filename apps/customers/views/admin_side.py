@@ -494,10 +494,10 @@ router.include_router(CrudRouter(
 ), prefix='/invoices')
 
 
-class CustomerRawPasswordModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerRawPassword.objects.select_related("customer")
-    serializer_class = serializers.CustomerRawPasswordModelSerializer
-    filterset_fields = ("customer",)
+router.include_router(CrudRouter(
+    schema=schemas.CustomerRawPasswordModelSchema,
+    queryset=models.CustomerRawPassword.objects.select_related("customer")
+), prefix='/customer-raw-password')
 
 
 class AdditionalTelephoneModelViewSet(DjingModelViewSet):

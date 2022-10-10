@@ -15,7 +15,6 @@ router.register("users/log", user_side.LogsReadOnlyModelViewSet)
 router.register("users/debts", user_side.DebtsList)
 
 # Admin Views
-router.register("customer-raw-password", admin_side.CustomerRawPasswordModelViewSet)
 router.register("additional-telephone", admin_side.AdditionalTelephoneModelViewSet)
 router.register("periodic-pay", admin_side.PeriodicPayForIdModelViewSet)
 router.register("attachments", admin_side.CustomerAttachmentViewSet)

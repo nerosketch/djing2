@@ -199,12 +199,6 @@ class InvoiceForPaymentModelSerializer(BaseCustomModelSerializer):
         fields = "__all__"
 
 
-class CustomerRawPasswordModelSerializer(BaseCustomModelSerializer):
-    class Meta:
-        model = models.CustomerRawPassword
-        fields = "__all__"
-
-
 class AdditionalTelephoneModelSerializer(BaseCustomModelSerializer):
     class Meta:
         model = models.AdditionalTelephone
