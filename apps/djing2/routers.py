@@ -5,6 +5,7 @@ from customer_comments.views import router as custocomm_rt
 from customer_contract.views import router as custocontr_rt
 from customers_duplicates.views import router as dup_rt
 from radiusapp.views import router as radius_rt
+from customers.views.admin_side import router as customers_admin_router
 
 
 router = APIRouter(
@@ -17,3 +18,4 @@ router.include_router(custocomm_rt)
 router.include_router(custocontr_rt)
 router.include_router(dup_rt)
 router.include_router(radius_rt)
+router.include_router(customers_admin_router)

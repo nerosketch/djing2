@@ -1,7 +1,8 @@
 from typing import Optional
+from datetime import datetime
 
 from djing2.lib.fastapi.types import OrmConf
-from pydantic import validator
+from pydantic import validator, BaseModel
 
 from profiles.schemas import BaseAccountModelSchema, BaseAccountSchema
 
@@ -36,5 +37,17 @@ class CustomerModelSchema(BaseAccountModelSchema):
     @validator('balance')
     def check_balance(cls, v):
         return round(v, 2)
+
+    Config = OrmConf
+
+
+class CustomerServiceBaseSchema(BaseModel):
+    deadline: Optional[datetime] = None
+
+
+class CustomerServiceModelSchema(CustomerServiceBaseSchema):
+    id: int
+    service_id: int
+    start_time: Optional[datetime] = None
 
     Config = OrmConf

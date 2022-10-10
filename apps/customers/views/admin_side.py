@@ -6,6 +6,8 @@ from django.db.models import Count, Q
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
+from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.crud import CrudRouter
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action, api_view
@@ -16,6 +18,8 @@ from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
+
+from fastapi import APIRouter, Depends, Request
 
 from djing2.lib.filters import CustomSearchFilter
 from djing2.permissions import IsSuperUser
@@ -31,16 +35,25 @@ from groupapp.models import Group
 from profiles.models import UserProfileLogActionType
 from services.models import OneShotPay, PeriodicPay, Service
 
+from .. import schemas
 
-class CustomerServiceModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerService.objects.all()
-    serializer_class = serializers.CustomerServiceModelSerializer
 
-    def create(self, request, *args, **kwargs):
-        return Response(
-            gettext("Not allowed to direct create Customer service, use 'pick_service' url"),
-            status=status.HTTP_403_FORBIDDEN,
-        )
+router = APIRouter(
+    prefix='/customers',
+    tags=['customers'],
+    dependencies=[Depends(is_admin_auth_dependency)]
+)
+
+
+router.include_router(CrudRouter(
+    schema=schemas.CustomerServiceModelSchema,
+    create_schema=schemas.CustomerServiceBaseSchema,
+    queryset=models.CustomerService.objects.all(),
+    create_route=False,
+    delete_one_route=False,
+    update_route=False
+), prefix='/customer-service')
+
 
 
 class CustomerLogModelViewSet(DjingModelViewSet):
