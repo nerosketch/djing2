@@ -10,6 +10,7 @@ from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 from djing2.lib.auth_backends import get_right_user
 from djing2.lib.redis import redis_proxy
+from djing2.lib import check_subnet
 
 
 TOKEN_RESULT_TYPE = tuple[BaseAccount, str]
@@ -101,3 +102,13 @@ def is_superuser_auth_dependency(token_auth: TOKEN_RESULT_TYPE = Depends(token_a
             detail='Forbidden'
         )
     return user, token
+
+
+def allowed_subnet_dependency(request: Request):
+    try:
+        check_subnet(request.headers)
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(err)
+        )

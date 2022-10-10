@@ -3,24 +3,23 @@ from datetime import datetime, timedelta, date
 from ipaddress import AddressValueError, IPv4Address
 from typing import Optional, Generator
 
+from addresses.interfaces import IAddressContaining
+from addresses.models import AddressModel
 from bitfield import BitField
-from pydantic import BaseModel
 from django.conf import settings
 from django.core import validators
 from django.db import connection, models, transaction
 from django.utils.translation import gettext as _
-from encrypted_model_fields.fields import EncryptedCharField
-
-from addresses.interfaces import IAddressContaining
 from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked
 from djing2.lib.mixins import RemoveFilterQuerySetMixin
 from djing2.models import BaseAbstractModel
 from dynamicfields.models import AbstractDynamicFieldContentModel
+from encrypted_model_fields.fields import EncryptedCharField
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
+from pydantic import BaseModel
 from services.custom_logic import SERVICE_CHOICES
 from services.models import OneShotPay, PeriodicPay, Service
-from addresses.models import AddressModel
 
 from . import custom_signals
 
@@ -456,11 +455,11 @@ class CustomerManager(MyUserManager):
                             "service_name": service.title
                         },
                     )
-                    custom_signals.customer_service_post_stop.send(
-                        sender=CustomerService,
-                        instance=expired_service,
-                        customer=expired_service_customer,
-                    )
+                custom_signals.customer_service_post_stop.send(
+                    sender=CustomerService,
+                    instance=expired_service,
+                    customer=expired_service_customer,
+                )
 
 
 class Customer(IAddressContaining, BaseAccount):
@@ -749,7 +748,7 @@ class Customer(IAddressContaining, BaseAccount):
         if not allow_negative and self.balance < cost:
             raise NotEnoughMoney(
                 detail=_("%(uname)s not enough money for service %(srv_name)s")
-                % {"uname": self.username, "srv_name": shot.name}
+                       % {"uname": self.username, "srv_name": shot.name}
             )
         old_balance = self.balance
         with transaction.atomic():

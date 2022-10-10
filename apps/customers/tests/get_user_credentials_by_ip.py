@@ -43,8 +43,9 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
         self.customer.refresh_from_db()
         self.customer.pick_service(self.service, self.customer)
 
-        self.lease = CustomerIpLeaseModel.objects.create(
+        self.lease = CustomerIpLeaseModel.objects.filter(
             ip_address="10.11.12.2",
+        ).update(
             mac_address="1:2:3:4:5:6",
             pool=self.ippool,
             customer=self.customer,
@@ -101,8 +102,9 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
         customer_onu.pick_service(self.service, customer_onu)
         self.customer_onu = customer_onu
 
-        self.lease = CustomerIpLeaseModel.objects.create(
+        self.lease = CustomerIpLeaseModel.objects.filter(
             ip_address="10.11.12.3",
+        ).update(
             mac_address="1:2:3:4:5:6",
             pool=self.ippool,
             customer=customer_onu,

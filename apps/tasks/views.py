@@ -65,7 +65,8 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
         return super().perform_create(
             serializer=serializer,
             author=self.request.user,
-            site=self.request.site
+            site=self.request.site,
+            *args, **kwargs
         )
 
     def perform_update(self, serializer, *args, **kwargs) -> None:

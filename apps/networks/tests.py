@@ -182,70 +182,42 @@ class IpPoolTestCase(TestCase):
         CustomAPITestCase.setUp(self)
 
     def test_get_free_ip_from_empty_leases(self):
-        free_ip = str(self.pool1.get_free_ip())
-        self.assertEqual(free_ip, "192.168.0.2")
+        free_ip = self.pool1.get_free_ip()
+        self.assertEqual(free_ip.ip_address, "192.168.0.2")
 
     def test_get_free_ip_from_filled_leases(self):
         # Fill leases
-        CustomerIpLeaseModel.objects.bulk_create(
-            objs=(
-                CustomerIpLeaseModel(
-                    ip_address="192.168.0.%d" % ip,
-                    pool=self.pool1,
-                    customer=self.customer,
-                    mac_address="11:7b:41:46:d3:%.2x" % ip,
-                )
-                for ip in range(2, 250)
-            )
+        CustomerIpLeaseModel.objects.exclude(ip_address="192.168.0.250").update(
+            customer=self.customer,
+            state=True
         )
-        free_ip = str(self.pool1.get_free_ip())
-        self.assertEqual(free_ip, "192.168.0.250")
+        free_ip = self.pool1.get_free_ip()
+        self.assertEqual(free_ip.ip_address, "192.168.0.250")
 
     def test_get_free_ip_from_full_leases(self):
         # Full fill leases
-        CustomerIpLeaseModel.objects.bulk_create(
-            objs=(
-                CustomerIpLeaseModel(
-                    ip_address="192.168.0.%d" % ip,
-                    pool=self.pool1,
-                    customer=self.customer,
-                    mac_address="11:7b:41:46:d3:%.2x" % ip,
-                )
-                for ip in range(2, 255)
-            )
+        CustomerIpLeaseModel.objects.all().update(
+            customer=self.customer,
+            state=True
         )
         free_ip = self.pool1.get_free_ip()
         self.assertIsNone(free_ip)
 
     def test_get_free_ip_from_beetween_leases(self):
         # Full fill leases
-        CustomerIpLeaseModel.objects.bulk_create(
-            objs=(
-                CustomerIpLeaseModel(
-                    ip_address="192.168.0.%d" % ip,
-                    pool=self.pool1,
-                    customer=self.customer,
-                    mac_address="11:7b:41:46:d3:%.2x" % ip,
-                )
-                for ip in range(2, 255)
-            )
+        CustomerIpLeaseModel.objects.exclude(ip_address="192.168.0.156").update(
+            customer=self.customer,
+            state=True
         )
         # Delete from some lease
-        CustomerIpLeaseModel.objects.filter(ip_address="192.168.0.156").delete()
-        free_ip = str(self.pool1.get_free_ip())
-        self.assertEqual(free_ip, "192.168.0.156")
+        CustomerIpLeaseModel.objects.filter(ip_address="192.168.0.156").release()
+        free_ip = self.pool1.get_free_ip()
+        self.assertEqual(free_ip.ip_address, "192.168.0.156")
 
     def test_for_busy_pool(self):
-        CustomerIpLeaseModel.objects.bulk_create(
-            objs=(
-                CustomerIpLeaseModel(
-                    ip_address="192.168.1.%d" % ip,
-                    pool=self.pool_small,
-                    customer=self.customer,
-                    mac_address="11:7b:41:46:d3:%.2x" % ip,
-                )
-                for ip in range(2, 7)
-            )
+        CustomerIpLeaseModel.objects.filter(pool=self.pool_small).update(
+            customer=self.customer,
+            state=True
         )
         free_ip = self.pool_small.get_free_ip()
         self.assertIsNone(free_ip)

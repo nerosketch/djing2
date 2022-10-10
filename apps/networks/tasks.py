@@ -12,7 +12,7 @@ def periodically_checks_for_stale_leases():
     CustomerIpLeaseModel.objects.filter(
         last_update__lte=datetime.now() - timedelta(days=2),
         is_dynamic=True
-    ).delete()
+    ).release()
 
 
 celery_app.add_periodic_task(
@@ -44,7 +44,7 @@ def _radius_task_wrapper(fn):
 def async_finish_session_task(radius_uname: str):
     ret_text = rc.finish_session(radius_uname=radius_uname)
     if ret_text is not None:
-        logger.warning("async_finish_session_task: %s" % ret_text)
+        logger.info("async_finish_session_task: %s" % ret_text)
 
 
 @celery_app.task
@@ -58,7 +58,7 @@ def async_change_session_inet2guest(radius_uname: str):
     """
     ret_text = rc.change_session_inet2guest(radius_uname)
     if ret_text is not None:
-        logger.warning('inet2guest: %s' % ret_text)
+        logger.info('inet2guest: %s' % ret_text)
 
 
 @celery_app.task
@@ -74,4 +74,4 @@ def async_change_session_guest2inet(radius_uname: str, speed_in: int,
         speed_out_burst=speed_out_burst
     )
     if ret_text is not None:
-        logger.warning('guest2inet: %s' % ret_text)
+        logger.info('guest2inet: %s' % ret_text)

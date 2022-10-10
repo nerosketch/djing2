@@ -39,8 +39,9 @@ class FetchCredentialsTestCase(CustomAPITestCase):
         self.customer.refresh_from_db()
         self.customer.pick_service(self.service, self.customer)
 
-        self.lease = CustomerIpLeaseModel.objects.create(
+        self.lease = CustomerIpLeaseModel.objects.filter(
             ip_address="10.11.12.2",
+        ).update(
             mac_address="1:2:3:4:5:6",
             pool=self.ippool,
             customer=self.customer,

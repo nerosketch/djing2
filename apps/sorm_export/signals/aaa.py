@@ -11,6 +11,7 @@ from django.dispatch.dispatcher import receiver
 from djing2.lib import time2utctime
 from djing2.lib.logger import logger
 from radiusapp.vendors import IVendorSpecific
+from radiusapp.vendor_base import RadiusCounters
 from rest_framework.exceptions import ValidationError
 from sorm_export.serializers.aaa import AAAExportSerializer, AAAEventType
 from sorm_export.tasks.aaa import save_radius_acct
@@ -72,8 +73,7 @@ def signal_radius_session_acct_stop(
         sender: Type[CustomerIpLeaseModel],
         instance: CustomerIpLeaseModel,
         instance_queryset, data: dict,
-        input_octets: int,
-        output_octets: int,
+        counters: RadiusCounters,
         ip_addr: str,
         radius_unique_id: str, customer_mac: EUI,
         *args, **kwargs):
@@ -100,8 +100,8 @@ def signal_radius_session_acct_stop(
             customer_db_username=customer_username,
             nas_port=nas_port,
             customer_device_mac=customer_mac.format(dialect=mac_unix_common) if customer_mac else '',
-            input_octets=input_octets,
-            output_octets=output_octets,
+            input_octets=counters.input_octets,
+            output_octets=counters.output_octets,
         )
     except Exception as err:
         logger.error("signal_radius_session_acct_stop: Error export AAA: %s" % err)
@@ -113,8 +113,7 @@ def signal_radius_acct_update(
         instance: Optional[CustomerIpLeaseModel],
         instance_queryset,
         data: dict,
-        input_octets: int,
-        output_octets: int,
+        counters: RadiusCounters,
         radius_unique_id: str,
         ip_addr: str,
         customer_mac: EUI,
@@ -141,7 +140,7 @@ def signal_radius_acct_update(
         customer_db_username=customer_username,
         nas_port=nas_port,
         customer_device_mac=customer_mac.format(dialect=mac_unix_common) if customer_mac else '',
-        input_octets=input_octets,
-        output_octets=output_octets,
+        input_octets=counters.input_octets,
+        output_octets=counters.output_octets,
     )
 

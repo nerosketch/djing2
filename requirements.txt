@@ -57,7 +57,7 @@ git+https://github.com/pyradius/pyrad.git#egg=pyrad
 pyyaml
 uritemplate
 
-requests
+requests~=2.28.1
 
 # Tests
 pyftpdlib==1.5.6
@@ -66,7 +66,11 @@ pyftpdlib==1.5.6
 djangorestframework-csv>=2.1.1
 
 # fastapi
-fastapi
+fastapi~=0.83.0
 uvicorn[standard]
-celery
-redis[hiredis]
+celery~=5.2.7
+redis[hiredis]~=4.3.4
+
+django-guardian~=2.4.0
+starlette~=0.19.1
+pydantic~=1.10.2

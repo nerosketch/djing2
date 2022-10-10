@@ -1,13 +1,15 @@
+from typing import Optional
+from datetime import datetime
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.translation import gettext_lazy as _
 from django.db.utils import IntegrityError
-from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import NotFound
 
 from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws, WebSocketSender
@@ -15,7 +17,7 @@ from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SecureApiViewMixin, SitesGroupFilterMixin, SitesFilterMixin
 from djing2.lib.logger import logger
 from djing2.lib import LogicError, DuplicateEntry, ProcessLocked
-from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel
+from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel, NetworkIpPoolKind
 from networks import serializers
 from networks import radius_commands
 from customers.serializers import CustomerModelSerializer
@@ -97,11 +99,47 @@ class VlanIfModelViewSet(SitesFilterMixin, DjingModelViewSet):
 
 
 class CustomerIpLeaseModelViewSet(DjingModelViewSet):
+    """
+    TIP: While creating new ip lease, actually we find existing lease by ip address,
+         and update other fields. Because ip leases creating on new IpPool created.
+    """
+
     queryset = CustomerIpLeaseModel.objects.all()
     serializer_class = serializers.CustomerIpLeaseModelSerializer
     filter_backends = (CustomObjectPermissionsFilter, OrderingFilter, DjangoFilterBackend)
     filterset_fields = ("customer",)
     ordering_fields = ("ip_address", "lease_time", "mac_address")
+
+    def create(self, request, *args, **kwargs):
+        d = request.data
+        instance = CustomerIpLeaseModel.objects.filter(
+            ip_address=d['ip_address']
+        ).first()
+        if instance is None:
+            raise NotFound('Failed to attach ip address')
+        serializer = self.get_serializer(instance, data=d, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        now = datetime.now()
+        CustomerIpLeaseModel.objects.filter(
+            ip_address=d['ip_address']
+        ).update(
+            mac_address=d.get('mac_address'),
+            customer=d['customer'],
+            is_dynamic=False,
+            input_octets=0,
+            output_octets=0,
+            input_packets=0,
+            output_packets=0,
+            cvid=0,
+            svid=0,
+            state=True,
+            lease_time=now,
+            last_update=now,
+        )
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
 
     @action(detail=True)
     def ping_ip(self, request, pk=None):
@@ -130,6 +168,28 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
         if r is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(str(r))
+
+    @action(detail=True, methods=['get'])
+    def release(self, request, pk: Optional[int] = None):
+        if pk is None:
+            return Response('object id is required', status=status.HTTP_403_FORBIDDEN)
+        reset_count = CustomerIpLeaseModel.objects.filter(pk=pk).release()
+        return Response(reset_count)
+
+    @action(detail=False, methods=['get'])
+    def guest_list(self, request):
+        #  from rest_framework.viewsets import mixins
+        queryset = CustomerIpLeaseModel.objects.filter(
+            pool__kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
+            state=True
+        )
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class DhcpLever(SecureApiViewMixin, APIView):
@@ -189,8 +249,8 @@ class DhcpLever(SecureApiViewMixin, APIView):
                     customer_uids = (lease.customer_id for lease in leases.iterator())
                     for customer_uid in customer_uids:
                         _update_lease_send_ws_signal(customer_uid, send2ws)
-                del_count, del_details = leases.delete()
-                return "Removed: %d" % del_count
+                leases.release()
+                return "Removed"
             else:
                 return '"cmd" parameter is invalid: %s' % data_action
         except (LogicError, DuplicateEntry) as e:

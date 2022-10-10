@@ -1,5 +1,3 @@
-from ipaddress import ip_address, ip_network
-
 from django.conf import settings
 from django.contrib.sites.middleware import CurrentSiteMiddleware
 from django.contrib.sites.models import Site
@@ -11,7 +9,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.serializers import ModelSerializer
 from drf_queryfields import QueryFieldsMixin
-from djing2.lib import check_sign
+from djing2.lib import check_sign, check_subnet
 
 from groupapp.models import Group
 
@@ -51,19 +49,11 @@ class AllowedSubnetMixin:
         Check if user ip in allowed subnet.
         Return 403 denied otherwise.
         """
-        ip = request.META.get("HTTP_X_REAL_IP", request.META.get('REMOTE_ADDR'))
-        if ip is None:
-            return JsonResponseForbidden("Failed to get remote addr")
-        ip = ip_address(ip)
-        api_auth_subnet = getattr(settings, "API_AUTH_SUBNET")
-        if isinstance(api_auth_subnet, (str, bytes)):
-            if ip in ip_network(api_auth_subnet):
-                return super().dispatch(request, *args, **kwargs)
-        elif isinstance(api_auth_subnet, (list, tuple)):
-            for subnet in api_auth_subnet:
-                if ip in ip_network(subnet, strict=False):
-                    return super().dispatch(request, *args, **kwargs)
-        return JsonResponseForbidden("Bad Subnet")
+        try:
+            check_subnet(request.META)
+            return super().dispatch(request, *args, **kwargs)
+        except ValueError as err:
+            return JsonResponseForbidden(str(err))
 
 
 class SecureApiViewMixin(AllowedSubnetMixin, HashAuthViewMixin):
