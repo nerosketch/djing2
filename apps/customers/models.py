@@ -217,6 +217,14 @@ class CustomerLog(BaseAbstractModel):
     comment = models.CharField(max_length=128)
     date = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def author_name(self):
+        if self.author:
+            fn = getattr(self, 'author.get_full_name', None)
+            if fn is None:
+                return
+            return fn()
+
     class Meta:
         db_table = "customer_log"
 

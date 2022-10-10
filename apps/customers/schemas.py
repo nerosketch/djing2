@@ -1,8 +1,9 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 
 from djing2.lib.fastapi.types import OrmConf
-from pydantic import validator, BaseModel
+from pydantic import validator, BaseModel, Field
 
 from profiles.schemas import BaseAccountModelSchema, BaseAccountSchema
 
@@ -49,5 +50,19 @@ class CustomerServiceModelSchema(CustomerServiceBaseSchema):
     id: int
     service_id: int
     start_time: Optional[datetime] = None
+
+    Config = OrmConf
+
+
+class CustomerLogModelSchema(BaseModel):
+    id: int
+    customer_id: int
+    author_id: Optional[int] = None
+    comment: str
+    date: date
+    author_name: Optional[str]
+    cost: Decimal = Decimal(0.0)
+    from_balance: Decimal = Decimal(0.0)
+    to_balance: Decimal = Decimal(0.0)
 
     Config = OrmConf

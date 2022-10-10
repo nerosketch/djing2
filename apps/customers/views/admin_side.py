@@ -55,20 +55,16 @@ router.include_router(CrudRouter(
 ), prefix='/customer-service')
 
 
-
-class CustomerLogModelViewSet(DjingModelViewSet):
-    queryset = models.CustomerLog.objects.select_related(
+router.include_router(CrudRouter(
+    schema=schemas.CustomerLogModelSchema,
+    queryset=models.CustomerLog.objects.select_related(
         "customer",
         "author"
-    ).order_by('-id')
-    serializer_class = serializers.CustomerLogModelSerializer
-    filterset_fields = ("customer",)
-
-    def create(self, request, *args, **kwargs):
-        return Response(
-            gettext("Not allowed to direct create Customer log"),
-            status=status.HTTP_403_FORBIDDEN
-        )
+    ).order_by('-id'),
+    create_route=False,
+    delete_one_route=False,
+    update_route=False
+), prefix='/customer-log')
 
 
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
