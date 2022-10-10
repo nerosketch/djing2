@@ -967,6 +967,22 @@ class InvoiceForPayment(BaseAbstractModel):
         self.status = True
         self.date_pay = datetime.now()
 
+    @property
+    def author_name(self):
+        if self.author:
+            fn = getattr(self, 'author.get_full_name', None)
+            if fn is None:
+                return
+            return fn()
+
+    @property
+    def author_uname(self):
+        if self.author:
+            fn = getattr(self, 'author.username', None)
+            if fn is None:
+                return
+            return fn()
+
     class Meta:
         db_table = "customer_inv_pay"
         verbose_name = _("Debt")

@@ -66,3 +66,18 @@ class CustomerLogModelSchema(BaseModel):
     to_balance: Decimal = Decimal(0.0)
 
     Config = OrmConf
+
+
+class InvoiceForPaymentModelSchema(BaseModel):
+    id: int
+    customer_id: int
+    status: bool = False
+    comment: str
+    date_create: datetime
+    date_pay: Optional[datetime]
+    author_id: int
+    author_name: Optional[str] = None
+    author_uname: Optional[str] = None
+    cost: Decimal = 0.0
+
+    Config = OrmConf

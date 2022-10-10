@@ -488,10 +488,10 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         return Response(serializer.data)
 
 
-class InvoiceForPaymentModelViewSet(DjingModelViewSet):
-    queryset = models.InvoiceForPayment.objects.select_related("customer", "author")
-    serializer_class = serializers.InvoiceForPaymentModelSerializer
-    filterset_fields = ("customer",)
+router.include_router(CrudRouter(
+    schema=schemas.InvoiceForPaymentModelSchema,
+    queryset=models.InvoiceForPayment.objects.select_related("customer", "author"),
+), prefix='/invoices')
 
 
 class CustomerRawPasswordModelViewSet(DjingModelViewSet):
