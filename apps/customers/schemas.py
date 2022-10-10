@@ -117,3 +117,9 @@ class PeriodicPayForIdModelSchema(PeriodicPayForIdBaseSchema):
     service_amount: Optional[float] = None
 
     Config = OrmConf
+
+
+class AttachGroupServiceResponseSchema(BaseModel):
+    service: int
+    check: bool
+    service_name: Optional[str] = None

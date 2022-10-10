@@ -8,11 +8,11 @@ from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
 from djing2.lib.fastapi.crud import CrudRouter
+from djing2.lib.fastapi.utils import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action, api_view
 from rest_framework.filters import OrderingFilter
-from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
@@ -36,6 +36,12 @@ from profiles.models import UserProfileLogActionType
 from services.models import OneShotPay, PeriodicPay, Service
 
 from .. import schemas
+
+
+# TODO:
+# выставить везде права.
+# фильтровать по сайтам.
+# проверить чтоб нельзя было изменить некоторые поля из api (типо изменить CustomerService и врубить себе услугу).
 
 
 router = APIRouter(
@@ -517,54 +523,43 @@ router.include_router(CrudRouter(
 ), prefix='/periodic-pay')
 
 
-class AttachServicesToGroups(APIView):
-    if getattr(settings, "DEBUG", False):
-        from rest_framework.authentication import SessionAuthentication
+@router.get('/attach_group_service/', response_model=list[schemas.AttachGroupServiceResponseSchema])
+def attach_group_service_get(group: int):
+    """Shows how services available in group"""
 
-        authentication_classes = (TokenAuthentication, SessionAuthentication)
-    else:
-        authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated, IsAdminUser)
+    grp = get_object_or_404(Group, pk=group)
 
-    @staticmethod
-    def get(request, format=None):
-        del format
-        gid = safe_int(request.query_params.get("group"))
-        grp = get_object_or_404(Group, pk=gid)
+    selected_services_id = tuple(pk[0] for pk in grp.service_set.only("pk").values_list("pk"))
+    services = Service.objects.only("pk", "title").iterator()
+    return (schemas.AttachGroupServiceResponseSchema(
+        service=srv.pk,
+        service_name=srv.title,
+        check=srv.pk in selected_services_id
+    ) for srv in services)
 
-        selected_services_id = tuple(pk[0] for pk in grp.service_set.only("pk").values_list("pk"))
-        services = Service.objects.only("pk", "title").iterator()
-        return Response(
-            {"service": srv.pk, "service_name": srv.title, "check": srv.pk in selected_services_id} for srv in services
-        )
 
-    @staticmethod
-    def post(request, format=None):
-        del format
-        group = safe_int(request.query_params.get("group"))
-        group = get_object_or_404(Group, pk=group)
-        # selected_service_ids_db = frozenset(t.pk for t in group.service_set.only('pk'))
-        all_available_service_ids_db = frozenset(srv.pk for srv in Service.objects.only("pk").iterator())
+@router.post('/attach_group_service/', status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+def attach_group_service(request_data: list[schemas.AttachGroupServiceResponseSchema], group: int):
+    group = get_object_or_404(Group, pk=group)
+    # selected_service_ids_db = frozenset(t.pk for t in group.service_set.only('pk'))
+    all_available_service_ids_db = frozenset(srv.pk for srv in Service.objects.only("pk").iterator())
 
-        # list of dicts: service<int>, check<bool>
-        data = request.data
-        selected_service_ids = frozenset(
-            s.get("service")
-            for s in data
-            if isinstance(s.get("service"), int)
-            and s.get("check")
-            and s.get("service") in all_available_service_ids_db
-        )
+    # list of dicts: service<int>, check<bool>
+    selected_service_ids = frozenset(
+        s.service
+        for s in request_data
+        if s.check and s.service in all_available_service_ids_db
+    )
 
-        # add = selected_service_ids - selected_service_ids_db
-        # sub = all_available_service_ids_db - (selected_service_ids - selected_service_ids_db)
+    # add = selected_service_ids - selected_service_ids_db
+    # sub = all_available_service_ids_db - (selected_service_ids - selected_service_ids_db)
 
-        group.service_set.set(selected_service_ids)
-        # models.Customer.objects.filter(
-        #     group=group,
-        #     last_connected_service__in=sub
-        # ).update(last_connected_service=None)
-        return Response(status=status.HTTP_200_OK)
+    group.service_set.set(selected_service_ids)
+    # models.Customer.objects.filter(
+    #     group=group,
+    #     last_connected_service__in=sub
+    # ).update(last_connected_service=None)
+    return
 
 
 class CustomerAttachmentViewSet(DjingModelViewSet):

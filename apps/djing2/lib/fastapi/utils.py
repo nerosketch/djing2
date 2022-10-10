@@ -4,8 +4,10 @@ from collections import OrderedDict
 from fastapi import APIRouter
 from pydantic import create_model, BaseModel
 from django.db.models import Model
+from django.shortcuts import get_object_or_404 as _get_object_or_404
+from django.core.exceptions import ValidationError
 
-from .types import T, FIELD_OBJECTS_TYPE, COMPUTED_FIELD_OBJECTS_TYPE
+from .types import T, FIELD_OBJECTS_TYPE, COMPUTED_FIELD_OBJECTS_TYPE, NOT_FOUND
 
 
 def schema_factory(
@@ -55,3 +57,14 @@ def create_get_initial_route(router: APIRouter, schema: Type[BaseModel], path: s
     def get_initial_values():
         return get_initial(schema)
     return get_initial_values
+
+
+def get_object_or_404(queryset, *filter_args, **filter_kwargs):
+    """
+    Same as Django's standard shortcut, but make sure to also raise 404
+    if the filter_kwargs don't match the required types.
+    """
+    try:
+        return _get_object_or_404(queryset, *filter_args, **filter_kwargs)
+    except (TypeError, ValueError, ValidationError):
+        raise NOT_FOUND

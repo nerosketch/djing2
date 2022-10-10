@@ -4,15 +4,14 @@ from django.db.models import QuerySet, Model
 from django.db.utils import IntegrityError
 from fastapi.params import Depends
 from pydantic import BaseModel
-from fastapi import HTTPException, status, Request, APIRouter
+from fastapi import HTTPException, Request, APIRouter
 from fastapi.types import DecoratedCallable
+from starlette import status
 
 from ._fields_cache import build_model_and_schema_fields
-from .types import DEPENDENCIES, IListResponse, Pagination
+from .types import DEPENDENCIES, IListResponse, Pagination, NOT_FOUND
 from .utils import schema_factory, format_object
 from .pagination import paginate_qs_path_decorator
-
-NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
 
 
 class CRUDReadGenerator(APIRouter):

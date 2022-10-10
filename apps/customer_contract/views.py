@@ -1,10 +1,10 @@
 from typing import Optional
 from customer_contract import models
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
-from djing2.lib.fastapi.crud import NOT_FOUND, CrudRouter
+from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
-from djing2.lib.fastapi.types import IListResponse, Pagination
+from djing2.lib.fastapi.types import IListResponse, Pagination, NOT_FOUND
 from djing2.lib.fastapi.utils import create_get_initial_route
 from fastapi import APIRouter, Depends, Request
 from starlette import status

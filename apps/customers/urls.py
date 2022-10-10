@@ -20,7 +20,6 @@ router.register("dynamic-fields", admin_side.CustomerDynamicFieldContentModelVie
 router.register("", admin_side.CustomerModelViewSet)
 
 urlpatterns = [
-    path("attach_group_service/", admin_side.AttachServicesToGroups.as_view()),
     path("groups_with_customers/", admin_side.groups_with_customers),
     path("customer-token", admin_side.SuperUserGetCustomerTokenByPhoneAPIView.as_view()),
     path("", include(router.urls)),

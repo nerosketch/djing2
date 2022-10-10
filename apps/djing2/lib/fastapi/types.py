@@ -1,8 +1,9 @@
 from typing import TypeVar, Optional, Sequence, Generic, OrderedDict as OrderedDictType
 
-from fastapi.params import Depends
+from fastapi import Depends, HTTPException
 from pydantic import BaseModel, Field as PydanticField
 from pydantic.generics import GenericModel
+from starlette import status
 from django.db.models import Field as DjangoField
 
 
@@ -34,3 +35,6 @@ COMPUTED_FIELD_OBJECTS_TYPE = OrderedDictType[str, PydanticField]
 
 class OrmConf:
     orm_mode = True
+
+
+NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
