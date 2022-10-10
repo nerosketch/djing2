@@ -1,47 +1,40 @@
 from collections import OrderedDict
 from datetime import datetime
-from typing import Optional
 
-from django.conf import settings
+from customers import models, serializers
+from customers.models import CustomerQuerySet
+from customers.views.view_decorators import catch_customers_errs
+from django.contrib.auth.hashers import make_password
 from django.db.models import Count, Q
+from django.db.models.query import QuerySet
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.hashers import make_password
 from django_filters.rest_framework import DjangoFilterBackend
-from guardian.shortcuts import get_objects_for_user
+from djing2.lib import safe_float, safe_int
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
 from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
-from djing2.lib.fastapi.types import IListResponse
+from djing2.lib.fastapi.types import IListResponse, Pagination
 from djing2.lib.fastapi.utils import get_object_or_404
-from rest_framework import status
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.decorators import action, api_view
-from rest_framework.filters import OrderingFilter
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework.settings import api_settings
-from rest_framework.views import APIView
-from rest_framework.authtoken.models import Token
-
-from fastapi import APIRouter, Depends, Request, Response
-
-from djing2.lib.filters import CustomSearchFilter
-from djing2.permissions import IsSuperUser
-from djing2.lib import safe_float, safe_int
 from djing2.lib.filters import CustomObjectPermissionsFilter
+from djing2.lib.filters import CustomSearchFilter
+from djing2.lib.filters import filter_qs_by_fields_decorator
 from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import DjingModelViewSet
-from customers import models, serializers
-from customers.models import CustomerQuerySet
-from customers.views.view_decorators import catch_customers_errs
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
+from fastapi import APIRouter, Depends, Request, Response
 from groupapp.models import Group
+from guardian.shortcuts import get_objects_for_user
 from profiles.models import UserProfileLogActionType, UserProfile
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter
+from rest_framework.settings import api_settings
 from services.models import OneShotPay, PeriodicPay, Service
 
 from .. import schemas
-
 
 # TODO:
 # выставить везде права.
@@ -55,7 +48,6 @@ router = APIRouter(
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
-
 router.include_router(CrudRouter(
     schema=schemas.CustomerServiceModelSchema,
     create_schema=schemas.CustomerServiceBaseSchema,
@@ -64,7 +56,6 @@ router.include_router(CrudRouter(
     delete_one_route=False,
     update_route=False
 ), prefix='/customer-service')
-
 
 router.include_router(CrudRouter(
     schema=schemas.CustomerLogModelSchema,
@@ -76,7 +67,6 @@ router.include_router(CrudRouter(
     delete_one_route=False,
     update_route=False
 ), prefix='/customer-log')
-
 
 _customer_base_query = models.Customer.objects.select_related(
     "current_service", "current_service__service", "gateway"
@@ -120,20 +110,27 @@ def get_customer_profile(customer_id: int):
 @router.get('/', response_model_exclude={'password'},
             response_model=IListResponse[schemas.CustomerModelSchema])
 @paginate_qs_path_decorator(schema=schemas.CustomerModelSchema, db_model=models.Customer)
-def get_customers(username: Optional[str]=None, fio: Optional[str]=None,
-                  telephone: Optional[str]=None, description: Optional[str]=None,
-                  user: UserProfile = Depends(permission_check_dependency(perm_codename='customers.view_customer'))):
+def get_customers(request: Request,
+                  user: UserProfile = Depends(permission_check_dependency(perm_codename='customers.view_customer')),
+                  filter_fields_qs: QuerySet = Depends(filter_qs_by_fields_decorator(
+                      fields={
+                          'group': int, 'device': int, 'dev_port': int, 'current_service__service': int,
+                          'address': int, 'birth_day': datetime
+                      },
+                      qs=_customer_base_query,
+                  )),
+                  pagination: Pagination = Depends()
+                  ):
 
-    customers_qs = _customer_base_query
-
+    # filter by rights
     customers_qs = get_objects_for_user(
         user=user,
         perms='customers.view_customer',
-        klass=customers_qs
+        klass=filter_fields_qs
     )
 
-    # TODO: filter by fields
     # TODO: order bu fields
+    # TODO: filter by sites
 
     return customers_qs
 
@@ -210,11 +207,11 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
             self.request.user.log(
                 do_type=UserProfileLogActionType.CREATE_USER,
                 additional_text='%s, "%s", %s'
-                % (
-                    customer_instance.username,
-                    customer_instance.fio,
-                    customer_instance.group.title if customer_instance.group else "",
-                ),
+                                % (
+                                    customer_instance.username,
+                                    customer_instance.fio,
+                                    customer_instance.group.title if customer_instance.group else "",
+                                ),
             )
         return customer_instance
 
@@ -558,7 +555,6 @@ router.include_router(CrudRouter(
     queryset=models.InvoiceForPayment.objects.select_related("customer", "author"),
 ), prefix='/invoices')
 
-
 router.include_router(CrudRouter(
     schema=schemas.CustomerRawPasswordModelSchema,
     queryset=models.CustomerRawPassword.objects.select_related("customer"),
@@ -567,13 +563,11 @@ router.include_router(CrudRouter(
     delete_one_route=False
 ), prefix='/customer-raw-password')
 
-
 router.include_router(CrudRouter(
     schema=schemas.AdditionalTelephoneModelSchema,
     create_schema=schemas.AdditionalTelephoneBaseSchema,
     queryset=models.AdditionalTelephone.objects.defer("customer"),
 ), prefix='/additional-telephone')
-
 
 router.include_router(CrudRouter(
     schema=schemas.PeriodicPayForIdModelSchema,
