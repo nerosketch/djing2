@@ -11,7 +11,6 @@ from profiles.models import split_fio
 from profiles.serializers import BaseAccountSerializer, generate_random_password
 from customers import models
 from djing2.lib.mixins import BaseCustomModelSerializer
-from djing2.lib.validators import telephoneValidator
 from services.serializers import ServiceModelSerializer
 
 
@@ -229,9 +228,3 @@ class GroupsWithCustomersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ("id", "title", "customer_count")
-
-
-class SuperUserGetCustomerTokenByPhoneSerializer(serializers.Serializer):
-    telephone = serializers.CharField(
-        validators=(telephoneValidator,)
-    )

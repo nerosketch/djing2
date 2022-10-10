@@ -6,7 +6,7 @@ from django.db.models import Count, Q
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
-from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
+from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
 from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.utils import get_object_or_404
 from rest_framework import status
@@ -14,12 +14,11 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action, api_view
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 
 from djing2.lib.filters import CustomSearchFilter
 from djing2.permissions import IsSuperUser
@@ -608,36 +607,34 @@ class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelVi
         }
 
 
-@api_view(['get'])
-def groups_with_customers(request):
+@router.get('/groups_with_customers/', response_model=list[schemas.GroupsWithCustomersSchema])
+def groups_with_customers():
     # TODO: Also filter by address
     grps = Group.objects.annotate(
         customer_count=Count('customer')
     ).filter(
         customer_count__gt=0
     ).order_by('title')
-    ser = serializers.GroupsWithCustomersSerializer(instance=grps, many=True)
-    return Response(ser.data)
+    return (schemas.GroupsWithCustomersSchema.from_orm(grp) for grp in grps.iterator())
 
 
-class SuperUserGetCustomerTokenByPhoneAPIView(APIView):
-    throttle_classes = ()
-    permission_classes = (IsAuthenticated, IsSuperUser)
-    serializer_class = serializers.SuperUserGetCustomerTokenByPhoneSerializer
+@router.get('/customer-token/',
+            response_model=schemas.TokenResponseSchema,
+            dependencies=[Depends(is_superuser_auth_dependency)])
+def super_user_get_customer_token_by_phone(data: schemas.TokenRequestSchema):
+    tel = data.telephone
 
-    def get(self, request, *args, **kwargs):
-        ser = self.serializer_class(data=request.query_params)
-        ser.is_valid(raise_exception=True)
-        dat = ser.data
-        tel = dat.get('telephone')
-        #  customers = models.Customer.objects.filter(telephone=)
-        tel = models.AdditionalTelephone.objects.filter(
-            Q(telephone=tel), Q(customer__telephone=tel)
-        ).select_related('customer').first()
-        if tel:
-            user = tel.customer
-            token = Token.objects.filter(user=user).first()
-            if token:
-                return Response({"token": token.key})
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
+    #  customers = models.Customer.objects.filter(telephone=)
+    tel = models.AdditionalTelephone.objects.filter(
+        Q(telephone=tel), Q(customer__telephone=tel)
+    ).select_related('customer').first()
+    if tel:
+        user = tel.customer
+        token = Token.objects.filter(user=user).first()
+        if token:
+            return schemas.TokenResponseSchema(
+                token=token.key
+            )
+    return schemas.TokenResponseSchema(
+        token=None
+    )

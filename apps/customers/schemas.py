@@ -2,6 +2,7 @@ from typing import Optional
 from datetime import datetime, date
 from decimal import Decimal
 
+from django.conf import settings
 from djing2.lib.fastapi.types import OrmConf
 from pydantic import validator, BaseModel, Field
 
@@ -139,3 +140,23 @@ class CustomerAttachmentModelSchema(CustomerAttachmentBaseSchema):
     customer_name: Optional[str] = None
 
     Config = OrmConf
+
+
+class GroupsWithCustomersSchema(BaseModel):
+    id: int
+    title: str
+    # sites: list[int]
+    customer_count: int = 0
+
+    Config = OrmConf
+
+
+class TokenResponseSchema(BaseModel):
+    token: Optional[str]
+
+
+tel_regexp_str = getattr(settings, "TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
+
+
+class TokenRequestSchema(BaseModel):
+    telephone: str = Field(regex=tel_regexp_str)
