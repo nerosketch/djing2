@@ -35,8 +35,8 @@ def generate_random_password():
 
 
 class BaseAccountSchema(BaseModel):
-    username: str = Field(default=generate_random_username)
-    password: str = Field(default=generate_random_password)
+    username: str = Field(default_factory=generate_random_username)
+    password: str = Field(default_factory=generate_random_password)
     fio: str
     birth_day: Optional[date]
     is_active: bool = False
