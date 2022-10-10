@@ -6,7 +6,7 @@ from django.db.models import Count, Q
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
-from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
 from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.utils import get_object_or_404
 from rest_framework import status
@@ -562,13 +562,25 @@ def attach_group_service(request_data: list[schemas.AttachGroupServiceResponseSc
     return
 
 
-class CustomerAttachmentViewSet(DjingModelViewSet):
-    queryset = models.CustomerAttachment.objects.select_related("author")
-    serializer_class = serializers.CustomerAttachmentSerializer
-    filterset_fields = ("customer",)
+router.include_router(CrudRouter(
+    schema=schemas.CustomerAttachmentModelSchema,
+    create_schema=schemas.CustomerAttachmentBaseSchema,
+    queryset=models.CustomerAttachment.objects.select_related("author"),
+    create_route=False
+), prefix='/attachments')
 
-    def perform_create(self, serializer, *args, **kwargs) -> None:
-        serializer.save(author=self.request.user)
+
+@router.post('/attachments/',
+             response_model=schemas.CustomerAttachmentModelSchema,
+             status_code=status.HTTP_201_CREATED)
+def create_customer_attachment(
+    attachment_data: schemas.CustomerAttachmentBaseSchema,
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+):
+    user, token = auth
+    pdict = attachment_data.dict()
+    obj = models.CustomerAttachment.objects.create(**pdict, author_id=user.pk)
+    return schemas.CustomerAttachmentModelSchema.from_orm(obj)
 
 
 class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelViewSet):

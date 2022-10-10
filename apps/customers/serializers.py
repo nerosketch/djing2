@@ -223,17 +223,6 @@ class PeriodicPayForIdRequestSerializer(serializers.Serializer):
 """
 
 
-class CustomerAttachmentSerializer(BaseCustomModelSerializer):
-    author = serializers.PrimaryKeyRelatedField(read_only=True)
-    author_name = serializers.CharField(source="author.get_full_name", read_only=True)
-    create_time = serializers.DateTimeField(read_only=True)
-    customer_name = serializers.CharField(source="customer.get_full_name", read_only=True)
-
-    class Meta:
-        model = models.CustomerAttachment
-        fields = "__all__"
-
-
 class GroupsWithCustomersSerializer(serializers.ModelSerializer):
     customer_count = serializers.IntegerField(read_only=True)
 

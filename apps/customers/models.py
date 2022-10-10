@@ -1164,5 +1164,15 @@ class CustomerAttachment(BaseAbstractModel):
     def __str__(self):
         return self.title
 
+    @property
+    def author_name(self):
+        if self.author:
+            return str(self.author.get_full_name())
+
+    @property
+    def customer_name(self):
+        if self.customer:
+            return str(self.customer.get_full_name())
+
     class Meta:
         db_table = "customer_attachments"
