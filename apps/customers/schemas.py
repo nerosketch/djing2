@@ -2,16 +2,22 @@ from typing import Optional
 from datetime import datetime, date
 from decimal import Decimal
 
-from django.conf import settings
 from djing2.lib.fastapi.types import OrmConf
+from djing2.lib.validators import tel_regexp_str
 from pydantic import validator, BaseModel, Field
 
-from profiles.schemas import BaseAccountModelSchema, BaseAccountSchema
+from profiles.schemas import BaseAccountSchema
+from . import models
+
+
+def update_passw(acc, raw_password):
+    if raw_password:
+        updated_count = models.CustomerRawPassword.objects.filter(customer=acc).update(passw_text=raw_password)
+        if updated_count == 0:
+            models.CustomerRawPassword.objects.create(customer=acc, passw_text=raw_password)
 
 
 class CustomerSchema(BaseAccountSchema):
-    balance: float
-    current_service_id: Optional[int] = None
     group_id: Optional[int] = None
     address_id: Optional[int] = None
     description: Optional[str] = None
@@ -23,8 +29,12 @@ class CustomerSchema(BaseAccountSchema):
     last_connected_service_id: Optional[int] = None
 
 
-class CustomerModelSchema(BaseAccountModelSchema):
+class CustomerModelSchema(CustomerSchema):
     id: int
+    create_date: date
+    last_update_time: Optional[datetime]
+    full_name: str
+
     group_title: Optional[str]
     address_title: str
     balance: float
@@ -35,9 +45,10 @@ class CustomerModelSchema(BaseAccountModelSchema):
     raw_password: Optional[str]
     lease_count: Optional[int] = None
     marker_icons: list[str] = []
+    current_service_id: Optional[int] = None
 
     @validator('balance')
-    def check_balance(cls, v):
+    def check_balance(cls, v: float):
         return round(v, 2)
 
     Config = OrmConf
@@ -153,9 +164,6 @@ class GroupsWithCustomersSchema(BaseModel):
 
 class TokenResponseSchema(BaseModel):
     token: Optional[str]
-
-
-tel_regexp_str = getattr(settings, "TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
 
 
 class TokenRequestSchema(BaseModel):

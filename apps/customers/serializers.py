@@ -12,6 +12,7 @@ from profiles.serializers import BaseAccountSerializer, generate_random_password
 from customers import models
 from djing2.lib.mixins import BaseCustomModelSerializer
 from services.serializers import ServiceModelSerializer
+from .schemas import update_passw
 
 
 class CustomerServiceModelSerializer(BaseCustomModelSerializer):
@@ -39,13 +40,6 @@ class CustomerLogModelSerializer(BaseCustomModelSerializer):
         fields = '__all__'
 
 
-def update_passw(acc, raw_password):
-    if raw_password:
-        updated_count = models.CustomerRawPassword.objects.filter(customer=acc).update(passw_text=raw_password)
-        if updated_count == 0:
-            models.CustomerRawPassword.objects.create(customer=acc, passw_text=raw_password)
-
-
 # TODO: deprecated: defined in customers.schemas.CustomerModelSchema
 class CustomerModelSerializer(BaseAccountSerializer):
     group_title = serializers.CharField(source="group.title", read_only=True)
@@ -62,8 +56,6 @@ class CustomerModelSerializer(BaseAccountSerializer):
     balance = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False, read_only=True)
     create_date = serializers.CharField(read_only=True)
     lease_count = serializers.IntegerField(read_only=True)
-
-    traf_octs = serializers.IntegerField(source="octsum", read_only=True)
 
     marker_icons = serializers.ListField(source="get_flag_icons", child=serializers.CharField(), read_only=True)
 

@@ -1,13 +1,19 @@
 from collections import OrderedDict
 from datetime import datetime
+from typing import Optional
 
 from django.conf import settings
 from django.db.models import Count, Q
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.hashers import make_password
 from django_filters.rest_framework import DjangoFilterBackend
+from guardian.shortcuts import get_objects_for_user
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
 from djing2.lib.fastapi.crud import CrudRouter
+from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
+from djing2.lib.fastapi.perms import permission_check_dependency
+from djing2.lib.fastapi.types import IListResponse
 from djing2.lib.fastapi.utils import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
@@ -31,7 +37,7 @@ from customers.models import CustomerQuerySet
 from customers.views.view_decorators import catch_customers_errs
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 from groupapp.models import Group
-from profiles.models import UserProfileLogActionType
+from profiles.models import UserProfileLogActionType, UserProfile
 from services.models import OneShotPay, PeriodicPay, Service
 
 from .. import schemas
@@ -72,6 +78,66 @@ router.include_router(CrudRouter(
 ), prefix='/customer-log')
 
 
+_customer_base_query = models.Customer.objects.select_related(
+    "current_service", "current_service__service", "gateway"
+)
+
+
+@router.post('/', response_model_exclude={'password'}, response_model=schemas.CustomerModelSchema)
+def create_customer_profile(new_customer_data: schemas.CustomerSchema):
+    pdata = new_customer_data.dict()
+    pdata.update({
+        "is_admin": False,
+        "is_superuser": False
+    })
+    acc = models.Customer.objects.create(**pdata)
+    raw_password = new_customer_data.password
+    schemas.update_passw(acc, raw_password=raw_password)
+    return schemas.CustomerModelSchema.from_orm(acc)
+
+
+@router.patch('/{customer_id}/', response_model_exclude={'password'}, response_model=schemas.CustomerModelSchema)
+def update_customer_profile(customer_id: int, customer_data: schemas.CustomerSchema):
+    pdata = customer_data.dict(exclude_none=True, exclude_unset=True, exclude_defaults=True)
+    raw_password = pdata.pop('password')
+    acc = get_object_or_404(models.Customer, pk=customer_id)
+    for d_name, d_val in pdata.items():
+        setattr(acc, d_name, d_val)
+    if raw_password:
+        schemas.update_passw(acc=acc, raw_password=raw_password)
+        setattr(acc, 'password', make_password(raw_password))
+
+    acc.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+    return schemas.CustomerModelSchema.from_orm(acc)
+
+
+@router.get('/{customer_id}/', response_model=schemas.CustomerModelSchema, response_model_exclude={'password'})
+def get_customer_profile(customer_id: int):
+    acc = get_object_or_404(models.Customer, pk=customer_id)
+    return schemas.CustomerModelSchema.from_orm(acc)
+
+
+@router.get('/', response_model_exclude={'password'},
+            response_model=IListResponse[schemas.CustomerModelSchema])
+@paginate_qs_path_decorator(schema=schemas.CustomerModelSchema, db_model=models.Customer)
+def get_customers(username: Optional[str]=None, fio: Optional[str]=None,
+                  telephone: Optional[str]=None, description: Optional[str]=None,
+                  user: UserProfile = Depends(permission_check_dependency(perm_codename='customers.view_customer'))):
+
+    customers_qs = _customer_base_query
+
+    customers_qs = get_objects_for_user(
+        user=user,
+        perms='customers.view_customer',
+        klass=customers_qs
+    )
+
+    # TODO: filter by fields
+    # TODO: order bu fields
+
+    return customers_qs
+
+
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = models.Customer.objects.select_related(
         "current_service", "current_service__service", "gateway"
@@ -109,12 +175,6 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         qs = super().get_queryset()
         return qs.annotate(
             lease_count=Count("customeripleasemodel"),
-            # octsum=Sum(
-            #     "traf_cache__octets",
-            #     filter=Q(
-            #         traf_cache__event_time__gt=datetime.now() - timedelta(minutes=5)
-            #     )
-            # ),
         )
 
     def filter_queryset(self, queryset: CustomerQuerySet):
