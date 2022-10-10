@@ -18,7 +18,4 @@ apps/devices/device_config/custom/*.py
 secrets/
 .env
 .vscode/
-.idea/workspace.xml
-.idea/inspectionProfiles/profiles_settings.xml
-.idea/djing2.iml
-.idea/misc.xml
+.idea/
