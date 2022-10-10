@@ -199,12 +199,6 @@ class InvoiceForPaymentModelSerializer(BaseCustomModelSerializer):
         fields = "__all__"
 
 
-class AdditionalTelephoneModelSerializer(BaseCustomModelSerializer):
-    class Meta:
-        model = models.AdditionalTelephone
-        fields = "__all__"
-
-
 class PeriodicPayForIdModelSerializer(BaseCustomModelSerializer):
     service_name = serializers.CharField(source="periodic_pay.name", read_only=True)
     service_calc_type = serializers.CharField(source="periodic_pay.calc_type_name", read_only=True)

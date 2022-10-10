@@ -89,3 +89,16 @@ class CustomerRawPasswordModelSchema(BaseModel):
     passw_text: str
 
     Config = OrmConf
+
+
+class AdditionalTelephoneBaseSchema(BaseModel):
+    telephone: str
+    customer_id: int
+
+
+class AdditionalTelephoneModelSchema(AdditionalTelephoneBaseSchema):
+    id: int
+    owner_name: str
+    create_time: datetime
+
+    Config = OrmConf

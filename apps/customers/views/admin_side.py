@@ -496,14 +496,18 @@ router.include_router(CrudRouter(
 
 router.include_router(CrudRouter(
     schema=schemas.CustomerRawPasswordModelSchema,
-    queryset=models.CustomerRawPassword.objects.select_related("customer")
+    queryset=models.CustomerRawPassword.objects.select_related("customer"),
+    create_route=False,
+    get_all_route=False,
+    delete_one_route=False
 ), prefix='/customer-raw-password')
 
 
-class AdditionalTelephoneModelViewSet(DjingModelViewSet):
-    queryset = models.AdditionalTelephone.objects.defer("customer")
-    serializer_class = serializers.AdditionalTelephoneModelSerializer
-    filterset_fields = ("customer",)
+router.include_router(CrudRouter(
+    schema=schemas.AdditionalTelephoneModelSchema,
+    create_schema=schemas.AdditionalTelephoneBaseSchema,
+    queryset=models.AdditionalTelephone.objects.defer("customer"),
+), prefix='/additional-telephone')
 
 
 class PeriodicPayForIdModelViewSet(DjingModelViewSet):
