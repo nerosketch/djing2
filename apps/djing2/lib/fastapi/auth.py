@@ -83,24 +83,30 @@ class TokenAPIKeyHeader(APIKeyHeader):
 
 token_auth_dep = TokenAPIKeyHeader(name='Authorization')
 
+FORBIDDEN = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail='Forbidden'
+)
+
 
 def is_admin_auth_dependency(token_auth: TOKEN_RESULT_TYPE = Depends(token_auth_dep)) -> TOKEN_RESULT_TYPE:
     user, token = token_auth
     if not user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='Forbidden'
-        )
+        raise FORBIDDEN
     return user, token
+
+
+def is_customer_auth_dependency(token_auth: TOKEN_RESULT_TYPE = Depends(token_auth_dep)) -> TOKEN_RESULT_TYPE:
+    user, token = token_auth
+    if user and not user.is_staff:
+        return user, token
+    raise FORBIDDEN
 
 
 def is_superuser_auth_dependency(token_auth: TOKEN_RESULT_TYPE = Depends(token_auth_dep)) -> TOKEN_RESULT_TYPE:
     user, token = token_auth
     if not (user.is_admin and user.is_superuser):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='Forbidden'
-        )
+        raise FORBIDDEN
     return user, token
 
 
