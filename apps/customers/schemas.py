@@ -168,3 +168,38 @@ class TokenResponseSchema(BaseModel):
 
 class TokenRequestSchema(BaseModel):
     telephone: str = Field(regex=tel_regexp_str)
+
+
+class UserCustomerWritableModelSchema(BaseModel):
+    address_id: Optional[int] = None
+    auto_renewal_service: bool = False
+
+
+class UserCustomerModelSchema(UserCustomerWritableModelSchema):
+    id: int
+    create_date: date
+    last_update_time: Optional[datetime]
+    full_name: str
+
+    address_title: str
+    balance: float
+    last_connected_service_title: Optional[str]
+    current_service_title: Optional[str]
+    service_id: Optional[int]
+    current_service_id: Optional[int] = None
+
+    last_connected_service_id: Optional[int] = None
+
+    Config = OrmConf
+
+
+class UserBuyServiceSchema(BaseModel):
+    service_id: int
+
+
+class UserAutoRenewalServiceSchema(BaseModel):
+    auto_renewal_service: bool
+
+
+class DetailedCustomerServiceModelSchema(BaseModel):
+    service:

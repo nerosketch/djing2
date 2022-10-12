@@ -624,7 +624,7 @@ class Customer(IAddressContaining, BaseAccount):
         return self.address
 
     def pick_service(
-        self, service, author: Optional[UserProfile],
+        self, service, author: Optional[BaseAccount],
         comment=None, deadline=None, allow_negative=False
     ) -> None:
         """

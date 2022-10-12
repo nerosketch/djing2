@@ -83,6 +83,10 @@ class Service(BaseAbstractModel):
         dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
         return self.calc_deadline().strftime(dtime_fmt)
 
+    @property
+    def planned_deadline(self):
+        return self.calc_deadline_formatted()
+
     def __str__(self):
         return f"{self.title} ({self.cost:.2f})"
 
