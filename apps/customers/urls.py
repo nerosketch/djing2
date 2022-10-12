@@ -16,7 +16,6 @@ router.register("users/debts", user_side.DebtsList)
 
 # Admin Views
 router.register("dynamic-fields", admin_side.CustomerDynamicFieldContentModelViewSet)
-router.register("", admin_side.CustomerModelViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),

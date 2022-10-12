@@ -3,6 +3,7 @@ from collections import OrderedDict
 
 from fastapi import APIRouter
 from pydantic import create_model, BaseModel
+from pydantic.main import ModelMetaclass
 from django.db.models import Model
 from django.shortcuts import get_object_or_404 as _get_object_or_404
 from django.core.exceptions import ValidationError
@@ -40,10 +41,10 @@ def format_object(
     if fields_list is not None:
         if not isinstance(fields_list, (list, tuple, set)):
             raise ValueError('fields_list must be list, tuple or set: %s' % fields_list)
-        result_dict_dields = ((fname, obj) for fname, obj in result_dict_dields if fields_list)
+        result_dict_dields = ((fname, obj) for fname, obj in result_dict_dields if fname in fields_list)
     r = OrderedDict(result_dict_dields)
     r.update({
-        fname: getattr(model_item, fname, None) for fname, ob in computed_field_objects.items()
+        fname: getattr(model_item, fname, None) for fname, _ in computed_field_objects.items()
     })
     return r
 
@@ -68,3 +69,18 @@ def get_object_or_404(queryset, *filter_args, **filter_kwargs):
         return _get_object_or_404(queryset, *filter_args, **filter_kwargs)
     except (TypeError, ValueError, ValidationError):
         raise NOT_FOUND
+
+
+class AllOptionalMetaclass(ModelMetaclass):
+    """Makes Pydantic model fields optional"""
+
+    def __new__(mcs, name, bases, namespaces, **kwargs):
+        annotations = namespaces.get('__annotations__', {})
+        for base in bases:
+            annotations.update(base.__annotations__)
+        for field in annotations:
+            if not field.startswith('__'):
+                annotations[field] = Optional[annotations[field]]
+        namespaces['__annotations__'] = annotations
+
+        return super().__new__(mcs, name, bases, namespaces, **kwargs)

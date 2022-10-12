@@ -1,3 +1,4 @@
+from typing import Optional
 from collections import OrderedDict
 from datetime import datetime
 
@@ -6,7 +7,6 @@ from customers.models import CustomerQuerySet
 from customers.views.view_decorators import catch_customers_errs
 from django.contrib.auth.hashers import make_password
 from django.db.models import Count, Q
-from django.db.models.query import QuerySet
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
@@ -16,10 +16,10 @@ from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination
-from djing2.lib.fastapi.utils import get_object_or_404
-from djing2.lib.filters import CustomObjectPermissionsFilter
+from djing2.lib.fastapi.utils import get_object_or_404, AllOptionalMetaclass
+from djing2.lib.filters import CustomObjectPermissionsFilter, search_qs_by_fields_dependency
 from djing2.lib.filters import CustomSearchFilter
-from djing2.lib.filters import filter_qs_by_fields_decorator
+from djing2.lib.filters import filter_qs_by_fields_dependency
 from djing2.lib.mixins import SitesFilterMixin
 from djing2.viewsets import DjingModelViewSet
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
@@ -86,6 +86,17 @@ def create_customer_profile(new_customer_data: schemas.CustomerSchema):
     return schemas.CustomerModelSchema.from_orm(acc)
 
 
+@router.get('/groups_with_customers/', response_model=list[schemas.GroupsWithCustomersSchema])
+def groups_with_customers():
+    # TODO: Also filter by address
+    grps = Group.objects.annotate(
+        customer_count=Count('customer')
+    ).filter(
+        customer_count__gt=0
+    ).order_by('title')
+    return [schemas.GroupsWithCustomersSchema.from_orm(grp) for grp in grps.iterator()]
+
+
 @router.patch('/{customer_id}/', response_model_exclude={'password'}, response_model=schemas.CustomerModelSchema)
 def update_customer_profile(customer_id: int, customer_data: schemas.CustomerSchema):
     pdata = customer_data.dict(exclude_none=True, exclude_unset=True, exclude_defaults=True)
@@ -107,32 +118,57 @@ def get_customer_profile(customer_id: int):
     return schemas.CustomerModelSchema.from_orm(acc)
 
 
+class CustomerResponseModelSchema(schemas.CustomerModelSchema, metaclass=AllOptionalMetaclass):
+    pass
+
+
 @router.get('/', response_model_exclude={'password'},
-            response_model=IListResponse[schemas.CustomerModelSchema])
-@paginate_qs_path_decorator(schema=schemas.CustomerModelSchema, db_model=models.Customer)
+            response_model=IListResponse[CustomerResponseModelSchema])
+@paginate_qs_path_decorator(schema=CustomerResponseModelSchema, db_model=models.Customer)
 def get_customers(request: Request,
+                  street: Optional[int] = None, house: Optional[int] = None,
+                  address: Optional[int] = None,
                   user: UserProfile = Depends(permission_check_dependency(perm_codename='customers.view_customer')),
-                  filter_fields_qs: QuerySet = Depends(filter_qs_by_fields_decorator(
+                  filter_fields_q: Q = Depends(filter_qs_by_fields_dependency(
                       fields={
                           'group': int, 'device': int, 'dev_port': int, 'current_service__service': int,
-                          'address': int, 'birth_day': datetime
+                          'birth_day': datetime,
                       },
-                      qs=_customer_base_query,
+                      db_model=models.Customer
+                  )),
+                  search_filter_q: Q = Depends(search_qs_by_fields_dependency(
+                      search_fields=["username", "fio", "telephone", "description"]
                   )),
                   pagination: Pagination = Depends()
                   ):
-
     # filter by rights
-    customers_qs = get_objects_for_user(
+    queryset = get_objects_for_user(
         user=user,
         perms='customers.view_customer',
-        klass=filter_fields_qs
+        klass=_customer_base_query
     )
+
+    queryset = queryset.filter(filter_fields_q | search_filter_q)
+
+    if house:
+        return queryset.filter_customers_by_addr(
+            addr_id=house,
+        )
+    else:
+        if street:
+            return queryset.filter_customers_by_addr(
+                addr_id=street,
+            )
+
+    if address:
+        return queryset.filter_customers_by_addr(
+            addr_id=address,
+        )
 
     # TODO: order bu fields
     # TODO: filter by sites
 
-    return customers_qs
+    return queryset
 
 
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
@@ -659,17 +695,6 @@ class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelVi
         return {
             'customer_id': field_data.get('customer')
         }
-
-
-@router.get('/groups_with_customers/', response_model=list[schemas.GroupsWithCustomersSchema])
-def groups_with_customers():
-    # TODO: Also filter by address
-    grps = Group.objects.annotate(
-        customer_count=Count('customer')
-    ).filter(
-        customer_count__gt=0
-    ).order_by('title')
-    return (schemas.GroupsWithCustomersSchema.from_orm(grp) for grp in grps.iterator())
 
 
 @router.get('/customer-token/',
