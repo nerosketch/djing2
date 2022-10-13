@@ -27,6 +27,7 @@ class Pagination(BaseModel):
     page: int = 1
     page_size: int = PydanticField(DEFAULT_LIMIT, lt=MAX_LIMIT+1, gt=0)
     fields: Optional[str] = None
+    ordering: Optional[str] = PydanticField(None, regex=r'^-?\w{1,50}$')
 
 
 FIELD_OBJECTS_TYPE = OrderedDictType[str, DjangoField]

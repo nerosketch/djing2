@@ -42,12 +42,10 @@ def get_prev_url(r: Request, current_page: int) -> Optional[str]:
         return str(u.include_query_params(page=page))
 
 
-# def paginate_path_decorator(fn):
-#     @wraps(fn)
-#     def _wrap(*args, **kwargs):
-#         return fn(*args, **kwargs)
-#
-#     return _wrap
+def apply_ordering(qs: QuerySet, field_name: str) -> QuerySet:
+    if not field_name:
+        return qs
+    return qs.order_by(field_name)
 
 
 def paginate_qs_path_decorator(
@@ -81,6 +79,10 @@ def paginate_qs_path_decorator(
                 page=pagination.page,
                 page_size=pagination.page_size
             )
+
+            if pagination.ordering:
+                r_qs = apply_ordering(qs=r_qs, field_name=pagination.ordering)
+
             return IListResponse[schema](
                 count=all_count,
                 next=get_next_url(
