@@ -19,11 +19,11 @@ SERVICE_CHOICES = (
 )
 
 
-class ServiceChoiceEnum(str, Enum):
-    SERVICE_CHOICE_DEFAULT = ServiceDefault.description
-    SERVICE_CHOICE_DP = TariffDp.description
-    SERVICE_CHOICE_CP = TariffCp.description
-    SERVICE_CHOICE_DAILY = TariffDaily.description
+class ServiceChoiceEnum(int, Enum):
+    SERVICE_CHOICE_DEFAULT = SERVICE_CHOICE_DEFAULT
+    SERVICE_CHOICE_DP = SERVICE_CHOICE_DP
+    SERVICE_CHOICE_CP = SERVICE_CHOICE_CP
+    SERVICE_CHOICE_DAILY = SERVICE_CHOICE_DAILY
 
 
 PERIODIC_PAY_CALC_DEFAULT = 0

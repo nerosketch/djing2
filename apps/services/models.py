@@ -55,6 +55,7 @@ class Service(BaseAbstractModel):
 
     objects = ServiceManager()
 
+    @property
     def calc_type_name(self):
         logic_class = self.get_calc_type()
         if hasattr(logic_class, "description"):

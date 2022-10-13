@@ -21,14 +21,6 @@ class CustomerServiceModelSerializer(BaseCustomModelSerializer):
         fields = '__all__'
 
 
-class DetailedCustomerServiceModelSerializer(BaseCustomModelSerializer):
-    service = ServiceModelSerializer(many=False, read_only=True)
-
-    class Meta:
-        model = models.CustomerService
-        fields = '__all__'
-
-
 class CustomerLogModelSerializer(BaseCustomModelSerializer):
     author_name = serializers.CharField(source="author.get_full_name", read_only=True)
     cost = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)

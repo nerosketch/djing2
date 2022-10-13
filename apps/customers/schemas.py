@@ -7,6 +7,8 @@ from djing2.lib.validators import tel_regexp_str
 from pydantic import validator, BaseModel, Field
 
 from profiles.schemas import BaseAccountSchema
+from services.schemas import ServiceModelSchema
+
 from . import models
 
 
@@ -202,4 +204,6 @@ class UserAutoRenewalServiceSchema(BaseModel):
 
 
 class DetailedCustomerServiceModelSchema(BaseModel):
-    service:
+    service: ServiceModelSchema
+
+    Config = OrmConf

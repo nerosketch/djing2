@@ -22,6 +22,6 @@ class ServiceModelSchema(ServiceModelBaseSchema):
     create_time: Optional[datetime] = None
     usercount: int
     planned_deadline: str
-    calc_type_name:
+    calc_type_name: Optional[str] = None
 
     Config = OrmConf

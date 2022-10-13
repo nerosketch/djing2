@@ -9,7 +9,7 @@ app_name = "customers"
 router = DefaultRouter()
 
 # User side views
-router.register("users/service", user_side.CustomerServiceModelViewSet)
+# router.register("users/service", user_side.CustomerServiceModelViewSet)
 router.register("users/log", user_side.LogsReadOnlyModelViewSet)
 router.register("users/debts", user_side.DebtsList)
 

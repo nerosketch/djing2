@@ -1,7 +1,10 @@
+from typing import Optional
+
 from django.db import transaction
 from django.utils.translation import gettext, gettext_lazy as _
 from starlette import status
 from fastapi import APIRouter, Depends
+from rest_framework.response import Response
 
 from customers import models, serializers
 from djing2.lib.fastapi.utils import get_object_or_404
@@ -23,6 +26,13 @@ router = APIRouter(
 
 
 _base_customers_queryset = models.Customer.objects.select_related("group", "gateway", "device", "current_service")
+
+
+class SingleListObjMixin:
+    def list(self, *args, **kwargs):
+        qs = self.get_queryset().first()
+        sr = self.get_serializer(qs, many=False)
+        return Response(sr.data)
 
 
 @router.get('/me/', response_model=schemas.UserCustomerModelSchema)
@@ -71,16 +81,12 @@ def set_auto_new_service(payload: schemas.UserAutoRenewalServiceSchema,
     return 'ok'
 
 
-@router.get('/users/service/')
-
-
-class CustomerServiceModelViewSet(SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
-    queryset = models.CustomerService.objects.all()
-    serializer_class = serializers.DetailedCustomerServiceModelSerializer
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(customer=self.request.user)
+@router.get('/users/service/', response_model=Optional[schemas.DetailedCustomerServiceModelSchema])
+def get_service_details(current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    act_srv = current_user.active_service()
+    if act_srv:
+        return schemas.DetailedCustomerServiceModelSchema.from_orm(act_srv)
+    return None
 
 
 class LogsReadOnlyModelViewSet(BaseNonAdminReadOnlyModelViewSet):
@@ -100,27 +106,27 @@ class DebtsList(BaseNonAdminReadOnlyModelViewSet):
         qs = super().get_queryset()
         return qs.filter(customer=self.request.user)
 
-    @action(methods=["post"], detail=True)
-    @catch_customers_errs
-    def buy(self, request, pk=None):
-        del pk
-        debt = self.get_object()
-        customer = request.user
-        sure = request.data.get("sure")
-        if sure != "on":
-            raise LogicError(_("Are you not sure that you want buy the service?"))
-        if customer.balance < debt.cost:
-            raise LogicError(_("Your account have not enough money"))
+    #@action(methods=["post"], detail=True)
+    #@catch_customers_errs
+    #def buy(self, request, pk=None):
+    #    del pk
+    #    debt = self.get_object()
+    #    customer = request.user
+    #    sure = request.data.get("sure")
+    #    if sure != "on":
+    #        raise LogicError(_("Are you not sure that you want buy the service?"))
+    #    if customer.balance < debt.cost:
+    #        raise LogicError(_("Your account have not enough money"))
 
-        with transaction.atomic():
-            amount = -debt.cost
-            customer.add_balance(
-                profile=request.user,
-                cost=amount,
-                comment=gettext("%(username)s paid the debt %(amount).2f")
-                % {"username": customer.get_full_name(), "amount": amount},
-            )
-            customer.save(update_fields=("balance",))
-            debt.set_ok()
-            debt.save(update_fields=("status", "date_pay"))
-        return Response(status=status.HTTP_200_OK)
+    #    with transaction.atomic():
+    #        amount = -debt.cost
+    #        customer.add_balance(
+    #            profile=request.user,
+    #            cost=amount,
+    #            comment=gettext("%(username)s paid the debt %(amount).2f")
+    #            % {"username": customer.get_full_name(), "amount": amount},
+    #        )
+    #        customer.save(update_fields=("balance",))
+    #        debt.set_ok()
+    #        debt.save(update_fields=("status", "date_pay"))
+    #    return Response(status=status.HTTP_200_OK)
