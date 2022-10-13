@@ -21,17 +21,6 @@ class CustomerServiceModelSerializer(BaseCustomModelSerializer):
         fields = '__all__'
 
 
-class CustomerLogModelSerializer(BaseCustomModelSerializer):
-    author_name = serializers.CharField(source="author.get_full_name", read_only=True)
-    cost = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=False, required=False)
-    from_balance = serializers.DecimalField(max_digits=12, decimal_places=3, coerce_to_string=False, required=False)
-    to_balance = serializers.DecimalField(max_digits=12, decimal_places=3, coerce_to_string=False, required=False)
-
-    class Meta:
-        model = models.CustomerLog
-        fields = '__all__'
-
-
 # TODO: deprecated: defined in customers.schemas.CustomerModelSchema
 class CustomerModelSerializer(BaseAccountSerializer):
     group_title = serializers.CharField(source="group.title", read_only=True)

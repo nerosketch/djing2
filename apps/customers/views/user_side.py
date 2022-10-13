@@ -89,13 +89,10 @@ def get_service_details(current_user: models.Customer = Depends(is_customer_auth
     return None
 
 
-class LogsReadOnlyModelViewSet(BaseNonAdminReadOnlyModelViewSet):
-    queryset = models.CustomerLog.objects.all()
-    serializer_class = serializers.CustomerLogModelSerializer
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(customer=self.request.user)
+@router.get('/users/log/', response_model=list[schemas.CustomerLogModelSchema])
+def get_user_log(current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    qs = models.CustomerLog.objects.filter(customer=current_user)
+    return (schemas.CustomerLogModelSchema.from_orm(log) for log in qs.iterator())
 
 
 class DebtsList(BaseNonAdminReadOnlyModelViewSet):
