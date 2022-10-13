@@ -3,7 +3,6 @@ from collections import OrderedDict
 from datetime import datetime
 
 from customers import models, serializers
-from customers.models import CustomerQuerySet
 from customers.views.view_decorators import catch_customers_errs
 from django.contrib.auth.hashers import make_password
 from django.db.models import Count, Q
@@ -37,9 +36,9 @@ from services.models import OneShotPay, PeriodicPay, Service
 from .. import schemas
 
 # TODO:
-# выставить везде права.
-# фильтровать по сайтам.
-# проверить чтоб нельзя было изменить некоторые поля из api (типо изменить CustomerService и врубить себе услугу).
+#  выставить везде права.
+#  фильтровать по сайтам.
+#  проверить чтоб нельзя было изменить некоторые поля из api (типо изменить CustomerService и врубить себе услугу).
 
 
 router = APIRouter(
@@ -165,10 +164,65 @@ def get_customers(request: Request,
             addr_id=address,
         )
 
-    # TODO: order bu fields
+    # TODO: order by fields
     # TODO: filter by sites
 
     return queryset
+
+
+@router.post('/', response_model_exclude={'password'},
+             response_model=schemas.CustomerModelSchema,
+             status_code=status.HTTP_201_CREATED
+             )
+def create_customer(payload: schemas.CustomerSchema,
+                    curr_user: UserProfile = Depends(permission_check_dependency(
+                        perm_codename='customers.add_customer'
+                    )),
+                    ):
+    customer_instance = models.Customer.objects.create(
+        **payload.dict(),
+        sites=[current_site]
+    )
+    if customer_instance:
+        # log about creating new customer
+        curr_user.log(
+            do_type=UserProfileLogActionType.CREATE_USER,
+            additional_text='%s, "%s", %s'
+                            % (
+                                customer_instance.username,
+                                customer_instance.fio,
+                                customer_instance.group.title if customer_instance.group else "",
+                            ),
+        )
+    return schemas.CustomerModelSchema.from_orm(customer_instance)
+
+
+@router.delete('/{customer_id}/', status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+def remove_customer(customer_id: int,
+                    curr_user: UserProfile = Depends(permission_check_dependency(
+                        perm_codename='customers.delete_customer'
+                    ))
+                    ):
+    # TODO: filter by sites
+    queryset = get_objects_for_user(
+        user=curr_user,
+        perms='customers.delete_customer',
+        klass=models.Customer.objects.all()
+    )
+    instance = get_object_or_404(queryset=queryset, pk=customer_id)
+
+    # log about deleting customer
+    curr_user.log(
+        do_type=UserProfileLogActionType.DELETE_USER,
+        additional_text=(
+            '%(uname)s, "%(fio)s", %(addr)s'
+            % {
+                "uname": instance.username,
+                "fio": instance.fio or "-",
+                "addr": instance.full_address,
+            }
+        ).strip(),
+    )
 
 
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
@@ -204,67 +258,67 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
         "birth_day"
     )
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.annotate(
-            lease_count=Count("customeripleasemodel"),
-        )
+    #def get_queryset(self):
+    #    qs = super().get_queryset()
+    #    return qs.annotate(
+    #        lease_count=Count("customeripleasemodel"),
+    #    )
 
-    def filter_queryset(self, queryset: CustomerQuerySet):
-        queryset = super().filter_queryset(queryset=queryset)
+    #def filter_queryset(self, queryset: CustomerQuerySet):
+    #    queryset = super().filter_queryset(queryset=queryset)
 
-        house = safe_int(self.request.query_params.get('house'))
-        if house > 0:
-            return queryset.filter_customers_by_addr(
-                addr_id=house,
-            )
-        else:
-            street = safe_int(self.request.query_params.get('street'))
-            if street > 0:
-                return queryset.filter_customers_by_addr(
-                    addr_id=street,
-                )
+    #    house = safe_int(self.request.query_params.get('house'))
+    #    if house > 0:
+    #        return queryset.filter_customers_by_addr(
+    #            addr_id=house,
+    #        )
+    #    else:
+    #        street = safe_int(self.request.query_params.get('street'))
+    #        if street > 0:
+    #            return queryset.filter_customers_by_addr(
+    #                addr_id=street,
+    #            )
 
-        address = safe_int(self.request.query_params.get('address'))
-        if address > 0:
-            return queryset.filter_customers_by_addr(
-                addr_id=address,
-            )
+    #    address = safe_int(self.request.query_params.get('address'))
+    #    if address > 0:
+    #        return queryset.filter_customers_by_addr(
+    #            addr_id=address,
+    #        )
 
-        return queryset
+    #    return queryset
 
-    def perform_create(self, serializer, *args, **kwargs):
-        customer_instance = super().perform_create(
-            serializer=serializer,
-            sites=[self.request.site]
-        )
-        if customer_instance is not None:
-            # log about creating new customer
-            self.request.user.log(
-                do_type=UserProfileLogActionType.CREATE_USER,
-                additional_text='%s, "%s", %s'
-                                % (
-                                    customer_instance.username,
-                                    customer_instance.fio,
-                                    customer_instance.group.title if customer_instance.group else "",
-                                ),
-            )
-        return customer_instance
+    #def perform_create(self, serializer, *args, **kwargs):
+    #    customer_instance = super().perform_create(
+    #        serializer=serializer,
+    #        sites=[self.request.site]
+    #    )
+    #    if customer_instance is not None:
+    #        # log about creating new customer
+    #        self.request.user.log(
+    #            do_type=UserProfileLogActionType.CREATE_USER,
+    #            additional_text='%s, "%s", %s'
+    #                            % (
+    #                                customer_instance.username,
+    #                                customer_instance.fio,
+    #                                customer_instance.group.title if customer_instance.group else "",
+    #                            ),
+    #        )
+    #    return customer_instance
 
-    def perform_destroy(self, instance):
-        # log about deleting customer
-        self.request.user.log(
-            do_type=UserProfileLogActionType.DELETE_USER,
-            additional_text=(
-                '%(uname)s, "%(fio)s", %(addr)s'
-                % {
-                    "uname": instance.username,
-                    "fio": instance.fio or "-",
-                    "addr": instance.full_address,
-                }
-            ).strip(),
-        )
-        return super().perform_destroy(instance)
+    #def perform_destroy(self, instance):
+    #    # log about deleting customer
+    #    self.request.user.log(
+    #        do_type=UserProfileLogActionType.DELETE_USER,
+    #        additional_text=(
+    #            '%(uname)s, "%(fio)s", %(addr)s'
+    #            % {
+    #                "uname": instance.username,
+    #                "fio": instance.fio or "-",
+    #                "addr": instance.full_address,
+    #            }
+    #        ).strip(),
+    #    )
+    #    return super().perform_destroy(instance)
 
     @action(methods=["post"], detail=True)
     @catch_customers_errs
