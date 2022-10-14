@@ -225,6 +225,37 @@ def remove_customer(customer_id: int,
     )
 
 
+@router.post('/{customer_id}/pick_service/', responses={
+    status.HTTP_200_OK: {'description': 'Ok'},
+    status.HTTP_402_PAYMENT_REQUIRED: {'description': gettext('Your account have not enough money')}
+})
+@catch_customers_errs
+def customer_pick_service(customer_id: int, payload: schemas.PickServiceRequestSchema,
+                          curr_user: UserProfile = Depends(permission_check_dependency(
+                              perm_codename='customers.can_buy_service'
+                          ))
+                          ):
+    """Trying to buy a service if enough money."""
+
+    srv = get_object_or_404(Service, pk=payload.service_id)
+    customer = get_object_or_404(models.Customer, pk=customer_id)
+    log_comment = _("Service '%(service_name)s' has connected via admin until %(deadline)s") % {
+        "service_name": srv.title,
+        "deadline": payload.deadline,
+    }
+    try:
+        customer.pick_service(
+            service=srv,
+            author=curr_user,
+            comment=log_comment,
+            deadline=payload.deadline,
+            allow_negative=True
+        )
+    except models.NotEnoughMoney as e:
+        return Response(str(e), status_code=status.HTTP_402_PAYMENT_REQUIRED)
+    return Response('Ok', status_code=status.HTTP_200_OK)
+
+
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = models.Customer.objects.select_related(
         "current_service", "current_service__service", "gateway"
@@ -319,35 +350,6 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     #        ).strip(),
     #    )
     #    return super().perform_destroy(instance)
-
-    @action(methods=["post"], detail=True)
-    @catch_customers_errs
-    def pick_service(self, request, pk=None):
-        del pk
-        self.check_permission_code(request, "customers.can_buy_service")
-        service_id = safe_int(request.data.get("service_id"))
-        deadline = request.data.get("deadline")
-        srv = get_object_or_404(Service, pk=service_id)
-        customer = self.get_object()
-        log_comment = None
-        if deadline:
-            datetime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
-            deadline = datetime.strptime(deadline, datetime_fmt)
-            log_comment = _("Service '%(service_name)s' has connected via admin until %(deadline)s") % {
-                "service_name": srv.title,
-                "deadline": deadline,
-            }
-        try:
-            customer.pick_service(
-                service=srv,
-                author=request.user,
-                comment=log_comment,
-                deadline=deadline,
-                allow_negative=True
-            )
-        except models.NotEnoughMoney as e:
-            return Response(data=str(e), status=status.HTTP_402_PAYMENT_REQUIRED)
-        return Response(status=status.HTTP_200_OK)
 
     @action(methods=["post"], detail=True)
     @catch_customers_errs

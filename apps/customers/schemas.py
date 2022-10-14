@@ -207,3 +207,8 @@ class DetailedCustomerServiceModelSchema(BaseModel):
     service: ServiceModelSchema
 
     Config = OrmConf
+
+
+class PickServiceRequestSchema(BaseModel):
+    service_id: int
+    deadline: Optional[datetime] = None
