@@ -47,7 +47,8 @@ def _assign_global_guest_lease(customer_mac, vlan_id: Optional[int], svid: Optio
         pool__kind=NetworkIpPoolKind.NETWORK_KIND_GUEST.value,
         state=False,
     )[:1]
-    updated_lease_count = CustomerIpLeaseModel.objects.filter(pk__in=leases_qs).update(
+    leases_qs = CustomerIpLeaseModel.objects.filter(pk__in=leases_qs)
+    updated_lease_count = leases_qs.update(
         mac_address=customer_mac,
         state=True,
         input_octets=0,
@@ -282,7 +283,7 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
             return _acct_unknown(None, err)
         return request_type_fn(vendor_manager=vendor_manager, request_data=request_data)
     except BadRetException as err:
-        return _bad_ret(f'BadRetException: {str(err)}')
+        return _bad_ret(str(err))
 
 
 def _bad_ret(text: str, custom_status=status.HTTP_400_BAD_REQUEST) -> JSONResponse:
