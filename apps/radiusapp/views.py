@@ -15,7 +15,8 @@ from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
 from networks.tasks import (
     async_change_session_inet2guest,
-    async_change_session_guest2inet
+    async_change_session_guest2inet,
+    check_if_lease_have_ib_db_task
 )
 from radiusapp import custom_signals
 from radiusapp.schemas import CustomerServiceRequestSchema
@@ -714,6 +715,10 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
                     speed_in_burst=speed.burst_in,
                     speed_out_burst=speed.burst_out
                 )
+        check_if_lease_have_ib_db_task.delay(
+            radius_uname=radius_username,
+            customer_mac=str(customer_mac)
+        )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

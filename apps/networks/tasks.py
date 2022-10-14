@@ -75,3 +75,14 @@ def async_change_session_guest2inet(radius_uname: str, speed_in: int,
     )
     if ret_text is not None:
         logger.info('guest2inet: %s' % ret_text)
+
+
+@celery_app.task
+@_radius_task_wrapper
+def check_if_lease_have_ib_db_task(radius_uname: str):
+    uleases = CustomerIpLeaseModel.objects.filter(
+        radius_username=radius_uname
+    )
+    if not uleases.exists():
+        logger.info('ORPHAN lease drop uname="%s"' % radius_uname)
+        rc.finish_session(radius_uname=radius_uname)
