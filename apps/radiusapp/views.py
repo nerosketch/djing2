@@ -716,8 +716,7 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
                     speed_out_burst=speed.burst_out
                 )
         check_if_lease_have_ib_db_task.delay(
-            radius_uname=radius_username,
-            customer_mac=str(customer_mac)
+            radius_uname=radius_username
         )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
