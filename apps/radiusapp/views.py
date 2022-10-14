@@ -310,6 +310,9 @@ class BadRetException(HTTPException):
             *args, **kwargs
         )
 
+    def __str__(self):
+        return f'{self.__class__.__name__}: {self.detail}'
+
 
 def _build_srv_result_from_db_result(row: tuple) -> CustomerServiceLeaseResult:
     (uid, uname, acc_is_act, balance, is_dyn_ip, ars, csid, dev_port_id, dev_id, gw_id,
