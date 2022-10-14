@@ -84,5 +84,5 @@ def check_if_lease_have_ib_db_task(radius_uname: str):
         radius_username=radius_uname
     )
     if not uleases.exists():
-        logger.info('ORPHAN lease drop uname="%s"' % radius_uname)
+        logger.warning('ORPHAN lease drop uname="%s"' % radius_uname)
         rc.finish_session(radius_uname=radius_uname)
