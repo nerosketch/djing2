@@ -5,10 +5,9 @@ import sys
 #  from importlib.util import find_spec
 from django.apps import apps
 from django.conf import settings
-from django.core.wsgi import get_wsgi_application
+from django.core.asgi import get_asgi_application
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.wsgi import WSGIMiddleware
 
 sys.path.insert(0, os.path.abspath("apps"))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apps.djing2.settings")
@@ -38,9 +37,9 @@ def get_application() -> FastAPI:
     # Include all api endpoints
     app.include_router(router)
 
-    application = get_wsgi_application()
+    application = get_asgi_application()
     # Mounts an independent web URL for Django WSGI application
-    app.mount("/", WSGIMiddleware(application))
+    app.mount("/", application)
 
     return app
 
