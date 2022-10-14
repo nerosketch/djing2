@@ -301,6 +301,79 @@ def make_periodic_pay(
     return Response("ok")
 
 
+@router.get('/service_users/', response_model=list[schemas.ServiceUsersResponseSchema])
+@catch_customers_errs
+def get_service_users(service_id: int,
+                      curr_user: UserProfile = Depends(permission_check_dependency(
+                          perm_codename='customers.can_buy_service'
+                      ))):
+    qs = models.Customer.objects.filter(current_service__service_id=service_id)
+    if not curr_user.is_superuser:
+        qs = qs.filter(sites__in=[curr_site])
+    qs = qs.values("id", "group_id", "username", "fio")
+    return (schemas.ServiceUsersResponseSchema(**v) for v in qs)
+
+
+@router.get('/{customer_id}/stop_service/', status_code=status.HTTP_204_NO_CONTENT)
+@catch_customers_errs
+def stop_service(customer_id: int,
+                 curr_user: UserProfile = Depends(permission_check_dependency(
+                     perm_codename='customers.can_complete_service'
+                 ))
+                 ):
+    customer = get_object_or_404(
+        models.Customer,
+        pk=customer_id
+    )
+    cust_srv = customer.active_service()
+    if cust_srv is None:
+        return Response(gettext("Service not connected"))
+    srv = cust_srv.service
+    if srv is None:
+        return Response(
+            "Custom service has not service (Look at customers.views.admin_site)",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    customer.stop_service(curr_user)
+
+
+@router.get(
+    '/{customer_id}/ping_all_ips/',
+    response_model=schemas.TypicalResponse,
+    dependencies=[
+        Depends(permission_check_dependency(
+            perm_codename='customers.can_ping'
+        ))
+    ])
+@catch_customers_errs
+def ping_all_ips(customer_id: int):
+    customer = get_object_or_404(
+        models.Customer,
+        pk=customer_id
+    )
+    res_text, res_status = customer.ping_all_leases()
+    return schemas.TypicalResponse(
+        text=res_text,
+        status=res_status
+    )
+
+
+@router.get('/{customer_id}/current_service/', responses={
+    status.HTTP_204_NO_CONTENT: {'description': 'Customer has no service'},
+    status.HTTP_200_OK: {'description': 'Customer service details'}
+}, response_model=schemas.DetailedCustomerServiceModelSchema)
+@catch_customers_errs
+def get_current_service(customer_id: int):
+    customer = get_object_or_404(
+        models.Customer,
+        pk=customer_id
+    )
+    if not customer.current_service:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    curr_srv = customer.current_service
+    return schemas.DetailedCustomerServiceModelSchema.from_orm(curr_srv)
+
+
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = models.Customer.objects.select_related(
         "current_service", "current_service__service", "gateway"
@@ -395,60 +468,6 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     #        ).strip(),
     #    )
     #    return super().perform_destroy(instance)
-
-    @action(detail=False)
-    @catch_customers_errs
-    def service_users(self, request):
-        service_id = safe_int(request.query_params.get("service_id"))
-        if service_id == 0:
-            return Response("service_id is required", status=status.HTTP_403_FORBIDDEN)
-        qs = models.Customer.objects.filter(current_service__service_id=service_id)
-        if not request.user.is_superuser:
-            qs = qs.filter(sites__in=[self.request.site])
-        qs = qs.values("id", "group_id", "username", "fio")
-        return Response(qs)
-
-    @action(detail=True)
-    @catch_customers_errs
-    def stop_service(self, request, pk=None):
-        del pk
-        self.check_permission_code(request, "customers.can_complete_service")
-        customer = self.get_object()
-        cust_srv = customer.active_service()
-        if cust_srv is None:
-            return Response(data=_("Service not connected"))
-
-        srv = cust_srv.service
-        if srv is None:
-            return Response(
-                "Custom service has not service (Look at customers.views.admin_site)",
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        customer.stop_service(request.user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    @action(detail=True)
-    @catch_customers_errs
-    def ping_all_ips(self, request, pk=None):
-        self.check_permission_code(request, "customers.can_ping")
-        del request, pk
-        customer = self.get_object()
-        res_text, res_status = customer.ping_all_leases()
-        return Response({"text": res_text, "status": res_status})
-
-    @action(detail=True)
-    @catch_customers_errs
-    def current_service(self, request, pk=None):
-        del request, pk
-        customer = self.get_object()
-        if not customer.current_service:
-            return Response(False)
-        curr_srv = customer.current_service
-        cur_ser_cls = serializers.CustomerServiceModelSerializer
-        cur_ser_cls.Meta.depth = 1
-        cur_ser = cur_ser_cls(instance=curr_srv)
-        return Response(cur_ser.data)
 
     @action(methods=["post"], detail=True)
     @catch_customers_errs

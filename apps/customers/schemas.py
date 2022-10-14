@@ -203,10 +203,8 @@ class UserAutoRenewalServiceSchema(BaseModel):
     auto_renewal_service: bool
 
 
-class DetailedCustomerServiceModelSchema(BaseModel):
+class DetailedCustomerServiceModelSchema(CustomerServiceModelSchema):
     service: ServiceModelSchema
-
-    Config = OrmConf
 
 
 class PickServiceRequestSchema(BaseModel):
@@ -221,3 +219,15 @@ class MakePaymentSHotRequestSchema(BaseModel):
 class PeriodicPayForIdRequestSchema(BaseModel):
     periodic_pay_id: int
     next_pay: datetime
+
+
+class ServiceUsersResponseSchema(BaseModel):
+    id: int
+    group_id: int
+    username: str
+    fio: str
+
+
+class TypicalResponse(BaseModel):
+    text: str
+    status: bool

@@ -864,7 +864,7 @@ class Customer(IAddressContaining, BaseAccount):
         #     last_connected_service__in=sub
         # ).update(last_connected_service=None)
 
-    def ping_all_leases(self):
+    def ping_all_leases(self) -> tuple[str, bool]:
         leases = self.customeripleasemodel_set.all()
         if not leases.exists():
             return _("Customer has not ips"), False
