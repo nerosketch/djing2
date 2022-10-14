@@ -276,6 +276,31 @@ def make_payment_shot(customer_id: int, payload: schemas.MakePaymentSHotRequestS
     return Response(r)
 
 
+@router.post('/{customer_id}/make_periodic_pay/', dependencies=[
+    Depends(permission_check_dependency(
+        perm_codename='customers.can_buy_service'
+    ))
+])
+@catch_customers_errs
+def make_periodic_pay(
+    customer_id: int,
+    payload: schemas.PeriodicPayForIdRequestSchema
+):
+    customer = get_object_or_404(
+        models.Customer,
+        pk=customer_id
+    )
+    periodic_pay = get_object_or_404(
+        PeriodicPay,
+        pk=payload.periodic_pay_id
+    )
+    customer.make_periodic_pay(
+        periodic_pay=periodic_pay,
+        next_pay=payload.next_pay
+    )
+    return Response("ok")
+
+
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = models.Customer.objects.select_related(
         "current_service", "current_service__service", "gateway"
@@ -370,25 +395,6 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     #        ).strip(),
     #    )
     #    return super().perform_destroy(instance)
-
-    @action(methods=["post"], detail=True)
-    @catch_customers_errs
-    def make_periodic_pay(self, request, pk=None):
-        periodic_pay_request_serializer = serializers.PeriodicPayForIdRequestSerializer(data=request.data)
-        periodic_pay_request_serializer.is_valid(raise_exception=True)
-        periodic_pay_id = periodic_pay_request_serializer.data.get("periodic_pay_id")
-        next_pay_date = periodic_pay_request_serializer.data.get("next_pay")
-        if not all([periodic_pay_id, next_pay_date]):
-            return Response("Invalid data", status=status.HTTP_400_BAD_REQUEST)
-        customer = self.get_object()
-        periodic_pay = get_object_or_404(PeriodicPay, pk=periodic_pay_id)
-        customer.make_periodic_pay(periodic_pay=periodic_pay, next_pay=next_pay_date)
-        return Response("ok")
-
-    @make_periodic_pay.mapping.get
-    def make_periodic_pay_get(self, request, **kwargs):
-        periodic_pay_request_serializer = serializers.PeriodicPayForIdRequestSerializer()
-        return Response(periodic_pay_request_serializer.data)
 
     @action(detail=False)
     @catch_customers_errs

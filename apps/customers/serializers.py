@@ -11,7 +11,6 @@ from profiles.models import split_fio
 from profiles.serializers import BaseAccountSerializer, generate_random_password
 from customers import models
 from djing2.lib.mixins import BaseCustomModelSerializer
-from services.serializers import ServiceModelSerializer
 from .schemas import update_passw
 
 
@@ -127,11 +126,6 @@ class PassportInfoModelSerializer(BaseCustomModelSerializer):
                 )
             }
         }
-
-
-class PeriodicPayForIdRequestSerializer(serializers.Serializer):
-    periodic_pay_id = serializers.IntegerField()
-    next_pay = serializers.DateTimeField()
 
 
 """class AmountMoneySerializer(serializers.Serializer):
