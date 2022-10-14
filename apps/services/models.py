@@ -180,17 +180,17 @@ class OneShotPay(BaseAbstractModel):
                 self._pay_type_cache = logic_class()
                 return self._pay_type_cache
 
-    def before_pay(self, request, customer):
+    def before_pay(self, customer):
         pay_logic = self._get_calc_object()
-        pay_logic.before_pay(request, customer)
+        pay_logic.before_pay(customer=customer)
 
-    def calc_cost(self, request, customer) -> float:
+    def calc_cost(self, customer) -> float:
         pay_logic = self._get_calc_object()
-        return pay_logic.calc_cost(self, request, customer)
+        return pay_logic.calc_cost(self, customer)
 
-    def after_pay(self, request, customer):
+    def after_pay(self, customer):
         pay_logic = self._get_calc_object()
-        pay_logic.before_pay(request, customer)
+        pay_logic.before_pay(customer=customer)
 
     def __str__(self):
         return self.name

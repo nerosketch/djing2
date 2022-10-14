@@ -256,6 +256,26 @@ def customer_pick_service(customer_id: int, payload: schemas.PickServiceRequestS
     return Response('Ok', status_code=status.HTTP_200_OK)
 
 
+@router.post('/{customer_id}/make_shot/', responses={
+    status.HTTP_403_FORBIDDEN: {'description': 'making payment shot not possible'},
+    status.HTTP_200_OK: {'description': 'Ok'}
+})
+@catch_customers_errs
+def make_payment_shot(customer_id: int, payload: schemas.MakePaymentSHotRequestSchema,
+                      curr_user: UserProfile = Depends(permission_check_dependency(
+                          perm_codename='customers.can_buy_service'
+                      ))
+                      ):
+    customer = get_object_or_404(models.Customer, pk=customer_id)
+    shot = get_object_or_404(OneShotPay, pk=payload.shot_id)
+    shot.before_pay(customer=customer)
+    r = customer.make_shot(shot=shot, user_profile=curr_user, allow_negative=True)
+    shot.after_pay(customer=customer)
+    if not r:
+        return Response(status_code=status.HTTP_403_FORBIDDEN)
+    return Response(r)
+
+
 class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     queryset = models.Customer.objects.select_related(
         "current_service", "current_service__service", "gateway"
@@ -350,19 +370,6 @@ class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
     #        ).strip(),
     #    )
     #    return super().perform_destroy(instance)
-
-    @action(methods=["post"], detail=True)
-    @catch_customers_errs
-    def make_shot(self, request, pk=None):
-        customer = self.get_object()
-        shot_id = safe_int(request.data.get("shot_id"))
-        shot = get_object_or_404(OneShotPay, pk=shot_id)
-        shot.before_pay(request=request, customer=customer)
-        r = customer.make_shot(request, shot, allow_negative=True)
-        shot.after_pay(request=request, customer=customer)
-        if not r:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        return Response(r)
 
     @action(methods=["post"], detail=True)
     @catch_customers_errs

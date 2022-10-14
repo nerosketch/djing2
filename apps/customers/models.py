@@ -738,10 +738,10 @@ class Customer(IAddressContaining, BaseAccount):
             customer=self
         )
 
-    def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
+    def make_shot(self, user_profile: UserProfile, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
         """
         Makes one-time service for accounting services.
-        :param request: Django http request.
+        :param user_profile: profiles.UserProfile instance, current authorized user.
         :param shot: instance of services.OneShotPay model.
         :param allow_negative: Allows negative balance.
         :param comment: Optional text for logging this pay.
@@ -750,7 +750,7 @@ class Customer(IAddressContaining, BaseAccount):
         if not isinstance(shot, OneShotPay):
             return False
 
-        cost = round(shot.calc_cost(request, self), 3)
+        cost = round(shot.calc_cost(self), 3)
 
         # if not enough money
         if not allow_negative and self.balance < cost:
@@ -770,7 +770,7 @@ class Customer(IAddressContaining, BaseAccount):
                 cost=-cost,
                 from_balance=old_balance,
                 to_balance=old_balance - cost,
-                author=request.user,
+                author=user_profile,
                 comment=comment or _('Buy one-shot service for "%(title)s"') % {
                     "title": shot.name
                 },

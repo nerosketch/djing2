@@ -212,3 +212,6 @@ class DetailedCustomerServiceModelSchema(BaseModel):
 class PickServiceRequestSchema(BaseModel):
     service_id: int
     deadline: Optional[datetime] = None
+
+class MakePaymentSHotRequestSchema(BaseModel):
+    shot_id: int
