@@ -45,10 +45,27 @@ router.include_router(CRUDReadGenerator(
     queryset=models.CustomerService.objects.all(),
 ), prefix='/customer-service')
 
-router.include_router(CRUDReadGenerator(
-    schema=schemas.CustomerLogModelSchema,
-    queryset=models.CustomerLog.objects.order_by('-id'),
-), prefix='/customer-log')
+
+@router.get('/customer-log/', response_model=IListResponse[schemas.CustomerLogModelSchema])
+@paginate_qs_path_decorator(schema=schemas.CustomerLogModelSchema, db_model=models.CustomerLog)
+def get_customer_payment_log(request: Request,
+                             customer: int,
+                             curr_site: Site = Depends(sites_dependency),
+                             auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                             pagination: Pagination = Depends()):
+    curr_user, token = auth
+
+    customers_qs = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='customers.view_customer'
+    ).filter(pk=customer)
+    qs = models.CustomerLog.objects.filter(
+        customer_id__in=customers_qs
+    ).order_by('-id')
+    return qs
+
 
 _customer_base_query = models.Customer.objects.select_related(
     "current_service", "current_service__service", "gateway"

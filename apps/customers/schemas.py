@@ -71,15 +71,31 @@ class CustomerServiceModelSchema(CustomerServiceBaseSchema):
 
 
 class CustomerLogModelSchema(BaseModel):
-    id: int
-    customer_id: int
+    id: Optional[int] = None
+    customer_id: Optional[int] = None
     author_id: Optional[int] = None
     comment: str
-    date: date
-    author_name: Optional[str]
-    cost: Decimal = Decimal(0.0)
-    from_balance: Decimal = Decimal(0.0)
-    to_balance: Decimal = Decimal(0.0)
+    date: datetime
+    author_name: Optional[str] = None
+    cost: float = 0.0
+    from_balance: float = 0.0
+    to_balance: float = 0.0
+
+    @validator('cost')
+    def validate_cost(cls, v: float):
+        return round(v, 2)
+
+    @validator('from_balance')
+    def validate_from_balance(cls, v: float):
+        return round(v, 2)
+
+    @validator('to_balance')
+    def validate_to_balance(cls, v: float):
+        return round(v, 2)
+
+    @validator('date')
+    def validate_date(cls, v: datetime) -> str:
+        return v.strftime('%Y-%m-%d %H:%M')
 
     Config = OrmConf
 

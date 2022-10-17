@@ -36,7 +36,7 @@ def get_next_url(r: Request, current_page: int, all_count: int, limit: int) -> O
 
 
 def get_prev_url(r: Request, current_page: int) -> Optional[str]:
-    if current_page > 0:
+    if current_page > 1:
         page = current_page - 1
         u = r.url
         return str(u.include_query_params(page=page))

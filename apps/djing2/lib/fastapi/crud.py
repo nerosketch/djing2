@@ -69,6 +69,8 @@ class CRUDReadGenerator(APIRouter):
                 self._get_one(),
                 methods=["GET"],
                 response_model=self.schema,
+                response_model_exclude_none=True,
+                response_model_exclude_unset=True,
                 summary="Get One",
                 dependencies=get_one_route,
                 error_responses=[NOT_FOUND],
@@ -85,6 +87,8 @@ class CRUDReadGenerator(APIRouter):
                 self._get_all(),
                 methods=["GET"],
                 response_model=Optional[IListResponse[self.schema]],  # type: ignore
+                response_model_exclude_none=True,
+                response_model_exclude_unset=True,
                 summary="Get All",
                 dependencies=get_all_route,
             )

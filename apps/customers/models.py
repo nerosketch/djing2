@@ -221,10 +221,7 @@ class CustomerLog(BaseAbstractModel):
     @property
     def author_name(self):
         if self.author:
-            fn = getattr(self, 'author.get_full_name', None)
-            if fn is None:
-                return
-            return fn()
+            return str(self.author.get_full_name())
 
     class Meta:
         db_table = "customer_log"

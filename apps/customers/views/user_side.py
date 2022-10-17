@@ -77,7 +77,7 @@ def get_service_details(current_user: models.Customer = Depends(is_customer_auth
 
 @router.get('/log/',
             response_model=list[schemas.CustomerLogModelSchema],
-            response_model_exclude=['author_name']
+            response_model_exclude={'author_name'}
             )
 def get_user_log(current_user: models.Customer = Depends(is_customer_auth_dependency)):
     qs = models.CustomerLog.objects.filter(customer=current_user)
@@ -86,7 +86,7 @@ def get_user_log(current_user: models.Customer = Depends(is_customer_auth_depend
 
 @router.get('/debts/',
             response_model=list[schemas.InvoiceForPaymentModelSchema],
-            response_model_exclude=('author_name', 'author_uname')
+            response_model_exclude={'author_name', 'author_uname'}
             )
 def get_user_debts(current_user: models.Customer = Depends(is_customer_auth_dependency)):
     qs = models.InvoiceForPayment.objects.filter(
