@@ -351,10 +351,6 @@ msgstr "Услуга не подключена"
 msgid "You can't top up an account with a positive amount"
 msgstr "Вы не можете пополнять счёт учётной записи"
 
-#: apps/customers/views/admin_side.py:252
-msgid "You can't top up an account with a negative amount"
-msgstr "Вы не можете снимать средства с баланса учётной записи"
-
 #: apps/customers/views/admin_side.py:264
 msgid "fill account through admin side"
 msgstr "Пополнение счёта сотрудником"

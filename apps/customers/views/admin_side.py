@@ -1,5 +1,4 @@
 from typing import Optional
-from collections import OrderedDict
 from datetime import datetime
 
 from customers import models, serializers
@@ -8,28 +7,21 @@ from django.contrib.auth.hashers import make_password
 from django.db.models import Count, Q
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
-from django_filters.rest_framework import DjangoFilterBackend
-from djing2.lib import safe_float, safe_int
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
 from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
-from djing2.lib.fastapi.perms import permission_check_dependency
+from djing2.lib.fastapi.perms import permission_check_dependency, check_perm
 from djing2.lib.fastapi.types import IListResponse, Pagination
 from djing2.lib.fastapi.utils import get_object_or_404, AllOptionalMetaclass
-from djing2.lib.filters import CustomObjectPermissionsFilter, search_qs_by_fields_dependency
-from djing2.lib.filters import CustomSearchFilter
+from djing2.lib.filters import search_qs_by_fields_dependency
 from djing2.lib.filters import filter_qs_by_fields_dependency
-from djing2.lib.mixins import SitesFilterMixin
-from djing2.viewsets import DjingModelViewSet
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Request, Response, Body
+from starlette import status
 from groupapp.models import Group
 from guardian.shortcuts import get_objects_for_user
 from profiles.models import UserProfileLogActionType, UserProfile
-from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import action
-from rest_framework.filters import OrderingFilter
 from rest_framework.settings import api_settings
 from services.models import OneShotPay, PeriodicPay, Service
 
@@ -37,6 +29,7 @@ from .. import schemas
 
 # TODO:
 #  выставить везде права.
+#  добавить новые права где не хватает.
 #  фильтровать по сайтам.
 #  проверить чтоб нельзя было изменить некоторые поля из api (типо изменить CustomerService и врубить себе услугу).
 
@@ -374,304 +367,208 @@ def get_current_service(customer_id: int):
     return schemas.DetailedCustomerServiceModelSchema.from_orm(curr_srv)
 
 
-class CustomerModelViewSet(SitesFilterMixin, DjingModelViewSet):
-    queryset = models.Customer.objects.select_related(
-        "current_service", "current_service__service", "gateway"
+@router.post('/{customer_id}/add_balance/')
+@catch_customers_errs
+def add_balance(customer_id: int,
+                payload: schemas.AddBalanceRequestSchema,
+                curr_user: UserProfile = Depends(permission_check_dependency(
+                    perm_codename='customers.can_add_balance'
+                ))
+                ):
+    cost = payload.cost
+    if cost < 0.0:
+        check_perm(
+            user=curr_user,
+            perm_codename='customers.can_add_negative_balance'
+        )
+    customer = get_object_or_404(
+        models.Customer,
+        pk=customer_id
     )
-    serializer_class = serializers.CustomerModelSerializer
-    filter_backends = [
-        CustomObjectPermissionsFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        CustomSearchFilter
-    ]
-    search_fields = (
-        "username",
-        "fio",
-        "telephone",
-        "description"
+    comment = payload.comment
+    customer.add_balance(
+        profile=curr_user,
+        cost=cost,
+        comment=" ".join(comment.split()) if comment else gettext("fill account through admin side"),
     )
-    filterset_fields = (
-        "group",
-        "device",
-        "dev_port",
-        "current_service__service",
-        "address",
-        "is_active"
-    )
-    ordering_fields = (
-        "username",
-        "fio",
-        "balance",
-        "current_service__service__title",
-        "birth_day"
+    customer.save(update_fields=("balance",))
+    return Response()
+
+
+@router.post('/set_service_group_accessory/', status_code=status.HTTP_204_NO_CONTENT)
+@catch_customers_errs
+def set_service_group_accessory(payload: schemas.SetServiceGroupAccessoryRequestSchema,
+                                curr_user: UserProfile = Depends(permission_check_dependency(
+                                    perm_codename='customers.change_customer'
+                                ))
+                                ):
+    group = get_object_or_404(Group, pk=payload.group_id)
+    models.Customer.set_service_group_accessory(
+        group,
+        payload.services,
+        # TODO: передать сайт
+        current_site=0,
+        current_user=curr_user
     )
 
-    #def get_queryset(self):
-    #    qs = super().get_queryset()
-    #    return qs.annotate(
-    #        lease_count=Count("customeripleasemodel"),
-    #    )
 
-    #def filter_queryset(self, queryset: CustomerQuerySet):
-    #    queryset = super().filter_queryset(queryset=queryset)
+@router.get('/filter_device_port/',
+            response_model_exclude={'password'},
+            response_model=list[schemas.CustomerModelSchema])
+@catch_customers_errs
+def filter_device_port(device_id: int, port_id: int):
+    customers = models.Customer.objects.filter(
+        device_id=device_id,
+        dev_port_id=port_id
+    )
+    return (schemas.CustomerModelSchema.from_orm(c) for c in customers.iterator())
 
-    #    house = safe_int(self.request.query_params.get('house'))
-    #    if house > 0:
-    #        return queryset.filter_customers_by_addr(
-    #            addr_id=house,
-    #        )
-    #    else:
-    #        street = safe_int(self.request.query_params.get('street'))
-    #        if street > 0:
-    #            return queryset.filter_customers_by_addr(
-    #                addr_id=street,
-    #            )
 
-    #    address = safe_int(self.request.query_params.get('address'))
-    #    if address > 0:
-    #        return queryset.filter_customers_by_addr(
-    #            addr_id=address,
-    #        )
-
-    #    return queryset
-
-    #def perform_create(self, serializer, *args, **kwargs):
-    #    customer_instance = super().perform_create(
-    #        serializer=serializer,
-    #        sites=[self.request.site]
-    #    )
-    #    if customer_instance is not None:
-    #        # log about creating new customer
-    #        self.request.user.log(
-    #            do_type=UserProfileLogActionType.CREATE_USER,
-    #            additional_text='%s, "%s", %s'
-    #                            % (
-    #                                customer_instance.username,
-    #                                customer_instance.fio,
-    #                                customer_instance.group.title if customer_instance.group else "",
-    #                            ),
-    #        )
-    #    return customer_instance
-
-    #def perform_destroy(self, instance):
-    #    # log about deleting customer
-    #    self.request.user.log(
-    #        do_type=UserProfileLogActionType.DELETE_USER,
-    #        additional_text=(
-    #            '%(uname)s, "%(fio)s", %(addr)s'
-    #            % {
-    #                "uname": instance.username,
-    #                "fio": instance.fio or "-",
-    #                "addr": instance.full_address,
-    #            }
-    #        ).strip(),
-    #    )
-    #    return super().perform_destroy(instance)
-
-    @action(methods=["post"], detail=True)
-    @catch_customers_errs
-    def add_balance(self, request, pk=None):
-        del pk
-        self.check_permission_code(request, "customers.can_add_balance")
-
-        cost = safe_float(request.data.get("cost"))
-        if cost == 0.0:
-            return Response("Passed invalid cost parameter", status=status.HTTP_400_BAD_REQUEST)
-
-        if cost > 0.0:
-            self.check_permission_code(
-                request,
-                "customers.can_add_balance",
-                _("You can't top up an account with a positive amount")
+@router.put('/{customer_id}/passport/',
+            response_model=schemas.PassportInfoModelSchema,
+            responses={
+                status.HTTP_200_OK: {'description': 'Updated existed passport instance'},
+                status.HTTP_201_CREATED: {'description': 'Created new passport instance'}
+            }
             )
-        else:
-            self.check_permission_code(
-                request,
-                "customers.can_add_negative_balance",
-                _("You can't top up an account with a negative amount"),
+@catch_customers_errs
+def set_customer_passport(customer_id: int, payload: schemas.PassportInfoBaseSchema):
+    passport_obj = models.PassportInfo.objects.filter(customer_id=customer_id).first()
+    customer = get_object_or_404(
+        models.Customer,
+        pk=customer_id
+    )
+
+    data_dict = payload.dict(
+        skip_defaults=True,
+        exclude_unset=True,
+        exclude_none=True
+    )
+
+    if passport_obj is None:
+        # create passport info for customer
+        passport_obj = models.PassportInfo.objects.create(
+            customer=customer,
+            **data_dict
+        )
+        res_stat = status.HTTP_201_CREATED
+    else:
+        # change passport info for customer
+        for f_name, f_val in data_dict.items():
+            setattr(passport_obj, f_name, f_val)
+        passport_obj.save()
+        res_stat = status.HTTP_200_OK
+
+    return schemas.PassportInfoModelSchema.from_orm(passport_obj), res_stat
+
+
+@router.get('/{customer_id}/passport/',
+            response_model=schemas.PassportInfoModelSchema
             )
+def get_customer_passport(customer_id: int):
+    passport_obj = get_object_or_404(models.PassportInfo, customer_id=customer_id)
+    return schemas.PassportInfoModelSchema.from_orm(passport_obj)
 
-        customer = self.get_object()
 
-        comment = request.data.get("comment")
-        if comment and len(comment) > 128:
+@router.get('/service_type_report/',
+            response_model=schemas.CustomerServiceTypeReportResponseSchema,
+            dependencies=[Depends(permission_check_dependency(
+                perm_codename='customers.can_view_service_type_report'
+            ))]
+            )
+def service_type_report():
+    r = models.Customer.objects.customer_service_type_report()
+    return r
+
+
+@router.get('/activity_report/',
+            response_model=schemas.ActivityReportResponseSchema,
+            dependencies=[Depends(permission_check_dependency(
+                perm_codename='customers.can_view_activity_report'
+            ))]
+            )
+def get_activity_report():
+    r = models.Customer.objects.activity_report()
+    return r
+
+
+@router.get('/{customer_id}/is_access/', response_model=bool, responses={
+    status.HTTP_200_OK: {'description': 'Shows is customer has access to any service'},
+    status.HTTP_404_NOT_FOUND: {'description': 'Customer does not exists'}
+})
+def get_customer_is_access(customer_id: int):
+    customer = get_object_or_404(
+        models.Customer,
+        pk=customer_id
+    )
+    return customer.is_access()
+
+
+@router.get('/generate_password/', response_model=str)
+def generate_password_for_customer():
+    rp = serializers.generate_random_password()
+    return rp
+
+
+_mflags = tuple(f for f, n in models.Customer.MARKER_FLAGS)
+@router.post('/{customer_id}/set_markers/', responses={
+    status.HTTP_400_BAD_REQUEST: {'description': 'Bad flag names in body'},
+    status.HTTP_204_NO_CONTENT: {'description': 'Markers applied successfully'}
+})
+def set_customer_markers(customer_id: int,
+                         flag_names: list[str] = Body(title='Flag name list')):
+    customer = get_object_or_404(
+        models.Customer,
+        pk=customer_id
+    )
+    for flag_name in flag_names:
+        if flag_name not in _mflags:
             return Response(
-                "comment parameter is too long",
-                status=status.HTTP_400_BAD_REQUEST
+                'Bad "flags". Must be an array of flag names. Such as %s' % _mflags,
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
+    customer.set_markers(flag_names=flag_names)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-        customer.add_balance(
-            profile=request.user,
-            cost=cost,
-            comment=" ".join(comment.split()) if comment else gettext("fill account through admin side"),
-        )
-        customer.save(update_fields=("balance",))
-        return Response()
 
-    @action(methods=["post"], detail=True)
-    @catch_customers_errs
-    def set_service_group_accessory(self, request, pk=None):
-        # customer = self.get_object()
-        group_id = request.data.get("group_id")
-        if not group_id:
-            return Response(
-                "group_id is required",
-                status=status.HTTP_400_BAD_REQUEST
+@router.get('/get_afk/', response_model=IListResponse[schemas.GetAfkResponseSchema])
+def get_afk(date_limit: datetime,
+            locality: int = 0,
+            out_limit: int = 50):
+    afk = models.Customer.objects.filter_afk(
+        date_limit=date_limit,
+        out_limit=out_limit
+    )
+    if locality > 0:
+        addr_filtered_customers = models.Customer.objects.filter_customers_by_addr(
+            addr_id=locality
+        ).only('pk').values_list('pk', flat=True)
+        afk = tuple(c for c in afk if c.customer_id in addr_filtered_customers)
+        del addr_filtered_customers
+
+    res_afk = (schemas.GetAfkResponseSchema(
+        timediff=str(r.timediff),
+        last_date=r.last_date,
+        customer_id=r.customer_id,
+        customer_uname=r.customer_uname,
+        customer_fio=r.customer_fio
+    ) for r in afk)
+    return Response({
+        'count': 1,
+        'next': None,
+        'previous': None,
+        'results': res_afk
+    })
+
+
+@router.get('/bums/',
+            response_model_exclude={'password'},
+            response_model=IListResponse[CustomerResponseModelSchema]
             )
-        group = get_object_or_404(Group, pk=int(group_id))
-        wanted_service_ids = request.data.get("services")
-        models.Customer.set_service_group_accessory(
-            group,
-            wanted_service_ids,
-            request
-        )
-        return Response()
-
-    @action(detail=False)
-    @catch_customers_errs
-    def filter_device_port(self, request):
-        dev_id = request.query_params.get("device_id")
-        port_id = request.query_params.get("port_id")
-        if not all([dev_id, port_id]):
-            return Response(
-                "Required paramemters: [dev_id, port_id]",
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        customers = models.Customer.objects.filter(
-            device_id=dev_id,
-            dev_port_id=port_id
-        )
-        return Response(self.get_serializer(customers, many=True).data)
-
-    @action(methods=["put"], detail=True)
-    @catch_customers_errs
-    def passport(self, request, pk=None):
-        self.serializer_class = serializers.PassportInfoModelSerializer
-        passport_obj = models.PassportInfo.objects.filter(customer_id=pk).first()
-
-        if passport_obj is None:
-            # create passport info for customer
-            serializer = serializers.PassportInfoModelSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            models.PassportInfo.objects.create(
-                customer=self.get_object(),
-                **serializer.validated_data
-            )
-            res_stat = status.HTTP_201_CREATED
-        else:
-            # change passport info for customer
-            serializer = serializers.PassportInfoModelSerializer(
-                instance=passport_obj,
-                data=request.data
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.update(
-                instance=passport_obj,
-                validated_data=serializer.validated_data
-            )
-            res_stat = status.HTTP_200_OK
-
-        return Response(serializer.data, status=res_stat)
-
-    @passport.mapping.get
-    def passport_get(self, request, pk=None):
-        self.serializer_class = serializers.PassportInfoModelSerializer
-        passport_obj = models.PassportInfo.objects.filter(customer_id=pk).first()
-        ser = serializers.PassportInfoModelSerializer(instance=passport_obj)
-        return Response(ser.data)
-
-    @action(detail=False)
-    def service_type_report(self, request):
-        self.check_permission_code(
-            request,
-            "customers.can_view_service_type_report"
-        )
-        r = models.Customer.objects.customer_service_type_report()
-        return Response(r)
-
-    @action(detail=False)
-    def activity_report(self, request):
-        self.check_permission_code(request, "customers.can_view_activity_report")
-        r = models.Customer.objects.activity_report()
-        return Response(r)
-
-    @action(methods=["get"], detail=True)
-    def is_access(self, request, pk=None):
-        customer = self.get_object()
-        is_acc = customer.is_access()
-        return Response(is_acc)
-
-    @action(methods=["get"], detail=False)
-    def generate_password(self, request):
-        rp = serializers.generate_random_password()
-        return Response(rp)
-
-    @action(methods=["post"], detail=True)
-    def set_markers(self, request, pk=None):
-        customer = self.get_object()
-        flag_names = list(request.data)
-        mflags = tuple(f for f, n in models.Customer.MARKER_FLAGS)
-        for flag_name in flag_names:
-            if flag_name not in mflags:
-                return Response(
-                    'Bad "flags". Must be an array of flag names. Such as %s' % mflags,
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-        customer.set_markers(flag_names=flag_names)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    @action(methods=['get'], detail=False)
-    def get_afk(self, request):
-        date_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
-
-        date_limit = request.query_params.get('date_limit')
-        if date_limit is not None:
-            date_limit = datetime.strptime(date_limit, date_fmt)
-
-        out_limit = request.query_params.get('out_limit')
-        out_limit = safe_int(out_limit, 50)
-
-        afk = models.Customer.objects.filter_afk(
-            date_limit=date_limit,
-            out_limit=out_limit
-        )
-
-        locality_addr = request.query_params.get('locality', 0)
-        locality_addr = safe_int(locality_addr)
-        if locality_addr > 0:
-            addr_filtered_customers = models.Customer.objects.filter_customers_by_addr(
-                addr_id=locality_addr
-            ).only('pk').values_list('pk', flat=True)
-            afk = tuple(c for c in afk if c.customer_id in addr_filtered_customers)
-            del addr_filtered_customers
-
-        res_afk = (OrderedDict(
-            timediff=str(r.timediff),
-            last_date=r.last_date.strftime(date_fmt),
-            customer_id=r.customer_id,
-            customer_uname=r.customer_uname,
-            customer_fio=r.customer_fio
-        ) for r in afk)
-        return Response({
-            'count': 1,
-            'next': None,
-            'previous': None,
-            'results': res_afk
-        })
-
-    @action(methods=['get'], detail=False)
-    def bums(self, request):
-        qs = self.get_queryset().filter(address=None)
-        queryset = self.filter_queryset(qs)
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+@paginate_qs_path_decorator(schema=CustomerResponseModelSchema, db_model=models.Customer)
+def get_customers_bums():
+    qs = models.Customer.objects.filter(address=None)
+    return qs
 
 
 router.include_router(CrudRouter(

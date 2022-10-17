@@ -22,6 +22,7 @@ from services.custom_logic import SERVICE_CHOICES
 from services.models import OneShotPay, PeriodicPay, Service
 
 from . import custom_signals
+from . import schemas
 
 RADIUS_SESSION_TIME = getattr(settings, "RADIUS_SESSION_TIME", 3600)
 
@@ -273,7 +274,7 @@ class CustomerManager(MyUserManager):
         user.save(using=self._db)
         return user
 
-    def customer_service_type_report(self):
+    def customer_service_type_report(self) -> schemas.CustomerServiceTypeReportResponseSchema:
         qs = super().get_queryset().filter(
             is_active=True
         ).exclude(
@@ -297,14 +298,14 @@ class CustomerManager(MyUserManager):
             for sc_num, sc_class in SERVICE_CHOICES
         ]
 
-        return {
-            "all_count": all_count,
-            "admin_count": admin_count,
-            "zero_cost_count": zero_cost,
-            "calc_type_counts": calc_type_counts,
-        }
+        return schemas.CustomerServiceTypeReportResponseSchema(
+            all_count=all_count,
+            admin_count=admin_count,
+            zero_cost_count=zero_cost,
+            calc_type_counts=calc_type_counts,
+        )
 
-    def activity_report(self):
+    def activity_report(self) -> schemas.ActivityReportResponseSchema:
         qs = super().get_queryset()
         all_count = qs.count()
         enabled_count = qs.filter(is_active=True).count()
@@ -327,13 +328,13 @@ class CustomerManager(MyUserManager):
             current_service__service__cost__gt=0
         ).exclude(current_service=None).count()
 
-        return {
-            "all_count": all_count,
-            "enabled_count": enabled_count,
-            "with_services_count": with_services_count,
-            "active_count": active_count,
-            "commercial_customers": commercial_customers,
-        }
+        return schemas.ActivityReportResponseSchema(
+            all_count=all_count,
+            enabled_count=enabled_count,
+            with_services_count=with_services_count,
+            active_count=active_count,
+            commercial_customers=commercial_customers,
+        )
 
     @staticmethod
     def filter_afk(date_limit: Optional[datetime] = None, out_limit=50) -> Generator[CustomerAFKType, None, None]:
@@ -848,11 +849,12 @@ class Customer(IAddressContaining, BaseAccount):
         return '-'
 
     @staticmethod
-    def set_service_group_accessory(group, wanted_service_ids: list, request):
-        if request.user.is_superuser:
+    def set_service_group_accessory(group: Group, wanted_service_ids: list[int],
+                                    current_user: UserProfile, current_site):
+        if current_user.is_superuser:
             existed_service_ids = frozenset(t.id for t in group.service_set.all())
         else:
-            existed_services = group.service_set.filter(sites__in=[request.site])
+            existed_services = group.service_set.filter(sites__in=[current_site])
             existed_service_ids = frozenset(t.id for t in existed_services)
         wanted_service_ids = frozenset(map(int, wanted_service_ids))
         sub = existed_service_ids - wanted_service_ids
@@ -1032,10 +1034,14 @@ class PassportInfo(IAddressContaining, BaseAbstractModel):
     def get_address(self):
         return self.registration_address
 
-    def full_address(self):
+    def full_address(self) -> str:
         if self.get_address():
             return str(self.get_address().full_title())
         return '-'
+
+    @property
+    def registration_address_title(self) -> str:
+        return self.full_address()
 
     class Meta:
         db_table = "passport_info"

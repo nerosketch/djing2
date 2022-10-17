@@ -1,7 +1,9 @@
+import os
 from typing import Optional
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 
+from django.utils.translation import gettext as _
 from djing2.lib.fastapi.types import OrmConf
 from djing2.lib.validators import tel_regexp_str
 from pydantic import validator, BaseModel, Field
@@ -231,3 +233,90 @@ class ServiceUsersResponseSchema(BaseModel):
 class TypicalResponse(BaseModel):
     text: str
     status: bool
+
+
+class AddBalanceRequestSchema(BaseModel):
+    cost: float
+    comment: Optional[str] = Field(None, max_length=128)
+
+    @validator('cost')
+    def validate_cost(cls, v: float):
+        if v == 0.0:
+            raise ValueError('Passed invalid cost parameter')
+        return v
+
+
+class SetServiceGroupAccessoryRequestSchema(BaseModel):
+    group_id: int
+    services: list[int]
+
+
+def _passport_distributor_default():
+    return os.getenv(
+        'CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR',
+        'customers passport default distributor'
+    )
+
+
+class PassportInfoBaseSchema(BaseModel):
+    series: str = Field(max_length=4, title=_("Passport serial"))
+    number: str = Field(max_length=6, title=_("Passport number"))
+    distributor: str = Field(
+        _passport_distributor_default(),
+        max_length=512,
+        description=_("Distributor")
+    )
+    date_of_acceptance: Optional[date] = Field(None, description=_("Date of acceptance"))
+    division_code: Optional[str] = Field(None, max_length=64, description=_("Division code"))
+    # customer_id: Optional[int] = None
+    registration_address_id: Optional[int]
+
+    @validator('series')
+    def validate_series(cls, v: str):
+        if not v.isdigit():
+            raise ValueError('series must be digital')
+
+    @validator('number')
+    def validate_number(cls, v: str):
+        if not v.isdigit():
+            raise ValueError('number must be digital')
+
+    @validator('date_of_acceptance')
+    def validate_date_of_acceptance(cls, value: Optional[datetime]):
+        now = datetime.now().date()
+        old_date = datetime.now() - timedelta(days=365 * 100)
+        if value >= now:
+            raise ValueError(_("You can't specify the future"))
+        elif value <= old_date.date():
+            raise ValueError(_("Too old date. Must be newer than %s") % old_date.strftime('%Y-%m-%d %H:%M:%S'))
+        return value
+
+
+class PassportInfoModelSchema(PassportInfoBaseSchema):
+    id: int
+    registration_address_title: str
+
+    Config = OrmConf
+
+
+class CustomerServiceTypeReportResponseSchema(BaseModel):
+    all_count: int = Field(title='All services count')
+    admin_count: int = Field(title='Admin services count')
+    zero_cost_count: int = Field(title='Zero cost services count')
+    calc_type_counts: int = Field(title='Calculation types count')
+
+
+class ActivityReportResponseSchema(BaseModel):
+    all_count: int = Field(title='All services count')
+    enabled_count: int = Field(title='Enabled services count')
+    with_services_count: int
+    active_count: int = Field(title='Active services count')
+    commercial_customers: int
+
+
+class GetAfkResponseSchema(BaseModel):
+    timediff: str
+    last_date: datetime
+    customer_id: int
+    customer_uname: str
+    customer_fio: str
