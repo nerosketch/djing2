@@ -1,4 +1,7 @@
+from typing import Union, Type
 from django.utils.translation import gettext
+from django.db.models import QuerySet, Model
+from guardian.shortcuts import get_objects_for_user
 from fastapi import Depends, HTTPException
 from profiles.models import BaseAccount
 from starlette import status
@@ -25,3 +28,12 @@ def permission_check_dependency(perm_codename: str):
         return user
 
     return _permission_check_dep
+
+
+def filter_qs_by_rights(qs_or_model: Union[QuerySet, Type[Model]], curr_user: BaseAccount, perm_codename: str):
+    rqs = get_objects_for_user(
+        user=curr_user,
+        perms=perm_codename,
+        klass=qs_or_model
+    )
+    return rqs
