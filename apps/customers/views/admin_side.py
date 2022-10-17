@@ -8,7 +8,7 @@ from django.db.models import Count, Q
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
-from djing2.lib.fastapi.crud import CrudRouter
+from djing2.lib.fastapi.crud import CrudRouter, CRUDReadGenerator
 from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency, check_perm
@@ -40,24 +40,14 @@ router = APIRouter(
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
-router.include_router(CrudRouter(
+router.include_router(CRUDReadGenerator(
     schema=schemas.CustomerServiceModelSchema,
-    create_schema=schemas.CustomerServiceBaseSchema,
     queryset=models.CustomerService.objects.all(),
-    create_route=False,
-    delete_one_route=False,
-    update_route=False
 ), prefix='/customer-service')
 
-router.include_router(CrudRouter(
+router.include_router(CRUDReadGenerator(
     schema=schemas.CustomerLogModelSchema,
-    queryset=models.CustomerLog.objects.select_related(
-        "customer",
-        "author"
-    ).order_by('-id'),
-    create_route=False,
-    delete_one_route=False,
-    update_route=False
+    queryset=models.CustomerLog.objects.order_by('-id'),
 ), prefix='/customer-log')
 
 _customer_base_query = models.Customer.objects.select_related(
@@ -86,289 +76,6 @@ def groups_with_customers(
     return (schemas.GroupsWithCustomersSchema.from_orm(grp) for grp in grps.iterator())
 
 
-@router.patch('/{customer_id}/', response_model_exclude={'password'},
-              response_model=schemas.CustomerModelSchema)
-def update_customer_profile(customer_id: int,
-                            customer_data: schemas.CustomerSchema,
-                            curr_site: Site = Depends(sites_dependency),
-                            curr_user: UserProfile = Depends(
-                                permission_check_dependency(perm_codename='customers.change_customer')
-                            )):
-    customers_qs = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_site=curr_site,
-        curr_user=curr_user,
-        perm_codename='customers.change_customer'
-    )
-    acc = get_object_or_404(customers_qs, pk=customer_id)
-
-    pdata = customer_data.dict(exclude_none=True, exclude_unset=True, exclude_defaults=True)
-    raw_password = pdata.pop('password')
-
-    for d_name, d_val in pdata.items():
-        setattr(acc, d_name, d_val)
-    if raw_password:
-        schemas.update_passw(acc=acc, raw_password=raw_password)
-        setattr(acc, 'password', make_password(raw_password))
-
-    acc.save(update_fields=[d_name for d_name, d_val in pdata.items()])
-    return schemas.CustomerModelSchema.from_orm(acc)
-
-
-@router.get('/{customer_id}/', response_model=schemas.CustomerModelSchema,
-            response_model_exclude={'password'})
-def get_customer_profile(customer_id: int,
-                         curr_site: Site = Depends(sites_dependency),
-                         auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
-                         ):
-    curr_user, token = auth
-    customers_qs = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_site=curr_site,
-        curr_user=curr_user,
-        perm_codename='customers.view_customer'
-    )
-    acc = get_object_or_404(customers_qs, pk=customer_id)
-    return schemas.CustomerModelSchema.from_orm(acc)
-
-
-@router.post('/', response_model_exclude={'password'},
-             response_model=schemas.CustomerModelSchema,
-             status_code=status.HTTP_201_CREATED)
-def create_customer_profile(new_customer_data: schemas.CustomerSchema,
-                            curr_site: Site = Depends(sites_dependency),
-                            curr_user: UserProfile = Depends(permission_check_dependency(
-                                perm_codename='customers.add_customer'
-                            ))
-                            ):
-    pdata = new_customer_data.dict()
-    pdata.update({
-        "is_admin": False,
-        "is_superuser": False
-    })
-    with transaction.atomic():
-        acc = models.Customer.objects.create(**pdata)
-        acc.sites.add(curr_site)
-        raw_password = new_customer_data.password
-        schemas.update_passw(acc, raw_password=raw_password)
-        if acc:
-            # log about creating new customer
-            curr_user.log(
-                do_type=UserProfileLogActionType.CREATE_USER,
-                additional_text='%s, "%s", %s' % (
-                    acc.username,
-                    acc.fio,
-                    acc.group.title if acc.group else "",
-                ),
-            )
-    return schemas.CustomerModelSchema.from_orm(acc)
-
-
-class CustomerResponseModelSchema(schemas.CustomerModelSchema, metaclass=AllOptionalMetaclass):
-    pass
-
-
-@router.get('/', response_model_exclude={'password'},
-            response_model=IListResponse[CustomerResponseModelSchema])
-@paginate_qs_path_decorator(schema=CustomerResponseModelSchema, db_model=models.Customer)
-def get_customers(request: Request,
-                  street: Optional[int] = None, house: Optional[int] = None,
-                  address: Optional[int] = None,
-                  curr_site: Site = Depends(sites_dependency),
-                  auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
-                  filter_fields_q: Q = Depends(filter_qs_by_fields_dependency(
-                      fields={
-                          'group': int, 'device': int, 'dev_port': int, 'current_service__service': int,
-                          'birth_day': datetime,
-                      },
-                      db_model=models.Customer
-                  )),
-                  search_filter_q: Q = Depends(search_qs_by_fields_dependency(
-                      search_fields=["username", "fio", "telephone", "description"]
-                  )),
-                  pagination: Pagination = Depends()
-                  ):
-    curr_user, token = auth
-
-    queryset = general_filter_queryset(
-        qs_or_model=_customer_base_query,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    )
-
-    queryset = queryset.filter(filter_fields_q | search_filter_q)
-
-    if house:
-        return queryset.filter_customers_by_addr(
-            addr_id=house,
-        )
-    else:
-        if street:
-            return queryset.filter_customers_by_addr(
-                addr_id=street,
-            )
-
-    if address:
-        return queryset.filter_customers_by_addr(
-            addr_id=address,
-        )
-
-    return queryset
-
-
-@router.delete('/{customer_id}/', status_code=status.HTTP_204_NO_CONTENT, response_model=None)
-def remove_customer(customer_id: int,
-                    curr_site: Site = Depends(sites_dependency),
-                    curr_user: UserProfile = Depends(permission_check_dependency(
-                        perm_codename='customers.delete_customer'
-                    ))
-                    ):
-    queryset = general_filter_queryset(
-        qs_or_model=models.Customer.objects.all(),
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.delete_customer'
-    )
-    instance = get_object_or_404(queryset=queryset, pk=customer_id)
-
-    with transaction.atomic():
-        # log about deleting customer
-        curr_user.log(
-            do_type=UserProfileLogActionType.DELETE_USER,
-            additional_text=(
-                '%(uname)s, "%(fio)s", %(addr)s' % {
-                    "uname": instance.username,
-                    "fio": instance.fio or "-",
-                    "addr": instance.full_address,
-                }
-            ).strip(),
-        )
-        instance.delete()
-
-
-@router.post('/{customer_id}/pick_service/', responses={
-    status.HTTP_200_OK: {'description': 'Service successfully picked'},
-    status.HTTP_402_PAYMENT_REQUIRED: {'description': gettext('Your account have not enough money')}
-})
-@catch_customers_errs
-def customer_pick_service(customer_id: int, payload: schemas.PickServiceRequestSchema,
-                          curr_site: Site = Depends(sites_dependency),
-                          curr_user: UserProfile = Depends(permission_check_dependency(
-                              perm_codename='customers.can_buy_service'
-                          )),
-                          ):
-    """Trying to buy a service if enough money."""
-
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    )
-    customer = get_object_or_404(customers_queryset, pk=customer_id)
-    service_queryset = general_filter_queryset(
-        qs_or_model=Service,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='service.view_service'
-    )
-    srv = get_object_or_404(service_queryset, pk=payload.service_id)
-
-    log_comment = _("Service '%(service_name)s' has connected via admin until %(deadline)s") % {
-        "service_name": srv.title,
-        "deadline": payload.deadline,
-    }
-    try:
-        customer.pick_service(
-            service=srv,
-            author=curr_user,
-            comment=log_comment,
-            deadline=payload.deadline,
-            allow_negative=True
-        )
-    except models.NotEnoughMoney as e:
-        return Response(str(e), status_code=status.HTTP_402_PAYMENT_REQUIRED)
-    return Response('Ok', status_code=status.HTTP_200_OK)
-
-
-@router.post('/{customer_id}/make_shot/', responses={
-    status.HTTP_403_FORBIDDEN: {'description': 'making payment shot not possible'},
-    status.HTTP_200_OK: {'description': 'Payment shot provided successfully'}
-})
-@catch_customers_errs
-def make_payment_shot(customer_id: int, payload: schemas.MakePaymentSHotRequestSchema,
-                      curr_site: Site = Depends(sites_dependency),
-                      curr_user: UserProfile = Depends(permission_check_dependency(
-                          perm_codename='customers.can_buy_service'
-                      ))
-                      ):
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.can_buy_service'
-    )
-    customer = get_object_or_404(customers_queryset, pk=customer_id)
-
-    shot_queryset = general_filter_queryset(
-        qs_or_model=OneShotPay,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='services.view_oneshotpay'
-    )
-    shot = get_object_or_404(shot_queryset, pk=payload.shot_id)
-
-    shot.before_pay(customer=customer)
-    r = customer.make_shot(
-        shot=shot,
-        user_profile=curr_user,
-        allow_negative=True
-    )
-    shot.after_pay(customer=customer)
-    if not r:
-        return Response(status_code=status.HTTP_403_FORBIDDEN)
-    return Response(r)
-
-
-@router.post('/{customer_id}/make_periodic_pay/')
-@catch_customers_errs
-def make_periodic_pay(
-    customer_id: int,
-    payload: schemas.PeriodicPayForIdRequestSchema,
-    curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='customers.can_buy_service'
-    )),
-    curr_site: Site = Depends(sites_dependency)
-):
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.can_buy_service'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-
-    pp_queryset = general_filter_queryset(
-        qs_or_model=PeriodicPay,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_periodicpay'
-    )
-    periodic_pay = get_object_or_404(
-        pp_queryset,
-        pk=payload.periodic_pay_id
-    )
-    customer.make_periodic_pay(
-        periodic_pay=periodic_pay,
-        next_pay=payload.next_pay
-    )
-    return Response("ok")
-
-
 @router.get('/service_users/', response_model=list[schemas.ServiceUsersResponseSchema])
 @catch_customers_errs
 def get_service_users(service_id: int,
@@ -385,138 +92,6 @@ def get_service_users(service_id: int,
     qs = qs.filter(current_service__service_id=service_id)
     qs = qs.values("id", "group_id", "username", "fio")
     return (schemas.ServiceUsersResponseSchema(**v) for v in qs)
-
-
-@router.get('/{customer_id}/stop_service/',
-            status_code=status.HTTP_204_NO_CONTENT,
-            responses={
-                status.HTTP_200_OK: {'description': 'Ok'},
-                status.HTTP_418_IM_A_TEAPOT: {
-                    'description': 'Service not connected. Nothing to stop'
-                }
-            })
-@catch_customers_errs
-def stop_service(customer_id: int,
-                 curr_site: Site = Depends(sites_dependency),
-                 curr_user: UserProfile = Depends(permission_check_dependency(
-                     perm_codename='customers.can_complete_service'
-                 ))
-                 ):
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.can_complete_service'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    cust_srv = customer.active_service()
-    if cust_srv is None:
-        return Response(
-            gettext("Service not connected"),
-            status_code=status.HTTP_418_IM_A_TEAPOT
-        )
-    srv = cust_srv.service
-    if srv is None:
-        return Response(
-            "Custom service has not service (Look at customers.views.admin_site)",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-    customer.stop_service(curr_user)
-    return 'Ok'
-
-
-@router.get(
-    '/{customer_id}/ping_all_ips/',
-    response_model=schemas.TypicalResponse,
-)
-@catch_customers_errs
-def ping_all_ips(customer_id: int,
-                 curr_site: Site = Depends(sites_dependency),
-                 curr_user: UserProfile = Depends(permission_check_dependency(
-                     perm_codename='customers.can_ping'
-                 ))
-                 ):
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    res_text, res_status = customer.ping_all_leases()
-    return schemas.TypicalResponse(
-        text=res_text,
-        status=res_status
-    )
-
-
-@router.get('/{customer_id}/current_service/', responses={
-    status.HTTP_204_NO_CONTENT: {'description': 'Customer has no service'},
-    status.HTTP_200_OK: {'description': 'Customer service details'}
-}, response_model=schemas.DetailedCustomerServiceModelSchema)
-@catch_customers_errs
-def get_current_service(customer_id: int,
-                        curr_site: Site = Depends(sites_dependency),
-                        auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
-                        ):
-    curr_user, token = auth
-
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    if not customer.current_service:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-    curr_srv = customer.current_service
-    return schemas.DetailedCustomerServiceModelSchema.from_orm(curr_srv)
-
-
-@router.post('/{customer_id}/add_balance/')
-@catch_customers_errs
-def add_balance(customer_id: int,
-                payload: schemas.AddBalanceRequestSchema,
-                curr_site: Site = Depends(sites_dependency),
-                curr_user: UserProfile = Depends(permission_check_dependency(
-                    perm_codename='customers.can_add_balance'
-                ))
-                ):
-    cost = payload.cost
-    if cost < 0.0:
-        check_perm(
-            user=curr_user,
-            perm_codename='customers.can_add_negative_balance'
-        )
-
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.change_customer'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    comment = payload.comment
-    customer.add_balance(
-        profile=curr_user,
-        cost=cost,
-        comment=" ".join(comment.split()) if comment else gettext("fill account through admin side"),
-    )
-    customer.save(update_fields=("balance",))
-    return Response()
 
 
 @router.post('/set_service_group_accessory/', status_code=status.HTTP_204_NO_CONTENT)
@@ -564,79 +139,6 @@ def filter_device_port(device_id: int, port_id: int,
     return (schemas.CustomerModelSchema.from_orm(c) for c in customers.iterator())
 
 
-@router.put('/{customer_id}/passport/',
-            response_model=schemas.PassportInfoModelSchema,
-            responses={
-                status.HTTP_200_OK: {'description': 'Updated existed passport instance'},
-                status.HTTP_201_CREATED: {'description': 'Created new passport instance'}
-            }
-            )
-@catch_customers_errs
-def set_customer_passport(customer_id: int, payload: schemas.PassportInfoBaseSchema,
-                          curr_site: Site = Depends(sites_dependency),
-                          auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
-                          ):
-    curr_user, token = auth
-
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    del customers_queryset
-
-    passport_obj = models.PassportInfo.objects.filter(customer_id=customer_id).first()
-
-    data_dict = payload.dict(
-        skip_defaults=True,
-        exclude_unset=True,
-        exclude_none=True
-    )
-
-    if passport_obj is None:
-        # create passport info for customer
-        passport_obj = models.PassportInfo.objects.create(
-            customer=customer,
-            **data_dict
-        )
-        res_stat = status.HTTP_201_CREATED
-    else:
-        # change passport info for customer
-        for f_name, f_val in data_dict.items():
-            setattr(passport_obj, f_name, f_val)
-        passport_obj.save()
-        res_stat = status.HTTP_200_OK
-
-    return schemas.PassportInfoModelSchema.from_orm(passport_obj), res_stat
-
-
-@router.get('/{customer_id}/passport/',
-            response_model=schemas.PassportInfoModelSchema
-            )
-def get_customer_passport(
-    customer_id: int,
-    curr_site: Site = Depends(sites_dependency),
-    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
-
-):
-    curr_user, token = auth
-
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    ).filter(customer_id=customer_id)
-
-    passport_obj = get_object_or_404(models.PassportInfo, customer_id_in=customers_queryset)
-    return schemas.PassportInfoModelSchema.from_orm(passport_obj)
-
-
 @router.get('/service_type_report/',
             response_model=schemas.CustomerServiceTypeReportResponseSchema,
             dependencies=[Depends(permission_check_dependency(
@@ -659,63 +161,10 @@ def get_activity_report():
     return r
 
 
-@router.get('/{customer_id}/is_access/', response_model=bool, responses={
-    status.HTTP_200_OK: {'description': 'Shows is customer has access to any service'},
-    status.HTTP_404_NOT_FOUND: {'description': 'Customer does not exists'}
-})
-def get_customer_is_access(customer_id: int,
-                           curr_site: Site = Depends(sites_dependency),
-                           auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
-                           ):
-    curr_user, token = auth
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    return customer.is_access()
-
-
 @router.get('/generate_password/', response_model=str)
 def generate_password_for_customer():
     rp = serializers.generate_random_password()
     return rp
-
-
-@router.post('/{customer_id}/set_markers/', responses={
-    status.HTTP_400_BAD_REQUEST: {'description': 'Bad flag names in body'},
-    status.HTTP_204_NO_CONTENT: {'description': 'Markers applied successfully'}
-})
-def set_customer_markers(customer_id: int,
-                         flag_names: list[str] = Body(title='Flag name list'),
-                         auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
-                         curr_site: Site = Depends(sites_dependency),
-                         ):
-    curr_user, token = auth
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.change_customer'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    _mflags = tuple(f for f, n in models.Customer.MARKER_FLAGS)
-    for flag_name in flag_names:
-        if flag_name not in _mflags:
-            return Response(
-                'Bad "flags". Must be an array of flag names. Such as %s' % _mflags,
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-    customer.set_markers(flag_names=flag_names)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get('/get_afk/', response_model=IListResponse[schemas.GetAfkResponseSchema])
@@ -748,6 +197,10 @@ def get_afk(date_limit: datetime,
         'previous': None,
         'results': res_afk
     })
+
+
+class CustomerResponseModelSchema(schemas.CustomerModelSchema, metaclass=AllOptionalMetaclass):
+    pass
 
 
 @router.get('/bums/',
@@ -941,3 +394,558 @@ def super_user_get_customer_token_by_phone(data: schemas.TokenRequestSchema):
     return schemas.TokenResponseSchema(
         token=None
     )
+
+
+@router.post('/{customer_id}/pick_service/', responses={
+    status.HTTP_200_OK: {
+        'description': 'Service successfully picked'
+    },
+    status.HTTP_402_PAYMENT_REQUIRED: {
+        'description': gettext('Your account have not enough money')
+    }
+})
+@catch_customers_errs
+def customer_pick_service(customer_id: int, payload: schemas.PickServiceRequestSchema,
+                          curr_site: Site = Depends(sites_dependency),
+                          curr_user: UserProfile = Depends(permission_check_dependency(
+                              perm_codename='customers.can_buy_service'
+                          )),
+                          ):
+    """Trying to buy a service if enough money."""
+
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.view_customer'
+    )
+    customer = get_object_or_404(customers_queryset, pk=customer_id)
+    service_queryset = general_filter_queryset(
+        qs_or_model=Service,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='service.view_service'
+    )
+    srv = get_object_or_404(service_queryset, pk=payload.service_id)
+
+    log_comment = _("Service '%(service_name)s' has connected via admin until %(deadline)s") % {
+        "service_name": srv.title,
+        "deadline": payload.deadline,
+    }
+    try:
+        customer.pick_service(
+            service=srv,
+            author=curr_user,
+            comment=log_comment,
+            deadline=payload.deadline,
+            allow_negative=True
+        )
+    except models.NotEnoughMoney as e:
+        return Response(str(e), status_code=status.HTTP_402_PAYMENT_REQUIRED)
+    return Response('Ok', status_code=status.HTTP_200_OK)
+
+
+@router.post('/{customer_id}/make_shot/', responses={
+    status.HTTP_403_FORBIDDEN: {
+        'description': 'making payment shot not possible'
+    },
+    status.HTTP_200_OK: {
+        'description': 'Payment shot provided successfully'
+    }
+})
+@catch_customers_errs
+def make_payment_shot(customer_id: int, payload: schemas.MakePaymentSHotRequestSchema,
+                      curr_site: Site = Depends(sites_dependency),
+                      curr_user: UserProfile = Depends(permission_check_dependency(
+                          perm_codename='customers.can_buy_service'
+                      ))
+                      ):
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.can_buy_service'
+    )
+    customer = get_object_or_404(customers_queryset, pk=customer_id)
+
+    shot_queryset = general_filter_queryset(
+        qs_or_model=OneShotPay,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='services.view_oneshotpay'
+    )
+    shot = get_object_or_404(shot_queryset, pk=payload.shot_id)
+
+    shot.before_pay(customer=customer)
+    r = customer.make_shot(
+        shot=shot,
+        user_profile=curr_user,
+        allow_negative=True
+    )
+    shot.after_pay(customer=customer)
+    if not r:
+        return Response(status_code=status.HTTP_403_FORBIDDEN)
+    return Response(r)
+
+
+@router.post('/{customer_id}/make_periodic_pay/')
+@catch_customers_errs
+def make_periodic_pay(
+    customer_id: int,
+    payload: schemas.PeriodicPayForIdRequestSchema,
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='customers.can_buy_service'
+    )),
+    curr_site: Site = Depends(sites_dependency)
+):
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.can_buy_service'
+    )
+    customer = get_object_or_404(
+        customers_queryset,
+        pk=customer_id
+    )
+
+    pp_queryset = general_filter_queryset(
+        qs_or_model=PeriodicPay,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.view_periodicpay'
+    )
+    periodic_pay = get_object_or_404(
+        pp_queryset,
+        pk=payload.periodic_pay_id
+    )
+    customer.make_periodic_pay(
+        periodic_pay=periodic_pay,
+        next_pay=payload.next_pay
+    )
+    return Response("ok")
+
+
+@router.get('/{customer_id}/stop_service/',
+            status_code=status.HTTP_204_NO_CONTENT,
+            responses={
+                status.HTTP_200_OK: {'description': 'Ok'},
+                status.HTTP_418_IM_A_TEAPOT: {
+                    'description': 'Service not connected. Nothing to stop'
+                }
+            })
+@catch_customers_errs
+def stop_service(customer_id: int,
+                 curr_site: Site = Depends(sites_dependency),
+                 curr_user: UserProfile = Depends(permission_check_dependency(
+                     perm_codename='customers.can_complete_service'
+                 ))
+                 ):
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.can_complete_service'
+    )
+    customer = get_object_or_404(
+        customers_queryset,
+        pk=customer_id
+    )
+    cust_srv = customer.active_service()
+    if cust_srv is None:
+        return Response(
+            gettext("Service not connected"),
+            status_code=status.HTTP_418_IM_A_TEAPOT
+        )
+    srv = cust_srv.service
+    if srv is None:
+        return Response(
+            "Custom service has not service (Look at customers.views.admin_site)",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    customer.stop_service(curr_user)
+    return 'Ok'
+
+
+@router.get(
+    '/{customer_id}/ping_all_ips/',
+    response_model=schemas.TypicalResponse,
+)
+@catch_customers_errs
+def ping_all_ips(customer_id: int,
+                 curr_site: Site = Depends(sites_dependency),
+                 curr_user: UserProfile = Depends(permission_check_dependency(
+                     perm_codename='customers.can_ping'
+                 ))
+                 ):
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.view_customer'
+    )
+    customer = get_object_or_404(
+        customers_queryset,
+        pk=customer_id
+    )
+    res_text, res_status = customer.ping_all_leases()
+    return schemas.TypicalResponse(
+        text=res_text,
+        status=res_status
+    )
+
+
+@router.get('/{customer_id}/current_service/', responses={
+    status.HTTP_204_NO_CONTENT: {'description': 'Customer has no service'},
+    status.HTTP_200_OK: {'description': 'Customer service details'}
+}, response_model=schemas.DetailedCustomerServiceModelSchema)
+@catch_customers_errs
+def get_current_service(customer_id: int,
+                        curr_site: Site = Depends(sites_dependency),
+                        auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+                        ):
+    curr_user, token = auth
+
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.view_customer'
+    )
+    customer = get_object_or_404(
+        customers_queryset,
+        pk=customer_id
+    )
+    if not customer.current_service:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    curr_srv = customer.current_service
+    return schemas.DetailedCustomerServiceModelSchema.from_orm(curr_srv)
+
+
+@router.post('/{customer_id}/add_balance/')
+@catch_customers_errs
+def add_balance(customer_id: int,
+                payload: schemas.AddBalanceRequestSchema,
+                curr_site: Site = Depends(sites_dependency),
+                curr_user: UserProfile = Depends(permission_check_dependency(
+                    perm_codename='customers.can_add_balance'
+                ))
+                ):
+    cost = payload.cost
+    if cost < 0.0:
+        check_perm(
+            user=curr_user,
+            perm_codename='customers.can_add_negative_balance'
+        )
+
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.change_customer'
+    )
+    customer = get_object_or_404(
+        customers_queryset,
+        pk=customer_id
+    )
+    comment = payload.comment
+    customer.add_balance(
+        profile=curr_user,
+        cost=cost,
+        comment=" ".join(comment.split()) if comment else gettext("fill account through admin side"),
+    )
+    customer.save(update_fields=("balance",))
+    return Response()
+
+
+@router.put('/{customer_id}/passport/',
+            response_model=schemas.PassportInfoModelSchema,
+            responses={
+                status.HTTP_200_OK: {'description': 'Updated existed passport instance'},
+                status.HTTP_201_CREATED: {'description': 'Created new passport instance'}
+            }
+            )
+@catch_customers_errs
+def set_customer_passport(customer_id: int, payload: schemas.PassportInfoBaseSchema,
+                          curr_site: Site = Depends(sites_dependency),
+                          auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+                          ):
+    curr_user, token = auth
+
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.view_customer'
+    )
+    customer = get_object_or_404(
+        customers_queryset,
+        pk=customer_id
+    )
+    del customers_queryset
+
+    passport_obj = models.PassportInfo.objects.filter(customer_id=customer_id).first()
+
+    data_dict = payload.dict(
+        skip_defaults=True,
+        exclude_unset=True,
+        exclude_none=True
+    )
+
+    if passport_obj is None:
+        # create passport info for customer
+        passport_obj = models.PassportInfo.objects.create(
+            customer=customer,
+            **data_dict
+        )
+        res_stat = status.HTTP_201_CREATED
+    else:
+        # change passport info for customer
+        for f_name, f_val in data_dict.items():
+            setattr(passport_obj, f_name, f_val)
+        passport_obj.save()
+        res_stat = status.HTTP_200_OK
+
+    return schemas.PassportInfoModelSchema.from_orm(passport_obj), res_stat
+
+
+@router.get('/{customer_id}/passport/',
+            response_model=schemas.PassportInfoModelSchema
+            )
+def get_customer_passport(
+    customer_id: int,
+    curr_site: Site = Depends(sites_dependency),
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+
+):
+    curr_user, token = auth
+
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.view_customer'
+    ).filter(customer_id=customer_id)
+
+    passport_obj = get_object_or_404(models.PassportInfo, customer_id_in=customers_queryset)
+    return schemas.PassportInfoModelSchema.from_orm(passport_obj)
+
+
+@router.get('/{customer_id}/is_access/',
+            response_model=bool,
+            responses={
+                status.HTTP_200_OK: {
+                    'description': 'Shows is customer has access to any service'
+                },
+                status.HTTP_404_NOT_FOUND: {
+                    'description': 'Customer does not exists'
+                }
+            })
+def get_customer_is_access(customer_id: int,
+                           curr_site: Site = Depends(sites_dependency),
+                           auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+                           ):
+    curr_user, token = auth
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.view_customer'
+    )
+    customer = get_object_or_404(
+        customers_queryset,
+        pk=customer_id
+    )
+    return customer.is_access()
+
+
+@router.post('/{customer_id}/set_markers/', responses={
+    status.HTTP_400_BAD_REQUEST: {
+        'description': 'Bad flag names in body'
+    },
+    status.HTTP_204_NO_CONTENT: {
+        'description': 'Markers applied successfully'
+    }
+})
+def set_customer_markers(customer_id: int,
+                         flag_names: list[str] = Body(title='Flag name list'),
+                         auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                         curr_site: Site = Depends(sites_dependency),
+                         ):
+    curr_user, token = auth
+    customers_queryset = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.change_customer'
+    )
+    customer = get_object_or_404(
+        customers_queryset,
+        pk=customer_id
+    )
+    _mflags = tuple(f for f, n in models.Customer.MARKER_FLAGS)
+    for flag_name in flag_names:
+        if flag_name not in _mflags:
+            return Response(
+                'Bad "flags". Must be an array of flag names. Such as %s' % _mflags,
+                status_code=status.HTTP_400_BAD_REQUEST,
+                )
+    customer.set_markers(flag_names=flag_names)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.patch('/{customer_id}/', response_model_exclude={'password'},
+              response_model=schemas.CustomerModelSchema)
+def update_customer_profile(customer_id: int,
+                            customer_data: schemas.CustomerSchema,
+                            curr_site: Site = Depends(sites_dependency),
+                            curr_user: UserProfile = Depends(
+                                permission_check_dependency(perm_codename='customers.change_customer')
+                            )):
+    customers_qs = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='customers.change_customer'
+    )
+    acc = get_object_or_404(customers_qs, pk=customer_id)
+
+    pdata = customer_data.dict(exclude_none=True, exclude_unset=True, exclude_defaults=True)
+    raw_password = pdata.pop('password')
+
+    for d_name, d_val in pdata.items():
+        setattr(acc, d_name, d_val)
+    if raw_password:
+        schemas.update_passw(acc=acc, raw_password=raw_password)
+        setattr(acc, 'password', make_password(raw_password))
+
+    acc.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+    return schemas.CustomerModelSchema.from_orm(acc)
+
+
+@router.get('/{customer_id}/', response_model=schemas.CustomerModelSchema,
+            response_model_exclude={'password'})
+def get_customer_profile(customer_id: int,
+                         curr_site: Site = Depends(sites_dependency),
+                         auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+                         ):
+    curr_user, token = auth
+    customers_qs = general_filter_queryset(
+        qs_or_model=models.Customer,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='customers.view_customer'
+    )
+    acc = get_object_or_404(customers_qs, pk=customer_id)
+    return schemas.CustomerModelSchema.from_orm(acc)
+
+
+@router.delete('/{customer_id}/', status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+def remove_customer(customer_id: int,
+                    curr_site: Site = Depends(sites_dependency),
+                    curr_user: UserProfile = Depends(permission_check_dependency(
+                        perm_codename='customers.delete_customer'
+                    ))
+                    ):
+    queryset = general_filter_queryset(
+        qs_or_model=models.Customer.objects.all(),
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.delete_customer'
+    )
+    instance = get_object_or_404(queryset=queryset, pk=customer_id)
+
+    with transaction.atomic():
+        # log about deleting customer
+        curr_user.log(
+            do_type=UserProfileLogActionType.DELETE_USER,
+            additional_text=(
+                '%(uname)s, "%(fio)s", %(addr)s' % {
+                    "uname": instance.username,
+                    "fio": instance.fio or "-",
+                    "addr": instance.full_address,
+                }
+            ).strip(),
+        )
+        instance.delete()
+
+
+@router.post('/', response_model_exclude={'password'},
+             response_model=schemas.CustomerModelSchema,
+             status_code=status.HTTP_201_CREATED)
+def create_customer_profile(new_customer_data: schemas.CustomerSchema,
+                            curr_site: Site = Depends(sites_dependency),
+                            curr_user: UserProfile = Depends(permission_check_dependency(
+                                perm_codename='customers.add_customer'
+                            ))
+                            ):
+    pdata = new_customer_data.dict()
+    pdata.update({
+        "is_admin": False,
+        "is_superuser": False
+    })
+    with transaction.atomic():
+        acc = models.Customer.objects.create(**pdata)
+        acc.sites.add(curr_site)
+        raw_password = new_customer_data.password
+        schemas.update_passw(acc, raw_password=raw_password)
+        if acc:
+            # log about creating new customer
+            curr_user.log(
+                do_type=UserProfileLogActionType.CREATE_USER,
+                additional_text='%s, "%s", %s' % (
+                    acc.username,
+                    acc.fio,
+                    acc.group.title if acc.group else "",
+                ),
+            )
+    return schemas.CustomerModelSchema.from_orm(acc)
+
+
+@router.get('/', response_model_exclude={'password'},
+            response_model=IListResponse[CustomerResponseModelSchema])
+@paginate_qs_path_decorator(schema=CustomerResponseModelSchema, db_model=models.Customer)
+def get_customers(request: Request,
+                  street: Optional[int] = None, house: Optional[int] = None,
+                  address: Optional[int] = None,
+                  curr_site: Site = Depends(sites_dependency),
+                  auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                  filter_fields_q: Q = Depends(filter_qs_by_fields_dependency(
+                      fields={
+                          'group': int, 'device': int, 'dev_port': int, 'current_service__service': int,
+                          'birth_day': datetime,
+                      },
+                      db_model=models.Customer
+                  )),
+                  search_filter_q: Q = Depends(search_qs_by_fields_dependency(
+                      search_fields=["username", "fio", "telephone", "description"]
+                  )),
+                  pagination: Pagination = Depends()
+                  ):
+    curr_user, token = auth
+
+    queryset = general_filter_queryset(
+        qs_or_model=_customer_base_query,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.view_customer'
+    )
+
+    queryset = queryset.filter(filter_fields_q | search_filter_q)
+
+    if house:
+        return queryset.filter_customers_by_addr(
+            addr_id=house,
+        )
+    else:
+        if street:
+            return queryset.filter_customers_by_addr(
+                addr_id=street,
+            )
+
+    if address:
+        return queryset.filter_customers_by_addr(
+            addr_id=address,
+        )
+
+    return queryset
