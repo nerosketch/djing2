@@ -22,7 +22,6 @@ from groupapp.models import Group
 from guardian.shortcuts import get_objects_for_user
 from profiles.models import UserProfileLogActionType, UserProfile
 from rest_framework.authtoken.models import Token
-from rest_framework.settings import api_settings
 from services.models import OneShotPay, PeriodicPay, Service
 
 from .. import schemas
