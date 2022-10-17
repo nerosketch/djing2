@@ -65,25 +65,6 @@ _customer_base_query = models.Customer.objects.select_related(
 )
 
 
-@router.post('/', response_model_exclude={'password'},
-             response_model=schemas.CustomerModelSchema,
-             dependencies=[Depends(permission_check_dependency(
-                 perm_codename='customers.add_customer'
-             ))])
-def create_customer_profile(new_customer_data: schemas.CustomerSchema,
-                            curr_site: Site = Depends(sites_dependency)):
-    pdata = new_customer_data.dict()
-    pdata.update({
-        "is_admin": False,
-        "is_superuser": False
-    })
-    acc = models.Customer.objects.create(**pdata)
-    acc.sites.add([curr_site])
-    raw_password = new_customer_data.password
-    schemas.update_passw(acc, raw_password=raw_password)
-    return schemas.CustomerModelSchema.from_orm(acc)
-
-
 @router.get('/groups_with_customers/', response_model=list[schemas.GroupsWithCustomersSchema])
 def groups_with_customers(
     curr_site: Site = Depends(sites_dependency),
@@ -151,6 +132,38 @@ def get_customer_profile(customer_id: int,
     return schemas.CustomerModelSchema.from_orm(acc)
 
 
+@router.post('/', response_model_exclude={'password'},
+             response_model=schemas.CustomerModelSchema,
+             status_code=status.HTTP_201_CREATED)
+def create_customer_profile(new_customer_data: schemas.CustomerSchema,
+                            curr_site: Site = Depends(sites_dependency),
+                            curr_user: UserProfile = Depends(permission_check_dependency(
+                                perm_codename='customers.add_customer'
+                            ))
+                            ):
+    pdata = new_customer_data.dict()
+    pdata.update({
+        "is_admin": False,
+        "is_superuser": False
+    })
+    with transaction.atomic():
+        acc = models.Customer.objects.create(**pdata)
+        acc.sites.add(curr_site)
+        raw_password = new_customer_data.password
+        schemas.update_passw(acc, raw_password=raw_password)
+        if acc:
+            # log about creating new customer
+            curr_user.log(
+                do_type=UserProfileLogActionType.CREATE_USER,
+                additional_text='%s, "%s", %s' % (
+                    acc.username,
+                    acc.fio,
+                    acc.group.title if acc.group else "",
+                ),
+            )
+    return schemas.CustomerModelSchema.from_orm(acc)
+
+
 class CustomerResponseModelSchema(schemas.CustomerModelSchema, metaclass=AllOptionalMetaclass):
     pass
 
@@ -201,38 +214,7 @@ def get_customers(request: Request,
             addr_id=address,
         )
 
-    # TODO: order by fields
-    # TODO: filter by sites
-
     return queryset
-
-
-@router.post('/', response_model_exclude={'password'},
-             response_model=schemas.CustomerModelSchema,
-             status_code=status.HTTP_201_CREATED
-             )
-def create_customer(payload: schemas.CustomerSchema,
-                    curr_site: Site = Depends(sites_dependency),
-                    curr_user: UserProfile = Depends(permission_check_dependency(
-                        perm_codename='customers.add_customer'
-                    )),
-                    ):
-    with transaction.atomic():
-        customer_instance = models.Customer.objects.create(
-            **payload.dict()
-        )
-        customer_instance.sites.add(curr_site)
-        if customer_instance:
-            # log about creating new customer
-            curr_user.log(
-                do_type=UserProfileLogActionType.CREATE_USER,
-                additional_text='%s, "%s", %s' % (
-                    customer_instance.username,
-                    customer_instance.fio,
-                    customer_instance.group.title if customer_instance.group else "",
-                ),
-            )
-    return schemas.CustomerModelSchema.from_orm(customer_instance)
 
 
 @router.delete('/{customer_id}/', status_code=status.HTTP_204_NO_CONTENT, response_model=None)
