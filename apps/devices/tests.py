@@ -6,20 +6,19 @@ from devices.models import Device, Port
 from devices.device_config.switch.eltex.general import EltexSwitch
 
 
-class DeviceTestCase(TestCase):
-    def setUp(self):
-        self.device_switch = Device.objects.create(
-            ip_address="192.168.2.3",
-            mac_addr="12:13:14:15:16:17",
-            comment="test",
-            dev_type=Dlink_dgs1100_10me_code,
-        )
-        self.device_onu = Device.objects.create(
-            mac_addr="11:13:14:15:16:18", comment="test2", dev_type=OnuZTE_F601_code
-        )
+def device_test_case_set_up(self):
+    self.device_switch = Device.objects.create(
+        ip_address="192.168.2.3",
+        mac_addr="12:13:14:15:16:17",
+        comment="test",
+        dev_type=Dlink_dgs1100_10me_code,
+    )
+    self.device_onu = Device.objects.create(
+        mac_addr="11:13:14:15:16:18", comment="test2", dev_type=OnuZTE_F601_code
+    )
 
-        ports = (Port(device=self.device_switch, num=n, descr="test %d" % n) for n in range(1, 3))
-        self.ports = Port.objects.bulk_create(ports)
+    ports = (Port(device=self.device_switch, num=n, descr="test %d" % n) for n in range(1, 3))
+    self.ports = Port.objects.bulk_create(ports)
 
 
 class DeviceSwitchConfigEltexMethodsTestCase(SimpleTestCase):

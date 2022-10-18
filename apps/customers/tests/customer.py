@@ -3,31 +3,19 @@ from datetime import datetime, timedelta
 from django.contrib.sites.models import Site
 from django.utils.translation import gettext_lazy as _
 from rest_framework.settings import api_settings
-from rest_framework.test import APITestCase
 from rest_framework import status
 from customers import models
 from groupapp.models import Group
 from services.models import Service
-from profiles.models import UserProfile
+from djing2.lib.fastapi.test import DjingTestCase
 
 
-class CustomAPITestCase(APITestCase):
-    def get(self, *args, **kwargs):
-        return self.client.get(SERVER_NAME="example.com", *args, **kwargs)
-
-    def post(self, *args, **kwargs):
-        return self.client.post(SERVER_NAME="example.com", *args, **kwargs)
-
+class CustomAPITestCase(DjingTestCase):
     def setUp(self):
+        super().setUp()
+
         self.group = Group.objects.create(title="test group", code="tst")
 
-        self.admin = UserProfile.objects.create_superuser(
-            username="admin",
-            password="admin",
-            telephone="+797812345678",
-            is_active=True
-        )
-        self.client.login(username="admin", password="admin")
         # customer for tests
         custo1 = models.Customer.objects.create_user(
             telephone="+79782345678", username="custo1", password="passw",
@@ -40,18 +28,18 @@ class CustomAPITestCase(APITestCase):
         self.customer = custo1
 
 
-class CustomerServiceTestCase(CustomAPITestCase):
-    def test_direct_create(self):
-        r = self.post("/api/customers/customer-service/")
-        self.assertEqual(r.data, _("Not allowed to direct create Customer service, use 'pick_service' url"))
-        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+# class CustomerServiceTestCase(CustomAPITestCase):
+#     def test_direct_create(self):
+#         r = self.post("/api/customers/customer-service/")
+#         self.assertEqual(r.data, _("Not allowed to direct create Customer service, use 'pick_service' url"))
+#         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
 
-class CustomerLogAPITestCase(CustomAPITestCase):
-    def test_direct_create(self):
-        r = self.post("/api/customers/customer-log/")
-        self.assertEqual(r.data, _("Not allowed to direct create Customer log"))
-        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+# class CustomerLogAPITestCase(CustomAPITestCase):
+#     def test_direct_create(self):
+#         r = self.post("/api/customers/customer-log/")
+#         self.assertEqual(r.data, _("Not allowed to direct create Customer log"))
+#         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class CustomerModelAPITestCase(CustomAPITestCase):
@@ -60,7 +48,11 @@ class CustomerModelAPITestCase(CustomAPITestCase):
 
         # service for tests
         self.service = Service.objects.create(
-            title="test service", speed_in=10.0, speed_out=10.0, cost=2, calc_type=0  # ServiceDefault
+            title="test service",
+            speed_in=10.0,
+            speed_out=10.0,
+            cost=2,
+            calc_type=0  # ServiceDefault
         )
 
     def test_get_random_username(self):

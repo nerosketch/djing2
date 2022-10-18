@@ -1,23 +1,26 @@
-from django.test import TestCase
-
 from customers.models import Customer, CustomerService
-from devices.tests import DeviceTestCase
+from devices.tests import device_test_case_set_up
 from networks.models import CustomerIpLeaseModel, NetworkIpPool, NetworkIpPoolKind
 from services.models import Service
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from .customer import CustomAPITestCase
 
 
-class BaseServiceTestCase(TestCase):
+class BaseServiceTestCase(CustomAPITestCase):
     def setUp(self):
         # Initialize customers instances
-        CustomAPITestCase.setUp(self)
+        super().setUp()
 
         # Initialize devices instances
-        DeviceTestCase.setUp(self)
+        device_test_case_set_up(self)
 
         self.service = Service.objects.create(
-            title="test", descr="test", speed_in=10.0, speed_out=10.0, cost=10.0, calc_type=SERVICE_CHOICE_DEFAULT
+            title="test",
+            descr="test",
+            speed_in=10.0,
+            speed_out=10.0,
+            cost=10.0,
+            calc_type=SERVICE_CHOICE_DEFAULT
         )
 
 
