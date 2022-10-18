@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from customers import models, serializers
+from customers import models
 from customers.views.view_decorators import catch_customers_errs
 from django.contrib.auth.hashers import make_password
 from django.contrib.sites.models import Site
@@ -9,7 +9,7 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
-from djing2.lib.fastapi.crud import CrudRouter, CRUDReadGenerator
+from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency, check_perm
@@ -22,6 +22,7 @@ from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 from fastapi import APIRouter, Depends, Request, Response, Body, Query, UploadFile, Form
 from groupapp.models import Group
 from profiles.models import UserProfileLogActionType, UserProfile
+from profiles.schemas import generate_random_password
 from rest_framework.authtoken.models import Token
 from services.models import OneShotPay, PeriodicPay, Service
 from starlette import status
@@ -29,7 +30,6 @@ from starlette import status
 from .. import schemas
 
 # TODO:
-#  выставить везде права. И для CrudRouter тоже.
 #  добавить новые права где не хватает.
 #  проверить чтоб нельзя было изменить некоторые поля из api (типо изменить CustomerService и врубить себе услугу).
 
@@ -40,10 +40,10 @@ router = APIRouter(
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
-router.include_router(CRUDReadGenerator(
-    schema=schemas.CustomerServiceModelSchema,
-    queryset=models.CustomerService.objects.all(),
-), prefix='/customer-service')
+# router.include_router(CRUDReadGenerator(
+#     schema=schemas.CustomerServiceModelSchema,
+#     queryset=models.CustomerService.objects.all(),
+# ), prefix='/customer-service')
 
 
 @router.get('/customer-log/', response_model=IListResponse[schemas.CustomerLogModelSchema])
@@ -180,7 +180,7 @@ def get_activity_report():
 
 @router.get('/generate_password/', response_model=str)
 def generate_password_for_customer():
-    rp = serializers.generate_random_password()
+    rp = generate_random_password()
     return rp
 
 
@@ -879,7 +879,7 @@ def update_customer_profile(customer_id: int,
     acc = get_object_or_404(customers_qs, pk=customer_id)
 
     pdata = customer_data.dict(exclude_none=True, exclude_unset=True, exclude_defaults=True)
-    raw_password = pdata.pop('password')
+    raw_password = pdata.pop('password', None)
 
     for d_name, d_val in pdata.items():
         setattr(acc, d_name, d_val)
