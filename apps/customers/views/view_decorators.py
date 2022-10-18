@@ -5,9 +5,9 @@ from fastapi import HTTPException
 
 def catch_customers_errs(fn):
     @wraps(fn)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(*args, **kwargs):
         try:
-            return fn(self, *args, **kwargs)
+            return fn(*args, **kwargs)
         except TimeoutError as e:
             raise HTTPException(
                 detail=str(e),

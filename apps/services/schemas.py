@@ -20,7 +20,7 @@ class ServiceModelBaseSchema(BaseModel):
 class ServiceModelSchema(ServiceModelBaseSchema):
     id: int
     create_time: Optional[datetime] = None
-    usercount: int
+    usercount: Optional[int] = None
     planned_deadline: str
     calc_type_name: Optional[str] = None
 
