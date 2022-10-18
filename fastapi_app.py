@@ -14,6 +14,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apps.djing2.settings")
 apps.populate(settings.INSTALLED_APPS)
 
 from djing2.routers import router
+from djing2.lib.fastapi.http_exceptions import handler_pairs
 
 
 def get_application() -> FastAPI:
@@ -36,6 +37,9 @@ def get_application() -> FastAPI:
 
     # Include all api endpoints
     app.include_router(router)
+
+    for handler, exc in handler_pairs:
+        app.add_exception_handler(exc, handler)
 
     application = get_asgi_application()
     # Mounts an independent web URL for Django WSGI application
