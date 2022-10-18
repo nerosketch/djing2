@@ -26,6 +26,7 @@ class CustomAPITestCase(DjingTestCase):
         custo1.sites.add(example_site)
         custo1.refresh_from_db()
         self.customer = custo1
+        self.site = example_site
 
 
 # class CustomerServiceTestCase(CustomAPITestCase):
@@ -54,6 +55,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             cost=2,
             calc_type=0  # ServiceDefault
         )
+        self.service.sites.add(self.site)
 
     def test_get_random_username(self):
         r = self.get("/api/customers/generate_username/")
@@ -109,15 +111,12 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_pick_admin_service_by_customer(self):
-        self.client.logout()
-        login_r = self.client.login(username="custo1", password="passw")
-        self.assertTrue(login_r)
         dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
         r = self.post(
             "/api/customers/%d/pick_service/" % self.customer.pk,
             {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
         )
-        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN, msg=r.content)
 
     def test_pick_service_by_customer_low_money(self):
         self.client.logout()
@@ -167,11 +166,14 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_add_balance_comment_bin(self):
-        r = self.post(
+        r = self.c.post(
             "/api/customers/%d/add_balance/" % self.customer.pk,
-            {"cost": 0xFF, "comment": bytes("".join(chr(i) for i in range(10)), encoding="utf8")},
+            data=b'{"cost": %d, "comment": %b}' % (
+                0xFF,
+                bytes("".join(chr(i) for i in range(10)), encoding="utf8")
+            )
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY, msg=r.json())
 
 
 class InvoiceForPaymentAPITestCase(CustomAPITestCase):
