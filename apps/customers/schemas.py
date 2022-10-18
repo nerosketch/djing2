@@ -157,17 +157,14 @@ class AttachGroupServiceResponseSchema(BaseModel):
     service_name: Optional[str] = None
 
 
-class CustomerAttachmentBaseSchema(BaseModel):
-    title: str
-    doc_file: str
-    customer_id: int
-
-
-class CustomerAttachmentModelSchema(CustomerAttachmentBaseSchema):
+class CustomerAttachmentModelSchema(BaseModel):
     id: int
     create_time: datetime
+    title: str
+    doc_file: str
     author_id: int
     author_name: Optional[str] = None
+    customer_id: int
     customer_name: Optional[str] = None
 
     Config = OrmConf

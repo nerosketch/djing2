@@ -1,11 +1,12 @@
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
 from customers import models, serializers
 from customers.views.view_decorators import catch_customers_errs
 from django.contrib.auth.hashers import make_password
-from django.db.models import Count, Q
+from django.contrib.sites.models import Site
 from django.db import transaction
+from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
 from djing2.lib.fastapi.crud import CrudRouter, CRUDReadGenerator
@@ -13,18 +14,17 @@ from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency, check_perm
 from djing2.lib.fastapi.sites_depend import sites_dependency
-from djing2.lib.fastapi.types import IListResponse, Pagination
+from djing2.lib.fastapi.types import IListResponse, Pagination, NOT_FOUND
 from djing2.lib.fastapi.utils import get_object_or_404, AllOptionalMetaclass
-from djing2.lib.filters import search_qs_by_fields_dependency
 from djing2.lib.filters import filter_qs_by_fields_dependency
-from django.contrib.sites.models import Site
+from djing2.lib.filters import search_qs_by_fields_dependency
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
-from fastapi import APIRouter, Depends, Request, Response, Body
-from starlette import status
+from fastapi import APIRouter, Depends, Request, Response, Body, Query, UploadFile, Form
 from groupapp.models import Group
 from profiles.models import UserProfileLogActionType, UserProfile
 from rest_framework.authtoken.models import Token
 from services.models import OneShotPay, PeriodicPay, Service
+from starlette import status
 
 from .. import schemas
 
@@ -344,26 +344,77 @@ def attach_group_service(request_data: list[schemas.AttachGroupServiceResponseSc
     return
 
 
-router.include_router(CrudRouter(
-    schema=schemas.CustomerAttachmentModelSchema,
-    create_schema=schemas.CustomerAttachmentBaseSchema,
-    queryset=models.CustomerAttachment.objects.select_related("author"),
-    create_route=False
-), prefix='/attachments')
+@router.delete('/attachments/{attachment_id}/',
+               status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(permission_check_dependency(
+                   perm_codename='customers.delete_customerattachment'
+               ))]
+               )
+def delete_customer_attachment(attachment_id: int):
+    qs = models.CustomerAttachment.objects.filter(pk=attachment_id)
+    if not qs.exists():
+        raise NOT_FOUND
+    qs.delete()
+
+
+@router.get('/attachments/',
+            response_model=list[schemas.CustomerAttachmentModelSchema],
+            dependencies=[Depends(permission_check_dependency(
+                perm_codename='customers.view_customerattachment'
+            ))]
+            )
+def get_customer_attachments(
+    customer: int = Query(gt=0, title='Customer id for filter documents by customer'),
+):
+    qs = models.CustomerAttachment.objects.select_related(
+        "author", "customer"
+    ).filter(
+        customer_id=customer
+    )
+
+    return (schemas.CustomerAttachmentModelSchema(
+        id=a.pk,
+        create_time=a.create_time,
+        author_id=a.author_id,
+        author_name=a.author.get_full_name(),
+        customer_id=a.customer_id,
+        customer_name=a.customer.get_full_name(),
+        title=a.title,
+        doc_file=a.doc_file.url,
+    ) for a in qs)
 
 
 @router.post('/attachments/',
              response_model=schemas.CustomerAttachmentModelSchema,
              status_code=status.HTTP_201_CREATED)
 def create_customer_attachment(
-    attachment_data: schemas.CustomerAttachmentBaseSchema,
+    doc_file: UploadFile,
+    title: str = Form(),
+    customer: int = Form(),
     auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
 ):
+    from django.core.files.base import ContentFile
+
     # FIXME: Possible creating attachment for customer on which there is no rights
     user, token = auth
-    pdict = attachment_data.dict()
-    obj = models.CustomerAttachment.objects.create(**pdict, author_id=user.pk)
-    return schemas.CustomerAttachmentModelSchema.from_orm(obj)
+
+    cf = ContentFile(doc_file.file._file.read(), name=doc_file.filename)
+    obj = models.CustomerAttachment.objects.create(
+        title=title,
+        customer_id=customer,
+        author_id=user.pk,
+        doc_file=cf
+    )
+    return schemas.CustomerAttachmentModelSchema(
+        id=obj.pk,
+        create_time=obj.create_time,
+        author_id=obj.author_id,
+        author_name=obj.author.get_full_name(),
+        customer_id=obj.customer_id,
+        customer_name=obj.customer.get_full_name(),
+        title=obj.title,
+        doc_file=obj.doc_file.url,
+    )
 
 
 class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelViewSet):
@@ -806,7 +857,7 @@ def set_customer_markers(customer_id: int,
             return Response(
                 'Bad "flags". Must be an array of flag names. Such as %s' % _mflags,
                 status_code=status.HTTP_400_BAD_REQUEST,
-                )
+            )
     customer.set_markers(flag_names=flag_names)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

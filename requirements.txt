@@ -67,6 +67,7 @@ djangorestframework-csv>=2.1.1
 
 # fastapi
 fastapi~=0.83.0
+python-multipart
 uvicorn[standard]
 celery~=5.2.7
 redis[hiredis]~=4.3.4
