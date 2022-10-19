@@ -1,23 +1,13 @@
-import os
 import re
-from datetime import datetime, timedelta
 
 from django.contrib.auth.hashers import make_password
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from groupapp.models import Group
 from profiles.models import split_fio
 from profiles.serializers import BaseAccountSerializer, generate_random_password
 from customers import models
-from djing2.lib.mixins import BaseCustomModelSerializer
 from .schemas import update_passw
-
-
-class CustomerServiceModelSerializer(BaseCustomModelSerializer):
-    class Meta:
-        model = models.CustomerService
-        fields = '__all__'
 
 
 # TODO: deprecated: defined in customers.schemas.CustomerModelSchema
@@ -100,56 +90,3 @@ class CustomerModelSerializer(BaseAccountSerializer):
             'is_superuser',
             'is_admin',
         )
-
-
-class PassportInfoModelSerializer(BaseCustomModelSerializer):
-    registration_address_title = serializers.CharField(source='full_address', read_only=True)
-
-    @staticmethod
-    def validate_date_of_acceptance(value):
-        now = datetime.now().date()
-        old_date = datetime.now() - timedelta(days=365 * 100)
-        if value >= now:
-            raise serializers.ValidationError(_("You can't specify the future"))
-        elif value <= old_date.date():
-            raise serializers.ValidationError(_("Too old date. Must be newer than %s") % old_date.strftime('%Y-%m-%d %H:%M:%S'))
-        return value
-
-    class Meta:
-        model = models.PassportInfo
-        exclude = ("customer",)
-        extra_kwargs = {
-            'distributor': {
-                'initial': os.getenv(
-                    'CUSTOMERS_PASSPORT_DEFAULT_DISTRIBUTOR',
-                    'customers passport default distributor'
-                )
-            }
-        }
-
-
-"""class AmountMoneySerializer(serializers.Serializer):
-    amount = serializers.FloatField(max_value=5000)
-    comment = serializers.CharField(
-        max_length=128,
-        required=False
-    )
-
-    def create(self, validated_data):
-        amnt = validated_data.get('amount')
-        comment = validated_data.get('comment')
-        if not comment:
-            comment = _('fill account through admin side')
-        raise NotImplementedError('`create()` must be implemented.')
-
-    # def update(self, instance, validated_data):
-    #     pass
-"""
-
-
-class GroupsWithCustomersSerializer(serializers.ModelSerializer):
-    customer_count = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = Group
-        fields = ("id", "title", "customer_count")
