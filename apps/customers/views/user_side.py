@@ -103,7 +103,7 @@ class _buyDebtPayload(BaseModel):
     sure: str = Field(title='Payment confirmation flag. Put "on"')
 
 
-@router.post("/debts/{debt_id}/buy/", status_code=status.HTTP_200_OK)
+@router.post("/debts/{debt_id}/buy/", status_code=status.HTTP_204_NO_CONTENT)
 @catch_customers_errs
 def buy_debt(debt_id: int,
              pl: _buyDebtPayload,

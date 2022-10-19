@@ -58,7 +58,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             "/api/customers/%d/pick_service/" % self.customer.pk,
             {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
         )
-        self.assertFalse(r.content)
+        self.assertEqual(r.text, 'Ok')
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.customer.refresh_from_db()
         self.assertEqual(self.customer.balance, -2)
@@ -72,7 +72,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             "/api/customers/%d/pick_service/" % self.customer.pk,
             {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
         )
-        self.assertFalse(r.content)
+        self.assertEqual(r.text, 'Ok')
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_pick_service_again(self):
@@ -96,7 +96,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         models.Customer.objects.filter(username="custo1").update(current_service=None)
         r = self.get("/api/customers/%d/stop_service/" % self.customer.pk)
         self.assertEqual(r.text, _("Service not connected"))
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.status_code, status.HTTP_418_IM_A_TEAPOT)
 
     def test_pick_admin_service_by_customer(self):
         self.logout()
@@ -130,7 +130,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.customer.refresh_from_db()
         r = self.post("/api/customers/users/me/buy_service/", {"service_id": self.service.pk})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.text, _("The service '%s' was successfully activated") % self.service)
+        self.assertEqual(r.json(), "The service '%s' was successfully activated" % self.service)
 
     def test_add_balance_negative(self):
         r = self.post("/api/customers/%d/add_balance/" % self.customer.pk, {"cost": -10})
@@ -201,8 +201,8 @@ class InvoiceForPaymentAPITestCase(CustomAPITestCase):
         models.Customer.objects.filter(username="custo1").update(balance=12)
         self.customer.refresh_from_db()
         r = self.post("/api/customers/users/debts/%d/buy/" % self.inv1.pk, {"sure": "on"})
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertFalse(r.content)
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(r.text, '')
         self.inv1.refresh_from_db()
         self.assertTrue(self.inv1.status)
         self.customer.refresh_from_db()
