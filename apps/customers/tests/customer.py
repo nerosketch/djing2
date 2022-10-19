@@ -79,13 +79,13 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.test_pick_service()
         self.customer.refresh_from_db()
         r = self._pick_service_request()
-        self.assertEqual(r.text, _('That service already activated'))
+        self.assertEqual(r.json()['detail'], _('That service already activated'))
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_stop_service(self):
         self.test_pick_service()
         r = self.get("/api/customers/%d/stop_service/" % self.customer.pk)
-        self.assertFalse(r.text, msg=r.data)
+        self.assertFalse(r.text, msg=r.text)
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_stop_not_exists_service(self):
