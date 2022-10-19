@@ -63,9 +63,13 @@ def get_customer_payment_log(request: Request,
         curr_user=curr_user,
         perm_codename='customers.view_customer'
     ).filter(pk=customer)
+    if not customers_qs.exists():
+        return models.CustomerLog.objects.empty()
+    del customers_qs
+
     qs = models.CustomerLog.objects.filter(
-        customer_id__in=customers_qs
-    ).order_by('-id')
+        customer_id=customer
+    ).select_related('author').order_by('-id')
     return qs
 
 
@@ -621,7 +625,7 @@ def make_periodic_pay(
 @router.get('/{customer_id}/stop_service/',
             status_code=status.HTTP_204_NO_CONTENT,
             responses={
-                status.HTTP_200_OK: {'description': 'Ok'},
+                status.HTTP_204_NO_CONTENT: {'description': 'Ok'},
                 status.HTTP_418_IM_A_TEAPOT: {
                     'description': 'Service not connected. Nothing to stop'
                 }
@@ -656,7 +660,6 @@ def stop_service(customer_id: int,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     customer.stop_service(curr_user)
-    return 'Ok'
 
 
 @router.get(

@@ -11,6 +11,7 @@ from django.db.models.enums import ChoicesMeta
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from fastapi import HTTPException
+from starlette import status
 from rest_framework.exceptions import APIException
 from .process_lock import process_lock_decorator, ProcessLocked
 
@@ -36,11 +37,12 @@ def safe_int(i: Any, default=0) -> int:
 # Exceptions
 class LogicError(HTTPException):
     default_detail = _("Internal logic error")
+    default_status = status.HTTP_400_BAD_REQUEST
 
     def __init__(self, detail=None, status_code: Optional[int] = None):
         super().__init__(
             detail=detail or self.default_detail,
-            status_code=status_code
+            status_code=status_code or self.default_status
         )
 
 

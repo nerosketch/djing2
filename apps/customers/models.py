@@ -28,7 +28,7 @@ RADIUS_SESSION_TIME = getattr(settings, "RADIUS_SESSION_TIME", 3600)
 
 
 class NotEnoughMoney(LogicError):
-    pass
+    default_detail = _("not enough money")
 
 
 class CustomerServiceModelManager(models.QuerySet):

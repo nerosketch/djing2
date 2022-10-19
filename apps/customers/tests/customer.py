@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from django.contrib.sites.models import Site
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 from rest_framework.settings import api_settings
 from rest_framework import status
 from customers import models
@@ -29,20 +29,6 @@ class CustomAPITestCase(DjingTestCase):
         custo1.refresh_from_db()
         self.customer = custo1
         self.site = example_site
-
-
-# class CustomerServiceTestCase(CustomAPITestCase):
-#     def test_direct_create(self):
-#         r = self.post("/api/customers/customer-service/")
-#         self.assertEqual(r.text, _("Not allowed to direct create Customer service, use 'pick_service' url"))
-#         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
-
-
-# class CustomerLogAPITestCase(CustomAPITestCase):
-#     def test_direct_create(self):
-#         r = self.post("/api/customers/customer-log/")
-#         self.assertEqual(r.text, _("Not allowed to direct create Customer log"))
-#         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class CustomerModelAPITestCase(CustomAPITestCase):
@@ -131,7 +117,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.customer.refresh_from_db()
         r = self.post("/api/customers/users/me/buy_service/", {"service_id": self.service.pk})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.text, _("%(uname)s not enough money for service %(srv_name)s") %{
+        self.assertEqual(r.json()['detail'], _("%(uname)s not enough money for service %(srv_name)s") % {
             'uname': self.customer.username,
             'srv_name': self.service
         })
@@ -206,7 +192,7 @@ class InvoiceForPaymentAPITestCase(CustomAPITestCase):
 
         r = self.post("/api/customers/users/debts/%d/buy/" % self.inv1.pk, {"sure": "on"})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.text, _("Your account have not enough money"))
+        self.assertEqual(r.json()['detail'], _("Your account have not enough money"))
 
     def test_buy(self):
         self.logout()
@@ -239,7 +225,7 @@ class UserTaskAPITestCase(CustomAPITestCase):
         self.logout()
         self.login(username='custo1')
         r = self.get("/api/tasks/users/task_history/")
-        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_task_link_unauth(self):
         self.logout()

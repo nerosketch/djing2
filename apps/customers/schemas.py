@@ -27,7 +27,7 @@ class CustomerSchema(BaseAccountSchema):
     address_id: Optional[int] = None
     description: Optional[str] = None
     device_id: Optional[int] = None
-    dev_port: Optional[int] = None
+    dev_port_id: Optional[int] = None
     is_dynamic_ip: bool = False
     gateway_id: Optional[int] = None
     auto_renewal_service: bool = False
