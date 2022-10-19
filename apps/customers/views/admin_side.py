@@ -12,7 +12,7 @@ from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE,
 from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
-from djing2.lib.fastapi.perms import permission_check_dependency, check_perm
+from djing2.lib.fastapi.perms import permission_check_dependency, check_perm, filter_qs_by_rights
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination, NOT_FOUND
 from djing2.lib.fastapi.utils import get_object_or_404, AllOptionalMetaclass
@@ -264,7 +264,31 @@ router.include_router(CrudRouter(
     schema=schemas.PeriodicPayForIdModelSchema,
     create_schema=schemas.PeriodicPayForIdBaseSchema,
     queryset=models.PeriodicPayForId.objects.defer("account").select_related("periodic_pay"),
+    get_all_route=False
 ), prefix='/periodic-pay')
+
+
+@router.get('/periodic-pay/',
+            response_model=IListResponse[schemas.PeriodicPayForIdModelSchema])
+@paginate_qs_path_decorator(
+    schema=schemas.PeriodicPayForIdModelSchema,
+    db_model=models.PeriodicPayForId
+)
+def get_periodic_pays(request: Request, account: int,
+                      auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                      pagination: Pagination = Depends(),
+                      ):
+    curr_user, token = auth
+
+    rqs = filter_qs_by_rights(
+        qs_or_model=models.Customer.objects.filter(pk=account),
+        curr_user=curr_user,
+        perm_codename='customers.view_customer'
+    )
+    qs = models.PeriodicPayForId.objects.filter(
+        account_id__in=rqs
+    )
+    return qs
 
 
 @router.get('/attach_group_service/', response_model=list[schemas.AttachGroupServiceResponseSchema])
@@ -793,9 +817,9 @@ def get_customer_passport(
         curr_user=curr_user,
         curr_site=curr_site,
         perm_codename='customers.view_customer'
-    ).filter(customer_id=customer_id)
+    ).filter(pk=customer_id)
 
-    passport_obj = get_object_or_404(models.PassportInfo, customer_id_in=customers_queryset)
+    passport_obj = get_object_or_404(models.PassportInfo, customer_id__in=customers_queryset)
     return schemas.PassportInfoModelSchema.from_orm(passport_obj)
 
 

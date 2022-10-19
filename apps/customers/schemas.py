@@ -308,7 +308,18 @@ class PassportInfoBaseSchema(BaseModel):
 
 class PassportInfoModelSchema(PassportInfoBaseSchema):
     id: int
+    series: Optional[str] = None
+    number: Optional[str] = None
+    distributor: Optional[str] = None
     registration_address_title: str
+
+    @validator('series')
+    def validate_series(cls, v: str):
+        return v or ''
+
+    @validator('number')
+    def validate_number(cls, v: str):
+        return v or ''
 
     Config = OrmConf
 
