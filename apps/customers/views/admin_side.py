@@ -878,7 +878,7 @@ def update_customer_profile(customer_id: int,
     )
     acc = get_object_or_404(customers_qs, pk=customer_id)
 
-    pdata = customer_data.dict(exclude_none=True, exclude_unset=True, exclude_defaults=True)
+    pdata = customer_data.dict(exclude_none=True, exclude_unset=True)
     raw_password = pdata.pop('password', None)
 
     for d_name, d_val in pdata.items():

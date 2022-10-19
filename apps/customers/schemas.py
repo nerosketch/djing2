@@ -23,6 +23,7 @@ def update_passw(acc, raw_password):
 
 class CustomerSchema(BaseAccountSchema):
     group_id: Optional[int] = None
+    fio: Optional[str] = None
     address_id: Optional[int] = None
     description: Optional[str] = None
     device_id: Optional[int] = None

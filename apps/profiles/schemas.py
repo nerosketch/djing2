@@ -8,7 +8,7 @@ from django.utils.translation import gettext as _
 from django.utils.crypto import get_random_string
 from djing2.lib.validators import tel_regexp_str
 from djing2.lib import safe_int
-from profiles.models import BaseAccount, UserProfile, UserProfileLog, ProfileAuthLog, split_fio
+from profiles.models import BaseAccount, split_fio
 
 
 def _is_chunk_ok(v: str, rgxp=re.compile(r"^[A-Za-zА-Яа-яЁё-]{1,50}$")):
@@ -21,13 +21,11 @@ err_ex = ValueError(
 )
 
 
-def generate_random_username():
+async def generate_random_username():
     username = get_random_string(length=6, allowed_chars=digits)
-    try:
-        BaseAccount.objects.get(username=username)
-        return generate_random_username()
-    except BaseAccount.DoesNotExist:
-        return str(safe_int(username))
+    if await BaseAccount.objects.filter(username=username).aexists():
+        yield generate_random_username()
+    yield str(safe_int(username))
 
 
 def generate_random_password():
