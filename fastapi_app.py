@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.asgi import get_asgi_application
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+# from fastapi.responses import ORJSONResponse
 
 sys.path.insert(0, os.path.abspath("apps"))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apps.djing2.settings")
@@ -24,6 +25,7 @@ def get_application() -> FastAPI:
         openapi_url="/api/openapi.json",
         debug=settings.DEBUG,
         swagger_ui_parameters={"docExpansion": "none"},
+        # default_response_class=ORJSONResponse
     )
 
     # Set all CORS enabled origins
