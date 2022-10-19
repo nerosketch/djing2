@@ -78,7 +78,7 @@ class CustomerLogModelSchema(BaseModel):
     comment: str
     date: datetime
     author_name: Optional[str] = None
-    cost: float = Field(0.0, lt=2**64)
+    cost: float = 0.0
     from_balance: float = 0.0
     to_balance: float = 0.0
 
@@ -111,7 +111,7 @@ class InvoiceForPaymentModelSchema(BaseModel):
     author_id: int
     author_name: Optional[str] = None
     author_uname: Optional[str] = None
-    cost: Decimal = Field(lt=2**64)
+    cost: Decimal
 
     Config = OrmConf
 
@@ -250,7 +250,7 @@ class TypicalResponse(BaseModel):
 
 
 class AddBalanceRequestSchema(BaseModel):
-    cost: float = Field(lt=2**64)
+    cost: float
     comment: Optional[str] = Field(None, max_length=128)
 
     @validator('cost')
