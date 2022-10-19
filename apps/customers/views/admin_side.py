@@ -35,8 +35,8 @@ from .. import schemas
 
 
 router = APIRouter(
-    prefix='/customers',
-    tags=['customers'],
+    prefix='',
+    tags=['Customers'],
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 

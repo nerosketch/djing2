@@ -8,6 +8,7 @@ from customers import models
 from groupapp.models import Group
 from services.models import Service
 from djing2.lib.fastapi.test import DjingTestCase
+from rest_framework.authtoken.models import Token
 
 
 class CustomAPITestCase(DjingTestCase):
@@ -22,6 +23,7 @@ class CustomAPITestCase(DjingTestCase):
             is_dynamic_ip=True, group=self.group,
             is_active=True
         )
+        Token.objects.create(user=custo1)
         example_site = Site.objects.first()
         custo1.sites.add(example_site)
         custo1.refresh_from_db()
@@ -32,14 +34,14 @@ class CustomAPITestCase(DjingTestCase):
 # class CustomerServiceTestCase(CustomAPITestCase):
 #     def test_direct_create(self):
 #         r = self.post("/api/customers/customer-service/")
-#         self.assertEqual(r.data, _("Not allowed to direct create Customer service, use 'pick_service' url"))
+#         self.assertEqual(r.text, _("Not allowed to direct create Customer service, use 'pick_service' url"))
 #         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
 
 # class CustomerLogAPITestCase(CustomAPITestCase):
 #     def test_direct_create(self):
 #         r = self.post("/api/customers/customer-log/")
-#         self.assertEqual(r.data, _("Not allowed to direct create Customer log"))
+#         self.assertEqual(r.text, _("Not allowed to direct create Customer log"))
 #         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
 
@@ -95,13 +97,13 @@ class CustomerModelAPITestCase(CustomAPITestCase):
             "/api/customers/%d/pick_service/" % self.customer.pk,
             {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
         )
-        self.assertEqual(r.data, _('That service already activated'))
+        self.assertEqual(r.text, _('That service already activated'))
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_stop_service(self):
         self.test_pick_service()
         r = self.get("/api/customers/%d/stop_service/" % self.customer.pk)
-        self.assertFalse(r.data, msg=r.data)
+        self.assertFalse(r.text, msg=r.data)
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_stop_not_exists_service(self):
@@ -111,6 +113,9 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_pick_admin_service_by_customer(self):
+        self.logout()
+        self.login(username='custo1')
+
         dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
         r = self.post(
             "/api/customers/%d/pick_service/" % self.customer.pk,
@@ -119,27 +124,27 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN, msg=r.content)
 
     def test_pick_service_by_customer_low_money(self):
-        self.client.logout()
-        login_r = self.client.login(username="custo1", password="passw")
-        self.assertTrue(login_r)
+        self.logout()
+        self.login(username='custo1')
+
         models.Customer.objects.filter(username="custo1").update(balance=0)
         self.customer.refresh_from_db()
         r = self.post("/api/customers/users/me/buy_service/", {"service_id": self.service.pk})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, _("%(uname)s not enough money for service %(srv_name)s") %{
+        self.assertEqual(r.text, _("%(uname)s not enough money for service %(srv_name)s") %{
             'uname': self.customer.username,
             'srv_name': self.service
         })
 
     def test_pick_service_by_customer(self):
-        self.client.logout()
-        login_r = self.client.login(username="custo1", password="passw")
-        self.assertTrue(login_r)
+        self.logout()
+        self.login(username='custo1')
+
         models.Customer.objects.filter(username="custo1").update(balance=2)
         self.customer.refresh_from_db()
         r = self.post("/api/customers/users/me/buy_service/", {"service_id": self.service.pk})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data, _("The service '%s' was successfully activated") % self.service)
+        self.assertEqual(r.text, _("The service '%s' was successfully activated") % self.service)
 
     def test_add_balance_negative(self):
         r = self.post("/api/customers/%d/add_balance/" % self.customer.pk, {"cost": -10})
@@ -188,25 +193,25 @@ class InvoiceForPaymentAPITestCase(CustomAPITestCase):
         )
 
     def test_buy_empty_data(self):
-        self.client.logout()
-        login_r = self.client.login(username="custo1", password="passw")
-        self.assertTrue(login_r)
-        r = self.post("/api/customers/users/debts/%d/buy/" % self.inv1.pk)
-        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, _("Are you not sure that you want buy the service?"))
+        self.logout()
+        self.login(username='custo1')
+
+        r = self.post("/api/customers/users/debts/%d/buy/" % self.inv1.pk, data={'sure': 'asd'})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, msg=r.text)
+        self.assertDictEqual(r.json(), {'detail': _("Are you not sure that you want buy the service?")})
 
     def test_buy_not_enough_money(self):
-        self.client.logout()
-        login_r = self.client.login(username="custo1", password="passw")
-        self.assertTrue(login_r)
+        self.logout()
+        self.login(username='custo1')
+
         r = self.post("/api/customers/users/debts/%d/buy/" % self.inv1.pk, {"sure": "on"})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.data, _("Your account have not enough money"))
+        self.assertEqual(r.text, _("Your account have not enough money"))
 
     def test_buy(self):
-        self.client.logout()
-        login_r = self.client.login(username="custo1", password="passw")
-        self.assertTrue(login_r)
+        self.logout()
+        self.login(username='custo1')
+
         models.Customer.objects.filter(username="custo1").update(balance=12)
         self.customer.refresh_from_db()
         r = self.post("/api/customers/users/debts/%d/buy/" % self.inv1.pk, {"sure": "on"})
@@ -218,25 +223,25 @@ class InvoiceForPaymentAPITestCase(CustomAPITestCase):
         self.assertEqual(self.customer.balance, 0)
 
     def test_buy_not_auth(self):
-        self.client.logout()
+        self.logout()
         r = self.post("/api/customers/users/debts/%d/buy/" % self.inv1.pk, {"sure": "on"})
         self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class UserTaskAPITestCase(CustomAPITestCase):
     def test_task_list(self):
-        self.client.logout()
-        self.client.login(username="custo1", password="passw")
+        self.logout()
+        self.login(username='custo1')
         r = self.get("/api/tasks/users/task_history/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_task_list_from_admin_user(self):
-        self.client.logout()
-        self.client.login(username="admin", password="admin")
+        self.logout()
+        self.login(username='custo1')
         r = self.get("/api/tasks/users/task_history/")
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_task_link_unauth(self):
-        self.client.logout()
+        self.logout()
         r = self.get("/api/tasks/users/task_history/")
         self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)

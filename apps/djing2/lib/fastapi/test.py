@@ -30,6 +30,15 @@ class DjingTestCase(TransactionTestCase):
             'Authorization': f'Token {token}'
         })
 
+    def logout(self):
+        self.c.headers.pop('Authorization', None)
+
+    def login(self, username: str):
+        token = str(Token.objects.get(user__username=username).key)
+        self.c.headers.update({
+            'Authorization': f'Token {token}'
+        })
+
     def setUp(self) -> None:
         super().setUp()
         self.create_admin()

@@ -606,7 +606,7 @@ class Customer(IAddressContaining, BaseAccount):
     def active_service(self) -> CustomerService:
         return self.current_service
 
-    def add_balance(self, profile: Optional[UserProfile], cost: float, comment: str) -> None:
+    def add_balance(self, profile: Optional[BaseAccount], cost: float, comment: str) -> None:
         old_balance = self.balance
         CustomerLog.objects.create(
             customer=self,

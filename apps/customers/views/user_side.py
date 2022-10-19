@@ -2,16 +2,20 @@ from typing import Optional
 
 from customers import models
 from django.utils.translation import gettext
+from django.db import transaction
+from djing2.lib import LogicError
 from djing2.lib.fastapi.auth import is_customer_auth_dependency
 from djing2.lib.fastapi.utils import get_object_or_404
 from fastapi import APIRouter, Depends
+from starlette import status
+from pydantic import BaseModel, Field
 from services.models import Service
 
 from .view_decorators import catch_customers_errs
 from .. import schemas
 
 router = APIRouter(
-    prefix='/customers/users',
+    prefix='/users',
     tags=['CustomersUserSide'],
     dependencies=[Depends(is_customer_auth_dependency)]
 )
@@ -94,27 +98,40 @@ def get_user_debts(current_user: models.Customer = Depends(is_customer_auth_depe
     )
     return (schemas.CustomerLogModelSchema.from_orm(inv) for inv in qs.iterator())
 
-# @action(methods=["post"], detail=True)
-# @catch_customers_errs
-# def buy(self, request, pk=None):
-#    del pk
-#    debt = self.get_object()
-#    customer = request.user
-#    sure = request.data.get("sure")
-#    if sure != "on":
-#        raise LogicError(_("Are you not sure that you want buy the service?"))
-#    if customer.balance < debt.cost:
-#        raise LogicError(_("Your account have not enough money"))
 
-#    with transaction.atomic():
-#        amount = -debt.cost
-#        customer.add_balance(
-#            profile=request.user,
-#            cost=amount,
-#            comment=gettext("%(username)s paid the debt %(amount).2f")
-#            % {"username": customer.get_full_name(), "amount": amount},
-#        )
-#        customer.save(update_fields=("balance",))
-#        debt.set_ok()
-#        debt.save(update_fields=("status", "date_pay"))
-#    return Response(status=status.HTTP_200_OK)
+class _buyDebtPayload(BaseModel):
+    sure: str = Field(title='Payment confirmation flag. Put "on"')
+
+
+@router.post("/debts/{debt_id}/buy/", status_code=status.HTTP_200_OK)
+@catch_customers_errs
+def buy_debt(debt_id: int,
+             pl: _buyDebtPayload,
+             customer: models.Customer = Depends(is_customer_auth_dependency)
+             ):
+    if pl.sure != 'on':
+        raise LogicError(
+            detail=gettext("Are you not sure that you want buy the service?"),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    debt = get_object_or_404(models.InvoiceForPayment, pk=debt_id)
+    if customer.balance < debt.cost:
+        raise LogicError(
+            detail=gettext("Your account have not enough money"),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    with transaction.atomic():
+        amount = -debt.cost
+        customer.add_balance(
+            profile=customer,
+            cost=amount,
+            comment=gettext("%(username)s paid the debt %(amount).2f") % {
+                "username": customer.get_full_name(),
+                "amount": amount
+            }
+        )
+        customer.save(update_fields=("balance",))
+        debt.set_ok()
+        debt.save(update_fields=("status", "date_pay"))
