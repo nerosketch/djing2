@@ -1022,7 +1022,8 @@ def get_customers(request: Request,
     curr_user, token = auth
 
     _customer_base_query = models.Customer.objects.select_related(
-        "current_service", "current_service__service", "group"
+        "current_service", "current_service__service", "group",
+        "address", "address__parent_addr"
     )
 
     queryset = general_filter_queryset(
