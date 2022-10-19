@@ -45,6 +45,14 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         )
         self.service.sites.add(self.site)
 
+    def _pick_service_request(self):
+        dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
+        r = self.post(
+            "/api/customers/%d/pick_service/" % self.customer.pk,
+            {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
+            )
+        return r
+
     def test_get_random_username(self):
         r = self.get("/api/customers/generate_username/")
         random_unique_uname = r.content
@@ -53,11 +61,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
 
     def test_pick_service_not_enough_money(self):
         models.Customer.objects.filter(username="custo1").update(balance=0)
-        dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
-        r = self.post(
-            "/api/customers/%d/pick_service/" % self.customer.pk,
-            {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
-        )
+        r = self._pick_service_request()
         self.assertEqual(r.text, 'Ok')
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.customer.refresh_from_db()
@@ -67,22 +71,14 @@ class CustomerModelAPITestCase(CustomAPITestCase):
     def test_pick_service(self):
         models.Customer.objects.filter(username="custo1").update(balance=2)
         self.customer.refresh_from_db()
-        dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
-        r = self.post(
-            "/api/customers/%d/pick_service/" % self.customer.pk,
-            {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
-        )
+        r = self._pick_service_request()
         self.assertEqual(r.text, 'Ok')
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_pick_service_again(self):
         self.test_pick_service()
         self.customer.refresh_from_db()
-        dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
-        r = self.post(
-            "/api/customers/%d/pick_service/" % self.customer.pk,
-            {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
-        )
+        r = self._pick_service_request()
         self.assertEqual(r.text, _('That service already activated'))
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -102,11 +98,7 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.logout()
         self.login(username='custo1')
 
-        dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
-        r = self.post(
-            "/api/customers/%d/pick_service/" % self.customer.pk,
-            {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
-        )
+        r = self._pick_service_request()
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN, msg=r.content)
 
     def test_pick_service_by_customer_low_money(self):
