@@ -35,17 +35,26 @@ def format_object(
     computed_field_objects: COMPUTED_FIELD_OBJECTS_TYPE,
     fields_list: Optional[list[str]] = None
 ) -> OrderedDictType:
-    result_dict_dields = (
+    result_dict_fields = (
         (fname, fobject.value_from_object(model_item)) for fname, fobject in field_objects.items()
     )
-    if fields_list is not None:
+
+    if fields_list:
         if not isinstance(fields_list, (list, tuple, set)):
             raise ValueError('fields_list must be list, tuple or set: %s' % fields_list)
-        result_dict_dields = ((fname, obj) for fname, obj in result_dict_dields if fname in fields_list)
-    r = OrderedDict(result_dict_dields)
-    r.update({
-        fname: getattr(model_item, fname, None) for fname, _ in computed_field_objects.items()
-    })
+        result_dict_fields = (
+            (fname, val) for fname, val in result_dict_fields if val is not None and fname in fields_list
+        )
+
+    r = OrderedDict(result_dict_fields)
+    if computed_field_objects:
+        computed_field_objects_keys = computed_field_objects.keys()
+        if fields_list:
+            computed_field_objects_keys = (fname for fname in computed_field_objects_keys if fname in fields_list)
+        r.update({
+            fname: getattr(model_item, fname, None) for fname in computed_field_objects_keys
+        })
+
     return r
 
 

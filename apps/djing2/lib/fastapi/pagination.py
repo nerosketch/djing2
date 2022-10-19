@@ -64,15 +64,9 @@ def paginate_qs_path_decorator(
             qs = fn(request=request, pagination=pagination, *args, **kwargs)
             all_count = qs.count()
 
-            fields_list = None
+            fields_list = []
             if pagination.fields:
                 fields_list = pagination.fields.split(',')
-                if len(fields_list) > 0:
-                    param_fields_list = set(fields_list)
-                    model_fields_list = {field_name for field_name, _ in field_objects.items()}
-                    fields_list = param_fields_list & model_fields_list
-                    # qs = qs.only(*fields_list)
-                    # TODO: use computed fields from DRF serializer
 
             r_qs = paginate_qs(
                 qs=qs,

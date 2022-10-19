@@ -46,7 +46,9 @@ router = APIRouter(
 # ), prefix='/customer-service')
 
 
-@router.get('/customer-log/', response_model=IListResponse[schemas.CustomerLogModelSchema])
+@router.get('/customer-log/', response_model=IListResponse[schemas.CustomerLogModelSchema],
+            response_model_exclude_none=True
+            )
 @paginate_qs_path_decorator(schema=schemas.CustomerLogModelSchema, db_model=models.CustomerLog)
 def get_customer_payment_log(request: Request,
                              customer: int,
@@ -65,11 +67,6 @@ def get_customer_payment_log(request: Request,
         customer_id__in=customers_qs
     ).order_by('-id')
     return qs
-
-
-_customer_base_query = models.Customer.objects.select_related(
-    "current_service", "current_service__service", "gateway"
-)
 
 
 @router.get('/groups_with_customers/', response_model=list[schemas.GroupsWithCustomersSchema])
@@ -222,6 +219,7 @@ class CustomerResponseModelSchema(schemas.CustomerModelSchema, metaclass=AllOpti
 
 @router.get('/bums/',
             response_model_exclude={'password'},
+            response_model_exclude_none=True,
             response_model=IListResponse[CustomerResponseModelSchema]
             )
 @paginate_qs_path_decorator(schema=CustomerResponseModelSchema, db_model=models.Customer)
@@ -269,7 +267,9 @@ router.include_router(CrudRouter(
 
 
 @router.get('/periodic-pay/',
-            response_model=IListResponse[schemas.PeriodicPayForIdModelSchema])
+            response_model=IListResponse[schemas.PeriodicPayForIdModelSchema],
+            response_model_exclude_none=True
+            )
 @paginate_qs_path_decorator(
     schema=schemas.PeriodicPayForIdModelSchema,
     db_model=models.PeriodicPayForId
@@ -995,7 +995,9 @@ def create_customer_profile(new_customer_data: schemas.CustomerSchema,
 
 
 @router.get('/', response_model_exclude={'password'},
-            response_model=IListResponse[CustomerResponseModelSchema])
+            response_model=IListResponse[CustomerResponseModelSchema],
+            response_model_exclude_none=True
+            )
 @paginate_qs_path_decorator(schema=CustomerResponseModelSchema, db_model=models.Customer)
 def get_customers(request: Request,
                   street: Optional[int] = None, house: Optional[int] = None,
@@ -1015,6 +1017,10 @@ def get_customers(request: Request,
                   pagination: Pagination = Depends()
                   ):
     curr_user, token = auth
+
+    _customer_base_query = models.Customer.objects.select_related(
+        "current_service", "current_service__service", "group"
+    )
 
     queryset = general_filter_queryset(
         qs_or_model=_customer_base_query,
