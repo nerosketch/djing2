@@ -21,7 +21,7 @@ class AAAConnectionType(IntegerChoices):
 
 
 class AAAExportSerializer(serializers.Serializer):
-    event_time = serializers.DateTimeField(format=datetime_format, default=lambda: datetime.now())
+    event_time = serializers.DateTimeField(format=datetime_format, default=datetime.now)
     event_type = serializers.ChoiceField(choices=AAAEventType.choices, required=True)
     session_id = serializers.CharField(required=True)
     customer_ip = serializers.IPAddressField(required=True)

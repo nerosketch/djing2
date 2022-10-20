@@ -15,7 +15,8 @@ from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
 from networks.tasks import (
     async_change_session_inet2guest,
-    async_change_session_guest2inet
+    async_change_session_guest2inet,
+    check_if_lease_have_ib_db_task
 )
 from radiusapp import custom_signals
 from radiusapp.schemas import CustomerServiceRequestSchema
@@ -46,7 +47,8 @@ def _assign_global_guest_lease(customer_mac, vlan_id: Optional[int], svid: Optio
         pool__kind=NetworkIpPoolKind.NETWORK_KIND_GUEST.value,
         state=False,
     )[:1]
-    updated_lease_count = CustomerIpLeaseModel.objects.filter(pk__in=leases_qs).update(
+    leases_qs = CustomerIpLeaseModel.objects.filter(pk__in=leases_qs)
+    updated_lease_count = leases_qs.update(
         mac_address=customer_mac,
         state=True,
         input_octets=0,
@@ -237,7 +239,7 @@ def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
         )
         return JSONResponse(response, status_code=code)
     except (LogicError, BadRetException) as err:
-        return _bad_ret(str(err))
+        return _bad_ret(f'{err.__class__.name}: {str(err)}')
 
 
 @router.post('/get_service/')
@@ -284,8 +286,8 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
         return _bad_ret(str(err))
 
 
-def _bad_ret(text, custom_status=status.HTTP_400_BAD_REQUEST) -> JSONResponse:
-    logger.error(text)
+def _bad_ret(text: str, custom_status=status.HTTP_400_BAD_REQUEST) -> JSONResponse:
+    logger.error(msg='Bad ret: %s' % str(text))
     return JSONResponse({
         "Reply-Message": text
     }, status_code=custom_status)
@@ -308,6 +310,9 @@ class BadRetException(HTTPException):
             detail=detail or _('exception from radius.'),
             *args, **kwargs
         )
+
+    def __str__(self):
+        return f'{self.__class__.__name__}: {self.detail}'
 
 
 def _build_srv_result_from_db_result(row: tuple) -> CustomerServiceLeaseResult:
@@ -714,6 +719,9 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
                     speed_in_burst=speed.burst_in,
                     speed_out_burst=speed.burst_out
                 )
+        check_if_lease_have_ib_db_task.delay(
+            radius_uname=radius_username
+        )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
