@@ -179,7 +179,9 @@ class AllTasksList(TasksQuerysetFilterMixin, DjingListAPIView):
 
     def get_queryset(self):
         qs = get_objects_for_user(user=self.request.user, perms="tasks.view_task", klass=models.Task).order_by("-id")
-        return qs.select_related("customer", "customer__address", "customer__group", "author").annotate(
+        return qs.select_related(
+            "customer", "customer__address", "customer__group", "author", "task_mode"
+        ).annotate(
             comment_count=Count("extracomment"), doc_count=Count('taskdocumentattachment')
         )
 
