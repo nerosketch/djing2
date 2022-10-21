@@ -59,7 +59,14 @@ def format_object(
 
 
 def get_initial(schema: Type[BaseModel]) -> dict:
-    return {fname: field.default for fname, field in schema.__fields__.items() if field.default}
+    def _get_default(field):
+        d = field.default
+        df = field.default_factory
+        if not d and df:
+            d = df()
+        return d
+    gen = ((fname, _get_default(field)) for fname, field in schema.__fields__.items())
+    return {fname: val for fname, val in gen if val}
 
 
 def create_get_initial_route(router: APIRouter, schema: Type[BaseModel], path: str = '/get_initial/'):

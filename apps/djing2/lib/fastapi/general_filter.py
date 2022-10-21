@@ -16,6 +16,7 @@ def general_filter_queryset(qs_or_model: Union[QuerySet, Type[Model]], curr_user
     )
     rqs = filter_qs_with_sites(
         qs=rqs,
+        curr_user=curr_user,
         curr_site=curr_site
     )
     return rqs

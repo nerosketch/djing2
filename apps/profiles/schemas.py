@@ -21,11 +21,11 @@ err_ex = ValueError(
 )
 
 
-async def generate_random_username():
+def generate_random_username():
     username = get_random_string(length=6, allowed_chars=digits)
-    if await BaseAccount.objects.filter(username=username).aexists():
-        yield generate_random_username()
-    yield str(safe_int(username))
+    if BaseAccount.objects.filter(username=username).exists():
+        return generate_random_username()
+    return str(safe_int(username))
 
 
 def generate_random_password():

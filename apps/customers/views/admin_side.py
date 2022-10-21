@@ -15,7 +15,7 @@ from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency, check_perm, filter_qs_by_rights
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination, NOT_FOUND
-from djing2.lib.fastapi.utils import get_object_or_404, AllOptionalMetaclass
+from djing2.lib.fastapi.utils import get_object_or_404, AllOptionalMetaclass, create_get_initial_route
 from djing2.lib.filters import filter_qs_by_fields_dependency
 from djing2.lib.filters import search_qs_by_fields_dependency
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
@@ -470,6 +470,12 @@ class CustomerDynamicFieldContentModelViewSet(AbstractDynamicFieldContentModelVi
         return {
             'customer_id': field_data.get('customer')
         }
+
+
+create_get_initial_route(
+    router=router,
+    schema=schemas.CustomerSchema
+)
 
 
 @router.get('/customer-token/',
@@ -994,7 +1000,7 @@ def create_customer_profile(new_customer_data: schemas.CustomerSchema,
                 additional_text='%s, "%s", %s' % (
                     acc.username,
                     acc.fio,
-                    acc.group.title if acc.group else "",
+                    acc.group.title if acc.group_id else "",
                 ),
             )
     return schemas.CustomerModelSchema.from_orm(acc)

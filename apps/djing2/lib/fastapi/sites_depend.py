@@ -101,8 +101,10 @@ class FilterableBySitesModel(abc.ABC):
     sites = ManyToManyField(Site, blank=True)
 
 
-def filter_qs_with_sites(qs: QuerySet[FilterableBySitesModel], curr_site: Optional[Site]):
+def filter_qs_with_sites(qs: QuerySet[FilterableBySitesModel], curr_site: Optional[Site], curr_user):
     rqs = qs
+    if curr_user.is_superuser:
+        return rqs
     if curr_site:
         rqs = qs.filter(sites__in=[curr_site])
     return rqs
