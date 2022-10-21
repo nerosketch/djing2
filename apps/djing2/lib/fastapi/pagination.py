@@ -68,14 +68,14 @@ def paginate_qs_path_decorator(
             if pagination.fields:
                 fields_list = pagination.fields.split(',')
 
-            r_qs = paginate_qs(
+            if pagination.ordering:
+                qs = apply_ordering(qs=qs, field_name=pagination.ordering)
+
+            qs = paginate_qs(
                 qs=qs,
                 page=pagination.page,
                 page_size=pagination.page_size
             )
-
-            if pagination.ordering:
-                r_qs = apply_ordering(qs=r_qs, field_name=pagination.ordering)
 
             return IListResponse[schema](
                 count=all_count,
@@ -94,7 +94,7 @@ def paginate_qs_path_decorator(
                     field_objects=field_objects,
                     computed_field_objects=computed_field_objects,
                     fields_list=fields_list,
-                ) for o in r_qs)
+                ) for o in qs)
             )
 
         return _wrap
