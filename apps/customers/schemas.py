@@ -295,11 +295,13 @@ class PassportInfoBaseSchema(BaseModel):
     def validate_series(cls, v: str):
         if not v.isdigit():
             raise ValueError('series must be digital')
+        return v
 
     @validator('number')
     def validate_number(cls, v: str):
         if not v.isdigit():
             raise ValueError('number must be digital')
+        return v
 
     @validator('date_of_acceptance')
     def validate_date_of_acceptance(cls, value: Optional[datetime]):

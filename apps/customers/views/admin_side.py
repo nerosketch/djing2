@@ -769,7 +769,8 @@ def add_balance(customer_id: int,
             }
             )
 @catch_customers_errs
-def set_customer_passport(customer_id: int, payload: schemas.PassportInfoBaseSchema,
+def set_customer_passport(response: Response,
+                          customer_id: int, payload: schemas.PassportInfoBaseSchema,
                           curr_site: Site = Depends(sites_dependency),
                           auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
                           ):
@@ -790,9 +791,7 @@ def set_customer_passport(customer_id: int, payload: schemas.PassportInfoBaseSch
     passport_obj = models.PassportInfo.objects.filter(customer_id=customer_id).first()
 
     data_dict = payload.dict(
-        skip_defaults=True,
         exclude_unset=True,
-        exclude_none=True
     )
 
     if passport_obj is None:
@@ -801,15 +800,15 @@ def set_customer_passport(customer_id: int, payload: schemas.PassportInfoBaseSch
             customer=customer,
             **data_dict
         )
-        res_stat = status.HTTP_201_CREATED
+        response.status_code = status.HTTP_201_CREATED
     else:
         # change passport info for customer
         for f_name, f_val in data_dict.items():
             setattr(passport_obj, f_name, f_val)
         passport_obj.save()
-        res_stat = status.HTTP_200_OK
+        response.status_code = status.HTTP_200_OK
 
-    return schemas.PassportInfoModelSchema.from_orm(passport_obj), res_stat
+    return schemas.PassportInfoModelSchema.from_orm(passport_obj)
 
 
 @router.get('/{customer_id}/passport/',

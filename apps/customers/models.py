@@ -1032,8 +1032,9 @@ class PassportInfo(IAddressContaining, BaseAbstractModel):
         return self.registration_address
 
     def full_address(self) -> str:
-        if self.get_address():
-            return str(self.get_address().full_title())
+        ra = self.get_address()
+        if ra:
+            return str(ra.full_title())
         return '-'
 
     @property
