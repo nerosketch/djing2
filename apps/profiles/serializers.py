@@ -1,33 +1,18 @@
-from string import digits
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.utils.crypto import get_random_string
 
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from django.utils.translation import gettext_lazy as _
+from profiles.schemas import generate_random_username, generate_random_password
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.exceptions import ValidationError, PermissionDenied
 
-from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
 from profiles.models import BaseAccount, UserProfile, UserProfileLog, ProfileAuthLog
-
-
-def generate_random_username():
-    username = get_random_string(length=6, allowed_chars=digits)
-    try:
-        BaseAccount.objects.get(username=username)
-        return generate_random_username()
-    except BaseAccount.DoesNotExist:
-        return str(safe_int(username))
-
-
-def generate_random_password():
-    return get_random_string(length=8, allowed_chars=digits)
 
 
 class BaseAccountSerializer(BaseCustomModelSerializer):

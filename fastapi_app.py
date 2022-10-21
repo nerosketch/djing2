@@ -9,6 +9,7 @@ from django.conf import settings
 from django.core.asgi import get_asgi_application
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+# from fastapi.responses import ORJSONResponse
 
 sys.path.insert(0, os.path.abspath("apps"))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apps.djing2.settings")
@@ -17,6 +18,7 @@ apps.populate(settings.INSTALLED_APPS)
 from djing2.routers import router
 from djing2.lib.logger import logger
 from djing2.lib.fastapi.pika_client import PikaClient
+from djing2.lib.fastapi.http_exceptions import handler_pairs
 
 
 class MainApp(FastAPI):
@@ -39,6 +41,7 @@ def get_application() -> MainApp:
         openapi_url="/api/openapi.json",
         debug=settings.DEBUG,
         swagger_ui_parameters={"docExpansion": "none"},
+        # default_response_class=ORJSONResponse
     )
 
     # Set all CORS enabled origins
@@ -52,6 +55,9 @@ def get_application() -> MainApp:
 
     # Include all api endpoints
     _app.include_router(router)
+
+    for handler, exc in handler_pairs:
+        app.add_exception_handler(exc, handler)
 
     _django_app = get_asgi_application()
     # Mounts an independent web URL for Django WSGI application

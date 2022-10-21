@@ -1,12 +1,12 @@
 from typing import Optional
 from customer_contract import models
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
-from djing2.lib.fastapi.crud import NOT_FOUND, CrudRouter
+from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
-from djing2.lib.fastapi.types import IListResponse, Pagination
+from djing2.lib.fastapi.types import IListResponse, Pagination, NOT_FOUND
 from djing2.lib.fastapi.utils import create_get_initial_route
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Path
 from starlette import status
 
 from . import schemas
@@ -55,12 +55,14 @@ def del_contract(contract_id: int):
 @router.patch('/contract/{contract_id}/', response_model=schemas.CustomerContractSchema, dependencies=[Depends(
     permission_check_dependency(perm_codename='customer_contract.change_customercontractmodel')
 )])
-def change_contract(contract_id: int, contract_data: schemas.CustomerContractBaseSchema):
+def change_contract(contract_data: schemas.CustomerContractBaseSchema,
+                    contract_id: int = Path(gt=0)
+                    ):
     c = models.CustomerContractModel.objects.filter(pk=contract_id)
     if not c.exists():
         raise NOT_FOUND
     c.update(**contract_data.dict())
-    return schemas.CustomerContractSchema.from_orm(c)
+    return schemas.CustomerContractSchema.from_orm(c.first())
 
 
 @router.put('/contract/{contract_id}/finish/', response_model=schemas.CustomerContractSchema, dependencies=[Depends(

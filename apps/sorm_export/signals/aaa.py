@@ -27,7 +27,6 @@ def _save_aaa_log(event_time: datetime, **serializer_keys):
         )
         ser.is_valid(raise_exception=True)
         return save_radius_acct.delay(
-            event_time=event_time.timestamp(),
             data=ser.data
         )
     except ValidationError as err:

@@ -165,6 +165,9 @@ msgid "%(uname)s not enough money for service %(srv_name)s"
 msgstr ""
 "У абонента %(uname)s не достаточно денег на счету для услуги %(srv_name)s"
 
+msgid "not enough money"
+msgstr "не достаточно средств"
+
 #: apps/customers/models.py:563
 msgid "Buy service default log"
 msgstr "Покупка тарифного плана через админку"
@@ -350,10 +353,6 @@ msgstr "Услуга не подключена"
 #: apps/customers/views/admin_side.py:246
 msgid "You can't top up an account with a positive amount"
 msgstr "Вы не можете пополнять счёт учётной записи"
-
-#: apps/customers/views/admin_side.py:252
-msgid "You can't top up an account with a negative amount"
-msgstr "Вы не можете снимать средства с баланса учётной записи"
 
 #: apps/customers/views/admin_side.py:264
 msgid "fill account through admin side"

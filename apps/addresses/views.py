@@ -7,8 +7,8 @@ from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Request, Depends
 from starlette import status
 
-from djing2.lib.fastapi.crud import CrudRouter, NOT_FOUND
-from djing2.lib.fastapi.types import MAX_LIMIT, IListResponse, Pagination
+from djing2.lib.fastapi.crud import CrudRouter
+from djing2.lib.fastapi.types import MAX_LIMIT, IListResponse, Pagination, NOT_FOUND
 from django.db.models import Count
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.fias_socrbase import AddressFIASInfo, AddressFIASLevelType, IAddressFIASType

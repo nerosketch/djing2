@@ -4,15 +4,30 @@ from django.db.models import QuerySet, Model
 from django.db.utils import IntegrityError
 from fastapi.params import Depends
 from pydantic import BaseModel
-from fastapi import HTTPException, status, Request, APIRouter
+from fastapi import HTTPException, Request, APIRouter
 from fastapi.types import DecoratedCallable
+from starlette import status
 
 from ._fields_cache import build_model_and_schema_fields
-from .types import DEPENDENCIES, IListResponse, Pagination
+from .perms import permission_check_dependency
+from .types import DEPENDENCIES, IListResponse, Pagination, NOT_FOUND
 from .utils import schema_factory, format_object
 from .pagination import paginate_qs_path_decorator
 
-NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
+
+def _generate_perm_dep(qs: QuerySet, route: Union[bool, DEPENDENCIES], perm_prefix: str) -> list[Depends]:
+    model = qs.model
+    _perm_codename = f"{model._meta.app_label}.{perm_prefix}_{model._meta.object_name.lower()}"
+    _dep = Depends(permission_check_dependency(
+        perm_codename=_perm_codename
+    ))
+    if isinstance(route, list):
+        new_create_route = route + [_dep]
+    elif isinstance(route, tuple):
+        new_create_route = list(route) + [_dep]
+    else:
+        new_create_route = [_dep]
+    return new_create_route
 
 
 class CRUDReadGenerator(APIRouter):
@@ -44,22 +59,36 @@ class CRUDReadGenerator(APIRouter):
         # tags = tags or [prefix.strip("/").capitalize()]
 
         if get_one_route:
+            get_one_route = _generate_perm_dep(
+                qs=self._queryset,
+                route=get_one_route,
+                perm_prefix='view'
+            )
             self._add_api_route(
                 "/{item_id}/",
                 self._get_one(),
                 methods=["GET"],
                 response_model=self.schema,
+                response_model_exclude_none=True,
+                response_model_exclude_unset=True,
                 summary="Get One",
                 dependencies=get_one_route,
                 error_responses=[NOT_FOUND],
             )
 
         if get_all_route:
+            get_all_route = _generate_perm_dep(
+                qs=self._queryset,
+                route=get_all_route,
+                perm_prefix='view'
+            )
             self._add_api_route(
                 "/",
                 self._get_all(),
                 methods=["GET"],
                 response_model=Optional[IListResponse[self.schema]],  # type: ignore
+                response_model_exclude_none=True,
+                response_model_exclude_unset=True,
                 summary="Get All",
                 dependencies=get_all_route,
             )
@@ -188,6 +217,11 @@ class CrudRouter(CRUDReadGenerator):
         )
 
         if update_route:
+            update_route = _generate_perm_dep(
+                qs=self._queryset,
+                route=update_route,
+                perm_prefix='change'
+            )
             self._add_api_route(
                 "/{item_id}/",
                 self._update(),
@@ -198,6 +232,11 @@ class CrudRouter(CRUDReadGenerator):
                 error_responses=[NOT_FOUND],
             )
         if delete_one_route:
+            delete_one_route = _generate_perm_dep(
+                qs=self._queryset,
+                route=delete_one_route,
+                perm_prefix='delete'
+            )
             self._add_api_route(
                 "/{item_id}/",
                 self._delete_one(),
@@ -209,6 +248,11 @@ class CrudRouter(CRUDReadGenerator):
                 status_code=status.HTTP_204_NO_CONTENT,
             )
         if create_route:
+            create_route = _generate_perm_dep(
+                qs=self._queryset,
+                route=create_route,
+                perm_prefix='add'
+            )
             self._add_api_route(
                 "/",
                 self._create(),
@@ -239,7 +283,11 @@ class CrudRouter(CRUDReadGenerator):
 
     def _create(self, *args: Any, **kwargs: Any):
         def route(payload: self.create_schema) -> OrderedDictType:
-            pdict = payload.dict()
+            pdict = payload.dict(
+                exclude_unset=True,
+                exclude_defaults=True,
+                exclude_none=True
+            )
             for fname, fobject in self._field_objects.items():
                 value = pdict.get(fname)
                 if isinstance(value, int):

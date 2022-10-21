@@ -66,15 +66,17 @@ pyftpdlib==1.5.6
 djangorestframework-csv>=2.1.1
 
 # fastapi
-fastapi~=0.83.0
+fastapi
+python-multipart
 uvicorn[standard]
-celery~=5.2.7
-redis[hiredis]~=4.3.4
+celery
+redis[hiredis]
+# orjson
 
 # amqp lib for RabbitMQ
 pika
 pika-stubs
 
-django-guardian~=2.4.0
-starlette~=0.19.1
-pydantic~=1.10.2
+django-guardian
+starlette
+pydantic

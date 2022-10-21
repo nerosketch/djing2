@@ -1,115 +1,137 @@
-from django.db import transaction
+from typing import Optional
+
+from customers import models
 from django.utils.translation import gettext
-from django.utils.translation import gettext_lazy as _
-from rest_framework import status
-from rest_framework.decorators import action
-from rest_framework.generics import get_object_or_404
-from rest_framework.response import Response
-
-from customers import models, serializers
-from customers.views.view_decorators import catch_customers_errs
-
-from djing2.lib import LogicError, safe_int
-from djing2.lib.mixins import SitesFilterMixin
-from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet, BaseNonAdminModelViewSet
+from django.db import transaction
+from djing2.lib import LogicError
+from djing2.lib.fastapi.auth import is_customer_auth_dependency
+from djing2.lib.fastapi.utils import get_object_or_404
+from fastapi import APIRouter, Depends
+from starlette import status
+from pydantic import BaseModel, Field
 from services.models import Service
 
+from .view_decorators import catch_customers_errs
+from .. import schemas
 
-class SingleListObjMixin:
-    def list(self, *args, **kwargs):
-        qs = self.get_queryset().first()
-        sr = self.get_serializer(qs, many=False)
-        return Response(sr.data)
+router = APIRouter(
+    prefix='/users',
+    tags=['CustomersUserSide'],
+    dependencies=[Depends(is_customer_auth_dependency)]
+)
 
-
-class CustomersUserSideModelViewSet(SitesFilterMixin, SingleListObjMixin, BaseNonAdminModelViewSet):
-    queryset = models.Customer.objects.select_related("group", "gateway", "device", "current_service")
-    serializer_class = serializers.UserCustomerModelSerializer
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(username=self.request.user.username)
-
-    def get_object(self):
-        qs = self.get_queryset()
-        return qs.first()
-
-    @action(methods=["post"], detail=False)
-    @catch_customers_errs
-    def buy_service(self, request):
-        service_id = safe_int(request.data.get("service_id"))
-        srv = get_object_or_404(Service, pk=service_id)
-        customer = request.user
-
-        customer.pick_service(
-            service=srv,
-            author=request.user,
-            comment=_("Buy the service via user side, service '%s'") % srv,
-            allow_negative=False,
-        )
-        # customer_gw_command.delay(
-        #     customer_uid=customer.pk,
-        #     command='sync'
-        # )
-        return Response(data=_("The service '%s' was successfully activated") % srv, status=status.HTTP_200_OK)
-
-    @action(methods=("put",), detail=False)
-    @catch_customers_errs
-    def set_auto_new_service(self, request):
-        auto_renewal_service = bool(request.data.get("auto_renewal_service"))
-        customer = request.user
-        customer.auto_renewal_service = auto_renewal_service
-        customer.save(update_fields=["auto_renewal_service"])
-        return Response()
+_base_customers_queryset = models.Customer.objects.select_related(
+    "group", "gateway", "device", "current_service"
+)
 
 
-class CustomerServiceModelViewSet(SingleListObjMixin, BaseNonAdminReadOnlyModelViewSet):
-    queryset = models.CustomerService.objects.all()
-    serializer_class = serializers.DetailedCustomerServiceModelSerializer
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(customer=self.request.user)
+@router.get('/me/', response_model=schemas.UserCustomerModelSchema)
+@catch_customers_errs
+def get_me(current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    return schemas.UserCustomerModelSchema.from_orm(current_user)
 
 
-class LogsReadOnlyModelViewSet(BaseNonAdminReadOnlyModelViewSet):
-    queryset = models.CustomerLog.objects.all()
-    serializer_class = serializers.CustomerLogModelSerializer
+@router.patch('/me/', response_model=schemas.UserCustomerModelSchema)
+@catch_customers_errs
+def update_me(data: schemas.UserCustomerWritableModelSchema,
+              current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    for f_name, v_val in data.__fields__:
+        setattr(current_user, f_name, v_val)
+    current_user.save(update_fields=[f_name for f_name, _ in data.__fields__])
+    return schemas.UserCustomerModelSchema.from_orm(current_user)
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(customer=self.request.user)
+
+@router.post('/me/buy_service/', response_model=str)
+@catch_customers_errs
+def buy_service(payload: schemas.UserBuyServiceSchema,
+                current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    service_id = payload.service_id
+    srv = get_object_or_404(Service, pk=service_id)
+
+    current_user.pick_service(
+        service=srv,
+        author=current_user,
+        comment=gettext("Buy the service via user side, service '%s'") % srv,
+        allow_negative=False,
+    )
+    # customer_gw_command.delay(
+    #     customer_uid=customer.pk,
+    #     command='sync'
+    # )
+    return gettext("The service '%s' was successfully activated") % srv
 
 
-class DebtsList(BaseNonAdminReadOnlyModelViewSet):
-    queryset = models.InvoiceForPayment.objects.all()
-    serializer_class = serializers.InvoiceForPaymentModelSerializer
+@router.put('/me/set_auto_new_service/')
+@catch_customers_errs
+def set_auto_new_service(payload: schemas.UserAutoRenewalServiceSchema,
+                         current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    auto_renewal_service = bool(payload.auto_renewal_service)
+    current_user.auto_renewal_service = auto_renewal_service
+    current_user.save(update_fields=["auto_renewal_service"])
+    return 'ok'
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(customer=self.request.user)
 
-    @action(methods=["post"], detail=True)
-    @catch_customers_errs
-    def buy(self, request, pk=None):
-        del pk
-        debt = self.get_object()
-        customer = request.user
-        sure = request.data.get("sure")
-        if sure != "on":
-            raise LogicError(_("Are you not sure that you want buy the service?"))
-        if customer.balance < debt.cost:
-            raise LogicError(_("Your account have not enough money"))
+@router.get('/service/', response_model=Optional[schemas.DetailedCustomerServiceModelSchema])
+def get_service_details(current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    act_srv = current_user.active_service()
+    if act_srv:
+        return schemas.DetailedCustomerServiceModelSchema.from_orm(act_srv)
+    return None
 
-        with transaction.atomic():
-            amount = -debt.cost
-            customer.add_balance(
-                profile=request.user,
-                cost=amount,
-                comment=gettext("%(username)s paid the debt %(amount).2f")
-                % {"username": customer.get_full_name(), "amount": amount},
+
+@router.get('/log/',
+            response_model=list[schemas.CustomerLogModelSchema],
+            response_model_exclude={'author_name'}
             )
-            customer.save(update_fields=("balance",))
-            debt.set_ok()
-            debt.save(update_fields=("status", "date_pay"))
-        return Response(status=status.HTTP_200_OK)
+def get_user_log(current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    qs = models.CustomerLog.objects.filter(customer=current_user)
+    return (schemas.CustomerLogModelSchema.from_orm(log) for log in qs.iterator())
+
+
+@router.get('/debts/',
+            response_model=list[schemas.InvoiceForPaymentModelSchema],
+            response_model_exclude={'author_name', 'author_uname'}
+            )
+def get_user_debts(current_user: models.Customer = Depends(is_customer_auth_dependency)):
+    qs = models.InvoiceForPayment.objects.filter(
+        customer=current_user
+    )
+    return (schemas.CustomerLogModelSchema.from_orm(inv) for inv in qs.iterator())
+
+
+class _buyDebtPayload(BaseModel):
+    sure: str = Field(title='Payment confirmation flag. Put "on"')
+
+
+@router.post("/debts/{debt_id}/buy/", status_code=status.HTTP_204_NO_CONTENT)
+@catch_customers_errs
+def buy_debt(debt_id: int,
+             pl: _buyDebtPayload,
+             customer: models.Customer = Depends(is_customer_auth_dependency)
+             ):
+    if pl.sure != 'on':
+        raise LogicError(
+            detail=gettext("Are you not sure that you want buy the service?"),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    debt = get_object_or_404(models.InvoiceForPayment, pk=debt_id)
+    if customer.balance < debt.cost:
+        raise LogicError(
+            detail=gettext("Your account have not enough money"),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    with transaction.atomic():
+        amount = -debt.cost
+        customer.add_balance(
+            profile=customer,
+            cost=amount,
+            comment=gettext("%(username)s paid the debt %(amount).2f") % {
+                "username": customer.get_full_name(),
+                "amount": amount
+            }
+        )
+        customer.save(update_fields=("balance",))
+        debt.set_ok()
+        debt.save(update_fields=("status", "date_pay"))

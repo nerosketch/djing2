@@ -22,12 +22,13 @@ from services.custom_logic import SERVICE_CHOICES
 from services.models import OneShotPay, PeriodicPay, Service
 
 from . import custom_signals
+from . import schemas
 
 RADIUS_SESSION_TIME = getattr(settings, "RADIUS_SESSION_TIME", 3600)
 
 
 class NotEnoughMoney(LogicError):
-    pass
+    default_detail = _("not enough money")
 
 
 class CustomerServiceModelManager(models.QuerySet):
@@ -217,6 +218,11 @@ class CustomerLog(BaseAbstractModel):
     comment = models.CharField(max_length=128)
     date = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def author_name(self):
+        if self.author:
+            return str(self.author.get_full_name())
+
     class Meta:
         db_table = "customer_log"
 
@@ -265,7 +271,7 @@ class CustomerManager(MyUserManager):
         user.save(using=self._db)
         return user
 
-    def customer_service_type_report(self):
+    def customer_service_type_report(self) -> schemas.CustomerServiceTypeReportResponseSchema:
         qs = super().get_queryset().filter(
             is_active=True
         ).exclude(
@@ -289,14 +295,14 @@ class CustomerManager(MyUserManager):
             for sc_num, sc_class in SERVICE_CHOICES
         ]
 
-        return {
-            "all_count": all_count,
-            "admin_count": admin_count,
-            "zero_cost_count": zero_cost,
-            "calc_type_counts": calc_type_counts,
-        }
+        return schemas.CustomerServiceTypeReportResponseSchema(
+            all_count=all_count,
+            admin_count=admin_count,
+            zero_cost_count=zero_cost,
+            calc_type_counts=calc_type_counts,
+        )
 
-    def activity_report(self):
+    def activity_report(self) -> schemas.ActivityReportResponseSchema:
         qs = super().get_queryset()
         all_count = qs.count()
         enabled_count = qs.filter(is_active=True).count()
@@ -319,13 +325,13 @@ class CustomerManager(MyUserManager):
             current_service__service__cost__gt=0
         ).exclude(current_service=None).count()
 
-        return {
-            "all_count": all_count,
-            "enabled_count": enabled_count,
-            "with_services_count": with_services_count,
-            "active_count": active_count,
-            "commercial_customers": commercial_customers,
-        }
+        return schemas.ActivityReportResponseSchema(
+            all_count=all_count,
+            enabled_count=enabled_count,
+            with_services_count=with_services_count,
+            active_count=active_count,
+            commercial_customers=commercial_customers,
+        )
 
     @staticmethod
     def filter_afk(date_limit: Optional[datetime] = None, out_limit=50) -> Generator[CustomerAFKType, None, None]:
@@ -600,7 +606,7 @@ class Customer(IAddressContaining, BaseAccount):
     def active_service(self) -> CustomerService:
         return self.current_service
 
-    def add_balance(self, profile: Optional[UserProfile], cost: float, comment: str) -> None:
+    def add_balance(self, profile: Optional[BaseAccount], cost: float, comment: str) -> None:
         old_balance = self.balance
         CustomerLog.objects.create(
             customer=self,
@@ -616,7 +622,7 @@ class Customer(IAddressContaining, BaseAccount):
         return self.address
 
     def pick_service(
-        self, service, author: Optional[UserProfile],
+        self, service, author: Optional[BaseAccount],
         comment=None, deadline=None, allow_negative=False
     ) -> None:
         """
@@ -730,10 +736,10 @@ class Customer(IAddressContaining, BaseAccount):
             customer=self
         )
 
-    def make_shot(self, request, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
+    def make_shot(self, user_profile: UserProfile, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
         """
         Makes one-time service for accounting services.
-        :param request: Django http request.
+        :param user_profile: profiles.UserProfile instance, current authorized user.
         :param shot: instance of services.OneShotPay model.
         :param allow_negative: Allows negative balance.
         :param comment: Optional text for logging this pay.
@@ -742,7 +748,7 @@ class Customer(IAddressContaining, BaseAccount):
         if not isinstance(shot, OneShotPay):
             return False
 
-        cost = round(shot.calc_cost(request, self), 3)
+        cost = round(shot.calc_cost(self), 3)
 
         # if not enough money
         if not allow_negative and self.balance < cost:
@@ -762,7 +768,7 @@ class Customer(IAddressContaining, BaseAccount):
                 cost=-cost,
                 from_balance=old_balance,
                 to_balance=old_balance - cost,
-                author=request.user,
+                author=user_profile,
                 comment=comment or _('Buy one-shot service for "%(title)s"') % {
                     "title": shot.name
                 },
@@ -840,11 +846,12 @@ class Customer(IAddressContaining, BaseAccount):
         return '-'
 
     @staticmethod
-    def set_service_group_accessory(group, wanted_service_ids: list, request):
-        if request.user.is_superuser:
+    def set_service_group_accessory(group: Group, wanted_service_ids: list[int],
+                                    current_user: UserProfile, current_site):
+        if current_user.is_superuser:
             existed_service_ids = frozenset(t.id for t in group.service_set.all())
         else:
-            existed_services = group.service_set.filter(sites__in=[request.site])
+            existed_services = group.service_set.filter(sites__in=[current_site])
             existed_service_ids = frozenset(t.id for t in existed_services)
         wanted_service_ids = frozenset(map(int, wanted_service_ids))
         sub = existed_service_ids - wanted_service_ids
@@ -856,7 +863,7 @@ class Customer(IAddressContaining, BaseAccount):
         #     last_connected_service__in=sub
         # ).update(last_connected_service=None)
 
-    def ping_all_leases(self):
+    def ping_all_leases(self) -> tuple[str, bool]:
         leases = self.customeripleasemodel_set.all()
         if not leases.exists():
             return _("Customer has not ips"), False
@@ -959,6 +966,22 @@ class InvoiceForPayment(BaseAbstractModel):
         self.status = True
         self.date_pay = datetime.now()
 
+    @property
+    def author_name(self):
+        if self.author:
+            fn = getattr(self, 'author.get_full_name', None)
+            if fn is None:
+                return
+            return fn()
+
+    @property
+    def author_uname(self):
+        if self.author:
+            fn = getattr(self, 'author.username', None)
+            if fn is None:
+                return
+            return fn()
+
     class Meta:
         db_table = "customer_inv_pay"
         verbose_name = _("Debt")
@@ -1008,10 +1031,14 @@ class PassportInfo(IAddressContaining, BaseAbstractModel):
     def get_address(self):
         return self.registration_address
 
-    def full_address(self):
+    def full_address(self) -> str:
         if self.get_address():
             return str(self.get_address().full_title())
         return '-'
+
+    @property
+    def registration_address_title(self) -> str:
+        return self.full_address()
 
     class Meta:
         db_table = "passport_info"
@@ -1108,6 +1135,21 @@ class PeriodicPayForId(BaseAbstractModel):
     def __str__(self):
         return f"{self.periodic_pay} {self.next_pay}"
 
+    @property
+    def service_name(self):
+        if self.periodic_pay:
+            return str(self.periodic_pay.name)
+
+    @property
+    def service_calc_type(self):
+        if self.periodic_pay:
+            return self.periodic_pay.calc_type_name()
+
+    @property
+    def service_amount(self):
+        if self.periodic_pay:
+            return float(self.periodic_pay.amount)
+
     class Meta:
         db_table = "periodic_pay_for_id"
 
@@ -1124,6 +1166,16 @@ class CustomerAttachment(BaseAbstractModel):
 
     def __str__(self):
         return self.title
+
+    @property
+    def author_name(self):
+        if self.author:
+            return str(self.author.get_full_name())
+
+    @property
+    def customer_name(self):
+        if self.customer:
+            return str(self.customer.get_full_name())
 
     class Meta:
         db_table = "customer_attachments"
