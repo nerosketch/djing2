@@ -16,22 +16,16 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apps.djing2.settings")
 apps.populate(settings.INSTALLED_APPS)
 
 from djing2.routers import router
-from djing2.lib.logger import logger
-from djing2.lib.fastapi.pika_client import PikaClient
+from djing2.lib.fastapi.amqp_client import AmqpProxyClient
 from djing2.lib.fastapi.http_exceptions import handler_pairs
 
 
 class MainApp(FastAPI):
-    pika_client: PikaClient
+    amqp_client: AmqpProxyClient
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.pika_client = PikaClient(self.log_incoming_message)
-
-    @classmethod
-    def log_incoming_message(cls, message: dict):
-        """Method to do something meaningful with the incoming message"""
-        logger.info('Here we got incoming message %s', message)
+        self.amqp_client = AmqpProxyClient()
 
 
 def get_application() -> MainApp:
@@ -57,7 +51,7 @@ def get_application() -> MainApp:
     _app.include_router(router)
 
     for handler, exc in handler_pairs:
-        app.add_exception_handler(exc, handler)
+        _app.add_exception_handler(exc, handler)
 
     _django_app = get_asgi_application()
     # Mounts an independent web URL for Django WSGI application
@@ -70,10 +64,10 @@ app = get_application()
 
 
 @app.on_event('startup')
-async def run_pika_on_startup():
+async def amqp_pika_on_startup():
     loop = asyncio.get_running_loop()
-    task = loop.create_task(app.pika_client.consume(loop))
-    await task
+    await loop.create_task(app.amqp_client.a_init())
+    await loop.create_task(app.amqp_client.consume())
 
 
 #  from fastapi.staticfiles import StaticFiles

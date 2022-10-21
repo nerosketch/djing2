@@ -74,8 +74,7 @@ redis[hiredis]
 # orjson
 
 # amqp lib for RabbitMQ
-pika
-pika-stubs
+aio_pika
 
 django-guardian
 starlette
