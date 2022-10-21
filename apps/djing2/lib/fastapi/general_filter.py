@@ -7,7 +7,7 @@ from .sites_depend import filter_qs_with_sites
 
 
 def general_filter_queryset(qs_or_model: Union[QuerySet, Type[Model]], curr_user: BaseAccount,
-                            perm_codename: str, curr_site: Optional[Site]
+                            perm_codename: Union[str, list[str]], curr_site: Optional[Site]
                             ) -> QuerySet:
     rqs = filter_qs_by_rights(
         qs_or_model=qs_or_model,

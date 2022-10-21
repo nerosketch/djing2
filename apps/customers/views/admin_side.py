@@ -520,7 +520,7 @@ def customer_pick_service(customer_id: int, payload: schemas.PickServiceRequestS
         qs_or_model=Service,
         curr_user=curr_user,
         curr_site=curr_site,
-        perm_codename='service.view_service'
+        perm_codename='services.view_service'
     )
     srv = get_object_or_404(service_queryset, pk=payload.service_id)
 

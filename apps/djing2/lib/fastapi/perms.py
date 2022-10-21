@@ -34,7 +34,9 @@ def permission_check_dependency(perm_codename: str):
     return _permission_check_dep
 
 
-def filter_qs_by_rights(qs_or_model: Union[QuerySet, Type[Model]], curr_user: BaseAccount, perm_codename: str):
+def filter_qs_by_rights(qs_or_model: Union[QuerySet, Type[Model]],
+                        curr_user: BaseAccount,
+                        perm_codename: Union[str, list[str]]):
     if curr_user.is_superuser:
         return _get_queryset(qs_or_model)
     rqs = get_objects_for_user(
