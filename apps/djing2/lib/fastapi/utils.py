@@ -1,5 +1,6 @@
 from typing import Type, Optional, OrderedDict as OrderedDictType
 from collections import OrderedDict
+from asyncio import iscoroutinefunction
 
 from fastapi import APIRouter
 from pydantic import create_model, BaseModel
@@ -58,21 +59,24 @@ def format_object(
     return r
 
 
-def get_initial(schema: Type[BaseModel]) -> dict:
-    def _get_default(field):
+async def get_initial(schema: Type[BaseModel]) -> dict:
+    async def _get_default(field):
         d = field.default
         df = field.default_factory
         if not d and df:
-            d = df()
+            if iscoroutinefunction(df):
+                d = await df()
+            else:
+                d = df()
         return d
     gen = ((fname, _get_default(field)) for fname, field in schema.__fields__.items())
-    return {fname: val for fname, val in gen if val}
+    return {fname: await val for fname, val in gen if val}
 
 
 def create_get_initial_route(router: APIRouter, schema: Type[BaseModel], path: str = '/get_initial/'):
     @router.get(path)
-    def get_initial_values():
-        return get_initial(schema)
+    async def get_initial_values():
+        return await get_initial(schema)
     return get_initial_values
 
 

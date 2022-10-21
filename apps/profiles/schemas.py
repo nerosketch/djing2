@@ -3,6 +3,7 @@ from datetime import datetime, date
 from typing import Optional
 from string import digits
 
+from asgiref.sync import sync_to_async
 from pydantic import BaseModel, validator, Field
 from django.utils.translation import gettext as _
 from django.utils.crypto import get_random_string
@@ -21,9 +22,9 @@ err_ex = ValueError(
 )
 
 
-def generate_random_username():
+async def generate_random_username():
     username = get_random_string(length=6, allowed_chars=digits)
-    if BaseAccount.objects.filter(username=username).exists():
+    if await sync_to_async(BaseAccount.objects.filter(username=username).exists)():
         return generate_random_username()
     return str(safe_int(username))
 
