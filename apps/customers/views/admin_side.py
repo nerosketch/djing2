@@ -40,11 +40,6 @@ router = APIRouter(
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
-# router.include_router(CRUDReadGenerator(
-#     schema=schemas.CustomerServiceModelSchema,
-#     queryset=models.CustomerService.objects.all(),
-# ), prefix='/customer-service')
-
 
 @router.get('/customer-log/', response_model=IListResponse[schemas.CustomerLogModelSchema],
             response_model_exclude_none=True
@@ -245,11 +240,14 @@ def get_customers_bums(
 
 router.include_router(CrudRouter(
     schema=schemas.InvoiceForPaymentModelSchema,
+    create_schema=schemas.InvoiceForPaymentBaseSchema,
+    update_schema=schemas.InvoiceForPaymentBaseSchema,
     queryset=models.InvoiceForPayment.objects.select_related("customer", "author"),
 ), prefix='/invoices')
 
 router.include_router(CrudRouter(
     schema=schemas.CustomerRawPasswordModelSchema,
+    update_schema=schemas.CustomerRawPasswordBaseSchema,
     queryset=models.CustomerRawPassword.objects.select_related("customer"),
     create_route=False,
     get_all_route=False,
@@ -332,14 +330,15 @@ def attach_group_service_get(group: int,
 @router.post('/attach_group_service/', status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 def attach_group_service(request_data: list[schemas.AttachGroupServiceResponseSchema], group: int,
                          curr_site: Site = Depends(sites_dependency),
-                         auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+                         curr_user: UserProfile = Depends(permission_check_dependency(
+                             perm_codename='groupapp.change_group'
+                         ))
                          ):
-    curr_user, token = auth
     groups_qs = general_filter_queryset(
         qs_or_model=Group,
         curr_user=curr_user,
         curr_site=curr_site,
-        perm_codename='groupapp.view_group'
+        perm_codename='groupapp.change_group'
     )
     group = get_object_or_404(groups_qs, pk=group)
     del groups_qs
@@ -373,13 +372,17 @@ def attach_group_service(request_data: list[schemas.AttachGroupServiceResponseSc
 
 
 @router.delete('/attachments/{attachment_id}/',
-               status_code=status.HTTP_204_NO_CONTENT,
-               dependencies=[Depends(permission_check_dependency(
-                   perm_codename='customers.delete_customerattachment'
-               ))]
-               )
-def delete_customer_attachment(attachment_id: int):
-    qs = models.CustomerAttachment.objects.filter(pk=attachment_id)
+               status_code=status.HTTP_204_NO_CONTENT)
+def delete_customer_attachment(attachment_id: int,
+                               curr_user: UserProfile = Depends(permission_check_dependency(
+                                   perm_codename='customers.delete_customerattachment'
+                               ))
+                               ):
+    qs = filter_qs_by_rights(
+        qs_or_model=models.CustomerAttachment,
+        curr_user=curr_user,
+        perm_codename='customers.delete_customerattachment'
+    ).filter(pk=attachment_id)
     if not qs.exists():
         raise NOT_FOUND
     qs.delete()
@@ -419,18 +422,17 @@ def create_customer_attachment(
     doc_file: UploadFile,
     title: str = Form(),
     customer: int = Form(),
-    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='customers.create_customerattachment'
+    ))
 ):
     from django.core.files.base import ContentFile
-
-    # FIXME: Possible creating attachment for customer on which there is no rights
-    user, token = auth
 
     cf = ContentFile(doc_file.file._file.read(), name=doc_file.filename)
     obj = models.CustomerAttachment.objects.create(
         title=title,
         customer_id=customer,
-        author_id=user.pk,
+        author_id=curr_user.pk,
         doc_file=cf
     )
     return schemas.CustomerAttachmentModelSchema(
@@ -864,10 +866,11 @@ def get_customer_is_access(customer_id: int,
 })
 def set_customer_markers(customer_id: int,
                          flag_names: list[str] = Body(title='Flag name list'),
-                         auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
                          curr_site: Site = Depends(sites_dependency),
+                         curr_user: UserProfile = Depends(permission_check_dependency(
+                             perm_codename='customers.change_customer'
+                         ))
                          ):
-    curr_user, token = auth
     customers_queryset = general_filter_queryset(
         qs_or_model=models.Customer,
         curr_user=curr_user,
@@ -905,7 +908,7 @@ def update_customer_profile(customer_id: int,
     )
     acc = get_object_or_404(customers_qs, pk=customer_id)
 
-    pdata = customer_data.dict(exclude_none=True, exclude_unset=True)
+    pdata = customer_data.dict(exclude_unset=True)
     raw_password = pdata.pop('password', None)
 
     for d_name, d_val in pdata.items():
@@ -974,7 +977,7 @@ def create_customer_profile(new_customer_data: schemas.CustomerSchema,
                                 perm_codename='customers.add_customer'
                             ))
                             ):
-    pdata = new_customer_data.dict()
+    pdata = new_customer_data.dict(exclude_unset=True)
     pdata.update({
         "is_admin": False,
         "is_superuser": False

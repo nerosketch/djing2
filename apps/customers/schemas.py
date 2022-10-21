@@ -101,25 +101,31 @@ class CustomerLogModelSchema(BaseModel):
     Config = OrmConf
 
 
-class InvoiceForPaymentModelSchema(BaseModel):
-    id: int
+class InvoiceForPaymentBaseSchema(BaseModel):
     customer_id: int
     status: bool = False
     comment: str
-    date_create: datetime
     date_pay: Optional[datetime]
+    cost: Decimal
+
+
+class InvoiceForPaymentModelSchema(InvoiceForPaymentBaseSchema):
+    id: int
+    date_create: datetime
     author_id: int
     author_name: Optional[str] = None
     author_uname: Optional[str] = None
-    cost: Decimal
 
     Config = OrmConf
 
 
-class CustomerRawPasswordModelSchema(BaseModel):
+class CustomerRawPasswordBaseSchema(BaseModel):
+    passw_text: str
+
+
+class CustomerRawPasswordModelSchema(CustomerRawPasswordBaseSchema):
     id: int
     customer_id: int
-    passw_text: str
 
     Config = OrmConf
 
