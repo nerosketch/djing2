@@ -41,6 +41,7 @@ class BaseAccountSchema(BaseModel):
     is_active: bool = False
     # is_admin: bool = False
     telephone: Optional[str] = Field(None, regex=tel_regexp_str)
+    sites: list[int] = []
 
     @validator('fio')
     def validate_fio(cls, full_fio: str) -> str:
@@ -56,6 +57,12 @@ class BaseAccountSchema(BaseModel):
 
             return f"{surname} {name} {last_name or ''}"
         raise ValueError(_('3 words required: surname, name and last_name without spaces'))
+
+    @validator('sites', pre=True)
+    def fornat_sites(cls, sites):
+        if isinstance(sites, (list, tuple)):
+            return sites
+        return [s.pk for s in sites.all()]
 
 
 class BaseAccountModelSchema(BaseAccountSchema):

@@ -423,7 +423,7 @@ def create_customer_attachment(
     title: str = Form(),
     customer: int = Form(),
     curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='customers.create_customerattachment'
+        perm_codename='customers.add_customerattachment'
     ))
 ):
     from django.core.files.base import ContentFile
@@ -917,8 +917,14 @@ def update_customer_profile(customer_id: int,
     pdata = customer_data.dict(exclude_unset=True)
     raw_password = pdata.pop('password', None)
 
+    sites = pdata.pop('sites', None)
+
     for d_name, d_val in pdata.items():
         setattr(acc, d_name, d_val)
+
+    if isinstance(sites, (tuple, list)):
+        acc.sites.set(sites)
+
     if raw_password:
         schemas.update_passw(acc=acc, raw_password=raw_password)
         setattr(acc, 'password', make_password(raw_password))
