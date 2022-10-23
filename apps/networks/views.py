@@ -54,7 +54,9 @@ class NetworkIpPoolModelViewSet(SitesGroupFilterMixin, DjingModelViewSet):
     def get_free_ip(self, request, pk=None):
         network = self.get_object()
         ip = network.get_free_ip()
-        return Response(str(ip))
+        if ip:
+            return Response(str(ip.ip_address))
+        return Response()
 
     def perform_create(self, serializer, *args, **kwargs):
         return super().perform_create(
