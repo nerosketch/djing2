@@ -63,12 +63,25 @@ def get_application() -> MainApp:
 app = get_application()
 
 
-@app.on_event('startup')
-async def amqp_pika_on_startup():
-    loop = asyncio.get_running_loop()
-    await loop.create_task(app.amqp_client.a_init())
-    await loop.create_task(app.amqp_client.consume())
+async def start_():
+    await app.amqp_client.a_init()
+    await app.amqp_client.consume()
 
+@app.on_event('startup')
+async def amqp_on_startup():
+    print('Startup')
+    loop = asyncio.get_running_loop()
+    loop.create_task(start_())
+    # await task
+    # print('Res', task.result())
+    # loop.create_task(app.amqp_client.consume())
+    # await app.amqp_client.a_init()
+    # await app.amqp_client.consume()
+
+
+@app.on_event("shutdown")
+def shutdown():
+    print('shutdown')
 
 #  from fastapi.staticfiles import StaticFiles
 #  from api import router

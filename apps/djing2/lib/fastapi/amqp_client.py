@@ -24,10 +24,11 @@ class AmqpProxyClient:
         connection = await connect(url)
         self.connection = connection
 
-        channel = await connection.channel(publisher_confirms=False)
+        channel = await connection.channel()
         self.channel = channel
 
-        print('Established ampq async listener')
+        print('Established amqp async listener')
+        return asyncio.Future()
 
     async def _declate_queue(self):
         # Declaring queue
@@ -37,11 +38,14 @@ class AmqpProxyClient:
 
     async def consume(self):
         """Setup message listener with the current running loop"""
+        print('Pre Start consume')
 
         queue = await self._declate_queue()
 
+        print('Start consume')
         await queue.consume(self.process_incoming_message)
-        await asyncio.Future()
+        print('consume return Future')
+        return asyncio.Future()
 
     def process_incoming_message(self, message: AbstractIncomingMessage):
         """Processing incoming message from RabbitMQ"""
