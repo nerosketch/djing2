@@ -13,7 +13,8 @@ class CustomerUnknownPaymentExportTree(ExportTree[AllTimePaymentLog]):
     за время, прошедшее с последней выгрузки.
     """
     def get_remote_ftp_file_name(self):
-        return f"ISP/abonents/payments_v1_{format_fname(self._event_time)}.txt"
+        f_date = format_fname(self._event_time)
+        return f"ISP/abonents/payments_v1_{f_date}.txt"
 
     @classmethod
     def get_export_format_serializer(cls):
