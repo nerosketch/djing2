@@ -88,20 +88,20 @@ class TaskStateChangeLogModel(BaseAbstractModel):
         state2 = task_state.get("to")
         if state1 == state2:
             return self._human_log_text_general()
-        if state1 == Task.TASK_STATE_NEW:
-            if state2 == Task.TASK_STATE_COMPLETED:
+        if state1 == TaskStates.TASK_STATE_NEW:
+            if state2 == TaskStates.TASK_STATE_COMPLETED:
                 return _("Completing task")
-            elif state2 == Task.TASK_STATE_CONFUSED:
+            elif state2 == TaskStates.TASK_STATE_CONFUSED:
                 return _("Failing task")
-        elif state1 == Task.TASK_STATE_CONFUSED:
-            if state2 == Task.TASK_STATE_NEW:
+        elif state1 == TaskStates.TASK_STATE_CONFUSED:
+            if state2 == TaskStates.TASK_STATE_NEW:
                 return _("Restore state from confused to new")
-            elif state2 == Task.TASK_STATE_COMPLETED:
+            elif state2 == TaskStates.TASK_STATE_COMPLETED:
                 return _("Change state from confused to completed")
-        elif state1 == Task.TASK_STATE_COMPLETED:
-            if state2 == Task.TASK_STATE_NEW:
+        elif state1 == TaskStates.TASK_STATE_COMPLETED:
+            if state2 == TaskStates.TASK_STATE_NEW:
                 return _("Restore state from completed to new")
-            elif state2 == Task.TASK_STATE_CONFUSED:
+            elif state2 == TaskStates.TASK_STATE_CONFUSED:
                 return _("Change state from completed to confused")
         return _("Unknown change action")
 
@@ -170,6 +170,18 @@ class TaskModeModel(models.Model):
         db_table = 'task_modes'
 
 
+class TaskPriorities(models.IntegerChoices):
+    TASK_PRIORITY_LOW = 0, _('Low')
+    TASK_PRIORITY_AVARAGE = 1, _('Average')
+    TASK_PRIORITY_HIGHER = 2, _('Higher')
+
+
+class TaskStates(models.IntegerChoices):
+    TASK_STATE_NEW = 0, _('New')
+    TASK_STATE_CONFUSED = 1, _('Confused')
+    TASK_STATE_COMPLETED = 2, _('Completed')
+
+
 class Task(BaseAbstractModel):
     descr = models.CharField(
         _("Description"),
@@ -188,18 +200,10 @@ class Task(BaseAbstractModel):
         blank=True,
         verbose_name=_("Task author")
     )
-    TASK_PRIORITY_LOW = 0
-    TASK_PRIORITY_AVARAGE = 1
-    TASK_PRIORITY_HIGHER = 2
-    TASK_PRIORITIES = (
-        (TASK_PRIORITY_LOW, _("Low")),
-        (TASK_PRIORITY_AVARAGE, _("Average")),
-        (TASK_PRIORITY_HIGHER, _("Higher")),
-    )
     priority = models.PositiveSmallIntegerField(
         _("A priority"),
-        choices=TASK_PRIORITIES,
-        default=TASK_PRIORITY_LOW
+        choices=TaskPriorities.choices,
+        default=TaskPriorities.TASK_PRIORITY_LOW
     )
     out_date = models.DateField(
         _("Reality"),
@@ -208,18 +212,10 @@ class Task(BaseAbstractModel):
         default=delta_add_days
     )
     time_of_create = models.DateTimeField(_("Date of create"), auto_now_add=True)
-    TASK_STATE_NEW = 0
-    TASK_STATE_CONFUSED = 1
-    TASK_STATE_COMPLETED = 2
-    TASK_STATES = (
-        (TASK_STATE_NEW, _("New")),
-        (TASK_STATE_CONFUSED, _("Confused")),
-        (TASK_STATE_COMPLETED, _("Completed")),
-    )
     task_state = models.PositiveSmallIntegerField(
         _("Condition"),
-        choices=TASK_STATES,
-        default=TASK_STATE_NEW
+        choices=TaskStates.choices,
+        default=TaskStates.TASK_STATE_NEW
     )
     TASK_TYPE_NOT_CHOSEN = 0
     TASK_TYPE_IP_CONFLICT = 1
@@ -271,26 +267,26 @@ class Task(BaseAbstractModel):
     objects = TaskQuerySet.as_manager()
 
     def finish(self, current_user):
-        if self.task_state != self.TASK_STATE_COMPLETED:
+        if self.task_state != TaskStates.TASK_STATE_COMPLETED:
             TaskStateChangeLogModel.objects.create_state_migration(
                 task=self,
                 author=current_user,
-                new_data={"task_state": self.TASK_STATE_COMPLETED, "out_date": self.out_date},
+                new_data={"task_state": TaskStates.TASK_STATE_COMPLETED, "out_date": self.out_date},
                 old_data={"task_state": int(self.task_state), "out_date": self.out_date},
             )
-            self.task_state = self.TASK_STATE_COMPLETED  # Completed. Task done
+            self.task_state = TaskStates.TASK_STATE_COMPLETED  # Completed. Task done
             self.out_date = datetime.now().date()  # End time
             self.save(update_fields=("task_state", "out_date"))
 
     def do_fail(self, current_user):
-        if self.task_state != self.TASK_STATE_CONFUSED:
+        if self.task_state != TaskStates.TASK_STATE_CONFUSED:
             TaskStateChangeLogModel.objects.create_state_migration(
                 task=self,
                 author=current_user,
-                new_data={"task_state": self.TASK_STATE_CONFUSED},
+                new_data={"task_state": TaskStates.TASK_STATE_CONFUSED},
                 old_data={"task_state": int(self.task_state)},
             )
-            self.task_state = self.TASK_STATE_CONFUSED  # Confused(crashed)
+            self.task_state = TaskStates.TASK_STATE_CONFUSED  # Confused(crashed)
             self.save(update_fields=("task_state",))
 
     def send_notification(self):

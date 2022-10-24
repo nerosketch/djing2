@@ -23,6 +23,9 @@ router = APIRouter(
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
+@router.post('/',)
+продолжить
+
 
 class TasksQuerysetFilterMixin:
     def filter_queryset(self, queryset):
@@ -62,7 +65,7 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
         if uname:
             exists_task = models.Task.objects.filter(
                 customer__username=uname,
-                task_state=models.Task.TASK_STATE_NEW
+                task_state=models.TaskStates.TASK_STATE_NEW
             )
             if exists_task.exists():
                 return Response(
@@ -95,7 +98,7 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
         if isinstance(request.user, UserProfile):
             tasks_count = models.Task.objects.filter(
                 recipients__in=(request.user,),
-                task_state=models.Task.TASK_STATE_NEW
+                task_state=models.TaskStates.TASK_STATE_NEW
             ).count()
         return Response(tasks_count)
 
@@ -128,7 +131,7 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
             )
         exists_task = models.Task.objects.filter(
             customer__id=customer_id_i,
-            task_state=models.Task.TASK_STATE_NEW
+            task_state=models.TaskStates.TASK_STATE_NEW
         )
         if exists_task.exists():
             # Task with this customer already exists
@@ -199,7 +202,7 @@ class AllTasksList(TasksQuerysetFilterMixin, DjingListAPIView):
 class AllNewTasksList(AllTasksList):
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(task_state=models.Task.TASK_STATE_NEW)
+        return qs.filter(task_state=models.TaskStates.TASK_STATE_NEW)
 
 
 class NewTasksList(AllTasksList):
@@ -211,7 +214,7 @@ class NewTasksList(AllTasksList):
         qs = super().get_queryset()
         return qs.filter(
             recipients=self.request.user,
-            task_state=models.Task.TASK_STATE_NEW
+            task_state=models.TaskStates.TASK_STATE_NEW
         )
 
 
@@ -220,7 +223,7 @@ class FailedTasksList(AllTasksList):
         qs = super().get_queryset()
         return qs.filter(
             recipients=self.request.user,
-            task_state=models.Task.TASK_STATE_CONFUSED
+            task_state=models.TaskStates.TASK_STATE_CONFUSED
         )
 
 
@@ -229,7 +232,7 @@ class FinishedTasksList(AllTasksList):
         qs = super().get_queryset()
         return qs.filter(
             recipients=self.request.user,
-            task_state=models.Task.TASK_STATE_COMPLETED
+            task_state=models.TaskStates.TASK_STATE_COMPLETED
         )
 
 
@@ -239,7 +242,7 @@ class OwnTasksList(AllTasksList):
         return qs.filter(
             author=self.request.user
         ).exclude(
-            task_state=models.Task.TASK_STATE_COMPLETED
+            task_state=models.TaskStates.TASK_STATE_COMPLETED
         )
 
 
