@@ -7,12 +7,21 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from fastapi import APIRouter, Depends, Request
 
 from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
+from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
 from profiles.models import UserProfile
 from tasks import models
 from tasks import serializers
+
+
+router = APIRouter(
+    prefix='/tasks',
+    tags=['Tasks'],
+    dependencies=[Depends(is_admin_auth_dependency)]
+)
 
 
 class TasksQuerysetFilterMixin:
@@ -22,6 +31,7 @@ class TasksQuerysetFilterMixin:
         if req.user.is_superuser:
             return qs
         return qs.filter(site=req.site)
+
 
 
 class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
