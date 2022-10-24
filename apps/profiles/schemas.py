@@ -25,7 +25,7 @@ err_ex = ValueError(
 async def generate_random_username():
     username = get_random_string(length=6, allowed_chars=digits)
     if await sync_to_async(BaseAccount.objects.filter(username=username).exists)():
-        return generate_random_username()
+        return await generate_random_username()
     return str(safe_int(username))
 
 
