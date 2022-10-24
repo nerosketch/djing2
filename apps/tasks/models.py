@@ -217,40 +217,6 @@ class Task(BaseAbstractModel):
         choices=TaskStates.choices,
         default=TaskStates.TASK_STATE_NEW
     )
-    TASK_TYPE_NOT_CHOSEN = 0
-    TASK_TYPE_IP_CONFLICT = 1
-    TASK_TYPE_YELLOW_TRIANGLE = 2
-    TASK_TYPE_RED_CROSS = 3
-    TASK_TYPE_WAEK_SPEED = 4
-    TASK_TYPE_CABLE_BREAK = 5
-    TASK_TYPE_CONNECTION = 6
-    TASK_TYPE_PERIODIC_DISAPPEARANCE = 7
-    TASK_TYPE_ROUTER_SETUP = 8
-    TASK_TYPE_CONFIGURE_ONU = 9
-    TASK_TYPE_CRIMP_CABLE = 10
-    TASK_TYPE_INTERNET_CRASH = 11
-    TASK_TYPE_OTHER = 12
-    TASK_TYPES = (
-        (TASK_TYPE_NOT_CHOSEN, _("not chosen")),
-        (TASK_TYPE_IP_CONFLICT, _("ip conflict")),
-        (TASK_TYPE_YELLOW_TRIANGLE, _("yellow triangle")),
-        (TASK_TYPE_RED_CROSS, _("red cross")),
-        (TASK_TYPE_WAEK_SPEED, _("weak speed")),
-        (TASK_TYPE_CABLE_BREAK, _("cable break")),
-        (TASK_TYPE_CONNECTION, _("connection")),
-        (TASK_TYPE_PERIODIC_DISAPPEARANCE, _("periodic disappearance")),
-        (TASK_TYPE_ROUTER_SETUP, _("router setup")),
-        (TASK_TYPE_CONFIGURE_ONU, _("configure onu")),
-        (TASK_TYPE_CRIMP_CABLE, _("crimp cable")),
-        (TASK_TYPE_INTERNET_CRASH, _("Internet crash")),
-        (TASK_TYPE_OTHER, _("other")),
-    )
-    # TODO: mode field is deprecated
-    mode = models.PositiveSmallIntegerField(
-        _("The nature of the damage"),
-        choices=TASK_TYPES,
-        default=TASK_TYPE_NOT_CHOSEN
-    )
     task_mode = models.ForeignKey(
         to=TaskModeModel,
         verbose_name=_('Mode'),
@@ -308,6 +274,60 @@ class Task(BaseAbstractModel):
                 "time_left": (now_date - self.out_date)
             }
         return time_diff
+
+    @property
+    def author_full_name(self):
+        if self.author_id:
+            return self.author.get_full_name()
+        return ''
+
+    @property
+    def author_uname(self):
+        if self.author_id:
+            return self.author.username
+        return ''
+
+    @property
+    def priority_name(self):
+        return self.get_priority_display()
+
+    @property
+    def time_diff(self):
+        return str(self.get_time_diff())
+
+    @property
+    def customer_address(self):
+        if self.customer_id:
+            return self.customer.full_address()
+        return ''
+
+    @property
+    def customer_full_name(self):
+        if self.customer_id:
+            return self.customer.get_full_name()
+        return ''
+
+    @property
+    def customer_uname(self):
+        if self.customer_id:
+            return self.customer.username
+        return ''
+
+    @property
+    def customer_group(self) -> Optional[int]:
+        if self.customer_id:
+            return self.customer.group_id or None
+        return None
+
+    @property
+    def state_str(self):
+        return self.get_task_state_display()
+
+    @property
+    def mode_str(self):
+        if self.task_mode:
+            return self.task_mode.title
+        return ''
 
     class Meta:
         db_table = "task"
@@ -398,4 +418,3 @@ class TaskFinishDocumentModel(models.Model):
 
     class Meta:
         db_table = 'task_finish_docs'
-
