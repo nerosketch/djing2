@@ -258,7 +258,29 @@ router.include_router(CrudRouter(
     schema=schemas.AdditionalTelephoneModelSchema,
     create_schema=schemas.AdditionalTelephoneBaseSchema,
     queryset=models.AdditionalTelephone.objects.defer("customer"),
+    get_all_route=False,
+    get_one_route=False
 ), prefix='/additional-telephone')
+
+
+@router.get('/additional-telephone/',
+            response_model=IListResponse[schemas.AdditionalTelephoneModelSchema])
+@paginate_qs_path_decorator(
+    schema=schemas.AdditionalTelephoneModelSchema,
+    db_model=models.AdditionalTelephone
+)
+def get_additional_telephones(request: Request, customer: int,
+                              auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                              pagination: Pagination = Depends()
+                              ):
+    curr_user, token = auth
+    rqs = filter_qs_by_rights(
+        qs_or_model=models.AdditionalTelephone,
+        curr_user=curr_user,
+        perm_codename='customers.view_additionaltelephone'
+    )
+    return rqs.filter(customer_id=customer)
+
 
 router.include_router(CrudRouter(
     schema=schemas.PeriodicPayForIdModelSchema,

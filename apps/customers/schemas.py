@@ -133,11 +133,11 @@ class CustomerRawPasswordModelSchema(CustomerRawPasswordBaseSchema):
 class AdditionalTelephoneBaseSchema(BaseModel):
     telephone: str
     customer_id: int
+    owner_name: str
 
 
 class AdditionalTelephoneModelSchema(AdditionalTelephoneBaseSchema):
     id: int
-    owner_name: str
     create_time: datetime
 
     Config = OrmConf
