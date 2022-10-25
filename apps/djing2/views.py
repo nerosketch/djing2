@@ -19,7 +19,8 @@ from rest_framework.response import Response
 
 def get_mac(mac: str) -> Optional[EUI]:
     try:
-        return EUI(mac)
+        if '.' in mac or '-' in mac or ':' in mac:
+            return EUI(mac)
     except ValueError:
         pass
 
