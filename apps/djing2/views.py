@@ -19,10 +19,13 @@ from rest_framework.response import Response
 
 def get_mac(mac: str) -> Optional[EUI]:
     try:
-        if '.' in mac or '-' in mac or ':' in mac:
-            return EUI(mac)
+        return EUI(mac)
     except ValueError:
         pass
+
+
+def is_mac_addr(mac: str, _ptrn=re.compile(r'^([0-9a-fA-F]{2,4}[:.-]){2,5}[0-9a-fA-F]{2,4}$')) -> bool:
+    return bool(_ptrn.match(str(mac)))
 
 
 def accs_format(acc: Customer) -> dict:
@@ -80,12 +83,12 @@ class SearchApiView(DjingListAPIView):
             if not request.user.is_superuser:
                 customers = customers.filter(sites__in=[self.request.site])
 
-            mac = get_mac(s)
             if re.match(IP_ADDR_REGEX, s):
                 customers = customers.filter(
                     customeripleasemodel__ip_address__icontains=s
                 )
-            elif isinstance(mac, EUI):
+            elif is_mac_addr(s) and get_mac(s):
+                mac = get_mac(s)
                 customers = customers.filter(
                     customeripleasemodel__mac_address__icontains=mac.format(
                         dialect=mac_unix_expanded
@@ -110,7 +113,8 @@ class SearchApiView(DjingListAPIView):
             if not request.user.is_superuser:
                 devices = devices.filter(sites__in=[self.request.site])
 
-            if isinstance(mac, EUI):
+            if is_mac_addr(s) and get_mac(s):
+                mac = get_mac(s)
                 str_mac = mac.format(dialect=mac_unix_expanded)
                 devices = devices.filter(mac_addr=str_mac)[:limit_count]
             else:
