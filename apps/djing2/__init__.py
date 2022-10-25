@@ -12,6 +12,8 @@ IP_ADDR_REGEX = (
     "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
 )
 
+MAC_ADDR_REGEXP = r"^([0-9a-fA-F]{2,4}[:.-]){2,5}[0-9a-fA-F]{2,4}$"
+
 
 def ping(ip_addr: str, count=1, arp=False, interval=0.2) -> bool:
     if re.match(IP_ADDR_REGEX, ip_addr):
@@ -25,4 +27,5 @@ def ping(ip_addr: str, count=1, arp=False, interval=0.2) -> bool:
         raise ValueError('"ip_addr" is not valid ip address')
 
 
-__all__ = ("ping", "IP_ADDR_REGEX", "celery_app", "send_smtp_email_task")
+__all__ = ("ping", "MAC_ADDR_REGEXP", "IP_ADDR_REGEX", "celery_app",
+           "send_smtp_email_task")
