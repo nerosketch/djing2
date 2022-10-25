@@ -1,6 +1,6 @@
 from django.urls import path, include
 from django.conf import settings
-from djing2.views import SearchApiView, can_login_by_location, get_vapid_public_key
+from djing2.views import can_login_by_location, get_vapid_public_key
 
 
 api_urls = [
@@ -20,7 +20,6 @@ api_urls = [
     path("legal/", include("customers_legal.urls", namespace="customers_legal")),
     #path("hook/", include("webhooks.urls", namespace="webhooks")),
     path("can_login_by_location/", can_login_by_location),
-    path("search/", SearchApiView.as_view()),
     path("webpush/", include("webpush.urls")),
     path("get_vapid_public_key/", get_vapid_public_key),
 ]
