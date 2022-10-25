@@ -71,3 +71,47 @@ class TaskStateChangeLogModelSchema(BaseModel):
     who_id: int
     who_name: str
     human_representation: Optional[str]
+
+    Config = OrmConf
+
+
+class TaskDocumentAttachmentBaseSchema(BaseModel):
+    title: str
+    doc_file: str
+    task_id: int
+
+
+class TaskDocumentAttachmentModelSchema(TaskDocumentAttachmentBaseSchema):
+    id: int
+    create_time: datetime
+    author_id: int
+
+    Config = OrmConf
+
+
+class TaskFinishDocumentBaseSchema(BaseModel):
+    code: str = Field(max_length=64, title=_('Document code'))
+    act_num: Optional[str] = Field(None, max_length=64, title=_('Act num'))
+    task_id: int = Field(title=_("Task"))
+    create_time: datetime = Field(title=_("Time of create"))
+    finish_time: datetime = Field(title=_('Finish time'))
+    cost: float = Field(title=_('Cost'))
+    task_mode_id: Optional[int] = Field(None, title=_('Mode'))
+    recipients: list[int] = Field(title=_("Recipients"))
+
+
+class TaskFinishDocumentModelSchema(TaskFinishDocumentBaseSchema):
+    id: int
+    author_id: int = Field(title=_("Author"))
+
+    Config = OrmConf
+
+
+class TaskModeModelBaseSchema(BaseModel):
+    title: str = Field(title=_('Title'), max_length=64)
+
+
+class TaskModeModelModelSchema(TaskModeModelBaseSchema):
+    id: int
+
+    Config = OrmConf
