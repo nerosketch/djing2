@@ -2,24 +2,24 @@ from typing import Optional
 from datetime import date, datetime
 
 from pydantic import BaseModel, Field
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 from djing2.lib.fastapi.types import OrmConf
 from tasks.models import TaskPriorities, delta_add_days
 
 
 class TaskBaseSchema(BaseModel):
     descr: Optional[str] = Field(None, title=_("Description"), max_length=128)
-    recipients: list[int] = Field(title=_("Recipients"))
+    recipients: list[int] = Field([], title=_("Recipients"))
     priority: TaskPriorities
-    out_date: Optional[date] = Field(None, default_factory=delta_add_days, title=_("Reality"))
+    out_date: Optional[date] = Field(default_factory=delta_add_days, title=_("Reality"))
     task_mode_id: int = Field(title=_("The nature of the damage"))
     customer_id: int = Field(title=_("Customer"))
 
 
 class TaskModelSchema(TaskBaseSchema):
     id: int
-    author_id: Optional[int]
     time_of_create: datetime = Field(title=_("Date of create"))
+    author_id: Optional[int]
     author_full_name: str
     author_uname: str
     priority_name: str
@@ -29,8 +29,9 @@ class TaskModelSchema(TaskBaseSchema):
     customer_uname: str
     customer_group: int
     comment_count: int
-    recipients: list[int]
+    recipients: list[int] = Field([], alias='recipients_agg')
     state_str: str
+    task_mode_id: Optional[int] = Field(None, title=_("The nature of the damage"))
     mode_str: str
     is_expired: bool
     doc_count: int
@@ -43,7 +44,6 @@ class UserTaskBaseSchema(BaseModel):
     state_str: str
     mode_str: str
     out_date: Optional[date] = Field(
-        None,
         default_factory=delta_add_days,
         title=_("Reality")
     )

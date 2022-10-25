@@ -268,6 +268,7 @@ class Task(BaseAbstractModel):
     def send_notification(self):
         task_handle(self, self.author, self.recipients.filter(is_active=True))
 
+    @property
     def is_expired(self):
         if self.out_date:
             return self.out_date < datetime.now().date()
@@ -308,7 +309,7 @@ class Task(BaseAbstractModel):
     @property
     def customer_address(self):
         if self.customer_id:
-            return self.customer.full_address()
+            return self.customer.full_address
         return ''
 
     @property

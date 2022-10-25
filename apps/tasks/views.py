@@ -1,10 +1,13 @@
-from django.db.models import Count
+from django.contrib.postgres.aggregates import ArrayAgg
+from django.contrib.sites.models import Site
+from django.db.models import Count, Q, QuerySet
 from django.utils.translation import gettext
 from django.forms.models import model_to_dict
 from django.http.response import Http404
-from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
-from djing2.lib.fastapi.types import IListResponse
+from djing2.lib.fastapi.perms import filter_qs_by_rights
+from djing2.lib.fastapi.sites_depend import sites_dependency
+from djing2.lib.fastapi.types import IListResponse, Pagination
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
@@ -13,11 +16,14 @@ from rest_framework.response import Response
 from fastapi import APIRouter, Depends, Request
 
 from djing2.lib import safe_int
+from djing2.lib.fastapi.utils import AllOptionalMetaclass
+from djing2.lib.filters import filter_qs_by_fields_dependency
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
 from profiles.models import UserProfile
 from tasks import models
 from tasks import serializers
+from tasks import schemas
 
 
 router = APIRouter(
@@ -35,15 +41,27 @@ class TasksQuerysetFilterMixin:
         return qs.filter(site=req.site)
 
 
-@router.get('',
-             response_model=IListResponse[CustomerResponseModelSchema],
-             response_model_exclude_none=True
-             )
-@paginate_qs_path_decorator(schema=CustomerResponseModelSchema, db_model=models.Customer)
-def get_all_tasks():
-    customers_qs = general_filter_queryset(
+class TaskModelSchemaResponseModelSchema(
+    schemas.TaskModelSchema,
+    metaclass=AllOptionalMetaclass
+):
+    pass
+
+
+def get_all_tasks_dependency(
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+    curr_site: Site = Depends(sites_dependency),
+    filter_fields_q: Q = Depends(filter_qs_by_fields_dependency(
+        fields={
+            'task_state': int, 'recipients': list[int], 'customer_id': int
+        },
+        db_model=models.Task
+    )),
+):
+    curr_user, token = auth
+
+    tasks_qs = filter_qs_by_rights(
         qs_or_model=models.Task,
-        curr_site=curr_site,
         curr_user=curr_user,
         perm_codename='tasks.view_task'
     ).select_related(
@@ -52,11 +70,23 @@ def get_all_tasks():
     ).annotate(
         comment_count=Count("extracomment"),
         doc_count=Count('taskdocumentattachment'),
-    )
+        # recipients_agg=ArrayAgg('recipients')
+    ).filter(filter_fields_q)
 
+    if not curr_user.is_superuser:
+        tasks_qs = tasks_qs.filter(site=curr_site)
+
+    return tasks_qs.order_by('-id')
 
 
 class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
+    queryset = models.Task.objects.select_related(
+        "author", "customer", "customer__group",
+        "customer__address", "task_mode"
+    ).annotate(
+        comment_count=Count("extracomment"),
+        doc_count=Count('taskdocumentattachment'),
+    )
     serializer_class = serializers.TaskModelSerializer
     filterset_fields = ("task_state", "recipients", "customer")
 
@@ -197,6 +227,21 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
             for vals in report.values("mode", "task_count")
         ]
         return Response({"annotation": res})
+
+
+@router.get('/get_all/',
+            response_model=IListResponse[TaskModelSchemaResponseModelSchema],
+            response_model_exclude_none=True
+            )
+@paginate_qs_path_decorator(
+    schema=TaskModelSchemaResponseModelSchema,
+    db_model=models.Task
+)
+def get_all_tasks(request: Request,
+                  pagination: Pagination = Depends(),
+                  tasks_qs: QuerySet[models.Task] = Depends(get_all_tasks_dependency)
+                  ):
+    return tasks_qs
 
 
 class AllTasksList(TasksQuerysetFilterMixin, DjingListAPIView):

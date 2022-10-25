@@ -14,7 +14,7 @@ router.register("", views.TaskModelViewSet)
 
 
 urlpatterns = [
-    path("get_all/", views.AllTasksList.as_view()),
+    # path("get_all/", views.AllTasksList.as_view()),
     path("get_all_new/", views.AllNewTasksList.as_view()),
     path("get_new/", views.NewTasksList.as_view()),
     path("get_failed/", views.FailedTasksList.as_view()),
