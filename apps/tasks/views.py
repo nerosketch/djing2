@@ -2,6 +2,9 @@ from django.db.models import Count
 from django.utils.translation import gettext
 from django.forms.models import model_to_dict
 from django.http.response import Http404
+from djing2.lib.fastapi.general_filter import general_filter_queryset
+from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
+from djing2.lib.fastapi.types import IListResponse
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status
 from rest_framework.decorators import action
@@ -23,10 +26,6 @@ router = APIRouter(
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
-@router.post('/',)
-продолжить
-
-
 class TasksQuerysetFilterMixin:
     def filter_queryset(self, queryset):
         qs = super().filter_queryset(queryset=queryset)
@@ -36,15 +35,28 @@ class TasksQuerysetFilterMixin:
         return qs.filter(site=req.site)
 
 
-
-class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
-    queryset = models.Task.objects.select_related(
+@router.get('',
+             response_model=IListResponse[CustomerResponseModelSchema],
+             response_model_exclude_none=True
+             )
+@paginate_qs_path_decorator(schema=CustomerResponseModelSchema, db_model=models.Customer)
+def get_all_tasks():
+    customers_qs = general_filter_queryset(
+        qs_or_model=models.Task,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='tasks.view_task'
+    ).select_related(
         "author", "customer", "customer__group",
         "customer__address", "task_mode"
     ).annotate(
         comment_count=Count("extracomment"),
         doc_count=Count('taskdocumentattachment'),
     )
+
+
+
+class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
     serializer_class = serializers.TaskModelSerializer
     filterset_fields = ("task_state", "recipients", "customer")
 

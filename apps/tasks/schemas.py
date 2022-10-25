@@ -36,3 +36,14 @@ class TaskModelSchema(TaskBaseSchema):
     doc_count: int
 
     Config = OrmConf
+
+
+class UserTaskBaseSchema(BaseModel):
+    time_of_create: datetime = Field(title=_("Date of create"))
+    state_str: str
+    mode_str: str
+    out_date: Optional[date] = Field(
+        None,
+        default_factory=delta_add_days,
+        title=_("Reality")
+    )
