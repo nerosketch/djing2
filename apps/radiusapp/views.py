@@ -684,7 +684,7 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
             cvid=safe_int(vlan_id)
         )
 
-    # Check for service synchronizaion
+    # Check for service synchronization
     bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
     if isinstance(bras_service_name, str):
         if 'SERVICE-INET' in bras_service_name:

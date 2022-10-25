@@ -1,18 +1,28 @@
 import re
 from ipaddress import ip_address, AddressValueError
-from django.db.models import Q
+from typing import Optional
+
+from customers.models import Customer
+from devices.models import Device
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _, gettext
+from django.db.models import Q
+from django.utils.translation import gettext
+from djing2 import IP_ADDR_REGEX
+from djing2.serializers import SearchSerializer
+from djing2.viewsets import DjingListAPIView
 from guardian.shortcuts import get_objects_for_user
+from netaddr import EUI, mac_unix_expanded
+from networks.models import CustomerIpLeaseModel
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 
-from djing2 import MAC_ADDR_REGEX, IP_ADDR_REGEX
-from djing2.serializers import SearchSerializer
-from djing2.viewsets import DjingListAPIView
-from customers.models import Customer
-from devices.models import Device
-from networks.models import CustomerIpLeaseModel
+
+def get_mac(mac: str) -> Optional[EUI]:
+    try:
+        if '.' in mac or '-' in mac or ':' in mac:
+            return EUI(mac)
+    except ValueError:
+        pass
 
 
 def accs_format(acc: Customer) -> dict:
@@ -70,8 +80,17 @@ class SearchApiView(DjingListAPIView):
             if not request.user.is_superuser:
                 customers = customers.filter(sites__in=[self.request.site])
 
+            mac = get_mac(s)
             if re.match(IP_ADDR_REGEX, s):
-                customers = customers.filter(customeripleasemodel__ip_address__icontains=s)
+                customers = customers.filter(
+                    customeripleasemodel__ip_address__icontains=s
+                )
+            elif isinstance(mac, EUI):
+                customers = customers.filter(
+                    customeripleasemodel__mac_address__icontains=mac.format(
+                        dialect=mac_unix_expanded
+                    )
+                )
             else:
                 customers = customers.filter(
                     Q(fio__icontains=s)
@@ -91,8 +110,9 @@ class SearchApiView(DjingListAPIView):
             if not request.user.is_superuser:
                 devices = devices.filter(sites__in=[self.request.site])
 
-            if re.match(MAC_ADDR_REGEX, s):
-                devices = devices.filter(mac_addr=s)[:limit_count]
+            if isinstance(mac, EUI):
+                str_mac = mac.format(dialect=mac_unix_expanded)
+                devices = devices.filter(mac_addr=str_mac)[:limit_count]
             else:
                 devices = devices.filter(Q(comment__icontains=s) | Q(ip_address__icontains=s))[:limit_count]
         else:
