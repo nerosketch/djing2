@@ -47,3 +47,19 @@ class UserTaskBaseSchema(BaseModel):
         default_factory=delta_add_days,
         title=_("Reality")
     )
+
+
+class ExtraCommentBaseSchema(BaseModel):
+    text: str = Field(title=_("Text of comment"))
+    task_id: int = Field(title=_("Task"))
+
+
+class ExtraCommentModelSchema(ExtraCommentBaseSchema):
+    id: int
+    date_create: datetime = Field(title=_("Time of create"))
+    author_id: int = Field(title=_("Author"))
+    author_name: str
+    author_avatar: str
+    can_remove: bool
+
+    Config = OrmConf

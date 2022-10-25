@@ -353,6 +353,18 @@ class ExtraComment(BaseAbstractModel):
         _("Time of create"), auto_now_add=True
     )
 
+    @property
+    def author_name(self):
+        if self.author:
+            return self.author.get_full_name()
+        return ''
+
+    @property
+    def author_avatar(self):
+        if self.author:
+            return self.author.get_avatar_url()
+        return ''
+
     def __str__(self):
         return self.text
 
