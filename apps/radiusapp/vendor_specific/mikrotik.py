@@ -1,7 +1,6 @@
 from typing import Mapping
 
-from netaddr import EUI
-from netfields.mac import mac_unix_common
+from netaddr import EUI, mac_unix_expanded
 from rest_framework import status
 from radiusapp.vendor_base import (
     IVendorSpecific,
@@ -21,7 +20,7 @@ class MikrotikVendorSpecific(IVendorSpecific):
     def get_customer_mac(self, data):
         str_mac = self.get_rad_val(data, "User-Name", str)
         if str_mac:
-            return EUI(str_mac, dialect=mac_unix_common)
+            return EUI(str_mac, dialect=mac_unix_expanded)
 
     def get_vlan_id(self, data):
         return 0
