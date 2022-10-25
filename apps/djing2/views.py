@@ -8,16 +8,14 @@ from django.conf import settings
 from django.db.models import Q
 from django.utils.translation import gettext
 from django.contrib.sites.models import Site
-from djing2 import IP_ADDR_REGEX
+from djing2 import IP_ADDR_REGEX, MAC_ADDR_REGEXP
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.schemas import AccountSearchResponse, DeviceSearchResponse, SearchResultModel
 from guardian.shortcuts import get_objects_for_user
 from netaddr import EUI, mac_unix_expanded
 from networks.models import CustomerIpLeaseModel
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.response import Response
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 
 router = APIRouter(
@@ -32,7 +30,7 @@ def get_mac(mac: str) -> Optional[EUI]:
         pass
 
 
-def is_mac_addr(mac: str, _ptrn=re.compile(r'^([0-9a-fA-F]{2,4}[:.-]){2,5}[0-9a-fA-F]{2,4}$')) -> bool:
+def is_mac_addr(mac: str, _ptrn=re.compile(MAC_ADDR_REGEXP)) -> bool:
     return bool(_ptrn.match(str(mac)))
 
 
@@ -147,29 +145,25 @@ def search_entry_point(s: str = '', limit: int = 100,
     )
 
 
-@api_view()
-@authentication_classes([])
-@permission_classes([])
-def can_login_by_location(request):
+@router.get('/can_login_by_location/', response_model=bool)
+def can_login_by_location(r: Request):
     """Can account login by his ip address."""
     try:
-        remote_ip = ip_address(request.META.get("HTTP_X_REAL_IP"))
+        remote_ip = ip_address(r.client.host)
         if remote_ip.version == 4:
             ips_exists = CustomerIpLeaseModel.objects.filter(ip_address=str(remote_ip)).exists()
-            return Response(ips_exists)
-
+            return ips_exists
     except AddressValueError:
         pass
-    return Response(False)
+    return False
 
 
-@api_view()
-@authentication_classes([])
-@permission_classes([])
-def get_vapid_public_key(request):
+@router.get('/get_vapid_public_key/', response_model=Optional[str])
+def get_vapid_public_key(request: Request):
     """Get VAPID public key for push."""
+
     opts = getattr(settings, "WEBPUSH_SETTINGS")
     if opts is None or not isinstance(opts, dict):
-        return Response()
+        return
     vpk = opts.get("VAPID_PUBLIC_KEY")
-    return Response(vpk)
+    return vpk

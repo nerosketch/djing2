@@ -16,6 +16,7 @@ apps.populate(settings.INSTALLED_APPS)
 
 from djing2.routers import router
 from djing2.lib.fastapi.http_exceptions import handler_pairs
+from djing2.middleware import apply_middlewares
 
 
 def get_application() -> FastAPI:
@@ -51,6 +52,8 @@ def get_application() -> FastAPI:
 
 
 app = get_application()
+
+apply_middlewares(app)
 
 
 #  from fastapi.staticfiles import StaticFiles
