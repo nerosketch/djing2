@@ -106,7 +106,7 @@ class TaskStateChangeLogModel(BaseAbstractModel):
         return _("Unknown change action")
 
     def human_log_text(self) -> Optional[str]:
-        """Human readable log representation."""
+        """Human-readable log representation."""
         dat = self.state_data
         if not dat:
             return None
@@ -119,6 +119,16 @@ class TaskStateChangeLogModel(BaseAbstractModel):
             return self._human_log_text_general()
 
         return self._human_log_text_state_change()
+
+    @property
+    def who_name(self):
+        if self.who:
+            return self.who.get_full_name()
+        return ''
+
+    @property
+    def human_representation(self):
+        return self.human_log_text()
 
     class Meta:
         db_table = "task_state_change_log"

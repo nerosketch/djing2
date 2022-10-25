@@ -63,3 +63,11 @@ class ExtraCommentModelSchema(ExtraCommentBaseSchema):
     can_remove: bool
 
     Config = OrmConf
+
+
+class TaskStateChangeLogModelSchema(BaseModel):
+    id: int
+    when: datetime
+    who_id: int
+    who_name: str
+    human_representation: Optional[str]
