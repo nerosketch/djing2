@@ -28,13 +28,13 @@ class TaskModelSchema(TaskBaseSchema):
     customer_full_name: str
     customer_uname: str
     customer_group: int
-    comment_count: int
+    comment_count: int = 0
     recipients: list[int] = Field([], alias='recipients_agg')
     state_str: str
     task_mode_id: Optional[int] = Field(None, title=_("The nature of the damage"))
     mode_str: str
     is_expired: bool
-    doc_count: int
+    doc_count: int = 0
 
     Config = OrmConf
 

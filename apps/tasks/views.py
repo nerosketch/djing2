@@ -2,6 +2,7 @@ from typing import Optional
 
 from django.contrib.postgres.aggregates.general import ArrayAgg
 from django.contrib.sites.models import Site
+from django.db import transaction
 from django.db.models import Count, Q, QuerySet
 from django.forms.models import model_to_dict
 from django.http.response import Http404
@@ -21,6 +22,7 @@ from profiles.models import UserProfile
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.response import Response as ResponseOld
 from tasks import models
 from tasks import schemas
 from tasks import serializers
@@ -114,6 +116,46 @@ def remove_task(task_id: int,
         )
 
 
+@router.post('/',
+             response_model=schemas.TaskModelSchema,
+             status_code=status.HTTP_201_CREATED,
+             responses={
+                 status.HTTP_409_CONFLICT: {
+                     'description': 'New task with this customer already exists.'
+                 },
+                 status.HTTP_201_CREATED: {
+                     'description': 'New task successfully created'
+                 }
+             })
+def create_new_task(new_task_data: schemas.TaskBaseSchema,
+                    uname: Optional[str] = None,
+                    curr_site: Site = Depends(sites_dependency),
+                    curr_user: UserProfile = Depends(permission_check_dependency(
+                        perm_codename='tasks.add_task'
+                    ))
+                    ):
+    # check if new task with user already exists
+    if uname:
+        exists_task = models.Task.objects.filter(
+            customer__username=uname,
+            task_state=models.TaskStates.TASK_STATE_NEW
+        )
+        if exists_task.exists():
+            return Response(
+                gettext("New task with this customer already exists."),
+                status_code=status.HTTP_409_CONFLICT
+            )
+    pdata = new_task_data.dict(exclude_unset=True, exclude={'recipients'})
+    pdata.update({
+        "author_id": curr_user.pk,
+        "site_id": curr_site.pk
+    })
+    with transaction.atomic():
+        new_task = models.Task.objects.create(**pdata)
+        new_task.recipients.set(new_task_data.recipients)
+    return schemas.TaskModelSchema.from_orm(new_task)
+
+
 class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
     queryset = models.Task.objects.select_related(
         "author", "customer", "customer__group",
@@ -129,9 +171,9 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
         task = self.get_object()
         if request.user.is_superuser or request.user not in task.recipients.all():
             self.perform_destroy(task)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return ResponseOld(status=status.HTTP_204_NO_CONTENT)
         else:
-            return Response(
+            return ResponseOld(
                 gettext("You cannot delete task assigned to you"),
                 status=status.HTTP_403_FORBIDDEN
             )
@@ -145,7 +187,7 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
                 task_state=models.TaskStates.TASK_STATE_NEW
             )
             if exists_task.exists():
-                return Response(
+                return ResponseOld(
                     gettext("New task with this customer already exists."),
                     status=status.HTTP_409_CONFLICT
                 )
@@ -177,32 +219,32 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
                 recipients__in=(request.user,),
                 task_state=models.TaskStates.TASK_STATE_NEW
             ).count()
-        return Response(tasks_count)
+        return ResponseOld(tasks_count)
 
     @action(detail=True)
     def finish(self, request, pk=None):
         task = self.get_object()
         task.finish(request.user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return ResponseOld(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True)
     def failed(self, request, pk=None):
         task = self.get_object()
         task.do_fail(request.user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return ResponseOld(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True)
     def remind(self, request, pk=None):
         self.check_permission_code(request, "tasks.can_remind")
         task = self.get_object()
         task.send_notification()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return ResponseOld(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, url_path=r"new_task_initial/(?P<group_id>\d{1,18})/(?P<customer_id>\d{1,18})")
     def new_task_initial(self, request, group_id: str, customer_id: str):
         customer_id_i = safe_int(customer_id)
         if customer_id_i == 0:
-            return Response(
+            return ResponseOld(
                 "bad customer_id",
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -212,7 +254,7 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
         )
         if exists_task.exists():
             # Task with this customer already exists
-            return Response(
+            return ResponseOld(
                 {
                     "status": 0,
                     "text": gettext("New task with this customer already exists."),
@@ -227,8 +269,8 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
                     group_id=group_id_i
                 ).only("pk").values_list("pk", flat=True)
             )
-            return Response({"status": 1, "recipients": recipients})
-        return Response(
+            return ResponseOld({"status": 1, "recipients": recipients})
+        return ResponseOld(
             '"group_id" parameter is required',
             status=status.HTTP_400_BAD_REQUEST
         )
@@ -244,7 +286,7 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
             for task_state_num, task_state_name in models.TaskStates.choices
         ]
 
-        return Response(r)
+        return ResponseOld(r)
 
     @action(detail=False)
     def task_mode_report(self, request):
@@ -261,7 +303,7 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
             {"mode": _get_display(vals.get("mode")), "task_count": vals.get("task_count")}
             for vals in report.values("mode", "task_count")
         ]
-        return Response({"annotation": res})
+        return ResponseOld({"annotation": res})
 
 
 @router.get('/get_all/',
@@ -417,14 +459,14 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
         comment = self.get_object()
         if comment.author == self.request.user:
             self.perform_destroy(comment)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_403_FORBIDDEN)
+            return ResponseOld(status=status.HTTP_204_NO_CONTENT)
+        return ResponseOld(status=status.HTTP_403_FORBIDDEN)
 
     @action(detail=False)
     def combine_with_logs(self, request, *args, **kwargs):
         task_id = safe_int(request.query_params.get("task"))
         if task_id == 0:
-            return Response('"task" param is required', status=status.HTTP_400_BAD_REQUEST)
+            return ResponseOld('"task" param is required', status=status.HTTP_400_BAD_REQUEST)
 
         comments_list = self.get_serializer(
             self.get_queryset().filter(task_id=task_id).defer("task"),
@@ -445,7 +487,7 @@ class ExtraCommentModelViewSet(DjingModelViewSet):
             reverse=True
         )
 
-        return Response(one_list)
+        return ResponseOld(one_list)
 
 
 class UserTaskHistory(BaseNonAdminReadOnlyModelViewSet):
@@ -480,7 +522,7 @@ class TaskFinishDocumentModelViewSet(DjingModelViewSet):
         try:
             return super().retrieve(request, *args, **kwargs)
         except Http404:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return ResponseOld(status=status.HTTP_204_NO_CONTENT)
 
     def create(self, request, *args, **kwargs):
         dat = {
@@ -491,7 +533,7 @@ class TaskFinishDocumentModelViewSet(DjingModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(
+        return ResponseOld(
             serializer.data,
             status=status.HTTP_201_CREATED,
             headers=headers
