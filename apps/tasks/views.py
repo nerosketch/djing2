@@ -81,81 +81,6 @@ def get_all_tasks_dependency(
     return tasks_qs.order_by('-id')
 
 
-@router.delete('/{task_id}/',
-               responses={
-                   status.HTTP_204_NO_CONTENT: {
-                       'description': 'Successfully removed'
-                   },
-                   status.HTTP_403_FORBIDDEN: {
-                       'description': "Forbidden to remove task. May be you does not "
-                                      "have rights, or you can't remove task assigned to you"
-                   }
-               },
-               response_model=Optional[str])
-def remove_task(task_id: int,
-                curr_site: Site = Depends(sites_dependency),
-                curr_user: UserProfile = Depends(permission_check_dependency(
-                    perm_codename='tasks.delete_task'
-                ))
-                ):
-    queryset = general_filter_queryset(
-        qs_or_model=models.Task,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.delete_customer'
-    ).annotate(
-        recipients_agg=ArrayAgg('recipients')
-    )
-    task = get_object_or_404(queryset=queryset, pk=task_id)
-    if curr_user.is_superuser or curr_user not in task.recipients_agg:
-        task.delete()
-    else:
-        return Response(
-            gettext("You cannot delete task assigned to you"),
-            status_code=status.HTTP_403_FORBIDDEN
-        )
-
-
-@router.post('/',
-             response_model=schemas.TaskModelSchema,
-             status_code=status.HTTP_201_CREATED,
-             responses={
-                 status.HTTP_409_CONFLICT: {
-                     'description': 'New task with this customer already exists.'
-                 },
-                 status.HTTP_201_CREATED: {
-                     'description': 'New task successfully created'
-                 }
-             })
-def create_new_task(new_task_data: schemas.TaskBaseSchema,
-                    uname: Optional[str] = None,
-                    curr_site: Site = Depends(sites_dependency),
-                    curr_user: UserProfile = Depends(permission_check_dependency(
-                        perm_codename='tasks.add_task'
-                    ))
-                    ):
-    # check if new task with user already exists
-    if uname:
-        exists_task = models.Task.objects.filter(
-            customer__username=uname,
-            task_state=models.TaskStates.TASK_STATE_NEW
-        )
-        if exists_task.exists():
-            return Response(
-                gettext("New task with this customer already exists."),
-                status_code=status.HTTP_409_CONFLICT
-            )
-    pdata = new_task_data.dict(exclude_unset=True, exclude={'recipients'})
-    pdata.update({
-        "author_id": curr_user.pk,
-        "site_id": curr_site.pk
-    })
-    with transaction.atomic():
-        new_task = models.Task.objects.create(**pdata)
-        new_task.recipients.set(new_task_data.recipients)
-    return schemas.TaskModelSchema.from_orm(new_task)
-
-
 class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
     queryset = models.Task.objects.select_related(
         "author", "customer", "customer__group",
@@ -544,3 +469,113 @@ create_get_initial_route(
     router=router,
     schema=schemas.TaskBaseSchema
 )
+
+
+@router.get('/{task_id}/', response_model=schemas.TaskModelSchema)
+def get_task_details(task_id: int,
+                     auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+                     ):
+    curr_user, token = auth
+    tasks_qs = filter_qs_by_rights(
+        qs_or_model=models.Task,
+        curr_user=curr_user,
+        perm_codename='tasks.view_task'
+    )
+    task = get_object_or_404(tasks_qs, pk=task_id)
+    return schemas.TaskModelSchema.from_orm(task)
+
+
+@router.patch('/{task_id}/', response_model=schemas.TaskModelSchema)
+def update_task_info(task_id: int,
+                     update_data: schemas.TaskUpdateSchema,
+                     auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+                     ):
+    curr_user, token = auth
+    tasks_qs = filter_qs_by_rights(
+        qs_or_model=models.Task,
+        curr_user=curr_user,
+        perm_codename='tasks.change_task'
+    )
+    task = get_object_or_404(tasks_qs, pk=task_id)
+    pdata = update_data.dict(
+        exclude_unset=True
+    )
+    for d_name, d_val in pdata.items():
+        setattr(task, d_name, d_val)
+    task.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+    return schemas.TaskModelSchema.from_orm(task)
+
+
+@router.delete('/{task_id}/',
+               responses={
+                   status.HTTP_204_NO_CONTENT: {
+                       'description': 'Successfully removed'
+                   },
+                   status.HTTP_403_FORBIDDEN: {
+                       'description': "Forbidden to remove task. May be you does not "
+                                      "have rights, or you can't remove task assigned to you"
+                   }
+               },
+               response_model=Optional[str])
+def remove_task(task_id: int,
+                curr_site: Site = Depends(sites_dependency),
+                curr_user: UserProfile = Depends(permission_check_dependency(
+                    perm_codename='tasks.delete_task'
+                ))
+                ):
+    queryset = general_filter_queryset(
+        qs_or_model=models.Task,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.delete_customer'
+    ).annotate(
+        recipients_agg=ArrayAgg('recipients')
+    )
+    task = get_object_or_404(queryset=queryset, pk=task_id)
+    if curr_user.is_superuser or curr_user not in task.recipients_agg:
+        task.delete()
+    else:
+        return Response(
+            gettext("You cannot delete task assigned to you"),
+            status_code=status.HTTP_403_FORBIDDEN
+        )
+
+
+@router.post('/',
+             response_model=schemas.TaskModelSchema,
+             status_code=status.HTTP_201_CREATED,
+             responses={
+                 status.HTTP_409_CONFLICT: {
+                     'description': 'New task with this customer already exists.'
+                 },
+                 status.HTTP_201_CREATED: {
+                     'description': 'New task successfully created'
+                 }
+             })
+def create_new_task(new_task_data: schemas.TaskBaseSchema,
+                    uname: Optional[str] = None,
+                    curr_site: Site = Depends(sites_dependency),
+                    curr_user: UserProfile = Depends(permission_check_dependency(
+                        perm_codename='tasks.add_task'
+                    ))
+                    ):
+    # check if new task with user already exists
+    if uname:
+        exists_task = models.Task.objects.filter(
+            customer__username=uname,
+            task_state=models.TaskStates.TASK_STATE_NEW
+        )
+        if exists_task.exists():
+            return Response(
+                gettext("New task with this customer already exists."),
+                status_code=status.HTTP_409_CONFLICT
+            )
+    pdata = new_task_data.dict(exclude_unset=True, exclude={'recipients'})
+    pdata.update({
+        "author_id": curr_user.pk,
+        "site_id": curr_site.pk
+    })
+    with transaction.atomic():
+        new_task = models.Task.objects.create(**pdata)
+        new_task.recipients.set(new_task_data.recipients)
+    return schemas.TaskModelSchema.from_orm(new_task)

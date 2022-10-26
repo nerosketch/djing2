@@ -10,10 +10,16 @@ from tasks.models import TaskPriorities, delta_add_days
 class TaskBaseSchema(BaseModel):
     descr: Optional[str] = Field(None, title=_("Description"), max_length=128)
     recipients: list[int] = Field([], title=_("Recipients"))
-    priority: TaskPriorities
+    priority: TaskPriorities = TaskPriorities.TASK_PRIORITY_LOW
     out_date: Optional[date] = Field(default_factory=delta_add_days, title=_("Reality"))
     task_mode_id: int = Field(title=_("The nature of the damage"))
     customer_id: int = Field(title=_("Customer"))
+
+
+class TaskUpdateSchema(TaskBaseSchema):
+    out_date: Optional[date] = None
+    task_mode_id: Optional[int] = Field(None, title=_("The nature of the damage"))
+    customer_id: Optional[int] = Field(None, title=_("Customer"))
 
 
 class TaskModelSchema(TaskBaseSchema):
