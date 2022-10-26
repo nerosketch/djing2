@@ -36,15 +36,20 @@ def format_object(
     computed_field_objects: COMPUTED_FIELD_OBJECTS_TYPE,
     fields_list: Optional[list[str]] = None
 ) -> OrderedDictType:
+    if fields_list:
+        _field_objects = ((fname, fobject) for fname, fobject in field_objects.items() if fname in fields_list)
+    else:
+        _field_objects = ((fname, fobject) for fname, fobject in field_objects.items())
+
     result_dict_fields = (
-        (fname, fobject.value_from_object(model_item)) for fname, fobject in field_objects.items()
+        (fname, fobject.value_from_object(model_item)) for fname, fobject in _field_objects
     )
 
     if fields_list:
         if not isinstance(fields_list, (list, tuple, set)):
             raise ValueError('fields_list must be list, tuple or set: %s' % fields_list)
         result_dict_fields = (
-            (fname, val) for fname, val in result_dict_fields if val is not None and fname in fields_list
+            (fname, val) for fname, val in result_dict_fields if val is not None
         )
 
     r = OrderedDict(result_dict_fields)

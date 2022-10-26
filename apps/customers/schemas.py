@@ -16,9 +16,16 @@ from . import models
 
 def update_passw(acc, raw_password):
     if raw_password:
-        updated_count = models.CustomerRawPassword.objects.filter(customer=acc).update(passw_text=raw_password)
+        updated_count = models.CustomerRawPassword.objects.filter(
+            customer=acc
+        ).update(
+            passw_text=raw_password
+        )
         if updated_count == 0:
-            models.CustomerRawPassword.objects.create(customer=acc, passw_text=raw_password)
+            models.CustomerRawPassword.objects.create(
+                customer=acc,
+                passw_text=raw_password
+            )
 
 
 class CustomerSchema(BaseAccountSchema):
@@ -49,7 +56,7 @@ class CustomerModelSchema(CustomerSchema):
     service_id: Optional[int]
     raw_password: Optional[str]
     lease_count: Optional[int] = None
-    marker_icons: list[str] = []
+    marker_icons: list[str] = Field([], title='Marker icons')
     current_service_id: Optional[int] = None
 
     @validator('balance')

@@ -17,9 +17,9 @@ class TaskBaseSchema(BaseModel):
 
 
 class TaskModelSchema(TaskBaseSchema):
-    id: int
+    id: Optional[int] = None
     time_of_create: datetime = Field(title=_("Date of create"))
-    author_id: Optional[int]
+    author_id: Optional[int] = None
     author_full_name: str
     author_uname: str
     priority_name: str
@@ -55,9 +55,9 @@ class ExtraCommentBaseSchema(BaseModel):
 
 
 class ExtraCommentModelSchema(ExtraCommentBaseSchema):
-    id: int
+    id: Optional[int] = None
     date_create: datetime = Field(title=_("Time of create"))
-    author_id: int = Field(title=_("Author"))
+    author_id: int = Field(0, title=_("Author"))
     author_name: str
     author_avatar: str
     can_remove: bool
@@ -66,11 +66,11 @@ class ExtraCommentModelSchema(ExtraCommentBaseSchema):
 
 
 class TaskStateChangeLogModelSchema(BaseModel):
-    id: int
-    when: datetime
-    who_id: int
+    id: Optional[int] = None
+    when: Optional[datetime] = None
+    who_id: Optional[int] = None
     who_name: str
-    human_representation: Optional[str]
+    human_representation: Optional[str] = None
 
     Config = OrmConf
 

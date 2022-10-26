@@ -94,7 +94,7 @@ def paginate_qs_path_decorator(
                     field_objects=field_objects,
                     computed_field_objects=computed_field_objects,
                     fields_list=fields_list,
-                ) for o in qs)
+                ) for o in qs.iterator())
             )
 
         return _wrap

@@ -62,6 +62,10 @@ class BaseAccountSchema(BaseModel):
     def fornat_sites(cls, sites):
         if isinstance(sites, (list, tuple)):
             return sites
+        try:
+            return list(sites)
+        except TypeError:
+            pass
         return [s.pk for s in sites.all()]
 
 
