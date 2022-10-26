@@ -1,3 +1,6 @@
+from typing import Optional
+
+from django.contrib.postgres.aggregates.general import ArrayAgg
 from django.contrib.sites.models import Site
 from django.db.models import Count, Q, QuerySet
 from django.forms.models import model_to_dict
@@ -5,19 +8,19 @@ from django.http.response import Http404
 from django.utils.translation import gettext
 from djing2.lib import safe_int
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
+from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
-from djing2.lib.fastapi.perms import filter_qs_by_rights
+from djing2.lib.fastapi.perms import filter_qs_by_rights, permission_check_dependency
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination
-from djing2.lib.fastapi.utils import AllOptionalMetaclass
+from djing2.lib.fastapi.utils import AllOptionalMetaclass, create_get_initial_route, get_object_or_404
 from djing2.lib.filters import filter_qs_by_fields_dependency
 from djing2.viewsets import DjingModelViewSet, BaseNonAdminReadOnlyModelViewSet
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from profiles.models import UserProfile
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework.response import Response
 from tasks import models
 from tasks import schemas
 from tasks import serializers
@@ -76,6 +79,41 @@ def get_all_tasks_dependency(
     return tasks_qs.order_by('-id')
 
 
+@router.delete('/{task_id}/',
+               responses={
+                   status.HTTP_204_NO_CONTENT: {
+                       'description': 'Successfully removed'
+                   },
+                   status.HTTP_403_FORBIDDEN: {
+                       'description': "Forbidden to remove task. May be you does not "
+                                      "have rights, or you can't remove task assigned to you"
+                   }
+               },
+               response_model=Optional[str])
+def remove_task(task_id: int,
+                curr_site: Site = Depends(sites_dependency),
+                curr_user: UserProfile = Depends(permission_check_dependency(
+                    perm_codename='tasks.delete_task'
+                ))
+                ):
+    queryset = general_filter_queryset(
+        qs_or_model=models.Task,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.delete_customer'
+    ).annotate(
+        recipients_agg=ArrayAgg('recipients')
+    )
+    task = get_object_or_404(queryset=queryset, pk=task_id)
+    if curr_user.is_superuser or curr_user not in task.recipients_agg:
+        task.delete()
+    else:
+        return Response(
+            gettext("You cannot delete task assigned to you"),
+            status_code=status.HTTP_403_FORBIDDEN
+        )
+
+
 class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
     queryset = models.Task.objects.select_related(
         "author", "customer", "customer__group",
@@ -94,7 +132,7 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(
-                gettext("You cannot delete task that assigned to you"),
+                gettext("You cannot delete task assigned to you"),
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -458,3 +496,9 @@ class TaskFinishDocumentModelViewSet(DjingModelViewSet):
             status=status.HTTP_201_CREATED,
             headers=headers
         )
+
+
+create_get_initial_route(
+    router=router,
+    schema=schemas.TaskBaseSchema
+)

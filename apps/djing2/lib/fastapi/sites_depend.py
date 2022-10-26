@@ -2,6 +2,7 @@ import abc
 from typing import Optional
 
 from django.db.models import QuerySet, ManyToManyField
+from django.db.utils import ProgrammingError
 from django.http.request import split_domain_port, validate_host
 from fastapi import Request, Depends, HTTPException
 from starlette import status
@@ -106,5 +107,11 @@ def filter_qs_with_sites(qs: QuerySet[FilterableBySitesModel], curr_site: Option
     if curr_user.is_superuser:
         return rqs
     if curr_site:
-        rqs = qs.filter(sites__in=[curr_site])
+        model = qs
+        if hasattr(model, 'sites'):
+            rqs = qs.filter(sites__in=[curr_site])
+        elif hasattr(model, 'site'):
+            rqs = qs.filter(site=curr_site)
+        else:
+            raise ProgrammingError('Model "%s" has no field "sites" nor "site"' % model)
     return rqs

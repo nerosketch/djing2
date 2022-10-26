@@ -257,7 +257,7 @@ msgstr ""
 "%(task_detail)s\n"
 
 #: apps/tasks/views.py:30
-msgid "You cannot delete task that assigned to you"
+msgid "You cannot delete task assigned to you"
 msgstr "Вы не можете удалять назначенные на вас задачи"
 
 #: apps/tasks/views.py:39 apps/tasks/views.py:95
