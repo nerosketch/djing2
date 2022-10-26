@@ -485,7 +485,8 @@ def get_task_details(task_id: int,
     return schemas.TaskModelSchema.from_orm(task)
 
 
-@router.patch('/{task_id}/', response_model=schemas.TaskModelSchema)
+@router.patch('/{task_id}/',
+              response_model=schemas.TaskModelSchema)
 def update_task_info(task_id: int,
                      update_data: schemas.TaskUpdateSchema,
                      auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
@@ -500,9 +501,19 @@ def update_task_info(task_id: int,
     pdata = update_data.dict(
         exclude_unset=True
     )
+    old_data = model_to_dict(task, exclude=["site", "customer"])
     for d_name, d_val in pdata.items():
         setattr(task, d_name, d_val)
-    task.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+    with transaction.atomic():
+        task.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+
+        # Makes task change log.
+        models.TaskStateChangeLogModel.objects.create_state_migration(
+            task=task,
+            author=curr_user,
+            new_data=pdata,
+            old_data=old_data
+        )
     return schemas.TaskModelSchema.from_orm(task)
 
 
