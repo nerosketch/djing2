@@ -136,27 +136,27 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
             task=instance, author=self.request.user, new_data=new_data, old_data=old_data
         )
 
-    @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
-    def active_task_count(self, request):
-        tasks_count = 0
-        if isinstance(request.user, UserProfile):
-            tasks_count = models.Task.objects.filter(
-                recipients__in=(request.user,),
-                task_state=models.TaskStates.TASK_STATE_NEW
-            ).count()
-        return ResponseOld(tasks_count)
+    # @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
+    # def active_task_count(self, request):
+    #     tasks_count = 0
+    #     if isinstance(request.user, UserProfile):
+    #         tasks_count = models.Task.objects.filter(
+    #             recipients__in=(request.user,),
+    #             task_state=models.TaskStates.TASK_STATE_NEW
+    #         ).count()
+    #     return ResponseOld(tasks_count)
 
-    @action(detail=True)
-    def finish(self, request, pk=None):
-        task = self.get_object()
-        task.finish(request.user)
-        return ResponseOld(status=status.HTTP_204_NO_CONTENT)
+    # @action(detail=True)
+    # def finish(self, request, pk=None):
+    #     task = self.get_object()
+    #     task.finish(request.user)
+    #     return ResponseOld(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True)
-    def failed(self, request, pk=None):
-        task = self.get_object()
-        task.do_fail(request.user)
-        return ResponseOld(status=status.HTTP_204_NO_CONTENT)
+    # @action(detail=True)
+    # def failed(self, request, pk=None):
+    #     task = self.get_object()
+    #     task.do_fail(request.user)
+    #     return ResponseOld(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True)
     def remind(self, request, pk=None):
@@ -469,6 +469,59 @@ create_get_initial_route(
     router=router,
     schema=schemas.TaskBaseSchema
 )
+
+
+@router.get('/active_task_count/',
+            response_model=int)
+def get_active_task_count(
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
+):
+    user, token = auth
+    tasks_count = 0
+    if isinstance(user, UserProfile):
+        tasks_count = models.Task.objects.filter(
+            recipients__in=(user,),
+            task_state=models.TaskStates.TASK_STATE_NEW
+        ).count()
+    return tasks_count
+
+
+@router.get(
+    '/{task_id}/finish/',
+    status_code=status.HTTP_204_NO_CONTENT
+)
+def finish_task(
+    task_id: int,
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='tasks.can_finish_task'
+    ))
+):
+    tasks_qs = filter_qs_by_rights(
+        qs_or_model=models.Task,
+        curr_user=curr_user,
+        perm_codename='tasks.can_finish_task'
+    )
+    task = get_object_or_404(tasks_qs, pk=task_id)
+    task.finish(curr_user)
+
+
+@router.get(
+    '/{task_id}/fail/',
+    status_code=status.HTTP_204_NO_CONTENT
+)
+def fail_task(
+    task_id: int,
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='tasks.can_fail_task'
+    ))
+):
+    tasks_qs = filter_qs_by_rights(
+        qs_or_model=models.Task,
+        curr_user=curr_user,
+        perm_codename='tasks.can_fail_task'
+    )
+    task = get_object_or_404(tasks_qs, pk=task_id)
+    task.do_fail(curr_user)
 
 
 @router.get('/{task_id}/', response_model=schemas.TaskModelSchema)

@@ -344,7 +344,9 @@ class Task(BaseAbstractModel):
         db_table = "task"
         permissions = [
             ("can_remind", _("Reminders of tasks")),
-            ("can_view_task_mode_report", _("Can view task mode report"))
+            ("can_view_task_mode_report", _("Can view task mode report")),
+            ("can_finish_task", _("Can finish tasks")),
+            ("can_fail_task", _("Can mark task as failed")),
         ]
 
 

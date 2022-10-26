@@ -278,3 +278,8 @@ msgstr "Заявка для этого абонента уже создана."
 
 #~ msgid "Attached image"
 #~ msgstr "Прикреплённое изображение"
+msgid "Can finish tasks"
+msgstr "Может завершать задачи"
+
+msgid "Can mark task as failed"
+msgstr "Может отмечать задачи проваленными"
