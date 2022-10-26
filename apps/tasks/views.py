@@ -1,36 +1,33 @@
-from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.sites.models import Site
 from django.db.models import Count, Q, QuerySet
-from django.utils.translation import gettext
 from django.forms.models import model_to_dict
 from django.http.response import Http404
+from django.utils.translation import gettext
+from djing2.lib import safe_int
+from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import filter_qs_by_rights
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination
-from guardian.shortcuts import get_objects_for_user
+from djing2.lib.fastapi.utils import AllOptionalMetaclass
+from djing2.lib.filters import filter_qs_by_fields_dependency
+from djing2.viewsets import DjingModelViewSet, BaseNonAdminReadOnlyModelViewSet
+from fastapi import APIRouter, Depends, Request
+from profiles.models import UserProfile
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
-from fastapi import APIRouter, Depends, Request
-
-from djing2.lib import safe_int
-from djing2.lib.fastapi.utils import AllOptionalMetaclass
-from djing2.lib.filters import filter_qs_by_fields_dependency
-from djing2.viewsets import DjingModelViewSet, DjingListAPIView, BaseNonAdminReadOnlyModelViewSet
-from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
-from profiles.models import UserProfile
 from tasks import models
-from tasks import serializers
 from tasks import schemas
-
+from tasks import serializers
 
 router = APIRouter(
     prefix='/tasks',
     tags=['Tasks'],
     dependencies=[Depends(is_admin_auth_dependency)]
 )
+
 
 class TasksQuerysetFilterMixin:
     def filter_queryset(self, queryset):
@@ -244,69 +241,130 @@ def get_all_tasks(request: Request,
     return tasks_qs
 
 
-class AllTasksList(TasksQuerysetFilterMixin, DjingListAPIView):
-    serializer_class = serializers.TaskModelSerializer
-
-    def get_queryset(self):
-        qs = get_objects_for_user(user=self.request.user, perms="tasks.view_task", klass=models.Task).order_by("-id")
-        return qs.select_related(
-            "customer", "customer__address", "customer__group", "author", "task_mode"
-        ).annotate(
-            comment_count=Count("extracomment"), doc_count=Count('taskdocumentattachment')
-        )
-
-
-class AllNewTasksList(AllTasksList):
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(task_state=models.TaskStates.TASK_STATE_NEW)
+@router.get('/get_all_new/',
+            response_model=IListResponse[TaskModelSchemaResponseModelSchema],
+            response_model_exclude_none=True)
+@paginate_qs_path_decorator(
+    schema=TaskModelSchemaResponseModelSchema,
+    db_model=models.Task
+)
+def get_all_new_task_list(request: Request,
+                          pagination: Pagination = Depends(),
+                          tasks_qs: QuerySet[models.Task] = Depends(get_all_tasks_dependency)
+                          ):
+    return tasks_qs.filter(task_state=models.TaskStates.TASK_STATE_NEW)
 
 
-class NewTasksList(AllTasksList):
+@router.get('/get_new/',
+            response_model=IListResponse[TaskModelSchemaResponseModelSchema],
+            response_model_exclude_none=True)
+@paginate_qs_path_decorator(
+    schema=TaskModelSchemaResponseModelSchema,
+    db_model=models.Task
+)
+def get_new_task_list(request: Request,
+                      pagination: Pagination = Depends(),
+                      auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                      tasks_qs: QuerySet[models.Task] = Depends(get_all_tasks_dependency)
+                      ):
     """
     Returns tasks that new for current user
     """
+    curr_user, token = auth
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(
-            recipients=self.request.user,
-            task_state=models.TaskStates.TASK_STATE_NEW
-        )
-
-
-class FailedTasksList(AllTasksList):
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(
-            recipients=self.request.user,
-            task_state=models.TaskStates.TASK_STATE_CONFUSED
-        )
+    return tasks_qs.filter(
+        recipients=curr_user,
+        task_state=models.TaskStates.TASK_STATE_NEW
+    )
 
 
-class FinishedTasksList(AllTasksList):
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(
-            recipients=self.request.user,
-            task_state=models.TaskStates.TASK_STATE_COMPLETED
-        )
+@router.get('/get_failed/',
+            response_model=IListResponse[TaskModelSchemaResponseModelSchema],
+            response_model_exclude_none=True)
+@paginate_qs_path_decorator(
+    schema=TaskModelSchemaResponseModelSchema,
+    db_model=models.Task
+)
+def get_failed_task_list(request: Request,
+                         pagination: Pagination = Depends(),
+                         auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                         tasks_qs: QuerySet[models.Task] = Depends(get_all_tasks_dependency)
+                         ):
+    """
+    Returns tasks that new for current user
+    """
+    curr_user, token = auth
+
+    return tasks_qs.filter(
+        recipients=curr_user,
+        task_state=models.TaskStates.TASK_STATE_CONFUSED
+    )
 
 
-class OwnTasksList(AllTasksList):
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(
-            author=self.request.user
-        ).exclude(
-            task_state=models.TaskStates.TASK_STATE_COMPLETED
-        )
+@router.get('/get_finished/',
+            response_model=IListResponse[TaskModelSchemaResponseModelSchema],
+            response_model_exclude_none=True)
+@paginate_qs_path_decorator(
+    schema=TaskModelSchemaResponseModelSchema,
+    db_model=models.Task
+)
+def get_finished_task_list(request: Request,
+                           pagination: Pagination = Depends(),
+                           auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                           tasks_qs: QuerySet[models.Task] = Depends(get_all_tasks_dependency)
+                           ):
+    """
+    Returns completed tasks for current user
+    """
+    curr_user, token = auth
+
+    return tasks_qs.filter(
+        recipients=curr_user,
+        task_state=models.TaskStates.TASK_STATE_COMPLETED
+    )
 
 
-class MyTasksList(AllTasksList):
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(recipients=self.request.user)
+@router.get('/get_own/',
+            response_model=IListResponse[TaskModelSchemaResponseModelSchema],
+            response_model_exclude_none=True)
+@paginate_qs_path_decorator(
+    schema=TaskModelSchemaResponseModelSchema,
+    db_model=models.Task
+)
+def get_my_own_task_list(request: Request,
+                         pagination: Pagination = Depends(),
+                         auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                         tasks_qs: QuerySet[models.Task] = Depends(get_all_tasks_dependency)
+                         ):
+    """
+    Returns own tasks for current user
+    """
+    curr_user, token = auth
+
+    return tasks_qs.filter(
+        author=curr_user,
+    ).exclude(
+        task_state=models.TaskStates.TASK_STATE_COMPLETED
+    )
+
+
+@router.get('/get_my/',
+            response_model=IListResponse[TaskModelSchemaResponseModelSchema],
+            response_model_exclude_none=True)
+@paginate_qs_path_decorator(
+    schema=TaskModelSchemaResponseModelSchema,
+    db_model=models.Task
+)
+def get_my_task_list(request: Request,
+                     pagination: Pagination = Depends(),
+                     auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                     tasks_qs: QuerySet[models.Task] = Depends(get_all_tasks_dependency)
+                     ):
+    curr_user, token = auth
+
+    return tasks_qs.filter(
+        recipients=curr_user,
+    )
 
 
 class ExtraCommentModelViewSet(DjingModelViewSet):
@@ -400,4 +458,3 @@ class TaskFinishDocumentModelViewSet(DjingModelViewSet):
             status=status.HTTP_201_CREATED,
             headers=headers
         )
-
