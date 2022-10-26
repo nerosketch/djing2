@@ -206,7 +206,7 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
 
         r = [
             _build_format(task_state_num, str(task_state_name))
-            for task_state_num, task_state_name in models.Task.TASK_STATES
+            for task_state_num, task_state_name in models.TaskStates.choices
         ]
 
         return Response(r)
