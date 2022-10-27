@@ -263,8 +263,10 @@ router.include_router(CrudRouter(
 ), prefix='/additional-telephone')
 
 
-@router.get('/additional-telephone/',
-            response_model=IListResponse[schemas.AdditionalTelephoneModelSchema])
+@router.get(
+    '/additional-telephone/',
+    response_model=IListResponse[schemas.AdditionalTelephoneModelSchema]
+)
 @paginate_qs_path_decorator(
     schema=schemas.AdditionalTelephoneModelSchema,
     db_model=models.AdditionalTelephone
@@ -417,12 +419,12 @@ def delete_customer_attachment(attachment_id: int,
             ))]
             )
 def get_customer_attachments(
-    customer: int = Query(gt=0, title='Customer id for filter documents by customer'),
+    customer_id: int = Query(gt=0, title='Customer id for filter documents by customer'),
 ):
     qs = models.CustomerAttachment.objects.select_related(
         "author", "customer"
     ).filter(
-        customer_id=customer
+        customer_id=customer_id
     )
 
     return (schemas.CustomerAttachmentModelSchema(
@@ -443,7 +445,7 @@ def get_customer_attachments(
 def create_customer_attachment(
     doc_file: UploadFile,
     title: str = Form(),
-    customer: int = Form(),
+    customer_id: int = Form(),
     curr_user: UserProfile = Depends(permission_check_dependency(
         perm_codename='customers.add_customerattachment'
     ))
@@ -453,7 +455,7 @@ def create_customer_attachment(
     cf = ContentFile(doc_file.file._file.read(), name=doc_file.filename)
     obj = models.CustomerAttachment.objects.create(
         title=title,
-        customer_id=customer,
+        customer_id=customer_id,
         author_id=curr_user.pk,
         doc_file=cf
     )

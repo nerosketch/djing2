@@ -62,7 +62,7 @@ def create_customer_attachment(
             response_model=IListResponse[schemas.TaskDocumentAttachmentModelSchema])
 @paginate_qs_path_decorator(
     schema=schemas.TaskDocumentAttachmentModelSchema,
-    db_model=models.Task
+    db_model=models.TaskDocumentAttachment
 )
 def get_customer_attachments(
     request: Request,
@@ -346,22 +346,28 @@ def comments_combine_with_logs(
     ).filter(task_id=task_id).defer("task")
 
     comments_list = [
-        schemas.ExtraCommentModelSchema.from_orm(c).dict(exclude_unset=True)
+        schemas.ExtraCommentModelSchema.from_orm(
+            c,
+        ).dict(exclude_unset=True)
         for c in comment_qs.iterator()
     ]
     for comment in comments_list:
         comment.update({"type": "comment"})
 
     logs_list = [
-        schemas.TaskStateChangeLogModelSchema.from_orm(tscl).dict(exclude_unset=True)
-        for tscl in models.TaskStateChangeLogModel.objects.filter(task_id=task_id).defer("task")
+        schemas.TaskStateChangeLogModelSchema.from_orm(
+            tscl
+        ).dict(exclude_unset=True)
+        for tscl in models.TaskStateChangeLogModel.objects.filter(
+            task_id=task_id
+        ).defer("task")
     ]
     for log in logs_list:
         log.update({"type": "log"})
 
     one_list = sorted(
         comments_list + logs_list,
-        key=lambda i: i.when or i.date_create,
+        key=lambda i: i.get('when') or i.get('date_create'),
         reverse=True
     )
 
@@ -520,7 +526,8 @@ def remind_task(
 
 
 # TODO: add permission check
-@router.get('/new_task_initial/{group_id}/{customer_id}/')
+@router.get('/new_task_initial/{group_id}/{customer_id}/',
+            response_model=dict)
 def new_task_initial(group_id: int = Path(gt=0),
                      customer_id: int = Path(gt=0)):
     exists_task = models.Task.objects.filter(
@@ -534,7 +541,7 @@ def new_task_initial(group_id: int = Path(gt=0),
             "text": gettext("New task with this customer already exists."),
             "task_id": exists_task.first().pk,
         }
-    recipients = (
+    recipients = list(
         UserProfile.objects.get_profiles_by_group(
             group_id=group_id
         ).only("pk").values_list("pk", flat=True)

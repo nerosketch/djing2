@@ -128,7 +128,10 @@ class TaskStateChangeLogModel(BaseAbstractModel):
 
     @property
     def human_representation(self):
-        return self.human_log_text()
+        r = self.human_log_text()
+        if r is None:
+            return
+        return str(r)
 
     class Meta:
         db_table = "task_state_change_log"
