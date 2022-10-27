@@ -17,11 +17,10 @@ from djing2.lib.fastapi.types import IListResponse, Pagination
 from djing2.lib.fastapi.utils import AllOptionalMetaclass, create_get_initial_route, get_object_or_404
 from djing2.lib.filters import filter_qs_by_fields_dependency
 from djing2.viewsets import DjingModelViewSet, BaseNonAdminReadOnlyModelViewSet
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Request, Response, Path
 from profiles.models import UserProfile
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response as ResponseOld
 from tasks import models
 from tasks import schemas
@@ -81,60 +80,60 @@ def get_all_tasks_dependency(
     return tasks_qs.order_by('-id')
 
 
-class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
-    queryset = models.Task.objects.select_related(
-        "author", "customer", "customer__group",
-        "customer__address", "task_mode"
-    ).annotate(
-        comment_count=Count("extracomment"),
-        doc_count=Count('taskdocumentattachment'),
-    )
-    serializer_class = serializers.TaskModelSerializer
-    filterset_fields = ("task_state", "recipients", "customer")
+# class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
+    # queryset = models.Task.objects.select_related(
+    #     "author", "customer", "customer__group",
+    #     "customer__address", "task_mode"
+    # ).annotate(
+    #     comment_count=Count("extracomment"),
+    #     doc_count=Count('taskdocumentattachment'),
+    # )
+    # serializer_class = serializers.TaskModelSerializer
+    # filterset_fields = ("task_state", "recipients", "customer")
 
-    def destroy(self, request, *args, **kwargs):
-        task = self.get_object()
-        if request.user.is_superuser or request.user not in task.recipients.all():
-            self.perform_destroy(task)
-            return ResponseOld(status=status.HTTP_204_NO_CONTENT)
-        else:
-            return ResponseOld(
-                gettext("You cannot delete task assigned to you"),
-                status=status.HTTP_403_FORBIDDEN
-            )
+    # def destroy(self, request, *args, **kwargs):
+    #     task = self.get_object()
+    #     if request.user.is_superuser or request.user not in task.recipients.all():
+    #         self.perform_destroy(task)
+    #         return ResponseOld(status=status.HTTP_204_NO_CONTENT)
+    #     else:
+    #         return ResponseOld(
+    #             gettext("You cannot delete task assigned to you"),
+    #             status=status.HTTP_403_FORBIDDEN
+    #         )
 
-    def create(self, request, *args, **kwargs):
-        # check if new task with user already exists
-        uname = request.query_params.get("uname")
-        if uname:
-            exists_task = models.Task.objects.filter(
-                customer__username=uname,
-                task_state=models.TaskStates.TASK_STATE_NEW
-            )
-            if exists_task.exists():
-                return ResponseOld(
-                    gettext("New task with this customer already exists."),
-                    status=status.HTTP_409_CONFLICT
-                )
-        return super().create(request, *args, **kwargs)
+    # def create(self, request, *args, **kwargs):
+    #     # check if new task with user already exists
+    #     uname = request.query_params.get("uname")
+    #     if uname:
+    #         exists_task = models.Task.objects.filter(
+    #             customer__username=uname,
+    #             task_state=models.TaskStates.TASK_STATE_NEW
+    #         )
+    #         if exists_task.exists():
+    #             return ResponseOld(
+    #                 gettext("New task with this customer already exists."),
+    #                 status=status.HTTP_409_CONFLICT
+    #             )
+    #     return super().create(request, *args, **kwargs)
 
-    def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(
-            serializer=serializer,
-            author=self.request.user,
-            site=self.request.site,
-            *args, **kwargs
-        )
+    # def perform_create(self, serializer, *args, **kwargs):
+    #     return super().perform_create(
+    #         serializer=serializer,
+    #         author=self.request.user,
+    #         site=self.request.site,
+    #         *args, **kwargs
+    #     )
 
-    def perform_update(self, serializer, *args, **kwargs) -> None:
-        new_data = dict(serializer.validated_data)
-        old_data = model_to_dict(serializer.instance, exclude=["site", "customer"])
-        instance = super().perform_update(serializer=serializer, *args, **kwargs)
+    # def perform_update(self, serializer, *args, **kwargs) -> None:
+    #     new_data = dict(serializer.validated_data)
+    #     old_data = model_to_dict(serializer.instance, exclude=["site", "customer"])
+    #     instance = super().perform_update(serializer=serializer, *args, **kwargs)
 
-        # Makes task change log.
-        models.TaskStateChangeLogModel.objects.create_state_migration(
-            task=instance, author=self.request.user, new_data=new_data, old_data=old_data
-        )
+    #     # Makes task change log.
+    #     models.TaskStateChangeLogModel.objects.create_state_migration(
+    #         task=instance, author=self.request.user, new_data=new_data, old_data=old_data
+    #     )
 
     # @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
     # def active_task_count(self, request):
@@ -158,77 +157,77 @@ class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
     #     task.do_fail(request.user)
     #     return ResponseOld(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True)
-    def remind(self, request, pk=None):
-        self.check_permission_code(request, "tasks.can_remind")
-        task = self.get_object()
-        task.send_notification()
-        return ResponseOld(status=status.HTTP_204_NO_CONTENT)
+    # @action(detail=True)
+    # def remind(self, request, pk=None):
+    #     self.check_permission_code(request, "tasks.can_remind")
+    #     task = self.get_object()
+    #     task.send_notification()
+    #     return ResponseOld(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, url_path=r"new_task_initial/(?P<group_id>\d{1,18})/(?P<customer_id>\d{1,18})")
-    def new_task_initial(self, request, group_id: str, customer_id: str):
-        customer_id_i = safe_int(customer_id)
-        if customer_id_i == 0:
-            return ResponseOld(
-                "bad customer_id",
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        exists_task = models.Task.objects.filter(
-            customer__id=customer_id_i,
-            task_state=models.TaskStates.TASK_STATE_NEW
-        )
-        if exists_task.exists():
-            # Task with this customer already exists
-            return ResponseOld(
-                {
-                    "status": 0,
-                    "text": gettext("New task with this customer already exists."),
-                    "task_id": exists_task.first().pk,
-                }
-            )
+    # @action(detail=False, url_path=r"new_task_initial/(?P<group_id>\d{1,18})/(?P<customer_id>\d{1,18})")
+    # def new_task_initial(self, request, group_id: str, customer_id: str):
+    #     customer_id_i = safe_int(customer_id)
+    #     if customer_id_i == 0:
+    #         return ResponseOld(
+    #             "bad customer_id",
+    #             status=status.HTTP_400_BAD_REQUEST
+    #         )
+    #     exists_task = models.Task.objects.filter(
+    #         customer__id=customer_id_i,
+    #         task_state=models.TaskStates.TASK_STATE_NEW
+    #     )
+    #     if exists_task.exists():
+    #         # Task with this customer already exists
+    #         return ResponseOld(
+    #             {
+    #                 "status": 0,
+    #                 "text": gettext("New task with this customer already exists."),
+    #                 "task_id": exists_task.first().pk,
+    #             }
+    #         )
 
-        group_id_i = safe_int(group_id)
-        if group_id_i > 0:
-            recipients = (
-                UserProfile.objects.get_profiles_by_group(
-                    group_id=group_id_i
-                ).only("pk").values_list("pk", flat=True)
-            )
-            return ResponseOld({"status": 1, "recipients": recipients})
-        return ResponseOld(
-            '"group_id" parameter is required',
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    #     group_id_i = safe_int(group_id)
+    #     if group_id_i > 0:
+    #         recipients = (
+    #             UserProfile.objects.get_profiles_by_group(
+    #                 group_id=group_id_i
+    #             ).only("pk").values_list("pk", flat=True)
+    #         )
+    #         return ResponseOld({"status": 1, "recipients": recipients})
+    #     return ResponseOld(
+    #         '"group_id" parameter is required',
+    #         status=status.HTTP_400_BAD_REQUEST
+    #     )
 
-    @action(detail=False)
-    def state_percent_report(self, request):
-        def _build_format(num: int, name: str):
-            state_count, state_percent = models.Task.objects.task_state_percent(task_state=int(num))
-            return {"num": num, "name": name, "count": state_count, "percent": state_percent}
+    # @action(detail=False)
+    # def state_percent_report(self, request):
+    #     def _build_format(num: int, name: str):
+    #         state_count, state_percent = models.Task.objects.task_state_percent(task_state=int(num))
+    #         return {"num": num, "name": name, "count": state_count, "percent": state_percent}
 
-        r = [
-            _build_format(task_state_num, str(task_state_name))
-            for task_state_num, task_state_name in models.TaskStates.choices
-        ]
+    #     r = [
+    #         _build_format(task_state_num, str(task_state_name))
+    #         for task_state_num, task_state_name in models.TaskStates.choices
+    #     ]
 
-        return ResponseOld(r)
+    #     return ResponseOld(r)
 
-    @action(detail=False)
-    def task_mode_report(self, request):
-        self.check_permission_code(request, "tasks.can_view_task_mode_report")
+    # @action(detail=False)
+    # def task_mode_report(self, request):
+    #     self.check_permission_code(request, "tasks.can_view_task_mode_report")
 
-        report = models.Task.objects.task_mode_report()
+    #     report = models.Task.objects.task_mode_report()
 
-        task_types = {t.pk: t.title for t in models.TaskModeModel.objects.all()}
+    #     task_types = {t.pk: t.title for t in models.TaskModeModel.objects.all()}
 
-        def _get_display(val: int) -> str:
-            return str(task_types.get(val, 'Not Found'))
+    #     def _get_display(val: int) -> str:
+    #         return str(task_types.get(val, 'Not Found'))
 
-        res = [
-            {"mode": _get_display(vals.get("mode")), "task_count": vals.get("task_count")}
-            for vals in report.values("mode", "task_count")
-        ]
-        return ResponseOld({"annotation": res})
+    #     res = [
+    #         {"mode": _get_display(vals.get("mode")), "task_count": vals.get("task_count")}
+    #         for vals in report.values("mode", "task_count")
+    #     ]
+    #     return ResponseOld({"annotation": res})
 
 
 @router.get('/get_all/',
@@ -522,6 +521,100 @@ def fail_task(
     )
     task = get_object_or_404(tasks_qs, pk=task_id)
     task.do_fail(curr_user)
+
+
+@router.get('/{task_id}/remind/',
+            status_code=status.HTTP_204_NO_CONTENT,
+            response_model=None)
+def remind_task(
+    task_id: int,
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='tasks.tasks.can_remind'
+    ))
+):
+    tasks_qs = filter_qs_by_rights(
+        qs_or_model=models.Task,
+        curr_user=curr_user,
+        perm_codename='tasks.can_fail_task'
+    )
+    task = get_object_or_404(tasks_qs, pk=task_id)
+    task.send_notification()
+
+
+# TODO: add permission check
+@router.get('/new_task_initial/{group_id}/{customer_id}/')
+def new_task_initial(group_id: int = Path(gt=0),
+                     customer_id: int = Path(gt=0)):
+    exists_task = models.Task.objects.filter(
+        customer__id=customer_id,
+        task_state=models.TaskStates.TASK_STATE_NEW
+    )
+    if exists_task.exists():
+        # Task with this customer already exists
+        return {
+            "status": 0,
+            "text": gettext("New task with this customer already exists."),
+            "task_id": exists_task.first().pk,
+        }
+    recipients = (
+        UserProfile.objects.get_profiles_by_group(
+            group_id=group_id
+        ).only("pk").values_list("pk", flat=True)
+    )
+    return {
+        "status": 1,
+        "recipients": recipients
+    }
+
+
+@router.get(
+    '/state_percent_report/',
+    response_model=list[schemas.StatePercentResponseSchema],
+    dependencies=[Depends(permission_check_dependency(
+        perm_codename='tasks.can_view_reports'
+    ))]
+)
+def state_percent_report():
+    def _build_format(num: int, name: str):
+        state_count, state_percent = models.Task.objects.task_state_percent(task_state=int(num))
+        return schemas.StatePercentResponseSchema(
+            num=num,
+            name=name,
+            count=state_count,
+            percent=state_percent
+        )
+
+    r = (
+        _build_format(task_state_num, str(task_state_name))
+        for task_state_num, task_state_name in models.TaskStates.choices
+    )
+    return r
+
+
+@router.get(
+    '/task_mode_report/',
+    response_model=schemas.TaskModeReportResponse,
+    dependencies=[Depends(permission_check_dependency(
+        perm_codename='tasks.can_view_task_mode_report'
+    ))]
+)
+def task_mode_report():
+    report = models.Task.objects.task_mode_report()
+    task_types = {t.pk: t.title for t in models.TaskModeModel.objects.only('pk', 'title')}
+
+    def _get_display(val: int) -> str:
+        return str(task_types.get(val, 'Not Found'))
+
+    res = (
+        schemas.TaskModeReportAnnotationItem(
+            mode=_get_display(vals.get("mode")),
+            task_count=vals.get("task_count")
+        )
+        for vals in report.values("mode", "task_count")
+    )
+    return schemas.TaskModeReportResponse(
+        annotation=res
+    )
 
 
 @router.get('/{task_id}/', response_model=schemas.TaskModelSchema)

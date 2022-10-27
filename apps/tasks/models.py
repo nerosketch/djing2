@@ -347,6 +347,7 @@ class Task(BaseAbstractModel):
             ("can_view_task_mode_report", _("Can view task mode report")),
             ("can_finish_task", _("Can finish tasks")),
             ("can_fail_task", _("Can mark task as failed")),
+            ("can_view_reports", _("Can view reports")),
         ]
 
 

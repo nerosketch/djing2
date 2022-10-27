@@ -10,7 +10,7 @@ router.register("attachment", views.TaskDocumentAttachmentViewSet)
 router.register("users/task_history", views.UserTaskHistory)
 router.register("modes", views.TaskModeModelViewSet)
 router.register("finish_document", views.TaskFinishDocumentModelViewSet)
-router.register("", views.TaskModelViewSet)
+# router.register("", views.TaskModelViewSet)
 
 
 urlpatterns = [

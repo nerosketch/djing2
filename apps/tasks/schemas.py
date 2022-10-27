@@ -121,3 +121,19 @@ class TaskModeModelModelSchema(TaskModeModelBaseSchema):
     id: int
 
     Config = OrmConf
+
+
+class StatePercentResponseSchema(BaseModel):
+    num: int
+    name: str
+    count: int
+    percent: float
+
+
+class TaskModeReportAnnotationItem(BaseModel):
+    mode: str
+    task_count: int
+
+
+class TaskModeReportResponse(BaseModel):
+    annotation: list[TaskModeReportAnnotationItem]

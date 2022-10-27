@@ -283,3 +283,6 @@ msgstr "Может завершать задачи"
 
 msgid "Can mark task as failed"
 msgstr "Может отмечать задачи проваленными"
+
+msgid "Can view reports"
+msgstr "Может видеть отчёты"
