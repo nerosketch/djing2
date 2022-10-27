@@ -286,3 +286,6 @@ msgstr "Может отмечать задачи проваленными"
 
 msgid "Can view reports"
 msgstr "Может видеть отчёты"
+
+msgid "You can't delete foreign comment"
+msgstr "Вы не можете удалить чужой комментарий"

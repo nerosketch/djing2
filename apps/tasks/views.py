@@ -5,10 +5,9 @@ from django.contrib.sites.models import Site
 from django.db import transaction
 from django.db.models import Count, Q, QuerySet
 from django.forms.models import model_to_dict
-from django.http.response import Http404
 from django.utils.translation import gettext
-from djing2.lib import safe_int
-from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
+from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_customer_auth_dependency
+from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import filter_qs_by_rights, permission_check_dependency
@@ -16,15 +15,11 @@ from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination
 from djing2.lib.fastapi.utils import AllOptionalMetaclass, create_get_initial_route, get_object_or_404
 from djing2.lib.filters import filter_qs_by_fields_dependency
-from djing2.viewsets import DjingModelViewSet, BaseNonAdminReadOnlyModelViewSet
-from fastapi import APIRouter, Depends, Request, Response, Path
+from fastapi import APIRouter, Depends, Request, Response, Path, Query, Form, UploadFile
 from profiles.models import UserProfile
-from rest_framework import status
-from rest_framework.decorators import action
-from rest_framework.response import Response as ResponseOld
+from starlette import status
 from tasks import models
 from tasks import schemas
-from tasks import serializers
 
 router = APIRouter(
     prefix='/tasks',
@@ -32,14 +27,122 @@ router = APIRouter(
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
+# TODO: change and remove comment can only author
+router.include_router(CrudRouter(
+    schema=schemas.TaskDocumentAttachmentModelSchema,
+    queryset=models.TaskDocumentAttachment.objects.all(),
+    create_route=False,
+    get_all_route=False
+), prefix='/attachment')
 
-class TasksQuerysetFilterMixin:
-    def filter_queryset(self, queryset):
-        qs = super().filter_queryset(queryset=queryset)
-        req = self.request
-        if req.user.is_superuser:
-            return qs
-        return qs.filter(site=req.site)
+
+@router.post('/attachment/',
+             response_model=schemas.TaskDocumentAttachmentModelSchema)
+def create_customer_attachment(
+    doc_file: UploadFile,
+    title: str = Form(),
+    task_id: int = Form(),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='tasks.add_taskdocumentattachment'
+    ))
+):
+    from django.core.files.base import ContentFile
+
+    df = ContentFile(doc_file.file._file.read(), name=doc_file.filename)
+    new_attachment = models.TaskDocumentAttachment.objects.create(
+        title=title,
+        doc_file=df,
+        author=curr_user,
+        task_id=task_id
+    )
+    return schemas.TaskDocumentAttachmentModelSchema.from_orm(new_attachment)
+
+
+@router.get('/attachment/',
+            response_model=IListResponse[schemas.TaskDocumentAttachmentModelSchema])
+@paginate_qs_path_decorator(
+    schema=schemas.TaskDocumentAttachmentModelSchema,
+    db_model=models.Task
+)
+def get_customer_attachments(
+    request: Request,
+    pagination: Pagination = Depends(),
+    task_id: int = Query(gt=0),
+):
+    # TODO: authenticate
+    qs = models.TaskDocumentAttachment.objects.filter(
+        task_id=task_id
+    )
+    return qs
+
+
+@router.get('/users/task_history/',
+            response_model=IListResponse[schemas.UserTaskBaseSchema])
+@paginate_qs_path_decorator(
+    schema=schemas.UserTaskBaseSchema,
+    db_model=models.Task
+)
+def get_user_task_history(
+    request: Request,
+    pagination: Pagination = Depends(),
+    auth: TOKEN_RESULT_TYPE = Depends(is_customer_auth_dependency),
+):
+    curr_user, token = auth
+    queryset = models.Task.objects.annotate(
+        comment_count=Count("extracomment")
+    ).filter(
+        customer__id=curr_user.pk
+    )
+    return queryset
+
+
+router.include_router(CrudRouter(
+    schema=schemas.TaskFinishDocumentModelSchema,
+    update_schema=schemas.TaskFinishDocumentBaseSchema,
+    queryset=models.TaskFinishDocumentModel.objects.all(),
+    create_route=False,
+    get_all_route=False
+), prefix='/finish_document')
+
+
+@router.get('/finish_document/',
+            response_model=IListResponse[schemas.TaskFinishDocumentModelSchema])
+@paginate_qs_path_decorator(
+    schema=schemas.TaskFinishDocumentModelSchema,
+    db_model=models.TaskFinishDocumentModel
+)
+def get_finish_documents(
+    request: Request,
+    task_id: int = Query(gt=0),
+    pagination: Pagination = Depends(),
+):
+    qs = models.TaskFinishDocumentModel.objects.filter(
+        task_id=task_id
+    )
+    return qs
+
+
+@router.post('/finish_document/',
+             response_model=schemas.TaskFinishDocumentBaseSchema,
+             status_code=status.HTTP_201_CREATED)
+def create_finish_document(
+    new_finish_doc: schemas.TaskFinishDocumentModelSchema,
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='tasks.add_taskfinishdocumentmodel'
+    ))
+):
+    dat = new_finish_doc.dict(
+        exclude_unset=True,
+    )
+    recs = dat.get('recipients', [])
+    dat.update({
+        'author': curr_user
+    })
+    with transaction.atomic():
+        new_doc = models.TaskFinishDocumentModel.objects.create(**dat)
+        new_doc.recipients.add(recs)
+
+    return schemas.TaskFinishDocumentModelSchema.from_orm(new_doc)
 
 
 class TaskModelSchemaResponseModelSchema(
@@ -78,156 +181,6 @@ def get_all_tasks_dependency(
         tasks_qs = tasks_qs.filter(site=curr_site)
 
     return tasks_qs.order_by('-id')
-
-
-# class TaskModelViewSet(TasksQuerysetFilterMixin, DjingModelViewSet):
-    # queryset = models.Task.objects.select_related(
-    #     "author", "customer", "customer__group",
-    #     "customer__address", "task_mode"
-    # ).annotate(
-    #     comment_count=Count("extracomment"),
-    #     doc_count=Count('taskdocumentattachment'),
-    # )
-    # serializer_class = serializers.TaskModelSerializer
-    # filterset_fields = ("task_state", "recipients", "customer")
-
-    # def destroy(self, request, *args, **kwargs):
-    #     task = self.get_object()
-    #     if request.user.is_superuser or request.user not in task.recipients.all():
-    #         self.perform_destroy(task)
-    #         return ResponseOld(status=status.HTTP_204_NO_CONTENT)
-    #     else:
-    #         return ResponseOld(
-    #             gettext("You cannot delete task assigned to you"),
-    #             status=status.HTTP_403_FORBIDDEN
-    #         )
-
-    # def create(self, request, *args, **kwargs):
-    #     # check if new task with user already exists
-    #     uname = request.query_params.get("uname")
-    #     if uname:
-    #         exists_task = models.Task.objects.filter(
-    #             customer__username=uname,
-    #             task_state=models.TaskStates.TASK_STATE_NEW
-    #         )
-    #         if exists_task.exists():
-    #             return ResponseOld(
-    #                 gettext("New task with this customer already exists."),
-    #                 status=status.HTTP_409_CONFLICT
-    #             )
-    #     return super().create(request, *args, **kwargs)
-
-    # def perform_create(self, serializer, *args, **kwargs):
-    #     return super().perform_create(
-    #         serializer=serializer,
-    #         author=self.request.user,
-    #         site=self.request.site,
-    #         *args, **kwargs
-    #     )
-
-    # def perform_update(self, serializer, *args, **kwargs) -> None:
-    #     new_data = dict(serializer.validated_data)
-    #     old_data = model_to_dict(serializer.instance, exclude=["site", "customer"])
-    #     instance = super().perform_update(serializer=serializer, *args, **kwargs)
-
-    #     # Makes task change log.
-    #     models.TaskStateChangeLogModel.objects.create_state_migration(
-    #         task=instance, author=self.request.user, new_data=new_data, old_data=old_data
-    #     )
-
-    # @action(detail=False, permission_classes=[IsAuthenticated, IsAdminUser])
-    # def active_task_count(self, request):
-    #     tasks_count = 0
-    #     if isinstance(request.user, UserProfile):
-    #         tasks_count = models.Task.objects.filter(
-    #             recipients__in=(request.user,),
-    #             task_state=models.TaskStates.TASK_STATE_NEW
-    #         ).count()
-    #     return ResponseOld(tasks_count)
-
-    # @action(detail=True)
-    # def finish(self, request, pk=None):
-    #     task = self.get_object()
-    #     task.finish(request.user)
-    #     return ResponseOld(status=status.HTTP_204_NO_CONTENT)
-
-    # @action(detail=True)
-    # def failed(self, request, pk=None):
-    #     task = self.get_object()
-    #     task.do_fail(request.user)
-    #     return ResponseOld(status=status.HTTP_204_NO_CONTENT)
-
-    # @action(detail=True)
-    # def remind(self, request, pk=None):
-    #     self.check_permission_code(request, "tasks.can_remind")
-    #     task = self.get_object()
-    #     task.send_notification()
-    #     return ResponseOld(status=status.HTTP_204_NO_CONTENT)
-
-    # @action(detail=False, url_path=r"new_task_initial/(?P<group_id>\d{1,18})/(?P<customer_id>\d{1,18})")
-    # def new_task_initial(self, request, group_id: str, customer_id: str):
-    #     customer_id_i = safe_int(customer_id)
-    #     if customer_id_i == 0:
-    #         return ResponseOld(
-    #             "bad customer_id",
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-    #     exists_task = models.Task.objects.filter(
-    #         customer__id=customer_id_i,
-    #         task_state=models.TaskStates.TASK_STATE_NEW
-    #     )
-    #     if exists_task.exists():
-    #         # Task with this customer already exists
-    #         return ResponseOld(
-    #             {
-    #                 "status": 0,
-    #                 "text": gettext("New task with this customer already exists."),
-    #                 "task_id": exists_task.first().pk,
-    #             }
-    #         )
-
-    #     group_id_i = safe_int(group_id)
-    #     if group_id_i > 0:
-    #         recipients = (
-    #             UserProfile.objects.get_profiles_by_group(
-    #                 group_id=group_id_i
-    #             ).only("pk").values_list("pk", flat=True)
-    #         )
-    #         return ResponseOld({"status": 1, "recipients": recipients})
-    #     return ResponseOld(
-    #         '"group_id" parameter is required',
-    #         status=status.HTTP_400_BAD_REQUEST
-    #     )
-
-    # @action(detail=False)
-    # def state_percent_report(self, request):
-    #     def _build_format(num: int, name: str):
-    #         state_count, state_percent = models.Task.objects.task_state_percent(task_state=int(num))
-    #         return {"num": num, "name": name, "count": state_count, "percent": state_percent}
-
-    #     r = [
-    #         _build_format(task_state_num, str(task_state_name))
-    #         for task_state_num, task_state_name in models.TaskStates.choices
-    #     ]
-
-    #     return ResponseOld(r)
-
-    # @action(detail=False)
-    # def task_mode_report(self, request):
-    #     self.check_permission_code(request, "tasks.can_view_task_mode_report")
-
-    #     report = models.Task.objects.task_mode_report()
-
-    #     task_types = {t.pk: t.title for t in models.TaskModeModel.objects.all()}
-
-    #     def _get_display(val: int) -> str:
-    #         return str(task_types.get(val, 'Not Found'))
-
-    #     res = [
-    #         {"mode": _get_display(vals.get("mode")), "task_count": vals.get("task_count")}
-    #         for vals in report.values("mode", "task_count")
-    #     ]
-    #     return ResponseOld({"annotation": res})
 
 
 @router.get('/get_all/',
@@ -371,97 +324,122 @@ def get_my_task_list(request: Request,
     )
 
 
-class ExtraCommentModelViewSet(DjingModelViewSet):
-    queryset = models.ExtraComment.objects.all()
-    serializer_class = serializers.ExtraCommentModelSerializer
-    filterset_fields = ("task", "author")
-
-    def perform_create(self, serializer, *args, **kwargs):
-        serializer.save(author=self.request.user)
-
-    def destroy(self, request, *args, **kwargs):
-        comment = self.get_object()
-        if comment.author == self.request.user:
-            self.perform_destroy(comment)
-            return ResponseOld(status=status.HTTP_204_NO_CONTENT)
-        return ResponseOld(status=status.HTTP_403_FORBIDDEN)
-
-    @action(detail=False)
-    def combine_with_logs(self, request, *args, **kwargs):
-        task_id = safe_int(request.query_params.get("task"))
-        if task_id == 0:
-            return ResponseOld('"task" param is required', status=status.HTTP_400_BAD_REQUEST)
-
-        comments_list = self.get_serializer(
-            self.get_queryset().filter(task_id=task_id).defer("task"),
-            many=True
-        ).data
-        for comment in comments_list:
-            comment.update({"type": "comment"})
-
-        logs_list = serializers.TaskStateChangeLogModelSerializer(
-            models.TaskStateChangeLogModel.objects.filter(task_id=task_id).defer("task"), many=True
-        ).data
-        for log in logs_list:
-            log.update({"type": "log"})
-
-        one_list = sorted(
-            comments_list + logs_list,
-            key=lambda i: i.get("when") or i.get("date_create"),
-            reverse=True
-        )
-
-        return ResponseOld(one_list)
+router.include_router(CrudRouter(
+    schema=schemas.TaskModeModelModelSchema,
+    create_schema=schemas.TaskModeModelBaseSchema,
+    queryset=models.TaskModeModel.objects.all(),
+), prefix='/modes')
 
 
-class UserTaskHistory(BaseNonAdminReadOnlyModelViewSet):
-    queryset = models.Task.objects.annotate(comment_count=Count("extracomment"))
-    serializer_class = serializers.UserTaskModelSerializer
+@router.get('/comments/combine_with_logs/',
+            response_model=list)
+def comments_combine_with_logs(
+    task_id: int = Query(gt=0),
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+):
+    curr_user, token = auth
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(customer__id=self.request.user.pk)
+    comment_qs = filter_qs_by_rights(
+        qs_or_model=models.ExtraComment,
+        curr_user=curr_user,
+        perm_codename='tasks.view_extracomment'
+    ).filter(task_id=task_id).defer("task")
+
+    comments_list = [
+        schemas.ExtraCommentModelSchema.from_orm(c).dict(exclude_unset=True)
+        for c in comment_qs.iterator()
+    ]
+    for comment in comments_list:
+        comment.update({"type": "comment"})
+
+    logs_list = [
+        schemas.TaskStateChangeLogModelSchema.from_orm(tscl).dict(exclude_unset=True)
+        for tscl in models.TaskStateChangeLogModel.objects.filter(task_id=task_id).defer("task")
+    ]
+    for log in logs_list:
+        log.update({"type": "log"})
+
+    one_list = sorted(
+        comments_list + logs_list,
+        key=lambda i: i.when or i.date_create,
+        reverse=True
+    )
+
+    return one_list
 
 
-class TaskDocumentAttachmentViewSet(DjingModelViewSet):
-    queryset = models.TaskDocumentAttachment.objects.all()
-    serializer_class = serializers.TaskDocumentAttachmentSerializer
-    filterset_fields = ("task",)
+@router.delete('/comments/{comment_id}/',
+               status_code=status.HTTP_204_NO_CONTENT,
+               responses={
+                   status.HTTP_204_NO_CONTENT: {
+                       'description': 'Comment successfully removed'
+                   },
+                   status.HTTP_403_FORBIDDEN: {
+                       'description': "You can't delete foreign comment"
+                   }
+               })
+def delete_customer_comment(
+    comment_id: int,
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+):
+    curr_user, token = auth
+    comment_qs = filter_qs_by_rights(
+        qs_or_model=models.ExtraComment,
+        curr_user=curr_user,
+        perm_codename='tasks.delete_extracomment'
+    )
+    comment = get_object_or_404(comment_qs, pk=comment_id)
 
-    def perform_create(self, serializer, *args, **kwargs):
-        serializer.save(author=self.request.user)
+    if comment.author_id == curr_user.pk:
+        comment.delete()
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(
+        content=gettext("You can't delete foreign comment"),
+        status_code=status.HTTP_403_FORBIDDEN
+    )
 
 
-class TaskModeModelViewSet(DjingModelViewSet):
-    queryset = models.TaskModeModel.objects.all()
-    serializer_class = serializers.TaskModeModelSerializer
+@router.get(
+    '/comments/',
+    response_model=IListResponse[schemas.ExtraCommentModelSchema],
+)
+@paginate_qs_path_decorator(
+    schema=TaskModelSchemaResponseModelSchema,
+    db_model=models.Task
+)
+def get_all_comments(
+    request: Request,
+    pagination: Pagination = Depends(),
+    task: Optional[int] = None, author: Optional[int] = None,
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+):
+    curr_user, token = auth
+    tasks_qs = filter_qs_by_rights(
+        qs_or_model=models.ExtraComment,
+        curr_user=curr_user,
+        perm_codename='tasks.view_extracomment'
+    )
+    if task:
+        tasks_qs = tasks_qs.filter(pk=task)
+    if author:
+        tasks_qs = tasks_qs.filter(author_id=author)
+
+    return tasks_qs
 
 
-class TaskFinishDocumentModelViewSet(DjingModelViewSet):
-    queryset = models.TaskFinishDocumentModel.objects.all()
-    serializer_class = serializers.TaskFinishDocumentModelSerializer
-    filterset_fields = ['task']
-
-    def retrieve(self, request, *args, **kwargs):
-        try:
-            return super().retrieve(request, *args, **kwargs)
-        except Http404:
-            return ResponseOld(status=status.HTTP_204_NO_CONTENT)
-
-    def create(self, request, *args, **kwargs):
-        dat = {
-            'author': request.user
-        }
-        dat.update(request.data)
-        serializer = self.get_serializer(data=dat)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return ResponseOld(
-            serializer.data,
-            status=status.HTTP_201_CREATED,
-            headers=headers
-        )
+@router.post(
+    '/comments/',
+    response_model=schemas.ExtraCommentModelSchema,
+)
+def create_customer_comment(
+    comment_data: schemas.ExtraCommentBaseSchema,
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='tasks.add_extracomment'
+    ))
+):
+    dat = comment_data.dict(exclude_unset=True)
+    new_comment = models.ExtraComment.objects.create(**dat, author=curr_user)
+    return schemas.ExtraCommentModelSchema.from_orm(new_comment)
 
 
 create_get_initial_route(

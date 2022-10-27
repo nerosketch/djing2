@@ -81,14 +81,11 @@ class TaskStateChangeLogModelSchema(BaseModel):
     Config = OrmConf
 
 
-class TaskDocumentAttachmentBaseSchema(BaseModel):
+class TaskDocumentAttachmentModelSchema(BaseModel):
+    id: int
     title: str
     doc_file: str
     task_id: int
-
-
-class TaskDocumentAttachmentModelSchema(TaskDocumentAttachmentBaseSchema):
-    id: int
     create_time: datetime
     author_id: int
 

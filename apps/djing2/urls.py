@@ -10,7 +10,6 @@ api_urls = [
     path("devices/", include("devices.urls", namespace="devices")),
     path("customers/", include("customers.urls", namespace="customers")),
     # path("messenger/", include("messenger.urls", namespace="messenger")),
-    path("tasks/", include("tasks.urls", namespace="tasks")),
     path("networks/", include("networks.urls", namespace="networks")),
     path("dynamicfields/", include("dynamicfields.urls", namespace="dynamicfields")),
     path("fin/", include("fin_app.urls", namespace="fin_app")),
