@@ -253,7 +253,7 @@ def get_service(data: CustomerServiceRequestSchema):
             "Reply-Message": "Customer service not found"
         }, status_code=status.HTTP_404_NOT_FOUND)
 
-    sess_time = customer_service.calc_session_time()
+    sess_time = customer_service.calc_remaining_time()
     return Response({
         "ip": customer_ip,
         "session_time": int(sess_time.total_seconds()),

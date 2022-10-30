@@ -99,21 +99,19 @@ class CustomerService(BaseAbstractModel):
         elapsed = dl - now
         return elapsed
 
-    def calc_session_time(self, splice=False) -> timedelta:
+    def calc_session_time(self) -> timedelta:
         """
         If remaining time more than session time then return session time,
-        return remaining time otherwise
-        :param splice: If splice then return RADIUS_SESSION_TIME when
-                time diff is too long.
-        :return: Current session time
+        return remaining time otherwise.
+        :return: RADIUS_SESSION_TIME when time diff is too long,
+        else return current session time
         """
         remaining_time = self.calc_remaining_time()
-        if splice:
-            radius_session_time = timedelta(
-                seconds=RADIUS_SESSION_TIME
-            )
-            if remaining_time > radius_session_time:
-                return radius_session_time
+        radius_session_time = timedelta(
+            seconds=RADIUS_SESSION_TIME
+        )
+        if remaining_time > radius_session_time:
+            return radius_session_time
         return remaining_time
 
     @staticmethod
