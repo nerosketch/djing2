@@ -115,7 +115,7 @@ class CustomerService(BaseAbstractModel):
         return remaining_time
 
     @staticmethod
-    def get_user_credentials_by_ip(ip_addr: str):
+    def get_user_credentials_by_ip(ip_addr: str) -> Optional['CustomerService']:
         if not ip_addr:
             return None
         try:
