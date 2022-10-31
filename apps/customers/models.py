@@ -329,19 +329,20 @@ class CustomerManager(MyUserManager):
 
     @staticmethod
     def filter_long_time_inactive_customers(
-        date_limit: Optional[datetime] = None,
+        since_time: Optional[datetime] = None,
         out_limit=50
     ) -> Generator[CustomerAFKType, None, None]:
-        # TODO: кто продолжительное время не пользуется услугой
-        if not isinstance(date_limit, datetime):
-            # date_limit default is month time ago
-            date_limit = get_past_time_days(
+        """Who's not used services long time"""
+
+        if not isinstance(since_time, datetime):
+            # date_limit default is month
+            since_time = get_past_time_days(
                 how_long_days=60
             )
 
         with connection.cursor() as cur:
             cur.execute("select * from fetch_customers_by_not_activity(%s, %s);", [
-                date_limit, int(out_limit)
+                since_time, int(out_limit)
             ])
             res = cur.fetchone()
             while res is not None:
