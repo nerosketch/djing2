@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta
 from functools import wraps
 
 from djing2 import celery_app
+from djing2.lib import get_past_time_days
 from djing2.lib.logger import logger
 from networks import radius_commands as rc
 from networks.models import CustomerIpLeaseModel
@@ -9,8 +9,11 @@ from networks.models import CustomerIpLeaseModel
 
 @celery_app.task
 def periodically_checks_for_stale_leases():
+    two_days_ago = get_past_time_days(
+        how_long_days=2
+    )
     CustomerIpLeaseModel.objects.filter(
-        last_update__lte=datetime.now() - timedelta(days=2),
+        last_update__lte=two_days_ago,
         is_dynamic=True
     ).release()
 

@@ -225,11 +225,11 @@ class MacDuplicateResult:
 class CustomerIpLeaseModelQuerySet(models.QuerySet):
     def active_leases(self) -> models.QuerySet:
         """
-        Filter by time, where lease time does not expired
+        Filter by time, where lease time does not expire
         :return: new QuerySet
         """
-        expire_time = datetime.now() - timedelta(seconds=DHCP_DEFAULT_LEASE_TIME)
-        return self.filter(lease_time__lt=expire_time)
+        expire_time_ago = datetime.now() - timedelta(seconds=DHCP_DEFAULT_LEASE_TIME)
+        return self.filter(lease_time__lt=expire_time_ago)
 
     @staticmethod
     def mac_duplicates() -> Generator[MacDuplicateResult, None, None]:

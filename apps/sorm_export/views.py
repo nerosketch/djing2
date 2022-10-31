@@ -72,13 +72,13 @@ def get_contracts(request: Request, pagination: Pagination = Depends()):
 
 @router.get('/birth_day/', response_model=IListResponse[customers_schemas.CustomerModelSchema])
 @paginate_qs_path_decorator(schema=customers_schemas.CustomerModelSchema, db_model=Customer)
-def get_without_burth_day(request: Request, pagination: Pagination = Depends()):
-    too_old = datetime.now() - timedelta(days=40150)
-    qs = Customer.objects.annotate(
+def get_without_birth_day(request: Request, pagination: Pagination = Depends()):
+    years_ago_110 = datetime.now() - timedelta(days=40150)
+    too_old_customers_qs = Customer.objects.annotate(
         legals=Count('customerlegalmodel')
     ).filter(
         legals=0,
         is_active=True,
-        birth_day__lte=too_old
+        birth_day__lte=years_ago_110
     )
-    return qs
+    return too_old_customers_qs
