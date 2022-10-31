@@ -1,10 +1,10 @@
 from typing import Optional
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from django.utils.translation import gettext as _
 from djing2.lib.fastapi.types import OrmConf
-from tasks.models import TaskPriorities, delta_add_days
+from tasks.models import TaskPriorities, delta_add_days, TaskStates
 
 
 class TaskBaseSchema(BaseModel):
@@ -35,7 +35,8 @@ class TaskModelSchema(TaskBaseSchema):
     customer_uname: str
     customer_group: int
     comment_count: int = 0
-    recipients: list[int] = Field([], alias='recipients_agg')
+    recipients: list[int] = []
+    task_state: TaskStates
     state_str: str
     task_mode_id: Optional[int] = Field(None, title=_("The nature of the damage"))
     mode_str: str
@@ -43,6 +44,16 @@ class TaskModelSchema(TaskBaseSchema):
     doc_count: int = 0
 
     Config = OrmConf
+
+    @validator('recipients', pre=True)
+    def get_recipients(cls, v):
+        # TODO: Annotate recipients with ArrayAgg from postgres
+        if isinstance(v, (list, tuple)):
+            return v
+        if not v:
+            return []
+        r = [r.pk for r in v.all()]
+        return r
 
 
 class UserTaskBaseSchema(BaseModel):
@@ -66,7 +77,7 @@ class ExtraCommentModelSchema(ExtraCommentBaseSchema):
     author_id: int = Field(0, title=_("Author"))
     author_name: str
     author_avatar: str
-    can_remove: bool
+    can_remove: bool = False
 
     Config = OrmConf
 

@@ -1,6 +1,5 @@
 from typing import Optional
 
-from django.contrib.postgres.aggregates.general import ArrayAgg
 from django.contrib.sites.models import Site
 from django.db import transaction
 from django.db.models import Count, Q, QuerySet
@@ -632,11 +631,15 @@ def update_task_info(task_id: int,
     pdata = update_data.dict(
         exclude_unset=True
     )
+    recipients = pdata.pop('recipients', None)
     old_data = model_to_dict(task, exclude=["site", "customer"])
     for d_name, d_val in pdata.items():
         setattr(task, d_name, d_val)
+
     with transaction.atomic():
         task.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+        if recipients:
+            task.recipients.set(recipients)
 
         # Makes task change log.
         models.TaskStateChangeLogModel.objects.create_state_migration(
@@ -670,9 +673,10 @@ def remove_task(task_id: int,
         curr_user=curr_user,
         curr_site=curr_site,
         perm_codename='customers.delete_customer'
-    ).annotate(
-        recipients_agg=ArrayAgg('recipients')
     )
+    # .annotate(
+    #     recipients_agg=ArrayAgg('recipients')
+    # )
     task = get_object_or_404(queryset=queryset, pk=task_id)
     if curr_user.is_superuser or curr_user not in task.recipients_agg:
         task.delete()
