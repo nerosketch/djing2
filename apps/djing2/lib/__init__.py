@@ -157,6 +157,20 @@ def time2utctime(src_datetime) -> datetime:
     return tz.localize(src_datetime).astimezone(pytz.utc)
 
 
+def get_past_time(how_long: timedelta) -> datetime:
+    if not isinstance(how_long, timedelta):
+        raise ValueError('"how_long" must be a timedelta')
+    now = datetime.now()
+    past = now - how_long
+    return past
+
+
+def get_past_time_days(how_long_days: int) -> datetime:
+    return get_past_time(
+        how_long=timedelta(days=how_long_days)
+    )
+
+
 class IntEnumEx(IntEnum, metaclass=ChoicesMeta):
     @classmethod
     def in_range(cls, value: int):
@@ -167,5 +181,6 @@ __all__ = (
     'safe_float', 'safe_int', 'LogicError', 'DuplicateEntry',
     'MyChoicesAdapter', 'RuTimedelta', 'bytes2human', 'calc_hash',
     'check_sign', 'macbin2str', 'time2utctime', 'IntEnumEx',
-    'process_lock_decorator', 'ProcessLocked', 'check_subnet'
+    'process_lock_decorator', 'ProcessLocked', 'check_subnet',
+    'get_past_time', 'get_past_time_days'
 )
