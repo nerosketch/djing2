@@ -66,7 +66,8 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
 
         snmp = SNMPWorker(hostname=parent.ip_address, community=str(parent.man_passw))
 
-        signal = safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%s.1" % fiber_addr))
+        signal_onu_rx = safe_int(snmp.get_item(".1.3.6.1.4.1.3902.1012.3.50.12.1.1.10.%s.1" % fiber_addr))
+        signal_otl_tx = safe_int(snmp.get_item('.1.3.6.1.4.1.3902.1015.1010.11.2.1.2.%s' % fiber_addr))
         # distance = self.get_item('.1.3.6.1.4.1.3902.1012.3.50.12.1.1.18.%s.1' % fiber_addr)
 
         sn = snmp.get_item_plain(".1.3.6.1.4.1.3902.1012.3.28.1.1.5.%s" % fiber_addr)
@@ -91,9 +92,10 @@ class OnuZTE_F660(EPON_BDCOM_FORA):
             "status": status_map.get(
                 safe_int(raw_status), "unknown"
             ),
-            "signal": zte_utils.conv_zte_signal(signal),
+            "signal": zte_utils.conv_zte_signal(signal_onu_rx),
             "mac": zte_utils.sn_to_mac(sn, prefix=mac_prefix),
             "info": (
+                ('OLT RX signal', signal_otl_tx / 1000 if abs(signal_otl_tx) > 0 else 0),
                 (_("name"), snmp.get_item(".1.3.6.1.4.1.3902.1012.3.28.1.1.3.%s" % fiber_addr)),
                 # 'distance': safe_float(distance) / 10,
                 # 'ip_addr': self.get_item('.1.3.6.1.4.1.3902.1012.3.50.16.1.1.10.%s' % fiber_addr),

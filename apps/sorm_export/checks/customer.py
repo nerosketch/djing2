@@ -1,7 +1,7 @@
 from typing import overload, AnyStr
 from dataclasses import dataclass
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import ValidationError
+from djing2.lib import LogicError
 from addresses.models import AddressModel, AddressModelTypes
 from customers.models import Customer, PassportInfo
 from customers_legal.models import CustomerLegalModel
@@ -14,7 +14,7 @@ class CustomerChecksRes:
     parent_street: AddressModel
 
 
-class CheckFailedException(ValidationError): pass
+class CheckFailedException(LogicError): pass
 
 
 @overload
