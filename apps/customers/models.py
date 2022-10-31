@@ -10,7 +10,7 @@ from django.conf import settings
 from django.core import validators
 from django.db import connection, models, transaction
 from django.utils.translation import gettext as _
-from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked
+from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked, get_past_time_days
 from djing2.lib.mixins import RemoveFilterQuerySetMixin
 from djing2.models import BaseAbstractModel
 from dynamicfields.models import AbstractDynamicFieldContentModel
@@ -335,9 +335,9 @@ class CustomerManager(MyUserManager):
         # TODO: кто продолжительное время не пользуется услугой
         if not isinstance(date_limit, datetime):
             # date_limit default is month time ago
-            now = datetime.now()
-            month = timedelta(days=60)
-            date_limit = now - month
+            date_limit = get_past_time_days(
+                how_long_days=60
+            )
 
         with connection.cursor() as cur:
             cur.execute("select * from fetch_customers_by_not_activity(%s, %s);", [

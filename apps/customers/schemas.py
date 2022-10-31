@@ -1,9 +1,11 @@
 import os
 from typing import Optional
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from decimal import Decimal
 
 from django.utils.translation import gettext as _
+
+from djing2.lib import get_past_time_days
 from djing2.lib.fastapi.types import OrmConf
 from djing2.lib.validators import tel_regexp_str
 from pydantic import validator, BaseModel, Field
@@ -311,14 +313,18 @@ class PassportInfoBaseSchema(BaseModel):
         return v
 
     @validator('date_of_acceptance')
-    def validate_date_of_acceptance(cls, value: Optional[datetime]):
-        now = datetime.now().date()
-        old_date = datetime.now() - timedelta(days=365 * 100)
-        if value >= now:
+    def validate_date_of_acceptance(cls, date_of_acceptance: Optional[datetime]):
+        now = datetime.now()
+        now_date = now.date()
+        hundred_years_ago = get_past_time_days(
+            how_long_days=365 * 100,
+            now=now
+        )
+        if date_of_acceptance >= now_date:
             raise ValueError(_("You can't specify the future"))
-        elif value <= old_date.date():
-            raise ValueError(_("Too old date. Must be newer than %s") % old_date.strftime('%Y-%m-%d %H:%M:%S'))
-        return value
+        elif date_of_acceptance <= hundred_years_ago.date():
+            raise ValueError(_("Too old date. Must be newer than %s") % hundred_years_ago.strftime('%Y-%m-%d %H:%M:%S'))
+        return date_of_acceptance
 
 
 class PassportInfoModelSchema(PassportInfoBaseSchema):

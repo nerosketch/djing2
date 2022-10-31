@@ -157,17 +157,19 @@ def time2utctime(src_datetime) -> datetime:
     return tz.localize(src_datetime).astimezone(pytz.utc)
 
 
-def get_past_time(how_long: timedelta) -> datetime:
+def get_past_time(how_long: timedelta, now: Optional[datetime] = None) -> datetime:
     if not isinstance(how_long, timedelta):
         raise ValueError('"how_long" must be a timedelta')
-    now = datetime.now()
+    if now is None:
+        now = datetime.now()
     past = now - how_long
     return past
 
 
-def get_past_time_days(how_long_days: int) -> datetime:
+def get_past_time_days(how_long_days: int, now: Optional[datetime] = None) -> datetime:
     return get_past_time(
-        how_long=timedelta(days=how_long_days)
+        how_long=timedelta(days=how_long_days),
+        now=now
     )
 
 
