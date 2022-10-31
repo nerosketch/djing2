@@ -149,6 +149,7 @@ class CustomerService(BaseAbstractModel):
 
     @staticmethod
     def find_customer_service_by_device_credentials(customer_id: int, current_service_id: int):
+        # TODO: deprecated. Remove it. Function lost semantic, and not used.
         customer_id = safe_int(customer_id)
         current_service_id = safe_int(current_service_id)
         # TODO: make tests for it
@@ -217,7 +218,7 @@ class CustomerLog(BaseAbstractModel):
     date = models.DateTimeField(auto_now_add=True)
 
     @property
-    def author_name(self):
+    def author_name(self) -> Optional[str]:
         if self.author:
             return str(self.author.get_full_name())
 
@@ -229,13 +230,12 @@ class CustomerLog(BaseAbstractModel):
 
 
 class CustomerQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
-    def filter_customers_by_addr(self, addr_id: int):
-        # Получить всех абонентов для населённого пункта.
-        # Get all customers in specified location by their address_id.
-
+    def filter_customers_by_address(self, addr_id: int):
         addr_ids_raw_query = AddressModel.objects.get_address_recursive_ids(addr_id=addr_id)
-        # FIXME:  "Cannot filter a query once a slice has been taken."
-        return self.remove_filter('address_id').filter(address_id__in=addr_ids_raw_query)
+        # FIXME: "Cannot filter a query once a slice has been taken."
+        return self.remove_filter('address_id').filter(
+            address_id__in=addr_ids_raw_query
+        )
 
 
 class CustomerAFKType(BaseModel):
@@ -251,10 +251,6 @@ class CustomerManager(MyUserManager):
         return super().get_queryset().filter(is_admin=False)
 
     def create_user(self, telephone, username, password=None, *args, **kwargs):
-        """
-        Creates and saves a User with the given telephone,
-        username and password.
-        """
         if not telephone:
             raise ValueError(_("Users must have an telephone number"))
 
@@ -270,27 +266,27 @@ class CustomerManager(MyUserManager):
         return user
 
     def customer_service_type_report(self) -> schemas.CustomerServiceTypeReportResponseSchema:
-        qs = super().get_queryset().filter(
+        active_customers_with_services_qs = super().get_queryset().filter(
             is_active=True
         ).exclude(
             current_service=None
         )
-        all_count = qs.count()
-        admin_count = qs.filter(
+        all_count = active_customers_with_services_qs.count()
+        admin_count = active_customers_with_services_qs.filter(
             current_service__service__is_admin=True
         ).count()
-        zero_cost = qs.filter(
+        zero_cost = active_customers_with_services_qs.filter(
             current_service__service__cost=0
         ).count()
 
         calc_type_counts = [
             {
-                "calc_type_count": qs.filter(
-                    current_service__service__calc_type=sc_num
+                "calc_type_count": active_customers_with_services_qs.filter(
+                    current_service__service__calc_type=srv_choice_num
                 ).count(),
-                "service_descr": str(sc_class.description),
+                "service_descr": str(srv_choice_class.description),
             }
-            for sc_num, sc_class in SERVICE_CHOICES
+            for srv_choice_num, srv_choice_class in SERVICE_CHOICES
         ]
 
         return schemas.CustomerServiceTypeReportResponseSchema(
@@ -332,10 +328,17 @@ class CustomerManager(MyUserManager):
         )
 
     @staticmethod
-    def filter_afk(date_limit: Optional[datetime] = None, out_limit=50) -> Generator[CustomerAFKType, None, None]:
+    def filter_long_time_inactive_customers(
+        date_limit: Optional[datetime] = None,
+        out_limit=50
+    ) -> Generator[CustomerAFKType, None, None]:
         # TODO: кто продолжительное время не пользуется услугой
-        if date_limit is None or not isinstance(date_limit, datetime):
-            date_limit = datetime.now() - timedelta(days=60)
+        if not isinstance(date_limit, datetime):
+            # date_limit default is month time ago
+            now = datetime.now()
+            month = timedelta(days=60)
+            date_limit = now - month
+
         with connection.cursor() as cur:
             cur.execute("select * from fetch_customers_by_not_activity(%s, %s);", [
                 date_limit, int(out_limit)

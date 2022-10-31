@@ -186,12 +186,12 @@ def get_afk(date_limit: datetime,
             out_limit: int = 50):
     # FIXME: отсюда можно увидеть слишком много учёток без прав. Надо ограничить правом.
 
-    afk = models.Customer.objects.filter_afk(
+    afk = models.Customer.objects.filter_long_time_inactive_customers(
         date_limit=date_limit,
         out_limit=out_limit
     )
     if locality > 0:
-        addr_filtered_customers = models.Customer.objects.filter_customers_by_addr(
+        addr_filtered_customers = models.Customer.objects.filter_customers_by_address(
             addr_id=locality
         ).only('pk').values_list('pk', flat=True)
         afk = tuple(c for c in afk if c.customer_id in addr_filtered_customers)
@@ -1072,17 +1072,17 @@ def get_customers(request: Request,
     queryset = queryset.filter(filter_fields_q | search_filter_q)
 
     if house:
-        return queryset.filter_customers_by_addr(
+        return queryset.filter_customers_by_address(
             addr_id=house,
         )
     else:
         if street:
-            return queryset.filter_customers_by_addr(
+            return queryset.filter_customers_by_address(
                 addr_id=street,
             )
 
     if address:
-        return queryset.filter_customers_by_addr(
+        return queryset.filter_customers_by_address(
             addr_id=address,
         )
 
