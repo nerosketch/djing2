@@ -32,9 +32,8 @@ class ServiceDefault(ServiceBase):
         return time_used
 
     def calc_cost(self) -> float:
-        """
-        Базовый функционал считает стоимость пропорционально использованному времени
-        """
+        """Базовый функционал считает стоимость пропорционально использованному времени."""
+
         now = timezone.now()
         how_long_use = self.get_how_long_time_used(now=now)
         curr_month_all_time = get_month_max_time(now=now)
@@ -42,11 +41,19 @@ class ServiceDefault(ServiceBase):
         used_cost = use_coefficient * self.customer_service.service.cost
         return float(used_cost)
 
-    # Тут мы расчитываем конец действия услуги, завершение будет в конце месяца
     def calc_deadline(self) -> datetime:
+        """Тут мы расчитываем конец действия услуги, завершение будет в конце месяца."""
+
         now = timezone.now()
-        last_day = monthrange(now.year, now.month)[1]
-        last_month_date = datetime(year=now.year, month=now.month, day=last_day, hour=23, minute=59, second=59)
+        _, last_day = monthrange(now.year, now.month)
+        last_month_date = datetime(
+            year=now.year,
+            month=now.month,
+            day=last_day,
+            hour=23,
+            minute=59,
+            second=59
+        )
         return last_month_date
 
 
@@ -64,10 +71,16 @@ class TariffCp(TariffDp):
     description = _("Private service")
 
     def calc_deadline(self) -> datetime:
-        # делаем время окончания услуги на 10 лет вперёд
         now = timezone.now()
-        long_long_time = datetime(year=now.year + 10, month=now.month, day=1, hour=23, minute=59, second=59)
-        return long_long_time
+        ten_years = datetime(
+            year=now.year + 10,
+            month=now.month,
+            day=1,
+            hour=23,
+            minute=59,
+            second=59
+        )
+        return ten_years
 
 
 # Daily service
