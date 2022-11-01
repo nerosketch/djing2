@@ -213,6 +213,10 @@ class UserCustomerModelSchema(UserCustomerWritableModelSchema):
     create_date: date
     last_update_time: Optional[datetime]
     full_name: str
+    fio: str
+    username: str
+    telephone: Optional[str]
+    birth_day: Optional[date] = None
 
     address_title: str
     balance: float
@@ -224,6 +228,10 @@ class UserCustomerModelSchema(UserCustomerWritableModelSchema):
     last_connected_service_id: Optional[int] = None
 
     Config = OrmConf
+
+    @validator('balance')
+    def check_balance(cls, v: float):
+        return round(v, 2)
 
 
 class UserBuyServiceSchema(BaseModel):
