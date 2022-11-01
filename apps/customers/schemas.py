@@ -140,7 +140,7 @@ class CustomerRawPasswordModelSchema(CustomerRawPasswordBaseSchema):
 
 
 class AdditionalTelephoneBaseSchema(BaseModel):
-    telephone: str
+    telephone: str = Field(regex=tel_regexp_str)
     customer_id: int
     owner_name: str
 
@@ -206,6 +206,7 @@ class TokenRequestSchema(BaseModel):
 class UserCustomerWritableModelSchema(BaseModel):
     address_id: Optional[int] = None
     auto_renewal_service: bool = False
+    telephone: str = Field(regex=tel_regexp_str)
 
 
 class UserCustomerModelSchema(UserCustomerWritableModelSchema):
