@@ -148,12 +148,9 @@ class SitesAuthTokenSerializer(AuthTokenSerializer):
         if username and password:
             user = authenticate(request=self.context.get("request"), username=username, password=password)
 
-            # The authenticate call simply returns None for is_active=False
-            # users. (Assuming the default ModelBackend authentication
-            # backend.)
             err_msg = _("Unable to log in with provided credentials")
             if not user:
-                raise serializers.ValidationError(err_msg, code="authorization")
+                raise ValidationError(err_msg, code="authorization")
 
             if not user.is_superuser:
                 if (
@@ -164,7 +161,7 @@ class SitesAuthTokenSerializer(AuthTokenSerializer):
 
         else:
             msg = _('Must include "username" and "password".')
-            raise serializers.ValidationError(msg, code="authorization")
+            raise ValidationError(msg, code="authorization")
 
         attrs["user"] = user
         return attrs
