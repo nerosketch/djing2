@@ -938,6 +938,7 @@ def update_customer_profile(customer_id: int,
     pdata = customer_data.dict(exclude_unset=True)
     raw_password = pdata.pop('password', None)
 
+    # TODO: deny changing sites without special permission
     sites = pdata.pop('sites', None)
 
     for d_name, d_val in pdata.items():
@@ -948,9 +949,9 @@ def update_customer_profile(customer_id: int,
 
     if raw_password:
         schemas.update_passw(acc=acc, raw_password=raw_password)
-        setattr(acc, 'password', make_password(raw_password))
+        acc.set_password(raw_password)
 
-    acc.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+    acc.save(update_fields=[d_name for d_name, d_val in pdata.items()] + ['password'])
     return schemas.CustomerModelSchema.from_orm(acc)
 
 
