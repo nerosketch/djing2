@@ -1,6 +1,5 @@
 import re
 from datetime import datetime, timedelta, date
-from decimal import Decimal
 from ipaddress import AddressValueError, IPv4Address
 from typing import Optional, Generator
 
@@ -611,7 +610,7 @@ class Customer(IAddressContaining, BaseAccount):
         return self.current_service
 
     def add_balance(self, profile: Optional[BaseAccount], cost: float, comment: str) -> None:
-        old_balance = Decimal(self.balance)
+        old_balance = self.balance
         CustomerLog.objects.create(
             customer=self,
             cost=cost,
