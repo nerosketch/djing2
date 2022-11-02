@@ -278,8 +278,8 @@ class AddBalanceRequestSchema(BaseModel):
     comment: Optional[str] = Field(None, max_length=128)
 
     @validator('cost')
-    def validate_cost(cls, v: float):
-        if v == 0.0:
+    def validate_cost(cls, v: Decimal):
+        if v.is_zero():
             raise ValueError('Passed invalid cost parameter')
         return v
 
