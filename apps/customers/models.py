@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timedelta, date
+from decimal import Decimal
 from ipaddress import AddressValueError, IPv4Address
 from typing import Optional, Generator
 
@@ -190,6 +191,36 @@ class CustomerService(BaseAbstractModel):
             deadline=deadline
         )
         return customer_service
+
+    def assign_deadline(self):
+        calc_obj = self.service.get_calc_type()(self)
+        self.deadline = calc_obj.calc_deadline()
+
+    def continue_for_customer(self, now: Optional[datetime] = None):
+        customer = self.customer
+        service = self.service
+        cost = float(service.cost)
+        old_balance = float(customer.balance)
+        with transaction.atomic():
+            customer.balance -= cost
+            self.start_time = now or datetime.now()
+            # Deadline sets automatically in signal pre_save
+            self.deadline = None
+            self.save(update_fields=["start_time", "deadline"])
+            customer.save(update_fields=["balance"])
+            # make log about it
+            uname = customer.get_short_name()
+            CustomerLog.objects.create(
+                customer=customer,
+                cost=-cost,
+                from_balance=old_balance,
+                to_balance=old_balance - cost,
+                comment=_("Automatic connect new service %(service_name)s "
+                          "for %(customer_name)s") % {
+                    "service_name": service.title,
+                    "customer_name": uname
+                }
+            )
 
     def __str__(self):
         return self.service.title
@@ -414,10 +445,10 @@ class CustomerManager(MyUserManager):
         expired_services = CustomerService.objects.select_related(
             'customer', 'service'
         ).filter(
-            deadline__lt=now,
+            deadline__lte=now,
             customer__auto_renewal_service=True
         )
-        if customer is not None and isinstance(customer, Customer):
+        if isinstance(customer, Customer):
             expired_services = expired_services.filter(customer=customer)
         if not expired_services.exists():
             return
@@ -426,47 +457,17 @@ class CustomerManager(MyUserManager):
                 continue
             expired_service_customer = expired_service.customer
             service = expired_service.service
-            cost = round(service.cost, 3)
-            if expired_service_customer.balance >= cost:
-                old_balance = expired_service_customer.balance
+            if expired_service_customer.balance >= service.cost:
                 # can continue service
-                with transaction.atomic():
-                    expired_service_customer.balance -= cost
-                    expired_service.start_time = now
-                    # Deadline sets automatically in signal pre_save
-                    expired_service.deadline = None
-                    expired_service.save(update_fields=["start_time", "deadline"])
-                    expired_service_customer.save(update_fields=["balance"])
-                    # make log about it
-                    uname = expired_service_customer.get_short_name()
-                    CustomerLog.objects.create(
-                        customer=expired_service_customer,
-                        cost=-cost,
-                        from_balance=old_balance,
-                        to_balance=old_balance - cost,
-                        comment=_("Automatic connect new service %(service_name)s for %(customer_name)s")
-                                % {"service_name": service.title, "customer_name": uname},
-                    )
+                expired_service.continue_for_customer(now=now)
             else:
                 # finish service otherwise
-                custom_signals.customer_service_pre_stop.send(
-                    sender=CustomerService,
-                    instance=expired_service,
-                    customer=expired_service_customer
-                )
-                with transaction.atomic():
-                    expired_service.delete()
-                    CustomerLog.objects.create(
-                        customer=expired_service_customer,
-                        cost=0,
-                        comment=_("Service '%(service_name)s' has expired") % {
-                            "service_name": service.title
-                        },
-                    )
-                custom_signals.customer_service_post_stop.send(
-                    sender=CustomerService,
-                    instance=expired_service,
-                    customer=expired_service_customer,
+                expired_service_customer.stop_service(
+                    author_profile=None,
+                    comment=_("Service '%(service_name)s' has expired") % {
+                        "service_name": service.title
+                    },
+                    force_cost=0.0
                 )
 
 
@@ -499,6 +500,7 @@ class Customer(IAddressContaining, BaseAccount):
         null=True,
         default=None
     )
+    # TODO: Change balance to Decimal
     balance = models.FloatField(default=0.0)
 
     description = models.TextField(
@@ -609,7 +611,7 @@ class Customer(IAddressContaining, BaseAccount):
         return self.current_service
 
     def add_balance(self, profile: Optional[BaseAccount], cost: float, comment: str) -> None:
-        old_balance = self.balance
+        old_balance = Decimal(self.balance)
         CustomerLog.objects.create(
             customer=self,
             cost=cost,
@@ -702,10 +704,17 @@ class Customer(IAddressContaining, BaseAccount):
             service=service
         )
 
-    def stop_service(self, profile: UserProfile) -> None:
+    def stop_service(self, author_profile: Optional[UserProfile],
+                     comment: Optional[str] = None,
+                     force_cost: Optional[float] = None
+                     ) -> None:
         """
         Removing current connected customer service
-        :param profile: Instance of profiles.models.UserProfile.
+
+        :param author_profile: Instance of profiles.models.UserProfile.
+        :param comment: Optional comment for logs
+        :param force_cost: if not None then not calculate cost to return, use
+                           force_cost value instead
         :return: nothing
         """
         customer_service = self.active_service()
@@ -714,22 +723,25 @@ class Customer(IAddressContaining, BaseAccount):
             instance=customer_service,
             customer=self
         )
-        with transaction.atomic():
+        if force_cost:
+            cost_to_return = force_cost
+        else:
             cost_to_return = self.calc_cost_to_return()
+        with transaction.atomic():
             if cost_to_return > 0.1:
                 self.add_balance(
-                    profile,
+                    author_profile,
                     cost=cost_to_return,
-                    comment=_("End of service, refund of balance")
+                    comment=comment or _("End of service, refund of balance")
                 )
                 self.save(
                     update_fields=("balance",)
                 )
             else:
                 self.add_balance(
-                    profile,
+                    author_profile,
                     cost=0,
-                    comment=_("End of service")
+                    comment=comment or _("End of service")
                 )
             customer_service.delete()
         custom_signals.customer_service_post_stop.send(
