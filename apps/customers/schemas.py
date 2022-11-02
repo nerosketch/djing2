@@ -274,7 +274,7 @@ class TypicalResponse(BaseModel):
 
 
 class AddBalanceRequestSchema(BaseModel):
-    cost: float
+    cost: Decimal = Field(max_digits=7, decimal_places=2)
     comment: Optional[str] = Field(None, max_length=128)
 
     @validator('cost')
