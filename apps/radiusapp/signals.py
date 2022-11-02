@@ -24,6 +24,7 @@ def customer_post_pick_service_signal_handler(sender, instance: Customer, servic
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+    # TODO: Duplicate code with: radius_app.views:708
     speed = SpeedInfoStruct(
         speed_in=float(service.speed_in),
         speed_out=float(service.speed_out),
@@ -32,7 +33,10 @@ def customer_post_pick_service_signal_handler(sender, instance: Customer, servic
     )
     speed = IVendorSpecific.get_speed(speed=speed)
 
-    leases = CustomerIpLeaseModel.objects.filter(customer=instance, state=True).exclude(radius_username=None)
+    leases = CustomerIpLeaseModel.objects.filter(
+        customer=instance,
+        state=True
+    ).exclude(radius_username=None)
     for lease in leases:
         tasks.async_change_session_guest2inet.delay(
             radius_uname=str(lease.radius_username),
@@ -56,4 +60,3 @@ def customer_post_pick_service_signal_handler(sender, instance: Customer, servic
 #        tasks.async_change_session_inet2guest.delay(
 #            radius_uname=str(lease.radius_username)
 #        )
-
