@@ -8,6 +8,7 @@ from addresses.models import AddressModel
 from bitfield import BitField
 from django.conf import settings
 from django.core import validators
+from django.core.exceptions import ValidationError
 from django.db import connection, models, transaction
 from django.utils.translation import gettext as _
 from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked, get_past_time_days
@@ -219,6 +220,14 @@ class CustomerService(BaseAbstractModel):
                     "customer_name": uname
                 }
             )
+
+    def clean(self) -> None:
+        if self.deadline <= self.start_time:
+            raise ValidationError(_("Deadline can't be in past"))
+
+    def save(self, *args, **kwargs) -> None:
+        self.full_clean(exclude=None)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.service.title
@@ -640,10 +649,6 @@ class Customer(IAddressContaining, BaseAccount):
         """
         if not isinstance(service, Service):
             raise TypeError("service must be instance of services.models.Service")
-
-        now = datetime.now()
-        if deadline <= now:
-            raise LogicError(_("Deadline can't be in past"))
 
         cost = round(service.cost, 2)
 
