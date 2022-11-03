@@ -203,8 +203,7 @@ class CustomerService(BaseAbstractModel):
         with transaction.atomic():
             customer.balance -= cost
             self.start_time = now or datetime.now()
-            # Deadline sets automatically in signal pre_save
-            self.deadline = None
+            self.assign_deadline()
             self.save(update_fields=["start_time", "deadline"])
             customer.save(update_fields=["balance"])
             # make log about it
@@ -641,6 +640,10 @@ class Customer(IAddressContaining, BaseAccount):
         """
         if not isinstance(service, Service):
             raise TypeError("service must be instance of services.models.Service")
+
+        now = datetime.now()
+        if deadline <= now:
+            raise LogicError(_("Deadline can't be in past"))
 
         cost = round(service.cost, 2)
 

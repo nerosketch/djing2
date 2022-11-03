@@ -381,6 +381,9 @@ msgstr "Недостаточно средств на счету"
 msgid "%(username)s paid the debt %(amount).2f"
 msgstr "%(username)s заплатил долг в размере %(amount).2f"
 
+msgid "Deadline can't be in past"
+msgstr "Время завершения не может быть в прошлом"
+
 #~ msgid "Ip address"
 #~ msgstr "Ip адрес"
 
