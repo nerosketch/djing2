@@ -141,8 +141,11 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_add_balance_big(self):
-        r = self.post("/api/customers/%d/add_balance/" % self.customer.pk, {"cost": 0xFF ** 0xFF})
-        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        r = self.c.post(
+            url="/api/customers/%d/add_balance/" % self.customer.pk,
+            data=b'{"cost": %d}' % 0xff ** 0xff
+        )
+        self.assertEqual(r.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY, msg=r.text)
 
     def test_add_balance_long_comment(self):
         r = self.post("/api/customers/%d/add_balance/" % self.customer.pk, {"cost": 0xFF, "comment": "text " * 0xFFF})

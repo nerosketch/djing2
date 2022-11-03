@@ -186,12 +186,12 @@ def get_afk(date_limit: datetime,
             out_limit: int = 50):
     # FIXME: отсюда можно увидеть слишком много учёток без прав. Надо ограничить правом.
 
-    afk = models.Customer.objects.filter_afk(
+    afk = models.Customer.objects.filter_long_time_inactive_customers(
         date_limit=date_limit,
         out_limit=out_limit
     )
     if locality > 0:
-        addr_filtered_customers = models.Customer.objects.filter_customers_by_addr(
+        addr_filtered_customers = models.Customer.objects.filter_customers_by_address(
             addr_id=locality
         ).only('pk').values_list('pk', flat=True)
         afk = tuple(c for c in afk if c.customer_id in addr_filtered_customers)
@@ -758,7 +758,7 @@ def add_balance(customer_id: int,
                     perm_codename='customers.can_add_balance'
                 ))
                 ):
-    cost = payload.cost
+    cost = float(payload.cost)
     if cost < 0.0:
         check_perm(
             user=curr_user,
@@ -940,6 +940,7 @@ def update_customer_profile(customer_id: int,
     pdata = customer_data.dict(exclude_unset=True)
     raw_password = pdata.pop('password', None)
 
+    # TODO: deny changing sites without special permission
     sites = pdata.pop('sites', None)
 
     for d_name, d_val in pdata.items():
@@ -950,9 +951,9 @@ def update_customer_profile(customer_id: int,
 
     if raw_password:
         schemas.update_passw(acc=acc, raw_password=raw_password)
-        setattr(acc, 'password', make_password(raw_password))
+        acc.set_password(raw_password)
 
-    acc.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+    acc.save(update_fields=[d_name for d_name, d_val in pdata.items()] + ['password'])
     return schemas.CustomerModelSchema.from_orm(acc)
 
 
@@ -1074,17 +1075,17 @@ def get_customers(request: Request,
     queryset = queryset.filter(filter_fields_q | search_filter_q)
 
     if house:
-        return queryset.filter_customers_by_addr(
+        return queryset.filter_customers_by_address(
             addr_id=house,
         )
     else:
         if street:
-            return queryset.filter_customers_by_addr(
+            return queryset.filter_customers_by_address(
                 addr_id=street,
             )
 
     if address:
-        return queryset.filter_customers_by_addr(
+        return queryset.filter_customers_by_address(
             addr_id=address,
         )
 

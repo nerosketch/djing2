@@ -35,9 +35,9 @@ def get_me(current_user: models.Customer = Depends(is_customer_auth_dependency))
 @catch_customers_errs
 def update_me(data: schemas.UserCustomerWritableModelSchema,
               current_user: models.Customer = Depends(is_customer_auth_dependency)):
-    for f_name, v_val in data.__fields__:
+    for f_name, v_val in data.__fields__.items():
         setattr(current_user, f_name, v_val)
-    current_user.save(update_fields=[f_name for f_name, _ in data.__fields__])
+    current_user.save(update_fields=[f_name for f_name, _ in data.__fields__.items()])
     return schemas.UserCustomerModelSchema.from_orm(current_user)
 
 

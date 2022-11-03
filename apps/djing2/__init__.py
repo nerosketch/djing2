@@ -12,7 +12,7 @@ IP_ADDR_REGEX = (
     "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
 )
 
-MAC_ADDR_REGEXP = r"^([0-9a-fA-F]{2,4}[:.-]){2,5}[0-9a-fA-F]{2,4}$"
+MAC_ADDR_REGEXP = r"^([0-9a-fA-F]{2}[:.-]){5}[0-9a-fA-F]{2}|([0-9a-fA-F]{4}[:.-]){2}[0-9a-fA-F]{4}$"
 
 
 def ping(ip_addr: str, count=1, arp=False, interval=0.2) -> bool:

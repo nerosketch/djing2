@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import timedelta, datetime
 from calendar import monthrange
 
@@ -7,37 +8,52 @@ from django.utils.translation import gettext as _
 from services.custom_logic.base_intr import ServiceBase
 
 
+def get_month_max_time(now: Optional[datetime] = None) -> timedelta:
+    week_day, n_days = monthrange(now.year, now.month)
+    curr_month_time = timedelta(days=n_days)
+    return curr_month_time
+
+
 class ServiceDefault(ServiceBase):
     description = _("Base calculate functionality")
 
     def __init__(self, customer_service):
         self.customer_service = customer_service
 
-    # Базовый функционал считает стоимость пропорционально использованному времени
-    def calc_cost(self) -> float:
-        now = timezone.now()
-
+    def get_how_long_time_used(self, now: Optional[datetime] = None) -> timedelta:
         # сколько прошло с начала действия услуги
         # если времени начала нет то это начало действия, использованное время 0
-        time_diff = now - self.customer_service.start_time if self.customer_service.start_time else timedelta(0)
+        if now is None:
+            now = datetime.now()
+        if self.customer_service.start_time:
+            time_used = now - self.customer_service.start_time
+        else:
+            time_used = timedelta(0)
+        return time_used
 
-        # времени в этом месяце
-        curr_month_time = datetime(now.year, now.month if now.month == 12 else now.month + 1, 1) - timedelta(days=1)
-        curr_month_time = timedelta(days=curr_month_time.day)
+    def calc_cost(self) -> float:
+        """Базовый функционал считает стоимость пропорционально использованному времени."""
 
-        # Сколько это в процентах от всего месяца (k - коеффициент)
-        k = time_diff.total_seconds() / curr_month_time.total_seconds()
-
-        # результат - это полная стоимость тарифа умноженная на k
-        res = k * self.customer_service.service.cost
-
-        return float(res)
-
-    # Тут мы расчитываем конец действия услуги, завершение будет в конце месяца
-    def calc_deadline(self) -> datetime:
         now = timezone.now()
-        last_day = monthrange(now.year, now.month)[1]
-        last_month_date = datetime(year=now.year, month=now.month, day=last_day, hour=23, minute=59, second=59)
+        how_long_use = self.get_how_long_time_used(now=now)
+        curr_month_all_time = get_month_max_time(now=now)
+        use_coefficient = how_long_use.total_seconds() / curr_month_all_time.total_seconds()
+        used_cost = use_coefficient * self.customer_service.service.cost
+        return float(used_cost)
+
+    def calc_deadline(self) -> datetime:
+        """Тут мы расчитываем конец действия услуги, завершение будет в конце месяца."""
+
+        now = timezone.now()
+        _, last_day = monthrange(now.year, now.month)
+        last_month_date = datetime(
+            year=now.year,
+            month=now.month,
+            day=last_day,
+            hour=23,
+            minute=59,
+            second=59
+        )
         return last_month_date
 
 
@@ -55,10 +71,16 @@ class TariffCp(TariffDp):
     description = _("Private service")
 
     def calc_deadline(self) -> datetime:
-        # делаем время окончания услуги на 10 лет вперёд
         now = timezone.now()
-        long_long_time = datetime(year=now.year + 10, month=now.month, day=1, hour=23, minute=59, second=59)
-        return long_long_time
+        ten_years = datetime(
+            year=now.year + 10,
+            month=now.month,
+            day=1,
+            hour=23,
+            minute=59,
+            second=59
+        )
+        return ten_years
 
 
 # Daily service

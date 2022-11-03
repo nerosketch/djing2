@@ -1,9 +1,11 @@
 import os
 from typing import Optional
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from decimal import Decimal
 
 from django.utils.translation import gettext as _
+
+from djing2.lib import get_past_time_days
 from djing2.lib.fastapi.types import OrmConf
 from djing2.lib.validators import tel_regexp_str
 from pydantic import validator, BaseModel, Field
@@ -138,7 +140,7 @@ class CustomerRawPasswordModelSchema(CustomerRawPasswordBaseSchema):
 
 
 class AdditionalTelephoneBaseSchema(BaseModel):
-    telephone: str
+    telephone: str = Field(regex=tel_regexp_str)
     customer_id: int
     owner_name: str
 
@@ -204,6 +206,7 @@ class TokenRequestSchema(BaseModel):
 class UserCustomerWritableModelSchema(BaseModel):
     address_id: Optional[int] = None
     auto_renewal_service: bool = False
+    telephone: str = Field(regex=tel_regexp_str)
 
 
 class UserCustomerModelSchema(UserCustomerWritableModelSchema):
@@ -211,6 +214,10 @@ class UserCustomerModelSchema(UserCustomerWritableModelSchema):
     create_date: date
     last_update_time: Optional[datetime]
     full_name: str
+    fio: str
+    username: str
+    telephone: Optional[str]
+    birth_day: Optional[date] = None
 
     address_title: str
     balance: float
@@ -222,6 +229,10 @@ class UserCustomerModelSchema(UserCustomerWritableModelSchema):
     last_connected_service_id: Optional[int] = None
 
     Config = OrmConf
+
+    @validator('balance')
+    def check_balance(cls, v: float):
+        return round(v, 2)
 
 
 class UserBuyServiceSchema(BaseModel):
@@ -263,12 +274,12 @@ class TypicalResponse(BaseModel):
 
 
 class AddBalanceRequestSchema(BaseModel):
-    cost: float
+    cost: Decimal = Field(max_digits=7, decimal_places=2)
     comment: Optional[str] = Field(None, max_length=128)
 
     @validator('cost')
-    def validate_cost(cls, v: float):
-        if v == 0.0:
+    def validate_cost(cls, v: Decimal):
+        if v.is_zero():
             raise ValueError('Passed invalid cost parameter')
         return v
 
@@ -311,14 +322,18 @@ class PassportInfoBaseSchema(BaseModel):
         return v
 
     @validator('date_of_acceptance')
-    def validate_date_of_acceptance(cls, value: Optional[datetime]):
-        now = datetime.now().date()
-        old_date = datetime.now() - timedelta(days=365 * 100)
-        if value >= now:
+    def validate_date_of_acceptance(cls, date_of_acceptance: Optional[datetime]):
+        now = datetime.now()
+        now_date = now.date()
+        hundred_years_ago = get_past_time_days(
+            how_long_days=365 * 100,
+            now=now
+        )
+        if date_of_acceptance >= now_date:
             raise ValueError(_("You can't specify the future"))
-        elif value <= old_date.date():
-            raise ValueError(_("Too old date. Must be newer than %s") % old_date.strftime('%Y-%m-%d %H:%M:%S'))
-        return value
+        elif date_of_acceptance <= hundred_years_ago.date():
+            raise ValueError(_("Too old date. Must be newer than %s") % hundred_years_ago.strftime('%Y-%m-%d %H:%M:%S'))
+        return date_of_acceptance
 
 
 class PassportInfoModelSchema(PassportInfoBaseSchema):
