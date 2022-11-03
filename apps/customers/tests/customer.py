@@ -2,7 +2,6 @@ from typing import Optional
 from datetime import datetime, timedelta
 
 from django.contrib.sites.models import Site
-from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 from rest_framework.settings import api_settings
 from rest_framework import status

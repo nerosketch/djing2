@@ -457,8 +457,6 @@ class CustomerManager(MyUserManager):
         )
         if isinstance(customer, Customer):
             expired_services = expired_services.filter(customer=customer)
-        if not expired_services.exists():
-            return
         for expired_service in expired_services.iterator():
             if not hasattr(expired_service, "customer"):
                 continue

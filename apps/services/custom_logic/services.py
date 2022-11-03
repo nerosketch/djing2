@@ -44,16 +44,21 @@ class ServiceDefault(ServiceBase):
     def calc_deadline(self) -> datetime:
         """Тут мы расчитываем конец действия услуги, завершение будет в конце месяца."""
 
-        now = timezone.now()
-        _, last_day = monthrange(now.year, now.month)
-        last_month_date = datetime(
-            year=now.year,
-            month=now.month,
-            day=last_day,
-            hour=23,
-            minute=59,
-            second=59
-        )
+        # FIXME: service has no start_time
+        start_time = self.customer_service.start_time
+
+        if start_time.month == 12:
+            last_month_date = datetime(
+                year=start_time.year+1,
+                month=1,
+                day=1
+            )
+        else:
+            last_month_date = datetime(
+                year=start_time.year,
+                month=start_time.month+1,
+                day=1
+            )
         return last_month_date
 
 
