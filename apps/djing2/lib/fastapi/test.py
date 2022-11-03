@@ -15,6 +15,7 @@ class DjingTestCase(TransactionTestCase):
         app=app,
         base_url='http://example.com'
     )
+    admin: UserProfile
 
     def create_admin(self) -> None:
         # Login super user
