@@ -1,8 +1,10 @@
+from django.core.exceptions import ValidationError
 from django.http.response import Http404
-from .main import django_http_resp_404_handler
+from . import main
 
 handler_pairs = (
-    (django_http_resp_404_handler, Http404),
+    (main.django_http_resp_404_handler, Http404),
+    (main.django_validation_error_handler, ValidationError),
 )
 
 __all__ = ['handler_pairs']

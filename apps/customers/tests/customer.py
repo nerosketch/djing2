@@ -1,6 +1,8 @@
+from typing import Optional
 from datetime import datetime, timedelta
 
 from django.contrib.sites.models import Site
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 from rest_framework.settings import api_settings
 from rest_framework import status
@@ -12,6 +14,10 @@ from rest_framework.authtoken.models import Token
 
 
 class CustomAPITestCase(DjingTestCase):
+    customer: models.Customer
+    site: Site
+    group: Group
+
     def setUp(self):
         super().setUp()
 
@@ -45,12 +51,17 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         )
         self.service.sites.add(self.site)
 
-    def _pick_service_request(self):
+    def _pick_service_request(self, deadline: Optional[datetime] = None):
+        if deadline is None:
+            deadline = datetime.now() + timedelta(days=5)
         dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
         r = self.post(
             "/api/customers/%d/pick_service/" % self.customer.pk,
-            {"service_id": self.service.pk, "deadline": (datetime.now() + timedelta(days=5)).strftime(dtime_fmt)},
-            )
+            {
+                "service_id": self.service.pk,
+                "deadline": deadline.strftime(dtime_fmt)
+            },
+        )
         return r
 
     def test_get_random_username(self):
@@ -80,6 +91,24 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         self.customer.refresh_from_db()
         r = self._pick_service_request()
         self.assertEqual(r.json()['detail'], _('That service already activated'))
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_pick_service_with_now_deadline(self):
+        models.Customer.objects.filter(username="custo1").update(balance=2)
+        self.customer.refresh_from_db()
+        r = self._pick_service_request(
+            deadline=datetime.now()
+        )
+        self.assertEqual(r.json(), _("Deadline can't be in past"))
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, r.text)
+
+    def test_pick_service_with_past_deadline(self):
+        models.Customer.objects.filter(username="custo1").update(balance=2)
+        self.customer.refresh_from_db()
+        r = self._pick_service_request(
+            deadline=datetime.now() - timedelta(minutes=2)
+        )
+        self.assertEqual(r.json(), _("Deadline can't be in past"))
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_stop_service(self):
