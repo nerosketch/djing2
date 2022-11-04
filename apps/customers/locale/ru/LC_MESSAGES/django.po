@@ -322,12 +322,6 @@ msgstr "Нельзя указывать будущее время"
 msgid "Too old date. Must be newer than %s"
 msgstr "Слишком старая дата. Должно быть новее чем %s"
 
-#: apps/customers/views/admin_side.py:38
-msgid "Not allowed to direct create Customer service, use 'pick_service' url"
-msgstr ""
-"Запрещено прямое создание привязанных к абоненту услуг, используйте "
-"'pick_service' url"
-
 #: apps/customers/views/admin_side.py:49
 msgid "Not allowed to direct create Customer log"
 msgstr "Запрещено прямое создание логов абонента"
