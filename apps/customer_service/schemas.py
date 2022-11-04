@@ -26,3 +26,11 @@ class CustomerServiceTypeReportResponseSchema(BaseModel):
     admin_count: int = Field(title='Admin services count')
     zero_cost_count: int = Field(title='Zero cost services count')
     calc_type_counts: int = Field(title='Calculation types count')
+
+
+class ActivityReportResponseSchema(BaseModel):
+    all_count: int = Field(title='All services count')
+    enabled_count: int = Field(title='Enabled services count')
+    with_services_count: int
+    active_count: int = Field(title='Active services count')
+    commercial_customers: int

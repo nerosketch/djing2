@@ -151,17 +151,6 @@ def filter_device_port(device_id: int, port_id: int,
     return (schemas.CustomerModelSchema.from_orm(c) for c in customers.iterator())
 
 
-@router.get('/activity_report/',
-            response_model=schemas.ActivityReportResponseSchema,
-            dependencies=[Depends(permission_check_dependency(
-                perm_codename='customers.can_view_activity_report'
-            ))]
-            )
-def get_activity_report():
-    r = models.Customer.objects.activity_report()
-    return r
-
-
 @router.get('/generate_password/', response_model=str)
 def generate_password_for_customer():
     rp = generate_random_password()

@@ -230,10 +230,6 @@ msgstr "Может пинговать"
 msgid "Can complete service"
 msgstr "Может завершать услугу"
 
-#: apps/customers/models.py:729
-msgid "Can view activity_report"
-msgstr "Может просматривать отчёт об активности абонентов"
-
 #: apps/customers/models.py:732
 msgid "Customer"
 msgstr "Абонент"

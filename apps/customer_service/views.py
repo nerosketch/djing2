@@ -54,3 +54,14 @@ def get_current_service(customer_id: int,
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     curr_srv = customer.current_service
     return schemas.DetailedCustomerServiceModelSchema.from_orm(curr_srv)
+
+
+@router.get('/activity_report/',
+            response_model=schemas.ActivityReportResponseSchema,
+            dependencies=[Depends(permission_check_dependency(
+                perm_codename='customers.can_view_activity_report'
+            ))]
+            )
+def get_activity_report():
+    r = models.Customer.objects.activity_report()
+    return r

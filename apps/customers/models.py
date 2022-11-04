@@ -90,37 +90,6 @@ class CustomerManager(MyUserManager):
         user.save(using=self._db)
         return user
 
-    def activity_report(self) -> schemas.ActivityReportResponseSchema:
-        qs = super().get_queryset()
-        all_count = qs.count()
-        enabled_count = qs.filter(is_active=True).count()
-        with_services_count = qs.filter(
-            is_active=True
-        ).exclude(
-            current_service=None
-        ).count()
-
-        active_count = (
-            qs.annotate(ips=models.Count("customeripleasemodel"))
-                .filter(is_active=True, ips__gt=0)
-                .exclude(current_service=None)
-                .count()
-        )
-
-        commercial_customers = qs.filter(
-            is_active=True,
-            current_service__service__is_admin=False,
-            current_service__service__cost__gt=0
-        ).exclude(current_service=None).count()
-
-        return schemas.ActivityReportResponseSchema(
-            all_count=all_count,
-            enabled_count=enabled_count,
-            with_services_count=with_services_count,
-            active_count=active_count,
-            commercial_customers=commercial_customers,
-        )
-
     @staticmethod
     def filter_long_time_inactive_customers(
         since_time: Optional[datetime] = None,
@@ -659,7 +628,6 @@ class Customer(IAddressContaining, BaseAccount):
             ("can_add_negative_balance", _("Fill account balance on negative cost")),
             ("can_ping", _("Can ping")),
             ("can_complete_service", _("Can complete service")),
-            ("can_view_activity_report", _("Can view activity_report")),
         ]
         verbose_name = _("Customer")
         verbose_name_plural = _("Customers")

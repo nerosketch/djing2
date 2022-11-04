@@ -117,12 +117,11 @@ class CustomerServiceModelManager(models.Manager):
             expired_services = expired_services.filter(customer=customer)
         if expired_services.exists():
             expired_services = expired_services.select_related("customer", "service")
-            # TODO: Replace it logging by trigger from db
-            for exp_srv in expired_services.iterator():
-                if not hasattr(exp_srv, "customer"):
-                    continue
-                exp_srv_customer = exp_srv.customer
-                with transaction.atomic():
+            with transaction.atomic():
+                for exp_srv in expired_services.iterator():
+                    if not hasattr(exp_srv, "customer"):
+                        continue
+                    exp_srv_customer = exp_srv.customer
                     CustomerLog.objects.create(
                         customer=exp_srv_customer,
                         cost=0,
@@ -132,12 +131,43 @@ class CustomerServiceModelManager(models.Manager):
                             "service_name": exp_srv.service.title
                         },
                     )
-                custom_signals.customer_service_post_stop.send(
-                    sender=CustomerService,
-                    instance=exp_srv,
-                    customer=exp_srv_customer
-                )
-            expired_services.delete()
+                    custom_signals.customer_service_post_stop.send(
+                        sender=CustomerService,
+                        instance=exp_srv,
+                        customer=exp_srv_customer
+                    )
+                expired_services.delete()
+
+    def activity_report(self) -> schemas.ActivityReportResponseSchema:
+        qs = super().get_queryset()
+        all_count = qs.count()
+        enabled_count = qs.filter(is_active=True).count()
+        with_services_count = qs.filter(
+            is_active=True
+        ).exclude(
+            current_service=None
+        ).count()
+
+        active_count = (
+            qs.annotate(ips=models.Count("customeripleasemodel"))
+                .filter(is_active=True, ips__gt=0)
+                .exclude(current_service=None)
+                .count()
+        )
+
+        commercial_customers = qs.filter(
+            is_active=True,
+            current_service__service__is_admin=False,
+            current_service__service__cost__gt=0
+        ).exclude(current_service=None).count()
+
+        return schemas.ActivityReportResponseSchema(
+            all_count=all_count,
+            enabled_count=enabled_count,
+            with_services_count=with_services_count,
+            active_count=active_count,
+            commercial_customers=commercial_customers,
+        )
 
 
 class CustomerService(BaseAbstractModel):
@@ -306,6 +336,7 @@ class CustomerService(BaseAbstractModel):
         verbose_name = _("Customer service")
         verbose_name_plural = _("Customer services")
         permissions = [
-            ("can_view_service_type_report", _('Can view service type report'))
+            ("can_view_service_type_report", _('Can view service type report')),
+            ("can_view_activity_report", _("Can view activity_report")),
         ]
 

@@ -337,14 +337,6 @@ class PassportInfoModelSchema(PassportInfoBaseSchema):
     Config = OrmConf
 
 
-class ActivityReportResponseSchema(BaseModel):
-    all_count: int = Field(title='All services count')
-    enabled_count: int = Field(title='Enabled services count')
-    with_services_count: int
-    active_count: int = Field(title='Active services count')
-    commercial_customers: int
-
-
 class GetAfkResponseSchema(BaseModel):
     timediff: str
     last_date: datetime
