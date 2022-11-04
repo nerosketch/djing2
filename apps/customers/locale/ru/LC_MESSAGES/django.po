@@ -234,11 +234,6 @@ msgstr "Может завершать услугу"
 msgid "Can view activity_report"
 msgstr "Может просматривать отчёт об активности абонентов"
 
-#: apps/customers/models.py:730
-msgid "Can view service type report"
-msgstr ""
-"Может просматривать отчёт о распределении использования услуг абонентами"
-
 #: apps/customers/models.py:732
 msgid "Customer"
 msgstr "Абонент"

@@ -1,9 +1,10 @@
 from typing import Optional
 from datetime import datetime, timedelta
 from django.db.models import F
-from customers.models import Customer, CustomerService, CustomerLog
+from customers.models import Customer, CustomerLog
 from customers.tests.customer import CustomAPITestCase
 from services.models import Service
+from .models import CustomerService
 
 
 class CustomerServiceAutoconnectTestCase(CustomAPITestCase):

@@ -3,7 +3,6 @@ from typing import Optional
 
 from customers import models
 from customers.views.view_decorators import catch_customers_errs
-from django.contrib.auth.hashers import make_password
 from django.contrib.sites.models import Site
 from django.db import transaction
 from django.db.models import Count, Q
@@ -150,17 +149,6 @@ def filter_device_port(device_id: int, port_id: int,
         dev_port_id=port_id
     )
     return (schemas.CustomerModelSchema.from_orm(c) for c in customers.iterator())
-
-
-@router.get('/service_type_report/',
-            response_model=schemas.CustomerServiceTypeReportResponseSchema,
-            dependencies=[Depends(permission_check_dependency(
-                perm_codename='customers.can_view_service_type_report'
-            ))]
-            )
-def service_type_report():
-    r = models.Customer.objects.customer_service_type_report()
-    return r
 
 
 @router.get('/activity_report/',
@@ -718,33 +706,6 @@ def ping_all_ips(customer_id: int,
         text=res_text,
         status=res_status
     )
-
-
-@router.get('/{customer_id}/current_service/', responses={
-    status.HTTP_204_NO_CONTENT: {'description': 'Customer has no service'},
-    status.HTTP_200_OK: {'description': 'Customer service details'}
-}, response_model=schemas.DetailedCustomerServiceModelSchema)
-@catch_customers_errs
-def get_current_service(customer_id: int,
-                        curr_site: Site = Depends(sites_dependency),
-                        auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
-                        ):
-    curr_user, token = auth
-
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    if not customer.current_service:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-    curr_srv = customer.current_service
-    return schemas.DetailedCustomerServiceModelSchema.from_orm(curr_srv)
 
 
 @router.post('/{customer_id}/add_balance/')

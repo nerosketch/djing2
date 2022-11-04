@@ -5,7 +5,8 @@ from django.core.management.base import BaseCommand
 from rest_framework.exceptions import ValidationError
 
 from addresses.models import AddressModel
-from customers.models import CustomerService, AdditionalTelephone
+from customers.models import AdditionalTelephone
+from customer_service.models import CustomerService
 from customers_legal.models import CustomerLegalModel
 from devices.device_config.device_type_collection import DEVICE_TYPES
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
