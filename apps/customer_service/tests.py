@@ -1,9 +1,12 @@
+from decimal import Decimal
 from typing import Optional
 from datetime import datetime, timedelta
 from django.db.models import F
-from customers.models import CustomerLog
+from customers.models import CustomerLog, Customer
 from customers.tests.customer import CustomAPITestCase
+from networks.models import CustomerIpLeaseModel
 from services.models import Service
+from customer_service.custom_logic import SERVICE_CHOICE_DEFAULT
 from .models import CustomerService
 
 
@@ -23,7 +26,7 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
 
         self.customer.add_balance(
             profile=self.admin,
-            cost=10,
+            cost=Decimal(10),
             comment='For tests'
         )
         self.customer.auto_renewal_service = True
@@ -79,3 +82,72 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
             cost=2,
         )
         self.assertTrue(logs.exists(), msg=logs)
+
+    def test_get_user_credentials_by_ip(self):
+        customer_service = CustomerService.get_user_credentials_by_ip(ip_addr="10.11.12.2")
+        self.assertIsNotNone(customer_service)
+        self.assertEqual(customer_service.service.speed_in, 10.0)
+        self.assertEqual(customer_service.service.speed_out, 10.0)
+        self.assertEqual(customer_service.service.speed_burst, 1)
+        self.assertEqual(customer_service.service.cost, 10.0)
+        self.assertEqual(customer_service.service.calc_type, SERVICE_CHOICE_DEFAULT)
+
+    def test_not_exists_lease(self):
+        customer_service = CustomerService.get_user_credentials_by_ip(ip_addr="10.11.12.12")
+        self.assertIsNone(customer_service)
+
+    def test_if_ip_is_none(self):
+        customer_service = CustomerService.get_user_credentials_by_ip(ip_addr=None)
+        self.assertIsNone(customer_service)
+
+    def test_if_ip_is_bad(self):
+        customer_service = CustomerService.get_user_credentials_by_ip(ip_addr="10.11.12.12.13")
+        self.assertIsNone(customer_service)
+
+    def test_customer_disabled(self):
+        self.customer.is_active = False
+        self.customer.save(update_fields=["is_active"])
+        # self.customer.refresh_from_db()
+        customer_service = CustomerService.get_user_credentials_by_ip(ip_addr="10.11.12.2")
+        self.assertIsNone(customer_service)
+
+    def test_customer_does_not_have_service(self):
+        self.customer.stop_service(self.customer)
+        customer_service = CustomerService.get_user_credentials_by_ip(ip_addr="10.11.12.2")
+        self.assertIsNone(customer_service)
+
+    def test_customer_with_onu_device(self):
+        # customer for tests
+        customer_onu = Customer.objects.create_user(
+            telephone="+79782345679",
+            username="custo_onu",
+            password="passww",
+            is_active=True
+        )
+        customer_onu.device = self.device_onu
+        customer_onu.add_balance(self.admin, 10000, "test")
+        customer_onu.save()
+        customer_onu.refresh_from_db()
+        customer_onu.pick_service(self.service, customer_onu)
+        self.customer_onu = customer_onu
+
+        self.lease = CustomerIpLeaseModel.objects.filter(
+            ip_address="10.11.12.3",
+        ).update(
+            mac_address="1:2:3:4:5:6",
+            pool=self.ippool,
+            customer=customer_onu,
+            is_dynamic=True,
+        )
+        self.assertIsNotNone(self.lease)
+        # lease must be contain ip_address=10.11.12.3'
+
+        customer_service = CustomerService.get_user_credentials_by_ip(
+            ip_addr="10.11.12.3",
+        )
+        self.assertIsNotNone(customer_service)
+        self.assertEqual(customer_service.service.speed_in, 10.0)
+        self.assertEqual(customer_service.service.speed_out, 10.0)
+        self.assertEqual(customer_service.service.speed_burst, 1)
+        self.assertEqual(customer_service.service.cost, 10.0)
+        self.assertEqual(customer_service.service.calc_type, SERVICE_CHOICE_DEFAULT)

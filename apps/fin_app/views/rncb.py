@@ -1,3 +1,4 @@
+from decimal import Decimal
 from functools import wraps
 from ._general import cached_property
 from datetime import datetime
@@ -197,7 +198,7 @@ class RNCBPaymentViewSet(GenericAPIView):
         with transaction.atomic():
             customer.add_balance(
                 profile=None,
-                cost=pay_amount,
+                cost=Decimal(pay_amount),
                 comment=f"{self._lazy_object.title} {pay_amount:.2f}"
             )
             customer.save(update_fields=("balance",))

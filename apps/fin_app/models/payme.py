@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional
 from datetime import datetime, timedelta
 from django.db import models, transaction
@@ -204,8 +205,7 @@ class PaymeTransactionModelManager(models.Manager):
                 with transaction.atomic():
                     customer.add_balance(
                         profile=None,
-                        # TODO: change to Decimal
-                        cost=float(pay_amount),
+                        cost=pay_amount,
                         comment=f"{gw.title} {pay_amount:.2f}"
                     )
                     customer.save(update_fields=["balance"])

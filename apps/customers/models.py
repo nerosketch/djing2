@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timedelta, date
+from decimal import Decimal
 from typing import Optional, Generator
 
 from addresses.interfaces import IAddressContaining
@@ -126,13 +127,6 @@ class Customer(IAddressContaining, BaseAccount):
         super().__init__(*args, **kwargs)
         self.__before_is_active = bool(self.is_active)
 
-    current_service = models.OneToOneField(
-        CustomerService,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        default=None
-    )
     group = models.ForeignKey(
         Group,
         on_delete=models.SET_NULL,
@@ -148,8 +142,7 @@ class Customer(IAddressContaining, BaseAccount):
         null=True,
         default=None
     )
-    # TODO: Change balance to Decimal
-    balance = models.FloatField(default=0.0)
+    balance = models.DecimalField(default=0.0, max_digits=6, decimal_places=2)
 
     description = models.TextField(
         _("Comment"),
@@ -217,6 +210,7 @@ class Customer(IAddressContaining, BaseAccount):
     objects = CustomerManager.from_queryset(CustomerQuerySet)()
 
     passportinfo: 'PassportInfo'
+    current_service: object  # customer_service.CustomerService
 
     def save(self, *args, **kwargs):
         curr_is_active = bool(self.is_active)
@@ -255,20 +249,22 @@ class Customer(IAddressContaining, BaseAccount):
         self.markers = flags
         self.save(update_fields=["markers"])
 
-    def active_service(self) -> CustomerService:
+    def active_service(self):
         return self.current_service
 
-    def add_balance(self, profile: Optional[BaseAccount], cost: float, comment: str) -> None:
+    def add_balance(self, profile: Optional[BaseAccount], cost: Decimal, comment: str) -> None:
         old_balance = self.balance
-        CustomerLog.objects.create(
-            customer=self,
-            cost=cost,
-            from_balance=old_balance,
-            to_balance=old_balance + cost,
-            author=profile if isinstance(profile, UserProfile) else None,
-            comment=re.sub(r"\W{1,128}", " ", comment)[:128] if comment else '-'
-        )
-        self.balance += cost
+        with transaction.atomic():
+            CustomerLog.objects.create(
+                customer=self,
+                cost=float(cost),
+                from_balance=float(old_balance),
+                to_balance=float(old_balance + cost),
+                author=profile if isinstance(profile, UserProfile) else None,
+                comment=re.sub(r"\W{1,128}", " ", comment)[:128] if comment else '-'
+            )
+            self.balance += cost
+            self.save(update_fields=['balance'])
 
     def get_address(self):
         return self.address
@@ -379,7 +375,7 @@ class Customer(IAddressContaining, BaseAccount):
             if cost_to_return > 0.1:
                 self.add_balance(
                     author_profile,
-                    cost=cost_to_return,
+                    cost=Decimal(cost_to_return),
                     comment=comment or _("End of service, refund of balance")
                 )
                 self.save(
@@ -388,7 +384,7 @@ class Customer(IAddressContaining, BaseAccount):
             else:
                 self.add_balance(
                     author_profile,
-                    cost=0,
+                    cost=Decimal(0),
                     comment=comment or _("End of service")
                 )
             customer_service.delete()
@@ -784,7 +780,7 @@ class PeriodicPayForId(BaseAbstractModel):
             account = self.account
             with transaction.atomic():
                 account.add_balance(
-                    author, -amount, comment=_('Charge for "%(service)s"') % {
+                    author, Decimal(-amount), comment=_('Charge for "%(service)s"') % {
                         "service": self.periodic_pay
                     }
                 )

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from hashlib import md5
 
 from ._general import cached_property
@@ -199,7 +200,7 @@ class AllTimePay(GenericAPIView):
         with transaction.atomic():
             customer.add_balance(
                 profile=None,
-                cost=pay_amount,
+                cost=Decimal(pay_amount),
                 comment=f"{self._lazy_object.title} {pay_amount:.2f}"
             )
             customer.save(update_fields=("balance",))

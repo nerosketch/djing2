@@ -706,7 +706,7 @@ def add_balance(customer_id: int,
                     perm_codename='customers.can_add_balance'
                 ))
                 ):
-    cost = float(payload.cost)
+    cost = payload.cost
     if cost < 0.0:
         check_perm(
             user=curr_user,

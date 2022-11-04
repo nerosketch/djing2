@@ -34,8 +34,8 @@ class FetchCredentialsTestCase(CustomAPITestCase):
         self.ippool.groups.add(self.group)
         self.customer.device = self.device_switch
         self.customer.dev_port = self.ports[1]
-        self.customer.add_balance(self.admin, 10000, "test")
         self.customer.save()
+        self.customer.add_balance(self.admin, 10000, "test")
         self.customer.refresh_from_db()
         self.customer.pick_service(self.service, self.customer)
 
