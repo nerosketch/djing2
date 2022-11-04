@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import datetime, timedelta
 from django.db.models import F
-from customers.models import Customer, CustomerLog
+from customers.models import CustomerLog
 from customers.tests.customer import CustomAPITestCase
 from services.models import Service
 from .models import CustomerService
@@ -54,7 +54,7 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         # before all, initial
         self.assertEqual(customer.current_service.service.pk, self.service.pk)
         self.assertEqual(customer.balance, 10)
-        Customer.objects.continue_services_if_autoconnect(customer=customer)
+        CustomerService.objects.continue_services_if_autoconnect(customer=customer)
 
         # after first try, when time not expired
         self.assertEqual(customer.balance, 10)
@@ -67,7 +67,7 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         )
 
         # now time is expired, continue service
-        Customer.objects.continue_services_if_autoconnect(customer=customer)
+        CustomerService.objects.continue_services_if_autoconnect(customer=customer)
         customer.refresh_from_db()
         self.assertEqual(customer.balance, 8)
         self.assertEqual(customer.current_service.service.pk, self.service.pk)

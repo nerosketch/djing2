@@ -16,7 +16,7 @@ from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
 from fin_app.serializers import rncb as serializers_rncb
 try:
     from customers.models import Customer
-    from customers.tasks import customer_check_service_for_expiration_task
+    from customer_service.tasks import customer_check_service_for_expiration_task
 except ImportError as imperr:
     from django.core.exceptions import ImproperlyConfigured
 

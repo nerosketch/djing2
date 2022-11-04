@@ -6,3 +6,4 @@ class CustomerServiceConfig(AppConfig):
 
     def ready(self) -> None:
         from customer_service import signals  # noqa
+        from customer_service import tasks  # noqa

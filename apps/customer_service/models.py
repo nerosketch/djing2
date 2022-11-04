@@ -169,6 +169,43 @@ class CustomerServiceModelManager(models.Manager):
             commercial_customers=commercial_customers,
         )
 
+    @staticmethod
+    def continue_services_if_autoconnect(customer=None) -> None:
+        # TODO: test it
+        """
+        If customer service has expired and automatic connect
+        is enabled, then update service start_time, deadline,
+        and flush money from customer balance
+        :param customer: This is Customer instance, if doing it for him alone
+        :return: nothing
+        """
+        now = datetime.now()
+        expired_services = CustomerService.objects.select_related(
+            'customer', 'service'
+        ).filter(
+            deadline__lte=now,
+            customer__auto_renewal_service=True
+        )
+        if isinstance(customer, Customer):
+            expired_services = expired_services.filter(customer=customer)
+        for expired_service in expired_services.iterator():
+            if not hasattr(expired_service, "customer"):
+                continue
+            expired_service_customer = expired_service.customer
+            service = expired_service.service
+            if expired_service_customer.balance >= service.cost:
+                # can continue service
+                expired_service.continue_for_customer(now=now)
+            else:
+                # finish service otherwise
+                expired_service_customer.stop_service(
+                    author_profile=None,
+                    comment=_("Service '%(service_name)s' has expired") % {
+                        "service_name": service.title
+                    },
+                    force_cost=0.0
+                )
+
 
 class CustomerService(BaseAbstractModel):
     service = models.ForeignKey(
