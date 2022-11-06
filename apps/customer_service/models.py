@@ -208,15 +208,15 @@ class CustomerServiceModelManager(models.Manager):
 
 
 class CustomerService(BaseAbstractModel):
-    current_service = models.OneToOneField(
+    customer = models.OneToOneField(
         Customer,
         related_name='current_service',
         on_delete=models.CASCADE,
     )
     service = models.ForeignKey(
         Service,
+        related_name="link_to_service",
         on_delete=models.CASCADE,
-        related_name="link_to_service"
     )
     start_time = models.DateTimeField(
         null=True,
@@ -381,4 +381,3 @@ class CustomerService(BaseAbstractModel):
             ("can_view_service_type_report", _('Can view service type report')),
             ("can_view_activity_report", _("Can view activity_report")),
         ]
-
