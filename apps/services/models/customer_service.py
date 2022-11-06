@@ -15,7 +15,6 @@ from services.models import OneShotPay, PeriodicPay, Service
 from services import custom_signals
 from services import schemas
 
-
 RADIUS_SESSION_TIME = getattr(settings, "RADIUS_SESSION_TIME", 3600)
 
 
@@ -38,7 +37,7 @@ class CustomerServiceQuerySet(models.QuerySet):
             "cs.deadline < now() and",
             "c.auto_renewal_service and",
             "c.balance %s s.cost" % balance_equal_operator,
-            ]
+        ]
         customer_id = safe_int(customer_id)
         params = None
         if customer_id > 0:

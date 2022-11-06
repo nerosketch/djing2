@@ -394,7 +394,8 @@ class Customer(IAddressContaining, BaseAccount):
             customer=self
         )
 
-    def make_shot(self, user_profile: UserProfile, shot: OneShotPay, allow_negative=False, comment=None) -> bool:
+    def make_shot(self, user_profile: UserProfile, shot: OneShotPay,
+                  allow_negative=False, comment=None) -> bool:
         """
         Makes one-time service for accounting services.
         :param user_profile: profiles.UserProfile instance, current authorized user.

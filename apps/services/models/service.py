@@ -77,6 +77,7 @@ class Service(BaseAbstractModel):
 
     def calc_deadline(self):
         calc_type = self.get_calc_type()
+        # FIXME: must pass CustomerService instance into calc_type
         calc_obj = calc_type(self)
         return calc_obj.calc_deadline()
 
@@ -102,7 +103,9 @@ class PeriodicPay(BaseAbstractModel):
     name = models.CharField(_("Periodic pay name"), max_length=64)
     when_add = models.DateTimeField(_("When pay created"), auto_now_add=True)
     calc_type = models.PositiveSmallIntegerField(
-        verbose_name=_("Script type for calculations"), default=PERIODIC_PAY_CALC_DEFAULT, choices=PERIODIC_PAY_CHOICES
+        verbose_name=_("Script type for calculations"),
+        default=PERIODIC_PAY_CALC_DEFAULT,
+        choices=PERIODIC_PAY_CHOICES
     )
     amount = models.FloatField(_("Total amount"))
     extra_info = models.JSONField(_("Extra info"), null=True, blank=True)
