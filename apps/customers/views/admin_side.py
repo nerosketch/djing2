@@ -499,55 +499,6 @@ def super_user_get_customer_token_by_phone(data: schemas.TokenRequestSchema):
     )
 
 
-@router.post('/{customer_id}/pick_service/', responses={
-    status.HTTP_200_OK: {
-        'description': 'Service successfully picked'
-    },
-    status.HTTP_402_PAYMENT_REQUIRED: {
-        'description': gettext('Your account have not enough money')
-    }
-})
-@catch_customers_errs
-def customer_pick_service(customer_id: int, payload: schemas.PickServiceRequestSchema,
-                          curr_site: Site = Depends(sites_dependency),
-                          curr_user: UserProfile = Depends(permission_check_dependency(
-                              perm_codename='customers.can_buy_service'
-                          )),
-                          ):
-    """Trying to buy a service if enough money."""
-
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    )
-    customer = get_object_or_404(customers_queryset, pk=customer_id)
-    service_queryset = general_filter_queryset(
-        qs_or_model=Service,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='services.view_service'
-    )
-    srv = get_object_or_404(service_queryset, pk=payload.service_id)
-
-    log_comment = _("Service '%(service_name)s' has connected via admin until %(deadline)s") % {
-        "service_name": srv.title,
-        "deadline": payload.deadline,
-    }
-    try:
-        srv.pick_service(
-            customer=customer,
-            author=curr_user,
-            comment=log_comment,
-            deadline=payload.deadline,
-            allow_negative=True
-        )
-    except models.NotEnoughMoney as e:
-        return Response(str(e), status_code=status.HTTP_402_PAYMENT_REQUIRED)
-    return Response('Ok', status_code=status.HTTP_200_OK)
-
-
 @router.post('/{customer_id}/make_shot/', responses={
     status.HTTP_403_FORBIDDEN: {
         'description': 'making payment shot not possible'

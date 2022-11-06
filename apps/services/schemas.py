@@ -56,3 +56,8 @@ class ActivityReportResponseSchema(BaseModel):
     with_services_count: int
     active_count: int = Field(title='Active services count')
     commercial_customers: int
+
+
+class PickServiceRequestSchema(BaseModel):
+    service_id: int
+    deadline: Optional[datetime] = None

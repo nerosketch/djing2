@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends
 from starlette import status
 from pydantic import BaseModel, Field
 from services.models import Service
+from services.schemas import DetailedCustomerServiceModelSchema
 
 from .view_decorators import catch_customers_errs
 from .. import schemas
@@ -71,11 +72,11 @@ def set_auto_new_service(payload: schemas.UserAutoRenewalServiceSchema,
     return 'ok'
 
 
-@router.get('/service/', response_model=Optional[schemas.DetailedCustomerServiceModelSchema])
+@router.get('/service/', response_model=Optional[DetailedCustomerServiceModelSchema])
 def get_service_details(current_user: models.Customer = Depends(is_customer_auth_dependency)):
     act_srv = current_user.active_service()
     if act_srv:
-        return schemas.DetailedCustomerServiceModelSchema.from_orm(act_srv)
+        return DetailedCustomerServiceModelSchema.from_orm(act_srv)
     return None
 
 

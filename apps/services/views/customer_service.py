@@ -1,4 +1,5 @@
 from django.contrib.sites.models import Site
+from django.utils.translation import gettext
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
 from djing2.lib.fastapi.perms import permission_check_dependency
 from djing2.lib.fastapi.sites_depend import sites_dependency
@@ -8,8 +9,10 @@ from fastapi import APIRouter, Depends, Response
 from starlette import status
 from customers.views.view_decorators import catch_customers_errs
 from customers.models import Customer
+from profiles.models import UserProfile
 from services import schemas
 from services import models
+from services.models import Service
 
 router = APIRouter(
     prefix='/customer_service',
@@ -63,5 +66,54 @@ def get_current_service(customer_id: int,
             ))]
             )
 def get_activity_report():
-    r = models.Customer.objects.activity_report()
+    r = Customer.objects.activity_report()
     return r
+
+
+@router.post('/{customer_id}/pick_service/', responses={
+    status.HTTP_200_OK: {
+        'description': 'Service successfully picked'
+    },
+    status.HTTP_402_PAYMENT_REQUIRED: {
+        'description': gettext('Your account have not enough money')
+    }
+})
+@catch_customers_errs
+def customer_pick_service(customer_id: int, payload: schemas.PickServiceRequestSchema,
+                          curr_site: Site = Depends(sites_dependency),
+                          curr_user: UserProfile = Depends(permission_check_dependency(
+                              perm_codename='customers.can_buy_service'
+                          )),
+                          ):
+    """Trying to buy a service if enough money."""
+
+    customers_queryset = general_filter_queryset(
+        qs_or_model=Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.view_customer'
+    )
+    customer = get_object_or_404(customers_queryset, pk=customer_id)
+    service_queryset = general_filter_queryset(
+        qs_or_model=Service,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='services.view_service'
+    )
+    srv = get_object_or_404(service_queryset, pk=payload.service_id)
+
+    log_comment = gettext("Service '%(service_name)s' has connected via admin until %(deadline)s") % {
+        "service_name": srv.title,
+        "deadline": payload.deadline,
+    }
+    try:
+        srv.pick_service(
+            customer=customer,
+            author=curr_user,
+            comment=log_comment,
+            deadline=payload.deadline,
+            allow_negative=True
+        )
+    except models.NotEnoughMoney as e:
+        return Response(str(e), status_code=status.HTTP_402_PAYMENT_REQUIRED)
+    return Response('Ok', status_code=status.HTTP_200_OK)
