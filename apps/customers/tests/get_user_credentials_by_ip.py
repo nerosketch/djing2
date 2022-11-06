@@ -8,6 +8,8 @@ from .customer import CustomAPITestCase
 
 
 class BaseServiceTestCase(CustomAPITestCase):
+    service: Service
+
     def setUp(self):
         # Initialize customers instances
         super().setUp()
@@ -45,7 +47,10 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
         self.customer.add_balance(self.admin, Decimal(10000), "test")
         self.customer.save()
         self.customer.refresh_from_db()
-        self.customer.pick_service(self.service, self.customer)
+        self.service.pick_service(
+            customer=self.customer,
+            author=self.customer
+        )
 
         self.lease = CustomerIpLeaseModel.objects.filter(
             ip_address="10.11.12.2",
