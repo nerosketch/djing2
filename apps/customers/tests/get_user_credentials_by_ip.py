@@ -1,6 +1,5 @@
 from decimal import Decimal
 
-from customers.models import Customer
 from devices.tests import device_test_case_set_up
 from networks.models import CustomerIpLeaseModel, NetworkIpPool, NetworkIpPoolKind
 from services.models import Service
