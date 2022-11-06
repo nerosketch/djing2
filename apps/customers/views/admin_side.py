@@ -536,8 +536,8 @@ def customer_pick_service(customer_id: int, payload: schemas.PickServiceRequestS
         "deadline": payload.deadline,
     }
     try:
-        customer.pick_service(
-            service=srv,
+        srv.pick_service(
+            customer=customer,
             author=curr_user,
             comment=log_comment,
             deadline=payload.deadline,

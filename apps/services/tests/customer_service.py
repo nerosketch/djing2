@@ -127,7 +127,11 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         customer_onu.add_balance(self.admin, 10000, "test")
         customer_onu.save()
         customer_onu.refresh_from_db()
-        customer_onu.pick_service(self.service, customer_onu)
+        self.service.pick_service(
+            customer=customer_onu,
+            author=customer_onu
+        )
+
         self.customer_onu = customer_onu
 
         self.lease = CustomerIpLeaseModel.objects.filter(

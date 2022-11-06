@@ -102,7 +102,10 @@ def create_full_customer(uname: str,
         cost=service_cost,
         calc_type=service_calc_type
     )
-    customer.pick_service(service, customer)
+    service.pick_service(
+        customer=customer,
+        author=customer
+    )
     return CreateFullCustomerReturnType(
         group=group,
         customer=customer,

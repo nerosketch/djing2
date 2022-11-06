@@ -48,8 +48,8 @@ def buy_service(payload: schemas.UserBuyServiceSchema,
     service_id = payload.service_id
     srv = get_object_or_404(Service, pk=service_id)
 
-    current_user.pick_service(
-        service=srv,
+    srv.pick_service(
+        customer=current_user,
         author=current_user,
         comment=gettext("Buy the service via user side, service '%s'") % srv,
         allow_negative=False,

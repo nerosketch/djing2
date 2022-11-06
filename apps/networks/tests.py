@@ -20,7 +20,10 @@ class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
         self.customer.save()
         self.customer.add_balance(self.admin, Decimal(10000), "test")
         self.customer.refresh_from_db()
-        self.customer.pick_service(self.service, self.customer)
+        self.service.pick_service(
+            customer=self.customer,
+            author=self.customer
+        )
 
         # customer for tests
         custo2 = Customer.objects.create_user(

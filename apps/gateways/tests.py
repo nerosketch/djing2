@@ -1,4 +1,6 @@
-from rest_framework import status
+from decimal import Decimal
+
+from starlette import status
 
 from customers.tests.customer import CustomAPITestCase
 from devices.tests import device_test_case_set_up
@@ -35,9 +37,12 @@ class FetchCredentialsTestCase(CustomAPITestCase):
         self.customer.device = self.device_switch
         self.customer.dev_port = self.ports[1]
         self.customer.save()
-        self.customer.add_balance(self.admin, 10000, "test")
+        self.customer.add_balance(self.admin, Decimal(10000), "test")
         self.customer.refresh_from_db()
-        self.customer.pick_service(self.service, self.customer)
+        self.service.pick_service(
+            customer=self.customer,
+            author=self.customer
+        )
 
         self.lease = CustomerIpLeaseModel.objects.filter(
             ip_address="10.11.12.2",

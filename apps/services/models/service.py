@@ -143,7 +143,7 @@ class Service(BaseAbstractModel):
                 CustomerService.objects.create(
                     customer=customer,
                     service=self,
-                    start_time=now,
+                    start_time=datetime.now(),
                     deadline=deadline,
                 )
 
