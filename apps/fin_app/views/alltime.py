@@ -20,7 +20,7 @@ from fin_app.models.alltime import AllTimePaymentLog, AllTimePayGateway
 
 try:
     from customers.models import Customer
-    from customer_service.tasks import customer_check_service_for_expiration_task
+    from services.tasks import customer_check_service_for_expiration_task
 except ImportError as imperr:
     from django.core.exceptions import ImproperlyConfigured
 

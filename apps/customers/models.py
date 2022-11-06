@@ -210,7 +210,7 @@ class Customer(IAddressContaining, BaseAccount):
     objects = CustomerManager.from_queryset(CustomerQuerySet)()
 
     passportinfo: 'PassportInfo'
-    current_service: object  # customer_service.CustomerService
+    current_service: object  # services.CustomerService
 
     def save(self, *args, **kwargs):
         curr_is_active = bool(self.is_active)

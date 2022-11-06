@@ -1,7 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
 from djing2 import celery_app
-from customer_service.models import CustomerService
+from services.models import CustomerService
 from sorm_export.hier_export.service import ManualDataCustomerServiceSimpleExportTree, CustomerServiceExportTree
 from sorm_export.hier_export.customer import ContactSimpleExportTree
 

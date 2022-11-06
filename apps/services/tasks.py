@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from customer_service.models import CustomerService
+from services.models import CustomerService
 from customers.models import Customer
 from djing2 import celery_app
 from djing2.lib import LogicError
@@ -62,8 +62,8 @@ def manage_services():
     CustomerService.objects.continue_services_if_autoconnect()
     CustomerService.objects.finish_services_if_expired()
 
-    # Post connect service
-    # connect service when autoconnect is True, and user have enough money
+    # Post connect service.
+    # Connect service when autoconnect is True, and user have enough money
     _manage_post_connect_services()
 
     _manage_periodic_pays_run()

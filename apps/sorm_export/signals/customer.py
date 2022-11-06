@@ -7,7 +7,7 @@ from django.utils.translation import gettext
 
 from djing2.lib import LogicError
 from customers.models import Customer
-from customer_service.models import CustomerService
+from services.models import CustomerService
 from customers.custom_signals import customer_turns_on
 from sorm_export.models import ExportFailedStatus
 from sorm_export.tasks.customer import (

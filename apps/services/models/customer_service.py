@@ -12,8 +12,8 @@ from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked, get_past
 from profiles.models import UserProfile
 from services.custom_logic import SERVICE_CHOICES
 from services.models import OneShotPay, PeriodicPay, Service
-from . import custom_signals
-from . import schemas
+from services import custom_signals
+from services import schemas
 
 
 RADIUS_SESSION_TIME = getattr(settings, "RADIUS_SESSION_TIME", 3600)

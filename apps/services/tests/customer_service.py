@@ -5,9 +5,8 @@ from django.db.models import F
 from customers.models import CustomerLog, Customer
 from customers.tests.customer import CustomAPITestCase
 from networks.models import CustomerIpLeaseModel
-from services.models import Service
-from customer_service.custom_logic import SERVICE_CHOICE_DEFAULT
-from .models import CustomerService
+from services.models import Service, CustomerService
+from services.custom_logic import SERVICE_CHOICE_DEFAULT
 
 
 class CustomerServiceAutoconnectTestCase(CustomAPITestCase):

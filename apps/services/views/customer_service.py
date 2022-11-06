@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, Response
 from starlette import status
 from customers.views.view_decorators import catch_customers_errs
 from customers.models import Customer
-from . import schemas
-from . import models
+from services import schemas
+from services import models
 
 router = APIRouter(
     prefix='/customer_service',
@@ -21,7 +21,7 @@ router = APIRouter(
 @router.get('/service_type_report/',
             response_model=schemas.CustomerServiceTypeReportResponseSchema,
             dependencies=[Depends(permission_check_dependency(
-                perm_codename='customer_service.can_view_service_type_report'
+                perm_codename='services.can_view_service_type_report'
             ))]
             )
 def service_type_report():

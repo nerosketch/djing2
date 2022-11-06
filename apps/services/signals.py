@@ -1,7 +1,7 @@
 from datetime import datetime
 from django.db.models.signals import post_init, pre_save
 from django.dispatch.dispatcher import receiver
-from customer_service.models import CustomerService
+from services.models import CustomerService
 
 
 @receiver(post_init, sender=CustomerService)

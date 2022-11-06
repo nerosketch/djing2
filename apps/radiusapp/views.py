@@ -9,7 +9,7 @@ from starlette import status
 from starlette.responses import Response, JSONResponse
 
 from customers.models import Customer
-from customer_service.models import CustomerService
+from services.models import CustomerService
 from djing2.lib import LogicError, safe_int
 from djing2.lib.logger import logger
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
