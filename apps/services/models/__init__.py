@@ -1,4 +1,3 @@
-from .service import Service, PeriodicPay, OneShotPay
-from .customer_service import CustomerService
+from .service import Service, PeriodicPay, OneShotPay, CustomerService
 
 __all__ = ['Service', 'PeriodicPay', 'OneShotPay', 'CustomerService']

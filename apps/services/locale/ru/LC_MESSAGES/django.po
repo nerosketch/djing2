@@ -145,3 +145,9 @@ msgstr ""
 
 msgid "Can view activity_report"
 msgstr "Может просматривать отчёт об активности абонентов"
+
+msgid "User who is no staff can not buy admin services"
+msgstr ""
+"Этот пользователь не является сотрудником и не может назначать "
+"административные услуги"
+

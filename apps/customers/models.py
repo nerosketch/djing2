@@ -23,10 +23,6 @@ from services.models import OneShotPay, PeriodicPay, Service
 from . import custom_signals
 
 
-class NotEnoughMoney(LogicError):
-    default_detail = _("not enough money")
-
-
 class CustomerLog(BaseAbstractModel):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
     cost = models.FloatField(default=0.0)
@@ -260,7 +256,7 @@ class Customer(IAddressContaining, BaseAccount):
                 cost=float(cost),
                 from_balance=float(old_balance),
                 to_balance=float(old_balance + cost),
-                author=profile if isinstance(profile, UserProfile) else None,
+                author=profile if isinstance(profile, BaseAccount) else None,
                 comment=re.sub(r"\W{1,128}", " ", comment)[:128] if comment else '-'
             )
             self.balance += cost
@@ -268,85 +264,6 @@ class Customer(IAddressContaining, BaseAccount):
 
     def get_address(self):
         return self.address
-
-    def pick_service(
-        self, service, author: Optional[BaseAccount],
-        comment=None, deadline=None, allow_negative=False
-    ) -> None:
-        """
-        Trying to buy a service if enough money.
-        :param allow_negative: Allows negative balance
-        :param service: instance of services.models.Service.
-        :param author: Instance of profiles.models.UserProfile.
-         Who connected this service. May be None if author is a system.
-        :param comment: Optional text for logging this pay.
-        :param deadline: Instance of datetime.datetime. Date when service is
-         expired.
-        :return: Nothing
-        """
-        if not isinstance(service, Service):
-            raise TypeError("service must be instance of services.models.Service")
-
-        cost = round(service.cost, 2)
-
-        if service.is_admin and author is not None:
-            if not author.is_staff:
-                raise LogicError(_("User who is no staff can not buy admin services"))
-
-        if self.current_service is not None:
-            if self.current_service.service == service:
-                # if service already connected
-                raise LogicError(_("That service already activated"))
-
-            # if service is present then speak about it
-            raise LogicError(_("Service already activated"))
-
-        if allow_negative and (author is None or not author.is_staff):
-            raise LogicError(_("User, who is no staff, can not be buy services on credit"))
-
-        # if not enough money
-        if not allow_negative and self.balance < cost:
-            raise NotEnoughMoney(
-                _("%(uname)s not enough money for service %(srv_name)s")
-                % {"uname": self.username, "srv_name": service}
-            )
-
-        custom_signals.customer_service_pre_pick.send(
-            sender=Customer,
-            instance=self,
-            service=service
-        )
-        old_balance = self.balance
-        with transaction.atomic():
-            self.current_service = CustomerService.objects.create(
-                deadline=deadline,
-                service=service
-            )
-            updated_fields = ["balance", "current_service"]
-            if self.last_connected_service != service:
-                self.last_connected_service = service
-                updated_fields.append("last_connected_service")
-
-            # charge for the service
-            self.balance -= cost
-
-            self.save(update_fields=updated_fields)
-
-            # make log about it
-            # TODO: move it to db trigger
-            CustomerLog.objects.create(
-                customer=self,
-                cost=-cost,
-                from_balance=old_balance,
-                to_balance=old_balance - cost,
-                author=author,
-                comment=comment or _("Buy service default log")
-            )
-        custom_signals.customer_service_post_pick.send(
-            sender=Customer,
-            instance=self,
-            service=service
-        )
 
     def stop_service(self, author_profile: Optional[UserProfile],
                      comment: Optional[str] = None,

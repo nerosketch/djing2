@@ -139,19 +139,9 @@ msgstr "Красный телефон"
 msgid "Green phone"
 msgstr "Зелёный телефон"
 
-#: apps/customers/models.py:521
-msgid "User who is no staff can not buy admin services"
-msgstr ""
-"Этот пользователь не является сотрудником и не может назначать "
-"административные услуги"
-
 #: apps/customers/models.py:526
 msgid "That service already activated"
 msgstr "Эта услуга уже подключена"
-
-#: apps/customers/models.py:529
-msgid "Service already activated"
-msgstr "Услуга уже подключена"
 
 #: apps/customers/models.py:532
 msgid "User, who is no staff, can not be buy services on credit"
