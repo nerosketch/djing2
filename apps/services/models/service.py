@@ -8,14 +8,14 @@ from rest_framework.settings import api_settings
 
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
-from .custom_logic import (
+from services.custom_logic import (
     SERVICE_CHOICES,
     PERIODIC_PAY_CALC_DEFAULT,
     PERIODIC_PAY_CHOICES,
     ONE_SHOT_TYPES,
     ONE_SHOT_DEFAULT,
 )
-from .custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase, OneShotBaseService
+from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase, OneShotBaseService
 
 
 class ServiceManager(models.Manager):

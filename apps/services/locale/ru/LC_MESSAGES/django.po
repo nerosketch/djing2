@@ -138,3 +138,10 @@ msgstr "Тип одноразового платежа"
 #: apps/services/models.py:165
 msgid "Uses for callbacks before pay and after pay"
 msgstr "Используется для настраиваемых хуков перед и после платежа"
+
+msgid "Can view service type report"
+msgstr ""
+"Может просматривать отчёт о распределении использования услуг абонентами"
+
+msgid "Can view activity_report"
+msgstr "Может просматривать отчёт об активности абонентов"

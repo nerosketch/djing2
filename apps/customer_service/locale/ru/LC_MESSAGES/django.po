@@ -1,8 +1,0 @@
-
-msgid "Can view service type report"
-msgstr ""
-"Может просматривать отчёт о распределении использования услуг абонентами"
-
-
-msgid "Can view activity_report"
-msgstr "Может просматривать отчёт об активности абонентов"
