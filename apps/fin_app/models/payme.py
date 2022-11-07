@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import Optional
 from datetime import datetime, timedelta
 from django.db import models, transaction
@@ -12,7 +11,7 @@ from .base_payment_model import (
     add_payment_type
 )
 from customers.models import Customer
-from customer_service.tasks import customer_check_service_for_expiration_task
+from services.tasks import customer_check_service_for_expiration_task
 
 
 PAYME_DB_TYPE_ID = 4

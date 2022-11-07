@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from customer_service.models import CustomerService
+from services.models import CustomerService
 from .base import format_fname, ExportTree, SimpleExportTree
 from sorm_export.serializers.customer_service_serializer import CustomerServiceIncrementalFormat
 from sorm_export.serializers.service_serializer import ServiceIncrementalNomenclature
