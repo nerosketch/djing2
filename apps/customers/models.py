@@ -10,7 +10,7 @@ from django.conf import settings
 from django.core import validators
 from django.db import connection, models, transaction
 from django.utils.translation import gettext as _
-from djing2.lib import LogicError, safe_float, safe_int, ProcessLocked, get_past_time_days
+from djing2.lib import ProcessLocked, get_past_time_days
 from djing2.lib.mixins import RemoveFilterQuerySetMixin
 from djing2.models import BaseAbstractModel
 from dynamicfields.models import AbstractDynamicFieldContentModel
@@ -18,7 +18,9 @@ from encrypted_model_fields.fields import EncryptedCharField
 from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from pydantic import BaseModel
-from services.models import OneShotPay, PeriodicPay, Service
+
+# FIXME: eliminate services import
+from services.models import OneShotPay, PeriodicPay, Service, NotEnoughMoney
 
 from . import custom_signals
 
@@ -278,7 +280,7 @@ class Customer(IAddressContaining, BaseAccount):
         if not isinstance(shot, OneShotPay):
             return False
 
-        cost = round(shot.calc_cost(self), 3)
+        cost = Decimal(shot.calc_cost(self))
 
         # if not enough money
         if not allow_negative and self.balance < cost:
@@ -286,23 +288,15 @@ class Customer(IAddressContaining, BaseAccount):
                 detail=_("%(uname)s not enough money for service %(srv_name)s")
                        % {"uname": self.username, "srv_name": shot.name}
             )
-        old_balance = self.balance
-        with transaction.atomic():
-            # charge for the service
-            self.balance -= cost
-            self.save(update_fields=["balance"])
 
-            # make log about it
-            CustomerLog.objects.create(
-                customer=self,
-                cost=-cost,
-                from_balance=old_balance,
-                to_balance=old_balance - cost,
-                author=user_profile,
-                comment=comment or _('Buy one-shot service for "%(title)s"') % {
-                    "title": shot.name
-                },
-            )
+        self.add_balance(
+            profile=user_profile,
+            cost=-cost,
+            comment=comment or _('Buy one-shot service for "%(title)s"') % {
+                "title": shot.name
+            }
+        )
+
         return True
 
     def make_periodic_pay(self, periodic_pay: PeriodicPay, next_pay: datetime):
