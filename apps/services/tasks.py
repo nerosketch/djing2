@@ -3,7 +3,9 @@ from datetime import datetime
 from services.models import PeriodicPayForId, CustomerService
 from customers.models import Customer
 from djing2 import celery_app
-from djing2.lib import LogicError, logger
+from djing2.lib import LogicError
+from djing2.lib.logger import logger
+from services.models.service import connect_service_if_autoconnect
 
 
 def customer_check_service_for_expiration(customer_id: int):
@@ -18,7 +20,7 @@ def customer_check_service_for_expiration(customer_id: int):
             if customer.current_service:
                 CustomerService.objects.continue_services_if_autoconnect(customer=customer)
             else:
-                customer.connect_service_if_autoconnect()
+                connect_service_if_autoconnect(customer_id=customer_id)
         else:
             Customer.objects.finish_services_if_expired(customer=customer)
 
@@ -43,32 +45,17 @@ def _manage_periodic_pays_run():
         pay.payment_for_service(now=now)
 
 
-def _manage_post_connect_services():
-    customers = Customer.objects.filter(
-        is_active=True,
-        current_service=None,
-        auto_renewal_service=True
-    )
-    for customer in customers.iterator():
-        try:
-            customer.connect_service_if_autoconnect()
-        except LogicError:
-            # TODO: May be log it?
-            pass
-
-
 @celery_app.task
 def manage_services():
     CustomerService.objects.continue_services_if_autoconnect()
     CustomerService.objects.finish_services_if_expired()
 
     # Post connect service.
-    # Connect service when autoconnect is True, and user have enough money
-    _manage_post_connect_services()
+    connect_service_if_autoconnect()
 
     _manage_periodic_pays_run()
 
 
 celery_app.add_periodic_task(
-    1800, manage_services.s(), name='Manage customer services every 30 min'
+    600, manage_services.s(), name='Manage customer services every 60 min'
 )

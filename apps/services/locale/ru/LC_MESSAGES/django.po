@@ -151,3 +151,6 @@ msgstr ""
 "Этот пользователь не является сотрудником и не может назначать "
 "административные услуги"
 
+#, python-format
+msgid "Automatic connect service '%(service_name)s'"
+msgstr "Автоматическое включение услуги '%(service_name)s'"

@@ -268,34 +268,6 @@ class Customer(IAddressContaining, BaseAccount):
         ct = trf.get_calc_type()(customer_service)
         return ct.manage_access(self)
 
-    def connect_service_if_autoconnect(self):
-        """
-        If customer service has expired, and then finished, and
-        automatic continue is enabled, then connect new service
-        from now
-        :return: nothing
-        """
-        if not self.is_active:
-            return
-        if self.current_service:
-            return
-        if not self.auto_renewal_service:
-            return
-        # FIXME: change last_connected_service for something else
-        if not self.last_connected_service:
-            return
-
-        srv = self.last_connected_service
-        if not srv or srv.is_admin:
-            return
-        self.pick_service(
-            service=srv,
-            author=None,
-            comment=_("Automatic connect service '%(service_name)s'") % {
-                "service_name": srv.title
-            },
-        )
-
     @property
     def full_address(self):
         if self.address:

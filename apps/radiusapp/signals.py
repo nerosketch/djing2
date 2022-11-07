@@ -5,7 +5,7 @@ from rest_framework import status
 
 from networks import tasks
 from networks.models import CustomerIpLeaseModel
-from customers import custom_signals as customer_custom_signals
+from services import custom_signals as customer_custom_signals
 from customers.models import Customer
 from radiusapp.vendor_base import SpeedInfoStruct, IVendorSpecific
 
@@ -18,7 +18,7 @@ def customer_post_pick_service_signal_handler(sender, instance: Customer, servic
     :param instance:
     :param service: instance of services.Service.
     """
-    if not instance.current_service_id:
+    if not instance.current_service:
         raise LogicError(
             detail="Server error: Customer has not current_service",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR

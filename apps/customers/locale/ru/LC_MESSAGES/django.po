@@ -171,11 +171,6 @@ msgstr "Завершение услуги"
 msgid "Buy one-shot service for \"%(title)s\""
 msgstr "Купить одноразовую услуга \"%(title)s\""
 
-#: apps/customers/models.py:677
-#, python-format
-msgid "Automatic connect service '%(service_name)s'"
-msgstr "Автоматическое включение услуги '%(service_name)s'"
-
 #: apps/customers/models.py:706
 msgid "Customer has not ips"
 msgstr "У абонента нет ip адресов"
