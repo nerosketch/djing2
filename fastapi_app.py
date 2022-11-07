@@ -18,6 +18,7 @@ apps.populate(settings.INSTALLED_APPS)
 from djing2.routers import router
 from djing2.lib.fastapi.amqp_client import AmqpProxyClient
 from djing2.lib.fastapi.http_exceptions import handler_pairs
+from djing2.middleware import apply_middlewares
 
 
 class MainApp(FastAPI):
@@ -61,6 +62,8 @@ def get_application() -> MainApp:
 
 
 app = get_application()
+
+apply_middlewares(app)
 
 
 async def start_():

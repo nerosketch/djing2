@@ -17,8 +17,11 @@ class CustomerContractBaseSchema(BaseModel):
 
 
 class CustomerContractSchema(CustomerContractBaseSchema):
-    id: int
+    id: Optional[int] = None
     is_active: bool = False
+    contract_number: str = ''
+    customer_id: Optional[int] = None
+    start_service_time: Optional[datetime] = None
 
     Config = OrmConf
 

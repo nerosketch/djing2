@@ -366,6 +366,9 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
 
         now = datetime(year=2017, month=1, day=1)
 
+        def _after(days: int):
+            return now + timedelta(days=days)
+
         logs = [
             models_rncb.RNCBPaymentLog(
                 customer=self.customer,
@@ -377,21 +380,21 @@ class RNCBPaymentBalanceCheckerAPITestCase(APITestCase):
             models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12838,
-                acct_time=now + timedelta(days=2),
+                acct_time=_after(days=2),
                 amount=2,
                 pay_gw=self.pay_system
             ),
             models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12839,
-                acct_time=now + timedelta(days=6),
+                acct_time=_after(days=6),
                 amount=3,
                 pay_gw=self.pay_system
             ),
             models_rncb.RNCBPaymentLog(
                 customer=self.customer,
                 pay_id=12840,
-                acct_time=now + timedelta(days=8),
+                acct_time=_after(days=8),
                 amount=5,
                 pay_gw=self.pay_system
             )
@@ -680,13 +683,13 @@ class PaymeMerchantApiTestCase(CustomAPITestCase):
         })
 
     def test_perform_transaction_bad_state(self):
-        edatetime = datetime.now() + timedelta(days=1)
+        tomorrow = datetime.now() + timedelta(days=1)
         trans = models_payme.PaymeTransactionModel.objects.create(
             customer=self.customer,
             transaction_state=models_payme.TransactionStatesEnum.INITIAL,
             external_id='5305e3bab097f420a62ced0a',
-            external_time=edatetime,
-            perform_time=edatetime + timedelta(days=3),
+            external_time=tomorrow,
+            perform_time=tomorrow + timedelta(days=3),
             amount=0.34
         )
         self._perform_transaction_bad_state()

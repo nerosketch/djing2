@@ -18,33 +18,48 @@ router = APIRouter(
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
-_base_contr_qs = models.CustomerContractModel.objects.all()
 
-
-@router.get('/contract/', response_model=IListResponse[schemas.CustomerContractSchema], dependencies=[Depends(
-    permission_check_dependency(perm_codename='customer_contract.view_customercontractmodel')
-)])
-@paginate_qs_path_decorator(schema=schemas.CustomerContractSchema, db_model=models.CustomerContractModel)
+@router.get('/contract/',
+            response_model=IListResponse[schemas.CustomerContractSchema],
+            dependencies=[Depends(
+                permission_check_dependency(
+                    perm_codename='customer_contract.view_customercontractmodel'
+                )
+            )])
+@paginate_qs_path_decorator(
+    schema=schemas.CustomerContractSchema,
+    db_model=models.CustomerContractModel
+)
 def get_contracts(
     request: Request,
     pagination: Pagination = Depends(),
     customer: Optional[int] = None):
+    _base_contr_qs = models.CustomerContractModel.objects.all()
     if customer is not None:
         return _base_contr_qs.filter(customer_id=customer)
     return _base_contr_qs
 
 
-@router.post('/contract/', response_model=schemas.CustomerContractSchema, status_code=status.HTTP_201_CREATED, dependencies=[Depends(
-    permission_check_dependency(perm_codename='customer_contract.add_customercontractmodel')
-)])
+@router.post('/contract/',
+             response_model=schemas.CustomerContractSchema,
+             status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(
+                 permission_check_dependency(
+                     perm_codename='customer_contract.add_customercontractmodel'
+                 )
+             )])
 def new_contract_route(contract_data: schemas.CustomerContractBaseSchema):
     new_contract = models.CustomerContractModel.objects.create(**contract_data.dict())
     return schemas.CustomerContractSchema.from_orm(new_contract)
 
 
-@router.delete('/contract/{contract_id}/', status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(
-    permission_check_dependency(perm_codename='customer_contract.delete_customercontractmodel')
-)])
+@router.delete('/contract/{contract_id}/',
+               status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(
+                   permission_check_dependency(
+                       perm_codename='customer_contract.delete_customercontractmodel'
+                   )
+               )])
 def del_contract(contract_id: int):
     c = models.CustomerContractModel.objects.filter(pk=contract_id)
     if not c.exists():
@@ -52,9 +67,13 @@ def del_contract(contract_id: int):
     c.delete()
 
 
-@router.patch('/contract/{contract_id}/', response_model=schemas.CustomerContractSchema, dependencies=[Depends(
-    permission_check_dependency(perm_codename='customer_contract.change_customercontractmodel')
-)])
+@router.patch('/contract/{contract_id}/',
+              response_model=schemas.CustomerContractSchema,
+              dependencies=[Depends(
+                  permission_check_dependency(
+                      perm_codename='customer_contract.change_customercontractmodel'
+                  )
+              )])
 def change_contract(contract_data: schemas.CustomerContractBaseSchema,
                     contract_id: int = Path(gt=0)
                     ):
@@ -65,9 +84,13 @@ def change_contract(contract_data: schemas.CustomerContractBaseSchema,
     return schemas.CustomerContractSchema.from_orm(c.first())
 
 
-@router.put('/contract/{contract_id}/finish/', response_model=schemas.CustomerContractSchema, dependencies=[Depends(
-    permission_check_dependency(perm_codename='customer_contract.change_customercontractmodel')
-)])
+@router.put('/contract/{contract_id}/finish/',
+            response_model=schemas.CustomerContractSchema,
+            dependencies=[Depends(
+                permission_check_dependency(
+                    perm_codename='customer_contract.change_customercontractmodel'
+                )
+            )])
 def finish_contract(contract_id: int):
     contract = models.CustomerContractModel.objects.get(pk=contract_id)
     contract.finish()

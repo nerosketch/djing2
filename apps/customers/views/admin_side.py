@@ -186,12 +186,12 @@ def get_afk(date_limit: datetime,
             out_limit: int = 50):
     # FIXME: отсюда можно увидеть слишком много учёток без прав. Надо ограничить правом.
 
-    afk = models.Customer.objects.filter_afk(
+    afk = models.Customer.objects.filter_long_time_inactive_customers(
         date_limit=date_limit,
         out_limit=out_limit
     )
     if locality > 0:
-        addr_filtered_customers = models.Customer.objects.filter_customers_by_addr(
+        addr_filtered_customers = models.Customer.objects.filter_customers_by_address(
             addr_id=locality
         ).only('pk').values_list('pk', flat=True)
         afk = tuple(c for c in afk if c.customer_id in addr_filtered_customers)
@@ -258,7 +258,29 @@ router.include_router(CrudRouter(
     schema=schemas.AdditionalTelephoneModelSchema,
     create_schema=schemas.AdditionalTelephoneBaseSchema,
     queryset=models.AdditionalTelephone.objects.defer("customer"),
+    get_all_route=False,
+    get_one_route=False
 ), prefix='/additional-telephone')
+
+
+@router.get('/additional-telephone/',
+            response_model=IListResponse[schemas.AdditionalTelephoneModelSchema])
+@paginate_qs_path_decorator(
+    schema=schemas.AdditionalTelephoneModelSchema,
+    db_model=models.AdditionalTelephone
+)
+def get_additional_telephones(request: Request, customer: int,
+                              auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+                              pagination: Pagination = Depends()
+                              ):
+    curr_user, token = auth
+    rqs = filter_qs_by_rights(
+        qs_or_model=models.AdditionalTelephone,
+        curr_user=curr_user,
+        perm_codename='customers.view_additionaltelephone'
+    )
+    return rqs.filter(customer_id=customer)
+
 
 router.include_router(CrudRouter(
     schema=schemas.PeriodicPayForIdModelSchema,
@@ -734,7 +756,7 @@ def add_balance(customer_id: int,
                     perm_codename='customers.can_add_balance'
                 ))
                 ):
-    cost = payload.cost
+    cost = float(payload.cost)
     if cost < 0.0:
         check_perm(
             user=curr_user,
@@ -769,7 +791,8 @@ def add_balance(customer_id: int,
             }
             )
 @catch_customers_errs
-def set_customer_passport(customer_id: int, payload: schemas.PassportInfoBaseSchema,
+def set_customer_passport(response: Response,
+                          customer_id: int, payload: schemas.PassportInfoBaseSchema,
                           curr_site: Site = Depends(sites_dependency),
                           auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
                           ):
@@ -790,9 +813,7 @@ def set_customer_passport(customer_id: int, payload: schemas.PassportInfoBaseSch
     passport_obj = models.PassportInfo.objects.filter(customer_id=customer_id).first()
 
     data_dict = payload.dict(
-        skip_defaults=True,
         exclude_unset=True,
-        exclude_none=True
     )
 
     if passport_obj is None:
@@ -801,15 +822,15 @@ def set_customer_passport(customer_id: int, payload: schemas.PassportInfoBaseSch
             customer=customer,
             **data_dict
         )
-        res_stat = status.HTTP_201_CREATED
+        response.status_code = status.HTTP_201_CREATED
     else:
         # change passport info for customer
         for f_name, f_val in data_dict.items():
             setattr(passport_obj, f_name, f_val)
         passport_obj.save()
-        res_stat = status.HTTP_200_OK
+        response.status_code = status.HTTP_200_OK
 
-    return schemas.PassportInfoModelSchema.from_orm(passport_obj), res_stat
+    return schemas.PassportInfoModelSchema.from_orm(passport_obj)
 
 
 @router.get('/{customer_id}/passport/',
@@ -917,6 +938,7 @@ def update_customer_profile(customer_id: int,
     pdata = customer_data.dict(exclude_unset=True)
     raw_password = pdata.pop('password', None)
 
+    # TODO: deny changing sites without special permission
     sites = pdata.pop('sites', None)
 
     for d_name, d_val in pdata.items():
@@ -927,9 +949,9 @@ def update_customer_profile(customer_id: int,
 
     if raw_password:
         schemas.update_passw(acc=acc, raw_password=raw_password)
-        setattr(acc, 'password', make_password(raw_password))
+        acc.set_password(raw_password)
 
-    acc.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+    acc.save(update_fields=[d_name for d_name, d_val in pdata.items()] + ['password'])
     return schemas.CustomerModelSchema.from_orm(acc)
 
 
@@ -1051,17 +1073,17 @@ def get_customers(request: Request,
     queryset = queryset.filter(filter_fields_q | search_filter_q)
 
     if house:
-        return queryset.filter_customers_by_addr(
+        return queryset.filter_customers_by_address(
             addr_id=house,
         )
     else:
         if street:
-            return queryset.filter_customers_by_addr(
+            return queryset.filter_customers_by_address(
                 addr_id=street,
             )
 
     if address:
-        return queryset.filter_customers_by_addr(
+        return queryset.filter_customers_by_address(
             addr_id=address,
         )
 

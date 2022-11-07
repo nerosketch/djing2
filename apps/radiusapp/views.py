@@ -253,7 +253,7 @@ def get_service(data: CustomerServiceRequestSchema):
             "Reply-Message": "Customer service not found"
         }, status_code=status.HTTP_404_NOT_FOUND)
 
-    sess_time = customer_service.calc_session_time()
+    sess_time = customer_service.calc_remaining_time()
     return Response({
         "ip": customer_ip,
         "session_time": int(sess_time.total_seconds()),
@@ -684,7 +684,7 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
             cvid=safe_int(vlan_id)
         )
 
-    # Check for service synchronizaion
+    # Check for service synchronization
     bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
     if isinstance(bras_service_name, str):
         if 'SERVICE-INET' in bras_service_name:
