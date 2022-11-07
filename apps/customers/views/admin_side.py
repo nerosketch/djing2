@@ -466,44 +466,6 @@ def super_user_get_customer_token_by_phone(data: schemas.TokenRequestSchema):
     )
 
 
-@router.post('/{customer_id}/make_periodic_pay/')
-@catch_customers_errs
-def make_periodic_pay(
-    customer_id: int,
-    payload: schemas.PeriodicPayForIdRequestSchema,
-    curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='customers.can_buy_service'
-    )),
-    curr_site: Site = Depends(sites_dependency)
-):
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.can_buy_service'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-
-    pp_queryset = general_filter_queryset(
-        qs_or_model=PeriodicPay,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_periodicpay'
-    )
-    periodic_pay = get_object_or_404(
-        pp_queryset,
-        pk=payload.periodic_pay_id
-    )
-    customer.make_periodic_pay(
-        periodic_pay=periodic_pay,
-        next_pay=payload.next_pay
-    )
-    return Response("ok")
-
-
 @router.get(
     '/{customer_id}/ping_all_ips/',
     response_model=schemas.TypicalResponse,
