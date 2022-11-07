@@ -15,7 +15,7 @@ from customers.models import Customer, CustomerLog
 from djing2.lib import LogicError, safe_int
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
-from profiles.models import BaseAccount
+from profiles.models import BaseAccount, UserProfile
 from services.custom_logic import (
     SERVICE_CHOICES,
     PERIODIC_PAY_CALC_DEFAULT,
@@ -272,6 +272,26 @@ class OneShotPay(BaseAbstractModel):
     def after_pay(self, customer):
         pay_logic = self._get_calc_object()
         pay_logic.before_pay(customer=customer)
+
+    def pick4customer(self, user_profile: UserProfile, customer: Customer,
+                      allow_negative=False, comment=None):
+
+        cost = Decimal(self.calc_cost(self))
+
+        # if not enough money
+        if not allow_negative and customer.balance < cost:
+            raise NotEnoughMoney(
+                detail=_("%(uname)s not enough money for service %(srv_name)s")
+                       % {"uname": customer.username, "srv_name": self.name}
+            )
+
+        customer.add_balance(
+            profile=user_profile,
+            cost=-cost,
+            comment=comment or _('Buy one-shot service for "%(title)s"') % {
+                "title": self.name
+            }
+        )
 
     def __str__(self):
         return self.name

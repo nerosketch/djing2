@@ -267,38 +267,6 @@ class Customer(IAddressContaining, BaseAccount):
     def get_address(self):
         return self.address
 
-    def make_shot(self, user_profile: UserProfile, shot: OneShotPay,
-                  allow_negative=False, comment=None) -> bool:
-        """
-        Makes one-time service for accounting services.
-        :param user_profile: profiles.UserProfile instance, current authorized user.
-        :param shot: instance of services.OneShotPay model.
-        :param allow_negative: Allows negative balance.
-        :param comment: Optional text for logging this pay.
-        :return: result for frontend
-        """
-        if not isinstance(shot, OneShotPay):
-            return False
-
-        cost = Decimal(shot.calc_cost(self))
-
-        # if not enough money
-        if not allow_negative and self.balance < cost:
-            raise NotEnoughMoney(
-                detail=_("%(uname)s not enough money for service %(srv_name)s")
-                       % {"uname": self.username, "srv_name": shot.name}
-            )
-
-        self.add_balance(
-            profile=user_profile,
-            cost=-cost,
-            comment=comment or _('Buy one-shot service for "%(title)s"') % {
-                "title": shot.name
-            }
-        )
-
-        return True
-
     def make_periodic_pay(self, periodic_pay: PeriodicPay, next_pay: datetime):
         ppay = PeriodicPayForId.objects.create(
             periodic_pay=periodic_pay,

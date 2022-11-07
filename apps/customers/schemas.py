@@ -230,10 +230,6 @@ class UserAutoRenewalServiceSchema(BaseModel):
     auto_renewal_service: bool
 
 
-class MakePaymentSHotRequestSchema(BaseModel):
-    shot_id: int
-
-
 class PeriodicPayForIdRequestSchema(BaseModel):
     periodic_pay_id: int
     next_pay: datetime
