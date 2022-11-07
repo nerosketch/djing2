@@ -44,10 +44,10 @@ def _manage_periodic_pays_run():
 
 
 def _manage_post_connect_services():
-    customers = (
-        Customer.objects.filter(is_active=True, current_service=None, auto_renewal_service=True)
-            .exclude(last_connected_service=None)
-            .select_related("last_connected_service")
+    customers = Customer.objects.filter(
+        is_active=True,
+        current_service=None,
+        auto_renewal_service=True
     )
     for customer in customers.iterator():
         try:

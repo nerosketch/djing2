@@ -326,14 +326,7 @@ def attach_group_service(request_data: list[schemas.AttachGroupServiceResponseSc
         if s.check and s.service in all_available_service_ids_db
     )
 
-    # add = selected_service_ids - selected_service_ids_db
-    # sub = all_available_service_ids_db - (selected_service_ids - selected_service_ids_db)
-
     group.service_set.set(selected_service_ids)
-    # models.Customer.objects.filter(
-    #     group=group,
-    #     last_connected_service__in=sub
-    # ).update(last_connected_service=None)
     return
 
 

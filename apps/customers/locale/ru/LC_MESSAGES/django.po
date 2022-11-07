@@ -91,10 +91,6 @@ msgstr "Сервер доступа в интернет"
 msgid "Automatically connect next service"
 msgstr "Автоматическое подключение следующей услуги"
 
-#: apps/customers/models.py:440
-msgid "Last connected service"
-msgstr "Последняя подключённая услуга"
-
 #: apps/customers/models.py:447
 msgid "Donkey"
 msgstr "Ослик"

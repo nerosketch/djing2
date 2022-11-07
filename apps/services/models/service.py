@@ -148,10 +148,6 @@ class Service(BaseAbstractModel):
                     deadline=deadline,
                 )
 
-                if customer.last_connected_service != self:
-                    customer.last_connected_service = self
-                    customer.save(update_fields=["last_connected_service"])
-
                 customer.add_balance(
                     profile=author,
                     cost=-cost,

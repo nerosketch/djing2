@@ -19,9 +19,6 @@ from groupapp.models import Group
 from profiles.models import BaseAccount, MyUserManager, UserProfile
 from pydantic import BaseModel
 
-# FIXME: eliminate services import
-from services.models import OneShotPay, PeriodicPay, Service, NotEnoughMoney
-
 from . import custom_signals
 
 
@@ -180,14 +177,6 @@ class Customer(IAddressContaining, BaseAccount):
         _("Automatically connect next service"),
         default=False
     )
-    last_connected_service = models.ForeignKey(
-        Service,
-        verbose_name=_("Last connected service"),
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        default=None,
-    )
     MARKER_FLAGS = (
         ("icon_donkey", _("Donkey")),
         ("icon_fire", _("Fire")),
@@ -292,6 +281,7 @@ class Customer(IAddressContaining, BaseAccount):
             return
         if not self.auto_renewal_service:
             return
+        # FIXME: change last_connected_service for something else
         if not self.last_connected_service:
             return
 
@@ -325,10 +315,6 @@ class Customer(IAddressContaining, BaseAccount):
         add = wanted_service_ids - existed_service_ids
         group.service_set.remove(*sub)
         group.service_set.add(*add)
-        # Customer.objects.filter(
-        #     group=group,
-        #     last_connected_service__in=sub
-        # ).update(last_connected_service=None)
 
     def ping_all_leases(self) -> tuple[str, bool]:
         leases = self.customeripleasemodel_set.all()
@@ -361,11 +347,6 @@ class Customer(IAddressContaining, BaseAccount):
     def device_comment(self):
         if self.device:
             return str(self.device.comment)
-
-    @property
-    def last_connected_service_title(self):
-        if self.last_connected_service:
-            return str(self.last_connected_service.title)
 
     @property
     def current_service_title(self):

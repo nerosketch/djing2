@@ -39,7 +39,6 @@ class CustomerSchema(BaseAccountSchema):
     is_dynamic_ip: bool = False
     gateway_id: Optional[int] = None
     auto_renewal_service: bool = False
-    last_connected_service_id: Optional[int] = None
 
 
 class CustomerModelSchema(CustomerSchema):
@@ -52,7 +51,6 @@ class CustomerModelSchema(CustomerSchema):
     address_title: str
     balance: float
     device_comment: Optional[str]
-    last_connected_service_title: Optional[str]
     current_service_title: Optional[str]
     service_id: Optional[int]
     raw_password: Optional[str]
@@ -193,12 +191,9 @@ class UserCustomerModelSchema(UserCustomerWritableModelSchema):
 
     address_title: str
     balance: float
-    last_connected_service_title: Optional[str]
     current_service_title: Optional[str]
     service_id: Optional[int]
     current_service_id: Optional[int] = None
-
-    last_connected_service_id: Optional[int] = None
 
     Config = OrmConf
 
