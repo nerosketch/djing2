@@ -2,6 +2,8 @@ from decimal import Decimal
 from typing import Optional
 from datetime import datetime, timedelta
 from django.db.models import F
+from django.utils.translation import gettext as _
+from starlette import status
 from customers.models import CustomerLog, Customer
 from customers.tests.customer import CustomAPITestCase
 from networks.models import CustomerIpLeaseModel
@@ -158,3 +160,11 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         self.assertEqual(customer_service.service.speed_burst, 1)
         self.assertEqual(customer_service.service.cost, 10.0)
         self.assertEqual(customer_service.service.calc_type, SERVICE_CHOICE_DEFAULT)
+
+    def test_stop_not_exists_service(self):
+        self.cs.stop_service(
+            author_profile=self.customer
+        )
+        r = self.get("/api/customer_service/%d/stop_service/" % self.customer.pk)
+        self.assertEqual(r.text, _("Service not connected"))
+        self.assertEqual(r.status_code, status.HTTP_418_IM_A_TEAPOT)

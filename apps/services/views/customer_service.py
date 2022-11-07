@@ -117,3 +117,43 @@ def customer_pick_service(customer_id: int, payload: schemas.PickServiceRequestS
     except models.NotEnoughMoney as e:
         return Response(str(e), status_code=status.HTTP_402_PAYMENT_REQUIRED)
     return Response('Ok', status_code=status.HTTP_200_OK)
+
+
+@router.get('/{customer_id}/stop_service/',
+            status_code=status.HTTP_204_NO_CONTENT,
+            responses={
+                status.HTTP_204_NO_CONTENT: {'description': 'Ok'},
+                status.HTTP_418_IM_A_TEAPOT: {
+                    'description': 'Service not connected. Nothing to stop'
+                }
+            })
+@catch_customers_errs
+def stop_service(customer_id: int,
+                 curr_site: Site = Depends(sites_dependency),
+                 curr_user: UserProfile = Depends(permission_check_dependency(
+                     perm_codename='customers.can_complete_service'
+                 ))
+                 ):
+    customers_queryset = general_filter_queryset(
+        qs_or_model=Customer,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='customers.can_complete_service'
+    )
+    customer = get_object_or_404(
+        customers_queryset,
+        pk=customer_id
+    )
+    cust_srv = customer.active_service()
+    if cust_srv is None:
+        return Response(
+            gettext("Service not connected"),
+            status_code=status.HTTP_418_IM_A_TEAPOT
+        )
+    srv = cust_srv.service
+    if srv is None:
+        return Response(
+            "Custom service has not service (Look at customers.views.admin_site)",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    customer.stop_service(curr_user)

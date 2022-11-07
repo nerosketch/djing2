@@ -11,7 +11,7 @@ from customers.models import Customer
 from devices.models import Device, Port
 from devices.device_config.switch.dlink.dgs_1100_10me import DEVICE_UNIQUE_CODE as Dlink_dgs1100_10me_code
 from groupapp.models import Group
-from services.models import Service
+from services.models import Service, CustomerService
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from radiusapp.vendors import VendorManager, parse_opt82
 from networks.models import (
@@ -941,8 +941,7 @@ class CustomerAuthTestCase(DjingTestCase, ReqMixin):
         """
         customer = self.full_customer.customer
         self.test_auth_radius_session()
-        customer.stop_service(self.admin)
-        self.
+        CustomerService.objects.filter(customer=customer).delete()
         r = self.post(
             "/api/radius/customer/auth/juniper/",
             radius_api_request_auth(

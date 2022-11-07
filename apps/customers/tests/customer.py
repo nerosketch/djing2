@@ -52,12 +52,6 @@ class CustomerModelAPITestCase(CustomAPITestCase):
         qs = models.Customer.objects.filter(username=random_unique_uname)
         self.assertFalse(qs.exists())
 
-    def test_stop_not_exists_service(self):
-        models.Customer.objects.filter(username="custo1").update(current_service=None)
-        r = self.get("/api/customers/%d/stop_service/" % self.customer.pk)
-        self.assertEqual(r.text, _("Service not connected"))
-        self.assertEqual(r.status_code, status.HTTP_418_IM_A_TEAPOT)
-
     def test_pick_service_by_customer_low_money(self):
         self.logout()
         self.login(username='custo1')

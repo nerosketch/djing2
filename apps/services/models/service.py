@@ -474,6 +474,7 @@ class CustomerServiceModelManager(models.Manager):
 class CustomerService(BaseAbstractModel):
     customer = models.OneToOneField(
         Customer,
+        # TODO: change current_service usages. And change to ForeignKey
         related_name='current_service',
         on_delete=models.CASCADE,
     )
