@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional
 from datetime import timedelta, datetime
 from calendar import monthrange
@@ -9,6 +10,9 @@ from services.custom_logic.base_intr import ServiceBase
 
 
 def get_month_max_time(now: Optional[datetime] = None) -> timedelta:
+    if now is None:
+        now = datetime.now()
+
     week_day, n_days = monthrange(now.year, now.month)
     curr_month_time = timedelta(days=n_days)
     return curr_month_time
@@ -31,15 +35,17 @@ class ServiceDefault(ServiceBase):
             time_used = timedelta(0)
         return time_used
 
-    def calc_cost(self) -> float:
+    def calc_cost(self, req_time: Optional[datetime] = None) -> Decimal:
         """Базовый функционал считает стоимость пропорционально использованному времени."""
 
-        now = timezone.now()
-        how_long_use = self.get_how_long_time_used(now=now)
-        curr_month_all_time = get_month_max_time(now=now)
-        use_coefficient = how_long_use.total_seconds() / curr_month_all_time.total_seconds()
+        if req_time is None:
+            req_time = datetime.now()
+
+        how_long_use = self.get_how_long_time_used(now=req_time)
+        curr_month_all_time = get_month_max_time(now=req_time)
+        use_coefficient = Decimal(how_long_use.total_seconds() / curr_month_all_time.total_seconds())
         used_cost = use_coefficient * self.customer_service.service.cost
-        return float(used_cost)
+        return used_cost
 
     def calc_deadline(self) -> datetime:
         """Тут мы расчитываем конец действия услуги, завершение будет в конце месяца."""
@@ -67,8 +73,8 @@ class TariffDp(ServiceDefault):
     # в IS снимается вся стоимость тарифа вне зависимости от времени использования
 
     # просто возвращаем всю стоимость тарифа
-    def calc_cost(self) -> float:
-        return float(self.customer_service.service.cost)
+    def calc_cost(self, req_time: Optional[datetime] = None) -> Decimal:
+        return self.customer_service.service.cost
 
 
 # Как в IS только не на время, а на 10 лет

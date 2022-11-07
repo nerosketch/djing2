@@ -265,52 +265,6 @@ class Customer(IAddressContaining, BaseAccount):
     def get_address(self):
         return self.address
 
-    def stop_service(self, author_profile: Optional[UserProfile],
-                     comment: Optional[str] = None,
-                     force_cost: Optional[float] = None
-                     ) -> None:
-        """
-        Removing current connected customer service
-
-        :param author_profile: Instance of profiles.models.UserProfile.
-        :param comment: Optional comment for logs
-        :param force_cost: if not None then not calculate cost to return, use
-                           force_cost value instead
-        :return: nothing
-        """
-        customer_service = self.active_service()
-        custom_signals.customer_service_pre_stop.send(
-            sender=CustomerService,
-            instance=customer_service,
-            customer=self
-        )
-        if force_cost:
-            cost_to_return = force_cost
-        else:
-            cost_to_return = self.calc_cost_to_return()
-        with transaction.atomic():
-            if cost_to_return > 0.1:
-                self.add_balance(
-                    author_profile,
-                    cost=Decimal(cost_to_return),
-                    comment=comment or _("End of service, refund of balance")
-                )
-                self.save(
-                    update_fields=("balance",)
-                )
-            else:
-                self.add_balance(
-                    author_profile,
-                    cost=Decimal(0),
-                    comment=comment or _("End of service")
-                )
-            customer_service.delete()
-        custom_signals.customer_service_post_stop.send(
-            sender=CustomerService,
-            instance=customer_service,
-            customer=self
-        )
-
     def make_shot(self, user_profile: UserProfile, shot: OneShotPay,
                   allow_negative=False, comment=None) -> bool:
         """
@@ -358,23 +312,6 @@ class Customer(IAddressContaining, BaseAccount):
             account=self
         )
         return ppay
-
-    def calc_cost_to_return(self):
-        """
-        calculates total proportional cost from elapsed time,
-        and return reminder to the account if reminder more than 0
-        :return: None
-        """
-        customer_service = self.active_service()
-        if not customer_service:
-            return
-        service = customer_service.service
-        if not service:
-            return
-        calc = service.get_calc_type()(customer_service=customer_service)
-        elapsed_cost = calc.calc_cost()
-        total_cost = safe_float(service.cost)
-        return total_cost - elapsed_cost
 
     # is customer have access to service,
     # view in services.custom_tariffs.<ServiceBase>.manage_access()

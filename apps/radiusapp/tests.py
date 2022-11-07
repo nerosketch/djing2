@@ -942,6 +942,7 @@ class CustomerAuthTestCase(DjingTestCase, ReqMixin):
         customer = self.full_customer.customer
         self.test_auth_radius_session()
         customer.stop_service(self.admin)
+        self.
         r = self.post(
             "/api/radius/customer/auth/juniper/",
             radius_api_request_auth(

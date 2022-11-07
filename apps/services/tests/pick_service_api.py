@@ -80,7 +80,7 @@ class PickServiceAPITestCase(CustomAPITestCase):
 
     def test_stop_service(self):
         self.test_pick_service()
-        r = self.get("/api/customers/%d/stop_service/" % self.customer.pk)
+        r = self.get("/api/services/%d/stop_service/" % self.customer.pk)
         self.assertFalse(r.text, msg=r.text)
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
 

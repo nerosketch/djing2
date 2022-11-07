@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from decimal import Decimal
 from ipaddress import IPv4Address, AddressValueError
 from typing import Optional
 
@@ -14,7 +15,7 @@ from customers.models import Customer, CustomerLog
 from djing2.lib import LogicError, safe_int
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
-from profiles.models import BaseAccount, UserProfile
+from profiles.models import BaseAccount
 from services.custom_logic import (
     SERVICE_CHOICES,
     PERIODIC_PAY_CALC_DEFAULT,
@@ -358,13 +359,13 @@ class CustomerServiceModelManager(models.Manager):
         )
 
     @staticmethod
-    def finish_services_if_expired(profile: Optional[UserProfile] = None,
+    def finish_services_if_expired(profile: Optional[BaseAccount] = None,
                                    comment=None, customer=None) -> None:
         # TODO: test it
         """
         If customer service has expired, and automatic connect
          is disabled, then finish that service and log about it
-        :param profile: Instance of profiles.models.UserProfile.
+        :param profile: Instance of profiles.models.BaseAccount.
         :param comment: comment for log
         :param customer: This is Customer instance, if doing it for him alone
         :return: nothing
@@ -388,7 +389,7 @@ class CustomerServiceModelManager(models.Manager):
                     CustomerLog.objects.create(
                         customer=exp_srv_customer,
                         cost=0,
-                        author=profile if isinstance(profile, UserProfile) else None,
+                        author=profile if isinstance(profile, BaseAccount) else None,
                         comment=comment % {
                             "customer_name": exp_srv_customer.get_short_name(),
                             "service_name": exp_srv.service.title
@@ -461,7 +462,7 @@ class CustomerServiceModelManager(models.Manager):
                 expired_service.continue_for_customer(now=now)
             else:
                 # finish service otherwise
-                expired_service_customer.stop_service(
+                expired_service.stop_service(
                     author_profile=None,
                     comment=_("Service '%(service_name)s' has expired") % {
                         "service_name": service.title
@@ -630,6 +631,57 @@ class CustomerService(BaseAbstractModel):
     def save(self, *args, **kwargs) -> None:
         self.full_clean(exclude=None)
         super().save(*args, **kwargs)
+
+    def stop_service(self, author_profile: Optional[BaseAccount],
+                     comment: Optional[str] = None,
+                     force_cost: Optional[Decimal] = None
+                     ) -> None:
+
+        custom_signals.customer_service_pre_stop.send(
+            sender=CustomerService,
+            instance=self,
+            customer=self.customer
+        )
+
+        cost_to_return = force_cost
+        if cost_to_return is None:
+            cost_to_return = self.calc_cost_to_return()
+
+        with transaction.atomic():
+            if cost_to_return >= 0.1:
+                self.customer.add_balance(
+                    profile=author_profile,
+                    cost=cost_to_return,
+                    comment=comment or _("End of service, refund of balance")
+                )
+            else:
+                self.customer.add_balance(
+                    profile=author_profile,
+                    cost=Decimal(0),
+                    comment=comment or _("End of service")
+                )
+            custom_signals.customer_service_post_stop.send(
+                sender=CustomerService,
+                instance=self,
+                customer=self.customer
+            )
+            self.delete()
+
+    def calc_cost_to_return(self):
+        """
+        calculates total proportional cost from elapsed time,
+        and return reminder to the account if reminder more than 0
+        :return: None
+        """
+        service = self.service
+        if not service:
+            return
+        calc = service.get_calc_type()(customer_service=self)
+        elapsed_cost = calc.calc_cost(
+            req_time=datetime.now()
+        )
+        total_cost = service.cost
+        return total_cost - elapsed_cost
 
     def __str__(self):
         return self.service.title

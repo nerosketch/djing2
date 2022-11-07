@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from decimal import Decimal
 from typing import AnyStr, Optional, Union
 
 
 class ServiceBase(ABC):
     @abstractmethod
-    def calc_cost(self) -> float:
+    def calc_cost(self, req_time: Optional[datetime] = None) -> Decimal:
         """Calculates total cost of payment"""
         raise NotImplementedError
 

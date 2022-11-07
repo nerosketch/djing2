@@ -10,6 +10,8 @@ from services.custom_logic import SERVICE_CHOICE_DEFAULT
 
 
 class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
+    cs: CustomerService
+
     def setUp(self):
         super().setUp()
 
@@ -111,7 +113,9 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         self.assertIsNone(customer_service)
 
     def test_customer_does_not_have_service(self):
-        self.customer.stop_service(self.customer)
+        self.cs.stop_service(
+            author_profile=self.customer
+        )
         customer_service = CustomerService.get_user_credentials_by_ip(ip_addr="10.11.12.2")
         self.assertIsNone(customer_service)
 
