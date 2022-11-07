@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from services.models import CustomerService
+from services.models import PeriodicPayForId, CustomerService
 from customers.models import Customer
 from djing2 import celery_app
-from djing2.lib import LogicError
+from djing2.lib import LogicError, logger
 
 
 def customer_check_service_for_expiration(customer_id: int):

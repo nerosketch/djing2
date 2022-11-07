@@ -227,6 +227,14 @@ class PeriodicPay(BaseAbstractModel):
     def __str__(self):
         return self.name
 
+    def make_periodic_pay(self, next_pay: datetime, customer: Customer):
+        ppay = PeriodicPayForId.objects.create(
+            periodic_pay=self,
+            next_pay=next_pay,
+            account=customer
+        )
+        return ppay
+
     class Meta:
         db_table = "periodic_pay"
         verbose_name = _("Periodic pay")
@@ -718,3 +726,70 @@ class CustomerService(BaseAbstractModel):
             ("can_view_service_type_report", _('Can view service type report')),
             ("can_view_activity_report", _("Can view activity_report")),
         ]
+
+
+class PeriodicPayForId(BaseAbstractModel):
+    periodic_pay = models.ForeignKey(
+        PeriodicPay,
+        on_delete=models.CASCADE,
+        verbose_name=_("Periodic pay")
+    )
+    last_pay = models.DateTimeField(
+        _("Last pay time"),
+        blank=True,
+        null=True,
+        default=None
+    )
+    next_pay = models.DateTimeField(_("Next time to pay"))
+    account = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        verbose_name=_("Account")
+    )
+
+    def payment_for_service(self, author: UserProfile = None, now: Optional[datetime] = None):
+        """
+        Charge for the service and leave a log about it
+        :param now: Current date, if now is None than it calculates in here
+        :param author: instance of UserProfile
+        """
+        if now is None:
+            now = datetime.now()
+        if self.next_pay < now:
+            pp = self.periodic_pay
+            amount = pp.calc_amount()
+            next_pay_date = pp.get_next_time_to_pay(self.last_pay)
+            account = self.account
+            with transaction.atomic():
+                account.add_balance(
+                    author, Decimal(-amount), comment=_('Charge for "%(service)s"') % {
+                        "service": self.periodic_pay
+                    }
+                )
+                account.save(update_fields=("balance",))
+                self.last_pay = now
+                self.next_pay = next_pay_date
+                self.save(update_fields=("last_pay", "next_pay"))
+
+    def __str__(self):
+        return f"{self.periodic_pay} {self.next_pay}"
+
+    @property
+    def service_name(self):
+        if self.periodic_pay:
+            return str(self.periodic_pay.name)
+
+    @property
+    def service_calc_type(self):
+        if self.periodic_pay:
+            return self.periodic_pay.calc_type_name()
+
+    @property
+    def service_amount(self):
+        if self.periodic_pay:
+            return float(self.periodic_pay.amount)
+
+    class Meta:
+        db_table = "periodic_pay_for_id"
+
+

@@ -1,7 +1,8 @@
 from .service import (
     Service, PeriodicPay, OneShotPay,
-    CustomerService, NotEnoughMoney
+    CustomerService, NotEnoughMoney,
+    PeriodicPayForId
 )
 
 __all__ = ['Service', 'PeriodicPay', 'OneShotPay', 'CustomerService',
-           'NotEnoughMoney']
+           'NotEnoughMoney', 'PeriodicPayForId']

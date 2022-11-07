@@ -65,3 +65,23 @@ class PickServiceRequestSchema(BaseModel):
 
 class MakePaymentSHotRequestSchema(BaseModel):
     shot_id: int
+
+
+class PeriodicPayForIdRequestSchema(BaseModel):
+    periodic_pay_id: int
+    next_pay: datetime
+
+
+class PeriodicPayForIdBaseSchema(BaseModel):
+    periodic_pay_id: int
+
+
+class PeriodicPayForIdModelSchema(PeriodicPayForIdBaseSchema):
+    id: int
+    next_pay: datetime
+    last_pay: Optional[datetime] = None
+    service_name: Optional[str] = None
+    service_calc_type: Optional[str] = None
+    service_amount: Optional[float] = None
+
+    Config = OrmConf

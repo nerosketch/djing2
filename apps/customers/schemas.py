@@ -139,21 +139,6 @@ class AdditionalTelephoneModelSchema(AdditionalTelephoneBaseSchema):
     Config = OrmConf
 
 
-class PeriodicPayForIdBaseSchema(BaseModel):
-    periodic_pay_id: int
-
-
-class PeriodicPayForIdModelSchema(PeriodicPayForIdBaseSchema):
-    id: int
-    next_pay: datetime
-    last_pay: Optional[datetime] = None
-    service_name: Optional[str] = None
-    service_calc_type: Optional[str] = None
-    service_amount: Optional[float] = None
-
-    Config = OrmConf
-
-
 class AttachGroupServiceResponseSchema(BaseModel):
     service: int
     check: bool
@@ -228,11 +213,6 @@ class UserBuyServiceSchema(BaseModel):
 
 class UserAutoRenewalServiceSchema(BaseModel):
     auto_renewal_service: bool
-
-
-class PeriodicPayForIdRequestSchema(BaseModel):
-    periodic_pay_id: int
-    next_pay: datetime
 
 
 class ServiceUsersResponseSchema(BaseModel):

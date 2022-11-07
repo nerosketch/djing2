@@ -259,39 +259,6 @@ def get_additional_telephones(request: Request, customer: int,
     return rqs.filter(customer_id=customer)
 
 
-router.include_router(CrudRouter(
-    schema=schemas.PeriodicPayForIdModelSchema,
-    create_schema=schemas.PeriodicPayForIdBaseSchema,
-    queryset=models.PeriodicPayForId.objects.defer("account").select_related("periodic_pay"),
-    get_all_route=False
-), prefix='/periodic-pay')
-
-
-@router.get('/periodic-pay/',
-            response_model=IListResponse[schemas.PeriodicPayForIdModelSchema],
-            response_model_exclude_none=True
-            )
-@paginate_qs_path_decorator(
-    schema=schemas.PeriodicPayForIdModelSchema,
-    db_model=models.PeriodicPayForId
-)
-def get_periodic_pays(request: Request, account: int,
-                      auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
-                      pagination: Pagination = Depends(),
-                      ):
-    curr_user, token = auth
-
-    rqs = filter_qs_by_rights(
-        qs_or_model=models.Customer.objects.filter(pk=account),
-        curr_user=curr_user,
-        perm_codename='customers.view_customer'
-    )
-    qs = models.PeriodicPayForId.objects.filter(
-        account_id__in=rqs
-    )
-    return qs
-
-
 @router.get('/attach_group_service/', response_model=list[schemas.AttachGroupServiceResponseSchema])
 def attach_group_service_get(group: int,
                              curr_site: Site = Depends(sites_dependency),
