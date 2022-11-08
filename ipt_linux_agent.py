@@ -5,9 +5,9 @@ from typing import Tuple
 from requests import get as httpget
 
 
-def diff_set(one: set, two: set) -> Tuple[set, set]:
-    list_for_del = (one ^ two) - one
-    list_for_add = one - two
+def diff_set(billing_users: set, ipt_users: set) -> Tuple[set, set]:
+    list_for_del = (billing_users ^ ipt_users) - billing_users
+    list_for_add = billing_users - ipt_users
     return list_for_add, list_for_del
 
 
