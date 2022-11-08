@@ -8,7 +8,7 @@ from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.db import models, transaction, connection, IntegrityError
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _, gettext
+from django.utils.translation import gettext_lazy as _
 from rest_framework.settings import api_settings
 
 from customers.models import Customer, CustomerLog
@@ -573,50 +573,6 @@ class CustomerService(BaseAbstractModel):
             start_time=f_start_time,
             deadline=f_deadline
         )
-
-    @staticmethod
-    def find_customer_service_by_device_credentials(customer_id: int, current_service_id: int):
-        # TODO: deprecated. Remove it. Function lost semantic, and not used.
-        customer_id = safe_int(customer_id)
-        current_service_id = safe_int(current_service_id)
-        # TODO: make tests for it
-        with connection.cursor() as cur:
-            query = "SELECT * FROM find_customer_service_by_device_credentials(%s, %s)"
-            cur.execute(query, [customer_id, current_service_id])
-            res = cur.fetchone()
-        if res is None or res[0] is None:
-            return None
-        (
-            customer_service_id,
-            service_id,
-            speed_in,
-            speed_out,
-            cost,
-            calc_type,
-            is_admin,
-            speed_burst,
-            start_time,
-            deadline,
-        ) = res
-
-        srv = Service(
-            pk=service_id,
-            title="",
-            descr="",
-            speed_in=float(speed_in),
-            speed_out=float(speed_out),
-            cost=float(cost),
-            calc_type=calc_type,
-            is_admin=is_admin,
-            speed_burst=speed_burst,
-        )
-        customer_service = CustomerService(
-            pk=customer_service_id,
-            service=srv,
-            start_time=start_time,
-            deadline=deadline
-        )
-        return customer_service
 
     def assign_deadline(self):
         calc_obj = self.service.get_calc_type()(self)
