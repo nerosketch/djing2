@@ -8,6 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('customers', '0019_auto_20220804_1203'),
+        ('services', '0007_auto_20221107_1809'),
     ]
 
     operations = [
@@ -34,7 +35,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='customer',
             name='balance',
-            field=models.DecimalField(decimal_places=2, default=0.0, max_digits=6),
+            field=models.DecimalField(decimal_places=2, default=0.0, max_digits=8),
         ),
         migrations.AlterField(
             model_name='customer',
@@ -44,7 +45,17 @@ class Migration(migrations.Migration):
         migrations.DeleteModel(
             name='CustomerService',
         ),
-        migrations.DeleteModel(
-            name='PeriodicPayForId',
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.AlterModelTable(
+                    name='PeriodicPayForId',
+                    table='periodic_pay_for_id'
+                )
+            ],
+            state_operations=[
+                migrations.DeleteModel(
+                    name='PeriodicPayForId',
+                )
+            ]
         ),
     ]

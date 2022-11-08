@@ -137,7 +137,7 @@ class Customer(IAddressContaining, BaseAccount):
         null=True,
         default=None
     )
-    balance = models.DecimalField(default=0.0, max_digits=6, decimal_places=2)
+    balance = models.DecimalField(default=0.0, max_digits=8, decimal_places=2)
 
     description = models.TextField(
         _("Comment"),

@@ -9,7 +9,7 @@ import djing2.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customers', '0020_auto_20221107_1809'),
+        ('customers', '0019_auto_20220804_1203'),
         ('services', '0006_auto_20210305_1316'),
     ]
 
@@ -30,20 +30,6 @@ class Migration(migrations.Migration):
             model_name='service',
             name='cost',
             field=models.DecimalField(decimal_places=2, max_digits=7, validators=[django.core.validators.MinValueValidator(limit_value=0.0)], verbose_name='Cost'),
-        ),
-        migrations.CreateModel(
-            name='PeriodicPayForId',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('last_pay', models.DateTimeField(blank=True, default=None, null=True, verbose_name='Last pay time')),
-                ('next_pay', models.DateTimeField(verbose_name='Next time to pay')),
-                ('account', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='customers.customer', verbose_name='Account')),
-                ('periodic_pay', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='services.periodicpay', verbose_name='Periodic pay')),
-            ],
-            options={
-                'db_table': 'periodic_pay_for_id',
-            },
-            bases=(djing2.models.BaseAbstractModelMixin, models.Model),
         ),
         migrations.CreateModel(
             name='CustomerServiceConnectingQueueModel',
@@ -78,5 +64,30 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             sql="DROP FUNCTION find_customer_service_by_device_credentials( integer, integer )"
+        ),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.CreateModel(
+                    name='PeriodicPayForId',
+                    fields=[
+                        ('id',
+                         models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('last_pay',
+                         models.DateTimeField(blank=True, default=None, null=True, verbose_name='Last pay time')),
+                        ('next_pay', models.DateTimeField(verbose_name='Next time to pay')),
+                        ('account',
+                         models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='customers.customer',
+                                           verbose_name='Account')),
+                        ('periodic_pay',
+                         models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='services.periodicpay',
+                                           verbose_name='Periodic pay')),
+                    ],
+                    options={
+                        'db_table': 'periodic_pay_for_id',
+                    },
+                    bases=(djing2.models.BaseAbstractModelMixin, models.Model),
+                ),
+            ]
         )
     ]
