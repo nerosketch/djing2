@@ -239,7 +239,7 @@ def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
         )
         return JSONResponse(response, status_code=code)
     except (LogicError, BadRetException) as err:
-        return _bad_ret(f'{err.__class__.name}: {str(err)}')
+        return _bad_ret(f'{str(err)}')
 
 
 @router.post('/get_service/')
@@ -287,7 +287,7 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
 
 
 def _bad_ret(text: str, custom_status=status.HTTP_400_BAD_REQUEST) -> JSONResponse:
-    logger.error(msg='Bad ret: %s' % str(text))
+    logger.error(msg=str(text))
     return JSONResponse({
         "Reply-Message": text
     }, status_code=custom_status)
