@@ -34,6 +34,22 @@ class ReqMixin:
         self.assertGreater(len(r.json()), 0, msg=res)
         return res
 
+    def _create_vlan_13(self):
+        vlan13 = VlanIf.objects.create(title="Vlan13 for customer tests", vid=13)
+        poolv13 = NetworkIpPool.objects.create(
+            network="10.152.65.0/24",
+            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
+            description="Test inet pool13",
+            ip_start="10.152.65.2",
+            ip_end="10.152.65.254",
+            vlan_if=vlan13,
+            gateway="10.152.65.1",
+            is_dynamic=False,
+        )
+        group = self.full_customer.group
+        poolv13.groups.add(group)
+        self.poolv13 = poolv13
+
 
 @dataclass
 class CreateFullCustomerReturnType:
@@ -147,7 +163,8 @@ def radius_api_request_auth(mac: str, vlan_id: Optional[int] = None, cid: Option
 
 
 class VendorsBuildDevMacByOpt82TestCase(SimpleTestCase):
-    def _make_request(self, remote_id: str, circuit_id: str):
+    @staticmethod
+    def _make_request(remote_id: str, circuit_id: str):
         dev_mac, dev_port = VendorManager.build_dev_mac_by_opt82(
             agent_remote_id=remote_id, agent_circuit_id=circuit_id
         )
@@ -239,22 +256,10 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
             gateway="10.152.64.1",
             is_dynamic=True,
         )
-        vlan13 = VlanIf.objects.create(title="Vlan13 for customer tests", vid=13)
-        poolv13 = NetworkIpPool.objects.create(
-            network="10.152.65.0/24",
-            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
-            description="Test inet pool13",
-            ip_start="10.152.65.2",
-            ip_end="10.152.65.254",
-            vlan_if=vlan13,
-            gateway="10.152.65.1",
-            is_dynamic=False,
-        )
+        self._create_vlan_13()
         group = self.full_customer.group
         pool.groups.add(group)
-        poolv13.groups.add(group)
         self.pool = pool
-        self.poolv13 = poolv13
 
         self.service_inet_str = "SERVICE-INET(11000000,1375000,11000000,1375000)"
 
@@ -1020,20 +1025,7 @@ class CustomerStaticMacAuthTestCase(DjingTestCase, ReqMixin):
         )
         self.service_inet_str = "SERVICE-INET(11000000,1375000,11000000,1375000)"
 
-        vlan13 = VlanIf.objects.create(title="Vlan13 for customer tests", vid=13)
-        poolv13 = NetworkIpPool.objects.create(
-            network="10.152.65.0/24",
-            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
-            description="Test inet pool13",
-            ip_start="10.152.65.2",
-            ip_end="10.152.65.254",
-            vlan_if=vlan13,
-            gateway="10.152.65.1",
-            is_dynamic=False,
-        )
-        group = self.full_customer.group
-        poolv13.groups.add(group)
-        self.poolv13 = poolv13
+        self._create_vlan_13()
 
         # Очистим информацию по оборудованию
         self.full_customer.customer.device = None
