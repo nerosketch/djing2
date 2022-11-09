@@ -364,7 +364,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
         self.assertIsNone(lease['session_id'], msg=lease)
 
         #  self._create_auth_session()
-        self._send_request_acct_start(
+        r = self._send_request_acct_start(
             # Not existing credentials
             cid='0004008B0002',
             arid='0006121314151617',
@@ -374,6 +374,8 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
             mac='1c:c0:4d:95:d0:30',
             session_id=UUID('12345678123456781234567812345678')
         )
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.text)
+        self.assertEqual(r.text, '')
 
         # Пробуем получить этот ip по оборудованию, которое назначено на учётку абонента
         leases = self._get_ip_leases()

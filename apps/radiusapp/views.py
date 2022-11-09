@@ -482,9 +482,9 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) 
         )
         CustomerIpLeaseModel.objects.filter(
             ip_address=ip,
-            mac_address=customer_mac,
             customer_id=customer.pk,
         ).update(
+            mac_address=customer_mac,
             input_octets=0,
             output_octets=0,
             input_packets=0,
@@ -498,19 +498,20 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) 
         # auth by mac. Find static lease.
         lease = CustomerIpLeaseModel.objects.filter(
             mac_address=customer_mac,
-            is_dynamic=False
+            is_dynamic=False,
+            state=False
         ).exclude(
             customer=None
         ).select_related('customer').first()
         if lease is None:
             return _bad_ret(
-                'Lease with mac="%s" not found' % customer_mac,
+                'Free lease with mac="%s" not found' % customer_mac,
                 custom_status=status.HTTP_404_NOT_FOUND
             )
         customer = lease.customer
         if not customer:
             return _bad_ret(
-                'Customer with provided mac address: %s Not found' % customer_mac,
+                'Customer static and free lease with provided mac address: %s Not found' % customer_mac,
                 custom_status=status.HTTP_404_NOT_FOUND
             )
 
