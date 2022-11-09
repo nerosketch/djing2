@@ -289,7 +289,7 @@ _address_fias_info = {
 AddressFIASLevelType = int
 
 
-@dataclass(frozen=True)
+@dataclass
 class IAddressFIASType:
     addr_code: int = 0
     addr_short_name: str = ''
