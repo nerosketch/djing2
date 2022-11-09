@@ -50,6 +50,13 @@ class ReqMixin:
         poolv13.groups.add(group)
         self.poolv13 = poolv13
 
+    @staticmethod
+    def disable_signals():
+        signals.post_save.disconnect()
+        signals.post_delete.disconnect()
+        signals.pre_save.disconnect()
+        signals.pre_delete.disconnect()
+
 
 @dataclass
 class CreateFullCustomerReturnType:
@@ -219,10 +226,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
         super().setUp()
 
         """Set up data for tests."""
-        signals.post_save.disconnect()
-        signals.post_delete.disconnect()
-        signals.pre_save.disconnect()
-        signals.pre_delete.disconnect()
+        self.disable_signals()
 
         self.full_customer = create_full_customer(
             uname='custo1',
@@ -602,10 +606,7 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
     def setUp(self):
         super().setUp()
 
-        signals.post_save.disconnect()
-        signals.post_delete.disconnect()
-        signals.pre_save.disconnect()
-        signals.pre_delete.disconnect()
+        self.disable_signals()
 
         self.full_customer = create_full_customer(
             uname='custo1',
@@ -665,6 +666,18 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
             },
         )
 
+    def _check_counters(self, lease: dict):
+        self.assertEqual(lease['session_id'], "12345678-1234-5678-1234-567812345678")
+        self.assertEqual(lease['input_octets'], 1374368169)
+        self.assertEqual(lease['output_octets'], 3403852035)
+        self.assertEqual(lease['input_packets'], 1154026959)
+        self.assertEqual(lease['output_packets'], 2349616998)
+        self.assertEqual(lease['h_input_octets'], '1.37 Gb')
+        self.assertEqual(lease['h_output_octets'], '3.4 Gb')
+        self.assertEqual(lease['h_input_packets'], '1.15 Gp')
+        self.assertEqual(lease['h_output_packets'], '2.35 Gp')
+        self.assertEqual(lease['cvid'], 12)
+
     def test_acct_update_counters(self):
         """Проверяем чтоб существующая сессия обновляла данные счётчиков,
            которые приходят с BRAS'а"""
@@ -708,16 +721,7 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
         self.assertEqual(lease['customer'], self.full_customer.customer.pk)
         self.assertEqual(lease['pool'], self.pool.pk)
         self.assertEqual(lease['radius_username'], "18c0.4d51.dee2-ae0:12-0004008B0002-0006121314151617")
-        self.assertEqual(lease['session_id'], "12345678-1234-5678-1234-567812345678")
-        self.assertEqual(lease['input_octets'], 1374368169)
-        self.assertEqual(lease['output_octets'], 3403852035)
-        self.assertEqual(lease['input_packets'], 1154026959)
-        self.assertEqual(lease['output_packets'], 2349616998)
-        self.assertEqual(lease['h_input_octets'], '1.37 Gb')
-        self.assertEqual(lease['h_output_octets'], '3.4 Gb')
-        self.assertEqual(lease['h_input_packets'], '1.15 Gp')
-        self.assertEqual(lease['h_output_packets'], '2.35 Gp')
-        self.assertEqual(lease['cvid'], 12)
+        self._check_counters(lease)
         self.assertEqual(lease['svid'], 1112)
         self.assertTrue(lease['state'])
         self.assertTrue(lease['is_dynamic'])
@@ -753,16 +757,7 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
         self.assertEqual(lease['customer'], self.full_customer.customer.pk)
         self.assertEqual(lease['pool'], self.pool.pk)
         self.assertEqual(lease['radius_username'], "18c0.4d51.dee2-ae0:11421-12-0004008B0002-0006121314151617")
-        self.assertEqual(lease['session_id'], "12345678-1234-5678-1234-567812345678")
-        self.assertEqual(lease['input_octets'], 1374368169)
-        self.assertEqual(lease['output_octets'], 3403852035)
-        self.assertEqual(lease['input_packets'], 1154026959)
-        self.assertEqual(lease['output_packets'], 2349616998)
-        self.assertEqual(lease['h_input_octets'], '1.37 Gb')
-        self.assertEqual(lease['h_output_octets'], '3.4 Gb')
-        self.assertEqual(lease['h_input_packets'], '1.15 Gp')
-        self.assertEqual(lease['h_output_packets'], '2.35 Gp')
-        self.assertEqual(lease['cvid'], 12)
+        self._check_counters(lease)
         self.assertEqual(lease['svid'], 11421)
         self.assertTrue(lease['state'])
         self.assertTrue(lease['is_dynamic'])
