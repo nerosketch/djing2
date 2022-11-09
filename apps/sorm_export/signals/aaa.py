@@ -54,10 +54,6 @@ def signal_radius_session_acc_start(
     **kwargs
 ):
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", int, 0)
-    bras_service_name = IVendorSpecific.get_rad_val(data, "ERX-Service-Session", str)
-
-    if bras_service_name is None:
-        return
 
     customer_username = customer.username
 
@@ -81,11 +77,6 @@ def signal_radius_session_acct_stop(
         ip_addr: str,
         radius_unique_id: str, customer_mac: EUI,
         *args, **kwargs):
-
-    bras_service_name = IVendorSpecific.get_rad_val(data, "ERX-Service-Session", str)
-
-    if bras_service_name is None:
-        return
 
     # TODO: Optimize
     if instance_queryset.exists():
@@ -128,11 +119,6 @@ def signal_radius_acct_update(
         ip_addr: str,
         customer_mac: EUI,
         *args, **kwargs):
-
-    bras_service_name = IVendorSpecific.get_rad_val(data, "ERX-Service-Session", str)
-
-    if bras_service_name is None:
-        return
 
     nas_port = IVendorSpecific.get_rad_val(data, "NAS-Port", int, 0)
 
