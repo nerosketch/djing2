@@ -29,7 +29,7 @@ class ReqMixin:
             "/api/networks/lease/",
             {'customer': customer_id}
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.text)
         res = r.json()
         self.assertGreater(len(r.json()), 0, msg=res)
         return res
@@ -314,7 +314,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
             session_id=session_id,
             vlan_id=vid,
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.text)
         self.assertEqual(r.json()['User-Password'], self.service_inet_str)
         self.assertIsNotNone(r.json().get('Framed-IP-Address'))
         return r
@@ -501,7 +501,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
             mac=mac,
             session_id=UUID('12345678123456781234567812345678')
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.text)
         self.assertDictEqual(r.json(), {
             "User-Password": "SERVICE-GUEST",
             "Framed-IP-Address": "192.168.0.3"
@@ -509,7 +509,7 @@ class CustomerAcctStartTestCase(DjingTestCase, ReqMixin):
 
         # Получаем все гостевые аренды
         r = self.get("/api/networks/lease/guest_list/")
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.text)
         d = r.json()
         self.assertEqual(len(d), 1)
         d = d[0]
@@ -663,9 +663,11 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
     def test_acct_update_counters(self):
         """Проверяем чтоб существующая сессия обновляла данные счётчиков,
            которые приходят с BRAS'а"""
+        ip = '10.152.64.18'
+
         # Create ip lease
         CustomerIpLeaseModel.objects.filter(
-            ip_address='10.152.64.18',
+            ip_address=ip,
         ).update(
             mac_address='18c0.4d51.dee2',
             pool=self.pool,
@@ -679,6 +681,7 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
         )
 
         r = self._send_request_acct_update(
+            ip=ip,
             cid='0004008B0002',
             arid='0006121314151617',
             vlan_id=12,
@@ -689,8 +692,8 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
             in_pkts=1154026959,
             out_pkts=2349616998
         )
-        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
-        self.assertEqual(r.content, b'', msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.text)
+        self.assertEqual(r.text, '')
 
         leases4customer = self._get_ip_leases()
         self.assertEqual(len(leases4customer), 1, msg=leases4customer)
@@ -734,8 +737,8 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
             in_pkts=1154026959,
             out_pkts=2349616998
         )
-        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
-        self.assertEqual(r.content, b'', msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.text)
+        self.assertEqual(r.text, '', msg=r.text)
 
         leases4customer = self._get_ip_leases()
         self.assertEqual(len(leases4customer), 1, msg=leases4customer)
@@ -780,8 +783,8 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
                 out_pkts=2349616998,
                 service_session_name="SERVICE-GUEST"
             )
-        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
-        self.assertEqual(r.content, b'', msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.text)
+        self.assertEqual(r.text, '', msg=r.text)
         self.assertGreater(len(log_capt.records), 0)
         self.assertIn(
             'INFO:djing2_logger:COA: guest->inet uname=18c0.4d51.dee2-ae0:11421-12-0004008B0002-0006121314151617',
@@ -813,8 +816,8 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
                 out_pkts=2349616998,
                 service_session_name="SERVICE-INET(100000000,18750000,101000000,18937500)"
             )
-        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.content)
-        self.assertEqual(r.content, b'')
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.text)
+        self.assertEqual(r.text, '')
         self.assertGreater(len(log_capt.records), 0)
         self.assertIn(
             'INFO:djing2_logger:COA: inet->guest uname=18c0.4d51.dee2-ae0:11421-12-0004008B0002-0006121314151617',
@@ -915,9 +918,9 @@ class CustomerAuthTestCase(DjingTestCase, ReqMixin):
                 mac="18c0.4d51.dee3",
             )
         )
-        self.assertEqual(r1.status_code, status.HTTP_200_OK, msg=r1.content)
+        self.assertEqual(r1.status_code, status.HTTP_200_OK, msg=r1.text)
         data = r1.json()
-        self.assertEqual(data["User-Password"], self.service_inet_str, msg=r1.content)
+        self.assertEqual(data["User-Password"], self.service_inet_str, msg=r1.text)
         r2 = self.post(
             "/api/radius/customer/auth/juniper/",
             radius_api_request_auth(
@@ -927,10 +930,10 @@ class CustomerAuthTestCase(DjingTestCase, ReqMixin):
                 mac="18c0.4d51.dee4",
             )
         )
-        self.assertEqual(r2.status_code, status.HTTP_200_OK, msg=r2.content)
+        self.assertEqual(r2.status_code, status.HTTP_200_OK, msg=r2.text)
         data = r2.json()
         # self.assertEqual(data["Framed-IP-Address"], "10.152.64.3")
-        self.assertEqual(data["User-Password"], self.service_inet_str, msg=r2.content)
+        self.assertEqual(data["User-Password"], self.service_inet_str, msg=r2.text)
 
     def test_guest_and_inet_subnet(self):
         """Проверка гостевой и инетной сессии.
@@ -950,7 +953,7 @@ class CustomerAuthTestCase(DjingTestCase, ReqMixin):
                 mac="18c0.4d51.dee4",
             )
         )
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.content)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.text)
         self.assertDictEqual(r.json(), {
             "User-Password": "SERVICE-GUEST",
             "Framed-IP-Address": "10.152.64.3"
@@ -1065,7 +1068,7 @@ class CustomerStaticMacAuthTestCase(DjingTestCase, ReqMixin):
                 mac='18:c0:4d:95:d0:30'
             )
         )
-        self.assertEqual(r.status_code, 200, msg=r.content)
+        self.assertEqual(r.status_code, 200, msg=r.text)
         d = r.json()
         self.assertEqual(d['Framed-IP-Address'], '10.152.65.24', msg=d)
         self.assertIsNotNone(d.get('User-Password'), msg=d)
