@@ -109,7 +109,7 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
     queryset = CustomerIpLeaseModel.objects.all()
     serializer_class = serializers.CustomerIpLeaseModelSerializer
     filter_backends = (CustomObjectPermissionsFilter, OrderingFilter, DjangoFilterBackend)
-    filterset_fields = ("customer",)
+    filterset_fields = ("customer", "state")
     ordering_fields = ("ip_address", "lease_time", "mac_address")
 
     def create(self, request, *args, **kwargs):
