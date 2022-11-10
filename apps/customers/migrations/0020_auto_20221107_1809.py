@@ -42,8 +42,18 @@ class Migration(migrations.Migration):
             name='markers',
             field=bitfield.models.BitField((('icon_donkey', 'Donkey'), ('icon_fire', 'Fire'), ('icon_ok', 'Ok'), ('icon_king', 'King'), ('icon_tv', 'TV'), ('icon_smile', 'Smile'), ('icon_dollar', 'Dollar'), ('icon_service', 'Service'), ('icon_mrk', 'Marker'), ('icon_red_tel', 'Red phone'), ('icon_green_tel', 'Green phone'), ('icon_doc', 'Document'), ('icon_reddoc', 'Red document')), default=0),
         ),
-        migrations.DeleteModel(
-            name='CustomerService',
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.AlterModelTable(
+                    name='CustomerService',
+                    table='customer_service'
+                )
+            ],
+            state_operations=[
+                migrations.DeleteModel(
+                    name='CustomerService',
+                )
+            ]
         ),
         migrations.SeparateDatabaseAndState(
             database_operations=[

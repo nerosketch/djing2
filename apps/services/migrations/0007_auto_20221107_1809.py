@@ -44,24 +44,6 @@ class Migration(migrations.Migration):
                 'unique_together': {('customer', 'number_queue')},
             },
         ),
-        migrations.CreateModel(
-            name='CustomerService',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('start_time', models.DateTimeField(blank=True, default=None, null=True)),
-                ('deadline', models.DateTimeField(blank=True, default=None, null=True)),
-                ('customer', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='current_service', to='customers.customer')),
-                ('service', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='link_to_service', to='services.service')),
-            ],
-            options={
-                'verbose_name': 'Customer service',
-                'verbose_name_plural': 'Customer services',
-                'db_table': 'customer_service',
-                'permissions': [('can_view_service_type_report', 'Can view service type report'), ('can_view_activity_report', 'Can view activity_report')],
-                'unique_together': {('customer', 'service')},
-            },
-            bases=(djing2.models.BaseAbstractModelMixin, models.Model),
-        ),
         migrations.RunSQL(
             sql="DROP FUNCTION find_customer_service_by_device_credentials( integer, integer )"
         ),
@@ -69,19 +51,59 @@ class Migration(migrations.Migration):
             database_operations=[],
             state_operations=[
                 migrations.CreateModel(
+                    name='CustomerService',
+                    fields=[
+                        ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('start_time', models.DateTimeField(blank=True, default=None, null=True)),
+                        ('deadline', models.DateTimeField(blank=True, default=None, null=True)),
+                        ('service', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='link_to_service', to='services.service')),
+                    ],
+                    options={
+                        'verbose_name': 'Customer service',
+                        'verbose_name_plural': 'Customer services',
+                        'db_table': 'customer_service',
+                        'permissions': [('can_view_service_type_report', 'Can view service type report'), ('can_view_activity_report', 'Can view activity_report')],
+                        'unique_together': {('customer', 'service')},
+                    },
+                    bases=(djing2.models.BaseAbstractModelMixin, models.Model),
+                ),
+            ]
+        ),
+        migrations.RunSQL(
+            sql=(
+                # SELECT cs.* FROM customer_service cs LEFT OUTER JOIN customers c ON cs.id = c.current_service_id WHERE c.baseaccount_ptr_id IS NULL;
+                # 'commit;\n'
+                'DELETE FROM customer_service USING customer_service cs RIGHT JOIN customers c ON cs.id = c.current_service_id WHERE c.baseaccount_ptr_id IS NULL;\n'
+                # 'begin;\n'
+                'ALTER TABLE customer_service ADD COLUMN customer_id integer;\n'
+                'UPDATE customer_service cs SET customer_id = c.baseaccount_ptr_id FROM customers c WHERE c.current_service_id = cs.id;\n'
+                'ALTER TABLE customer_service ALTER COLUMN customer_id SET NOT NULL;\n'
+                'ALTER TABLE customer_service ADD FOREIGN KEY (customer_id) REFERENCES customers("baseaccount_ptr_id") DEFERRABLE INITIALLY DEFERRED;\n'
+                'ALTER TABLE customer_service ADD CONSTRAINT customer_service_customer_id_30a14af1_fk_customers UNIQUE (customer_id);\n'
+                'SET CONSTRAINTS customer_service_customer_id_30a14af1_fk_customers IMMEDIATE;'
+            ),
+            state_operations=[
+                migrations.AddField(
+                    model_name='customerservice',
+                    name='customer',
+                    field=models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='current_service', to='customers.customer'
+                    )
+                )
+            ]
+        ),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.CreateModel(
                     name='PeriodicPayForId',
                     fields=[
-                        ('id',
-                         models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                        ('last_pay',
-                         models.DateTimeField(blank=True, default=None, null=True, verbose_name='Last pay time')),
+                        ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('last_pay', models.DateTimeField(blank=True, default=None, null=True, verbose_name='Last pay time')),
                         ('next_pay', models.DateTimeField(verbose_name='Next time to pay')),
-                        ('account',
-                         models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='customers.customer',
-                                           verbose_name='Account')),
-                        ('periodic_pay',
-                         models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='services.periodicpay',
-                                           verbose_name='Periodic pay')),
+                        ('account', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='customers.customer', verbose_name='Account')),
+                        ('periodic_pay', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='services.periodicpay', verbose_name='Periodic pay')),
                     ],
                     options={
                         'db_table': 'periodic_pay_for_id',
