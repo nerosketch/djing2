@@ -10,7 +10,7 @@ from ...base_device_strategy import SNMPWorker
 _DEVICE_UNIQUE_CODE = 5
 
 
-@dataclass(frozen=True)
+@dataclass
 class UnregisteredUnitType:
     mac: str
     firmware_ver: str

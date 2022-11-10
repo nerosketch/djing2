@@ -7,7 +7,7 @@ from customers.models import Customer, PassportInfo
 from customers_legal.models import CustomerLegalModel
 
 
-@dataclass(frozen=True)
+@dataclass
 class CustomerChecksRes:
     passport: PassportInfo
     passport_parent_addr: AddressModel
@@ -98,7 +98,7 @@ def customer_checks(customer: Customer) -> CustomerChecksRes:
     )
 
 
-@dataclass(frozen=True)
+@dataclass
 class CustomerLegalCheckRes:
     addr: AddressModel
     parent_street: AddressModel
