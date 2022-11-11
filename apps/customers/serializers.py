@@ -58,27 +58,23 @@ class CustomerModelSerializer(BaseAccountSerializer):
 
         return instance
 
+    # TODO: deprecated, defined in profiles.schemas.BaseAccountSchema
     @staticmethod
     def validate_fio(full_fio: str) -> str:
         def _is_chunk_ok(v: str, rgxp=re.compile(r"^[A-Za-zА-Яа-яЁё-]{1,250}$")):
-            r = rgxp.search(v)
-            return bool(r)
+            return bool(rgxp.search(v))
 
         err_text = _('Credentials must be without spaces or any special symbols, only letters and "-"')
 
-        res = split_fio(full_fio)
-        if len(res) == 3:
-            surname, name, last_name = res
-            if surname is not None and not _is_chunk_ok(surname):
-                raise serializers.ValidationError(err_text)
-            if name is not None and not _is_chunk_ok(name):
-                raise serializers.ValidationError(err_text)
-            if last_name is not None and not _is_chunk_ok(last_name):
-                raise serializers.ValidationError(err_text)
+        r = split_fio(full_fio)
+        if r.surname is not None and not _is_chunk_ok(r.surname):
+            raise serializers.ValidationError(err_text)
+        if r.name is not None and not _is_chunk_ok(r.name):
+            raise serializers.ValidationError(err_text)
+        if r.last_name is not None and not _is_chunk_ok(r.last_name):
+            raise serializers.ValidationError(err_text)
 
-            return f"{surname} {name} {last_name or ''}"
-        else:
-            raise serializers.ValidationError(_('3 words required: surname, name and last_name without spaces'))
+        return f"{r.surname} {r.name} {r.last_name or ''}"
 
     class Meta:
         model = models.Customer

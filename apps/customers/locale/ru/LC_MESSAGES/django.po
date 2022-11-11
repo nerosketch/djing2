@@ -318,10 +318,6 @@ msgid ""
 "\"-\""
 msgstr "ФИО должно быть без пробелов и спец знаков, только буквы и \"-\""
 
-#: apps/customers/serializers.py:117
-msgid "3 words required: surname, name and last_name without spaces"
-msgstr "3 слова необходимо: фамилия, имя и отчество без пробелов"
-
 #: apps/customers/serializers.py:139
 msgid "You can't specify the future"
 msgstr "Нельзя указывать будущее время"

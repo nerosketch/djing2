@@ -298,13 +298,13 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
             # TODO: "actual_end_time":
             "customer_id": customer.pk,
         }
-        surname, name, last_name = customer.split_fio()
-        if surname is not None:
-            r['surname'] = surname
-        if name is not None:
-            r['name'] = name
-        if last_name is not None:
-            r['last_name'] = last_name
+        fio = customer.split_fio()
+        if fio.surname:
+            r['surname'] = r.surname
+        if fio.name:
+            r['name'] = r.name
+        if fio.last_name:
+            r['last_name'] = r.last_name
         return r
 
 
