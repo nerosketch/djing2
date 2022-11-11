@@ -39,4 +39,3 @@ class IpLeaseExportTree(ExportTree[CustomerIpLeaseModel]):
             'assign_time': lease.lease_time,
             'mac_addr': lease.mac_address
         }
-

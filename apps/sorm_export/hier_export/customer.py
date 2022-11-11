@@ -454,19 +454,7 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     def get_export_type(cls):
         return ExportStampTypeEnum.CUSTOMER_CONTRACT
 
-    # def export_dependencies(self):
-    #     # Проверить и выгрузить все зависимости, если self._recursive
-    #     for dep_class, qs in self.parent_dependencies:
-    #         Тут надо сделать queryset для зависимостей
-    #         exporter = dep_class(recursive=True, event_time=self._event_time)
-    #         data = exporter.export(queryset=qs)
-    #         exporter.upload2ftp(data=data)
-
     def get_items(self, queryset):
-        # Проверить и выгрузить все зависимости, если self._recursive
-        # if self._recursive:
-        #    self.export_dependencies()
-
         # Выгрузить себя
         for item in self.filter_queryset(queryset=queryset):
             try:
@@ -482,5 +470,4 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
             'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
             "contract_number": contract.contract_number,
             "contract_title": gettext('Contract default title'),
-            # "contract_title": contract.title,
         }
