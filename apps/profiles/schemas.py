@@ -45,18 +45,15 @@ class BaseAccountSchema(BaseModel):
 
     @validator('fio')
     def validate_fio(cls, full_fio: str) -> str:
-        res = split_fio(full_fio)
-        if len(res) == 3:
-            surname, name, last_name = res
-            if surname is not None and not _is_chunk_ok(surname):
-                raise err_ex
-            if name is not None and not _is_chunk_ok(name):
-                raise err_ex
-            if last_name is not None and not _is_chunk_ok(last_name):
-                raise err_ex
+        r = split_fio(full_fio)
+        if r.surname is not None and not _is_chunk_ok(r.surname):
+            raise err_ex
+        if r.name is not None and not _is_chunk_ok(r.name):
+            raise err_ex
+        if r.last_name is not None and not _is_chunk_ok(r.last_name):
+            raise err_ex
 
-            return f"{surname} {name} {last_name or ''}"
-        raise ValueError(_('3 words required: surname, name and last_name without spaces'))
+        return str(r)
 
     @validator('sites', pre=True)
     def fornat_sites(cls, sites):

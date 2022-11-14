@@ -2,10 +2,12 @@ from datetime import datetime
 from typing import Any
 
 from django.core.management.base import BaseCommand
+from django.db.models import Count, Case, When, Value, BooleanField
+
 from rest_framework.exceptions import ValidationError
 
 from addresses.models import AddressModel
-from customers.models import CustomerService, AdditionalTelephone
+from customers.models import CustomerService, AdditionalTelephone, Customer
 from customers_legal.models import CustomerLegalModel
 from devices.device_config.device_type_collection import DEVICE_TYPES
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
@@ -40,14 +42,24 @@ def export_all_root_customers():
     """
 
     customers = general_customer_all_filter_queryset()
-    CustomerRootExportTree(recursive=False).exportNupload(queryset=customers)
+    CustomerRootExportTree(
+        recursive=False
+    ).exportNupload(
+        queryset=customers
+    )
 
 
 def export_all_customer_contracts():
-    contracts = CustomerContractModel.objects.select_related('customer').filter(
+    contracts = CustomerContractModel.objects.select_related(
+        'customer'
+    ).filter(
         customer__is_active=True
     )
-    CustomerContractExportTree(recursive=False).exportNupload(queryset=contracts)
+    CustomerContractExportTree(
+        recursive=False
+    ).exportNupload(
+        queryset=contracts
+    )
 
 
 def export_all_address_objects():
@@ -59,23 +71,49 @@ def export_all_address_objects():
     )
     et = datetime.now()
 
-    AddressExportTree(event_time=et, recursive=False).exportNupload(queryset=addr_objects)
+    AddressExportTree(
+        event_time=et, recursive=False
+    ).exportNupload(
+        queryset=addr_objects
+    )
 
 
 def export_all_access_point_addresses():
     # TODO: Выгружать так же и оборудование юриков. сейчас только физики.
     customers = general_customer_filter_queryset()
-    AccessPointExportTree(recursive=False).exportNupload(queryset=customers)
+    AccessPointExportTree(
+        recursive=False
+    ).exportNupload(
+        queryset=customers
+    )
 
 
 def export_all_individual_customers():
-    customers = general_customer_filter_queryset()
-    IndividualCustomersExportTree(recursive=False).exportNupload(queryset=customers)
+    customers = Customer.objects.filter(
+        is_active=True
+    ).annotate(
+        legals=Count('customerlegalmodel')
+    ).annotate(
+        is_legal_filial=Case(
+            When(legals__gt=0, then=Value(True)),
+            default=Value(False),
+            output_field=BooleanField()
+        )
+    )
+    IndividualCustomersExportTree(
+        recursive=False
+    ).exportNupload(
+        queryset=customers
+    )
 
 
 def export_all_legal_customers():
     customers = CustomerLegalModel.objects.all()
-    LegalCustomerExportTree(recursive=False).exportNupload(queryset=customers)
+    LegalCustomerExportTree(
+        recursive=False
+    ).exportNupload(
+        queryset=customers
+    )
 
 
 def export_all_customer_contacts():
@@ -85,7 +123,11 @@ def export_all_customer_contacts():
 
     def _build_f_tels(c):
         contract_date = c.customercontractmodel_set.first().start_service_time
-        create_date = datetime(c.create_date.year, c.create_date.month, c.create_date.day)
+        create_date = datetime(
+            year=c.create_date.year,
+            month=c.create_date.month,
+            day=c.create_date.day
+        )
 
         if create_date >= contract_date:
             act_start_time = create_date
@@ -103,7 +145,11 @@ def export_all_customer_contacts():
     def _build_s_tels(t: AdditionalTelephone):
         c = t.customer
         contract_date = c.customercontractmodel_set.first().start_service_time
-        create_date = datetime(c.create_date.year, c.create_date.month, c.create_date.day)
+        create_date = datetime(
+            year=c.create_date.year,
+            month=c.create_date.month,
+            day=c.create_date.day
+        )
 
         if create_date >= contract_date:
             act_start_time = create_date
@@ -118,25 +164,38 @@ def export_all_customer_contacts():
         }
 
     # export additional tels
-    tels = AdditionalTelephone.objects.filter(customer__in=customers).select_related("customer")
+    tels = AdditionalTelephone.objects.filter(
+        customer__in=customers
+    ).select_related("customer")
     customer_tels.extend(
         _build_s_tels(t) for t in tels.iterator()
     )
 
-    ContactSimpleExportTree(recursive=False).exportNupload(data=customer_tels, many=True)
+    ContactSimpleExportTree(
+        recursive=False
+    ).exportNupload(
+        data=customer_tels, many=True
+    )
 
 
 def export_all_service_nomenclature():
-    NomenclatureSimpleExportTree(recursive=False).exportNupload()
+    NomenclatureSimpleExportTree(
+        recursive=False
+    ).exportNupload()
 
 
 def export_all_ip_leases():
     customers_qs = general_customer_all_filter_queryset()
     leases = CustomerIpLeaseModel.objects.filter(
         customer__in=customers_qs,
-        is_dynamic=False
+        is_dynamic=False,
+        state=True
+    ).exclude(lease_time=None)
+    IpLeaseExportTree(
+        recursive=False
+    ).exportNupload(
+        queryset=leases
     )
-    IpLeaseExportTree(recursive=False).exportNupload(queryset=leases)
 
 
 def export_all_customer_services():
@@ -144,24 +203,38 @@ def export_all_customer_services():
     csrv = CustomerService.objects.select_related("customer").filter(
         customer__in=customers_qs
     )
-    CustomerServiceExportTree(recursive=False).exportNupload(queryset=csrv)
+    CustomerServiceExportTree(
+        recursive=False
+    ).exportNupload(
+        queryset=csrv
+    )
 
 
 def export_all_switches():
     device_switch_type_ids = [uniq_num for uniq_num, dev_klass in DEVICE_TYPES if issubclass(
         dev_klass, SwitchDeviceStrategy)]
-    devs = Device.objects.filter(dev_type__in=device_switch_type_ids).exclude(address=None).select_related('address')
+    devs = Device.objects.filter(
+        dev_type__in=device_switch_type_ids
+    ).exclude(address=None).select_related('address')
     if devs.exists():
-        DeviceExportTree(recursive=True).exportNupload(queryset=devs)
+        DeviceExportTree(
+            recursive=True
+        ).exportNupload(
+            queryset=devs
+        )
 
 
 def export_all_ip_numbering():
-    IpNumberingExportTree(recursive=False).exportNupload(queryset=NetworkIpPool.objects.all())
+    IpNumberingExportTree(recursive=False).exportNupload(
+        queryset=NetworkIpPool.objects.all()
+    )
 
 
 def export_all_gateways():
     from gateways.models import Gateway
-    GatewayExportTree(recursive=True).exportNupload(queryset=Gateway.objects.exclude(place=None))
+    GatewayExportTree(recursive=True).exportNupload(
+        queryset=Gateway.objects.exclude(place=None)
+    )
 
 
 class Command(BaseCommand):

@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime, date
 from bitfield.models import BitField
@@ -15,7 +16,17 @@ from djing2.models import BaseAbstractModel, BaseAbstractModelMixin
 from groupapp.models import Group
 
 
-def split_fio(fio: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
+@dataclass(frozen=True)
+class FioDataclass:
+    name: str
+    surname: Optional[str]
+    last_name: Optional[str]
+
+    def __str__(self):
+        return f"{self.surname} {self.name} {self.last_name or ''}"
+
+
+def split_fio(fio: str) -> FioDataclass:
     """Try to split name, last_name, and surname."""
     full_fname = str(fio)
     full_name_list = full_fname.split()
@@ -31,7 +42,11 @@ def split_fio(fio: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
             surname, name = full_name_list
         elif name_len == 1:
             name = full_fname
-    return surname, name, last_name
+    return FioDataclass(
+        surname=surname,
+        name=name,
+        last_name=last_name
+    )
 
 
 class MyUserManager(BaseUserManager):
@@ -121,7 +136,7 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
         ProfileAuthLog.objects.create(profile=self, user_agent=user_agent, remote_ip=remote_ip)
         BaseAccount.objects.filter(pk=self.pk).update(last_login=datetime.now())
 
-    def split_fio(self):
+    def split_fio(self) -> FioDataclass:
         """Try to split name, last_name, and surname."""
         return split_fio(str(self.fio))
 
