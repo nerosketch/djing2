@@ -28,15 +28,3 @@ def customer_contact_export_task(customer_tels, event_time: Optional[float] = No
     if event_time is not None:
         event_time = datetime.fromtimestamp(event_time)
     ContactSimpleExportTree(event_time=event_time).exportNupload(data=customer_tels, many=True)
-
-
-# @celery_app.task
-# def customer_root_export_task(customer_id: int, event_time: Optional[float] = None):
-#    if event_time is not None:
-#        event_time = datetime.fromtimestamp(event_time)
-#    exporter = CustomerRootExportTree(recursive=False)
-#    data, fname = export_customer_root(
-#        customers=Customer.objects.filter(pk=customer_id),
-#        event_time=event_time
-#    )
-#    task_export(data, fname)

@@ -89,7 +89,8 @@ class AddressObjectFormat(serializers.Serializer):
     )
     type_id = serializers.IntegerField(
         label=_('Address type id'),
-        help_text="соответствует полю SOCRBASE.KOD_T_ST (уникальный код типа а/о) из справочника типов адресных объектов ФИАС",
+        help_text="соответствует полю SOCRBASE.KOD_T_ST (уникальный код типа а/о) "
+                  "из справочника типов адресных объектов ФИАС",
         # https://github.com/hflabs/socrbase/blob/master/socrbase.csv
         required=True,
         # sorm_export.fias_socrbase.py
@@ -97,7 +98,8 @@ class AddressObjectFormat(serializers.Serializer):
     region_type = serializers.CharField(
         label=_('Region type'),
         max_length=128,
-        help_text="соответствует полю SOCRBASE.SOCRNAME (сокращённое название) из справочника типов адресных объектов ФИАС",
+        help_text="соответствует полю SOCRBASE.SOCRNAME (сокращённое название) "
+                  "из справочника типов адресных объектов ФИАС",
         # sorm_export.fias_socrbase.py
         required=True
     )

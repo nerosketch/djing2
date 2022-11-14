@@ -1,6 +1,6 @@
 from typing import overload, AnyStr
 from dataclasses import dataclass
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 from djing2.lib import LogicError
 from addresses.models import AddressModel, AddressModelTypes
 from customers.models import Customer, PassportInfo
@@ -61,6 +61,10 @@ def customer_checks(customer: Customer) -> CustomerChecksRes:
             _('Individual customer "%s" [%s] has relation to legal [%s]') % legal_names)
 
     passport = customer.passportinfo
+    if not passport:
+        raise CheckFailedException(
+            detail=_('Customer "%s" [%s] has no passport info') % (customer, customer.username),
+        )
 
     passport_addr = passport.registration_address
     if not passport_addr:
