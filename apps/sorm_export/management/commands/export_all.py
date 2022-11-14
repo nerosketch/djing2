@@ -144,8 +144,9 @@ def export_all_ip_leases():
     customers_qs = general_customer_all_filter_queryset()
     leases = CustomerIpLeaseModel.objects.filter(
         customer__in=customers_qs,
-        is_dynamic=False
-    )
+        is_dynamic=False,
+        state=True
+    ).exclude(lease_time=None)
     IpLeaseExportTree(recursive=False).exportNupload(queryset=leases)
 
 
