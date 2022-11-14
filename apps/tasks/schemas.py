@@ -1,6 +1,8 @@
 from typing import Optional
 from datetime import date, datetime
 
+from django.db.models.fields.files import FieldFile
+from profiles.models import UserProfile
 from pydantic import BaseModel, Field, validator
 from django.utils.translation import gettext as _
 from djing2.lib.fastapi.types import OrmConf
@@ -102,6 +104,12 @@ class TaskDocumentAttachmentModelSchema(BaseModel):
 
     Config = OrmConf
 
+    @validator('doc_file', pre=True)
+    def validate_doc_file(cls, v):
+        if isinstance(v, FieldFile):
+            return v.url
+        return v
+
 
 class TaskFinishDocumentBaseSchema(BaseModel):
     code: str = Field(max_length=64, title=_('Document code'))
@@ -117,8 +125,16 @@ class TaskFinishDocumentBaseSchema(BaseModel):
 class TaskFinishDocumentModelSchema(TaskFinishDocumentBaseSchema):
     id: int
     author_id: int = Field(title=_("Author"))
+    recipients: list[int] = Field([], title=_("Recipients"))
 
     Config = OrmConf
+
+    @validator('recipients', pre=True)
+    def prepare_recipients_for_serialization(cls, recipients: list[UserProfile]):
+        if not isinstance(recipients, list):
+            return recipients
+        r = (i for i in recipients if isinstance(i, UserProfile))
+        return [i.pk for i in r]
 
 
 class TaskModeModelBaseSchema(BaseModel):
