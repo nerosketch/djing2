@@ -5,7 +5,7 @@ from customers.models import Customer
 from djing2 import celery_app
 from djing2.lib import LogicError
 from djing2.lib.logger import logger
-from services.models.service import connect_service_if_autoconnect
+from services.models import connect_service_if_autoconnect
 
 
 def customer_check_service_for_expiration(customer_id: int):
