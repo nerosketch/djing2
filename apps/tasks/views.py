@@ -26,13 +26,39 @@ router = APIRouter(
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
-# TODO: change and remove comment can only author
 router.include_router(CrudRouter(
     schema=schemas.TaskDocumentAttachmentModelSchema,
     queryset=models.TaskDocumentAttachment.objects.all(),
     create_route=False,
+    delete_one_route=False,
+    update_route=False,
     get_all_route=False
 ), prefix='/attachment')
+
+
+@router.delete('/attachment/{attachment_id}/',
+               status_code=status.HTTP_204_NO_CONTENT,
+               responses={
+                   status.HTTP_204_NO_CONTENT: {
+                       'description': 'Attachment successfully removed'
+                   },
+                   status.HTTP_403_FORBIDDEN: {
+                       'description': "You can't delete this attachment"
+                   }
+               })
+def delete_attachment(
+    attachment_id: int,
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+):
+    curr_user, token = auth
+    attachments_qs = filter_qs_by_rights(
+        qs_or_model=models.TaskDocumentAttachment,
+        curr_user=curr_user,
+        perm_codename='tasks.delete_taskdocumentattachment'
+    ).filter(author=curr_user)
+    attachment = get_object_or_404(attachments_qs, pk=attachment_id)
+    attachment.delete()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post('/attachment/',
