@@ -7,6 +7,7 @@ from addresses.models import AddressModelTypes, AddressModel
 from customer_contract.models import CustomerContractModel
 from customers_legal.models import CustomerLegalModel
 from customers.models import Customer
+from profiles.models import FioDataclass
 from sorm_export.models import (
     CommunicationStandardChoices,
     CustomerDocumentTypeChoices,
@@ -16,7 +17,8 @@ from sorm_export.serializers import individual_entity_serializers
 from sorm_export.checks.customer import (
     customer_checks,
     CheckFailedException,
-    customer_legal_checks
+    customer_legal_checks,
+    _addr_get_parent
 )
 from .base import (
     format_fname,
@@ -234,6 +236,17 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
     def get_export_type(cls):
         return ExportStampTypeEnum.CUSTOMER_INDIVIDUAL
 
+    @staticmethod
+    def _add_fio(fio: FioDataclass) -> dict:
+        r = {}
+        if fio.surname:
+            r['surname'] = fio.surname
+        if fio.name:
+            r['name'] = fio.name
+        if fio.last_name:
+            r['last_name'] = fio.last_name
+        return r
+
     def filter_queryset(self, queryset):
         contract_start_service_time_q = CustomerContractModel.objects.filter(
             customer_id=OuterRef('pk'),
@@ -244,13 +257,71 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
         ).annotate(
             contract_date=Subquery(contract_start_service_time_q),
             legals=Count('customerlegalmodel'),
-        ).filter(legals=0)
-        _report_about_customers_no_have_passport(
-            qs.filter(passportinfo=None)
         )
-        return qs.exclude(passportinfo=None)
+        _report_about_customers_no_have_passport(
+            qs.filter(passportinfo=None).filter(legals=0)
+        )
+        return qs
 
-    def get_item(self, customer):
+    def _make_legal_filial_item(self, customer):
+        my_legal = customer.customerlegalmodel_set.first()
+
+        try:
+            addr_parent_street_region = _addr_get_parent(
+                customer.address,
+                _('Customer "%s" with login "%s" address has no parent street element') % (
+                    customer,
+                    customer.username
+                )
+            )
+        except CheckFailedException as err:
+            logger.error(str(err))
+            return
+
+        actual_start_date = my_legal.actual_start_time
+
+        r = {
+            "contract_id": my_legal.pk,
+            "birthday": customer.birth_day or None,
+            "parent_id_ao": addr_parent_street_region.pk,
+            "actual_start_time": actual_start_date,
+            # TODO: "actual_end_time":
+            "customer_id": customer.pk,
+        }
+
+        passport = getattr(customer, 'passportinfo', None)
+        if passport:
+            r.update({
+                "document_type": CustomerDocumentTypeChoices.PASSPORT_RF,
+                "document_serial": passport.series,
+                "document_number": passport.number,
+                "document_distributor": passport.distributor,
+                "passport_code": passport.division_code or "",
+                "passport_date": passport.date_of_acceptance,
+            })
+            addr = passport.registration_address
+            if addr:
+                addr_house = addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.HOUSE
+                )
+                addr_building = addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.BUILDING
+                )
+                addr_corp = addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.CORPUS
+                )
+                r.update({
+                    "house": addr.title,
+                    "house_num": addr_house.title if addr_house else None,
+                    "building": addr_building.title if addr_building else None,
+                    "building_corpus": addr_corp.title if addr_corp else None,
+                })
+
+        fio = my_legal.split_fio()
+        r.update(self._add_fio(fio))
+        return r
+
+    def _make_individual_item(self, customer):
         try:
             check_ok_res = customer_checks(customer=customer)
         except CheckFailedException as err:
@@ -295,13 +366,13 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
             "customer_id": customer.pk,
         }
         fio = customer.split_fio()
-        if fio.surname:
-            r['surname'] = fio.surname
-        if fio.name:
-            r['name'] = fio.name
-        if fio.last_name:
-            r['last_name'] = fio.last_name
+        r.update(self._add_fio(fio))
         return r
+
+    def get_item(self, customer):
+        if customer.is_legal_filial:
+            return self._make_legal_filial_item(customer)
+        return self._make_individual_item(customer)
 
 
 class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):

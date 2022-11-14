@@ -2,10 +2,12 @@ from datetime import datetime
 from typing import Any
 
 from django.core.management.base import BaseCommand
+from django.db.models import Count, Case, When, Value, BooleanField
+
 from rest_framework.exceptions import ValidationError
 
 from addresses.models import AddressModel
-from customers.models import CustomerService, AdditionalTelephone
+from customers.models import CustomerService, AdditionalTelephone, Customer
 from customers_legal.models import CustomerLegalModel
 from devices.device_config.device_type_collection import DEVICE_TYPES
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategy
@@ -69,7 +71,15 @@ def export_all_access_point_addresses():
 
 
 def export_all_individual_customers():
-    customers = general_customer_filter_queryset()
+    customers = Customer.objects.filter(is_active=True).annotate(
+        legals=Count('customerlegalmodel')
+    ).annotate(
+        is_legal_filial=Case(
+            When(legals__gt=0, then=Value(True)),
+            default=Value(False),
+            output_field=BooleanField()
+        )
+    )
     IndividualCustomersExportTree(recursive=False).exportNupload(queryset=customers)
 
 
