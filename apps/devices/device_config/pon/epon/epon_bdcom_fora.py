@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from django.utils.translation import gettext, gettext_lazy as _
 from easysnmp import EasySNMPTimeoutError
 
@@ -12,6 +14,12 @@ from ..pon_device_strategy import PonOnuDeviceStrategy, PonONUDeviceStrategyCont
 from ...base_device_strategy import SNMPWorker
 
 _DEVICE_UNIQUE_CODE = 3
+
+
+@dataclass
+class DefaultVlanDC:
+    port: int
+    vids: Vlans
 
 
 class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
@@ -44,7 +52,7 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
     def get_uptime(self):
         return '0'
 
-    def get_details(self):
+    def get_details(self) -> dict:
         dev = self.model_instance
         if dev is None:
             return {}
@@ -66,39 +74,38 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
             if uptime > 0:
                 uptime = RuTimedelta(seconds=uptime / 100)
             # speed = self.get_item('.1.3.6.1.2.1.2.2.1.5.%d' % num)
-            if status > 0:
-                return {
-                    "status": status_map.get(status, "unknown"),
-                    "signal": signal / 10 if signal else "—",
-                    "mac": macbin2str(mac),
-                    "info": (
-                        # IF-MIB::ifDescr
-                        (_("name"), snmp.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % num)),
-                        # IF-MIB::ifMtu
-                        (_("mtu"), snmp.get_item(".1.3.6.1.2.1.2.2.1.4.%d" % num)),
-                        # IF-MIB::ifInOctets
-                        (_("in_octets"), bytes2human(safe_float(snmp.get_item(".1.3.6.1.2.1.2.2.1.10.%d" % num)))),
-                        # IF-MIB::ifInUcastPkts
-                        (_("in_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.11.%d" % num)),
-                        # IF-MIB::ifInNUcastPkts
-                        (_("in_not_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.12.%d" % num)),
-                        # IF-MIB::ifInDiscards
-                        (_("in_discards"), snmp.get_item(".1.3.6.1.2.1.2.2.1.13.%d" % num)),
-                        # IF-MIB::ifInErrors
-                        (_("in_errors"), snmp.get_item(".1.3.6.1.2.1.2.2.1.14.%d" % num)),
-                        # IF-MIB::ifOutOctets
-                        (_("out_octets"), bytes2human(safe_float(snmp.get_item(".1.3.6.1.2.1.2.2.1.16.%d" % num)))),
-                        # IF-MIB::ifOutUcastPkts
-                        (_("out_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.17.%d" % num)),
-                        # IF-MIB::ifOutNUcastPkts
-                        (_("out_not_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.18.%d" % num)),
-                        # IF-MIB::ifOutDiscards
-                        (_("out_discards"), snmp.get_item(".1.3.6.1.2.1.2.2.1.19.%d" % num)),
-                        # IF-MIB::ifOutErrors
-                        (_("out_errors"), snmp.get_item(".1.3.6.1.2.1.2.2.1.20.%d" % num)),
-                        (_("uptime"), str(uptime)),
-                    ),
-                }
+            return {
+                "status": status_map.get(status, "unknown"),
+                "signal": signal / 10 if signal else "—",
+                "mac": macbin2str(mac),
+                "info": (
+                    # IF-MIB::ifDescr
+                    (_("name"), snmp.get_item(".1.3.6.1.2.1.2.2.1.2.%d" % num)),
+                    # IF-MIB::ifMtu
+                    (_("mtu"), snmp.get_item(".1.3.6.1.2.1.2.2.1.4.%d" % num)),
+                    # IF-MIB::ifInOctets
+                    (_("in_octets"), bytes2human(safe_float(snmp.get_item(".1.3.6.1.2.1.2.2.1.10.%d" % num)))),
+                    # IF-MIB::ifInUcastPkts
+                    (_("in_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.11.%d" % num)),
+                    # IF-MIB::ifInNUcastPkts
+                    (_("in_not_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.12.%d" % num)),
+                    # IF-MIB::ifInDiscards
+                    (_("in_discards"), snmp.get_item(".1.3.6.1.2.1.2.2.1.13.%d" % num)),
+                    # IF-MIB::ifInErrors
+                    (_("in_errors"), snmp.get_item(".1.3.6.1.2.1.2.2.1.14.%d" % num)),
+                    # IF-MIB::ifOutOctets
+                    (_("out_octets"), bytes2human(safe_float(snmp.get_item(".1.3.6.1.2.1.2.2.1.16.%d" % num)))),
+                    # IF-MIB::ifOutUcastPkts
+                    (_("out_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.17.%d" % num)),
+                    # IF-MIB::ifOutNUcastPkts
+                    (_("out_not_ucst_pkts"), snmp.get_item(".1.3.6.1.2.1.2.2.1.18.%d" % num)),
+                    # IF-MIB::ifOutDiscards
+                    (_("out_discards"), snmp.get_item(".1.3.6.1.2.1.2.2.1.19.%d" % num)),
+                    # IF-MIB::ifOutErrors
+                    (_("out_errors"), snmp.get_item(".1.3.6.1.2.1.2.2.1.20.%d" % num)),
+                    (_("uptime"), str(uptime)),
+                ),
+            }
         except EasySNMPTimeoutError as e:
             return {"err": "{}: {}".format(_("ONU not connected"), e)}
 
@@ -136,7 +143,7 @@ class EPON_BDCOM_FORA(PonOnuDeviceStrategy):
     def read_onu_vlan_info(self):
         return []
 
-    def default_vlan_info(self):
+    def default_vlan_info(self) -> list[DefaultVlanDC]:
         return []
 
     def read_all_vlan_info(self) -> Vlans:

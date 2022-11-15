@@ -1,33 +1,18 @@
-from string import digits
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.utils.crypto import get_random_string
 
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from django.utils.translation import gettext_lazy as _
+from profiles.schemas import generate_random_username, generate_random_password
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.exceptions import ValidationError, PermissionDenied
 
-from djing2.lib import safe_int
 from djing2.lib.mixins import BaseCustomModelSerializer
 from profiles.models import BaseAccount, UserProfile, UserProfileLog, ProfileAuthLog
-
-
-def generate_random_username():
-    username = get_random_string(length=6, allowed_chars=digits)
-    try:
-        BaseAccount.objects.get(username=username)
-        return generate_random_username()
-    except BaseAccount.DoesNotExist:
-        return str(safe_int(username))
-
-
-def generate_random_password():
-    return get_random_string(length=8, allowed_chars=digits)
 
 
 class BaseAccountSerializer(BaseCustomModelSerializer):
@@ -163,12 +148,9 @@ class SitesAuthTokenSerializer(AuthTokenSerializer):
         if username and password:
             user = authenticate(request=self.context.get("request"), username=username, password=password)
 
-            # The authenticate call simply returns None for is_active=False
-            # users. (Assuming the default ModelBackend authentication
-            # backend.)
             err_msg = _("Unable to log in with provided credentials")
             if not user:
-                raise serializers.ValidationError(err_msg, code="authorization")
+                raise ValidationError(err_msg, code="authorization")
 
             if not user.is_superuser:
                 if (
@@ -179,7 +161,7 @@ class SitesAuthTokenSerializer(AuthTokenSerializer):
 
         else:
             msg = _('Must include "username" and "password".')
-            raise serializers.ValidationError(msg, code="authorization")
+            raise ValidationError(msg, code="authorization")
 
         attrs["user"] = user
         return attrs

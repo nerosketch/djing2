@@ -56,7 +56,13 @@ class LocationAuthBackend(DjingAuthBackend):
         if byip is None:
             return
         try:
-            remote_ip = ip_address(request.META.get("HTTP_X_REAL_IP"))
+            remote_ip = request.META.get(
+                "HTTP_X_REAL_IP",
+                request.META.get('REMOTE_ADDR')
+            )
+            if not remote_ip:
+                return
+            remote_ip = ip_address(remote_ip)
             ip_users = CustomerIpLeaseModel.objects.filter(ip_address=str(remote_ip)).select_related('customer')
             if ip_users.exists():
                 ip_user = ip_users.first()

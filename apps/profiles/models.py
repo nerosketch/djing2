@@ -1,6 +1,7 @@
 import os
+from dataclasses import dataclass
 from typing import Optional
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from bitfield.models import BitField
 from django.core.exceptions import ValidationError
 from django.conf import settings
@@ -9,12 +10,23 @@ from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from djing2.lib import get_past_time_days
 from djing2.lib.validators import latinValidator, telephoneValidator
 from djing2.models import BaseAbstractModel, BaseAbstractModelMixin
 from groupapp.models import Group
 
 
-def split_fio(fio: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
+@dataclass(frozen=True)
+class FioDataclass:
+    name: str
+    surname: Optional[str]
+    last_name: Optional[str]
+
+    def __str__(self):
+        return f"{self.surname} {self.name} {self.last_name or ''}"
+
+
+def split_fio(fio: str) -> FioDataclass:
     """Try to split name, last_name, and surname."""
     full_fname = str(fio)
     full_name_list = full_fname.split()
@@ -30,7 +42,11 @@ def split_fio(fio: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
             surname, name = full_name_list
         elif name_len == 1:
             name = full_fname
-    return surname, name, last_name
+    return FioDataclass(
+        surname=surname,
+        name=name,
+        last_name=last_name
+    )
 
 
 class MyUserManager(BaseUserManager):
@@ -68,16 +84,20 @@ class MyUserManager(BaseUserManager):
 
 
 def birth_day_18yo_validator(val: date) -> None:
-    now = datetime.now().date()
-    min_bd = now - timedelta(days=18*365)
-    if val > min_bd:
+    now = datetime.now()
+    years_ago_18 = get_past_time_days(
+        how_long_days=18*365,
+        now=now
+    )
+    if val > years_ago_18.date():
         raise ValidationError(_('Account is too young, birth_day "%s" less than 18 yo') % val)
 
 
 def birth_day_too_old_validator(val: date) -> None:
-    # 110 years
-    low_bound = datetime.now() - timedelta(days=40150)
-    if val <= low_bound.date():
+    years_ago_110 = get_past_time_days(
+        how_long_days=40150
+    )
+    if val <= years_ago_110.date():
         raise ValidationError(_('Account is too old, birth_day "%s"') % val)
 
 
@@ -116,7 +136,7 @@ class BaseAccount(BaseAbstractModelMixin, AbstractBaseUser, PermissionsMixin):
         ProfileAuthLog.objects.create(profile=self, user_agent=user_agent, remote_ip=remote_ip)
         BaseAccount.objects.filter(pk=self.pk).update(last_login=datetime.now())
 
-    def split_fio(self):
+    def split_fio(self) -> FioDataclass:
         """Try to split name, last_name, and surname."""
         return split_fio(str(self.fio))
 

@@ -1,8 +1,8 @@
 from typing import Optional
+from functools import lru_cache
 from django.db import models, connection
-from django.db.models import Q, Count
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import ValidationError
+from djing2.exceptions import ModelValidationError
 
 from djing2.lib import safe_int, IntEnumEx
 from djing2.models import BaseAbstractModel
@@ -89,7 +89,9 @@ class AddressModelManager(models.Manager):
         return self.filter(pk__in=ids_tree_query, address_type=addr_type)
 
     @staticmethod
+    @lru_cache(maxsize=1024)
     def get_address_full_title(addr_id: int) -> str:
+        # TODO: move to redis
         query = (
             "WITH RECURSIVE chain(id, parent_addr_id) AS ("
             "    SELECT id, parent_addr_id, fias_address_type, title "
@@ -208,21 +210,42 @@ class AddressModel(IAddressObject, BaseAbstractModel):
         """Нельзя чтобы у адресного объекта его тип был таким же как и у родителя.
            Например улица не может находится в улице, дом в доме, а город в городе.
         """
-        qs = AddressModel.objects.annotate(
-            # Считаем всех потомков, у которых тип адреса как у родителя
-            children_addrs_count=Count('addressmodel', filter=Q(
-                addressmodel__fias_address_type=self.fias_address_type
-            ))
-        ).filter(
-            Q(parent_addr__fias_address_type=self.fias_address_type) |  # Сверяемся с родителем
-            Q(children_addrs_count__gt=0),
-            pk=self.pk
-        )
-        if qs.exists():
-            raise ValidationError(
-                'У родительского адресного объекта не может '
-                'быть такой же тип как у родителя'
+
+        # Уровень родительского элемента должен быть больше чем у детей
+        if self.parent_addr and self.parent_addr.fias_address_level > int(self.fias_address_level):
+            raise ModelValidationError(
+                detail=(
+                    'Выбран уровень(%s), который выше уровня родительского элемента(%d). '
+                    'Не надо так, он должен быть меньше.' % (
+                        self.fias_address_level,
+                        self.parent_addr.fias_address_level
+                    )
+                )
             )
+
+        qs = AddressModel.objects.get_address_recursive_ids(
+            addr_id=self.pk,
+            direction_down=False
+        )
+        if AddressModel.objects.filter(
+            pk__in=qs,
+            fias_address_type=self.fias_address_type
+        ).exclude(pk=self.pk).exists():
+            raise ModelValidationError(
+                detail='У родительского адресного объекта не может '
+                       'быть такой же тип адреса'
+            )
+
+        # Нельзя чтобы address_type=OTHER был ниже чем street
+        if int(self.address_type) == AddressModelTypes.OTHER.value:
+            street_qs = AddressModel.objects.get_address_by_type(
+                addr_id=self.pk,
+                addr_type=AddressModelTypes.STREET
+            )
+            if street_qs.exists():
+                raise ModelValidationError(
+                    detail=f'Нельзя указывать тип {_("Other")} ниже улицы'
+                )
         return super().save(*args, **kwargs)
 
     def __str__(self):

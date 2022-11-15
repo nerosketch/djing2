@@ -10,8 +10,7 @@ def get_addr_type(ip) -> networks.IpLeaseAddrTypeChoice:
     _addr = ip_address(ip)
     if _addr.is_private:
         return networks.IpLeaseAddrTypeChoice.GRAY
-    else:
-        return networks.IpLeaseAddrTypeChoice.WHITE
+    return networks.IpLeaseAddrTypeChoice.WHITE
 
 
 class IpLeaseExportTree(ExportTree[CustomerIpLeaseModel]):
@@ -39,4 +38,3 @@ class IpLeaseExportTree(ExportTree[CustomerIpLeaseModel]):
             'assign_time': lease.lease_time,
             'mac_addr': lease.mac_address
         }
-

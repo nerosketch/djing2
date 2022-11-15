@@ -1,9 +1,9 @@
 import abc
-from typing import Optional, Type, TypeVar, overload
 from dataclasses import dataclass
-from netaddr import EUI
+from typing import Optional, Type, TypeVar, overload, Mapping
 
-from djing2.lib import LogicError, IntEnumEx
+from djing2.lib import LogicError, safe_int, IntEnumEx
+from netaddr import EUI
 
 
 @dataclass
@@ -16,13 +16,13 @@ class SpeedInfoStruct:
 
 @dataclass
 class CustomerServiceLeaseResult:
-    id: int
-    username: str
-    is_active: bool
-    balance: float
-    is_dynamic_ip: bool
-    auto_renewal_service: bool
-    current_service_id: Optional[int]
+    id: int = 0
+    username: str = ''
+    is_active: bool = False
+    balance: float = 0
+    is_dynamic_ip: bool = False
+    auto_renewal_service: bool = False
+    current_service_id: Optional[int] = None
     dev_port_id: Optional[int] = None
     device_id: Optional[int] = None
     gateway_id: Optional[int] = None
@@ -32,10 +32,31 @@ class CustomerServiceLeaseResult:
     is_dynamic: Optional[bool] = False
 
 
+@dataclass
+class RadiusCounters:
+    """
+    input_octets - count of input octets from start session to now
+    output_octets - count of output octets from start session to now
+    input_packets - count of input packets from start session to now
+    output_packets - count of output packets from start session to now
+    """
+
+    input_octets: int = 0
+    output_octets: int = 0
+    input_packets: int = 0
+    output_packets: int = 0
+
+
 class AcctStatusType(IntEnumEx):
     START = 1
     STOP = 2
     UPDATE = 3
+
+
+def gigaword_imp(num: int, gwords: int) -> int:
+    num = safe_int(num)
+    gwords = safe_int(gwords)
+    return num + gwords * (10 ** 9)
 
 
 T = TypeVar('T')
@@ -69,7 +90,7 @@ class IVendorSpecific(abc.ABC):
         return default
 
     @abc.abstractmethod
-    def parse_option82(self, data) -> Optional[tuple[str, str]]:
+    def parse_option82(self, data: Mapping[str, str]) -> Optional[tuple[str, str]]:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -95,9 +116,9 @@ class IVendorSpecific(abc.ABC):
     def get_speed(speed: SpeedInfoStruct) -> SpeedInfoStruct:
         speed_in = speed.speed_in * 1000000.0
         speed_out = speed.speed_out * 1000000.0
-        #brst_in = speed_in / 8.0 * 1.5
+        # brst_in = speed_in / 8.0 * 1.5
         brst_in = speed_in / 8.0
-        #brst_out = speed_in / 8.0 * 1.5
+        # brst_out = speed_in / 8.0 * 1.5
         brst_out = speed_in / 8.0
         return SpeedInfoStruct(
             speed_in=speed_in,
@@ -107,15 +128,18 @@ class IVendorSpecific(abc.ABC):
         )
 
     @abc.abstractmethod
+    def get_counters(self, data: Mapping[str, str]) -> RadiusCounters:
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def get_auth_session_response(
         self,
         db_result: CustomerServiceLeaseResult
     ) -> Optional[dict]:
         raise NotImplementedError
 
-    def get_acct_status_type(self, request) -> AcctStatusType:
-        dat = request.data
-        act_type = self.get_rad_val(dat, "Acct-Status-Type", str)
+    def get_acct_status_type(self, request_data) -> AcctStatusType:
+        act_type = self.get_rad_val(request_data, "Acct-Status-Type", str)
         if isinstance(act_type, int) or (isinstance(act_type, str) and act_type.isdigit()):
             act_type = int(act_type)
             r_map = {
@@ -125,7 +149,6 @@ class IVendorSpecific(abc.ABC):
             }
             r = r_map.get(act_type)
         elif isinstance(act_type, str):
-            act_type = str(act_type)
             r_map = {
                 "Start": AcctStatusType.START,
                 "Stop": AcctStatusType.STOP,

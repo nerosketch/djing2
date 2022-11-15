@@ -5,7 +5,6 @@
 !TODO.txt
 !robots.txt
 media/
-.idea/
 apps/djing2/local_settings.py
 *.bak
 *.mo
@@ -23,4 +22,5 @@ docs/_templates/
 
 secrets/
 .env
-touch_reload
+.vscode/
+.idea/

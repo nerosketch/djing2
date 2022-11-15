@@ -7,6 +7,7 @@ from addresses.models import AddressModelTypes, AddressModel
 from customer_contract.models import CustomerContractModel
 from customers_legal.models import CustomerLegalModel
 from customers.models import Customer
+from profiles.models import FioDataclass
 from sorm_export.models import (
     CommunicationStandardChoices,
     CustomerDocumentTypeChoices,
@@ -16,7 +17,8 @@ from sorm_export.serializers import individual_entity_serializers
 from sorm_export.checks.customer import (
     customer_checks,
     CheckFailedException,
-    customer_legal_checks
+    customer_legal_checks,
+    _addr_get_parent
 )
 from .base import (
     format_fname,
@@ -168,15 +170,15 @@ class AccessPointExportTree(ExportTree[Customer]):
             ))
             return
 
-        addr_parent_street = _addr2str(addr.get_address_item_by_type(
+        addr_parent_street = addr.get_address_item_by_type(
             addr_type=AddressModelTypes.STREET
-        ))
+        )
         if not addr_parent_street:
             logger.error(
-            _('Customer "%s" with login "%s" address has no parent street element') % (
-                customer,
-                customer.username
-            ))
+                _('Customer "%s" with login "%s" address has no parent street element') % (
+                    customer,
+                    customer.username
+                ))
             return
 
         addr_building = _addr2str(addr.get_address_item_by_type(
@@ -194,7 +196,7 @@ class AccessPointExportTree(ExportTree[Customer]):
             "ap_id": addr.pk,
             "customer_id": customer.pk,
             "house": addr_house or addr_office,
-            "parent_id_ao": addr_parent_street,
+            "parent_id_ao": addr_parent_street.pk,
             "house_num": addr_house or None,
             "builing": addr_building,
             "building_corpus": addr_corpus or None,
@@ -222,6 +224,7 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
     В этом файле выгружается информация об абонентах, у которых контракт заключён с физическим лицом.
     Выгружаются только абоненты с паспортными данными.
     """
+
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/fiz_v2_{format_fname(self._event_time)}.txt"
 
@@ -233,6 +236,17 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
     def get_export_type(cls):
         return ExportStampTypeEnum.CUSTOMER_INDIVIDUAL
 
+    @staticmethod
+    def _add_fio(fio: FioDataclass) -> dict:
+        r = {}
+        if fio.surname:
+            r['surname'] = fio.surname
+        if fio.name:
+            r['name'] = fio.name
+        if fio.last_name:
+            r['last_name'] = fio.last_name
+        return r
+
     def filter_queryset(self, queryset):
         contract_start_service_time_q = CustomerContractModel.objects.filter(
             customer_id=OuterRef('pk'),
@@ -243,13 +257,71 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
         ).annotate(
             contract_date=Subquery(contract_start_service_time_q),
             legals=Count('customerlegalmodel'),
-        ).filter(legals=0)
-        _report_about_customers_no_have_passport(
-            qs.filter(passportinfo=None)
         )
-        return qs.exclude(passportinfo=None)
+        _report_about_customers_no_have_passport(
+            qs.filter(passportinfo=None).filter(legals=0)
+        )
+        return qs
 
-    def get_item(self, customer):
+    def _make_legal_filial_item(self, customer):
+        my_legal = customer.customerlegalmodel_set.first()
+
+        try:
+            addr_parent_street_region = _addr_get_parent(
+                customer.address,
+                _('Customer "%s" with login "%s" address has no parent street element') % (
+                    customer,
+                    customer.username
+                )
+            )
+        except CheckFailedException as err:
+            logger.error(str(err))
+            return
+
+        actual_start_date = my_legal.actual_start_time
+
+        r = {
+            "contract_id": my_legal.pk,
+            "birthday": customer.birth_day or None,
+            "parent_id_ao": addr_parent_street_region.pk,
+            "actual_start_time": actual_start_date,
+            # TODO: "actual_end_time":
+            "customer_id": customer.pk,
+        }
+
+        passport = getattr(customer, 'passportinfo', None)
+        if passport:
+            r.update({
+                "document_type": CustomerDocumentTypeChoices.PASSPORT_RF,
+                "document_serial": passport.series,
+                "document_number": passport.number,
+                "document_distributor": passport.distributor,
+                "passport_code": passport.division_code or "",
+                "passport_date": passport.date_of_acceptance,
+            })
+            addr = passport.registration_address
+            if addr:
+                addr_house = addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.HOUSE
+                )
+                addr_building = addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.BUILDING
+                )
+                addr_corp = addr.get_address_item_by_type(
+                    addr_type=AddressModelTypes.CORPUS
+                )
+                r.update({
+                    "house": addr.title,
+                    "house_num": addr_house.title if addr_house else None,
+                    "building": addr_building.title if addr_building else None,
+                    "building_corpus": addr_corp.title if addr_corp else None,
+                })
+
+        fio = my_legal.split_fio()
+        r.update(self._add_fio(fio))
+        return r
+
+    def _make_individual_item(self, customer):
         try:
             check_ok_res = customer_checks(customer=customer)
         except CheckFailedException as err:
@@ -266,8 +338,6 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
             return
         actual_start_date = customer.contract_date
 
-        full_fname = customer.get_full_name()
-
         addr_house = addr.get_address_item_by_type(
             addr_type=AddressModelTypes.HOUSE
         )
@@ -279,8 +349,6 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
         )
         r = {
             "contract_id": customer.pk,
-            "name": full_fname,
-            "surname": full_fname,
             "birthday": customer.birth_day,
             "document_type": CustomerDocumentTypeChoices.PASSPORT_RF,
             "document_serial": passport.series,
@@ -297,14 +365,14 @@ class IndividualCustomersExportTree(ExportTree[Customer]):
             # TODO: "actual_end_time":
             "customer_id": customer.pk,
         }
-        surname, name, last_name = customer.split_fio()
-        if surname is not None:
-            r['surname'] = surname
-        if name is not None:
-            r['name'] = name
-        if last_name is not None:
-            r['last_name'] = last_name
+        fio = customer.split_fio()
+        r.update(self._add_fio(fio))
         return r
+
+    def get_item(self, customer):
+        if customer.is_legal_filial:
+            return self._make_legal_filial_item(customer)
+        return self._make_individual_item(customer)
 
 
 class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
@@ -333,86 +401,85 @@ class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
             yield from self._iter_customers(legal)
 
     def _iter_customers(self, legal):
-        # TODO: Optimize
-        #  оптимизаровать запросы к бд
-        #  Сейчас на каждый запрос адреса из иерархии адресов делается отдельный запрос в бд.
-        for customer in legal.branches.annotate(
-            contr_count=Count('customercontractmodel')
-        ).filter(contr_count__gt=0, is_active=True):
-            try:
-                r = customer_legal_checks(legal=legal)
-            except CheckFailedException as err:
-                logger.error(str(err))
-                return
-            addr = r.addr
-            addr_parent_region = r.parent_street
-            post_addr = r.post_addr
-            post_addr_parent_region = r.post_addr_parent_street
-            delivery_addr = r.delivery_addr
-            delivery_addr_parent_region = r.delivery_parent_street
+        try:
 
-            res = {
-                'legal_id': legal.pk,
-                'legal_title': legal.title,
-                'inn': legal.tax_number,
-                'post_index': legal.post_index,
-                'office_addr': _addr2str(addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.OFFICE_NUM
-                )),
-                'parent_id_ao': addr_parent_region.pk,
-                'house': _addr2str(addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.HOUSE
-                )) or None,
-                'building': _addr2str(addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.BUILDING
-                )) or None,
-                'building_corpus': _addr2str(addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.CORPUS
-                )),
-                'full_description': addr.full_title(),
-                # TODO: fill contact_telephones
-                # 'contact_telephones': '',
-                'post_post_index': legal.post_post_index or legal.post_index,
-                'office_post_addr': _addr2str(post_addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.OFFICE_NUM
-                )),
-                'post_parent_id_ao': post_addr_parent_region.pk if post_addr_parent_region else addr_parent_region.pk,
-                'post_house': _addr2str(post_addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.HOUSE
-                )) or None,
-                'post_building': _addr2str(post_addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.BUILDING
-                )) or None,
-                'post_building_corpus': _addr2str(post_addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.BUILDING
-                )),
-                'post_full_description': post_addr.full_title(),
-                'post_delivery_index': legal.delivery_address_post_index or legal.post_index,
-                'office_delivery_address': _addr2str(delivery_addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.OFFICE_NUM
-                )),
-                'parent_office_delivery_address_id': delivery_addr_parent_region.pk if delivery_addr_parent_region else addr_parent_region.pk,
-                'office_delivery_address_house': _addr2str(delivery_addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.HOUSE
-                )) or None,
-                'office_delivery_address_building': _addr2str(delivery_addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.BUILDING
-                )) or None,
-                'office_delivery_address_building_corpus': _addr2str(delivery_addr.get_address_item_by_type(
-                    addr_type=AddressModelTypes.CORPUS
-                )),
-                'office_delivery_address_full_description': delivery_addr.full_title(),
-                'actual_start_time': legal.actual_start_time,
-                'actual_end_time': legal.actual_end_time,
+            legal_checks = customer_legal_checks(legal=legal)
+        except CheckFailedException as err:
+            logger.error(str(err))
+            return
+
+        addr = legal_checks.addr
+        addr_parent_region = legal_checks.parent_street
+        post_addr = legal_checks.post_addr
+        post_addr_parent_region = legal_checks.post_addr_parent_street
+        delivery_addr = legal_checks.delivery_addr
+        delivery_addr_parent_region = legal_checks.delivery_parent_street
+
+        res = {
+            'legal_id': legal.pk,
+            'legal_title': legal.title,
+            'inn': legal.tax_number,
+            'post_index': legal.post_index,
+            'office_addr': _addr2str(addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.OFFICE_NUM
+            )),
+            'parent_id_ao': addr_parent_region.pk,
+            'house': _addr2str(addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.HOUSE
+            )) or None,
+            'building': _addr2str(addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.BUILDING
+            )) or None,
+            'building_corpus': _addr2str(addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.CORPUS
+            )),
+            'full_description': addr.full_title(),
+            # TODO: fill contact_telephones
+            # 'contact_telephones': '',
+            'post_post_index': legal.post_post_index or legal.post_index,
+            'office_post_addr': _addr2str(post_addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.OFFICE_NUM
+            )),
+            'post_parent_id_ao': post_addr_parent_region.pk if post_addr_parent_region else addr_parent_region.pk,
+            'post_house': _addr2str(post_addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.HOUSE
+            )) or None,
+            'post_building': _addr2str(post_addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.BUILDING
+            )) or None,
+            'post_building_corpus': _addr2str(post_addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.BUILDING
+            )),
+            'post_full_description': post_addr.full_title(),
+            'post_delivery_index': legal.delivery_address_post_index or legal.post_index,
+            'office_delivery_address': _addr2str(delivery_addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.OFFICE_NUM
+            )),
+            'parent_office_delivery_address_id': delivery_addr_parent_region.pk if delivery_addr_parent_region else addr_parent_region.pk,
+            'office_delivery_address_house': _addr2str(delivery_addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.HOUSE
+            )) or None,
+            'office_delivery_address_building': _addr2str(delivery_addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.BUILDING
+            )) or None,
+            'office_delivery_address_building_corpus': _addr2str(delivery_addr.get_address_item_by_type(
+                addr_type=AddressModelTypes.CORPUS
+            )),
+            'office_delivery_address_full_description': delivery_addr.full_title(),
+            'actual_start_time': legal.actual_start_time,
+            'actual_end_time': legal.actual_end_time,
+        }
+        if hasattr(legal, 'legalcustomerbankmodel'):
+            bank_info = getattr(legal, 'legalcustomerbankmodel')
+            res.update({
+                'customer_bank': bank_info.title,
+                'customer_bank_num': bank_info.number,
+            })
+
+        for customer in legal.branches.filter(is_active=True):
+            yield {**res, **{
                 'customer_id': customer.pk,
-            }
-            if hasattr(legal, 'legalcustomerbankmodel'):
-                bank_info = getattr(legal, 'legalcustomerbankmodel')
-                res.update({
-                    'customer_bank': bank_info.title,
-                    'customer_bank_num': bank_info.number,
-                })
-            yield res
+            }}
 
 
 class ContactSimpleExportTree(SimpleExportTree):
@@ -421,6 +488,7 @@ class ContactSimpleExportTree(SimpleExportTree):
     В этом файле выгружается контактная информация
     для каждого абонента - ФИО, телефон и факс контактного лица.
     """
+
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/contact_phones_v1_{format_fname(self._event_time)}.txt"
 
@@ -440,7 +508,6 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     В этом файле выгружаются данные по договорам абонентов.
     :return:
     """
-    parent_dependencies = ()
 
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt"
@@ -453,19 +520,7 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     def get_export_type(cls):
         return ExportStampTypeEnum.CUSTOMER_CONTRACT
 
-    #def export_dependencies(self):
-    #    # Проверить и выгрузить все зависимости, если self._recursive
-    #    for dep_class, qs in self.parent_dependencies:
-    #        Тут надо сделать queryset для зависимостей
-    #        exporter = dep_class(recursive=True, event_time=self._event_time)
-    #        data = exporter.export(queryset=qs)
-    #        exporter.upload2ftp(data=data)
-
     def get_items(self, queryset):
-        # Проверить и выгрузить все зависимости, если self._recursive
-        #if self._recursive:
-        #    self.export_dependencies()
-
         # Выгрузить себя
         for item in self.filter_queryset(queryset=queryset):
             try:
@@ -481,5 +536,4 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
             'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
             "contract_number": contract.contract_number,
             "contract_title": gettext('Contract default title'),
-            # "contract_title": contract.title,
         }

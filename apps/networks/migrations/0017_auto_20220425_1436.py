@@ -9,6 +9,7 @@ copy_from_old_sessions_sql = (
     "session_id=s.session_id FROM radius_customer_session AS s WHERE s.ip_lease_id = l.id;"
 )
 
+
 class Migration(migrations.Migration):
 
     dependencies = [
