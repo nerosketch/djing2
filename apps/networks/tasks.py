@@ -82,7 +82,7 @@ def async_change_session_guest2inet(radius_uname: str, speed_in: int,
 
 @celery_app.task
 @_radius_task_wrapper
-def check_if_lease_have_ib_db_task(radius_uname: str):
+def check_if_lease_have_id_db_task(radius_uname: str):
     uleases = CustomerIpLeaseModel.objects.filter(
         radius_username=radius_uname
     )

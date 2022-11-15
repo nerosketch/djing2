@@ -70,14 +70,6 @@ class ExportTree(Generic[T]):
     def get_item(self, *args, **kwargs):
         raise NotImplementedError
 
-    #def _resolve_tree_deps(self, *args, **kwargs):
-    #    """Экспортируем все зависимости рекурсивно"""
-    #    raise NotImplementedError
-    #    if not self._recursive:
-    #        return self.export()
-    #    for dep in self.parent_dependencies:
-    #        return dep(*args, **kwargs)
-
     def export(self, queryset, *args, **kwargs):
         serializer_class = self.get_export_format_serializer()
 

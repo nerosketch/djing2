@@ -128,7 +128,10 @@ class TaskStateChangeLogModel(BaseAbstractModel):
 
     @property
     def human_representation(self):
-        return self.human_log_text()
+        r = self.human_log_text()
+        if r is None:
+            return
+        return str(r)
 
     class Meta:
         db_table = "task_state_change_log"
@@ -146,7 +149,7 @@ class TaskQuerySet(models.QuerySet):
         Returns queryset with annotate how many
         tasks with each task mode was
         """
-        return self.values("mode").annotate(task_count=models.Count("pk")).order_by("mode")
+        return self.values("task_mode").annotate(task_count=models.Count("pk")).order_by("task_mode")
 
     @staticmethod
     def task_state_percent(task_state: int) -> tuple[int, float]:
@@ -344,7 +347,10 @@ class Task(BaseAbstractModel):
         db_table = "task"
         permissions = [
             ("can_remind", _("Reminders of tasks")),
-            ("can_view_task_mode_report", _("Can view task mode report"))
+            ("can_view_task_mode_report", _("Can view task mode report")),
+            ("can_finish_task", _("Can finish tasks")),
+            ("can_fail_task", _("Can mark task as failed")),
+            ("can_view_reports", _("Can view reports")),
         ]
 
 

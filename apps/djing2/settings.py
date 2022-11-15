@@ -90,7 +90,6 @@ INSTALLED_APPS = [
     # "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
-    "traf_stat.apps.TrafStatConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
     #"sorm_export.apps.SormExportConfig",
