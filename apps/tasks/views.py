@@ -148,10 +148,10 @@ def get_finish_documents(
 
 
 @router.post('/finish_document/',
-             response_model=schemas.TaskFinishDocumentBaseSchema,
+             response_model=schemas.TaskFinishDocumentModelSchema,
              status_code=status.HTTP_201_CREATED)
 def create_finish_document(
-    new_finish_doc: schemas.TaskFinishDocumentModelSchema,
+    new_finish_doc: schemas.TaskFinishDocumentBaseSchema,
     curr_user: UserProfile = Depends(permission_check_dependency(
         perm_codename='tasks.add_taskfinishdocumentmodel'
     ))
@@ -159,13 +159,13 @@ def create_finish_document(
     dat = new_finish_doc.dict(
         exclude_unset=True,
     )
-    recs = dat.get('recipients', [])
+    recs = dat.pop('recipients', [])
     dat.update({
         'author': curr_user
     })
     with transaction.atomic():
         new_doc = models.TaskFinishDocumentModel.objects.create(**dat)
-        new_doc.recipients.add(recs)
+        new_doc.recipients.set(recs)
 
     return schemas.TaskFinishDocumentModelSchema.from_orm(new_doc)
 

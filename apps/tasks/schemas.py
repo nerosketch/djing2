@@ -9,9 +9,23 @@ from djing2.lib.fastapi.types import OrmConf
 from tasks.models import TaskPriorities, delta_add_days, TaskStates
 
 
-class TaskBaseSchema(BaseModel):
-    descr: Optional[str] = Field(None, title=_("Description"), max_length=128)
+class RecipientsFieldMixin(BaseModel):
     recipients: list[int] = Field([], title=_("Recipients"))
+
+    @validator('recipients', pre=True, always=True)
+    def get_recipients(cls, recipients: list[UserProfile]):
+        # TODO: Annotate recipients with ArrayAgg from postgres
+        if not recipients:
+            return []
+        if isinstance(recipients, (list, tuple)):
+            r = (i for i in recipients if isinstance(i, UserProfile))
+            return [i.pk for i in r]
+        r = [r.pk for r in recipients.all()]
+        return r
+
+
+class TaskBaseSchema(RecipientsFieldMixin):
+    descr: Optional[str] = Field(None, title=_("Description"), max_length=128)
     priority: TaskPriorities = TaskPriorities.TASK_PRIORITY_LOW
     out_date: Optional[date] = Field(default_factory=delta_add_days, title=_("Reality"))
     task_mode_id: int = Field(title=_("The nature of the damage"))
@@ -37,7 +51,6 @@ class TaskModelSchema(TaskBaseSchema):
     customer_uname: str
     customer_group: int
     comment_count: int = 0
-    recipients: list[int] = []
     task_state: TaskStates
     state_str: str
     task_mode_id: Optional[int] = Field(None, title=_("The nature of the damage"))
@@ -46,16 +59,6 @@ class TaskModelSchema(TaskBaseSchema):
     doc_count: int = 0
 
     Config = OrmConf
-
-    @validator('recipients', pre=True)
-    def get_recipients(cls, v):
-        # TODO: Annotate recipients with ArrayAgg from postgres
-        if isinstance(v, (list, tuple)):
-            return v
-        if not v:
-            return []
-        r = [r.pk for r in v.all()]
-        return r
 
 
 class UserTaskBaseSchema(BaseModel):
@@ -111,7 +114,7 @@ class TaskDocumentAttachmentModelSchema(BaseModel):
         return v
 
 
-class TaskFinishDocumentBaseSchema(BaseModel):
+class TaskFinishDocumentBaseSchema(RecipientsFieldMixin):
     code: str = Field(max_length=64, title=_('Document code'))
     act_num: Optional[str] = Field(None, max_length=64, title=_('Act num'))
     task_id: int = Field(title=_("Task"))
@@ -119,7 +122,6 @@ class TaskFinishDocumentBaseSchema(BaseModel):
     finish_time: datetime = Field(title=_('Finish time'))
     cost: float = Field(title=_('Cost'))
     task_mode_id: Optional[int] = Field(None, title=_('Mode'))
-    recipients: list[int] = Field(title=_("Recipients"))
 
 
 class TaskFinishDocumentModelSchema(TaskFinishDocumentBaseSchema):
@@ -128,13 +130,6 @@ class TaskFinishDocumentModelSchema(TaskFinishDocumentBaseSchema):
     recipients: list[int] = Field([], title=_("Recipients"))
 
     Config = OrmConf
-
-    @validator('recipients', pre=True)
-    def prepare_recipients_for_serialization(cls, recipients: list[UserProfile]):
-        if not isinstance(recipients, list):
-            return recipients
-        r = (i for i in recipients if isinstance(i, UserProfile))
-        return [i.pk for i in r]
 
 
 class TaskModeModelBaseSchema(BaseModel):
