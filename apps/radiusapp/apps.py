@@ -6,4 +6,4 @@ class RadiusAppConfig(AppConfig):
 
     def ready(self):
         from radiusapp import signals  # noqa
-        from radiusapp import tasks  # noqa
+

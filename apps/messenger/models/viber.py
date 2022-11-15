@@ -1,4 +1,3 @@
-import logging
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from viberbot import Api, BotConfiguration
@@ -6,6 +5,7 @@ from viberbot.api.messages.message import Message
 
 from messenger.models.base_messenger import MessengerModel, MessengerSubscriberModel
 from profiles.models import UserProfile
+from djing2.lib.logger import logger
 
 from rest_framework import status
 from viberbot.api.messages import TextMessage, ContactMessage, KeyboardMessage
@@ -89,7 +89,7 @@ class ViberMessengerModel(MessengerModel):
         elif isinstance(vr, ViberSubscribedRequest):
             self._make_subscriber(vr.user)
         elif isinstance(vr, ViberFailedRequest):
-            logging.error(f"client failed receiving message. failure: {vr}")
+            logger.error(f"client failed receiving message. failure: {vr}")
         elif isinstance(vr, ViberUnsubscribedRequest):
             ViberMessengerSubscriberModel.objects.filter(uid=vr.user_id).delete()
         return None

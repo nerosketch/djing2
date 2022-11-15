@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Tuple
 
 from django.contrib.sites.models import Site
 from django.core.validators import MinValueValidator
@@ -56,6 +55,7 @@ class Service(BaseAbstractModel):
 
     objects = ServiceManager()
 
+    @property
     def calc_type_name(self):
         logic_class = self.get_calc_type()
         if hasattr(logic_class, "description"):
@@ -84,14 +84,9 @@ class Service(BaseAbstractModel):
         dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
         return self.calc_deadline().strftime(dtime_fmt)
 
-    def calc_burst(self) -> Tuple[int, int]:
-        # TODO: calc with burst from field 'speed_burst',
-        #  or remove 'speed_burst' field.
-        speed_in = int(self.speed_in * 1000000)
-        speed_out = int(self.speed_out * 1000000)
-        speed_in_burst = int(speed_in / 8 * 1.5)
-        speed_out_burst = int(speed_out / 8 * 1.5)
-        return speed_in_burst, speed_out_burst
+    @property
+    def planned_deadline(self):
+        return self.calc_deadline_formatted()
 
     def __str__(self):
         return f"{self.title} ({self.cost:.2f})"
@@ -185,17 +180,17 @@ class OneShotPay(BaseAbstractModel):
                 self._pay_type_cache = logic_class()
                 return self._pay_type_cache
 
-    def before_pay(self, request, customer):
+    def before_pay(self, customer):
         pay_logic = self._get_calc_object()
-        pay_logic.before_pay(request, customer)
+        pay_logic.before_pay(customer=customer)
 
-    def calc_cost(self, request, customer) -> float:
+    def calc_cost(self, customer) -> float:
         pay_logic = self._get_calc_object()
-        return pay_logic.calc_cost(self, request, customer)
+        return pay_logic.calc_cost(self, customer)
 
-    def after_pay(self, request, customer):
+    def after_pay(self, customer):
         pay_logic = self._get_calc_object()
-        pay_logic.before_pay(request, customer)
+        pay_logic.before_pay(customer=customer)
 
     def __str__(self):
         return self.name

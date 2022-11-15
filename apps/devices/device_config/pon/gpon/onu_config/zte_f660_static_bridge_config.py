@@ -1,12 +1,11 @@
-from typing import List
-
 from django.utils.translation import gettext_lazy as _
 
 from devices.device_config import expect_util
+from devices.device_config.pon.gpon.onu_config.zte_onu import build_trunk_native_from_vids
 from .zte_f601_bridge_config import ZteF601BridgeScriptModule
 
 
-VlanList = List[int]
+VlanList = list[int]
 
 
 def _get_onu_template(all_vids: VlanList, *args, **kwargs) -> tuple:
@@ -22,12 +21,8 @@ def _get_onu_template(all_vids: VlanList, *args, **kwargs) -> tuple:
     )
 
 
-def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
-    all_vids = ",".join(map(str, set(all_vids)))
-    vlan_config = config.get("vlanConfig")
-
+def get_ports_config(vlan_config):
     ports_config = []
-
     for port_conf in vlan_config:
         port_num = port_conf.get("port")
 
@@ -35,10 +30,7 @@ def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
         if not vids:
             continue
 
-        native_vids = {vid.get("vid") for vid in vids if vid.get("native", False)}
-        native_vids = list(native_vids)
-        trunk_vids = {vid.get("vid") for vid in vids if not vid.get("native", False)}
-        trunk_vids = list(trunk_vids)
+        native_vids, trunk_vids = build_trunk_native_from_vids(vids)
 
         native_vids_len = len(native_vids)
         trunk_vids_len = len(trunk_vids)
@@ -53,7 +45,7 @@ def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
                     [
                         "vlan port eth_0/%d mode hybrid def-vlan %d" % (port_num, native_vids[0]),
                         "vlan port eth_0/%d vlan %s" % (port_num, ",".join(map(str, trunk_vids))),
-                    ]
+                        ]
                 )
             elif trunk_vids_len == 0:
                 # Only Access port
@@ -65,11 +57,19 @@ def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
                     [
                         "vlan port eth_0/%d mode trunk" % port_num,
                         "vlan port eth_0/%d vlan %s" % (port_num, ",".join(map(str, trunk_vids))),
-                    ]
+                        ]
                 )
             elif trunk_vids_len == 0:
                 # Without vlan config, type default vlan
                 ports_config.append("vlan port eth_0/%d mode tag vlan 1" % port_num)
+    return ports_config
+
+
+def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
+    all_vids = ",".join(map(str, set(all_vids)))
+    vlan_config = config.get("vlanConfig")
+
+    ports_config = get_ports_config(vlan_config)
 
     return (
         [

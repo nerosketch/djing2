@@ -23,40 +23,35 @@ def _get_pon_mng_template(all_vids: VlanList, config: dict, *args, **kwargs) -> 
     all_vids = ",".join(map(str, set(all_vids)))
     vlan_config = config.get("vlanConfig")
     vids = vlan_config[0].get("vids")
-    native_vids = {vid.get("vid") for vid in vids if vid.get("native", False)}
-    native_vids = list(native_vids)
-    trunk_vids = {vid.get("vid") for vid in vids if not vid.get("native", False)}
-    trunk_vids = list(trunk_vids)
 
+    native_vids, trunk_vids = zte_onu.build_trunk_native_from_vids(vids)
     native_vids_len = len(native_vids)
     trunk_vids_len = len(trunk_vids)
 
     if native_vids_len > 1:
-        raise expect_util.ExpectValidationError(_("Multiple native vid is not allowed on one port"))
+        raise expect_util.ExpectValidationError(
+            _("Multiple native vid is not allowed on one port")
+        )
 
     ports_config = []
 
     if native_vids_len == 1:
         if trunk_vids_len > 0:
             # Trunk with access port, Hybrid
-            ports_config.extend(
-                [
-                    "vlan port eth_0/1 mode hybrid def-vlan %d" % native_vids[0],
-                    "vlan port eth_0/1 vlan %s" % ",".join(map(str, trunk_vids)),
-                ]
-            )
+            ports_config.extend([
+                "vlan port eth_0/1 mode hybrid def-vlan %d" % native_vids[0],
+                "vlan port eth_0/1 vlan %s" % ",".join(map(str, trunk_vids)),
+            ])
         elif trunk_vids_len == 0:
             # Only Access port
             ports_config.append("vlan port eth_0/1 mode tag vlan %d" % native_vids[0])
     elif native_vids_len == 0:
         if trunk_vids_len > 0:
             # Only trunk port
-            ports_config.extend(
-                [
-                    "vlan port eth_0/1 mode trunk",
-                    "vlan port eth_0/1 vlan %s" % ",".join(map(str, trunk_vids)),
-                ]
-            )
+            ports_config.extend([
+                "vlan port eth_0/1 mode trunk",
+                "vlan port eth_0/1 vlan %s" % ",".join(map(str, trunk_vids)),
+            ])
         elif trunk_vids_len == 0:
             # Without vlan config, type default vlan
             ports_config.append("vlan port eth_0/1 mode tag vlan 1")

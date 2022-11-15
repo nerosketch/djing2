@@ -257,7 +257,7 @@ msgstr ""
 "%(task_detail)s\n"
 
 #: apps/tasks/views.py:30
-msgid "You cannot delete task that assigned to you"
+msgid "You cannot delete task assigned to you"
 msgstr "Вы не можете удалять назначенные на вас задачи"
 
 #: apps/tasks/views.py:39 apps/tasks/views.py:95
@@ -281,3 +281,14 @@ msgstr "Оповещать о задачах"
 
 #~ msgid "Attached image"
 #~ msgstr "Прикреплённое изображение"
+msgid "Can finish tasks"
+msgstr "Может завершать задачи"
+
+msgid "Can mark task as failed"
+msgstr "Может отмечать задачи проваленными"
+
+msgid "Can view reports"
+msgstr "Может видеть отчёты"
+
+msgid "You can't delete foreign comment"
+msgstr "Вы не можете удалить чужой комментарий"

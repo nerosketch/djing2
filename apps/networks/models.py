@@ -1,6 +1,7 @@
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address
-from typing import Optional, Union
+from ipaddress import ip_address, ip_network
+from typing import Optional, Union, Generator
 from netaddr import EUI
 
 from django.conf import settings
@@ -8,19 +9,43 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, connection, InternalError
+from django.contrib.postgres.aggregates.general import ArrayAgg
 from django.utils.translation import gettext_lazy as _
 from netfields import MACAddressField, CidrAddressField
-
-from customers.models import Customer
 from djing2 import ping as icmp_ping
-from djing2.lib import process_lock, LogicError, safe_int
+from djing2.lib import LogicError, safe_int
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
+from customers.models import Customer
+from networks.radius_commands import finish_session
+
 
 DHCP_DEFAULT_LEASE_TIME = getattr(settings, "DHCP_DEFAULT_LEASE_TIME", 86400)
 
 
+def _human_readable_int(num: int, u="b") -> str:
+    """
+    Translates 'num' into decimal prefixes with 'u' prefix name.
+
+    :prop num: Integer count number.
+    :prop u: Unit name.
+    """
+    decs = (
+        (10 ** 12, "T"),
+        (10 **  9, "G"),
+        (10 **  6, "M"),
+        (10 **  3, "K"),
+    )
+    for dec, pref in decs:
+        if num >= dec:
+            num = round(num / dec, 2)
+            return f"{num} {pref}{u}"
+    return str(num)
+
+
 class VlanIf(BaseAbstractModel):
+    """802.1q, vlan information for bindings"""
+
     title = models.CharField(_("Vlan title"), max_length=128)
     vid = models.PositiveSmallIntegerField(
         _("VID"),
@@ -53,6 +78,8 @@ class NetworkIpPoolKind(models.IntegerChoices):
 
 
 class NetworkIpPool(BaseAbstractModel):
+    """Customer network ip lease information"""
+
     network = CidrAddressField(
         verbose_name=_("Ip network address"),
         help_text=_("Ip address of network. For example: 192.168.1.0/24 or fde8:6789:1234:1::/64"),
@@ -84,6 +111,9 @@ class NetworkIpPool(BaseAbstractModel):
 
     def __str__(self):
         return f"{self.description}: {self.network}"
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}>: {self.__str__()}"
 
     def clean(self):
         errs = {}
@@ -128,18 +158,17 @@ class NetworkIpPool(BaseAbstractModel):
                 )
                 raise ValidationError(errs)
 
-    def get_free_ip(self) -> Optional[Union[IPv4Address, IPv6Address]]:
+    def get_free_ip(self) -> Optional['CustomerIpLeaseModel']:
         """
-        Finds unused ip
+        Find unused ip
         :return:
         """
-        with connection.cursor() as cur:
-            cur.execute(
-                "SELECT find_new_ip_pool_lease(%s, %s::boolean, 0::smallint, %s::smallint)",
-                (self.pk, 1 if self.is_dynamic else 0, self.kind)
-            )
-            free_ip = cur.fetchone()
-        return ip_address(free_ip[0]) if free_ip and free_ip[0] else None
+        return CustomerIpLeaseModel.objects.filter(
+            pool=self,
+            customer=None,
+            is_dynamic=self.is_dynamic,
+            state=False
+        ).first()
 
     @staticmethod
     def find_ip_pool_by_ip(ip_addr: str):
@@ -160,30 +189,107 @@ class NetworkIpPool(BaseAbstractModel):
             )
         return None
 
+    def reserve_leases(self):
+        """Reserve networks.CustomerIpLeaseModel instances
+           for this pool for feauture usage"""
+
+        start_ip = ip_address(self.ip_start)
+        end_ip = ip_address(self.ip_end)
+        sql = ("INSERT INTO networks_ip_leases"
+                "(ip_address, pool_id, is_dynamic, "
+                "last_update, state, svid, cvid, input_octets, "
+                "input_packets, output_octets, output_packets) "
+                "SELECT %s::inet + ip, %s::int, %s::boolean, null, "
+                "false, 0,0,0,0,0,0 FROM generate_series(0, %s::int) ip "
+                "ON CONFLICT DO NOTHING"
+               )
+        range_len = int(end_ip) - int(start_ip)
+        is_dynamic = bool(self.is_dynamic)
+        with connection.cursor() as cur:
+            cur.execute(sql=sql, params=[str(start_ip), self.pk, is_dynamic, range_len])
+
     class Meta:
+        """Declare database table name in metaclass."""
         db_table = "networks_ip_pool"
         verbose_name = _("Network ip pool")
         verbose_name_plural = _("Network ip pools")
 
 
+@dataclass
+class MacDuplicateResult:
+    mac_address: EUI
+    mac_count: int
+    customers: list[int]
+
+
 class CustomerIpLeaseModelQuerySet(models.QuerySet):
     def active_leases(self) -> models.QuerySet:
         """
-        Filter by time, where lease time does not expired
+        Filter by time, where lease time does not expire
         :return: new QuerySet
         """
-        expire_time = datetime.now() - timedelta(seconds=DHCP_DEFAULT_LEASE_TIME)
-        return self.filter(lease_time__lt=expire_time)
+        expire_time_ago = datetime.now() - timedelta(seconds=DHCP_DEFAULT_LEASE_TIME)
+        return self.filter(lease_time__lt=expire_time_ago)
+
+    @staticmethod
+    def mac_duplicates() -> Generator[MacDuplicateResult, None, None]:
+        """Get all mac address duplicates"""
+        qs = CustomerIpLeaseModel.objects.values('mac_address').annotate(
+            mac_count=models.Count('mac_address'),
+            customers=ArrayAgg('customer_id')
+        ).filter(mac_cnt__gt=1)
+        return (MacDuplicateResult(
+            mac_address=lease['mac_address'],
+            mac_count=lease['mac_count'],
+            customers=lease['customers']
+        ) for lease in qs.iterator())
+
+    def release(self):
+        """
+        Free leases. Mark it free, for use it again.
+        """
+        return self.update(
+            mac_address=None,
+            customer=None,
+            input_octets=0,
+            output_octets=0,
+            input_packets=0,
+            output_packets=0,
+            cvid=0,
+            svid=0,
+            state=False,
+            lease_time=None,
+            last_update=None,
+            session_id=None,
+            radius_username=None
+        )
 
 
 class CustomerIpLeaseModel(models.Model):
+    """Ip lease credentials for customer."""
+
     ip_address = models.GenericIPAddressField(_("Ip address"), unique=True)
-    pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE)
-    lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True)
     mac_address = MACAddressField(verbose_name=_("Mac address"), null=True, default=None)
+    pool = models.ForeignKey(NetworkIpPool, on_delete=models.CASCADE, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, default=None)
     is_dynamic = models.BooleanField(_("Is dynamic"), default=False)
+    input_octets = models.BigIntegerField(default=0)
+    output_octets = models.BigIntegerField(default=0)
+    input_packets = models.BigIntegerField(default=0)
+    output_packets = models.BigIntegerField(default=0)
+    cvid = models.PositiveSmallIntegerField(_("Customer Vlan id"), default=0)
+    svid = models.PositiveSmallIntegerField(_("Service Vlan id"), default=0)
+    state = models.BooleanField(_('Lease state'), null=True, blank=True, default=None)
+    lease_time = models.DateTimeField(_("Lease time"), blank=True, null=True, default=datetime.now)
     last_update = models.DateTimeField(_("Last update"), blank=True, null=True, default=None)
+    session_id = models.UUIDField(_("Unique session id"), blank=True, null=True, default=None)
+    radius_username = models.CharField(
+        _("User-Name av pair from radius"),
+        max_length=128,
+        null=True,
+        blank=True,
+        default=None
+    )
 
     objects = CustomerIpLeaseModelQuerySet.as_manager()
 
@@ -191,53 +297,75 @@ class CustomerIpLeaseModel(models.Model):
         return f"{self.ip_address} [{self.mac_address}]"
 
     @staticmethod
-    def find_customer_by_device_credentials(device_mac: EUI, device_port: int = 0) -> Optional[Customer]:
+    def find_customer_by_device_credentials(device_mac: Union[EUI, str], device_port: int = 0) -> Optional[Customer]:
+        """Returns customers.Customer instance for passed device mac and port.
+           If device is not use ports, then it is ignored."""
+
+        sql = (
+            "SELECT ba.id, ba.last_login, ba.is_superuser, ba.username, "
+            "ba.fio, ba.birth_day, ba.is_active, ba.is_admin, "
+            "ba.telephone, ba.create_date, ba.last_update_time, "
+            "cs.balance, cs.is_dynamic_ip, cs.auto_renewal_service, "
+            "cs.current_service_id, cs.dev_port_id, cs.device_id, "
+            "cs.gateway_id, cs.group_id, cs.last_connected_service_id, cs.address_id "
+            "FROM customers cs "
+            "LEFT JOIN device dv ON (dv.id = cs.device_id) "
+            "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
+            "LEFT JOIN device_dev_type_is_use_dev_port ddtiudptiu ON (ddtiudptiu.dev_type = dv.dev_type) "
+            "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+            "WHERE dv.mac_addr = %s::MACADDR "
+            "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = %s::SMALLINT) "
+            "LIMIT 1;"
+        )
         with connection.cursor() as cur:
             cur.execute(
-                "SELECT * FROM find_customer_by_device_credentials(%s::macaddr, %s::smallint)",
-                (str(device_mac), device_port),
+                sql, (str(device_mac), device_port),
             )
             res = cur.fetchone()
         if res is None or res[0] is None:
             return None
         (
-            baseaccount_id,
-            balance,
-            descr,
-            is_dyn_ip,
-            auto_renw_srv,
-            markers,
-            curr_srv_id,
-            dev_port_id,
-            dev_id,
-            gw_id,
-            grp_id,
-            last_srv_id,
-            *others,
+            bid, last_login, is_superuser, username,
+            fio, birth_day, is_active, is_admin,
+            telephone, create_date, last_update_time,
+            balance, is_dyn_ip, auto_renw_srv,
+            curr_srv_id, dev_port_id, dev_id,
+            gw_id, grp_id, last_srv_id, address_id,
         ) = res
         return Customer(
-            pk=baseaccount_id,
+            pk=bid,
+            last_login=last_login,
+            is_superuser=is_superuser,
+            username=username,
+            fio=fio,
+            birth_day=birth_day,
+            is_active=is_active,
+            is_admin=is_admin,
+            telephone=telephone,
+            create_date=create_date,
+            last_update_time=last_update_time,
             balance=balance,
-            description=descr,
             is_dynamic_ip=is_dyn_ip,
             auto_renewal_service=auto_renw_srv,
-            markers=markers,
             current_service_id=curr_srv_id,
-            device_id=dev_id,
             dev_port_id=dev_port_id,
+            device_id=dev_id,
             gateway_id=gw_id,
             group_id=grp_id,
             last_connected_service_id=last_srv_id,
+            address_id=address_id,
         )
 
     @staticmethod
     def get_service_permit_by_ip(ip_addr: str) -> bool:
+        """Checks if customer has service by passed ip address"""
+
         with connection.cursor() as cur:
             cur.execute("select * from find_service_permit(%s::inet)", [ip_addr])
             res = cur.fetchone()
         return res[0] if len(res) > 0 else False
 
-    @process_lock()
+    # @process_lock_decorator()
     def ping_icmp(self, num_count=10, arp=False) -> bool:
         host_ip = str(self.ip_address)
         return icmp_ping(ip_addr=host_ip, count=num_count, arp=arp)
@@ -254,12 +382,11 @@ class CustomerIpLeaseModel(models.Model):
         :return: str about result
         """
         dev_port = safe_int(dev_port)
-        dev_port = dev_port if dev_port > 0 else None
         try:
             with connection.cursor() as cur:
                 cur.execute(
                     "SELECT * FROM lease_commit_add_update(%s::inet, %s::macaddr, %s::macaddr, %s::smallint)",
-                    (client_ip, mac_addr, dev_mac, dev_port),
+                    (client_ip, mac_addr, dev_mac, dev_port or None),
                 )
                 res = cur.fetchone()
             # lease_id, ip_addr, pool_id, lease_time, mac_addr, customer_id, is_dynamic, last_update = res
@@ -267,14 +394,66 @@ class CustomerIpLeaseModel(models.Model):
         except InternalError as err:
             raise LogicError(str(err)) from err
 
+    @property
+    def h_input_octets(self):
+        """Human readable input octets."""
+        return _human_readable_int(num=self.input_octets)
+
+    @property
+    def h_output_octets(self):
+        """Human readable output octets."""
+        return _human_readable_int(num=self.output_octets)
+
+    @property
+    def h_input_packets(self):
+        """Human readable input packets."""
+        return _human_readable_int(num=self.input_packets, u="p")
+
+    @property
+    def h_output_packets(self):
+        """Human readable output packets."""
+        return _human_readable_int(num=self.output_packets, u="p")
+
+    @property
+    def finish_session(self) -> Optional[str]:
+        """Send radius disconnect packet to BRAS."""
+        if not self.radius_username:
+            return
+        return finish_session(self.radius_username)
+
+    @staticmethod
+    def delete(*args, **kwargs):
+        raise LogicError('Currently not allowed to remove CustomerIpLeaseModel, use release action instead.')
+
+    def release(self):
+        """Reset all fields, it marked as Free, for next time usages"""
+        self.mac_address = None
+        self.customer = None
+        self.input_octets = 0
+        self.output_octets = 0
+        self.input_packets = 0
+        self.output_packets = 0
+        self.cvid = 0
+        self.svid = 0
+        self.state = False
+        self.lease_time = None
+        self.last_update = None
+        self.session_id = None
+        self.radius_username = None
+        return ('mac_address', 'customer', 'input_octets', 'output_octets', 'input_packets',
+                'output_packets', 'cvid', 'svid', 'state', 'lease_time', 'last_update',
+                'session_id', 'radius_username')
+
     class Meta:
         db_table = "networks_ip_leases"
         verbose_name = _("IP lease")
         verbose_name_plural = _("IP leases")
-        unique_together = ("ip_address", "mac_address", "pool", "customer")
 
 
 class CustomerIpLeaseLog(models.Model):
+    """Stores history of CustomerIpLeaseModel changes. If ip lease changed
+       customer, then save log about it in this table"""
+
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     ip_address = models.GenericIPAddressField(_("Ip address"))
     lease_time = models.DateTimeField(_("Lease time"), auto_now_add=True)

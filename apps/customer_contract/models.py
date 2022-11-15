@@ -4,6 +4,8 @@ from django.utils.translation import gettext_lazy as _
 from djing2.models import BaseAbstractModel
 from profiles.models import UserProfile
 from customers.models import Customer
+from customer_contract.custom_signals import finish_customer_contract_signal
+from rest_framework.exceptions import ValidationError
 
 
 def _datetime_now_time():
@@ -12,6 +14,11 @@ def _datetime_now_time():
 
 class CustomerContractModel(BaseAbstractModel):
     """Customer contract info"""
+    __before_is_active: bool
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__before_is_active = bool(self.is_active)
 
     customer = models.ForeignKey(
         to=Customer,
@@ -52,6 +59,27 @@ class CustomerContractModel(BaseAbstractModel):
 
     def __str__(self):
         return self.contract_number
+
+    def finish(self):
+        self.is_active = False
+        self.end_service_time = datetime.now()
+        finish_customer_contract_signal.send(
+            sender=self.__class__,
+            instance=self
+        )
+        setattr(self, '__from_finish', True)
+        self.save(update_fields=['is_active', 'end_service_time'])
+
+    def save(self, *args, **kwargs):
+        if not self.__before_is_active and bool(self.is_active):
+            # prevent restore contract from inactive
+            raise ValidationError(_('Restoring from inactive is not allowed'))
+        if hasattr(self, '__from_finish'):
+            delattr(self, '__from_finish')
+        elif self.__before_is_active != self.is_active:
+            # prevent direct change is_active field
+            raise ValidationError(_('Direct change is_active is not allowed'))
+        return super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'contract'

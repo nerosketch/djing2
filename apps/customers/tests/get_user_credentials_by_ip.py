@@ -1,23 +1,26 @@
-from django.test import TestCase
-
 from customers.models import Customer, CustomerService
-from devices.tests import DeviceTestCase
+from devices.tests import device_test_case_set_up
 from networks.models import CustomerIpLeaseModel, NetworkIpPool, NetworkIpPoolKind
 from services.models import Service
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from .customer import CustomAPITestCase
 
 
-class BaseServiceTestCase(TestCase):
+class BaseServiceTestCase(CustomAPITestCase):
     def setUp(self):
         # Initialize customers instances
-        CustomAPITestCase.setUp(self)
+        super().setUp()
 
         # Initialize devices instances
-        DeviceTestCase.setUp(self)
+        device_test_case_set_up(self)
 
         self.service = Service.objects.create(
-            title="test", descr="test", speed_in=10.0, speed_out=10.0, cost=10.0, calc_type=SERVICE_CHOICE_DEFAULT
+            title="test",
+            descr="test",
+            speed_in=10.0,
+            speed_out=10.0,
+            cost=10.0,
+            calc_type=SERVICE_CHOICE_DEFAULT
         )
 
 
@@ -43,8 +46,9 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
         self.customer.refresh_from_db()
         self.customer.pick_service(self.service, self.customer)
 
-        self.lease = CustomerIpLeaseModel.objects.create(
+        self.lease = CustomerIpLeaseModel.objects.filter(
             ip_address="10.11.12.2",
+        ).update(
             mac_address="1:2:3:4:5:6",
             pool=self.ippool,
             customer=self.customer,
@@ -88,7 +92,12 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
 
     def test_customer_with_onu_device(self):
         # customer for tests
-        customer_onu = Customer.objects.create_user(telephone="+79782345679", username="custo_onu", password="passww")
+        customer_onu = Customer.objects.create_user(
+            telephone="+79782345679",
+            username="custo_onu",
+            password="passww",
+            is_active=True
+        )
         customer_onu.device = self.device_onu
         customer_onu.add_balance(self.admin, 10000, "test")
         customer_onu.save()
@@ -96,8 +105,9 @@ class GetUserCredentialsByIpTestCase(BaseServiceTestCase):
         customer_onu.pick_service(self.service, customer_onu)
         self.customer_onu = customer_onu
 
-        self.lease = CustomerIpLeaseModel.objects.create(
+        self.lease = CustomerIpLeaseModel.objects.filter(
             ip_address="10.11.12.3",
+        ).update(
             mac_address="1:2:3:4:5:6",
             pool=self.ippool,
             customer=customer_onu,

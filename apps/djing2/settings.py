@@ -11,25 +11,28 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-from typing import Optional
+from typing import overload, TypeVar, Union
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+_T = TypeVar("_T")
 
-def get_secret(fname: str, default=None) -> Optional[str]:
+@overload
+def get_secret(fname: str) -> str: ...
+
+@overload
+def get_secret(fname: str, default: _T) -> Union[str, _T]: ...
+
+def get_secret(fname: str, default=None):
     try:
-        secrets_dir_path = os.environ.get("SECRETS_DIR_PATH", "/run/secrets")
+        secrets_dir_path = os.getenv("SECRETS_DIR_PATH", "/run/secrets")
         with open(os.path.join(secrets_dir_path, fname), 'r') as f:
             val = f.read().strip()
         return val
     except FileNotFoundError:
         return default
-
-
-def get_env(name: str, default=None):
-    return os.environ.get(name, default)
 
 
 # Quick-start development settings - unsuitable for production
@@ -42,20 +45,21 @@ if SECRET_KEY is None:
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = get_env("APP_DEBUG", False)
+DEBUG = os.getenv("APP_DEBUG", False)
 DEBUG = bool(DEBUG)
 
-ALLOWED_HOSTS = get_env("ALLOWED_HOSTS")
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", ())
 if ALLOWED_HOSTS:
     ALLOWED_HOSTS = ALLOWED_HOSTS.split('|')
 
-DEFAULT_FROM_EMAIL = get_env("DEFAULT_EMAIL")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_EMAIL")
 
-# ADMINS = get_env("ADMINS")
-# if isinstance(ADMINS, str):
-#    ADMINS = json.loads(ADMINS)
-# else:
-ADMINS = [("Admin", "admin@localhost")]
+ADMINS = os.getenv("ADMINS")
+if isinstance(ADMINS, str):
+    import json
+    ADMINS = json.loads(ADMINS)
+else:
+    ADMINS = [("Admin", "admin@localhost")]
 
 # Application definition
 
@@ -83,23 +87,25 @@ INSTALLED_APPS = [
     "devices.apps.DevicesConfig",
     "networks.apps.NetworksConfig",
     "customers.apps.CustomersConfig",
-    "messenger.apps.MessengerConfig",
+    # "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
-    "traf_stat.apps.TrafStatConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
-    "sorm_export.apps.SormExportConfig",
+    #"sorm_export.apps.SormExportConfig",
     "customer_comments.apps.CustomerCommentsConfig",
     "dynamicfields.apps.DynamicfieldsConfig",
     "customers_legal.apps.CustomersLegalConfig",
     "customer_contract.apps.CustomerContractConfig",
+
+    #"webhooks.apps.WebhooksConfig",
 ]
 
 if DEBUG:
     INSTALLED_APPS.insert(0, "django.contrib.admin")
 
 MIDDLEWARE = [
+    "djing2.middleware.XRealIPMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -108,6 +114,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+
     "djing2.lib.mixins.CustomCurrentSiteMiddleware",
 ]
 
@@ -143,13 +150,14 @@ WSGI_APPLICATION = "djing2.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "CONN_MAX_AGE": get_env('CONN_MAX_AGE', 300),
-        "NAME": get_env("POSTGRES_DB", "djing2"),
-        "USER": get_env("POSTGRES_USER", "postgres"),
+        "ENGINE": "django.db.backends.postgresql",
+        "CONN_MAX_AGE": os.getenv('CONN_MAX_AGE', 300),
+        "NAME": os.getenv("POSTGRES_DB", "djing2"),
+        "USER": os.getenv("POSTGRES_USER", "postgres"),
         "PASSWORD": get_secret("POSTGRES_PASSWORD"),
-        "HOST": get_env("POSTGRES_HOST", "postgres"),
-        "PORT": get_env("POSTGRES_PORT", 5432),
+        "HOST": os.getenv("POSTGRES_HOST", "postgres"),
+        "PORT": os.getenv("POSTGRES_PORT", 5432),
+        "DISABLE_SERVER_SIDE_CURSORS": bool(os.getenv("DISABLE_SERVER_SIDE_CURSORS", False)),
     }
 }
 
@@ -187,6 +195,50 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {filename} {name}: {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{asctime} {levelname}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
+        # 'file': {
+        #     'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        #     'class': 'logging.FileHandler',
+        #     'filename': os.getenv('DJING2_LOG_FILE', '/tmp/djing2.log'),
+        #     'formatter': 'simple'
+        # }
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            # 'handlers': ['file', 'console'],
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False
+        },
+        'djing2_logger': {
+            # 'handlers': ['file', 'console'],
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False
+        }
+    }
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
@@ -203,7 +255,7 @@ PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
 LOCALE_PATHS = (os.path.join(PROJECT_PATH, "../locale"),)
 
 
-TIME_ZONE = get_env("TIME_ZONE", "Europe/Simferopol")
+TIME_ZONE = os.getenv("TIME_ZONE", "Europe/Simferopol")
 
 USE_I18N = True
 
@@ -212,7 +264,7 @@ USE_L10N = False
 USE_TZ = False
 
 # Maximum file size is 50Mb
-FILE_UPLOAD_MAX_MEMORY_SIZE = get_env("FILE_UPLOAD_MAX_MEMORY_SIZE", 52428800)
+FILE_UPLOAD_MAX_MEMORY_SIZE = os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", 52428800)
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
 
@@ -245,19 +297,20 @@ AUTH_USER_MODEL = "profiles.BaseAccount"
 # LOGIN_REDIRECT_URL = reverse_lazy('acc_app:setup_info')
 # LOGOUT_URL = reverse_lazy('acc_app:logout')
 
-TELEPHONE_REGEXP = get_env("TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
+TELEPHONE_REGEXP = os.getenv("TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
 
 # Secret word for auth to api views by hash
 API_AUTH_SECRET = get_secret("API_AUTH_SECRET")
 
 # Allowed subnet for api
-API_AUTH_SUBNET = get_env("API_AUTH_SUBNET", ("127.0.0.0/8", "10.0.0.0/8"))
+# API_AUTH_SUBNET = ('127.0.0.0/8', '172.0.0.0/8')
+API_AUTH_SUBNET = os.getenv("API_AUTH_SUBNET", ("127.0.0.0/8", "10.0.0.0/8"))
 if API_AUTH_SUBNET and isinstance(API_AUTH_SUBNET, str) and '|' in API_AUTH_SUBNET:
     API_AUTH_SUBNET = API_AUTH_SUBNET.split('|')
 
 
 # public url for messenger bot
-MESSENGER_BOT_PUBLIC_URL = get_env("MESSENGER_BOT_PUBLIC_URL")
+MESSENGER_BOT_PUBLIC_URL = os.getenv("MESSENGER_BOT_PUBLIC_URL")
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "djing2.lib.paginator.QueryPageNumberPagination",
@@ -273,6 +326,7 @@ REST_FRAMEWORK = {
     "DATETIME_INPUT_FORMATS": [
         "%Y-%m-%d %H:%M",
         "%Y-%m-%dT%H:%M",
+        "%Y-%m-%dT%H:%M:%S.%f",
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%d",
     ],
@@ -283,8 +337,8 @@ REST_FRAMEWORK = {
         # 'djing2.permissions.CustomizedDjangoObjectPermissions'
     ],
     'DEFAULT_RENDERER_CLASSES': [
-        # 'djing2.lib.renderer.ExtendedRenderer',
-        'rest_framework.renderers.JSONRenderer',
+        'djing2.lib.renderer.CustomJSONRenderer',
+        'rest_framework_csv.renderers.CSVRenderer',
     ]
 }
 
@@ -320,37 +374,54 @@ if DEBUG:
 DHCP_DEFAULT_LEASE_TIME = 86400
 
 # Default radius session time
-RADIUS_SESSION_TIME = get_env("RADIUS_SESSION_TIME", 3600)
+RADIUS_SESSION_TIME = os.getenv("RADIUS_SESSION_TIME", 3600)
 
 # Address to websocket transmitter
-WS_ADDR = get_env("WS_ADDR", "127.0.0.1:3211")
+WS_ADDR = os.getenv("WS_ADDR", "127.0.0.1:3211")
 
 # absolute path to arping command
-ARPING_COMMAND = get_env("ARPING_COMMAND", "/usr/sbin/arping")
-ARPING_ENABLED = get_env("ARPING_ENABLED", False)
+ARPING_COMMAND = os.getenv("ARPING_COMMAND", "/usr/sbin/arping")
+ARPING_ENABLED = os.getenv("ARPING_ENABLED", False)
 ARPING_ENABLED = bool(ARPING_ENABLED)
 
 # SITE_ID = 1
 
+if DEBUG:
+    TEST_RUNNER = "djing2.lib.fastapi.test.TestRunner"
+
 WEBPUSH_SETTINGS = {
     "VAPID_PUBLIC_KEY": get_secret("VAPID_PUBLIC_KEY"),
     "VAPID_PRIVATE_KEY": get_secret("VAPID_PRIVATE_KEY"),
-    "VAPID_ADMIN_EMAIL": get_env("VAPID_ADMIN_EMAIL", DEFAULT_FROM_EMAIL),
+    "VAPID_ADMIN_EMAIL": os.getenv("VAPID_ADMIN_EMAIL", DEFAULT_FROM_EMAIL),
 }
 
 DEFAULT_FTP_CREDENTIALS = {
-    "host": get_env("SORM_EXPORT_FTP_HOST"),
-    "uname": get_env("SORM_EXPORT_FTP_USERNAME"),
-    "password": get_secret("SORM_EXPORT_FTP_PASSWORD")
+    "host": os.getenv("SORM_EXPORT_FTP_HOST"),
+    "port": os.getenv("SORM_EXPORT_FTP_PORT", default=21),
+    "uname": os.getenv("SORM_EXPORT_FTP_USERNAME"),
+    "password": get_secret("SORM_EXPORT_FTP_PASSWORD"),
+    "disabled": os.getenv("SORM_EXPORT_FTP_DISABLE", default=False)
 }
 
 RADIUSAPP_OPTIONS = {
-    'server_host': get_env("RADIUS_APP_HOST"),
+    'server_host': os.getenv("RADIUS_APP_HOST"),
     'secret': get_secret("RADIUS_SECRET").encode()
 }
 
 SORM_REPORTING_EMAILS = []
 
 CONTRACTS_OPTIONS = {
-    'DEFAULT_TITLE': get_env('CONTRACT_DEFAULT_TITLE', 'Contract default title')
+    'DEFAULT_TITLE': os.getenv('CONTRACT_DEFAULT_TITLE', 'Contract default title')
 }
+
+# PAYME_CREDENTIALS = base64(login:password)
+PAYME_CREDENTIALS = get_secret("PAYME_CREDENTIALS")
+
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'pyamqp://user:passw@djing2rabbitmq/')
+CELERY_SERIALIZER = 'msgpack'
+
+REDIS_HOST = os.getenv('REDIS_HOST', 'djing2redis')
+REDIS_PORT = os.getenv('REDIS_PORT', 6379)
+REDIS_AUTH_CACHE_TTL = os.getenv('REDIS_AUTH_CACHE_TTL', 3600)

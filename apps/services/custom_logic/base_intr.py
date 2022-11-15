@@ -70,19 +70,18 @@ class OneShotBaseService(ABC):
         Uses in djing2.lib.IntegerChoicesClassAdapter for CHOICES fields"""
 
     @abstractmethod
-    def calc_cost(self, model_object, request, customer) -> float:
+    def calc_cost(self, model_object, customer) -> float:
         """
         :param model_object: it is a instance of models.OneShotPay model
-        :param request: Django http request
         :param customer: instance of custmers.Customer model
         :return: float: amount for the service
         """
         raise NotImplementedError
 
     @abstractmethod
-    def before_pay(self, request, customer):
+    def before_pay(self, customer):
         raise NotImplementedError
 
     @abstractmethod
-    def after_pay(self, request, customer):
+    def after_pay(self, customer):
         raise NotImplementedError

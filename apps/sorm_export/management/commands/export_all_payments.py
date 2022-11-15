@@ -1,9 +1,6 @@
-from datetime import datetime
 from django.core.management.base import BaseCommand, no_translations
-from sorm_export.tasks.task_export import task_export
-from sorm_export.models import ExportStampTypeEnum
-from fin_app.models.alltime import AllTimePayLog
-from sorm_export.hier_export.payment import export_customer_unknown_payment
+from fin_app.models.alltime import AllTimePaymentLog
+from sorm_export.hier_export.payment import CustomerUnknownPaymentExportTree
 
 
 class Command(BaseCommand):
@@ -11,10 +8,8 @@ class Command(BaseCommand):
 
     @no_translations
     def handle(self, *args, **options):
-        pay_logs = AllTimePayLog.objects.exclude(customer=None).filter(
+        pay_logs = AllTimePaymentLog.objects.exclude(customer=None).filter(
             customer__is_active=True
         )
-        event_time = datetime.now()
-        data, fname = export_customer_unknown_payment(pays=pay_logs, event_time=event_time)
-        task_export(data, fname, ExportStampTypeEnum.PAYMENT_UNKNOWN)
+        CustomerUnknownPaymentExportTree(recursive=False).exportNupload(queryset=pay_logs)
         self.stdout.write(self.style.SUCCESS("OK"))

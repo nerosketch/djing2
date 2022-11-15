@@ -1,31 +1,22 @@
-import logging
-from typing import List
 from datetime import datetime
-from uwsgi_tasks import task
+from typing import Optional
 
-from networks.models import CustomerIpLeaseModel
+from djing2 import celery_app
 from sorm_export.hier_export.base import format_fname
-from sorm_export.hier_export.networks import export_ip_leases, get_addr_type
-from sorm_export.models import ExportStampTypeEnum, ExportFailedStatus
+from sorm_export.hier_export.networks import get_addr_type
+from sorm_export.models import ExportStampTypeEnum
 from sorm_export.tasks.task_export import task_export
 from sorm_export.serializers import networks as sorm_networks_serializers
 
 
-@task()
-def export_static_ip_leases_task(customer_lease_id_list: List[int], event_time=None):
-    leases = CustomerIpLeaseModel.objects.filter(pk__in=customer_lease_id_list).exclude(customer=None)
-    try:
-        data, fname = export_ip_leases(leases=leases, event_time=event_time)
-        task_export(data, fname, ExportStampTypeEnum.NETWORK_STATIC_IP)
-    except ExportFailedStatus as err:
-        logging.error(err)
-
-
-@task()
-def export_static_ip_leases_task_finish(customer_id: int, ip_address: str, lease_time: datetime,
-                                        mac_address: str, event_time=None):
+@celery_app.task
+def export_static_ip_leases_task_finish(customer_id: int, ip_address: str, lease_time: float,
+                                        mac_address: str, event_time: Optional[float] = None):
     if event_time is None:
         event_time = datetime.now()
+    else:
+        event_time = datetime.fromtimestamp(event_time)
+    lease_time = datetime.fromtimestamp(lease_time)
     dat = [{
         'customer_id': customer_id,
         'ip_addr': ip_address,

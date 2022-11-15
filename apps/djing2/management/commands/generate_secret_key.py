@@ -6,5 +6,5 @@ class Command(BaseCommand):
     help = "Generates SECRET_KEY"
 
     def handle(self, *args, **options):
-        secret_key = get_random_string(length=32)
-        print("Generated SECRET_KEY =", secret_key)
+        new_key = get_random_string(length=32)
+        print("Generated SECRET_KEY =", new_key)

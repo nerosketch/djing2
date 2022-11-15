@@ -163,16 +163,12 @@ msgid "Details"
 msgstr "Подробности"
 
 #: apps/profiles/serializers.py:162 apps/profiles/views.py:144
-msgid "Unable to log in with provided credentials."
-msgstr "Не получается войти с предоставленными учётными данными."
+msgid "Unable to log in with provided credentials"
+msgstr "Не получается войти с предоставленными учётными данными"
 
 #: apps/profiles/serializers.py:174
 msgid "Must include \"username\" and \"password\"."
 msgstr "Должны быть \"username\" и \"password\"."
-
-#: apps/profiles/views.py:99
-msgid "Passwords must be same"
-msgstr "Пароли должны быть одинаковыми"
 
 #: apps/profiles/views.py:101
 msgid "Wrong old password"
@@ -185,6 +181,9 @@ msgstr "Вход учётной записи через ip адрес"
 #: apps/profiles/views.py:148
 msgid "Incorrect provided credentials."
 msgstr "Авторизация с предоставленными учётными данными невозможна"
+
+msgid "Account is too old, birth_day \"%s\""
+msgstr "Учётная запись слишком стара. Дата рождения \"%s\""
 
 #~ msgid "Login is not possible"
 #~ msgstr "Не получается войти в предоставленными учётными данными"

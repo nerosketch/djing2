@@ -1,13 +1,11 @@
-import logging
 from datetime import datetime
-
-from uwsgi_tasks import cron, task
 
 from customers.models import Customer, PeriodicPayForId
 from djing2.lib import LogicError
+from djing2.lib.logger import logger
+from djing2 import celery_app
 
 
-@task()
 def customer_check_service_for_expiration(customer_id: int):
     """
     Finish expired services and connect new services if enough money
@@ -27,7 +25,12 @@ def customer_check_service_for_expiration(customer_id: int):
     except Customer.DoesNotExist:
         pass
     except LogicError as err:
-        logging.error(str(err))
+        logger.error(str(err))
+
+
+@celery_app.task
+def customer_check_service_for_expiration_task(customer_id: int):
+    customer_check_service_for_expiration(customer_id=customer_id)
 
 
 def _manage_periodic_pays_run():
@@ -54,8 +57,8 @@ def _manage_post_connect_services():
             pass
 
 
-@cron(minute=-30)
-def manage_services(signal_number):
+@celery_app.task
+def manage_services():
     Customer.objects.continue_services_if_autoconnect()
     Customer.objects.finish_services_if_expired()
 
@@ -64,3 +67,8 @@ def manage_services(signal_number):
     _manage_post_connect_services()
 
     _manage_periodic_pays_run()
+
+
+celery_app.add_periodic_task(
+    1800, manage_services.s(), name='Manage customer services every 30 min'
+)

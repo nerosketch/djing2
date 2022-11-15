@@ -1,9 +1,9 @@
 import math
-from typing import Generator, Iterable, Dict
+from typing import Generator, Iterable
 
 from django.utils.translation import gettext_lazy as _
 
-from djing2.lib import safe_int, RuTimedelta, process_lock
+from djing2.lib import safe_int, RuTimedelta, process_lock_decorator
 from devices.device_config.base import (
     Vlans,
     Vlan,
@@ -160,7 +160,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
             name = self.get_vid_name(vid=vid)
             yield Vlan(vid=vid, title=name)
 
-    @process_lock()
+    @process_lock_decorator()
     def read_mac_address_port(self, port_num: int) -> Macs:
         if port_num > self.ports_len or port_num < 1:
             raise DeviceImplementationError("Port must be in range 1-%d" % self.ports_len)
@@ -193,7 +193,7 @@ class EltexSwitch(DlinkDGS1100_10ME):
             yield MacItem(vid=vid, name=vid_name, mac=fdb_mac, port=real_fdb_port_num)
 
     @staticmethod
-    def make_eltex_map_vlan(vids: Iterable[int]) -> Dict[int, bytes]:
+    def make_eltex_map_vlan(vids: Iterable[int]) -> dict[int, bytes]:
         """
         https://eltex-co.ru/upload/iblock/f69/MES_configuration_and_monitoring_via_SNMP_1.1.48.11,%202.5.48.11,%202.2.14.6.pdf
         :param vids: Vlan id iterable collection

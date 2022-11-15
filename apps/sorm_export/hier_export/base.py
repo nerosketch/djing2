@@ -1,42 +1,77 @@
-import logging
-from typing import Tuple, Any
+import abc
+from typing import Optional, TypeVar, Generic
 from datetime import datetime
-from functools import wraps
 
+from django.db.models import QuerySet
+from djing2.lib.logger import logger
 from rest_framework.exceptions import ValidationError
+from sorm_export.tasks.task_export import task_export
+from sorm_export.models import ExportStampTypeEnum
 
+
+T = TypeVar('T')
 
 _fname_date_format = '%d%m%Y%H%M%S'
 
 
-def format_fname(fname_timestamp=None) -> str:
+def format_fname(fname_timestamp: Optional[datetime] = None) -> str:
     if fname_timestamp is None:
         fname_timestamp = datetime.now()
     return fname_timestamp.strftime(_fname_date_format)
 
 
-def simple_export_decorator(fn):
-    @wraps(fn)
-    def _wrapped(event_time=None, *args, **kwargs):
+class ContinueIteration(Exception):
+    pass
+
+
+class ExportTree(Generic[T]):
+    _recursive: bool
+    _event_time: datetime
+    _extra_kwargs: Optional[dict]
+
+    def __init__(self, recursive=True, event_time: Optional[datetime] = None, extra_kwargs: Optional[dict] = None):
+        self._recursive = recursive
+        self._extra_kwargs = extra_kwargs
         if event_time is None:
-            event_time = datetime.now()
-        elif isinstance(event_time, str):
-            event_time = datetime.fromisoformat(event_time)
-        ser, fname = fn(event_time=event_time, *args, **kwargs)
-        ser.is_valid(raise_exception=True)
-        return ser.data, fname
-    return _wrapped
+            self._event_time = datetime.now()
+        else:
+            self._event_time = event_time
 
+    def filter_queryset(self, queryset):
+        return queryset
 
-def iterable_export_decorator(fn):
-    @wraps(fn)
-    def _wrapped(event_time=None, *args, **kwargs) -> Tuple[Any, str]:
-        if event_time is None:
-            event_time = datetime.now()
-        elif isinstance(event_time, str):
-            event_time = datetime.fromisoformat(event_time)
+    @abc.abstractmethod
+    def get_remote_ftp_file_name(self):
+        raise NotImplementedError
 
-        serializer_class, gen_fn, qs, fname = fn(event_time=event_time, *args, **kwargs)
+    @classmethod
+    @abc.abstractmethod
+    def get_export_format_serializer(cls):
+        raise NotImplementedError
+
+    @classmethod
+    @abc.abstractmethod
+    def get_export_type(cls) -> ExportStampTypeEnum:
+        raise NotImplementedError
+
+    def get_items(self, queryset: QuerySet):
+        for item in self.filter_queryset(queryset=queryset):
+            try:
+                r = self.get_item(item)
+                # Добавляем или обновляем к результатам дополнительные данные.
+                if isinstance(self._extra_kwargs, dict):
+                    r.update(self._extra_kwargs)
+                yield r
+
+            except ContinueIteration:
+                continue
+
+    @abc.abstractmethod
+    def get_item(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def export(self, queryset, *args, **kwargs):
+        serializer_class = self.get_export_format_serializer()
 
         def _val_fn(dat):
             try:
@@ -44,38 +79,27 @@ def iterable_export_decorator(fn):
                 ser.is_valid(raise_exception=True)
                 return ser.data
             except ValidationError as e:
-                logging.error("%s | %s" % (e.detail, dat))
+                logger.error("%s | %s" % (e.detail, dat))
 
-        res_data = map(gen_fn, qs.iterator())
-        res_data = (_val_fn(r) for r in res_data if r)
+        gen = self.get_items(queryset=queryset, *args, **kwargs)
+
+        res_data = (_val_fn(r) for r in gen if r)
         res_data = (r for r in res_data if r)
 
-        return res_data, fname
-    return _wrapped
+        return res_data
+
+    def upload2ftp(self, data):
+        fname = self.get_remote_ftp_file_name()
+        task_export(data, fname, export_type=self.get_export_type())
+
+    def exportNupload(self, *args, **kwargs):
+        data = self.export(*args, **kwargs)
+        self.upload2ftp(data=data)
 
 
-def iterable_gen_export_decorator(fn):
-    @wraps(fn)
-    def _wrapped(event_time=None, *args, **kwargs) -> Tuple[Any, str]:
-        if event_time is None:
-            event_time = datetime.now()
-        elif isinstance(event_time, str):
-            event_time = datetime.fromisoformat(event_time)
+class SimpleExportTree(ExportTree):
+    def get_export_format_serializer(self):
+        pass
 
-        serializer_class, gen_fn, fname = fn(event_time=event_time, *args, **kwargs)
-
-        def _val_fn(dat):
-            try:
-                ser = serializer_class(data=dat)
-                ser.is_valid(raise_exception=True)
-                return ser.data
-            except ValidationError as e:
-                logging.error("%s | %s" % (e.detail, dat))
-
-        # res_data = map(gen_fn, qs.iterator())
-        res_data = (_val_fn(r) for r in gen_fn() if r)
-        res_data = (r for r in res_data if r)
-
-        return res_data, fname
-    return _wrapped
-
+    def export(self, *args, **kwargs) -> dict:
+        raise NotImplementedError

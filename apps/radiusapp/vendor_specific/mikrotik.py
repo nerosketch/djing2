@@ -1,35 +1,45 @@
-from netaddr import EUI
-from netfields.mac import mac_unix_common
-from radiusapp.vendor_base import IVendorSpecific
+from typing import Mapping
+
+from netaddr import EUI, mac_unix_expanded
+from rest_framework import status
+from radiusapp.vendor_base import (
+    IVendorSpecific,
+    CustomerServiceLeaseResult,
+    RadiusCounters
+)
 
 
 class MikrotikVendorSpecific(IVendorSpecific):
     vendor = "mikrotik"
 
-    def parse_option82(self, data):
-        aget_remote_id = self.get_rad_val(data, "Agent-Remote-Id")
-        aget_circ_id = self.get_rad_val(data, "Agent-Circuit-Id")
+    def parse_option82(self, data: Mapping[str, str]):
+        aget_remote_id = self.get_rad_val(data, "Agent-Remote-Id", str)
+        aget_circ_id = self.get_rad_val(data, "Agent-Circuit-Id", str)
         return aget_remote_id, aget_circ_id
 
     def get_customer_mac(self, data):
-        str_mac = self.get_rad_val(data, "User-Name")
+        str_mac = self.get_rad_val(data, "User-Name", str)
         if str_mac:
-            return EUI(str_mac, dialect=mac_unix_common)
+            return EUI(str_mac, dialect=mac_unix_expanded)
 
     def get_vlan_id(self, data):
         return 0
 
-    def get_auth_guest_session_response(self, guest_session, data):
-        return {
-            # TODO: Optimize it, ip_lease.ip_address fetched from db
-            "Framed-IP-Address": guest_session.ip_lease.ip_address,
-            # 'Acct-Interim-Interval': 300,
-        }
+    def get_service_vlan_id(self, data):
+        return 0
 
-    def get_auth_session_response(self, subscriber_lease, customer_service, customer, request_data):
-        return {
-            "Framed-IP-Address": subscriber_lease.ip_addr,
-            # 'Acct-Interim-Interval': 300,
+    def get_counters(self, data: Mapping[str, str]) -> RadiusCounters:
+        return RadiusCounters()
+
+    def get_auth_session_response(self, db_result: CustomerServiceLeaseResult):
+        # TODO: Make it
+        r = {
             "Mikrotik-Rate-Limit": "1M/1M",
             "Mikrotik-Address-List": "DjingUsersAllowed",
+            # 'Acct-Interim-Interval': 300,
         }
+        if db_result.ip_address:
+            r.update({
+                "Framed-IP-Address": db_result.ip_address,
+            })
+        return r, status.HTTP_200_OK

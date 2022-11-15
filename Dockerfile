@@ -1,34 +1,36 @@
-FROM python:3.9
+FROM python:3.9-alpine
 
 LABEL maintainer="nerosketch@gmail.com"
 
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONOPTIMIZE 1
-#ENV APP_DEBUG ${APP_DEBUG}
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONOPTIMIZE=1
+ENV PYTHONIOENCODING=UTF-8
+ENV PYTHONPATH=/var/www/djing2:/var/www/djing2/apps
+ENV DJANGO_SETTINGS_MODULE=djing2.settings
+
+RUN ["apk", "add", "net-snmp-dev", "arping", "gettext", "inetutils-telnet", "gcc", "git", "musl-dev", "libffi-dev", "libpq-dev", "make", "--no-cache"]
+RUN ["adduser", "-G", "www-data", "-SDH", "-h", "/var/www/djing2", "www-data"]
+RUN mkdir -p /var/www/djing2/media /var/log/djing2 \
+    && chown -R www-data. /var/www/djing2 /var/log/djing2
+
+COPY --chown=www-data:www-data ["requirements.txt", "/var/www/djing2"]
+RUN ["pip", "install", "--no-cache-dir", "-r", "/var/www/djing2/requirements.txt"]
+RUN ["apk", "del", "-r", "gcc", "git", "make"]
 
 EXPOSE 8000
 
-RUN apt-get update
-RUN apt-get install -y python3-psycopg2 libsnmp-dev arping gcc gettext telnet uwsgi uwsgi-plugin-python3 --no-install-recommends
-RUN mkdir -p /var/www/djing2
-
-RUN mkdir /var/www/djing2/spooler && touch /var/www/djing2/touch_reload
-
-COPY requirements.txt /var/www/djing2
-RUN pip install --no-cache-dir -r /var/www/djing2/requirements.txt
-#RUN apt-get purge -y --auto-remove gcc
-
-RUN chown -R www-data. /var/www
-
-USER www-data
+COPY --chown=www-data:www-data ["manage.py", "create_initial_user.py", "ipt_linux_agent.py", "fastapi_app.py", "/var/www/djing2/"]
+COPY --chown=www-data:www-data ["apps", "/var/www/djing2/apps"]
 
 WORKDIR /var/www/djing2
 
-COPY . .
+USER www-data
+
+#RUN ["django-admin", "compilemessages"]
 
 CMD ./manage.py migrate \
     && ./manage.py loaddata initial_data \
-    # && ./manage.py compilemessages -l ru \
-    # && ./manage.py shell -c "from create_initial_user import *; make_initial_user()" \
-    #&& exec uwsgi --ini /var/www/djing2/uwsgi_djing2.ini
-    && exec ./manage.py runserver 0.0.0.0:8000
+    # && ./manage.py shell -c "from create_initial_user import *; make_initial_user()"
+    # --workers=(Total RAM in GB)
+    && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --workers $(free -g | awk 'NR == 2{print $2}')
+#   && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --reload

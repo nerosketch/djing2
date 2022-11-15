@@ -67,5 +67,8 @@ msgstr ""
 msgid "Client mac address"
 msgstr "mac адрес клиента"
 
+msgid "exception from radius."
+msgstr "Исключение в radius."
+
 #~ msgid "Failed to stop session"
 #~ msgstr "Ошибка остановки сессии"

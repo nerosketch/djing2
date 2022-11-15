@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generator, Optional, Dict, Tuple, Any, List, Type
+from typing import Generator, Optional, Any, Type
 from easysnmp import Session, EasySNMPConnectionError
 from django.utils.translation import gettext
 from devices.device_config.base import (
@@ -31,8 +31,7 @@ class SNMPWorker(Session):
 
     def get_list(self, oid) -> Generator:
         try:
-            for v in self.walk(oid):
-                yield v.value
+            return (v.value for v in self.walk(oid))
         except EasySNMPConnectionError as err:
             raise DeviceConnectionError(err) from err
 
@@ -44,7 +43,7 @@ class SNMPWorker(Session):
         except EasySNMPConnectionError as err:
             raise DeviceConnectionError(err) from err
 
-    def get_next_keyval(self, oid) -> Tuple:
+    def get_next_keyval(self, oid) -> tuple:
         v = self.get_next(oid)
         if not v:
             return None, None
@@ -122,7 +121,7 @@ class DeviceConfigType:
         return {"title": cls.title, "code": cls.short_code, "accept_vlan": cls.accept_vlan}
 
 
-ListDeviceConfigType = List[Type[DeviceConfigType]]
+ListDeviceConfigType = list[Type[DeviceConfigType]]
 
 
 class BaseDeviceStrategy(ABC):
@@ -182,7 +181,7 @@ class BaseDeviceStrategy(ABC):
         return r"¯ \ _ (ツ) _ / ¯"
 
 
-global_device_types_map: Dict[int, Type[BaseDeviceStrategy]] = {}
+global_device_types_map: dict[int, Type[BaseDeviceStrategy]] = {}
 
 
 class BaseDeviceStrategyContext(ABC):
@@ -208,7 +207,7 @@ class BaseDeviceStrategyContext(ABC):
         global_device_types_map[unique_code] = device_class
 
     @staticmethod
-    def get_device_types() -> Dict[int, Type[BaseDeviceStrategy]]:
+    def get_device_types() -> dict[int, Type[BaseDeviceStrategy]]:
         return global_device_types_map
 
     def get_description(self):

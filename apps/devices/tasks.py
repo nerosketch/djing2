@@ -1,11 +1,10 @@
-from uwsgi_tasks import task
-
+from djing2 import celery_app
 from devices.models import Device
 from devices.device_config.device_type_collection import DEVICE_ONU_TYPES
 
 
-@task()
-def unregister_device_async(device_id: int) -> None:
+@celery_app.task
+def unregister_device_task(device_id: int) -> None:
     """
     Remove ONU from OLT or make other post delete device action
     :return:

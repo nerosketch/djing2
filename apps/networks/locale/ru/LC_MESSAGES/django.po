@@ -203,6 +203,12 @@ msgstr "не пингуется"
 msgid "Process locked by another process"
 msgstr "Процесс занят другой задачей, подождите чуть и попробуйте ещё"
 
+msgid "Radius session not found error"
+msgstr "Сессия не найдена"
+
+msgid "Not allowed to add ip from dynamic pool as static"
+msgstr "Запрещено добавлять ip из динамического пула статически"
+
 #~ msgid "Client mac address"
 #~ msgstr "MAC адрес клиента"
 

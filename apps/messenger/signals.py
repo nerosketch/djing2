@@ -12,6 +12,7 @@ def on_notification_signal_event(sender, instance, text: str, recipients: Option
     :param recipients: List of UserProfile id.
     :param text: Message text.
     """
+    # TODO: move to task server
     send_messenger_broadcast_message_task(
         text=text,
         recipients=recipients

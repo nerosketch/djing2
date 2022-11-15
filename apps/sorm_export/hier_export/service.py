@@ -1,55 +1,57 @@
 from datetime import datetime
-from typing import Iterable
 
 from customers.models import CustomerService
-from services.models import Service
-from .base import iterable_export_decorator, format_fname, simple_export_decorator
-from ..models import CommunicationStandardChoices
-from ..serializers.customer_service_serializer import CustomerServiceIncrementalFormat
-from ..serializers.service_serializer import ServiceIncrementalNomenclature
+from .base import format_fname, ExportTree, SimpleExportTree
+from sorm_export.serializers.customer_service_serializer import CustomerServiceIncrementalFormat
+from sorm_export.serializers.service_serializer import ServiceIncrementalNomenclature
+from sorm_export.models import ExportStampTypeEnum, CommunicationStandardChoices
 
 
-@simple_export_decorator
-def export_nomenclature(services: Iterable[Service], event_time=None):
+class NomenclatureSimpleExportTree(SimpleExportTree):
     """
     Файл выгрузки номенклатуры, версия 1.
     В этом файле выгружаются все услуги, предоставляемые оператором своим абонентам - номенклатура-справочник.
+    FIXME: Определиться нужно-ли выгружать названия тарифов.
+     А пока выгружается "Высокоскоростной доступ в интернет".
+    Да и вообще тут пока всё статично.
     """
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/service_list_v1_{format_fname(self._event_time)}.txt"
 
-    # def gen(srv: Service):
-    #     return {
-    #         "service_id": srv.pk,
-    #         "mnemonic": str(srv.title)[:64],
-    #         "description": str(srv.descr)[:256],
-    #         "begin_time": srv.create_time.date(),  # дата начала будет датой создания тарифа.
-    #         # end_time 36525 дней (~100 лет), типо бесконечно. Т.к. для вида услуги нет даты завершения,
-    #         # как и нет даты окончания действия какого-то имени, например.
-    #         "end_time": srv.create_time.date() + timedelta(days=36525),
-    #         "operator_type_id": CommunicationStandardChoices.ETHERNET.label,
-    #     }
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.SERVICE_NOMENCLATURE
 
-    dat = [{
-        # FIXME: Определиться нужно-ли выгружать названия тарифов.
-        #  А пока выгружается "Высокоскоростной доступ в интернет".
-        "service_id": 1,
-        "mnemonic": "Интернет",
-        "description": "Высокоскоростной доступ в интернет",
-        "begin_time": datetime(2017, 1, 1, 0, 0).date(),
-        "operator_type_id": CommunicationStandardChoices.ETHERNET.label,
-    }]
-    ser = ServiceIncrementalNomenclature(data=dat, many=True)
-
-    return ser, f"ISP/abonents/service_list_v1_{format_fname(event_time)}.txt"
+    def export(self, *args, **kwargs):
+        dat = [{
+            "service_id": 1,
+            "mnemonic": "Интернет",
+            "description": "Высокоскоростной доступ в интернет",
+            "begin_time": datetime(2017, 1, 1, 0, 0).date(),
+            "operator_type_id": CommunicationStandardChoices.ETHERNET.label,
+        }]
+        ser = ServiceIncrementalNomenclature(data=dat, many=True)
+        ser.is_valid(raise_exception=True)
+        return ser.data
 
 
-@iterable_export_decorator
-def export_customer_service(cservices: Iterable[CustomerService], event_time=None):
+class CustomerServiceExportTree(ExportTree[CustomerService]):
     """
     Файл выгрузки услуг по абонентам.
     В этом файле выгружаются все привязки услуг к абонентам.
     """
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/services_{format_fname(self._event_time)}.txt"
 
-    def gen(cs: CustomerService):
+    @classmethod
+    def get_export_format_serializer(cls):
+        return CustomerServiceIncrementalFormat
+
+    @classmethod
+    def get_export_type(cls):
+        return ExportStampTypeEnum.SERVICE_CUSTOMER
+
+    def get_item(self, cs: CustomerService, *args, **kwargs):
         # srv = cs.service
         if hasattr(cs, "customer"):
             return {
@@ -63,10 +65,16 @@ def export_customer_service(cservices: Iterable[CustomerService], event_time=Non
         else:
             return None
 
-    return CustomerServiceIncrementalFormat, gen, cservices, f"ISP/abonents/services_{format_fname(event_time)}.txt"
 
+class ManualDataCustomerServiceSimpleExportTree(SimpleExportTree):
+    def get_remote_ftp_file_name(self):
+        return f"ISP/abonents/services_{format_fname(self._event_time)}.txt"
 
-@simple_export_decorator
-def export_manual_data_customer_service(data, event_time=None):
-    ser = CustomerServiceIncrementalFormat(data=data, many=True)
-    return ser, f"ISP/abonents/services_{format_fname(event_time)}.txt"
+    @classmethod
+    def get_export_type(cls) -> ExportStampTypeEnum:
+        return ExportStampTypeEnum.SERVICE_CUSTOMER_MANUAL
+
+    def export(self, *args, **kwargs):
+        ser = CustomerServiceIncrementalFormat(many=True, *args, **kwargs)
+        ser.is_valid(raise_exception=True)
+        return ser.data
