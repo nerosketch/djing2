@@ -660,7 +660,7 @@ def update_task_info(task_id: int,
     pdata = update_data.dict(
         exclude_unset=True
     )
-    recipients = pdata.pop('recipients', None)
+    recipients = pdata.pop('recipients', [])
     old_data = model_to_dict(task, exclude=["site", "customer"])
     for d_name, d_val in pdata.items():
         setattr(task, d_name, d_val)

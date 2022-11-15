@@ -18,8 +18,8 @@ class RecipientsFieldMixin(BaseModel):
         if not recipients:
             return []
         if isinstance(recipients, (list, tuple)):
-            r = (i for i in recipients if isinstance(i, UserProfile))
-            return [i.pk for i in r]
+            r = (i for i in recipients if isinstance(i, (UserProfile, int)))
+            return [i.pk if isinstance(i, UserProfile) else i for i in r]
         r = [r.pk for r in recipients.all()]
         return r
 
@@ -36,6 +36,7 @@ class TaskUpdateSchema(TaskBaseSchema):
     out_date: Optional[date] = None
     task_mode_id: Optional[int] = Field(None, title=_("The nature of the damage"))
     customer_id: Optional[int] = Field(None, title=_("Customer"))
+    task_state: TaskStates
 
 
 class TaskModelSchema(TaskBaseSchema):
@@ -51,7 +52,7 @@ class TaskModelSchema(TaskBaseSchema):
     customer_uname: str
     customer_group: int
     comment_count: int = 0
-    task_state: TaskStates
+    task_state: int
     state_str: str
     task_mode_id: Optional[int] = Field(None, title=_("The nature of the damage"))
     mode_str: str
