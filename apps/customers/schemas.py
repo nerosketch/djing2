@@ -354,11 +354,16 @@ class PassportInfoModelSchema(PassportInfoBaseSchema):
     Config = OrmConf
 
 
+class CustomerServiceTypeReportCalcType(BaseModel):
+    calc_type_count: int
+    service_descr: str
+
+
 class CustomerServiceTypeReportResponseSchema(BaseModel):
     all_count: int = Field(title='All services count')
     admin_count: int = Field(title='Admin services count')
     zero_cost_count: int = Field(title='Zero cost services count')
-    calc_type_counts: int = Field(title='Calculation types count')
+    calc_type_counts: list[CustomerServiceTypeReportCalcType] = Field(title='Calculation types count')
 
 
 class ActivityReportResponseSchema(BaseModel):

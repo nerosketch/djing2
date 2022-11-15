@@ -620,10 +620,10 @@ def task_mode_report():
 
     res = (
         schemas.TaskModeReportAnnotationItem(
-            mode=_get_display(vals.get("mode")),
+            mode=_get_display(vals.get("task_mode_id")),
             task_count=vals.get("task_count")
         )
-        for vals in report.values("mode", "task_count")
+        for vals in report.values("task_mode_id", "task_count")
     )
     return schemas.TaskModeReportResponse(
         annotation=res
