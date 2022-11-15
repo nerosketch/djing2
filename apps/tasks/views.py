@@ -377,7 +377,10 @@ def comments_combine_with_logs(
         for c in comment_qs.iterator()
     ]
     for comment in comments_list:
-        comment.update({"type": "comment"})
+        comment.update({
+            "type": "comment",
+            "can_remove": comment.get('author_id', 0) == curr_user.pk
+        })
 
     logs_list = [
         schemas.TaskStateChangeLogModelSchema.from_orm(
