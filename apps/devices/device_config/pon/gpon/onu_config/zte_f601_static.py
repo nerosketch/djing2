@@ -23,11 +23,8 @@ def _get_pon_mng_template(all_vids: VlanList, config: dict, *args, **kwargs) -> 
     all_vids = ",".join(map(str, set(all_vids)))
     vlan_config = config.get("vlanConfig")
     vids = vlan_config[0].get("vids")
-    native_vids = {vid.get("vid") for vid in vids if vid.get("native", False)}
-    native_vids = list(native_vids)
-    trunk_vids = {vid.get("vid") for vid in vids if not vid.get("native", False)}
-    trunk_vids = list(trunk_vids)
 
+    native_vids, trunk_vids = zte_onu.build_trunk_native_from_vids(vids)
     native_vids_len = len(native_vids)
     trunk_vids_len = len(trunk_vids)
 

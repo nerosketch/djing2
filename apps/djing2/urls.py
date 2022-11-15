@@ -1,6 +1,5 @@
 from django.urls import path, include
 from django.conf import settings
-from djing2.views import SearchApiView, can_login_by_location, get_vapid_public_key
 
 
 api_urls = [
@@ -10,23 +9,14 @@ api_urls = [
     path("gateways/", include("gateways.urls", namespace="gateways")),
     path("devices/", include("devices.urls", namespace="devices")),
     path("customers/", include("customers.urls", namespace="customers")),
-    path("customer_comments/", include("customer_comments.urls", namespace="customer_comments")),
-    path("customer_contract/", include("customer_contract.urls", namespace="customer_contract")),
-    path("messenger/", include("messenger.urls", namespace="messenger")),
-    path("tasks/", include("tasks.urls", namespace="tasks")),
+    # path("messenger/", include("messenger.urls", namespace="messenger")),
     path("networks/", include("networks.urls", namespace="networks")),
     path("dynamicfields/", include("dynamicfields.urls", namespace="dynamicfields")),
     path("fin/", include("fin_app.urls", namespace="fin_app")),
     path("sites/", include("sitesapp.urls", namespace="sitesapp")),
-    path("radius/", include("radiusapp.urls", namespace="radiusapp")),
-    #path("sorm/", include("sorm_export.urls", namespace="sorm_export")),
-    path("traf_stat/", include("traf_stat.urls", namespace="traf_stat")),
     path("legal/", include("customers_legal.urls", namespace="customers_legal")),
     #path("hook/", include("webhooks.urls", namespace="webhooks")),
-    path("can_login_by_location/", can_login_by_location),
-    path("search/", SearchApiView.as_view()),
     path("webpush/", include("webpush.urls")),
-    path("get_vapid_public_key/", get_vapid_public_key),
 ]
 
 

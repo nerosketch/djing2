@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime, date
 from types import GeneratorType
-from typing import Tuple, Optional
+from typing import Optional
 
 from django.contrib.sites.models import Site
 from django.db import models, connection
@@ -88,25 +88,25 @@ class TaskStateChangeLogModel(BaseAbstractModel):
         state2 = task_state.get("to")
         if state1 == state2:
             return self._human_log_text_general()
-        if state1 == Task.TASK_STATE_NEW:
-            if state2 == Task.TASK_STATE_COMPLETED:
+        if state1 == TaskStates.TASK_STATE_NEW:
+            if state2 == TaskStates.TASK_STATE_COMPLETED:
                 return _("Completing task")
-            elif state2 == Task.TASK_STATE_CONFUSED:
+            elif state2 == TaskStates.TASK_STATE_CONFUSED:
                 return _("Failing task")
-        elif state1 == Task.TASK_STATE_CONFUSED:
-            if state2 == Task.TASK_STATE_NEW:
+        elif state1 == TaskStates.TASK_STATE_CONFUSED:
+            if state2 == TaskStates.TASK_STATE_NEW:
                 return _("Restore state from confused to new")
-            elif state2 == Task.TASK_STATE_COMPLETED:
+            elif state2 == TaskStates.TASK_STATE_COMPLETED:
                 return _("Change state from confused to completed")
-        elif state1 == Task.TASK_STATE_COMPLETED:
-            if state2 == Task.TASK_STATE_NEW:
+        elif state1 == TaskStates.TASK_STATE_COMPLETED:
+            if state2 == TaskStates.TASK_STATE_NEW:
                 return _("Restore state from completed to new")
-            elif state2 == Task.TASK_STATE_CONFUSED:
+            elif state2 == TaskStates.TASK_STATE_CONFUSED:
                 return _("Change state from completed to confused")
         return _("Unknown change action")
 
     def human_log_text(self) -> Optional[str]:
-        """Human readable log representation."""
+        """Human-readable log representation."""
         dat = self.state_data
         if not dat:
             return None
@@ -119,6 +119,19 @@ class TaskStateChangeLogModel(BaseAbstractModel):
             return self._human_log_text_general()
 
         return self._human_log_text_state_change()
+
+    @property
+    def who_name(self):
+        if self.who:
+            return self.who.get_full_name()
+        return ''
+
+    @property
+    def human_representation(self):
+        r = self.human_log_text()
+        if r is None:
+            return
+        return str(r)
 
     class Meta:
         db_table = "task_state_change_log"
@@ -136,10 +149,10 @@ class TaskQuerySet(models.QuerySet):
         Returns queryset with annotate how many
         tasks with each task mode was
         """
-        return self.values("mode").annotate(task_count=models.Count("pk")).order_by("mode")
+        return self.values("task_mode").annotate(task_count=models.Count("pk")).order_by("task_mode")
 
     @staticmethod
-    def task_state_percent(task_state: int) -> Tuple[int, float]:
+    def task_state_percent(task_state: int) -> tuple[int, float]:
         """
         Returns percent of specified task state
         :param task_state: int of task state
@@ -170,6 +183,18 @@ class TaskModeModel(models.Model):
         db_table = 'task_modes'
 
 
+class TaskPriorities(models.IntegerChoices):
+    TASK_PRIORITY_LOW = 0, _('Low')
+    TASK_PRIORITY_AVARAGE = 1, _('Average')
+    TASK_PRIORITY_HIGHER = 2, _('Higher')
+
+
+class TaskStates(models.IntegerChoices):
+    TASK_STATE_NEW = 0, _('New')
+    TASK_STATE_CONFUSED = 1, _('Confused')
+    TASK_STATE_COMPLETED = 2, _('Completed')
+
+
 class Task(BaseAbstractModel):
     descr = models.CharField(
         _("Description"),
@@ -188,18 +213,10 @@ class Task(BaseAbstractModel):
         blank=True,
         verbose_name=_("Task author")
     )
-    TASK_PRIORITY_LOW = 0
-    TASK_PRIORITY_AVARAGE = 1
-    TASK_PRIORITY_HIGHER = 2
-    TASK_PRIORITIES = (
-        (TASK_PRIORITY_LOW, _("Low")),
-        (TASK_PRIORITY_AVARAGE, _("Average")),
-        (TASK_PRIORITY_HIGHER, _("Higher")),
-    )
     priority = models.PositiveSmallIntegerField(
         _("A priority"),
-        choices=TASK_PRIORITIES,
-        default=TASK_PRIORITY_LOW
+        choices=TaskPriorities.choices,
+        default=TaskPriorities.TASK_PRIORITY_LOW
     )
     out_date = models.DateField(
         _("Reality"),
@@ -208,52 +225,10 @@ class Task(BaseAbstractModel):
         default=delta_add_days
     )
     time_of_create = models.DateTimeField(_("Date of create"), auto_now_add=True)
-    TASK_STATE_NEW = 0
-    TASK_STATE_CONFUSED = 1
-    TASK_STATE_COMPLETED = 2
-    TASK_STATES = (
-        (TASK_STATE_NEW, _("New")),
-        (TASK_STATE_CONFUSED, _("Confused")),
-        (TASK_STATE_COMPLETED, _("Completed")),
-    )
     task_state = models.PositiveSmallIntegerField(
         _("Condition"),
-        choices=TASK_STATES,
-        default=TASK_STATE_NEW
-    )
-    TASK_TYPE_NOT_CHOSEN = 0
-    TASK_TYPE_IP_CONFLICT = 1
-    TASK_TYPE_YELLOW_TRIANGLE = 2
-    TASK_TYPE_RED_CROSS = 3
-    TASK_TYPE_WAEK_SPEED = 4
-    TASK_TYPE_CABLE_BREAK = 5
-    TASK_TYPE_CONNECTION = 6
-    TASK_TYPE_PERIODIC_DISAPPEARANCE = 7
-    TASK_TYPE_ROUTER_SETUP = 8
-    TASK_TYPE_CONFIGURE_ONU = 9
-    TASK_TYPE_CRIMP_CABLE = 10
-    TASK_TYPE_INTERNET_CRASH = 11
-    TASK_TYPE_OTHER = 12
-    TASK_TYPES = (
-        (TASK_TYPE_NOT_CHOSEN, _("not chosen")),
-        (TASK_TYPE_IP_CONFLICT, _("ip conflict")),
-        (TASK_TYPE_YELLOW_TRIANGLE, _("yellow triangle")),
-        (TASK_TYPE_RED_CROSS, _("red cross")),
-        (TASK_TYPE_WAEK_SPEED, _("weak speed")),
-        (TASK_TYPE_CABLE_BREAK, _("cable break")),
-        (TASK_TYPE_CONNECTION, _("connection")),
-        (TASK_TYPE_PERIODIC_DISAPPEARANCE, _("periodic disappearance")),
-        (TASK_TYPE_ROUTER_SETUP, _("router setup")),
-        (TASK_TYPE_CONFIGURE_ONU, _("configure onu")),
-        (TASK_TYPE_CRIMP_CABLE, _("crimp cable")),
-        (TASK_TYPE_INTERNET_CRASH, _("Internet crash")),
-        (TASK_TYPE_OTHER, _("other")),
-    )
-    # TODO: mode field is deprecated
-    mode = models.PositiveSmallIntegerField(
-        _("The nature of the damage"),
-        choices=TASK_TYPES,
-        default=TASK_TYPE_NOT_CHOSEN
+        choices=TaskStates.choices,
+        default=TaskStates.TASK_STATE_NEW
     )
     task_mode = models.ForeignKey(
         to=TaskModeModel,
@@ -271,31 +246,32 @@ class Task(BaseAbstractModel):
     objects = TaskQuerySet.as_manager()
 
     def finish(self, current_user):
-        if self.task_state != self.TASK_STATE_COMPLETED:
+        if self.task_state != TaskStates.TASK_STATE_COMPLETED:
             TaskStateChangeLogModel.objects.create_state_migration(
                 task=self,
                 author=current_user,
-                new_data={"task_state": self.TASK_STATE_COMPLETED, "out_date": self.out_date},
+                new_data={"task_state": TaskStates.TASK_STATE_COMPLETED, "out_date": self.out_date},
                 old_data={"task_state": int(self.task_state), "out_date": self.out_date},
             )
-            self.task_state = self.TASK_STATE_COMPLETED  # Completed. Task done
+            self.task_state = TaskStates.TASK_STATE_COMPLETED  # Completed. Task done
             self.out_date = datetime.now().date()  # End time
             self.save(update_fields=("task_state", "out_date"))
 
     def do_fail(self, current_user):
-        if self.task_state != self.TASK_STATE_CONFUSED:
+        if self.task_state != TaskStates.TASK_STATE_CONFUSED:
             TaskStateChangeLogModel.objects.create_state_migration(
                 task=self,
                 author=current_user,
-                new_data={"task_state": self.TASK_STATE_CONFUSED},
+                new_data={"task_state": TaskStates.TASK_STATE_CONFUSED},
                 old_data={"task_state": int(self.task_state)},
             )
-            self.task_state = self.TASK_STATE_CONFUSED  # Confused(crashed)
+            self.task_state = TaskStates.TASK_STATE_CONFUSED  # Confused(crashed)
             self.save(update_fields=("task_state",))
 
     def send_notification(self):
         task_handle(self, self.author, self.recipients.filter(is_active=True))
 
+    @property
     def is_expired(self):
         if self.out_date:
             return self.out_date < datetime.now().date()
@@ -313,11 +289,68 @@ class Task(BaseAbstractModel):
             }
         return time_diff
 
+    @property
+    def author_full_name(self):
+        if self.author_id:
+            return self.author.get_full_name()
+        return ''
+
+    @property
+    def author_uname(self):
+        if self.author_id:
+            return self.author.username
+        return ''
+
+    @property
+    def priority_name(self):
+        return self.get_priority_display()
+
+    @property
+    def time_diff(self):
+        return str(self.get_time_diff())
+
+    @property
+    def customer_address(self):
+        if self.customer_id:
+            return self.customer.full_address
+        return ''
+
+    @property
+    def customer_full_name(self):
+        if self.customer_id:
+            return self.customer.get_full_name()
+        return ''
+
+    @property
+    def customer_uname(self):
+        if self.customer_id:
+            return self.customer.username
+        return ''
+
+    @property
+    def customer_group(self) -> Optional[int]:
+        if self.customer_id:
+            return self.customer.group_id or None
+        return None
+
+    @property
+    def state_str(self):
+        return self.get_task_state_display()
+
+    @property
+    def mode_str(self):
+        if self.task_mode:
+            return self.task_mode.title
+        return ''
+
     class Meta:
         db_table = "task"
         permissions = [
             ("can_remind", _("Reminders of tasks")),
-            ("can_view_task_mode_report", _("Can view task mode report"))
+            ("can_view_task_mode_report", _("Can view task mode report")),
+            ("can_finish_task", _("Can finish tasks")),
+            ("can_fail_task", _("Can mark task as failed")),
+            ("can_view_reports", _("Can view reports")),
         ]
 
 
@@ -336,6 +369,18 @@ class ExtraComment(BaseAbstractModel):
     date_create = models.DateTimeField(
         _("Time of create"), auto_now_add=True
     )
+
+    @property
+    def author_name(self):
+        if self.author:
+            return self.author.get_full_name()
+        return ''
+
+    @property
+    def author_avatar(self):
+        if self.author:
+            return self.author.get_avatar_url()
+        return ''
 
     def __str__(self):
         return self.text
@@ -402,4 +447,3 @@ class TaskFinishDocumentModel(models.Model):
 
     class Meta:
         db_table = 'task_finish_docs'
-

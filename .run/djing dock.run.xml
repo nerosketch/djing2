@@ -1,0 +1,31 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="djing dock" type="docker-deploy" factoryName="docker-compose.yml" server-name="Docker">
+    <deployment type="docker-compose.yml">
+      <settings>
+        <option name="envVars">
+          <list>
+            <DockerEnvVarImpl>
+              <option name="name" value="PYTHONPATH" />
+              <option name="value" value="/var/www/djing2/apps" />
+            </DockerEnvVarImpl>
+          </list>
+        </option>
+        <option name="commandLineOptions" value="--build" />
+        <option name="secondarySourceFiles">
+          <list>
+            <option value="../docker-compose-dev.yml" />
+          </list>
+        </option>
+        <option name="services">
+          <list>
+            <option value="djing2_app" />
+            <option value="djing2db" />
+            <option value="djing2-ui" />
+          </list>
+        </option>
+        <option name="sourceFilePath" value="../docker-compose.yml" />
+      </settings>
+    </deployment>
+    <method v="2" />
+  </configuration>
+</component>

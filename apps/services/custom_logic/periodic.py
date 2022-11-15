@@ -15,9 +15,9 @@ class PeriodicPayCalcDefault(PeriodicPayCalcBase):
 
     def get_next_time_to_pay(self, model_object, last_time_payment) -> datetime:
         today = date.today()
-        nw = datetime(today.year, today.month, today.day)
-        days = monthrange(nw.year, nw.month)[1]
-        return nw + timedelta(days - nw.day + 1)
+        now = datetime(today.year, today.month, today.day)
+        days = monthrange(now.year, now.month)[1]
+        return now + timedelta(days=days - now.day + 1)
 
 
 class PeriodicPayCalcRandom(PeriodicPayCalcDefault):

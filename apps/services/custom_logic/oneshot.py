@@ -6,11 +6,11 @@ from .base_intr import OneShotBaseService
 class ShotDefault(OneShotBaseService):
     description = _("Default shot pay logic")
 
-    def calc_cost(self, model_object, request, customer) -> float:
+    def calc_cost(self, model_object, customer) -> float:
         return safe_float(model_object.cost)
 
-    def before_pay(self, request, customer):
+    def before_pay(self, customer):
         pass
 
-    def after_pay(self, request, customer):
+    def after_pay(self, customer):
         pass

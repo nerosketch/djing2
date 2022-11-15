@@ -45,3 +45,6 @@ msgstr ""
 
 #~ msgid "Russian"
 #~ msgstr "Русский"
+
+msgid "Permission denied, check your rights."
+msgstr "Запрещено. Убедитесь, что у вас достаточно прав."

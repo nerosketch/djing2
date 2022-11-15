@@ -1,14 +1,10 @@
 from datetime import datetime, timedelta
-
 from django.db.models import Count
-from djing2.lib.fastapi.crud import CRUDReadGenerator
-from fastapi import APIRouter, Depends
-from rest_framework.viewsets import ReadOnlyModelViewSet
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from djing2.lib.mixins import SitesFilterMixin
+from djing2.lib.fastapi.pagination import Pagination, paginate_qs_path_decorator
+from fastapi import APIRouter, Depends, Request
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.types import IListResponse
 from customers.models import Customer
-from customers.serializers import CustomerModelSerializer
 from customers import schemas as customers_schemas
 
 
@@ -19,26 +15,22 @@ router = APIRouter(
 )
 
 
-class CustomerModelSchemaWLegals(customers_schemas.CustomerModelSchema):
-    legals: int
+@router.get('/passports/', response_model=IListResponse[customers_schemas.CustomerModelSchema])
+@paginate_qs_path_decorator(schema=customers_schemas.CustomerModelSchema, db_model=Customer)
+def get_bad_passports(request: Request, pagination: Pagination = Depends()):
+    qs = Customer.objects.annotate(
+        legals=Count('customerlegalmodel')
+    ).filter(
+        passportinfo=None,
+        legals=0,
+        is_active=True
+    )
+    return qs
 
 
-_queryset = Customer.objects.annotate(
-    legals=Count('customerlegalmodel')
-).filter(
-    passportinfo=None,
-    legals=0,
-    is_active=True
-)
-
-router.include_router(CRUDReadGenerator(
-    schema=CustomerModelSchemaWLegals,
-    prefix='/passports',
-    queryset=_queryset
-))
-
-
-class SormCustomersWithoutContractsView(SitesFilterMixin, ReadOnlyModelViewSet):
+@router.get('/contracts/', response_model=IListResponse[customers_schemas.CustomerModelSchema])
+@paginate_qs_path_decorator(schema=customers_schemas.CustomerModelSchema, db_model=Customer)
+def get_contracts(request: Request, pagination: Pagination = Depends()):
     """
     Fetch example:
 
@@ -46,11 +38,11 @@ class SormCustomersWithoutContractsView(SitesFilterMixin, ReadOnlyModelViewSet):
     >>> import requests
     >>>
     >>>
-    >>> r = requests.get('http://localhost:8000/api/sorm/', headers={
+    >>> r = requests.get('http://localhost:8000/api/sorm/contracts/', headers={
     >>>     'Authorization': 'Token ffffffffffffffffffffffffffffffffffff',
     >>>     'Content-type': 'application/json'
     >>> }, params={
-    >>>     'fields': 'id,username,full_name'
+    >>>     'fields': 'id,username,full_namevm ap'
     >>> })
     >>>
     >>> customers = r.json()
@@ -67,7 +59,7 @@ class SormCustomersWithoutContractsView(SitesFilterMixin, ReadOnlyModelViewSet):
     >>>         writer.writerow(vals)
     >>>
     """
-    queryset = Customer.objects.annotate(
+    qs = Customer.objects.annotate(
         ccc=Count('customercontractmodel'),
         legc=Count('customerlegalmodel')
     ).filter(
@@ -75,24 +67,18 @@ class SormCustomersWithoutContractsView(SitesFilterMixin, ReadOnlyModelViewSet):
         legc=0,
         is_active=True
     )
-    serializer_class = CustomerModelSerializer
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    return qs
 
 
-class SormCustomersTooOldView(SitesFilterMixin, ReadOnlyModelViewSet):
-    queryset = Customer.objects.annotate(
+@router.get('/birth_day/', response_model=IListResponse[customers_schemas.CustomerModelSchema])
+@paginate_qs_path_decorator(schema=customers_schemas.CustomerModelSchema, db_model=Customer)
+def get_without_birth_day(request: Request, pagination: Pagination = Depends()):
+    years_ago_110 = datetime.now() - timedelta(days=40150)
+    too_old_customers_qs = Customer.objects.annotate(
         legals=Count('customerlegalmodel')
     ).filter(
         legals=0,
-        is_active=True
+        is_active=True,
+        birth_day__lte=years_ago_110
     )
-    serializer_class = CustomerModelSerializer
-    permission_classes = [IsAuthenticated, IsAdminUser]
-
-    def get_queryset(self):
-        # 110 years
-        too_old = datetime.now() - timedelta(days=40150)
-        qs = super().get_queryset()
-        return qs.filter(
-            birth_day__lte=too_old
-        )
+    return too_old_customers_qs

@@ -1,7 +1,7 @@
 from rest_framework import status
 
 from customers.tests.customer import CustomAPITestCase
-from devices.tests import DeviceTestCase
+from devices.tests import device_test_case_set_up
 from networks.models import NetworkIpPool, NetworkIpPoolKind, CustomerIpLeaseModel
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from services.models import Service
@@ -14,7 +14,7 @@ class FetchCredentialsTestCase(CustomAPITestCase):
         super().setUp()
 
         # Initialize devices instances
-        DeviceTestCase.setUp(self)
+        device_test_case_set_up(self)
 
         self.service = Service.objects.create(
             title="test", descr="test",
@@ -39,8 +39,9 @@ class FetchCredentialsTestCase(CustomAPITestCase):
         self.customer.refresh_from_db()
         self.customer.pick_service(self.service, self.customer)
 
-        self.lease = CustomerIpLeaseModel.objects.create(
+        self.lease = CustomerIpLeaseModel.objects.filter(
             ip_address="10.11.12.2",
+        ).update(
             mac_address="1:2:3:4:5:6",
             pool=self.ippool,
             customer=self.customer,

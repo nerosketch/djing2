@@ -1,9 +1,15 @@
-from typing import Optional, Type, Any
+from typing import Type, Optional, OrderedDict as OrderedDictType
+from collections import OrderedDict
+from asyncio import iscoroutinefunction
 
-from fastapi import Depends, HTTPException
-from pydantic import create_model
+from fastapi import APIRouter
+from pydantic import create_model, BaseModel
+from pydantic.main import ModelMetaclass
+from django.db.models import Model
+from django.shortcuts import get_object_or_404 as _get_object_or_404
+from django.core.exceptions import ValidationError
 
-from .types import T, PAGINATION
+from .types import T, FIELD_OBJECTS_TYPE, COMPUTED_FIELD_OBJECTS_TYPE, NOT_FOUND
 
 
 def schema_factory(
@@ -24,42 +30,82 @@ def schema_factory(
     return schema
 
 
-def create_query_validation_exception(field: str, msg: str) -> HTTPException:
-    return HTTPException(
-        422,
-        detail={
-            "detail": [
-                {"loc": ["query", field], "msg": msg, "type": "type_error.integer"}
-            ]
-        },
+def format_object(
+    model_item: Model,
+    field_objects: FIELD_OBJECTS_TYPE,
+    computed_field_objects: COMPUTED_FIELD_OBJECTS_TYPE,
+    fields_list: Optional[list[str]] = None
+) -> OrderedDictType:
+    if fields_list:
+        _field_objects = ((fname, fobject) for fname, fobject in field_objects.items() if fname in fields_list)
+    else:
+        _field_objects = ((fname, fobject) for fname, fobject in field_objects.items())
+
+    result_dict_fields = (
+        (fname, fobject.value_from_object(model_item)) for fname, fobject in _field_objects
     )
 
+    if fields_list:
+        if not isinstance(fields_list, (list, tuple, set)):
+            raise ValueError('fields_list must be list, tuple or set: %s' % fields_list)
+        result_dict_fields = (
+            (fname, val) for fname, val in result_dict_fields if val is not None
+        )
 
-def pagination_factory(max_limit: Optional[int] = None) -> Any:
+    r = OrderedDict(result_dict_fields)
+    if computed_field_objects:
+        computed_field_objects_keys = computed_field_objects.keys()
+        if fields_list:
+            computed_field_objects_keys = (fname for fname in computed_field_objects_keys if fname in fields_list)
+        r.update({
+            fname: getattr(model_item, fname, None) for fname in computed_field_objects_keys
+        })
+
+    return r
+
+
+async def get_initial(schema: Type[BaseModel]) -> dict:
+    async def _get_default(field):
+        d = field.default
+        df = field.default_factory
+        if not d and df:
+            if iscoroutinefunction(df):
+                d = await df()
+            else:
+                d = df()
+        return d
+    gen = ((fname, _get_default(field)) for fname, field in schema.__fields__.items())
+    return {fname: await val for fname, val in gen if val}
+
+
+def create_get_initial_route(router: APIRouter, schema: Type[BaseModel], path: str = '/get_initial/'):
+    @router.get(path)
+    async def get_initial_values():
+        return await get_initial(schema)
+    return get_initial_values
+
+
+def get_object_or_404(queryset, *filter_args, **filter_kwargs):
     """
-    Created the pagination dependency to be used in the router
+    Same as Django's standard shortcut, but make sure to also raise 404
+    if the filter_kwargs don't match the required types.
     """
+    try:
+        return _get_object_or_404(queryset, *filter_args, **filter_kwargs)
+    except (TypeError, ValueError, ValidationError):
+        raise NOT_FOUND
 
-    def pagination(page: int = 0, page_size: Optional[int] = 100) -> PAGINATION:
-        if page < 0:
-            raise create_query_validation_exception(
-                field="page",
-                msg="page query parameter must be greater or equal to zero",
-            )
 
-        if page_size is not None:
-            if page_size < 0:
-                raise create_query_validation_exception(
-                    field="page_size",
-                    msg="page_size query parameter must be greater then or equal zero"
-                )
+class AllOptionalMetaclass(ModelMetaclass):
+    """Makes Pydantic model fields optional"""
 
-            elif max_limit and max_limit < page_size:
-                raise create_query_validation_exception(
-                    field="page_size",
-                    msg=f"page_size query parameter must be less then {max_limit}",
-                )
+    def __new__(mcs, name, bases, namespaces, **kwargs):
+        annotations = namespaces.get('__annotations__', {})
+        for base in bases:
+            annotations.update(base.__annotations__)
+        for field in annotations:
+            if not field.startswith('__'):
+                annotations[field] = Optional[annotations[field]]
+        namespaces['__annotations__'] = annotations
 
-        return {"page": page, "page_size": page_size}
-
-    return Depends(pagination)
+        return super().__new__(mcs, name, bases, namespaces, **kwargs)

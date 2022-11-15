@@ -53,8 +53,6 @@ class CustomerLegalModelViewSet(DjingModelViewSet):
         return Response(ser.data)
 
 
-
-
 class LegalCustomerBankModelViewSet(DjingModelViewSet):
     queryset = models.LegalCustomerBankModel.objects.all()
     serializer_class = serializers.LegalCustomerBankModelSerializer

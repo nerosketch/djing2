@@ -1,12 +1,16 @@
-from typing import Optional, Tuple, Type, overload
+from typing import Optional, Type, overload, Mapping
 from netaddr import EUI
 from djing2.lib import macbin2str, safe_int, LogicError
 
 from radiusapp.vendor_specific import vendor_classes
-from radiusapp.vendor_base import IVendorSpecific, SpeedInfoStruct, T, CustomerServiceLeaseResult
+from radiusapp.vendor_base import (
+    IVendorSpecific, SpeedInfoStruct,
+    T, CustomerServiceLeaseResult,
+    RadiusCounters
+)
 
 
-def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[EUI], int]:
+def parse_opt82(remote_id: bytes, circuit_id: bytes) -> tuple[Optional[EUI], int]:
     # 'remote_id': '0x000600ad24d0c544', 'circuit_id': '0x000400020002'
     mac, port = None, 0
     if not isinstance(remote_id, bytes):
@@ -14,8 +18,12 @@ def parse_opt82(remote_id: bytes, circuit_id: bytes) -> Tuple[Optional[EUI], int
     if not isinstance(circuit_id, bytes):
         circuit_id = bytes(circuit_id)
 
-    if circuit_id.startswith(b"ZTE"):
+    if circuit_id.startswith(b'ZTE'):
         mac = remote_id.decode()
+    elif circuit_id.startswith(b'HWTC'):
+        sn = circuit_id[4:]
+        mac = '54:43:%s' % b':'.join(sn[n:n + 2] for n in range(0, len(sn), 2)).decode()
+        del sn
     else:
         try:
             port = safe_int(circuit_id[-1:][0])
@@ -36,7 +44,7 @@ class VendorManager:
         else:
             raise RuntimeError('Something went wrong in assigning vendor class')
 
-    def get_opt82(self, data):
+    def get_opt82(self, data: Mapping[str, str]):
         if self.vendor_class:
             return self.vendor_class.parse_option82(data=data)
 
@@ -59,7 +67,7 @@ class VendorManager:
         raise RuntimeError('Vendor class not specified')
 
     @staticmethod
-    def build_dev_mac_by_opt82(agent_remote_id: str, agent_circuit_id: str) -> Tuple[Optional[EUI], int]:
+    def build_dev_mac_by_opt82(agent_remote_id: str, agent_circuit_id: str) -> tuple[Optional[EUI], int]:
         def _cnv(v):
             return bytes.fromhex(v[2:]) if v.startswith("0x") else v.encode()
 
@@ -94,6 +102,13 @@ class VendorManager:
             raise RuntimeError('Vendor class not specified')
         return self.vendor_class.get_speed(speed=speed)
 
+    def get_counters(self, data: Mapping[str, str]) -> RadiusCounters:
+        """Parse counters info from radius Acct Update request and return it"""
+
+        if self.vendor_class:
+            return self.vendor_class.get_counters(data=data)
+        return RadiusCounters()
+
     def get_auth_session_response(
         self,
         db_result: CustomerServiceLeaseResult
@@ -103,8 +118,8 @@ class VendorManager:
                 db_result=db_result
             )
 
-    def get_acct_status_type(self, request):
+    def get_acct_status_type(self, request_data):
         if self.vendor_class:
-            return self.vendor_class.get_acct_status_type(request)
+            return self.vendor_class.get_acct_status_type(request_data)
         else:
             raise LogicError('Vendor class not instantiated')
