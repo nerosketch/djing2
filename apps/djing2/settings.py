@@ -90,7 +90,6 @@ INSTALLED_APPS = [
     # "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
-    "traf_stat.apps.TrafStatConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
     #"sorm_export.apps.SormExportConfig",
@@ -304,6 +303,7 @@ TELEPHONE_REGEXP = os.getenv("TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
 API_AUTH_SECRET = get_secret("API_AUTH_SECRET")
 
 # Allowed subnet for api
+# API_AUTH_SUBNET = ('127.0.0.0/8', '172.0.0.0/8')
 API_AUTH_SUBNET = os.getenv("API_AUTH_SUBNET", ("127.0.0.0/8", "10.0.0.0/8"))
 if API_AUTH_SUBNET and isinstance(API_AUTH_SUBNET, str) and '|' in API_AUTH_SUBNET:
     API_AUTH_SUBNET = API_AUTH_SUBNET.split('|')
@@ -424,4 +424,4 @@ CELERY_SERIALIZER = 'msgpack'
 
 REDIS_HOST = os.getenv('REDIS_HOST', 'djing2redis')
 REDIS_PORT = os.getenv('REDIS_PORT', 6379)
-REDIS_AUTH_CASHE_TTL = os.getenv('REDIS_AUTH_CASHE_TTL', 3600)
+REDIS_AUTH_CACHE_TTL = os.getenv('REDIS_AUTH_CACHE_TTL', 3600)

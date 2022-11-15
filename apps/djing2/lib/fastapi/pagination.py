@@ -36,18 +36,16 @@ def get_next_url(r: Request, current_page: int, all_count: int, limit: int) -> O
 
 
 def get_prev_url(r: Request, current_page: int) -> Optional[str]:
-    if current_page > 0:
+    if current_page > 1:
         page = current_page - 1
         u = r.url
         return str(u.include_query_params(page=page))
 
 
-# def paginate_path_decorator(fn):
-#     @wraps(fn)
-#     def _wrap(*args, **kwargs):
-#         return fn(*args, **kwargs)
-#
-#     return _wrap
+def apply_ordering(qs: QuerySet, field_name: str) -> QuerySet:
+    if not field_name:
+        return qs
+    return qs.order_by(field_name)
 
 
 def paginate_qs_path_decorator(
@@ -66,21 +64,19 @@ def paginate_qs_path_decorator(
             qs = fn(request=request, pagination=pagination, *args, **kwargs)
             all_count = qs.count()
 
-            fields_list = None
+            fields_list = []
             if pagination.fields:
                 fields_list = pagination.fields.split(',')
-                if len(fields_list) > 0:
-                    param_fields_list = set(fields_list)
-                    model_fields_list = {field_name for field_name, _ in field_objects.items()}
-                    fields_list = param_fields_list & model_fields_list
-                    # qs = qs.only(*fields_list)
-                    # TODO: use computed fields from DRF serializer
 
-            r_qs = paginate_qs(
+            if pagination.ordering:
+                qs = apply_ordering(qs=qs, field_name=pagination.ordering)
+
+            qs = paginate_qs(
                 qs=qs,
                 page=pagination.page,
                 page_size=pagination.page_size
             )
+
             return IListResponse[schema](
                 count=all_count,
                 next=get_next_url(
@@ -98,7 +94,7 @@ def paginate_qs_path_decorator(
                     field_objects=field_objects,
                     computed_field_objects=computed_field_objects,
                     fields_list=fields_list,
-                ) for o in r_qs)
+                ) for o in qs.iterator())
             )
 
         return _wrap

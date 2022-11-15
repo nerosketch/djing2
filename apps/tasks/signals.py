@@ -3,12 +3,12 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from djing2.lib.ws_connector import send_data2ws, WsEventTypeEnum
-from tasks.models import Task
+from tasks.models import Task, TaskPriorities
 
 
 @receiver(post_save, sender=Task)
 def task_post_save(sender, instance: Task, created=False, **kwargs):
-    if instance.priority == Task.TASK_PRIORITY_HIGHER:
+    if instance.priority == TaskPriorities.TASK_PRIORITY_HIGHER:
         if created:
             notify_title = _("High priority task was created")
         else:

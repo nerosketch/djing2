@@ -1,6 +1,6 @@
 from typing import Optional
+from functools import lru_cache
 from django.db import models, connection
-from django.db.models import Q, Count
 from django.utils.translation import gettext_lazy as _
 from djing2.exceptions import ModelValidationError
 
@@ -89,7 +89,9 @@ class AddressModelManager(models.Manager):
         return self.filter(pk__in=ids_tree_query, address_type=addr_type)
 
     @staticmethod
+    @lru_cache(maxsize=1024)
     def get_address_full_title(addr_id: int) -> str:
+        # TODO: move to redis
         query = (
             "WITH RECURSIVE chain(id, parent_addr_id) AS ("
             "    SELECT id, parent_addr_id, fias_address_type, title "

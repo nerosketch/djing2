@@ -21,9 +21,15 @@ class CustomerLegalIntegerChoices(IntEnumEx):
 
 class CustomerLegalModel(BaseAccount):
     group = models.ForeignKey(
-        Group, on_delete=models.SET_NULL, blank=True, null=True, default=None, verbose_name=_("Legal customer group")
+        Group, on_delete=models.SET_NULL,
+        blank=True, null=True, default=None,
+        verbose_name=_("Legal customer group")
     )
-    branches = models.ManyToManyField(Customer, blank=True, verbose_name=_('Branches'))
+    branches = models.ManyToManyField(
+        Customer,
+        blank=True,
+        verbose_name=_('Branches')
+    )
     balance = models.FloatField(default=0.0)
 
     # Юридический адрес
@@ -100,12 +106,23 @@ class CustomerLegalModel(BaseAccount):
         null=True, blank=True, default=None,
     )
 
-    title = models.CharField(_('Title'), max_length=256, unique=True)
+    title = models.CharField(
+        _('Title'),
+        max_length=256,
+        unique=True
+    )
 
-    description = models.TextField(_("Comment"), null=True, blank=True, default=None)
+    description = models.TextField(
+        _("Comment"),
+        null=True,
+        blank=True,
+        default=None
+    )
 
     def get_telephones(self):
-        return CustomerLegalTelephoneModel.objects.filter(legal_customer=self).defer('legal_customer')
+        return CustomerLegalTelephoneModel.objects.filter(
+            legal_customer=self
+        ).defer('legal_customer')
 
     def __str__(self):
         return self.title
@@ -153,7 +170,9 @@ class CustomerLegalTelephoneModel(BaseAbstractModel):
         max_length=16,
         verbose_name=_("Telephone"),
         unique=True,
-        validators=[validators.RegexValidator(getattr(settings, "TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$"))]
+        validators=[validators.RegexValidator(
+            getattr(settings, "TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
+        )]
     )
     owner_name = models.CharField(max_length=127)
     create_time = models.DateTimeField(auto_now_add=True)

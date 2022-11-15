@@ -96,4 +96,4 @@ def conv_zte_signal(lvl: int) -> float:
         r = lvl * 0.002 - 30
     elif 60000 < lvl < 65534:
         r = (lvl - 65534) * 0.002 - 30
-    return round(r, 2)
+    return round(r, 6)

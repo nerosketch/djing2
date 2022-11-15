@@ -1,6 +1,6 @@
 from django.utils.translation import gettext as _
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
-from djing2.lib.fastapi.crud import NOT_FOUND
+from djing2.lib.fastapi.types import NOT_FOUND
 from djing2.lib.fastapi.perms import permission_check_dependency
 from fastapi import APIRouter, Depends
 from starlette import status
