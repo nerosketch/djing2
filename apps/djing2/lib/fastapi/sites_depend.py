@@ -107,7 +107,10 @@ def filter_qs_with_sites(qs: QuerySet[FilterableBySitesModel], curr_site: Option
     if curr_user.is_superuser:
         return rqs
     if curr_site:
-        model = qs
+        if isinstance(qs, QuerySet):
+            model = qs.model
+        else:
+            model = qs
         if hasattr(model, 'sites'):
             rqs = qs.filter(sites__in=[curr_site])
         elif hasattr(model, 'site'):
