@@ -751,3 +751,19 @@ def create_new_task(new_task_data: schemas.TaskBaseSchema,
         new_task = models.Task.objects.create(**pdata)
         new_task.recipients.set(new_task_data.recipients)
     return schemas.TaskModelSchema.from_orm(new_task)
+
+
+@router.get('/',
+            response_model=IListResponse[TaskModelSchemaResponseModelSchema],
+            response_model_exclude_none=True
+            )
+@paginate_qs_path_decorator(
+    schema=TaskModelSchemaResponseModelSchema,
+    db_model=models.Task
+)
+def get_all_tasks(request: Request,
+                  customer_id: int = Query(gt=0),
+                  pagination: Pagination = Depends(),
+                  tasks_qs: QuerySet[models.Task] = Depends(get_all_tasks_dependency)
+                  ):
+    return tasks_qs.filter(customer_id=customer_id)
