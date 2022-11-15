@@ -1,13 +1,14 @@
 from typing import Optional
 
+from djing2.lib.fastapi.auth import token_auth_dep
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Request, Depends
 from starlette import status
 
-from djing2.lib.fastapi.crud import CrudRouter, NOT_FOUND
-from djing2.lib.fastapi.types import MAX_LIMIT, IListResponse, Pagination
+from djing2.lib.fastapi.crud import CrudRouter
+from djing2.lib.fastapi.types import MAX_LIMIT, IListResponse, Pagination, NOT_FOUND
 from django.db.models import Count
 from addresses.models import AddressModel, AddressModelTypes
 from addresses.fias_socrbase import AddressFIASInfo, AddressFIASLevelType, IAddressFIASType
@@ -16,6 +17,7 @@ from addresses import schemas
 router = APIRouter(
     prefix='/addrs',
     tags=['address'],
+    dependencies=[Depends(token_auth_dep)]
 )
 
 _base_addr_queryset = AddressModel.objects.annotate(
@@ -99,7 +101,7 @@ def filter_by_fias_level(level: AddressFIASLevelType):
 @router.get('/get_ao_types/', response_model=list[IAddressFIASType])
 def get_ao_types(level: AddressFIASLevelType):
     """Get all address object types."""
-    return AddressFIASInfo.get_address_types_by_level(level=level)
+    return list(AddressFIASInfo.get_address_types_by_level(level=level))
 
 
 @router.get('/{addr_id}/get_parent/', response_model=Optional[schemas.AddressModelSchema])

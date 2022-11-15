@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from datetime import datetime
 from django.test import override_settings
 from django.contrib.sites.models import Site
@@ -50,27 +51,23 @@ class PaymentsExportAPITestCase(CustomAPITestCase, FtpTestCaseMixin):
 
     def _make_customer_pay(self):
         service_id = str(self.gw.service_id)
-        self.get(
-            self.payment_url,
-            {
-                "ACT": AllTimePayActEnum.ACT_PAY_DO.value,
-                "PAY_ACCOUNT": self.customer.username,
-                "PAY_AMOUNT": 12,
-                "RECEIPT_NUM": 127468,
-                "SERVICE_ID": service_id,
-                "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
-                "TRADE_POINT": "term1",
-                "SIGN": _make_sign(
-                    AllTimePayActEnum.ACT_PAY_DO,
-                    str(self.customer.username), service_id,
-                    "840ab457-e7d1-4494-8197-9570da035170",
-                    str(self.gw.secret)
-                ),
-            },
-        )
+        self.get(self.payment_url, {
+            "ACT": AllTimePayActEnum.ACT_PAY_DO.value,
+            "PAY_ACCOUNT": self.customer.username,
+            "PAY_AMOUNT": 12,
+            "RECEIPT_NUM": 127468,
+            "SERVICE_ID": service_id,
+            "PAY_ID": "840ab457-e7d1-4494-8197-9570da035170",
+            "TRADE_POINT": "term1",
+            "SIGN": _make_sign(
+                AllTimePayActEnum.ACT_PAY_DO,
+                str(self.customer.username), service_id,
+                "840ab457-e7d1-4494-8197-9570da035170",
+                str(self.gw.secret)
+            ),
+        })
 
     def test_customer_payment_task(self):
-        from pathlib import Path
         Path('/tmp/ISP/abonents').mkdir(parents=True, exist_ok=True)
         event_time = datetime.now()
         fname = f"/tmp/ISP/abonents/payments_v1_{format_fname(event_time)}.txt"

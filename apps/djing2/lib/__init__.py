@@ -3,13 +3,16 @@ from enum import IntEnum
 from collections.abc import Iterator
 from datetime import timedelta, datetime
 from hashlib import sha256
-from typing import Any, Union, Optional
+from typing import Any, Union, Optional, Mapping
+from ipaddress import ip_address, ip_network
 
 from django.conf import settings
 from django.db.models.enums import ChoicesMeta
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import ParseError, APIException
+from fastapi import HTTPException
+from starlette import status
+from rest_framework.exceptions import APIException
 from .process_lock import process_lock_decorator, ProcessLocked
 
 
@@ -32,13 +35,15 @@ def safe_int(i: Any, default=0) -> int:
 
 
 # Exceptions
-class LogicError(ParseError):
+class LogicError(HTTPException):
     default_detail = _("Internal logic error")
+    default_status = status.HTTP_400_BAD_REQUEST
 
-    def __init__(self, detail=None, code=None, status_code: Optional[int] = None):
-        super().__init__(detail=detail, code=code)
-        if status_code is not None:
-            self.status_code = status_code
+    def __init__(self, detail=None, status_code: Optional[int] = None):
+        super().__init__(
+            detail=detail or self.default_detail,
+            status_code=status_code or self.default_status
+        )
 
 
 class DuplicateEntry(APIException):
@@ -119,6 +124,26 @@ def check_sign(get_values: dict, external_sign: str) -> bool:
     return external_sign == my_sign
 
 
+def check_subnet(headers_dict: Mapping[str, str]):
+    """
+    Check if user ip in allowed subnet.
+    Return 403 denied otherwise.
+    """
+    ip = headers_dict.get("HTTP_X_REAL_IP", headers_dict.get('REMOTE_ADDR'))
+    if ip is None:
+        raise ValueError("Failed to get remote addr")
+    ip = ip_address(ip)
+    api_auth_subnet = getattr(settings, "API_AUTH_SUBNET")
+    if isinstance(api_auth_subnet, (str, bytes)):
+        if ip in ip_network(api_auth_subnet):
+            return
+    elif isinstance(api_auth_subnet, (list, tuple)):
+        for subnet in api_auth_subnet:
+            if ip in ip_network(subnet, strict=False):
+                return
+    raise ValueError("Bad Subnet")
+
+
 # TODO: Replace it by netaddr.EUI
 def macbin2str(bin_mac: bytes) -> str:
     if isinstance(bin_mac, (bytes, bytearray)):
@@ -129,7 +154,23 @@ def macbin2str(bin_mac: bytes) -> str:
 def time2utctime(src_datetime) -> datetime:
     """Convert datetime from local tz to UTC"""
     tz = timezone.get_current_timezone()
-    return tz.localize(src_datetime, is_dst=None).astimezone(pytz.utc)
+    return tz.localize(src_datetime).astimezone(pytz.utc)
+
+
+def get_past_time(how_long: timedelta, now: Optional[datetime] = None) -> datetime:
+    if not isinstance(how_long, timedelta):
+        raise ValueError('"how_long" must be a timedelta')
+    if now is None:
+        now = datetime.now()
+    past = now - how_long
+    return past
+
+
+def get_past_time_days(how_long_days: int, now: Optional[datetime] = None) -> datetime:
+    return get_past_time(
+        how_long=timedelta(days=how_long_days),
+        now=now
+    )
 
 
 class IntEnumEx(IntEnum, metaclass=ChoicesMeta):
@@ -142,5 +183,6 @@ __all__ = (
     'safe_float', 'safe_int', 'LogicError', 'DuplicateEntry',
     'MyChoicesAdapter', 'RuTimedelta', 'bytes2human', 'calc_hash',
     'check_sign', 'macbin2str', 'time2utctime', 'IntEnumEx',
-    'process_lock_decorator', 'ProcessLocked'
+    'process_lock_decorator', 'ProcessLocked', 'check_subnet',
+    'get_past_time', 'get_past_time_days'
 )

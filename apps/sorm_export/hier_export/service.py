@@ -4,7 +4,7 @@ from customers.models import CustomerService
 from .base import format_fname, ExportTree, SimpleExportTree
 from sorm_export.serializers.customer_service_serializer import CustomerServiceIncrementalFormat
 from sorm_export.serializers.service_serializer import ServiceIncrementalNomenclature
-from sorm_export.models import ExportStampTypeEnum, CommunicationStandardChoices, ExportStampTypeEnum
+from sorm_export.models import ExportStampTypeEnum, CommunicationStandardChoices
 
 
 class NomenclatureSimpleExportTree(SimpleExportTree):
@@ -23,17 +23,6 @@ class NomenclatureSimpleExportTree(SimpleExportTree):
         return ExportStampTypeEnum.SERVICE_NOMENCLATURE
 
     def export(self, *args, **kwargs):
-        # def gen(srv: Service):
-        #     return {
-        #         "service_id": srv.pk,
-        #         "mnemonic": str(srv.title)[:64],
-        #         "description": str(srv.descr)[:256],
-        #         "begin_time": srv.create_time.date(),  # дата начала будет датой создания тарифа.
-        #         # end_time 36525 дней (~100 лет), типо бесконечно. Т.к. для вида услуги нет даты завершения,
-        #         # как и нет даты окончания действия какого-то имени, например.
-        #         "end_time": srv.create_time.date() + timedelta(days=36525),
-        #         "operator_type_id": CommunicationStandardChoices.ETHERNET.label,
-        #     }
         dat = [{
             "service_id": 1,
             "mnemonic": "Интернет",
