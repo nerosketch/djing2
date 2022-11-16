@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 from ipaddress import IPv4Address, AddressValueError
-from typing import Optional
+from typing import Optional, Type
 
 from django.contrib.sites.models import Site
 from django.core.validators import MinValueValidator
@@ -81,7 +81,7 @@ class Service(BaseAbstractModel):
             return getattr(logic_class, "description")
         return str(logic_class)
 
-    def get_calc_type(self):
+    def get_calc_type(self) -> Type[ServiceBase]:
         """
         :return: Child of services.base_intr.ServiceBase,
                  methods which provide the desired logic of payments
@@ -93,6 +93,7 @@ class Service(BaseAbstractModel):
                 if not issubclass(logic_class, ServiceBase):
                     raise TypeError
                 return logic_class
+        raise RuntimeError('Unknown service.calc_type')
 
     def calc_deadline(self):
         calc_type = self.get_calc_type()
@@ -575,7 +576,7 @@ class CustomerService(BaseAbstractModel):
         )
 
     def assign_deadline(self):
-        calc_obj = self.service.get_calc_type()(self)
+        calc_obj = self.service.get_calc_type()(self.service)
         self.deadline = calc_obj.calc_deadline()
 
     def continue_for_customer(self, now: Optional[datetime] = None):
