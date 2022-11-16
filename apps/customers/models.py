@@ -261,7 +261,7 @@ class Customer(IAddressContaining, BaseAccount):
         return self.address
 
     # is customer have access to service,
-    # view in services.custom_tariffs.<ServiceBase>.manage_access()
+    # view in services.custom_tariffs.<ServiceBase>.is_access()
     def is_access(self) -> bool:
         if not self.is_active:
             return False
@@ -270,7 +270,7 @@ class Customer(IAddressContaining, BaseAccount):
             return False
         trf = customer_service.service
         ct = trf.get_calc_type()(customer_service)
-        return ct.manage_access(self)
+        return ct.is_access(self)
 
     @property
     def full_address(self):

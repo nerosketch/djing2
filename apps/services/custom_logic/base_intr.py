@@ -24,8 +24,8 @@ class ServiceBase(ABC):
         """
 
     @staticmethod
-    def manage_access(customer) -> bool:
-        """Manage for access to customer services"""
+    def is_access(customer) -> bool:
+        """Calculates access possibility for customer services"""
         if not customer.is_active:
             return False
         act_srv = customer.active_service()
