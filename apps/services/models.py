@@ -668,7 +668,7 @@ class CustomerService(BaseAbstractModel):
     objects = CustomerServiceModelManager()
 
     class Meta:
-        db_table = "customer_connected_services"
+        db_table = "customer_service"
         verbose_name = _("Customer service")
         verbose_name_plural = _("Customer services")
         unique_together = ('customer', 'service')
