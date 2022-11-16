@@ -366,12 +366,12 @@ class CustomerServiceModelManager(models.Manager):
         ).count()
 
         calc_type_counts = [
-            {
-                "calc_type_count": active_customers_with_services_qs.filter(
+            schemas.CustomerServiceTypeReportCalcType(
+                calc_type_count=active_customers_with_services_qs.filter(
                     current_service__service__calc_type=srv_choice_num
                 ).count(),
-                "service_descr": str(srv_choice_class.description),
-            }
+                service_descr=str(srv_choice_class.description),
+            )
             for srv_choice_num, srv_choice_class in SERVICE_CHOICES
         ]
 

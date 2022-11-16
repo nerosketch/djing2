@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta, date
-from decimal import Decimal
 from typing import Optional, Generator
+from decimal import Decimal
 
 from addresses.interfaces import IAddressContaining
 from addresses.models import AddressModel
@@ -137,7 +137,11 @@ class Customer(IAddressContaining, BaseAccount):
         null=True,
         default=None
     )
-    balance = models.DecimalField(default=0.0, max_digits=8, decimal_places=2)
+    balance = models.DecimalField(
+        default=0.0,
+        max_digits=8,
+        decimal_places=2
+    )
 
     description = models.TextField(
         _("Comment"),
