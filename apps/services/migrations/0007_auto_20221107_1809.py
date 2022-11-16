@@ -71,16 +71,14 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             sql=(
-                # SELECT cs.* FROM customer_service cs LEFT OUTER JOIN customers c ON cs.id = c.current_service_id WHERE c.baseaccount_ptr_id IS NULL;
-                # 'commit;\n'
-                'DELETE FROM customer_service USING customer_service cs RIGHT JOIN customers c ON cs.id = c.current_service_id WHERE c.baseaccount_ptr_id IS NULL;\n'
-                # 'begin;\n'
-                'ALTER TABLE customer_service ADD COLUMN customer_id integer;\n'
-                'UPDATE customer_service cs SET customer_id = c.baseaccount_ptr_id FROM customers c WHERE c.current_service_id = cs.id;\n'
-                'ALTER TABLE customer_service ALTER COLUMN customer_id SET NOT NULL;\n'
-                'ALTER TABLE customer_service ADD FOREIGN KEY (customer_id) REFERENCES customers("baseaccount_ptr_id") DEFERRABLE INITIALLY DEFERRED;\n'
-                'ALTER TABLE customer_service ADD CONSTRAINT customer_service_customer_id_30a14af1_fk_customers UNIQUE (customer_id);\n'
-                'SET CONSTRAINTS customer_service_customer_id_30a14af1_fk_customers IMMEDIATE;'
+                'CREATE TABLE customer_service_tmp (id serial NOT NULL PRIMARY KEY, start_time timestamp with time zone NULL, deadline timestamp with time zone NULL, service_id integer NOT NULL, customer_id integer NOT NULL UNIQUE);\n',
+                'INSERT INTO customer_service_tmp(start_time, deadline, service_id, customer_id) SELECT cs.start_time, cs.deadline, cs.service_id, c.baseaccount_ptr_id FROM customer_service cs RIGHT JOIN customers c ON c.current_service_id = cs.id WHERE CS.id IS NOT NULL;\n'
+                'DROP TABLE customer_service CASCADE;\n'
+                'ALTER TABLE customer_service_tmp RENAME TO customer_service;\n'
+                'ALTER TABLE "customer_service" ADD CONSTRAINT "customer_service_customer_id_service_id_08d6f028_uniq" UNIQUE ("customer_id", "service_id");\n'
+                'ALTER TABLE "customer_service" ADD CONSTRAINT "customer_service_service_id_bd5f1ba6_fk_services_id" FOREIGN KEY ("service_id") REFERENCES "services" ("id") DEFERRABLE INITIALLY DEFERRED;\n'
+                'ALTER TABLE "customer_service" ADD CONSTRAINT "customer_service_customer_id_30a14af1_fk_customers" FOREIGN KEY ("customer_id") REFERENCES "customers" ("baseaccount_ptr_id") DEFERRABLE INITIALLY DEFERRED;\n'
+                'CREATE INDEX "customer_service_service_id_bd5f1ba6" ON "customer_service" ("service_id")'
             ),
             state_operations=[
                 migrations.AddField(
