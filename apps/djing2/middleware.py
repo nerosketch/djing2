@@ -1,6 +1,10 @@
 import time
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import FastAPI, Request
+from starlette import status
+from djing2.lib import LogicError
+from rest_framework.views import exception_handler
+from rest_framework.response import Response
 
 
 # TODO: deprecated, defined in 'fastapi_app.py'
@@ -25,3 +29,13 @@ async def add_process_time_header(request: Request, call_next):
 
 def apply_middlewares(app: FastAPI):
     app.add_middleware(BaseHTTPMiddleware, dispatch=add_process_time_header)
+
+
+# TODO: deprecated. Only for Django Rest Framework
+def catch_logic_error(exc, context):
+    if isinstance(exc, LogicError):
+        return Response(
+            data=str(exc),
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    return exception_handler(exc, context)

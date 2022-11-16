@@ -339,7 +339,8 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'djing2.lib.renderer.CustomJSONRenderer',
         'rest_framework_csv.renderers.CSVRenderer',
-    ]
+    ],
+    'EXCEPTION_HANDLER': 'djing2.middleware.catch_logic_error',
 }
 
 # Guardian options
