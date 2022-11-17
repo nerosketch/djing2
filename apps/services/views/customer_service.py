@@ -43,20 +43,19 @@ def get_current_service(customer_id: int,
                         ):
     curr_user, token = auth
 
-    customers_queryset = general_filter_queryset(
-        qs_or_model=Customer,
+    customer_service_qs = general_filter_queryset(
+        qs_or_model=models.CustomerService,
         curr_user=curr_user,
         curr_site=curr_site,
-        perm_codename='customers.view_customer'
+        perm_codename='services.view_customerservice'
     )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    if not customer.current_service:
+    try:
+        customer_service = customer_service_qs.select_related('service').get(
+            customer_id=customer_id
+        )
+        return schemas.DetailedCustomerServiceModelSchema.from_orm(customer_service)
+    except models.CustomerService.DoesNotExist:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-    curr_srv = customer.current_service
-    return schemas.DetailedCustomerServiceModelSchema.from_orm(curr_srv)
 
 
 @router.get('/activity_report/',
@@ -66,7 +65,7 @@ def get_current_service(customer_id: int,
             ))]
             )
 def get_activity_report():
-    r = Customer.objects.activity_report()
+    r = models.CustomerService.objects.activity_report()
     return r
 
 
