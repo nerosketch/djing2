@@ -47,13 +47,26 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             sql="DROP FUNCTION find_customer_service_by_device_credentials( integer, integer )"
         ),
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
+        migrations.RunSQL(
+            sql=(
+                'CREATE TABLE customer_service_tmp (id serial NOT NULL PRIMARY KEY, customer_id integer NOT NULL UNIQUE, start_time timestamp with time zone NULL, deadline timestamp with time zone NULL, service_id integer NOT NULL);\n',
+                'INSERT INTO customer_service_tmp(start_time, deadline, service_id, customer_id) SELECT cs.start_time, cs.deadline, cs.service_id, c.baseaccount_ptr_id FROM customer_service cs RIGHT JOIN customers c ON c.current_service_id = cs.id WHERE CS.id IS NOT NULL;\n'
+                'DROP TABLE customer_service CASCADE;\n'
+                'ALTER TABLE customer_service_tmp RENAME TO customer_service;\n'
+                'ALTER TABLE "customer_service" ADD CONSTRAINT "customer_service_customer_id_service_id_08d6f028_uniq" UNIQUE ("customer_id", "service_id");\n'
+                'ALTER TABLE "customer_service" ADD CONSTRAINT "customer_service_service_id_bd5f1ba6_fk_services_id" FOREIGN KEY ("service_id") REFERENCES "services" ("id") DEFERRABLE INITIALLY DEFERRED;\n'
+                'ALTER TABLE "customer_service" ADD CONSTRAINT "customer_service_customer_id_30a14af1_fk_customers" FOREIGN KEY ("customer_id") REFERENCES "customers" ("baseaccount_ptr_id") DEFERRABLE INITIALLY DEFERRED;\n'
+                'CREATE INDEX "customer_service_service_id_bd5f1ba6" ON "customer_service" ("service_id")'
+            ),
             state_operations=[
                 migrations.CreateModel(
                     name='CustomerService',
                     fields=[
                         ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('customer', models.OneToOneField(
+                            on_delete=django.db.models.deletion.CASCADE,
+                            related_name='current_service', to='customers.customer'
+                        )),
                         ('start_time', models.DateTimeField(blank=True, default=None, null=True)),
                         ('deadline', models.DateTimeField(blank=True, default=None, null=True)),
                         ('service', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='link_to_service', to='services.service')),
@@ -66,33 +79,10 @@ class Migration(migrations.Migration):
                         'unique_together': {('customer', 'service')},
                     },
                     bases=(djing2.models.BaseAbstractModelMixin, models.Model),
-                ),
-            ]
-        ),
-        migrations.RunSQL(
-            sql=(
-                'CREATE TABLE customer_service_tmp (id serial NOT NULL PRIMARY KEY, start_time timestamp with time zone NULL, deadline timestamp with time zone NULL, service_id integer NOT NULL, customer_id integer NOT NULL UNIQUE);\n',
-                'INSERT INTO customer_service_tmp(start_time, deadline, service_id, customer_id) SELECT cs.start_time, cs.deadline, cs.service_id, c.baseaccount_ptr_id FROM customer_service cs RIGHT JOIN customers c ON c.current_service_id = cs.id WHERE CS.id IS NOT NULL;\n'
-                'DROP TABLE customer_service CASCADE;\n'
-                'ALTER TABLE customer_service_tmp RENAME TO customer_service;\n'
-                'ALTER TABLE "customer_service" ADD CONSTRAINT "customer_service_customer_id_service_id_08d6f028_uniq" UNIQUE ("customer_id", "service_id");\n'
-                'ALTER TABLE "customer_service" ADD CONSTRAINT "customer_service_service_id_bd5f1ba6_fk_services_id" FOREIGN KEY ("service_id") REFERENCES "services" ("id") DEFERRABLE INITIALLY DEFERRED;\n'
-                'ALTER TABLE "customer_service" ADD CONSTRAINT "customer_service_customer_id_30a14af1_fk_customers" FOREIGN KEY ("customer_id") REFERENCES "customers" ("baseaccount_ptr_id") DEFERRABLE INITIALLY DEFERRED;\n'
-                'CREATE INDEX "customer_service_service_id_bd5f1ba6" ON "customer_service" ("service_id")'
-            ),
-            state_operations=[
-                migrations.AddField(
-                    model_name='customerservice',
-                    name='customer',
-                    field=models.OneToOneField(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name='current_service', to='customers.customer'
-                    )
                 )
             ]
         ),
         migrations.SeparateDatabaseAndState(
-            database_operations=[],
             state_operations=[
                 migrations.CreateModel(
                     name='PeriodicPayForId',
