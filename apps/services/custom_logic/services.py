@@ -52,7 +52,10 @@ class ServiceDefault(ServiceBase):
 
         # FIXME: service has no start_time
         start_time = self.customer_service.start_time
+        return self.offer_deadline(start_time)
 
+    @staticmethod
+    def offer_deadline(start_time: datetime) -> datetime:
         if start_time.month == 12:
             last_month_date = datetime(
                 year=start_time.year+1,

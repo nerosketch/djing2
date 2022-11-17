@@ -15,6 +15,12 @@ class ServiceBase(ABC):
         """Calculate deadline date"""
         raise NotImplementedError
 
+    @staticmethod
+    @abstractmethod
+    def offer_deadline(start_time: datetime) -> datetime:
+        """Offers deadline for frontend"""
+        raise NotImplementedError
+
     @property
     @abstractmethod
     def description(self) -> AnyStr:

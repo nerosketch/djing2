@@ -97,9 +97,10 @@ class Service(BaseAbstractModel):
 
     def calc_deadline(self):
         calc_type = self.get_calc_type()
-        # FIXME: must pass CustomerService instance into calc_type
-        calc_obj = calc_type(self)
-        return calc_obj.calc_deadline()
+        deadline = calc_type.offer_deadline(
+            start_time=datetime.now()
+        )
+        return deadline
 
     def calc_deadline_formatted(self):
         dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
@@ -429,7 +430,7 @@ class CustomerServiceModelManager(models.Manager):
                 expired_services.delete()
 
     def activity_report(self) -> schemas.ActivityReportResponseSchema:
-        qs = super().get_queryset()
+        qs = self.get_queryset()
         all_count = qs.count()
         enabled_count = qs.filter(is_active=True).count()
         with_services_count = qs.filter(
