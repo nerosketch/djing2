@@ -64,7 +64,7 @@ router.include_router(CrudRouter(
 ))
 
 
-@router.get('',
+@router.get('/',
             response_model=IListResponse[schemas.PeriodicPayForIdModelSchema],
             response_model_exclude_none=True
             )
