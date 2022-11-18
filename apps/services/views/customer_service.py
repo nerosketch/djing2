@@ -138,21 +138,13 @@ def stop_service(customer_id: int,
         curr_user=curr_user,
         curr_site=curr_site,
         perm_codename='customers.can_complete_service'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    cust_srv = customer.active_service()
-    if cust_srv is None:
+    ).filter(pk=customer_id)
+    cust_srv = models.CustomerService.objects.filter(
+        customer__in=customers_queryset
+    ).first()
+    if not cust_srv:
         return Response(
             gettext("Service not connected"),
             status_code=status.HTTP_418_IM_A_TEAPOT
         )
-    srv = cust_srv.service
-    if srv is None:
-        return Response(
-            "Custom service has not service (Look at customers.views.admin_site)",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-    customer.stop_service(curr_user)
+    cust_srv.stop_service(curr_user)
