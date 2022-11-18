@@ -244,13 +244,13 @@ class Customer(IAddressContaining, BaseAccount):
         return self.current_service
 
     def add_balance(self, profile: Optional[BaseAccount], cost: Decimal, comment: str) -> None:
-        old_balance = self.balance
+        old_balance = float(self.balance)
         with transaction.atomic():
             CustomerLog.objects.create(
                 customer=self,
                 cost=float(cost),
-                from_balance=float(old_balance),
-                to_balance=float(old_balance + cost),
+                from_balance=old_balance,
+                to_balance=old_balance + cost,
                 author=profile if isinstance(profile, BaseAccount) else None,
                 comment=re.sub(r"\W{1,128}", " ", str(comment))[:128] if comment else '-'
             )
