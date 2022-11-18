@@ -6,7 +6,7 @@ from typing import Optional, Type
 from django.contrib.sites.models import Site
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
-from django.db import models, transaction, connection, IntegrityError
+from django.db import models, transaction, IntegrityError
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework.settings import api_settings
@@ -550,54 +550,9 @@ class CustomerService(BaseAbstractModel):
             ip_addr = IPv4Address(ip_addr)
         except AddressValueError:
             return None
-        with connection.cursor() as cur:
-            sql = (
-                "SELECT "
-                   "services.id, "
-                   "services.speed_in, "
-                   "services.speed_out, "
-                   "services.cost, "
-                   "services.calc_type, "
-                   "services.is_admin, "
-                   "services.speed_burst, "
-                   "cs.start_time, "
-                   "cs.deadline, "
-                   "cs.customer_id "
-                 "FROM services "
-                   "LEFT JOIN customer_service cs ON (cs.service_id = services.id) "
-                   "LEFT JOIN networks_ip_leases nil ON (nil.customer_id = cs.customer_id) "
-                   "LEFT JOIN base_accounts ba ON (ba.id = cs.customer_id) "
-                 "WHERE nil.ip_address = %s::inet AND ba.is_active "
-                 "LIMIT 1;"
-            )
-            cur.execute(sql, [str(ip_addr)])
-            res = cur.fetchone()
-        if res is None:
-            return None
-        (
-            f_id, f_speed_in, f_speed_out, f_cost, f_calc_type,
-            f_is_admin, f_speed_burst, f_start_time, f_deadline,
-            customer_id
-        ) = res
-        if f_id is None:
-            return None
-        srv = Service(
-            pk=f_id,
-            title=None,
-            descr=None,
-            speed_in=f_speed_in,
-            speed_out=f_speed_out,
-            speed_burst=f_speed_burst,
-            cost=f_cost,
-            calc_type=f_calc_type,
-            is_admin=f_is_admin,
-        )
-        return CustomerService(
-            service=srv,
-            start_time=f_start_time,
-            deadline=f_deadline,
-            customer_id=customer_id
-        )
+        return CustomerService.objects.filter(
+            customer__customeripleasemodel__ip_address=str(ip_addr)
+        ).select_related('service', 'customer').first()
 
     def assign_deadline(self):
         calc_obj = self.service.get_calc_type()(self)
