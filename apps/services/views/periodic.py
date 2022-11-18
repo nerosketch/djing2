@@ -49,8 +49,8 @@ def make_periodic_pay(
         pp_queryset,
         pk=payload.periodic_pay_id
     )
-    customer.make_periodic_pay(
-        periodic_pay=periodic_pay,
+    periodic_pay.make_periodic_pay(
+        customer=customer,
         next_pay=payload.next_pay
     )
     return Response("ok")
