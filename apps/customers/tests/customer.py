@@ -16,7 +16,7 @@ class CustomAPITestCase(DjingTestCase):
     def setUp(self):
         super().setUp()
 
-        self.group = Group.objects.create(title="test group", code="tst")
+        self.group = Group.objects.create(title="test group")
 
         # customer for tests
         custo1 = models.Customer.objects.create_user(

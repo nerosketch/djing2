@@ -9,6 +9,7 @@ from customers.tests.customer import CustomAPITestCase
 from networks.models import CustomerIpLeaseModel
 from services.models import Service, CustomerService
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
+from djing2.lib.fastapi.test import DjingTestCase
 
 
 class CustomerServiceAutoconnectTestCase(CustomAPITestCase):

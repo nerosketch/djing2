@@ -29,7 +29,7 @@ class PickServiceAPITestCase(CustomAPITestCase):
             deadline = datetime.now() + timedelta(days=5)
         dtime_fmt = getattr(api_settings, "DATETIME_FORMAT", "%Y-%m-%d %H:%M")
         r = self.post(
-            "/api/customer_service/%d/pick_service/" % self.customer.pk,
+            "/api/services/customer_service/%d/pick_service/" % self.customer.pk,
             {
                 "service_id": self.service.pk,
                 "deadline": deadline.strftime(dtime_fmt)
@@ -50,15 +50,15 @@ class PickServiceAPITestCase(CustomAPITestCase):
         Customer.objects.filter(username="custo1").update(balance=2)
         self.customer.refresh_from_db()
         r = self._pick_service_request()
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.text)
         self.assertEqual(r.text, 'Ok')
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
 
     def test_pick_service_again(self):
         self.test_pick_service()
         self.customer.refresh_from_db()
         r = self._pick_service_request()
-        self.assertEqual(r.json()['detail'], _('That service already activated'))
-        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, msg=r.text)
+        self.assertTrue(len(r.text) > 10, msg=r.text)
 
     def test_pick_service_with_now_deadline(self):
         Customer.objects.filter(username="custo1").update(balance=2)
@@ -80,7 +80,8 @@ class PickServiceAPITestCase(CustomAPITestCase):
 
     def test_stop_service(self):
         self.test_pick_service()
-        r = self.get("/api/customer_service/%d/stop_service/" % self.customer.pk)
+        r = self.get("/api/services/customer_service/%d/stop_service/" % self.customer.pk)
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT, msg=r.text)
         self.assertFalse(r.text, msg=r.text)
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
 
