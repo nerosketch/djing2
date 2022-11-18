@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from networks.tests import create_test_ippool
 from starlette import status
 
 from customers.tests.customer import CustomAPITestCase
@@ -23,17 +24,7 @@ class FetchCredentialsTestCase(CustomAPITestCase):
             speed_in=10.0, speed_out=10.0, cost=10.0,
             calc_type=SERVICE_CHOICE_DEFAULT
         )
-        self.ippool = NetworkIpPool.objects.create(
-            network="10.11.12.0/24",
-            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET.value,
-            description="test",
-            ip_start="10.11.12.2",
-            ip_end="10.11.12.254",
-            # vlan_if=vlan,
-            gateway="10.11.12.1",
-            is_dynamic=True,
-        )
-        self.ippool.groups.add(self.group)
+        create_test_ippool(self)
         self.customer.device = self.device_switch
         self.customer.dev_port = self.ports[1]
         self.customer.save()

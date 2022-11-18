@@ -1,8 +1,11 @@
 from decimal import Decimal
 from typing import Optional
 from datetime import datetime, timedelta
+
+from devices.tests import device_test_case_set_up
 from django.db.models import F
 from django.utils.translation import gettext as _
+from networks.tests import create_test_ippool
 from starlette import status
 from customers.models import CustomerLog, Customer
 from customers.tests.customer import CustomAPITestCase
@@ -42,6 +45,9 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         )
         cs.refresh_from_db()
         self.cs = cs
+
+        device_test_case_set_up(self)
+        create_test_ippool(self)
 
     def _check_customer_service(self, customer_service):
         self.assertIsNotNone(customer_service)

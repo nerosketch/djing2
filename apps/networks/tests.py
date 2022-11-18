@@ -9,6 +9,20 @@ from customers.tests.customer import CustomAPITestCase
 from customers.tests.get_user_credentials_by_ip import BaseServiceTestCase
 
 
+def create_test_ippool(self):
+    self.ippool = NetworkIpPool.objects.create(
+        network="10.11.12.0/24",
+        kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
+        description="test",
+        ip_start="10.11.12.2",
+        ip_end="10.11.12.254",
+        # vlan_if=vlan,
+        gateway="10.11.12.1",
+        is_dynamic=True,
+    )
+    self.ippool.groups.add(self.group)
+
+
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
 class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
     def setUp(self):
@@ -37,17 +51,7 @@ class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
         custo2.refresh_from_db()
         self.customer2 = custo2
 
-        self.ippool = NetworkIpPool.objects.create(
-            network="10.11.12.0/24",
-            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
-            description="test",
-            ip_start="10.11.12.2",
-            ip_end="10.11.12.254",
-            # vlan_if=vlan,
-            gateway="10.11.12.1",
-            is_dynamic=True,
-        )
-        self.ippool.groups.add(self.group)
+        create_test_ippool(self)
 
         self.client.logout()
 
