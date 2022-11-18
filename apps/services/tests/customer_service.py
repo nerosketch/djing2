@@ -9,7 +9,6 @@ from customers.tests.customer import CustomAPITestCase
 from networks.models import CustomerIpLeaseModel
 from services.models import Service, CustomerService
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
-from djing2.lib.fastapi.test import DjingTestCase
 
 
 class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
@@ -44,28 +43,36 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         cs.refresh_from_db()
         self.cs = cs
 
+    def _check_customer_service(self, customer_service):
+        self.assertIsNotNone(customer_service)
+        self.assertEqual(customer_service.service.speed_in, 10.0)
+        self.assertEqual(customer_service.service.speed_out, 10.0)
+        self.assertEqual(customer_service.service.speed_burst, 1)
+        self.assertEqual(customer_service.service.cost, 10.0)
+        self.assertEqual(customer_service.service.calc_type, SERVICE_CHOICE_DEFAULT)
+
     def _pick_service(self, deadline: datetime, service=None, start_time: Optional[datetime] = None):
         customer_service = CustomerService.objects.create(
             service=service or self.service,
             start_time=start_time or datetime.now(),
             deadline=deadline,
+            customer=self.customer
         )
-        self.customer.current_service = customer_service
-        self.customer.save(update_fields=['current_service'])
-        self.customer.refresh_from_db()
         return customer_service
 
     def test_continue_service_ok(self):
         customer = self.customer
 
         # before all, initial
-        self.assertEqual(customer.current_service.service.pk, self.service.pk)
+        curr_cust_srv = CustomerService.objects.filter(customer=customer).first()
+        self.assertEqual(curr_cust_srv.service_id, self.service.pk)
         self.assertEqual(customer.balance, 10)
         CustomerService.objects.continue_services_if_autoconnect(customer=customer)
 
         # after first try, when time not expired
         self.assertEqual(customer.balance, 10)
-        self.assertEqual(customer.current_service.service.pk, self.service.pk)
+        curr_cust_srv = CustomerService.objects.filter(customer=customer).first()
+        self.assertEqual(curr_cust_srv.service_id, self.service.pk)
 
         # decrease time
         CustomerService.objects.filter(pk=self.cs.pk).update(
@@ -77,7 +84,8 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         CustomerService.objects.continue_services_if_autoconnect(customer=customer)
         customer.refresh_from_db()
         self.assertEqual(customer.balance, 8)
-        self.assertEqual(customer.current_service.service.pk, self.service.pk)
+        curr_cust_srv = CustomerService.objects.filter(customer=customer).first()
+        self.assertEqual(curr_cust_srv.service_id, self.service.pk)
 
         logs = CustomerLog.objects.filter(
             customer=self.customer,
@@ -89,12 +97,7 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
 
     def test_get_user_credentials_by_ip(self):
         customer_service = CustomerService.get_user_credentials_by_ip(ip_addr="10.11.12.2")
-        self.assertIsNotNone(customer_service)
-        self.assertEqual(customer_service.service.speed_in, 10.0)
-        self.assertEqual(customer_service.service.speed_out, 10.0)
-        self.assertEqual(customer_service.service.speed_burst, 1)
-        self.assertEqual(customer_service.service.cost, 10.0)
-        self.assertEqual(customer_service.service.calc_type, SERVICE_CHOICE_DEFAULT)
+        self._check_customer_service(customer_service)
 
     def test_not_exists_lease(self):
         customer_service = CustomerService.get_user_credentials_by_ip(ip_addr="10.11.12.12")
@@ -155,17 +158,12 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         customer_service = CustomerService.get_user_credentials_by_ip(
             ip_addr="10.11.12.3",
         )
-        self.assertIsNotNone(customer_service)
-        self.assertEqual(customer_service.service.speed_in, 10.0)
-        self.assertEqual(customer_service.service.speed_out, 10.0)
-        self.assertEqual(customer_service.service.speed_burst, 1)
-        self.assertEqual(customer_service.service.cost, 10.0)
-        self.assertEqual(customer_service.service.calc_type, SERVICE_CHOICE_DEFAULT)
+        self._check_customer_service(customer_service)
 
     def test_stop_not_exists_service(self):
         self.cs.stop_service(
             author_profile=self.customer
         )
-        r = self.get("/api/customer_service/%d/stop_service/" % self.customer.pk)
+        r = self.get("/api/services/customer_service/%d/stop_service/" % self.customer.pk)
         self.assertEqual(r.text, _("Service not connected"))
         self.assertEqual(r.status_code, status.HTTP_418_IM_A_TEAPOT)
