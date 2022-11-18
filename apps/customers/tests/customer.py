@@ -1,6 +1,6 @@
 from django.contrib.sites.models import Site
 from django.utils.translation import gettext as _
-from rest_framework import status
+from starlette import status
 from customers import models
 from groupapp.models import Group
 from services.models import Service
@@ -157,23 +157,4 @@ class InvoiceForPaymentAPITestCase(CustomAPITestCase):
     def test_buy_not_auth(self):
         self.logout()
         r = self.post("/api/customers/users/debts/%d/buy/" % self.inv1.pk, {"sure": "on"})
-        self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-class UserTaskAPITestCase(CustomAPITestCase):
-    def test_task_list(self):
-        self.logout()
-        self.login(username='custo1')
-        r = self.get("/api/tasks/users/task_history/")
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-
-    def test_task_list_from_admin_user(self):
-        self.logout()
-        self.login(username='custo1')
-        r = self.get("/api/tasks/users/task_history/")
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-
-    def test_task_link_unauth(self):
-        self.logout()
-        r = self.get("/api/tasks/users/task_history/")
         self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
