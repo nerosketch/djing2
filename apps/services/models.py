@@ -551,7 +551,8 @@ class CustomerService(BaseAbstractModel):
         except AddressValueError:
             return None
         return CustomerService.objects.filter(
-            customer__customeripleasemodel__ip_address=str(ip_addr)
+            customer__customeripleasemodel__ip_address=str(ip_addr),
+            customer__is_active=True
         ).select_related('service', 'customer').first()
 
     def assign_deadline(self):
