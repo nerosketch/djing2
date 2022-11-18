@@ -91,9 +91,10 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
             customer=self.customer,
             from_balance=10,
             to_balance=8,
-            cost=2,
+            cost=-2,
         )
         self.assertTrue(logs.exists(), msg=logs)
+        self.assertEqual(logs.count(), 1, msg=logs)
 
     def test_get_user_credentials_by_ip(self):
         customer_service = CustomerService.get_user_credentials_by_ip(ip_addr="10.11.12.2")

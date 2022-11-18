@@ -462,7 +462,6 @@ class CustomerServiceModelManager(models.Manager):
 
     @staticmethod
     def continue_services_if_autoconnect(customer=None) -> None:
-        # TODO: test it
         """
         If customer service has expired and automatic connect
         is enabled, then update service start_time, deadline,
@@ -602,13 +601,13 @@ class CustomerService(BaseAbstractModel):
         )
 
     def assign_deadline(self):
-        calc_obj = self.service.get_calc_type()(self.service)
+        calc_obj = self.service.get_calc_type()(self)
         self.deadline = calc_obj.calc_deadline()
 
     def continue_for_customer(self, now: Optional[datetime] = None):
         customer = self.customer
         service = self.service
-        cost = float(service.cost)
+        cost = service.cost
         old_balance = float(customer.balance)
         with transaction.atomic():
             customer.balance -= cost
@@ -622,7 +621,7 @@ class CustomerService(BaseAbstractModel):
                 customer=customer,
                 cost=-cost,
                 from_balance=old_balance,
-                to_balance=old_balance - cost,
+                to_balance=old_balance - float(cost),
                 comment=_("Automatic connect new service %(service_name)s "
                           "for %(customer_name)s") % {
                             "service_name": service.title,
