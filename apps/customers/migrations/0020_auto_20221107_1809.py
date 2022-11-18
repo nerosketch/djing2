@@ -56,4 +56,5 @@ class Migration(migrations.Migration):
                 ),
             ]
         ),
+        migrations.RunSQL(sql="DROP FUNCTION find_customer_service_by_ip( inet );")
     ]

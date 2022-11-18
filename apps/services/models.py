@@ -552,11 +552,35 @@ class CustomerService(BaseAbstractModel):
         except AddressValueError:
             return None
         with connection.cursor() as cur:
-            cur.execute("SELECT * FROM find_customer_service_by_ip(%s::inet)", (str(ip_addr),))
+            sql = (
+                "SELECT "
+                   "services.id, "
+                   "services.speed_in, "
+                   "services.speed_out, "
+                   "services.cost, "
+                   "services.calc_type, "
+                   "services.is_admin, "
+                   "services.speed_burst, "
+                   "customer_service.start_time, "
+                   "customer_service.deadline, "
+                   "customer_service.customer_id "
+                 "FROM services "
+                   "LEFT JOIN customer_service ON (customer_service.service_id = services.id) "
+                   "LEFT JOIN customers ON (customers.current_service_id = customer_service.id) "
+                   "LEFT JOIN networks_ip_leases nil ON (nil.customer_id = customers.baseaccount_ptr_id) "
+                   "LEFT JOIN base_accounts ON (base_accounts.id = customers.baseaccount_ptr_id) "
+                 "WHERE nil.ip_address = %s::inet AND base_accounts.is_active "
+                 "LIMIT 1;"
+            )
+            cur.execute(sql, [str(ip_addr)])
             res = cur.fetchone()
         if res is None:
             return None
-        f_id, f_speed_in, f_speed_out, f_cost, f_calc_type, f_is_admin, f_speed_burst, f_start_time, f_deadline = res
+        (
+            f_id, f_speed_in, f_speed_out, f_cost, f_calc_type,
+            f_is_admin, f_speed_burst, f_start_time, f_deadline,
+            customer_id
+        ) = res
         if f_id is None:
             return None
         srv = Service(
@@ -573,7 +597,8 @@ class CustomerService(BaseAbstractModel):
         return CustomerService(
             service=srv,
             start_time=f_start_time,
-            deadline=f_deadline
+            deadline=f_deadline,
+            customer_id=customer_id
         )
 
     def assign_deadline(self):
