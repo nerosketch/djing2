@@ -49,12 +49,25 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         device_test_case_set_up(self)
         create_test_ippool(self)
 
+        self.lease = CustomerIpLeaseModel.objects.filter(
+            ip_address="10.11.12.2"
+        )
+        self.lease.update(
+            mac_address="1:2:3:4:5:6",
+            pool=self.ippool,
+            customer=self.customer,
+            is_dynamic=True,
+            state=True
+        )
+        self.lease = self.lease.first()
+        self.assertIsNotNone(self.lease)
+
     def _check_customer_service(self, customer_service):
         self.assertIsNotNone(customer_service)
         self.assertEqual(customer_service.service.speed_in, 10.0)
         self.assertEqual(customer_service.service.speed_out, 10.0)
         self.assertEqual(customer_service.service.speed_burst, 1)
-        self.assertEqual(customer_service.service.cost, 10.0)
+        self.assertEqual(customer_service.service.cost, Decimal(2.0))
         self.assertEqual(customer_service.service.calc_type, SERVICE_CHOICE_DEFAULT)
 
     def _pick_service(self, deadline: datetime, service=None, start_time: Optional[datetime] = None):
