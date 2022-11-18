@@ -126,7 +126,8 @@ router.include_router(CrudRouter(
     update_schema=schemas.TaskFinishDocumentBaseSchema,
     queryset=models.TaskFinishDocumentModel.objects.all(),
     create_route=False,
-    get_all_route=False
+    get_all_route=False,
+    get_one_route=False,
 ), prefix='/finish_document')
 
 
