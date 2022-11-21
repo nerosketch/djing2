@@ -148,6 +148,7 @@ class Service(BaseAbstractModel):
                     service=self,
                     start_time=datetime.now(),
                     deadline=deadline,
+                    cost=self.cost
                 )
 
                 customer.add_balance(
@@ -516,6 +517,11 @@ class CustomerService(BaseAbstractModel):
         blank=True,
         default=None
     )
+    cost = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        validators=[MinValueValidator(limit_value=0.0)]
+    )
 
     def calc_service_cost(self) -> float:
         cost = self.service.cost
@@ -744,7 +750,7 @@ class CustomerServiceConnectingQueueModelManager(models.QuerySet):
 
 class CustomerServiceConnectingQueueModel(models.Model):
     customer = models.ForeignKey(
-        Service,
+        Customer,
         on_delete=models.CASCADE,
         related_name='service_queue',
     )
@@ -786,7 +792,7 @@ def connect_service_if_autoconnect(customer_id: Optional[int] = None):
     for queue_item in queue_services.iterator():
         srv = queue_item.service
         srv.pick_service(
-            customer=srv.customer,
+            customer=queue_item.customer,
             author=None,
             comment=_("Automatic connect service '%(service_name)s'") % {
                 "service_name": srv.title
