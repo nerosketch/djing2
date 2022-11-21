@@ -3,13 +3,10 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
-from .service import Service
+from .service import Service, CustomerService
 
 
-class CustomerServiceConnectingQueueModelManager(models.QuerySet):
-    """
-    Filter queue by number_queue, and returns only items with maximum in the group.
-    """
+class CustomerServiceConnectingQuerySet(models.QuerySet):
     def filter_first_queue_items(self):
         return self.annotate(
             max_number_queue=models.Subquery(
@@ -22,6 +19,49 @@ class CustomerServiceConnectingQueueModelManager(models.QuerySet):
         ).filter(
             number_queue=models.F('max_number_queue')
         )
+
+    def _assign_num_for_new_queue(self, customer_id: int, service_id: int, num: int):
+        return self.filter(
+            customer_id=customer_id,
+            service_id=service_id,
+            number_queue__gte=num
+        ).update(
+            number_queue=models.F('number_queue') + 1
+        )
+
+    def filter_first(self):
+        return self
+
+    def filter_back(self):
+        ..
+
+    def push_back(self):
+        ..
+
+    def pop_back(self):
+        ..
+
+    def push_front(self):
+        ..
+
+    def pop_front(self):
+        ..
+
+    def use_multiple(self):
+        ..
+
+
+class CustomerServiceConnectingQueueModelManager(models.Manager):
+    """
+    Filter queue by number_queue, and returns only items with maximum in the group.
+    """
+    _queryset_class = CustomerServiceConnectingQuerySet
+
+    def swap(self, first: 'CustomerServiceConnectingQueueModel', second: 'CustomerServiceConnectingQueueModel'):
+        ..
+
+    def create_new(self, customer_service: CustomerService, ):
+        ..
 
 
 class CustomerServiceConnectingQueueModel(models.Model):
@@ -37,11 +77,26 @@ class CustomerServiceConnectingQueueModel(models.Model):
     )
     number_queue = models.IntegerField('Number in the queue')
 
-    objects = CustomerServiceConnectingQueueModelManager.as_manager()
+    objects = CustomerServiceConnectingQueueModelManager()
+
+    def append(self, s: Service):
+        ..
+
+    def prepend(self):
+        ..
+
+    def use(self):
+        return self.delete()
 
     class Meta:
         db_table = 'services_queue'
-        unique_together = ('customer', 'number_queue')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['customer', 'number_queue'],
+                name='customer_number_queue_unique',
+                deferrable=models.Deferrable.DEFERRED,
+            )
+        ]
 
 
 def connect_service_if_autoconnect(customer_id: Optional[int] = None):

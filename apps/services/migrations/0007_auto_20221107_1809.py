@@ -42,7 +42,13 @@ class Migration(migrations.Migration):
             ],
             options={
                 'db_table': 'services_queue',
-                'unique_together': {('customer', 'number_queue')},
+                'constraints': [
+                    models.UniqueConstraint(
+                        deferrable=django.db.models.constraints.Deferrable['DEFERRED'],
+                        fields=('customer', 'number_queue'),
+                        name='customer_number_queue_unique'
+                    )
+                ]
             },
         ),
         migrations.RunSQL(

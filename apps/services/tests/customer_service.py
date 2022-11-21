@@ -15,31 +15,27 @@ from services import models
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 
 
-def create_customer_service_queue(customer: Customer, service: models.Service, num=1):
-    return models.CustomerServiceConnectingQueueModel.objects.bulk_create([
-        models.CustomerServiceConnectingQueueModel(
-            customer=customer,
-            service=service,
-            number_queue=n
-        ) for n in range(1, num+1, 1)
-    ])
+def create_service(self):
+    self.service = models.Service.objects.create(
+        title="test service",
+        speed_in=10.0,
+        speed_out=10.0,
+        cost=2,
+        calc_type=0  # ServiceDefault
+    )
+    self.service.sites.add(self.site)
+    return self.service
 
 
 class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
     cs: models.CustomerService
+    service: models.Service
 
     def setUp(self):
         super().setUp()
 
         # service for tests
-        self.service = models.Service.objects.create(
-            title="test service",
-            speed_in=10.0,
-            speed_out=10.0,
-            cost=2,
-            calc_type=0  # ServiceDefault
-        )
-        self.service.sites.add(self.site)
+        create_service(self)
 
         self.customer.add_balance(
             profile=self.admin,
@@ -72,12 +68,6 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         )
         self.lease = self.lease.first()
         self.assertIsNotNone(self.lease)
-
-        create_customer_service_queue(
-            customer=self.customer,
-            service=self.service,
-            num=3
-        )
 
     def _check_customer_service(self, customer_service):
         self.assertIsNotNone(customer_service)
