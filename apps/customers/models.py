@@ -250,7 +250,7 @@ class Customer(IAddressContaining, BaseAccount):
                 customer=self,
                 cost=float(cost),
                 from_balance=old_balance,
-                to_balance=old_balance + cost,
+                to_balance=old_balance + float(cost),
                 author=profile if isinstance(profile, BaseAccount) else None,
                 comment=re.sub(r"\W{1,128}", " ", str(comment))[:128] if comment else '-'
             )
