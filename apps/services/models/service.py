@@ -15,15 +15,11 @@ from customers.models import Customer, CustomerLog
 from djing2.lib import LogicError, safe_int
 from djing2.models import BaseAbstractModel
 from groupapp.models import Group
-from profiles.models import BaseAccount, UserProfile
+from profiles.models import BaseAccount
 from services.custom_logic import (
     SERVICE_CHOICES,
-    PERIODIC_PAY_CALC_DEFAULT,
-    PERIODIC_PAY_CHOICES,
-    ONE_SHOT_TYPES,
-    ONE_SHOT_DEFAULT,
 )
-from services.custom_logic.base_intr import ServiceBase, PeriodicPayCalcBase, OneShotBaseService
+from services.custom_logic.base_intr import ServiceBase
 from services import custom_signals
 from services import schemas
 
@@ -176,137 +172,6 @@ class Service(BaseAbstractModel):
         unique_together = ("speed_in", "speed_out", "cost", "calc_type")
 
 
-class PeriodicPay(BaseAbstractModel):
-    name = models.CharField(_("Periodic pay name"), max_length=64)
-    when_add = models.DateTimeField(_("When pay created"), auto_now_add=True)
-    calc_type = models.PositiveSmallIntegerField(
-        verbose_name=_("Script type for calculations"),
-        default=PERIODIC_PAY_CALC_DEFAULT,
-        choices=PERIODIC_PAY_CHOICES
-    )
-    amount = models.FloatField(_("Total amount"))
-    extra_info = models.JSONField(_("Extra info"), null=True, blank=True)
-    sites = models.ManyToManyField(Site, blank=True)
-
-    def _get_calc_object(self):
-        """
-        :return: subclass of services.custom_logic.PeriodicPayCalcBase with required
-        logic depending on the selected in database.
-        """
-        calc_code = self.calc_type
-        for choice_pair in PERIODIC_PAY_CHOICES:
-            choice_code, logic_class = choice_pair
-            if choice_code == calc_code:
-                if not issubclass(logic_class, PeriodicPayCalcBase):
-                    raise TypeError
-                return logic_class()
-
-    def calc_type_name(self) -> str:
-        ct = self._get_calc_object()
-        desc = ct.description
-        return str(desc)
-
-    def get_next_time_to_pay(self, last_time_payment):
-        #
-        # last_time_payment may be None if it is a first payment
-        #
-        calc_obj = self._get_calc_object()
-        res = calc_obj.get_next_time_to_pay(self, last_time_payment)
-        if not isinstance(res, datetime):
-            raise TypeError
-        return res
-
-    def calc_amount(self) -> float:
-        calc_obj = self._get_calc_object()
-        res = calc_obj.calc_amount(self)
-        if not isinstance(res, float):
-            raise TypeError
-        return res
-
-    def __str__(self):
-        return self.name
-
-    def make_periodic_pay(self, next_pay: datetime, customer: Customer):
-        ppay = PeriodicPayForId.objects.create(
-            periodic_pay=self,
-            next_pay=next_pay,
-            account=customer
-        )
-        return ppay
-
-    class Meta:
-        db_table = "periodic_pay"
-        verbose_name = _("Periodic pay")
-        verbose_name_plural = _("Periodic pays")
-
-
-class OneShotPay(BaseAbstractModel):
-    name = models.CharField(_("Shot pay name"), max_length=64)
-    cost = models.FloatField(_("Total cost"))
-    pay_type = models.PositiveSmallIntegerField(
-        _("One shot pay type"),
-        help_text=_("Uses for callbacks before pay and after pay"),
-        choices=ONE_SHOT_TYPES,
-        default=ONE_SHOT_DEFAULT,
-    )
-    _pay_type_cache = None
-    sites = models.ManyToManyField(Site, blank=True)
-
-    def _get_calc_object(self):
-        """
-        :return: subclass of services.custom_logic.OneShotBaseService with required
-        logic depending on the selected in database.
-        """
-        if self._pay_type_cache is not None:
-            return self._pay_type_cache
-        pay_type = self.pay_type
-        for choice_pair in ONE_SHOT_TYPES:
-            choice_code, logic_class = choice_pair
-            if choice_code == pay_type:
-                if not issubclass(logic_class, OneShotBaseService):
-                    raise TypeError
-                self._pay_type_cache = logic_class()
-                return self._pay_type_cache
-
-    def before_pay(self, customer):
-        pay_logic = self._get_calc_object()
-        pay_logic.before_pay(customer=customer)
-
-    def calc_cost(self, customer) -> float:
-        pay_logic = self._get_calc_object()
-        return pay_logic.calc_cost(self, customer)
-
-    def after_pay(self, customer):
-        pay_logic = self._get_calc_object()
-        pay_logic.before_pay(customer=customer)
-
-    def pick4customer(self, user_profile: UserProfile, customer: Customer,
-                      allow_negative=False, comment=None):
-
-        cost = Decimal(self.calc_cost(self))
-
-        # if not enough money
-        if not allow_negative and customer.balance < cost:
-            raise NotEnoughMoney(
-                detail=_("%(uname)s not enough money for service %(srv_name)s")
-                       % {"uname": customer.username, "srv_name": self.name}
-            )
-
-        customer.add_balance(
-            profile=user_profile,
-            cost=-cost,
-            comment=comment or _('Buy one-shot service for "%(title)s"') % {
-                "title": self.name
-            }
-        )
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = "service_one_shot"
-
-
 RADIUS_SESSION_TIME = getattr(settings, "RADIUS_SESSION_TIME", 3600)
 
 
@@ -442,9 +307,9 @@ class CustomerServiceModelManager(models.Manager):
 
         active_count = (
             qs.annotate(ips=models.Count("customeripleasemodel"))
-            .filter(is_active=True, ips__gt=0)
-            .exclude(current_service=None)
-            .count()
+                .filter(is_active=True, ips__gt=0)
+                .exclude(current_service=None)
+                .count()
         )
 
         commercial_customers = qs.filter(
@@ -663,138 +528,3 @@ class CustomerService(BaseAbstractModel):
             ("can_view_service_type_report", _('Can view service type report')),
             ("can_view_activity_report", _("Can view activity_report")),
         ]
-
-
-class PeriodicPayForId(BaseAbstractModel):
-    periodic_pay = models.ForeignKey(
-        PeriodicPay,
-        on_delete=models.CASCADE,
-        verbose_name=_("Periodic pay")
-    )
-    last_pay = models.DateTimeField(
-        _("Last pay time"),
-        blank=True,
-        null=True,
-        default=None
-    )
-    next_pay = models.DateTimeField(_("Next time to pay"))
-    account = models.ForeignKey(
-        Customer,
-        on_delete=models.CASCADE,
-        verbose_name=_("Account")
-    )
-
-    def payment_for_service(self, author: UserProfile = None, now: Optional[datetime] = None):
-        """
-        Charge for the service and leave a log about it
-        :param now: Current date, if now is None than it calculates in here
-        :param author: instance of UserProfile
-        """
-        if now is None:
-            now = datetime.now()
-        if self.next_pay < now:
-            pp = self.periodic_pay
-            amount = pp.calc_amount()
-            next_pay_date = pp.get_next_time_to_pay(self.last_pay)
-            account = self.account
-            with transaction.atomic():
-                account.add_balance(
-                    author, Decimal(-amount), comment=_('Charge for "%(service)s"') % {
-                        "service": self.periodic_pay
-                    }
-                )
-                account.save(update_fields=("balance",))
-                self.last_pay = now
-                self.next_pay = next_pay_date
-                self.save(update_fields=("last_pay", "next_pay"))
-
-    def __str__(self):
-        return f"{self.periodic_pay} {self.next_pay}"
-
-    @property
-    def service_name(self):
-        if self.periodic_pay:
-            return str(self.periodic_pay.name)
-
-    @property
-    def service_calc_type(self):
-        if self.periodic_pay:
-            return self.periodic_pay.calc_type_name()
-
-    @property
-    def service_amount(self):
-        if self.periodic_pay:
-            return float(self.periodic_pay.amount)
-
-    class Meta:
-        db_table = "periodic_pay_for_id"
-
-
-class CustomerServiceConnectingQueueModelManager(models.QuerySet):
-    """
-    Filter queue by number_queue, and returns only items with maximum in the group.
-    """
-    def filter_first_queue_items(self):
-        return self.annotate(
-            max_number_queue=models.Subquery(
-                CustomerServiceConnectingQueueModel.objects.filter(
-                    customer_id=models.OuterRef('customer'),
-                    service_id=models.OuterRef('service')
-                ).order_by('-number_queue').values('number_queue')[:1],
-                output_field=models.IntegerField()
-            )
-        ).filter(
-            number_queue=models.F('max_number_queue')
-        )
-
-
-class CustomerServiceConnectingQueueModel(models.Model):
-    customer = models.ForeignKey(
-        Customer,
-        on_delete=models.CASCADE,
-        related_name='service_queue',
-    )
-    service = models.ForeignKey(
-        Service,
-        on_delete=models.CASCADE,
-        related_name='customer_service_queue',
-    )
-    number_queue = models.IntegerField('Number in the queue')
-
-    objects = CustomerServiceConnectingQueueModelManager.as_manager()
-
-    class Meta:
-        db_table = 'services_queue'
-        unique_together = ('customer', 'number_queue')
-
-
-def connect_service_if_autoconnect(customer_id: Optional[int] = None):
-    """
-    Connect service when autoconnect is True, and user have enough money
-    """
-
-    customers = Customer.objects.filter(
-        is_active=True,
-        auto_renewal_service=True,
-        balance__gt=0
-    ).annotate(
-        connected_services_count=models.Count('current_service')
-    ).filter(connected_services_count=0)
-
-    if isinstance(customer_id, int):
-        customers = customers.filter(pk=customer_id)
-
-    queue_services = CustomerServiceConnectingQueueModel.objects.filter(
-        customer__in=customers,
-        service__is_admin=False
-    ).select_related('service', 'customer').filter_first_queue_items()
-
-    for queue_item in queue_services.iterator():
-        srv = queue_item.service
-        srv.pick_service(
-            customer=queue_item.customer,
-            author=None,
-            comment=_("Automatic connect service '%(service_name)s'") % {
-                "service_name": srv.title
-            }
-        )
