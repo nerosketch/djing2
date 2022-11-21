@@ -7,6 +7,7 @@ from django.db.models import F
 from django.utils.translation import gettext as _
 from networks.tests import create_test_ippool
 from starlette import status
+from freezegun import freeze_time
 from customers.models import CustomerLog, Customer
 from customers.tests.customer import CustomAPITestCase
 from networks.models import CustomerIpLeaseModel
@@ -187,3 +188,39 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         r = self.get("/api/services/customer_service/%d/stop_service/" % self.customer.pk)
         self.assertEqual(r.text, _("Service not connected"))
         self.assertEqual(r.status_code, status.HTTP_418_IM_A_TEAPOT)
+
+    @freeze_time(datetime(year=2020, month=11, day=30))
+    def test_last_minute_autoconnect(self):
+        customer = self.customer
+        curr_cust_qs = CustomerService.objects.filter(customer=customer)
+
+        # set times
+        curr_cust_qs.update(
+            start_time=datetime(
+                year=2020, month=10, day=1,
+                hour=13, minute=13, second=10
+            ),
+            deadline=datetime(
+                year=2020, month=11, day=30
+            )
+        )
+        curr_srv = curr_cust_qs.get()
+        # self.assertEqual(curr_srv.service_id, self.service.pk)
+        # self.assertEqual(customer.balance, 10)
+
+        CustomerService.objects.continue_services_if_autoconnect(
+            customer=customer
+        )
+        curr_srv.refresh_from_db()
+        customer.refresh_from_db()
+        self.assertEqual(customer.balance, 8)
+        self.assertEqual(curr_srv.customer, customer)
+        self.assertEqual(curr_srv.service, self.service)
+        expected_start_time = datetime(
+            year=2020, month=11, day=30
+        )
+        self.assertEqual(curr_srv.start_time, expected_start_time)
+        expected_deadline = datetime(
+            year=2020, month=12, day=1
+        )
+        self.assertEqual(curr_srv.deadline, expected_deadline)
