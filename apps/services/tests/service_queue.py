@@ -72,3 +72,17 @@ class CustomerServiceQueueTestCase(CustomAPITestCase):
         self.assertEqual(sq[2].number_queue, 4)
         self.assertEqual(sq[3].number_queue, 5)
         self.assertEqual(sq[4].number_queue, 6)
+
+    def test_filter_first(self):
+        f = CustomerServiceConnectingQueueModel.objects.filter(
+            customer=self.customer
+        ).filter_first().first()
+        self.assertIsNotNone(f)
+        self.assertEqual(f.pk, self.service_queue.pk)
+
+    def test_filter_last(self):
+        f = CustomerServiceConnectingQueueModel.objects.filter(
+            customer=self.customer
+        ).filter_last().first()
+        self.assertIsNotNone(f)
+        self.assertEqual(f.pk, self.service_queues[4].pk)

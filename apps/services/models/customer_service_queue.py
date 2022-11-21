@@ -1,5 +1,5 @@
 from typing import Optional
-from django.db import models
+from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
@@ -7,17 +7,17 @@ from .service import Service, CustomerService
 
 
 class CustomerServiceConnectingQuerySet(models.QuerySet):
-    def filter_first_queue_items(self):
-        return self.annotate(
-            max_number_queue=models.Subquery(
-                CustomerServiceConnectingQueueModel.objects.filter(
-                    customer_id=models.OuterRef('customer'),
-                    service_id=models.OuterRef('service')
-                ).order_by('-number_queue').values('number_queue')[:1],
-                output_field=models.IntegerField()
-            )
-        ).filter(
-            number_queue=models.F('max_number_queue')
+    def _single_queue_num_subquery(self, from_start2end=True):
+        if from_start2end:
+            m = ''
+        else:
+            m = '-'
+        return models.Subquery(
+            self.model.objects.filter(
+                customer_id=models.OuterRef('customer'),
+                service_id=models.OuterRef('service')
+            ).order_by(f'{m}number_queue').values('number_queue')[:1],
+            output_field=models.IntegerField()
         )
 
     def _assign_num_for_new_queue(self, customer_id: int, service_id: int, num: int):
@@ -30,19 +30,52 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
         )
 
     def filter_first(self):
-        return self
+        return self.annotate(
+            min_number_queue=self._single_queue_num_subquery()
+        ).filter(
+            number_queue=models.F('min_number_queue')
+        )
 
-    def filter_back(self):
-        ..
+    def filter_last(self):
+        return self.annotate(
+            max_number_queue=self._single_queue_num_subquery(from_start2end=False)
+        ).filter(
+            number_queue=models.F('max_number_queue')
+        )
 
-    def push_back(self):
-        ..
+    def push_back(self, customer_id: int, service_id: int):
+        return self.annotate(
+            max_number_queue=self._single_queue_num_subquery(from_start2end=False)
+        ).create(
+            customer_id=customer_id,
+            service_id=service_id,
+            number_queue=models.F('max_number_queue') + 1
+        )
 
     def pop_back(self):
         ..
 
-    def push_front(self):
-        ..
+    def push_front(self, customer_id: int, service_id: int):
+        with transaction.atomic():
+            min_number = self.annotate(
+                min_number_queue=self._single_queue_num_subquery()
+            ).filter(
+                customer_id=customer_id,
+                service_id=service_id,
+                number_queue=models.F('min_number_queue')
+            ).values('number_queue')['number_queue']
+            self._assign_num_for_new_queue(
+                customer_id=customer_id,
+                service_id=service_id,
+                num=min_number
+            )
+
+            r = self.create(
+                customer_id=customer_id,
+                service_id=service_id,
+                number_queue=min_number
+            )
+        return r
 
     def pop_front(self):
         ..
