@@ -205,4 +205,4 @@ def connect_service_if_autoconnect(customer_id: Optional[int] = None):
                 }
             )
         except NotEnoughMoney as e:
-            logger.error(str(e))
+            logger.info(str(e))
