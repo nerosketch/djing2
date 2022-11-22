@@ -3,7 +3,7 @@ from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
-from .service import Service, CustomerService
+from .service import Service
 
 
 class CustomerServiceConnectingQuerySet(models.QuerySet):
@@ -44,12 +44,14 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
         )
 
     def push_back(self, customer_id: int, service_id: int):
-        return self.annotate(
-            max_number_queue=self._single_queue_num_subquery(from_start2end=False)
-        ).create(
+        max_number_queue = self.filter(
             customer_id=customer_id,
             service_id=service_id,
-            number_queue=models.F('max_number_queue') + 1
+        ).order_by('-number_queue')[:1].values_list('number_queue', flat=True)[0]
+        return self.create(
+            customer_id=customer_id,
+            service_id=service_id,
+            number_queue=max_number_queue + 1
         )
 
     def pop_back(self):
@@ -84,13 +86,10 @@ class CustomerServiceConnectingQueueModelManager(models.Manager):
     """
     _queryset_class = CustomerServiceConnectingQuerySet
 
-    def swap(self, first: 'CustomerServiceConnectingQueueModel', second: 'CustomerServiceConnectingQueueModel') -> None:
+    def swap(self, first: 'CustomerServiceConnectingQueueModel', second: 'CustomerServiceConnectingQueueModel'):
         with transaction.atomic():
             self.filter(pk=first.pk).update(number_queue=second.number_queue)
             self.filter(pk=second.pk).update(number_queue=first.number_queue)
-
-    def create_new(self, customer_service: CustomerService, ):
-        ...
 
 
 class CustomerServiceConnectingQueueModel(models.Model):
@@ -109,10 +108,22 @@ class CustomerServiceConnectingQueueModel(models.Model):
     objects = CustomerServiceConnectingQueueModelManager()
 
     def append(self, s: Service):
-        ...
+        return CustomerServiceConnectingQueueModel.objects.filter(
+            customer=self.customer,
+            service=self.service
+        ).push_back(
+            customer_id=self.customer_id,
+            service_id=s.pk
+        )
 
-    def prepend(self):
-        ...
+    def prepend(self, s: Service):
+        return CustomerServiceConnectingQueueModel.objects.filter(
+            customer=self.customer,
+            service=self.service
+        ).push_front(
+            customer_id=self.customer_id,
+            service_id=s.pk
+        )
 
     def use(self):
         return self.delete()

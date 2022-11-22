@@ -100,7 +100,6 @@ class CustomerServiceQueueTestCase(CustomAPITestCase):
         self.assertEqual(queue.count(), 6)
         for i, q in enumerate(queue, 1):
             self.assertEqual(q.number_queue, i)
-            self.assertEqual(q.customer_id, self.customer.pk)
             self.assertEqual(q.service_id, self.service.pk)
 
     def test_swap(self):
@@ -116,3 +115,27 @@ class CustomerServiceQueueTestCase(CustomAPITestCase):
         sec.refresh_from_db()
         self.assertEqual(first.number_queue, 2)
         self.assertEqual(sec.number_queue, 1)
+
+    def test_append(self):
+        query = CustomerServiceConnectingQueueModel.objects.filter(
+            customer=self.customer,
+            service=self.service
+        )
+        self.assertEqual(query.count(), 5)
+        new_queue_item = self.service_queue.append(s=self.service)
+        self.assertEqual(new_queue_item.number_queue, 6)
+        self.assertEqual(query.count(), 6)
+        for i, q in enumerate(query, 1):
+            self.assertEqual(q.number_queue, i)
+
+    def test_prepend(self):
+        query = CustomerServiceConnectingQueueModel.objects.filter(
+            customer=self.customer,
+            service=self.service
+        ).order_by('number_queue')
+        self.assertEqual(query.count(), 5)
+        new_queue_item = self.service_queue.prepend(s=self.service)
+        self.assertEqual(query.count(), 6)
+        self.assertEqual(new_queue_item.number_queue, 1)
+        for i, q in enumerate(query, 1):
+            self.assertEqual(q.number_queue, i)
