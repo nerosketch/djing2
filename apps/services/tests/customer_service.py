@@ -13,18 +13,7 @@ from customers.tests.customer import CustomAPITestCase
 from networks.models import CustomerIpLeaseModel
 from services import models
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
-
-
-def create_service(self):
-    self.service = models.Service.objects.create(
-        title="test service",
-        speed_in=10.0,
-        speed_out=10.0,
-        cost=2,
-        calc_type=0  # ServiceDefault
-    )
-    self.service.sites.add(self.site)
-    return self.service
+from ._general import create_service, create_customer_service_queue
 
 
 class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
@@ -68,6 +57,11 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         )
         self.lease = self.lease.first()
         self.assertIsNotNone(self.lease)
+
+        create_customer_service_queue(
+            customer=self.customer,
+            service=self.service
+        )
 
     def _check_customer_service(self, customer_service):
         self.assertIsNotNone(customer_service)

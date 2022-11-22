@@ -1,17 +1,6 @@
 from customers.tests.customer import CustomAPITestCase
-from customers.models import Customer
 from services.models import CustomerServiceConnectingQueueModel, Service
-from .customer_service import create_service
-
-
-def create_customer_service_queue(customer: Customer, service: Service, num=1):
-    return CustomerServiceConnectingQueueModel.objects.bulk_create([
-        CustomerServiceConnectingQueueModel(
-            customer=customer,
-            service=service,
-            number_queue=n
-        ) for n in range(1, num+1, 1)
-    ])
+from ._general import create_service, create_customer_service_queue
 
 
 class CustomerServiceQueueTestCase(CustomAPITestCase):
