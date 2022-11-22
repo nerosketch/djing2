@@ -52,6 +52,9 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.RunSQL(
+            sql="INSERT INTO services_queue(customer_id, service_id, number_queue) SELECT c.baseaccount_ptr_id, c.last_connected_service_id, 1 FROM customers c WHERE c.last_connected_service_id IS NOT NULL"
+        ),
+        migrations.RunSQL(
             sql="DROP FUNCTION find_customer_service_by_device_credentials( integer, integer )"
         ),
         migrations.RunSQL(
