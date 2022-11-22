@@ -1,24 +1,28 @@
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Optional
-from datetime import datetime, timedelta
 
-from devices.tests import device_test_case_set_up
-from django.db.models import F
-from django.utils.translation import gettext as _
-from networks.tests import create_test_ippool
-from starlette import status
-from freezegun import freeze_time
 from customers.models import CustomerLog, Customer
 from customers.tests.customer import CustomAPITestCase
-from networks.models import CustomerIpLeaseModel
+from devices.tests import device_test_case_set_up, Device
+from django.db.models import F
+from django.utils.translation import gettext as _
+from freezegun import freeze_time
+from networks.models import CustomerIpLeaseModel, NetworkIpPool
+from networks.tests import create_test_ippool
 from services import models
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
+from starlette import status
+
 from ._general import create_service, create_customer_service_queue
 
 
 class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
     cs: models.CustomerService
     service: models.Service
+    ippool: NetworkIpPool
+    device_switch: Device
+    device_onu: Device
 
     def setUp(self):
         super().setUp()
