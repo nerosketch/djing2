@@ -4,6 +4,9 @@ from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
+from djing2.lib.logger import logger
+from ._general import NotEnoughMoney
+
 from .service import Service
 
 
@@ -193,10 +196,13 @@ def connect_service_if_autoconnect(customer_id: Optional[int] = None):
 
     for queue_item in queue_services.iterator():
         srv = queue_item.service
-        srv.pick_service(
-            customer=queue_item.customer,
-            author=None,
-            comment=_("Automatic connect service '%(service_name)s'") % {
-                "service_name": srv.title
-            }
-        )
+        try:
+            srv.pick_service(
+                customer=queue_item.customer,
+                author=None,
+                comment=_("Automatic connect service '%(service_name)s'") % {
+                    "service_name": srv.title
+                }
+            )
+        except NotEnoughMoney as e:
+            logger.error(str(e))
