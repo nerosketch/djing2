@@ -102,3 +102,17 @@ class CustomerServiceQueueTestCase(CustomAPITestCase):
             self.assertEqual(q.number_queue, i)
             self.assertEqual(q.customer_id, self.customer.pk)
             self.assertEqual(q.service_id, self.service.pk)
+
+    def test_swap(self):
+        first = self.service_queues[0]
+        sec = self.service_queues[1]
+        self.assertEqual(first.number_queue, 1)
+        self.assertEqual(sec.number_queue, 2)
+        CustomerServiceConnectingQueueModel.objects.swap(
+            first=first,
+            second=sec
+        )
+        first.refresh_from_db()
+        sec.refresh_from_db()
+        self.assertEqual(first.number_queue, 2)
+        self.assertEqual(sec.number_queue, 1)

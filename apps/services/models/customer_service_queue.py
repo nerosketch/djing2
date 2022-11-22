@@ -84,8 +84,10 @@ class CustomerServiceConnectingQueueModelManager(models.Manager):
     """
     _queryset_class = CustomerServiceConnectingQuerySet
 
-    def swap(self, first: 'CustomerServiceConnectingQueueModel', second: 'CustomerServiceConnectingQueueModel'):
-        ..
+    def swap(self, first: 'CustomerServiceConnectingQueueModel', second: 'CustomerServiceConnectingQueueModel') -> None:
+        with transaction.atomic():
+            self.filter(pk=first.pk).update(number_queue=second.number_queue)
+            self.filter(pk=second.pk).update(number_queue=first.number_queue)
 
     def create_new(self, customer_service: CustomerService, ):
         ..
