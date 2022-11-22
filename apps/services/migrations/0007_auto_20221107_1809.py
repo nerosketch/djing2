@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
             name='CustomerServiceConnectingQueueModel',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('number_queue', models.IntegerField(verbose_name='Number in the queue')),
+                ('number_queue', models.IntegerField(verbose_name='Number in the queue', db_index=True)),
                 ('customer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='service_queue', to='customers.Customer')),
                 ('service', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='customer_service_queue', to='services.service')),
             ],

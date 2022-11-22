@@ -53,7 +53,7 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
         )
 
     def pop_back(self):
-        ..
+        ...
 
     def push_front(self, customer_id: int, service_id: int):
         with transaction.atomic():
@@ -72,10 +72,10 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
         return r
 
     def pop_front(self):
-        ..
+        ...
 
     def use_multiple(self):
-        ..
+        ...
 
 
 class CustomerServiceConnectingQueueModelManager(models.Manager):
@@ -90,7 +90,7 @@ class CustomerServiceConnectingQueueModelManager(models.Manager):
             self.filter(pk=second.pk).update(number_queue=first.number_queue)
 
     def create_new(self, customer_service: CustomerService, ):
-        ..
+        ...
 
 
 class CustomerServiceConnectingQueueModel(models.Model):
@@ -104,15 +104,15 @@ class CustomerServiceConnectingQueueModel(models.Model):
         on_delete=models.CASCADE,
         related_name='customer_service_queue',
     )
-    number_queue = models.IntegerField('Number in the queue')
+    number_queue = models.IntegerField('Number in the queue', db_index=True)
 
     objects = CustomerServiceConnectingQueueModelManager()
 
     def append(self, s: Service):
-        ..
+        ...
 
     def prepend(self):
-        ..
+        ...
 
     def use(self):
         return self.delete()
