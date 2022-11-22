@@ -1,9 +1,17 @@
+from dataclasses import dataclass
 from typing import Optional
 from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
 from .service import Service
+
+
+@dataclass
+class QueueRemovedResult:
+    customer_id: int
+    service_id: int
+    number_queue: int
 
 
 class CustomerServiceConnectingQuerySet(models.QuerySet):
@@ -44,18 +52,32 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
         )
 
     def push_back(self, customer_id: int, service_id: int):
-        max_number_queue = self.filter(
-            customer_id=customer_id,
-            service_id=service_id,
-        ).order_by('-number_queue')[:1].values_list('number_queue', flat=True)[0]
-        return self.create(
-            customer_id=customer_id,
-            service_id=service_id,
-            number_queue=max_number_queue + 1
-        )
+        # TODO: optimize
+        with transaction.atomic():
+            max_number_queue = self.select_for_update().filter(
+                customer_id=customer_id,
+                service_id=service_id,
+            ).order_by('-number_queue')[:1].values_list('number_queue', flat=True)[0]
+            r = self.create(
+                customer_id=customer_id,
+                service_id=service_id,
+                number_queue=max_number_queue + 1
+            )
+        return r
 
-    def pop_back(self):
-        ...
+    def pop_back(self) -> QueueRemovedResult:
+        with transaction.atomic():
+            qs = self.select_for_update()
+            q_item_last_qs = qs.filter_last()
+            q_item_last = q_item_last_qs.first()
+            rr = QueueRemovedResult(
+                service_id=q_item_last.service_id,
+                customer_id=q_item_last.customer_id,
+                number_queue=q_item_last.number_queue
+            )
+            if qs.count() > 1:
+                q_item_last_qs.delete()
+        return rr
 
     def push_front(self, customer_id: int, service_id: int):
         with transaction.atomic():
@@ -73,11 +95,19 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
             )
         return r
 
-    def pop_front(self):
-        ...
-
-    def use_multiple(self):
-        ...
+    def pop_front(self) -> QueueRemovedResult:
+        with transaction.atomic():
+            qs = self.select_for_update()
+            q_item_first_qs = qs.filter_first()
+            q_item_first = q_item_first_qs.first()
+            rr = QueueRemovedResult(
+                service_id=q_item_first.service_id,
+                customer_id=q_item_first.customer_id,
+                number_queue=q_item_first.number_queue
+            )
+            if qs.count() > 1:
+                q_item_first_qs.delete()
+        return rr
 
 
 class CustomerServiceConnectingQueueModelManager(models.Manager):
@@ -124,9 +154,6 @@ class CustomerServiceConnectingQueueModel(models.Model):
             customer_id=self.customer_id,
             service_id=s.pk
         )
-
-    def use(self):
-        return self.delete()
 
     class Meta:
         db_table = 'services_queue'
