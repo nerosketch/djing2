@@ -50,7 +50,6 @@ class ServiceDefault(ServiceBase):
     def calc_deadline(self) -> datetime:
         """Тут мы расчитываем конец действия услуги, завершение будет в конце месяца."""
 
-        # FIXME: service has no start_time
         start_time = self.customer_service.start_time
         return self.offer_deadline(start_time)
 
@@ -84,11 +83,11 @@ class TariffDp(ServiceDefault):
 class TariffCp(TariffDp):
     description = _("Private service")
 
-    def calc_deadline(self) -> datetime:
-        now = timezone.now()
+    @staticmethod
+    def offer_deadline(start_time: datetime) -> datetime:
         ten_years = datetime(
-            year=now.year + 10,
-            month=now.month,
+            year=start_time.year + 10,
+            month=start_time.month,
             day=1,
             hour=23,
             minute=59,
@@ -101,8 +100,8 @@ class TariffCp(TariffDp):
 class TariffDaily(TariffDp):
     description = _("IS Daily service")
 
-    def calc_deadline(self):
-        now = timezone.now()
+    @staticmethod
+    def offer_deadline(start_time: datetime) -> datetime:
         # next day in the same time
         one_day = timedelta(days=1)
-        return now + one_day
+        return start_time + one_day
