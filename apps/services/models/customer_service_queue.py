@@ -57,13 +57,7 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
 
     def push_front(self, customer_id: int, service_id: int):
         with transaction.atomic():
-            min_number = self.annotate(
-                min_number_queue=self._single_queue_num_subquery()
-            ).filter(
-                customer_id=customer_id,
-                service_id=service_id,
-                number_queue=models.F('min_number_queue')
-            ).values('number_queue')['number_queue']
+            min_number = 1
             self._assign_num_for_new_queue(
                 customer_id=customer_id,
                 service_id=service_id,
@@ -151,7 +145,7 @@ def connect_service_if_autoconnect(customer_id: Optional[int] = None):
     queue_services = CustomerServiceConnectingQueueModel.objects.filter(
         customer__in=customers,
         service__is_admin=False
-    ).select_related('service', 'customer').filter_first_queue_items()
+    ).select_related('service', 'customer').filter_first()
 
     for queue_item in queue_services.iterator():
         srv = queue_item.service
