@@ -155,6 +155,10 @@ class CustomerServiceConnectingQueueModel(models.Model):
             service_id=s.pk
         )
 
+    @property
+    def service_title(self):
+        return self.service.title
+
     class Meta:
         db_table = 'services_queue'
         constraints = [

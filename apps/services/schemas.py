@@ -90,3 +90,16 @@ class PeriodicPayForIdModelSchema(PeriodicPayForIdBaseSchema):
     service_amount: Optional[float] = None
 
     Config = OrmConf
+
+
+class CustomerServiceQueueBaseSchema(BaseModel):
+    customer_id: int
+    service_id: int
+
+
+class CustomerServiceQueueModelSchema(CustomerServiceQueueBaseSchema):
+    id: int
+    number_queue: int = Field(gt=0, title='Number in queue')
+    service_title: str
+
+    Config = OrmConf
