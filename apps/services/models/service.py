@@ -128,7 +128,7 @@ class Service(BaseAbstractModel):
         if not allow_negative and customer.balance < cost:
             raise NotEnoughMoney(
                 _("%(uname)s not enough money for service %(srv_name)s")
-                % {"uname": author.username, "srv_name": self}
+                % {"uname": customer.username, "srv_name": self}
             )
 
         custom_signals.customer_service_pre_pick.send(
