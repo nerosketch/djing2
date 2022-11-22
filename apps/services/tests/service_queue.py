@@ -134,7 +134,7 @@ class CustomerServiceQueueTestCase(CustomAPITestCase):
     def test_append(self):
         query = CustomerServiceConnectingQueueModel.objects.filter(
             customer=self.customer,
-            service=self.service
+            # service=self.service
         )
         self.assertEqual(query.count(), 5)
         new_queue_item = self.service_queue.append(s=self.service)
@@ -146,7 +146,7 @@ class CustomerServiceQueueTestCase(CustomAPITestCase):
     def test_prepend(self):
         query = CustomerServiceConnectingQueueModel.objects.filter(
             customer=self.customer,
-            service=self.service
+            # service=self.service
         ).order_by('number_queue')
         self.assertEqual(query.count(), 5)
         new_queue_item = self.service_queue.prepend(s=self.service)
@@ -155,4 +155,24 @@ class CustomerServiceQueueTestCase(CustomAPITestCase):
         for i, q in enumerate(query, 1):
             self.assertEqual(q.number_queue, i)
 
-    # def test_
+    def test_pop_back(self):
+        query = CustomerServiceConnectingQueueModel.objects.filter(
+            customer=self.customer,
+        )
+        self.assertEqual(query.count(), 5)
+        last = query.pop_back()
+        self.assertEqual(last.service_id, self.service.pk)
+        self.assertEqual(last.customer_id, self.customer.pk)
+        self.assertEqual(last.number_queue, 5)
+        self.assertEqual(query.count(), 4)
+
+    def test_pop_front(self):
+        query = CustomerServiceConnectingQueueModel.objects.filter(
+            customer=self.customer,
+        )
+        self.assertEqual(query.count(), 5)
+        first = query.pop_front()
+        self.assertEqual(first.service_id, self.service.pk)
+        self.assertEqual(first.customer_id, self.customer.pk)
+        self.assertEqual(first.number_queue, 1)
+        self.assertEqual(query.count(), 4)
