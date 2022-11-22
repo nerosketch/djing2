@@ -22,10 +22,7 @@ from services.custom_logic import (
 from services.custom_logic.base_intr import ServiceBase
 from services import custom_signals
 from services import schemas
-
-
-class NotEnoughMoney(LogicError):
-    default_detail = _("not enough money")
+from ._general import NotEnoughMoney
 
 
 class ServiceManager(models.Manager):
@@ -170,9 +167,6 @@ class Service(BaseAbstractModel):
         verbose_name = _("Service")
         verbose_name_plural = _("Services")
         unique_together = ("speed_in", "speed_out", "cost", "calc_type")
-
-
-RADIUS_SESSION_TIME = getattr(settings, "RADIUS_SESSION_TIME", 3600)
 
 
 class CustomerServiceQuerySet(models.QuerySet):
@@ -358,6 +352,9 @@ class CustomerServiceModelManager(models.Manager):
                         "service_name": service.title
                     }
                 )
+
+
+RADIUS_SESSION_TIME = getattr(settings, "RADIUS_SESSION_TIME", 3600)
 
 
 class CustomerService(BaseAbstractModel):

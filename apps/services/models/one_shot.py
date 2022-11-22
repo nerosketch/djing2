@@ -11,7 +11,7 @@ from services.custom_logic import (
     ONE_SHOT_DEFAULT,
 )
 from services.custom_logic.base_intr import OneShotBaseService
-from services.models.service import NotEnoughMoney
+from ._general import NotEnoughMoney
 
 
 class OneShotPay(BaseAbstractModel):
