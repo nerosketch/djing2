@@ -136,7 +136,7 @@ class Service(BaseAbstractModel):
 
         try:
             with transaction.atomic():
-                CustomerService.objects.create(
+                new_customer_service = CustomerService.objects.create(
                     customer=customer,
                     service=self,
                     start_time=datetime.now(),
@@ -154,8 +154,8 @@ class Service(BaseAbstractModel):
             raise LogicError(_("That service already activated"))
 
         custom_signals.customer_service_post_pick.send(
-            sender=Customer,
-            instance=customer,
+            sender=CustomerService,
+            instance=new_customer_service,
             service=self
         )
 

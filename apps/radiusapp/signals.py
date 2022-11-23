@@ -1,28 +1,21 @@
 """Radius application signals file."""
 from django.dispatch.dispatcher import receiver
-from djing2.lib import LogicError
-from rest_framework import status
 
 from networks import tasks
 from networks.models import CustomerIpLeaseModel
 from services import custom_signals as customer_custom_signals
-from customers.models import Customer
 from radiusapp.vendor_base import SpeedInfoStruct, IVendorSpecific
+from services.models import CustomerService
 
 
-@receiver(customer_custom_signals.customer_service_post_pick, sender=Customer)
-def customer_post_pick_service_signal_handler(sender, instance: Customer, service, **kwargs):
+@receiver(customer_custom_signals.customer_service_post_pick, sender=CustomerService)
+def customer_post_pick_service_signal_handler(sender, instance: CustomerService, service, **kwargs):
     """When single customer picked a service, then change it session to inet.
 
-    :param sender: customers.Customer class
-    :param instance:
+    :param sender: services.CustomerService class
+    :param instance: services.CustomerService instance
     :param service: instance of services.Service.
     """
-    if not instance.current_service:
-        raise LogicError(
-            detail="Server error: Customer has not current_service",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
 
     # TODO: Duplicate code with: radius_app.views:708
     speed = SpeedInfoStruct(
@@ -34,7 +27,7 @@ def customer_post_pick_service_signal_handler(sender, instance: Customer, servic
     speed = IVendorSpecific.get_speed(speed=speed)
 
     leases = CustomerIpLeaseModel.objects.filter(
-        customer=instance,
+        customer=instance.customer,
         state=True
     ).exclude(radius_username=None)
     for lease in leases:
