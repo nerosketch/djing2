@@ -39,10 +39,8 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
         )
 
     def filter_first(self):
-        return self.annotate(
-            min_number_queue=self._single_queue_num_subquery()
-        ).filter(
-            number_queue=models.F('min_number_queue')
+        return self.filter(
+            number_queue=1
         )
 
     def filter_last(self):
@@ -115,6 +113,11 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
             if qs.count() > 1:
                 q_item_first_qs.delete()
         return rr
+
+    def replace_first(self, service_id: int):
+        return self.filter_first().update(
+            service_id=service_id
+        )
 
 
 class CustomerServiceConnectingQueueModelManager(models.Manager):
