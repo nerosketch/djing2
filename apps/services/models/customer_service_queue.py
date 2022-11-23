@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import Optional
+
 from django.db import models, transaction
 
 from customers.models import Customer
@@ -64,16 +66,19 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
             )
         return r
 
-    def pop_back(self) -> QueueRemovedResult:
+    def pop_back(self) -> Optional[QueueRemovedResult]:
         with transaction.atomic():
             qs = self.select_for_update()
             q_item_last_qs = qs.filter_last()
             q_item_last = q_item_last_qs.first()
-            rr = QueueRemovedResult(
-                service_id=q_item_last.service_id,
-                customer_id=q_item_last.customer_id,
-                number_queue=q_item_last.number_queue
-            )
+            if q_item_last is None:
+                rr = None
+            else:
+                rr = QueueRemovedResult(
+                    service_id=q_item_last.service_id,
+                    customer_id=q_item_last.customer_id,
+                    number_queue=q_item_last.number_queue
+                )
             if qs.count() > 1:
                 q_item_last_qs.delete()
         return rr
@@ -94,16 +99,19 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
             )
         return r
 
-    def pop_front(self) -> QueueRemovedResult:
+    def pop_front(self) -> Optional[QueueRemovedResult]:
         with transaction.atomic():
             qs = self.select_for_update()
             q_item_first_qs = qs.filter_first()
             q_item_first = q_item_first_qs.first()
-            rr = QueueRemovedResult(
-                service_id=q_item_first.service_id,
-                customer_id=q_item_first.customer_id,
-                number_queue=q_item_first.number_queue
-            )
+            if q_item_first is None:
+                rr = None
+            else:
+                rr = QueueRemovedResult(
+                    service_id=q_item_first.service_id,
+                    customer_id=q_item_first.customer_id,
+                    number_queue=q_item_first.number_queue
+                )
             if qs.count() > 1:
                 q_item_first_qs.delete()
         return rr
