@@ -3,8 +3,8 @@ from decimal import Decimal
 from typing import Optional
 
 from customers.models import Customer
-from django.db import transaction, models
-from django.utils.translation import gettext_lazy as _
+from django.db import transaction, models as db_models
+from django.utils.translation import gettext as _
 from djing2.lib.logger import logger
 from profiles.models import BaseAccount
 from services import custom_signals
@@ -53,7 +53,11 @@ def continue_services_if_autoconnect(customer=None) -> None:
         service = expired_service.service
         if expired_service_customer.balance >= service.cost:
             # can continue service
-            expired_service.continue_for_customer(now=now)
+            with transaction.atomic():
+                expired_service.continue_for_customer()
+                models.CustomerServiceConnectingQueueModel.objects.filter(
+                    customer_id=expired_service_customer.pk
+                ).pop_front()
         else:
             # finish service otherwise
             expired_service.stop_service(
@@ -129,26 +133,13 @@ def connect_service_if_autoconnect(customer_id: Optional[int] = None):
         auto_renewal_service=True,
         balance__gt=0
     ).annotate(
-        connected_services_count=models.Count('current_service')
+        connected_services_count=db_models.Count('current_service')
     ).filter(connected_services_count=0)
 
     if isinstance(customer_id, int):
         customers = customers.filter(pk=customer_id)
 
-    queue_services = models.CustomerServiceConnectingQueueModel.objects.filter(
-        customer__in=customers,
-        service__is_admin=False
-    ).select_related('service', 'customer').filter_first()
-
-    for queue_item in queue_services.iterator():
-        srv = queue_item.service
-        try:
-            srv.pick_service(
-                customer=queue_item.customer,
-                author=None,
-                comment=_("Automatic connect service '%(service_name)s'") % {
-                    "service_name": srv.title
-                }
-            )
-        except models.NotEnoughMoney as e:
-            logger.info(str(e))
+    for customer in customers.iterator():
+        connect_service_from_queue(
+            customer_id=customer.pk
+        )
