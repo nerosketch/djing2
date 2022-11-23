@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional
 from dataclasses import dataclass
 from uuid import UUID
@@ -84,7 +85,7 @@ def create_full_customer(uname: str,
     if group_title is None:
         group_title = 'test_group'
 
-    group, _ = Group.objects.get_or_create(title=group_title, code="tst")
+    group, _ = Group.objects.get_or_create(title=group_title)
 
     if dev_mac is None:
         dev_mac = "11:13:14:15:17:17"
@@ -103,7 +104,8 @@ def create_full_customer(uname: str,
     customer = Customer.objects.create_user(
         telephone=tel, username=uname, password="passw",
         is_dynamic_ip=True, group=group,
-        balance=initial_balance, device=device,
+        balance=Decimal(initial_balance),
+        device=device,
         dev_port=ports[1],
         is_active=True
     )
@@ -122,7 +124,7 @@ def create_full_customer(uname: str,
         title=service_title, descr=service_descr,
         speed_in=service_speed_in,
         speed_out=service_speed_out,
-        cost=service_cost,
+        cost=Decimal(service_cost),
         calc_type=service_calc_type
     )
     service.pick_service(
