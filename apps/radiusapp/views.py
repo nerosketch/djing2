@@ -378,7 +378,7 @@ def _get_customer_and_service_and_lease_by_device_credentials(
               "nip.mac_address = %s::MACADDR OR nip.mac_address IS NULL "
             ") "
           ") "
-        "WHERE dv.mac_addr = %s::MACADDR AND srv.id IS NOT NULL AND nip.id IS NOT NULL "
+        "WHERE dv.mac_addr = %s::MACADDR "
         "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = %s::SMALLINT) "
         "LIMIT 1;"
     )
@@ -415,7 +415,7 @@ def _get_customer_and_service_and_lease_by_mac(
           "LEFT JOIN customer_service cs ON cs.customer_id = c.baseaccount_ptr_id "
           "LEFT JOIN services srv ON srv.id = cs.service_id "
           "LEFT JOIN networks_ip_leases nip ON nip.customer_id = c.baseaccount_ptr_id "
-        "WHERE cs.id IS NOT NULL AND ba.id IS NOT NULL AND srv.id IS NOT NULL AND "
+        "WHERE "
           "nip.mac_address = %s::MACADDR "
         "LIMIT 1;"
     )
