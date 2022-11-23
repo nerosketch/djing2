@@ -350,6 +350,9 @@ class CustomerService(BaseAbstractModel):
         self.deadline = calc_obj.calc_deadline()
 
     def continue_for_customer(self, now: Optional[datetime] = None):
+        """Keep current customer_service row, updates start_time, deadline,
+           and withdrawals balance."""
+
         customer = self.customer
         service = self.service
         cost = service.cost
