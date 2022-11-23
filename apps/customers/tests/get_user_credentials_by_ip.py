@@ -22,7 +22,7 @@ class BaseServiceTestCase(CustomAPITestCase):
             descr="test",
             speed_in=10.0,
             speed_out=10.0,
-            cost=10.0,
+            cost=Decimal(10),
             calc_type=SERVICE_CHOICE_DEFAULT
         )
 

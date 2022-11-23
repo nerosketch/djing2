@@ -24,10 +24,10 @@ def create_test_ippool(self):
 
 
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
-class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
+class LeaseCommitAddUpdateTestCase(BaseServiceTestCase):
     def setUp(self):
         # Initialize customers instances
-        BaseServiceTestCase.setUp(self)
+        super().setUp()
 
         self.customer.device = self.device_switch
         self.customer.dev_port = self.ports[1]
@@ -159,8 +159,12 @@ class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
         self.assertIsNotNone(log_customer2.event_time)
         self.assertIsNone(log_customer2.end_use_time)
 
-class IpPoolTestCase(TestCase):
+
+class IpPoolTestCase(CustomAPITestCase):
     def setUp(self):
+        # Initialize customers instances
+        super().setUp()
+
         self.vlan1 = VlanIf.objects.create(
             title="Test vlan 1",
             vid=12,
@@ -186,9 +190,6 @@ class IpPoolTestCase(TestCase):
             gateway="192.168.1.1",
             is_dynamic=False,
         )
-
-        # Initialize customers instances
-        CustomAPITestCase.setUp(self)
 
     def test_get_free_ip_from_empty_leases(self):
         free_ip = self.pool1.get_free_ip()
