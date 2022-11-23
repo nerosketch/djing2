@@ -8,7 +8,7 @@ from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.db import models, transaction, IntegrityError
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 from rest_framework.settings import api_settings
 
 from customers.models import Customer, CustomerLog
