@@ -244,51 +244,6 @@ class CustomerServiceModelManager(models.Manager):
             calc_type_counts=calc_type_counts,
         )
 
-    @staticmethod
-    def finish_services_if_expired(profile: Optional[BaseAccount] = None,
-                                   comment=None, customer=None) -> None:
-        # TODO: test it
-        """
-        If customer service has expired, and automatic connect
-         is disabled, then finish that service and log about it
-        :param profile: Instance of profiles.models.BaseAccount.
-        :param comment: comment for log
-        :param customer: This is Customer instance, if doing it for him alone
-        :return: nothing
-        """
-        if comment is None:
-            comment = _("Service for customer %(customer_name)s with name '%(service_name)s' has expired")
-        now = datetime.now()
-        expired_services = CustomerService.objects.filter(
-            deadline__lt=now,
-            customer__auto_renewal_service=False
-        ).select_related("customer", "service").exclude(customer=None)
-
-        if customer is not None and isinstance(customer, Customer):
-            expired_services = expired_services.filter(customer=customer)
-
-        dec0 = Decimal(0)
-        profile = profile if isinstance(profile, BaseAccount) else None
-
-        if expired_services.exists():
-            with transaction.atomic():
-                for exp_srv in expired_services.iterator():
-                    exp_srv_customer = exp_srv.customer
-                    exp_srv_customer.add_balance(
-                        profile=profile,
-                        cost=dec0,
-                        comment=comment % {
-                            "customer_name": exp_srv_customer.get_short_name(),
-                            "service_name": exp_srv.service.title
-                        }
-                    )
-                    custom_signals.customer_service_post_stop.send(
-                        sender=CustomerService,
-                        instance=exp_srv,
-                        customer=exp_srv_customer
-                    )
-                expired_services.delete()
-
     def activity_report(self) -> schemas.ActivityReportResponseSchema:
         qs = self.get_queryset()
         all_count = qs.count()
@@ -319,39 +274,6 @@ class CustomerServiceModelManager(models.Manager):
             active_count=active_count,
             commercial_customers=commercial_customers,
         )
-
-    @staticmethod
-    def continue_services_if_autoconnect(customer=None) -> None:
-        """
-        If customer service has expired and automatic connect
-        is enabled, then update service start_time, deadline,
-        and flush money from customer balance
-        :param customer: This is Customer instance, if doing it for him alone
-        :return: nothing
-        """
-        now = datetime.now()
-        expired_services = CustomerService.objects.select_related(
-            'customer', 'service'
-        ).filter(
-            deadline__lte=now,
-            customer__auto_renewal_service=True
-        ).exclude(customer=None)
-        if isinstance(customer, Customer):
-            expired_services = expired_services.filter(customer=customer)
-        for expired_service in expired_services.iterator():
-            expired_service_customer = expired_service.customer
-            service = expired_service.service
-            if expired_service_customer.balance >= service.cost:
-                # can continue service
-                expired_service.continue_for_customer(now=now)
-            else:
-                # finish service otherwise
-                expired_service.stop_service(
-                    author_profile=None,
-                    comment=_("Service '%(service_name)s' has expired") % {
-                        "service_name": service.title
-                    }
-                )
 
 
 RADIUS_SESSION_TIME = getattr(settings, "RADIUS_SESSION_TIME", 3600)

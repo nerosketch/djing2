@@ -1,11 +1,7 @@
 from dataclasses import dataclass
-from typing import Optional
 from django.db import models, transaction
-from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer
-from djing2.lib.logger import logger
-from ._general import NotEnoughMoney
 
 from .service import Service
 
@@ -171,38 +167,3 @@ class CustomerServiceConnectingQueueModel(models.Model):
                 deferrable=models.Deferrable.DEFERRED,
             )
         ]
-
-
-def connect_service_if_autoconnect(customer_id: Optional[int] = None):
-    """
-    Connect service when autoconnect is True, and user have enough money
-    """
-
-    customers = Customer.objects.filter(
-        is_active=True,
-        auto_renewal_service=True,
-        balance__gt=0
-    ).annotate(
-        connected_services_count=models.Count('current_service')
-    ).filter(connected_services_count=0)
-
-    if isinstance(customer_id, int):
-        customers = customers.filter(pk=customer_id)
-
-    queue_services = CustomerServiceConnectingQueueModel.objects.filter(
-        customer__in=customers,
-        service__is_admin=False
-    ).select_related('service', 'customer').filter_first()
-
-    for queue_item in queue_services.iterator():
-        srv = queue_item.service
-        try:
-            srv.pick_service(
-                customer=queue_item.customer,
-                author=None,
-                comment=_("Automatic connect service '%(service_name)s'") % {
-                    "service_name": srv.title
-                }
-            )
-        except NotEnoughMoney as e:
-            logger.info(str(e))

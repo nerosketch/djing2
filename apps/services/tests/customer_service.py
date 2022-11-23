@@ -12,6 +12,7 @@ from networks.models import CustomerIpLeaseModel, NetworkIpPool
 from networks.tests import create_test_ippool
 from services import models
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
+from services import periodicity_controllers
 from starlette import status
 
 from ._general import create_service, create_customer_service_queue
@@ -92,7 +93,7 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         curr_cust_srv = models.CustomerService.objects.filter(customer=customer).first()
         self.assertEqual(curr_cust_srv.service_id, self.service.pk)
         self.assertEqual(customer.balance, 10)
-        models.CustomerService.objects.continue_services_if_autoconnect(customer=customer)
+        periodicity_controllers.continue_services_if_autoconnect(customer=customer)
 
         # after first try, when time not expired
         self.assertEqual(customer.balance, 10)
@@ -106,7 +107,7 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         )
 
         # now time is expired, continue service
-        models.CustomerService.objects.continue_services_if_autoconnect(customer=customer)
+        periodicity_controllers.continue_services_if_autoconnect(customer=customer)
         customer.refresh_from_db()
         self.assertEqual(customer.balance, 8)
         curr_cust_srv = models.CustomerService.objects.filter(customer=customer).first()
@@ -213,7 +214,7 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         # self.assertEqual(curr_srv.service_id, self.service.pk)
         # self.assertEqual(customer.balance, 10)
 
-        models.CustomerService.objects.continue_services_if_autoconnect(
+        periodicity_controllers.continue_services_if_autoconnect(
             customer=customer
         )
         curr_srv.refresh_from_db()
@@ -231,7 +232,7 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         self.assertEqual(curr_srv.deadline, expected_deadline)
 
     def _connect_service_and_check(self, customer, expected_start_time, expected_deadline):
-        models.connect_service_if_autoconnect(customer_id=customer.pk)
+        periodicity_controllers.connect_service_if_autoconnect(customer_id=customer.pk)
         customer.refresh_from_db()
 
         current_customer_srv = models.CustomerService.objects.get(customer=customer)
