@@ -5,7 +5,7 @@ from starlette import status
 
 from customers.tests.customer import CustomAPITestCase
 from devices.tests import device_test_case_set_up
-from networks.models import NetworkIpPool, NetworkIpPoolKind, CustomerIpLeaseModel
+from networks.models import CustomerIpLeaseModel
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from services.models import Service
 from gateways.gw_facade import MIKROTIK
@@ -21,7 +21,7 @@ class FetchCredentialsTestCase(CustomAPITestCase):
 
         self.service = Service.objects.create(
             title="test", descr="test",
-            speed_in=10.0, speed_out=10.0, cost=10.0,
+            speed_in=10.0, speed_out=10.0, cost=Decimal(10),
             calc_type=SERVICE_CHOICE_DEFAULT
         )
         create_test_ippool(self)
@@ -74,8 +74,8 @@ class FetchCredentialsTestCase(CustomAPITestCase):
     def test_get_credentials(self):
         r = self.get("/api/gateways/fetch_customers_srvnet_credentials_by_gw/", {"gw_id": self.gw.pk})
 
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        data = list(r.data)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.text)
+        data = list(r.json())
         self.assertGreater(len(data), 0, msg=data)
         (
             customer_id,

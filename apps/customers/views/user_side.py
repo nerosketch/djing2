@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional
 
 from customers import models
@@ -124,7 +125,7 @@ def buy_debt(debt_id: int,
         )
 
     with transaction.atomic():
-        amount = -debt.cost
+        amount = Decimal(debt.cost) * -1
         customer.add_balance(
             profile=customer,
             cost=amount,
