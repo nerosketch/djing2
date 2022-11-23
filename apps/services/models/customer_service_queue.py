@@ -10,8 +10,8 @@ from .service import Service
 
 @dataclass
 class QueueRemovedResult:
-    customer_id: int
-    service_id: int
+    customer: Customer
+    service: Service
     number_queue: int
 
 
@@ -68,15 +68,15 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
 
     def pop_back(self) -> Optional[QueueRemovedResult]:
         with transaction.atomic():
-            qs = self.select_for_update()
+            qs = self.select_for_update().select_related('customer', 'service')
             q_item_last_qs = qs.filter_last()
             q_item_last = q_item_last_qs.first()
             if q_item_last is None:
                 rr = None
             else:
                 rr = QueueRemovedResult(
-                    service_id=q_item_last.service_id,
-                    customer_id=q_item_last.customer_id,
+                    service=q_item_last.service,
+                    customer=q_item_last.customer,
                     number_queue=q_item_last.number_queue
                 )
             if qs.count() > 1:
@@ -101,15 +101,15 @@ class CustomerServiceConnectingQuerySet(models.QuerySet):
 
     def pop_front(self) -> Optional[QueueRemovedResult]:
         with transaction.atomic():
-            qs = self.select_for_update()
+            qs = self.select_for_update().select_related('customer', 'service')
             q_item_first_qs = qs.filter_first()
             q_item_first = q_item_first_qs.first()
             if q_item_first is None:
                 rr = None
             else:
                 rr = QueueRemovedResult(
-                    service_id=q_item_first.service_id,
-                    customer_id=q_item_first.customer_id,
+                    service=q_item_first.service,
+                    customer=q_item_first.customer,
                     number_queue=q_item_first.number_queue
                 )
             if qs.count() > 1:

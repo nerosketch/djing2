@@ -8,7 +8,27 @@ from django.utils.translation import gettext_lazy as _
 from djing2.lib.logger import logger
 from profiles.models import BaseAccount
 from services import custom_signals
-from services.models import CustomerService, PeriodicPayForId, CustomerServiceConnectingQueueModel, NotEnoughMoney
+from services import models
+
+
+def connect_service_from_queue(customer_id: int):
+    with transaction.atomic():
+        first_queue = models.CustomerServiceConnectingQueueModel.objects.filter(
+            customer_id=customer_id
+        ).pop_front()
+        if first_queue is None:
+            return
+        try:
+            srv = first_queue.service
+            srv.pick_service(
+                customer=first_queue.customer,
+                author=None,
+                comment=_("Automatic connect service '%(service_name)s'") % {
+                    "service_name": srv.title
+                }
+            )
+        except models.NotEnoughMoney as e:
+            logger.info(str(e))
 
 
 def continue_services_if_autoconnect(customer=None) -> None:
@@ -20,7 +40,7 @@ def continue_services_if_autoconnect(customer=None) -> None:
     :return: nothing
     """
     now = datetime.now()
-    expired_services = CustomerService.objects.select_related(
+    expired_services = models.CustomerService.objects.select_related(
         'customer', 'service'
     ).filter(
         deadline__lte=now,
@@ -58,7 +78,7 @@ def finish_services_if_expired(profile: Optional[BaseAccount] = None,
     if comment is None:
         comment = _("Service for customer %(customer_name)s with name '%(service_name)s' has expired")
     now = datetime.now()
-    expired_services = CustomerService.objects.filter(
+    expired_services = models.CustomerService.objects.filter(
         deadline__lt=now,
         customer__auto_renewal_service=False
     ).select_related("customer", "service").exclude(customer=None)
@@ -82,7 +102,7 @@ def finish_services_if_expired(profile: Optional[BaseAccount] = None,
                     }
                 )
                 custom_signals.customer_service_post_stop.send(
-                    sender=CustomerService,
+                    sender=models.CustomerService,
                     instance=exp_srv,
                     customer=exp_srv_customer
                 )
@@ -91,7 +111,7 @@ def finish_services_if_expired(profile: Optional[BaseAccount] = None,
 
 def manage_periodic_pays_run():
     now = datetime.now()
-    ppays = PeriodicPayForId.objects.select_related("account", "periodic_pay").filter(
+    ppays = models.PeriodicPayForId.objects.select_related("account", "periodic_pay").filter(
         next_pay__lte=now,
         # account__is_active=True
     )
@@ -115,7 +135,7 @@ def connect_service_if_autoconnect(customer_id: Optional[int] = None):
     if isinstance(customer_id, int):
         customers = customers.filter(pk=customer_id)
 
-    queue_services = CustomerServiceConnectingQueueModel.objects.filter(
+    queue_services = models.CustomerServiceConnectingQueueModel.objects.filter(
         customer__in=customers,
         service__is_admin=False
     ).select_related('service', 'customer').filter_first()
@@ -130,5 +150,5 @@ def connect_service_if_autoconnect(customer_id: Optional[int] = None):
                     "service_name": srv.title
                 }
             )
-        except NotEnoughMoney as e:
+        except models.NotEnoughMoney as e:
             logger.info(str(e))
