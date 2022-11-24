@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from decimal import Decimal
 
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from djing2.lib import calc_hash
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel, NetworkIpPoolKind, CustomerIpLeaseLog
 from customers.models import Customer
