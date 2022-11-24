@@ -1,7 +1,7 @@
 from django.contrib.sites.models import Site
 from django.utils.translation import gettext
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
-from djing2.lib.fastapi.perms import permission_check_dependency
+from djing2.lib.fastapi.perms import permission_check_dependency, filter_qs_by_rights
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.utils import get_object_or_404
@@ -43,10 +43,9 @@ def get_current_service(customer_id: int,
                         ):
     curr_user, token = auth
 
-    customer_service_qs = general_filter_queryset(
+    customer_service_qs = filter_qs_by_rights(
         qs_or_model=models.CustomerService,
         curr_user=curr_user,
-        curr_site=curr_site,
         perm_codename='services.view_customerservice'
     )
     try:
