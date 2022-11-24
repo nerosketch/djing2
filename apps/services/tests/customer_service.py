@@ -73,7 +73,7 @@ class CustomerServiceAutoconnectTestCase(CustomAPITestCase):
         self.assertEqual(customer_service.service.speed_in, 10.0)
         self.assertEqual(customer_service.service.speed_out, 10.0)
         self.assertEqual(customer_service.service.speed_burst, 1)
-        self.assertEqual(customer_service.service.cost, Decimal(2.0))
+        self.assertEqual(customer_service.service.cost, Decimal('2'))
         self.assertEqual(customer_service.service.calc_type, SERVICE_CHOICE_DEFAULT)
 
     def _pick_service(self, deadline: datetime, service=None, start_time: Optional[datetime] = None):

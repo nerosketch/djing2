@@ -129,7 +129,7 @@ class AllPayTestCase(CustomAPITestCase):
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.customer.refresh_from_db()
-        self.assertEqual(round(self.customer.balance, 2), Decimal(5.09))
+        self.assertEqual(self.customer.balance, Decimal('5.09'))
         self.user_pay_check(current_date)
 
     def user_pay_check(self, test_pay_time):
