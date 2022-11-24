@@ -241,7 +241,7 @@ class Customer(IAddressContaining, BaseAccount):
         self.save(update_fields=["markers"])
 
     def active_service(self):
-        return self.current_service
+        return getattr(self, 'current_service', None)
 
     def add_balance(self, profile: Optional[BaseAccount], cost: Decimal, comment: str) -> None:
         old_balance = float(self.balance)
