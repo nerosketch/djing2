@@ -43,7 +43,7 @@ def make_periodic_pay(
         qs_or_model=models.PeriodicPay,
         curr_user=curr_user,
         curr_site=curr_site,
-        perm_codename='customers.view_periodicpay'
+        perm_codename='services.view_periodicpay'
     )
     periodic_pay = get_object_or_404(
         pp_queryset,
