@@ -803,7 +803,9 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
         """
         # remove customer service
         customer = self.full_customer.customer
-        customer.current_service = None
+        CustomerService.objects.filter(
+            customer=customer
+        ).delete()
         customer.save()
         customer.refresh_from_db()
 
