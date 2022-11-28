@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Mapping, Any
 
-from django.db import connection
+from django.db import connection, transaction
 from django.utils.translation import gettext_lazy as _
 from fastapi import APIRouter, HTTPException, Body
 from netaddr import EUI
@@ -487,7 +487,7 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any], 
         )
         CustomerIpLeaseModel.objects.filter(
             ip_address=ip,
-            customer_id=customer.pk,
+            # customer_id=customer.pk,
         ).update(
             mac_address=customer_mac,
             input_octets=0,
@@ -540,11 +540,21 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any], b
     ip = vendor_manager.get_rad_val(request_data, "Framed-IP-Address", str)
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     customer_mac = vendor_manager.get_customer_mac(request_data)
-    leases = CustomerIpLeaseModel.objects.filter(
-        ip_address=ip,
-    )
 
     counters = vendor_manager.get_counters(data=request_data)
+
+    with transaction.atomic():
+        leases = CustomerIpLeaseModel.objects.filter(
+            ip_address=ip,
+        ).select_for_upadte().select_related('customer')
+        leases.update(
+            state=False,
+            input_octets=counters.input_octets,
+            output_octets=counters.output_octets,
+            input_packets=counters.input_packets,
+            output_packets=counters.output_packets,
+            last_update=datetime.now()
+        )
 
     custom_signals.radius_acct_stop_signal.send(
         sender=CustomerIpLeaseModel,
@@ -555,14 +565,6 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any], b
         ip_addr=ip,
         radius_unique_id=radius_unique_id,
         customer_mac=customer_mac,
-    )
-    leases.update(
-        state=False,
-        input_octets=counters.input_octets,
-        output_octets=counters.output_octets,
-        input_packets=counters.input_packets,
-        output_packets=counters.output_packets,
-        last_update=datetime.now()
     )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
