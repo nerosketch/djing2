@@ -44,5 +44,5 @@ def manage_services():
 
 
 celery_app.add_periodic_task(
-    3600, manage_services.s(), name='Manage customer services every 60 min'
+    600, manage_services.s(), name='Manage customer services every 10 min'
 )
