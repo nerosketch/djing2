@@ -546,8 +546,8 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any], b
     with transaction.atomic():
         leases = CustomerIpLeaseModel.objects.filter(
             ip_address=ip,
-        ).select_for_update().select_related('customer')
-        leases.update(
+        ).select_related('customer')
+        leases.select_for_update().update(
             state=False,
             input_octets=counters.input_octets,
             output_octets=counters.output_octets,
