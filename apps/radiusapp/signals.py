@@ -33,8 +33,8 @@ def customer_post_pick_service_signal_handler(sender, instance: CustomerService,
     for lease in leases:
         tasks.async_change_session_guest2inet.delay(
             radius_uname=str(lease.radius_username),
-            speed_in=speed.speed_in,
-            speed_out=speed.speed_out,
-            speed_in_burst=speed.burst_in,
-            speed_out_burst=speed.burst_out
+            speed_in=int(speed.speed_in),
+            speed_out=int(speed.speed_out),
+            speed_in_burst=int(speed.burst_in),
+            speed_out_burst=int(speed.burst_out)
         )
