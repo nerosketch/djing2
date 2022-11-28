@@ -11,7 +11,7 @@ from .base_payment_model import (
     add_payment_type
 )
 from customers.models import Customer
-from services.tasks import customer_check_service_for_expiration_task
+from fin_app import custom_signals
 
 
 PAYME_DB_TYPE_ID = 4
@@ -201,6 +201,11 @@ class PaymeTransactionModelManager(models.Manager):
                 if not customer:
                     raise PaymeCustomerNotFound
                 pay_amount = trans.amount
+                custom_signals.before_payment_success.send(
+                    sender=Customer,
+                    instance=customer,
+                    amount=pay_amount
+                )
                 with transaction.atomic():
                     customer.add_balance(
                         profile=None,
@@ -213,7 +218,11 @@ class PaymeTransactionModelManager(models.Manager):
                         amount=pay_amount,
                     )
                     trans.perform()
-                customer_check_service_for_expiration_task.delay(customer_id=customer.pk)
+                custom_signals.after_payment_success.send(
+                    sender=Customer,
+                    instance=customer,
+                    amount=pay_amount
+                )
         if trans.transaction_state in [TransactionStatesEnum.START, TransactionStatesEnum.PERFORMED]:
             return trans.as_dict()
 

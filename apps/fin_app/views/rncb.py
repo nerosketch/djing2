@@ -15,9 +15,9 @@ from djing2.viewsets import DjingModelViewSet
 from fin_app.models.base_payment_model import fetch_customer_profile
 from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
 from fin_app.serializers import rncb as serializers_rncb
+from fin_app import custom_signals
 try:
     from customers.models import Customer
-    from services.tasks import customer_check_service_for_expiration_task
 except ImportError as imperr:
     from django.core.exceptions import ImproperlyConfigured
 
@@ -195,6 +195,11 @@ class RNCBPaymentViewSet(GenericAPIView):
             }
         del pay
 
+        custom_signals.before_payment_success.send(
+            sender=Customer,
+            instance=customer,
+            amount=Decimal(pay_amount)
+        )
         with transaction.atomic():
             customer.add_balance(
                 profile=None,
@@ -208,7 +213,11 @@ class RNCBPaymentViewSet(GenericAPIView):
                 amount=pay_amount,
                 pay_gw=self._lazy_object
             )
-        customer_check_service_for_expiration_task.delay(customer_id=customer.pk)
+        custom_signals.after_payment_success.send(
+            sender=Customer,
+            instance=customer,
+            amount=Decimal(pay_amount)
+        )
 
         return {
             'OUT_PAYMENT_ID': log.pk,
