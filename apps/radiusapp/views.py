@@ -15,8 +15,6 @@ from djing2.lib.logger import logger
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
 from networks.tasks import (
-    async_change_session_inet2guest,
-    async_change_session_guest2inet,
     check_if_lease_have_id_db_task
 )
 from radiusapp import custom_signals
@@ -27,6 +25,7 @@ from radiusapp.vendor_base import (
     SpeedInfoStruct, RadiusCounters
 )
 from radiusapp.vendors import VendorManager
+from radiusapp import tasks
 
 # TODO: Also protect requests by hash
 router = APIRouter(
@@ -664,34 +663,11 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
     # Check for service synchronization
     bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
     if isinstance(bras_service_name, str):
-        if 'SERVICE-INET' in bras_service_name:
-            # bras contain inet session
-            if not customer.is_access():
-                logger.info("COA: inet->guest uname=%s" % radius_username)
-                async_change_session_inet2guest.delay(
-                    radius_uname=radius_username
-                )
-        elif 'SERVICE-GUEST' in bras_service_name:
-            # bras contain guest session
-            # TODO: optimize
-            if customer.is_access():
-                logger.info("COA: guest->inet uname=%s" % radius_username)
-                customer_service = customer.active_service()
-                service = customer_service.service
-                speed = SpeedInfoStruct(
-                    speed_in=float(service.speed_in),
-                    speed_out=float(service.speed_out),
-                    burst_in=float(service.speed_burst),
-                    burst_out=float(service.speed_burst),
-                )
-                speed = vendor_manager.get_speed(speed=speed)
-                async_change_session_guest2inet.delay(
-                    radius_uname=radius_username,
-                    speed_in=speed.speed_in,
-                    speed_out=speed.speed_out,
-                    speed_in_burst=speed.burst_in,
-                    speed_out_burst=speed.burst_out
-                )
+        tasks.check_and_control_session_task.delay(
+            bras_service_name=bras_service_name,
+            customer_id=customer.pk,
+            radius_username=radius_username
+        )
         custom_signals.radius_auth_update_signal.send(
             sender=CustomerIpLeaseModel,
             instance=None,
