@@ -94,7 +94,7 @@ def _find_and_assign_lease(customer_mac: EUI, pool_kind: NetworkIpPoolKind,
                 OR
             (nil.customer_id IS NULL AND nil.mac_address IS NULL)
         )
-      AND nil.state is false
+      AND NOT nil.state
     LIMIT 1
 )
 UPDATE networks_ip_leases unil
@@ -544,7 +544,7 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -
     counters = vendor_manager.get_counters(data=request_data)
 
     bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
-    if bras_service_name is not None:
+    if isinstance(bras_service_name, str):
         custom_signals.radius_acct_stop_signal.send(
             sender=CustomerIpLeaseModel,
             instance=CustomerIpLeaseModel(),
@@ -555,15 +555,15 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -
             radius_unique_id=radius_unique_id,
             customer_mac=customer_mac,
         )
+        leases.update(
+            state=False,
+            input_octets=counters.input_octets,
+            output_octets=counters.output_octets,
+            input_packets=counters.input_packets,
+            output_packets=counters.output_packets,
+            last_update=datetime.now()
+        )
 
-    leases.update(
-        state=False,
-        input_octets=counters.input_octets,
-        output_octets=counters.output_octets,
-        input_packets=counters.input_packets,
-        output_packets=counters.output_packets,
-        last_update=datetime.now()
-    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
