@@ -23,7 +23,7 @@ router = APIRouter(
 )
 
 _base_customers_queryset = models.Customer.objects.select_related(
-    "group", "gateway", "device", "current_service"
+    "group", "gateway", "device"
 )
 
 

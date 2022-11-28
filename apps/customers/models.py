@@ -326,13 +326,15 @@ class Customer(IAddressContaining, BaseAccount):
 
     @property
     def current_service_title(self):
-        if self.current_service and self.current_service.service:
-            return str(self.current_service.service.title)
+        cs = self.active_service()
+        if cs and cs.service:
+            return str(cs.service.title)
 
     @property
     def service_id(self) -> Optional[int]:
-        if self.current_service:
-            return int(self.current_service.pk)
+        cs = self.active_service()
+        if cs:
+            return int(cs.pk)
 
     @property
     def raw_password(self) -> Optional[str]:

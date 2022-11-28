@@ -14,7 +14,7 @@ def customer_check_service_for_expiration(customer_id: int):
     try:
         customer = Customer.objects.get(pk=customer_id)
         if customer.auto_renewal_service:
-            if customer.current_service:
+            if customer.active_service():
                 periodicity_controllers.continue_services_if_autoconnect(customer=customer)
             else:
                 periodicity_controllers.connect_service_if_autoconnect(customer_id=customer_id)
