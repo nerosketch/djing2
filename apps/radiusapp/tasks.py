@@ -1,7 +1,7 @@
 from customers.models import Customer
 from djing2 import celery_app
 from djing2.lib.logger import logger
-from networks.tasks import async_change_session_inet2guest, async_change_session_guest2inet
+from networks import tasks
 from radiusapp.vendor_base import SpeedInfoStruct, IVendorSpecific
 
 
@@ -15,7 +15,7 @@ def check_and_control_session_task(bras_service_name: str, customer_id: int, rad
         # bras contain inet session
         if not customer.is_access():
             logger.info("COA: inet->guest uname=%s" % radius_username)
-            async_change_session_inet2guest(
+            tasks.async_change_session_inet2guest(
                 radius_uname=radius_username
             )
     elif 'SERVICE-GUEST' in bras_service_name:
@@ -32,10 +32,13 @@ def check_and_control_session_task(bras_service_name: str, customer_id: int, rad
                 burst_out=float(service.speed_burst),
             )
             speed = IVendorSpecific.get_speed(speed=speed)
-            async_change_session_guest2inet(
+            tasks.async_change_session_guest2inet(
                 radius_uname=radius_username,
                 speed_in=int(speed.speed_in),
                 speed_out=int(speed.speed_out),
                 speed_in_burst=int(speed.burst_in),
                 speed_out_burst=int(speed.burst_out)
             )
+    tasks.check_if_lease_have_id_db_task(
+        radius_uname=radius_username
+    )

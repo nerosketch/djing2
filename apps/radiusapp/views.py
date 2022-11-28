@@ -14,9 +14,6 @@ from djing2.lib import LogicError, safe_int
 from djing2.lib.logger import logger
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
-from networks.tasks import (
-    check_if_lease_have_id_db_task
-)
 from radiusapp import custom_signals
 from radiusapp.schemas import CustomerServiceRequestSchema
 from radiusapp.vendor_base import (
@@ -268,6 +265,10 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
         return _bad_ret('Empty vendor name')
 
     vendor_manager = VendorManager(vendor_name=vendor_name)
+    bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
+    if bras_service_name is None:
+        logger.info('ERX-Service-Session not found')
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     request_type = vendor_manager.get_acct_status_type(request_data)
     if not request_type:
@@ -281,7 +282,11 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
             err = 'request_type_fn is None, (request_type=%s)' % request_type
             logger.error(err)
             return _acct_unknown(None, err)
-        return request_type_fn(vendor_manager=vendor_manager, request_data=request_data)
+        return request_type_fn(
+            vendor_manager=vendor_manager,
+            request_data=request_data,
+            bras_service_name=bras_service_name
+        )
     except BadRetException as err:
         return _bad_ret(str(err))
 
@@ -440,7 +445,7 @@ def _update_counters(leases, counters: RadiusCounters,
     )
 
 
-def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -> Response:
+def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
     """Accounting start handler."""
     if not vendor_manager or not vendor_manager.vendor_class:
         return _bad_ret(
@@ -515,25 +520,23 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) 
                 custom_status=status.HTTP_404_NOT_FOUND
             )
 
-    bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
-    if bras_service_name is not None:
-        custom_signals.radius_acct_start_signal.send(
-            sender=CustomerIpLeaseModel,
-            instance=None,
-            data=request_data,
-            ip_addr=ip,
-            customer_mac=customer_mac,
-            radius_username=radius_username,
-            customer_ip_lease=None,
-            customer=customer,
-            radius_unique_id=radius_unique_id,
-            event_time=now,
-        )
+    custom_signals.radius_acct_start_signal.send(
+        sender=CustomerIpLeaseModel,
+        instance=None,
+        data=request_data,
+        ip_addr=ip,
+        customer_mac=customer_mac,
+        radius_username=radius_username,
+        customer_ip_lease=None,
+        customer=customer,
+        radius_unique_id=radius_unique_id,
+        event_time=now,
+    )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -> Response:
+def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
     ip = vendor_manager.get_rad_val(request_data, "Framed-IP-Address", str)
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     customer_mac = vendor_manager.get_customer_mac(request_data)
@@ -543,26 +546,24 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -
 
     counters = vendor_manager.get_counters(data=request_data)
 
-    bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
-    if isinstance(bras_service_name, str):
-        custom_signals.radius_acct_stop_signal.send(
-            sender=CustomerIpLeaseModel,
-            instance=CustomerIpLeaseModel(),
-            instance_queryset=leases,
-            data=request_data,
-            counters=counters,
-            ip_addr=ip,
-            radius_unique_id=radius_unique_id,
-            customer_mac=customer_mac,
-        )
-        leases.update(
-            state=False,
-            input_octets=counters.input_octets,
-            output_octets=counters.output_octets,
-            input_packets=counters.input_packets,
-            output_packets=counters.output_packets,
-            last_update=datetime.now()
-        )
+    custom_signals.radius_acct_stop_signal.send(
+        sender=CustomerIpLeaseModel,
+        instance=CustomerIpLeaseModel(),
+        instance_queryset=leases,
+        data=request_data,
+        counters=counters,
+        ip_addr=ip,
+        radius_unique_id=radius_unique_id,
+        customer_mac=customer_mac,
+    )
+    leases.update(
+        state=False,
+        input_octets=counters.input_octets,
+        output_octets=counters.output_octets,
+        input_packets=counters.input_packets,
+        output_packets=counters.output_packets,
+        last_update=datetime.now()
+    )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -604,7 +605,7 @@ def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Cu
     )
 
 
-def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -> Response:
+def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     if not radius_unique_id:
         return _bad_ret(
@@ -661,25 +662,20 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
         )
 
     # Check for service synchronization
-    bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
-    if isinstance(bras_service_name, str):
-        tasks.check_and_control_session_task.delay(
-            bras_service_name=bras_service_name,
-            customer_id=customer.pk,
-            radius_username=radius_username
-        )
-        custom_signals.radius_auth_update_signal.send(
-            sender=CustomerIpLeaseModel,
-            instance=None,
-            instance_queryset=leases,
-            data=request_data,
-            counters=counters,
-            radius_unique_id=radius_unique_id,
-            ip_addr=ip,
-            customer_mac=customer_mac
-        )
-    check_if_lease_have_id_db_task.delay(
-        radius_uname=radius_username
+    tasks.check_and_control_session_task.delay(
+        bras_service_name=bras_service_name,
+        customer_id=customer.pk,
+        radius_username=radius_username
+    )
+    custom_signals.radius_auth_update_signal.send(
+        sender=CustomerIpLeaseModel,
+        instance=None,
+        instance_queryset=leases,
+        data=request_data,
+        counters=counters,
+        radius_unique_id=radius_unique_id,
+        ip_addr=ip,
+        customer_mac=customer_mac
     )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
