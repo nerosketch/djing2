@@ -702,7 +702,7 @@ def remove_task(task_id: int,
         qs_or_model=models.Task,
         curr_user=curr_user,
         curr_site=curr_site,
-        perm_codename='customers.delete_customer'
+        perm_codename='tasks.delete_task'
     )
     # .annotate(
     #     recipients_agg=ArrayAgg('recipients')
