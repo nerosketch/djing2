@@ -521,7 +521,6 @@ def add_balance(customer_id: int,
         cost=cost,
         comment=" ".join(comment.split()) if comment else gettext("fill account through admin side"),
     )
-    customer.save(update_fields=("balance",))
     return Response()
 
 

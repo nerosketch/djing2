@@ -134,6 +134,5 @@ def buy_debt(debt_id: int,
                 "amount": amount
             }
         )
-        customer.save(update_fields=("balance",))
         debt.set_ok()
         debt.save(update_fields=("status", "date_pay"))

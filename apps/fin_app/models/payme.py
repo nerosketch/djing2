@@ -207,7 +207,6 @@ class PaymeTransactionModelManager(models.Manager):
                         cost=pay_amount,
                         comment=f"{gw.title} {pay_amount:.2f}"
                     )
-                    customer.save(update_fields=["balance"])
                     PaymePaymentLogModel.objects.create(
                         customer=customer,
                         pay_gw=gw,

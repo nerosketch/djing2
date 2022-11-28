@@ -201,7 +201,6 @@ class RNCBPaymentViewSet(GenericAPIView):
                 cost=Decimal(pay_amount),
                 comment=f"{self._lazy_object.title} {pay_amount:.2f}"
             )
-            customer.save(update_fields=("balance",))
             log = RNCBPaymentLog.objects.create(
                 customer=customer,
                 pay_id=payment_id,

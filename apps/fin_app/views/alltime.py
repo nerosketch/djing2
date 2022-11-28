@@ -203,8 +203,6 @@ class AllTimePay(GenericAPIView):
                 cost=Decimal(pay_amount),
                 comment=f"{self._lazy_object.title} {pay_amount:.2f}"
             )
-            customer.save(update_fields=("balance",))
-
             AllTimePaymentLog.objects.create(
                 customer=customer,
                 pay_id=pay_id,
