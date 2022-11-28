@@ -14,6 +14,7 @@ from djing2.lib import LogicError, safe_int
 from djing2.lib.logger import logger
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
+from networks.tasks import async_finish_session_task
 from radiusapp import custom_signals
 from radiusapp.schemas import CustomerServiceRequestSchema
 from radiusapp.vendor_base import (
@@ -320,6 +321,11 @@ class BadRetException(HTTPException):
         return f'{self.__class__.__name__}: {self.detail}'
 
 
+class CustomerNotFoundException(BadRetException): pass
+class Opt82NotExistsException(BadRetException): pass
+class Opt82NotAllExistsException(BadRetException): pass
+
+
 def _build_srv_result_from_db_result(row: tuple) -> CustomerServiceLeaseResult:
     (uid, uname, acc_is_act, balance, is_dyn_ip, ars, csid, dev_port_id, dev_id, gw_id,
      si, so, sb, ip_addr, mac_addr, ip_is_dynamic) = row
@@ -499,26 +505,23 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any], 
             radius_username=radius_username,
             last_update=now,
         )
-    except BadRetException:
+    except (Opt82NotExistsException, Opt82NotAllExistsException):
         # auth by mac. Find static lease.
-        lease = CustomerIpLeaseModel.objects.filter(
-            mac_address=customer_mac,
-            is_dynamic=False,
-            state=False
-        ).exclude(
-            customer=None
-        ).select_related('customer').first()
-        if lease is None:
-            return _bad_ret(
-                'Free lease with mac="%s" not found' % customer_mac,
-                custom_status=status.HTTP_404_NOT_FOUND
-            )
-        customer = lease.customer
-        if not customer:
-            return _bad_ret(
-                'Customer static and free lease with provided mac address: %s Not found' % customer_mac,
-                custom_status=status.HTTP_404_NOT_FOUND
-            )
+        with transaction.atomic():
+            lease = CustomerIpLeaseModel.objects.filter(
+                mac_address=customer_mac,
+                is_dynamic=False,
+            ).exclude(
+                customer=None
+            ).select_related('customer').select_for_update()
+            lease.update(state=True)
+            lease = lease.first()
+            customer = lease.customer
+            if lease is None:
+                return _bad_ret(
+                    'Free lease with mac="%s" not found' % customer_mac,
+                    custom_status=status.HTTP_404_NOT_FOUND
+                )
 
     custom_signals.radius_acct_start_signal.send(
         sender=CustomerIpLeaseModel,
@@ -572,8 +575,8 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any], b
 
 def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Customer:
     opt82 = vendor_manager.get_opt82(data=data)
-    if not opt82:
-        raise BadRetException(detail="Failed fetch opt82 info")
+    if not opt82 or opt82 == (None, None):
+        raise Opt82NotExistsException(detail="Failed fetch opt82 info")
     agent_remote_id, agent_circuit_id = opt82
     if all([agent_remote_id, agent_circuit_id]):
         dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
@@ -593,7 +596,7 @@ def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Cu
             device_port=dev_port
         )
         if not customer:
-            raise BadRetException(
+            raise CustomerNotFoundException(
                 detail='Customer not found by device: dev_mac=%(dev_mac)s, dev_port=%(dev_port)s' % {
                     'dev_mac': str(dev_mac),
                     'dev_port': str(dev_port),
@@ -601,7 +604,7 @@ def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Cu
                 status_code=status.HTTP_404_NOT_FOUND
             )
         return customer
-    raise BadRetException(
+    raise Opt82NotAllExistsException(
         detail='not all opt82 %s' % str(opt82),
         status_code=status.HTTP_200_OK
     )
@@ -628,7 +631,20 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any],
     now = datetime.now()
     counters = vendor_manager.get_counters(request_data)
 
-    customer = _find_customer(data=request_data, vendor_manager=vendor_manager)
+    try:
+        customer = _find_customer(data=request_data, vendor_manager=vendor_manager)
+    except CustomerNotFoundException as err:
+        logger.error('Session with not customer in db: uname="%s", details: %s' % (
+            radius_username, err.detail
+        ))
+        async_finish_session_task.delay(
+            radius_uname=radius_username
+        )
+        raise err
+    except Opt82NotExistsException as err:
+        # TODO: update fixed mac
+        raise err
+
     leases = CustomerIpLeaseModel.objects.filter(
         ip_address=ip,
         mac_address=customer_mac,
