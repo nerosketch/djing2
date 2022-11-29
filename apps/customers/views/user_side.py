@@ -98,7 +98,7 @@ def get_user_debts(current_user: models.Customer = Depends(is_customer_auth_depe
     qs = models.InvoiceForPayment.objects.filter(
         customer=current_user
     )
-    return (schemas.CustomerLogModelSchema.from_orm(inv) for inv in qs.iterator())
+    return (schemas.InvoiceForPaymentModelSchema.from_orm(inv) for inv in qs.iterator())
 
 
 class _buyDebtPayload(BaseModel):
