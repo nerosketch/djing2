@@ -190,7 +190,8 @@ def get_afk(date_limit: datetime,
 
 
 class CustomerResponseModelSchema(schemas.CustomerModelSchema, metaclass=AllOptionalMetaclass):
-    pass
+    id: Optional[int] = None
+    username: Optional[str] = None
 
 
 @router.get('/bums/',
