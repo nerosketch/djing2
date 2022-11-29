@@ -22,10 +22,6 @@ router = APIRouter(
     dependencies=[Depends(is_customer_auth_dependency)]
 )
 
-_base_customers_queryset = models.Customer.objects.select_related(
-    "group", "gateway", "device"
-)
-
 
 @router.get('/me/', response_model=schemas.UserCustomerModelSchema)
 @catch_customers_errs
