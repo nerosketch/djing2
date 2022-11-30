@@ -18,6 +18,7 @@ from groupapp import schemas
 
 router = APIRouter(
     prefix='/groups',
+    tags=['Groups'],
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
