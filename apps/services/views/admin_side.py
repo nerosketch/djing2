@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.contrib.sites.models import Site
 from django.db import transaction
 from django.db.models.aggregates import Count
@@ -156,6 +158,7 @@ def get_service_details(
     db_model=Service
 )
 def get_all_services(request: Request,
+                     groups: Optional[int] = None,
                      curr_user: UserProfile = Depends(permission_check_dependency(
                          perm_codename='services.view_service'
                      )),
@@ -168,6 +171,8 @@ def get_all_services(request: Request,
         curr_user=curr_user,
         perm_codename='services.view_service'
     )
+    if groups is not None:
+        qs = qs.filter(groups__in=[groups])
     return qs
 
 
