@@ -18,11 +18,17 @@ class ServiceModelBaseSchema(BaseModel):
 
 
 class ServiceModelSchema(ServiceModelBaseSchema):
-    id: int
+    id: Optional[int] = None
+    title: Optional[str] = None
     create_time: Optional[datetime] = None
     usercount: Optional[int] = None
-    planned_deadline: str
+    planned_deadline: str = ''
     calc_type_name: Optional[str] = None
+    speed_in: float = Field(0.0, ge=0.1)
+    speed_out: float = Field(0.0, ge=0.1)
+    speed_burst: float = 1.0
+    cost: float = Field(0.0, ge=0.0)
+    calc_type: ServiceChoiceEnum = ServiceChoiceEnum.SERVICE_CHOICE_DEFAULT
 
     Config = OrmConf
 

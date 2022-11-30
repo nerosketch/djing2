@@ -51,4 +51,5 @@ __all__ = (
     "ONE_SHOT_DEFAULT",
     "PERIODIC_PAY_CHOICES",
     "ONE_SHOT_TYPES",
+    "ServiceChoiceEnum",
 )
