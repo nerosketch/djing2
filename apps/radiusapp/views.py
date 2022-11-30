@@ -131,12 +131,11 @@ RETURNING (SELECT ip_address FROM lease);
 
 @router.post('/auth/{vendor_name}/')
 def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
-    # Just find customer by credentials from request
     vendor_manager = VendorManager(vendor_name=vendor_name)
 
     opt82 = vendor_manager.get_opt82(data=request_data)
-    if not opt82:
-        return _bad_ret("Failed fetch opt82 info")
+    if opt82 is None:
+        return _bad_ret("Fetch opt82 info system fail")
     agent_remote_id, agent_circuit_id = opt82
 
     customer_mac = vendor_manager.get_customer_mac(request_data)
@@ -236,8 +235,10 @@ def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
             customer_id=db_info.id
         )
         return JSONResponse(response, status_code=code)
-    except (LogicError, BadRetException) as err:
+    except LogicError as err:
         return _bad_ret(f'{str(err)}')
+    except BadRetException as err:
+        return _bad_ret(f'{str(err)}', log_err=err.show_err)
 
 
 @router.post('/get_service/')
@@ -289,11 +290,12 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
             bras_service_name=bras_service_name
         )
     except BadRetException as err:
-        return _bad_ret(str(err))
+        return _bad_ret(str(err), log_err=err.show_err)
 
 
-def _bad_ret(text: str, custom_status=status.HTTP_400_BAD_REQUEST) -> JSONResponse:
-    logger.error(msg=str(text))
+def _bad_ret(text: str, custom_status=status.HTTP_400_BAD_REQUEST, log_err=True) -> JSONResponse:
+    if log_err:
+        logger.error(msg=str(text))
     return JSONResponse({
         "Reply-Message": text
     }, status_code=custom_status)
@@ -309,8 +311,11 @@ def _update_lease_send_ws_signal(customer_id: int):
 
 
 class BadRetException(HTTPException):
+    show_err: bool
+
     def __init__(self, status_code=status.HTTP_400_BAD_REQUEST, detail=None,
-                 *args, **kwargs):
+                 show_err=True, *args, **kwargs):
+        self.show_err = show_err
         super().__init__(
             status_code=status_code,
             detail=detail or _('exception from radius.'),
@@ -576,7 +581,10 @@ def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any], b
 def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Customer:
     opt82 = vendor_manager.get_opt82(data=data)
     if not opt82 or opt82 == (None, None):
-        raise Opt82NotExistsException(detail="Failed fetch opt82 info")
+        raise Opt82NotExistsException(
+            detail="Failed fetch opt82 info",
+            show_err=False
+        )
     agent_remote_id, agent_circuit_id = opt82
     if all([agent_remote_id, agent_circuit_id]):
         dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
