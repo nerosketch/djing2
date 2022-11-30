@@ -30,7 +30,6 @@ set rtp+=~/.local/share/nvim/plugged
 call plug#begin('~/.local/share/nvim/plugged')
   Plug 'neovim/nvim-lspconfig'
 
-  Plug 'tpope/vim-fugitive'
   Plug 'neoclide/coc.nvim', {'branch': 'release'}
   " Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
   Plug 'preservim/nerdtree'
@@ -45,10 +44,7 @@ call plug#begin('~/.local/share/nvim/plugged')
   Plug 'scrooloose/nerdcommenter'
   " Plug 'mg979/vim-visual-multi', {'branch': 'master'}
   Plug 'eugen0329/vim-esearch'
-  Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --no-bash' }
-  Plug 'junegunn/fzf.vim'
   "Plug 'RRethy/vim-hexokinase', { 'do': 'make hexokinase' }
-  Plug 'mileszs/ack.vim'
   Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}  " We recommend updating the parsers on update
   " Plug 'SirVer/ultisnips'
   " Plug 'honza/vim-snippets'
@@ -149,7 +145,7 @@ autocmd BufNewFile,BufRead *.todo set syntax=todo
 autocmd BufWritePre * %s/\s\+$//e
 
 set encoding=UTF-8
-set hidden
+" set hidden
 set nobackup
 set nowritebackup
 set cursorline
@@ -159,35 +155,30 @@ set cursorline
 " endif
 " By the way, -- INSERT -- is unnecessary anymore because the mode information is displayed in the statusline.
 set noshowmode
-set foldmethod=indent
-set foldlevel=99
-set conceallevel=0
-let g:is_posix = 1
+" set foldmethod=indent
+" set foldlevel=99
+" set conceallevel=0
+" let g:is_posix = 1
 set noswapfile
-set nojoinspaces
+" set nojoinspaces
 set wrap
 " set linebreak
 set number
 set ttyfast
 set laststatus=2
-set ttimeout
-set ttimeoutlen=10
-set ignorecase
+" set ttimeout
+" set ttimeoutlen=10
+" set ignorecase
 " Signify default updatetime 4000ms is not good for async update
 set updatetime=100
 
-inoremap jk <ESC>
-vnoremap <M-/> <Esc>/\%V
-nnoremap <ESC><ESC> :nohlsearch<CR>
-" Word instead of character movement
-" nnoremap L l
-" nnoremap H h
-" nnoremap l w
-" nnoremap h b
+" inoremap jk <ESC>
+" vnoremap <M-/> <Esc>/\%V
+" nnoremap <ESC><ESC> :nohlsearch<CR>
 
-vnoremap p "_dP
+" vnoremap p "_dP
 
-set scroll=5
+" set scroll=2
 " Remap scrolling
 "nnoremap <C-k> <C-u>
 "nnoremap <C-j> <C-d>
@@ -196,8 +187,8 @@ noremap <C-c> <C-u>
 " Add status line support, for integration with other plugin, checkout `:h coc-status`
 set statusline^=%{coc#status()}%{StatusDiagnostic()}
 
-let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
-let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
+" let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
+" let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
 
 colorscheme gruvbox
 " colorscheme OceanicNext
@@ -219,7 +210,7 @@ endif
 set listchars=tab:>·,trail:~,extends:>,precedes:<
 set list
 set backspace=eol,start,indent
-set whichwrap+=<,>,h,l
+" set whichwrap+=<,>,h,l
 set tabstop=4
 set softtabstop=4
 set shiftwidth=4
@@ -250,21 +241,6 @@ set pumblend=1
 " Vim color highlighting
 let g:Hexokinase_highlighters = ['virtual']
 let g:Hexokinase_virtualText = '▩'
-
-" FZF config
-let g:fzf_layout = { 'window': {
-      \ 'width': 0.9,
-      \ 'height': 0.7,
-      \ 'highlight': 'Comment',
-      \ 'rounded': v:false } }
-let $FZF_DEFAULT_COMMAND = 'rg --files --hidden'
-" [Buffers] Jump to the existing window if possible
-let g:fzf_buffers_jump = 1
-" [Tags] Command to generate tags file
-let g:fzf_tags_command = 'ctags -R'
-
-" [Commands] --expect expression for directly executing the command
-let g:fzf_commands_expect = 'alt-enter,ctrl-x'
 
 " Esearch config
 let g:esearch = {
@@ -339,18 +315,12 @@ nnoremap <Leader>2 :diffget 2<CR>:diffupdate<CR>
 nnoremap <Leader>s :Ack<CR>
 nnoremap <Leader>wb :e#<CR>
 nnoremap <Leader>qq :bd<CR>
-nnoremap <Leader>qk :call DeleteCurrentFileAndBuffer()<CR>
 nnoremap <Leader>ss :mksession! .vimsession<CR>
 nnoremap <Leader>sr :so .vimsession<CR>
 nnoremap <Leader><Leader>r :so ~/.config/nvim/init.vim<CR>
 nnoremap <Leader>n :NERDTree<CR>
 nmap " :NERDTreeToggle<CR>
 " nnoremap <Leader>f :NERDTreeFind<CR>
-" Tabs
-" nnoremap <Leader>tn :tabn<CR>
-" nnoremap <Leader>tp :tabp<CR>
-" nnoremap <Leader>tc :tabe<CR>
-" nnoremap <Leader>tx :tabclose<CR>
 
 " Buffers
 nnoremap <Leader>qq :bd<CR>
@@ -366,12 +336,12 @@ nnoremap <silent> <Leader>pf :Files<CR>
 nnoremap <silent> <Leader>pb :Buffers<CR>
 nnoremap <silent> <Leader>pr :History<CR>
 nnoremap <silent> <c-\> :call esearch#init()<CR>
-command! -bang -nargs=* Rg call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case ".shellescape(<q-args>), 1, {'options': '--delimiter : --nth 4..'}, <bang>0)
-nnoremap <silent> \ :Rg<CR>
-nnoremap <silent> <c-o> :CocList outline<CR>
+" command! -bang -nargs=* Rg call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case ".shellescape(<q-args>), 1, {'options': '--delimiter : --nth 4..'}, <bang>0)
+"nnoremap <silent> \ :Rg<CR>
+"nnoremap <silent> <c-o> :CocList outline<CR>
 " Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
 " Coc only does snippet and additional edit on confirm.
-inoremap <silent><expr> <tab> coc#pum#visible() ? coc#pum#confirm() : "\<tab>"
+" inoremap <silent><expr> <tab> coc#pum#visible() ? coc#pum#confirm() : "\<tab>"
 
 " Remap keys for gotos
 nmap <silent> gd <Plug>(coc-definition)
@@ -381,10 +351,7 @@ nmap <silent> gr <Plug>(coc-references)
 
 " Use K to show documentation in preview window
 nnoremap <silent> K :call <SID>show_documentation()<CR>
-" nnoremap <F5> !bash ./run.sh<cr>
 
-" Close current opened buffer
-"map gw :Bclose<cr>
 " close buffers
 nnoremap <silent> Q     :Bdelete menu<CR>
 
@@ -394,15 +361,6 @@ let g:NERDSpaceDelims = 1
 let NERDTreeIgnore=['__pycache__',]
 
 " ------ Lightline ------
-function! DeleteCurrentFileAndBuffer()
-  call delete(expand('%'))
-  bdelete!
-endfunction
-
-function! DrawGitBranchInfo()
-  let branch = FugitiveHead()
-  return len(branch) > 0 ? " " . branch : ""
-endfunction
 
 function! MyFiletype()
   " return winwidth(0) > 70 ? (strlen(&filetype) ? WebDevIconsGetFileTypeSymbol() : '') : ''
@@ -441,7 +399,6 @@ let g:lightline = {
       \ 'component': { 'lineinfo': ' %2p%% %3l:%-2v' },
       \ 'component_function': {
       \   'fileicon': 'MyFiletype',
-      \   'icongitbranch': 'DrawGitBranchInfo',
       \   'iconline': 'DrawLineInfo',
       \   'gitbranch': 'FugitiveHead',
       \   'cocstatus': 'coc#status',
@@ -460,24 +417,6 @@ augroup vimrc_autocmds
     autocmd FileType python,rst,c,cpp set colorcolumn=117
 augroup END
 
-" Use tab for trigger completion with characters ahead and navigate.
-" Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.
-" inoremap <silent><expr> <TAB>
-      " \ pumvisible() ? "\<C-n>" :
-      " \ <SID>check_back_space() ? "\<TAB>" :
-      " \ coc#refresh()
-" inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
-
-" inoremap <silent><expr> <TAB>
-"       \ pumvisible() ? coc#_select_confirm() :
-"       \ coc#expandableOrJumpable() ? "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
-"       \ <SID>check_back_space() ? "\<TAB>" :
-"       \ coc#refresh()
-
-function! s:check_back_space() abort
-  let col = col('.') - 1
-  return !col || getline('.')[col - 1]  =~# '\s'
-endfunction
 
 " let g:coc_snippet_next = '<tab>'
 let g:coc_disable_startup_warning = 1
@@ -494,24 +433,24 @@ endfunction
 autocmd CursorHold * silent call CocActionAsync('highlight')
 
 " Use `:Fold` to fold current buffer
-command! -nargs=? Fold :call     CocAction('fold', <f-args>)
+" command! -nargs=? Fold :call     CocAction('fold', <f-args>)
 
 " Remap for format selected region
-xmap <leader><leader>f  <Plug>(coc-format-selected)
-nmap <leader><leader>f  <Plug>(coc-format-selected)
+" xmap <leader><leader>f  <Plug>(coc-format-selected)
+" nmap <leader><leader>f  <Plug>(coc-format-selected)
 
 " Create mappings for function text object, requires document symbols feature of languageserver.
-xmap if <Plug>(coc-funcobj-i)
-xmap af <Plug>(coc-funcobj-a)
-omap if <Plug>(coc-funcobj-i)
-omap af <Plug>(coc-funcobj-a)
+" xmap if <Plug>(coc-funcobj-i)
+" xmap af <Plug>(coc-funcobj-a)
+" omap if <Plug>(coc-funcobj-i)
+" omap af <Plug>(coc-funcobj-a)
 
 " Remap for do codeAction of selected region, ex: `<leader>aap` for current paragraph
 xmap <leader>a  <Plug>(coc-codeaction-selected)
 nmap <leader>a  <Plug>(coc-codeaction-selected)
 " Remap for do codeAction of current line
-nmap <leader>ac  <Plug>(coc-codeaction)
-nmap <leader>ar  <Plug>(coc-rename)
+" nmap <leader>ac  <Plug>(coc-codeaction)
+" nmap <leader>ar  <Plug>(coc-rename)
 " Fix autofix problem of current line
 nmap <leader>qf  <Plug>(coc-fix-current)
 
@@ -564,4 +503,4 @@ nnoremap <Leader>gs :Git status<CR>
 nnoremap <Leader>gc :Git commit %<cr>
 nnoremap <Leader>gu :Git checkout -- %<cr>
 nnoremap <Leader>gd :Git diff<cr>
-
+nnoremap t :Twilight<cr>
