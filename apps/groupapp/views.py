@@ -1,50 +1,76 @@
-from rest_framework.filters import OrderingFilter
+from typing import Optional
 
-# from rest_framework.generics import get_object_or_404
-# from rest_framework.response import Response
-
-from djing2.lib.filters import CustomObjectPermissionsFilter
-from djing2.lib.mixins import SitesFilterMixin
-from djing2.viewsets import DjingModelViewSet
+from django.contrib.sites.models import Site
+from django.db import transaction
+from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.crud import CrudRouter
+from djing2.lib.fastapi.general_filter import general_filter_queryset
+from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
+from djing2.lib.fastapi.perms import permission_check_dependency
+from djing2.lib.fastapi.sites_depend import sites_dependency
+from djing2.lib.fastapi.types import IListResponse, Pagination
+from profiles.models import BaseAccount
 from groupapp.models import Group
-from groupapp.serializers import GroupsSerializer  # , SetRelatedPermsRecursiveSerializer
+from fastapi import APIRouter, Depends, Request
+from starlette import status
+from groupapp import schemas
 
-# from profiles.serializers import PermissionModelSerializer
+
+router = APIRouter(
+    prefix='/groups',
+    dependencies=[Depends(is_admin_auth_dependency)]
+)
 
 
-class GroupsModelViewSets(SitesFilterMixin, DjingModelViewSet):
-    queryset = Group.objects.all().order_by('title')
-    serializer_class = GroupsSerializer
-    filter_backends = [CustomObjectPermissionsFilter, OrderingFilter]
-    ordering_fields = ("title",)
+router.include_router(CrudRouter(
+    schema=schemas.GroupsModelSchema,
+    create_schema=schemas.GroupBaseSchema,
+    queryset=Group.objects.all(),
+    create_route=False,
+    get_all_route=False,
+    get_one_route=False,
+))
 
-    def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(serializer=serializer, sites=[self.request.site])
 
-    # @action(detail=False)
-    # def get_all_related_perms(self, request):
-    #     if not request.user.is_superuser:
-    #         return Response(status=status.HTTP_403_FORBIDDEN)
-    #     related_perms_qs = Group.objects.get_perms4related_models()
-    #
-    #     serializer = PermissionModelSerializer(related_perms_qs, many=True)
-    #     return Response(serializer.data)
+@router.get('/',
+            response_model=IListResponse[schemas.GroupsModelSchema],
+            response_model_exclude_none=True
+            )
+@paginate_qs_path_decorator(
+    schema=schemas.GroupsModelSchema,
+    db_model=Group
+)
+def get_all_services(request: Request,
+                     groups: Optional[int] = None,
+                     curr_user: BaseAccount = Depends(permission_check_dependency(
+                         perm_codename='groupapp.view_group'
+                     )),
+                     curr_site: Site = Depends(sites_dependency),
+                     pagination: Pagination = Depends()
+                     ):
+    qs = general_filter_queryset(
+        qs_or_model=Group.objects.order_by('title'),
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='groupapp.view_group'
+    )
+    return qs
 
-    # @action(detail=True, methods=['put'])
-    # def set_related_perms_recursive(self, request, pk=None):
-    #     if not request.user.is_superuser:
-    #         return Response(status=status.HTTP_403_FORBIDDEN)
-    #     current_group = self.get_object()
-    #
-    #     serializer = SetRelatedPermsRecursiveSerializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #
-    #     data = serializer.data
-    #     perms = data.get('permission_ids', [])
-    #     profile_group = get_object_or_404(ProfileGroup, pk=data.get('profile_group'))
-    #
-    #     r = current_group.set_permissions_recursive(
-    #         permission_ids=perms,
-    #         profile_group=profile_group
-    #     )
-    #     return Response('ok', status=status.HTTP_200_OK if r else status.HTTP_400_BAD_REQUEST)
+
+@router.post('/',
+             status_code=status.HTTP_201_CREATED,
+             response_model=schemas.GroupsModelSchema,
+             dependencies=[Depends(permission_check_dependency(
+                 perm_codename='groupapp.add_group'
+             ))]
+             )
+def create_new_group(
+    group_data: schemas.GroupBaseSchema,
+    curr_site: Site = Depends(sites_dependency),
+):
+    with transaction.atomic():
+        new_group = Group.objects.create(
+            **group_data.dict()
+        )
+        new_group.sites.add(curr_site)
+    return schemas.GroupsModelSchema.from_orm(new_group)

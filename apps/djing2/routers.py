@@ -9,6 +9,7 @@ from services.views import router as srv_rt
 from radiusapp.views import router as radius_rt
 from tasks.views import router as tasks_rt
 from djing2.views import router as root_rt
+from groupapp.views import router as groups_rt
 
 
 router = APIRouter(
@@ -24,4 +25,5 @@ router.include_router(radius_rt)
 router.include_router(customers_router)
 router.include_router(srv_rt)
 router.include_router(tasks_rt)
+router.include_router(groups_rt)
 router.include_router(root_rt)
