@@ -10,6 +10,11 @@ class Migration(migrations.Migration):
         ("networks", "0009_auto_20201109_1437"),
     ]
 
+    run_before = [
+        ("customers", "0020_auto_20221107_1809"),
+        ("services", "0007_auto_20221107_1809"),
+    ]
+
     operations = [
         migrations.RunSQL(sql=read_all_file("0010_find_service_permit_updated.sql", __file__)),
     ]

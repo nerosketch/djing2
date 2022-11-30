@@ -1,17 +1,24 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from decimal import Decimal
 from typing import AnyStr, Optional, Union
 
 
 class ServiceBase(ABC):
     @abstractmethod
-    def calc_cost(self) -> float:
+    def calc_cost(self, req_time: Optional[datetime] = None) -> Decimal:
         """Calculates total cost of payment"""
         raise NotImplementedError
 
     @abstractmethod
     def calc_deadline(self) -> datetime:
         """Calculate deadline date"""
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def offer_deadline(start_time: datetime) -> datetime:
+        """Offers deadline for frontend"""
         raise NotImplementedError
 
     @property
@@ -23,8 +30,8 @@ class ServiceBase(ABC):
         """
 
     @staticmethod
-    def manage_access(customer) -> bool:
-        """Manage for access to customer services"""
+    def is_access(customer) -> bool:
+        """Calculates access possibility for customer services"""
         if not customer.is_active:
             return False
         act_srv = customer.active_service()

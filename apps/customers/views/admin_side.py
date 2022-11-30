@@ -3,11 +3,10 @@ from typing import Optional
 
 from customers import models
 from customers.views.view_decorators import catch_customers_errs
-from django.contrib.auth.hashers import make_password
 from django.contrib.sites.models import Site
 from django.db import transaction
 from django.db.models import Count, Q
-from django.utils.translation import gettext_lazy as _, gettext
+from django.utils.translation import gettext
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE, is_superuser_auth_dependency
 from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.general_filter import general_filter_queryset
@@ -24,7 +23,7 @@ from groupapp.models import Group
 from profiles.models import UserProfileLogActionType, UserProfile
 from profiles.schemas import generate_random_password
 from rest_framework.authtoken.models import Token
-from services.models import OneShotPay, PeriodicPay, Service
+from services.models import Service
 from starlette import status
 
 from .. import schemas
@@ -152,28 +151,6 @@ def filter_device_port(device_id: int, port_id: int,
     return (schemas.CustomerModelSchema.from_orm(c) for c in customers.iterator())
 
 
-@router.get('/service_type_report/',
-            response_model=schemas.CustomerServiceTypeReportResponseSchema,
-            dependencies=[Depends(permission_check_dependency(
-                perm_codename='customers.can_view_service_type_report'
-            ))]
-            )
-def service_type_report():
-    r = models.Customer.objects.customer_service_type_report()
-    return r
-
-
-@router.get('/activity_report/',
-            response_model=schemas.ActivityReportResponseSchema,
-            dependencies=[Depends(permission_check_dependency(
-                perm_codename='customers.can_view_activity_report'
-            ))]
-            )
-def get_activity_report():
-    r = models.Customer.objects.activity_report()
-    return r
-
-
 @router.get('/generate_password/', response_model=str)
 def generate_password_for_customer():
     rp = generate_random_password()
@@ -213,7 +190,8 @@ def get_afk(date_limit: datetime,
 
 
 class CustomerResponseModelSchema(schemas.CustomerModelSchema, metaclass=AllOptionalMetaclass):
-    pass
+    id: Optional[int] = None
+    username: Optional[str] = None
 
 
 @router.get('/bums/',
@@ -284,39 +262,6 @@ def get_additional_telephones(request: Request, customer: int,
     return rqs.filter(customer_id=customer)
 
 
-router.include_router(CrudRouter(
-    schema=schemas.PeriodicPayForIdModelSchema,
-    create_schema=schemas.PeriodicPayForIdBaseSchema,
-    queryset=models.PeriodicPayForId.objects.defer("account").select_related("periodic_pay"),
-    get_all_route=False
-), prefix='/periodic-pay')
-
-
-@router.get('/periodic-pay/',
-            response_model=IListResponse[schemas.PeriodicPayForIdModelSchema],
-            response_model_exclude_none=True
-            )
-@paginate_qs_path_decorator(
-    schema=schemas.PeriodicPayForIdModelSchema,
-    db_model=models.PeriodicPayForId
-)
-def get_periodic_pays(request: Request, account: int,
-                      auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
-                      pagination: Pagination = Depends(),
-                      ):
-    curr_user, token = auth
-
-    rqs = filter_qs_by_rights(
-        qs_or_model=models.Customer.objects.filter(pk=account),
-        curr_user=curr_user,
-        perm_codename='customers.view_customer'
-    )
-    qs = models.PeriodicPayForId.objects.filter(
-        account_id__in=rqs
-    )
-    return qs
-
-
 @router.get('/attach_group_service/', response_model=list[schemas.AttachGroupServiceResponseSchema])
 def attach_group_service_get(group: int,
                              curr_site: Site = Depends(sites_dependency),
@@ -384,14 +329,7 @@ def attach_group_service(request_data: list[schemas.AttachGroupServiceResponseSc
         if s.check and s.service in all_available_service_ids_db
     )
 
-    # add = selected_service_ids - selected_service_ids_db
-    # sub = all_available_service_ids_db - (selected_service_ids - selected_service_ids_db)
-
     group.service_set.set(selected_service_ids)
-    # models.Customer.objects.filter(
-    #     group=group,
-    #     last_connected_service__in=sub
-    # ).update(last_connected_service=None)
     return
 
 
@@ -524,176 +462,6 @@ def super_user_get_customer_token_by_phone(data: schemas.TokenRequestSchema):
     )
 
 
-@router.post('/{customer_id}/pick_service/', responses={
-    status.HTTP_200_OK: {
-        'description': 'Service successfully picked'
-    },
-    status.HTTP_402_PAYMENT_REQUIRED: {
-        'description': gettext('Your account have not enough money')
-    }
-})
-@catch_customers_errs
-def customer_pick_service(customer_id: int, payload: schemas.PickServiceRequestSchema,
-                          curr_site: Site = Depends(sites_dependency),
-                          curr_user: UserProfile = Depends(permission_check_dependency(
-                              perm_codename='customers.can_buy_service'
-                          )),
-                          ):
-    """Trying to buy a service if enough money."""
-
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    )
-    customer = get_object_or_404(customers_queryset, pk=customer_id)
-    service_queryset = general_filter_queryset(
-        qs_or_model=Service,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='services.view_service'
-    )
-    srv = get_object_or_404(service_queryset, pk=payload.service_id)
-
-    log_comment = _("Service '%(service_name)s' has connected via admin until %(deadline)s") % {
-        "service_name": srv.title,
-        "deadline": payload.deadline,
-    }
-    try:
-        customer.pick_service(
-            service=srv,
-            author=curr_user,
-            comment=log_comment,
-            deadline=payload.deadline,
-            allow_negative=True
-        )
-    except models.NotEnoughMoney as e:
-        return Response(str(e), status_code=status.HTTP_402_PAYMENT_REQUIRED)
-    return Response('Ok', status_code=status.HTTP_200_OK)
-
-
-@router.post('/{customer_id}/make_shot/', responses={
-    status.HTTP_403_FORBIDDEN: {
-        'description': 'making payment shot not possible'
-    },
-    status.HTTP_200_OK: {
-        'description': 'Payment shot provided successfully'
-    }
-})
-@catch_customers_errs
-def make_payment_shot(customer_id: int, payload: schemas.MakePaymentSHotRequestSchema,
-                      curr_site: Site = Depends(sites_dependency),
-                      curr_user: UserProfile = Depends(permission_check_dependency(
-                          perm_codename='customers.can_buy_service'
-                      ))
-                      ):
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.can_buy_service'
-    )
-    customer = get_object_or_404(customers_queryset, pk=customer_id)
-
-    shot_queryset = general_filter_queryset(
-        qs_or_model=OneShotPay,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='services.view_oneshotpay'
-    )
-    shot = get_object_or_404(shot_queryset, pk=payload.shot_id)
-
-    shot.before_pay(customer=customer)
-    r = customer.make_shot(
-        shot=shot,
-        user_profile=curr_user,
-        allow_negative=True
-    )
-    shot.after_pay(customer=customer)
-    if not r:
-        return Response(status_code=status.HTTP_403_FORBIDDEN)
-    return Response(r)
-
-
-@router.post('/{customer_id}/make_periodic_pay/')
-@catch_customers_errs
-def make_periodic_pay(
-    customer_id: int,
-    payload: schemas.PeriodicPayForIdRequestSchema,
-    curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='customers.can_buy_service'
-    )),
-    curr_site: Site = Depends(sites_dependency)
-):
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.can_buy_service'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-
-    pp_queryset = general_filter_queryset(
-        qs_or_model=PeriodicPay,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_periodicpay'
-    )
-    periodic_pay = get_object_or_404(
-        pp_queryset,
-        pk=payload.periodic_pay_id
-    )
-    customer.make_periodic_pay(
-        periodic_pay=periodic_pay,
-        next_pay=payload.next_pay
-    )
-    return Response("ok")
-
-
-@router.get('/{customer_id}/stop_service/',
-            status_code=status.HTTP_204_NO_CONTENT,
-            responses={
-                status.HTTP_204_NO_CONTENT: {'description': 'Ok'},
-                status.HTTP_418_IM_A_TEAPOT: {
-                    'description': 'Service not connected. Nothing to stop'
-                }
-            })
-@catch_customers_errs
-def stop_service(customer_id: int,
-                 curr_site: Site = Depends(sites_dependency),
-                 curr_user: UserProfile = Depends(permission_check_dependency(
-                     perm_codename='customers.can_complete_service'
-                 ))
-                 ):
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.can_complete_service'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    cust_srv = customer.active_service()
-    if cust_srv is None:
-        return Response(
-            gettext("Service not connected"),
-            status_code=status.HTTP_418_IM_A_TEAPOT
-        )
-    srv = cust_srv.service
-    if srv is None:
-        return Response(
-            "Custom service has not service (Look at customers.views.admin_site)",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-    customer.stop_service(curr_user)
-
-
 @router.get(
     '/{customer_id}/ping_all_ips/',
     response_model=schemas.TypicalResponse,
@@ -722,33 +490,6 @@ def ping_all_ips(customer_id: int,
     )
 
 
-@router.get('/{customer_id}/current_service/', responses={
-    status.HTTP_204_NO_CONTENT: {'description': 'Customer has no service'},
-    status.HTTP_200_OK: {'description': 'Customer service details'}
-}, response_model=schemas.DetailedCustomerServiceModelSchema)
-@catch_customers_errs
-def get_current_service(customer_id: int,
-                        curr_site: Site = Depends(sites_dependency),
-                        auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
-                        ):
-    curr_user, token = auth
-
-    customers_queryset = general_filter_queryset(
-        qs_or_model=models.Customer,
-        curr_user=curr_user,
-        curr_site=curr_site,
-        perm_codename='customers.view_customer'
-    )
-    customer = get_object_or_404(
-        customers_queryset,
-        pk=customer_id
-    )
-    if not customer.current_service:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-    curr_srv = customer.current_service
-    return schemas.DetailedCustomerServiceModelSchema.from_orm(curr_srv)
-
-
 @router.post('/{customer_id}/add_balance/')
 @catch_customers_errs
 def add_balance(customer_id: int,
@@ -758,7 +499,7 @@ def add_balance(customer_id: int,
                     perm_codename='customers.can_add_balance'
                 ))
                 ):
-    cost = float(payload.cost)
+    cost = payload.cost
     if cost < 0.0:
         check_perm(
             user=curr_user,
@@ -781,7 +522,6 @@ def add_balance(customer_id: int,
         cost=cost,
         comment=" ".join(comment.split()) if comment else gettext("fill account through admin side"),
     )
-    customer.save(update_fields=("balance",))
     return Response()
 
 

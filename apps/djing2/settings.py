@@ -74,7 +74,6 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "encrypted_model_fields",
     "django_filters",
-    "corsheaders",
     "guardian",
     "django_cleanup.apps.CleanupConfig",
     "webpush",
@@ -108,7 +107,6 @@ MIDDLEWARE = [
     "djing2.middleware.XRealIPMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     # 'django.middleware.csrf.CsrfViewMiddleware',
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -348,9 +346,6 @@ GUARDIAN_RAISE_403 = True
 # GUARDIAN_AUTO_PREFETCH = True
 
 if DEBUG:
-    CORS_ORIGIN_ALLOW_ALL = True
-    CORS_ALLOW_CREDENTIALS = True
-    CORS_ORIGIN_WHITELIST = ("http://0.0.0.0:8080",)
     REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"].append(
         "rest_framework.authentication.SessionAuthentication",
     )

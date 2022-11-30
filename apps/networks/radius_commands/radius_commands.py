@@ -61,7 +61,7 @@ class RadiusInteract:
             'User-Name': uname,
             'ERX-Service-Deactivate': 'SERVICE-INET',
             'ERX-Service-Activate:1': 'SERVICE-GUEST',
-            'ERX-Service-Acct-Interval:1': 14400,
+            'ERX-Service-Acct-Interval:1': 600,
             'ERX-Service-Statistics:1': 2
         }
         return self.coa(**attrs)
@@ -71,7 +71,7 @@ class RadiusInteract:
             'User-Name': uname,
             'ERX-Service-Deactivate': 'SERVICE-GUEST',
             'ERX-Service-Activate:1': f'SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})',
-            'ERX-Service-Acct-Interval:1': 14400,
+            'ERX-Service-Acct-Interval:1': 600,
             'ERX-Service-Statistics:1': 2
         }
         return self.coa(**attrs)

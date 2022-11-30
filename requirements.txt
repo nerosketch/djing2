@@ -29,7 +29,7 @@ django-cleanup==5.1.0
 # viberbot
 git+https://github.com/Viber/viber-bot-python.git#egg=viberbot
 
-django-cors-headers==3.7.0
+#django-cors-headers==3.7.0
 django-encrypted-model-fields
 django-netfields==1.2.2
 
@@ -61,6 +61,8 @@ requests~=2.28.1
 
 # Tests
 pyftpdlib==1.5.6
+httpx
+freezegun
 
 # Csv and excel
 djangorestframework-csv>=2.1.1

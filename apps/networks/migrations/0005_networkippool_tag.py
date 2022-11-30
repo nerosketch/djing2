@@ -9,6 +9,12 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("networks", "0004_networkippool_is_dynamic"),
+        ("devices", "0004_push_dev_type2db"),
+    ]
+
+    run_before = [
+        ("customers", "0020_auto_20221107_1809"),
+        ("services", "0007_auto_20221107_1809"),
     ]
 
     operations = [

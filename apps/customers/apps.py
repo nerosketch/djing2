@@ -6,4 +6,3 @@ class CustomersConfig(AppConfig):
 
     def ready(self):
         from customers import signals  # noqa
-        from customers import tasks  # noqa
