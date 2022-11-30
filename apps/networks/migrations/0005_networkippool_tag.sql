@@ -160,7 +160,7 @@ $$
     left join base_accounts on (base_accounts.id = customers.baseaccount_ptr_id)
     left join networks_ip_leases nil on (nil.customer_id = customers.baseaccount_ptr_id)
   where nil.ip_address = v_ip and base_accounts.is_active
-  limit 1);
+);
 
 $$
 LANGUAGE sql;

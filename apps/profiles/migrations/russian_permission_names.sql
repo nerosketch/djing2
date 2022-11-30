@@ -65,8 +65,8 @@ execute _tp('customers', 'change_customer', 'Может изменять або�
 execute _tp('customers', 'view_customer', 'Может видеть абонентов');
 execute _tp('customers', 'can_buy_service', 'Может покупать абоненту услугу');
 execute _tp('customers', 'can_ping', 'Может пинговать абонентов');
-execute _tp('customers', 'change_periodicpayforid', 'Может изменять периодический платёж');
-execute _tp('customers', 'delete_periodicpayforid', 'Может удалять периодический платёж');
+execute _tp('services', 'change_periodicpayforid', 'Может изменять периодический платёж');
+execute _tp('services', 'delete_periodicpayforid', 'Может удалять периодический платёж');
 execute _tp('customers', 'add_passportinfo', 'Может добавлять паспортные данные');
 execute _tp('customers', 'change_passportinfo', 'Может изменять паспортные данные');
 execute _tp('customers', 'view_passportinfo', 'Может видеть паспортные данные');
@@ -84,8 +84,8 @@ execute _tp('customers', 'view_additionaltelephone', 'Может видеть д
 execute _tp('customers', 'delete_customer', 'Может удалять абонентов');
 execute _tp('customers', 'can_add_balance', 'Может пополнять абоненту счёт');
 execute _tp('customers', 'can_add_negative_balance', 'Может снимать средства со счёта абонента');
-execute _tp('customers', 'add_periodicpayforid', 'Может назначать периодический платёж');
-execute _tp('customers', 'view_periodicpayforid', 'Может видеть периодический платёж');
+execute _tp('services', 'add_periodicpayforid', 'Может назначать периодический платёж');
+execute _tp('services', 'view_periodicpayforid', 'Может видеть периодический платёж');
 execute _tp('customers', 'delete_passportinfo', 'Может удалять паспортные данные');
 execute _tp('customers', 'change_invoiceforpayment', 'Может изменять долг для абонента');
 execute _tp('customers', 'view_invoiceforpayment', 'Может видеть долг для абонента');

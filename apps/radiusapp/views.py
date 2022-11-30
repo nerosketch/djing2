@@ -1,23 +1,20 @@
 from datetime import datetime
 from typing import Optional, Mapping, Any
 
-from django.db import connection
+from django.db import connection, transaction
 from django.utils.translation import gettext_lazy as _
 from fastapi import APIRouter, HTTPException, Body
 from netaddr import EUI
 from starlette import status
 from starlette.responses import Response, JSONResponse
 
-from customers.models import CustomerService, Customer
+from customers.models import Customer
+from services.models import CustomerService
 from djing2.lib import LogicError, safe_int
 from djing2.lib.logger import logger
 from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
-from networks.tasks import (
-    async_change_session_inet2guest,
-    async_change_session_guest2inet,
-    check_if_lease_have_id_db_task
-)
+from networks.tasks import async_finish_session_task
 from radiusapp import custom_signals
 from radiusapp.schemas import CustomerServiceRequestSchema
 from radiusapp.vendor_base import (
@@ -26,6 +23,7 @@ from radiusapp.vendor_base import (
     SpeedInfoStruct, RadiusCounters
 )
 from radiusapp.vendors import VendorManager
+from radiusapp import tasks
 
 # TODO: Also protect requests by hash
 router = APIRouter(
@@ -94,7 +92,7 @@ def _find_and_assign_lease(customer_mac: EUI, pool_kind: NetworkIpPoolKind,
                 OR
             (nil.customer_id IS NULL AND nil.mac_address IS NULL)
         )
-      AND nil.state is false
+      AND NOT nil.state
     LIMIT 1
 )
 UPDATE networks_ip_leases unil
@@ -133,12 +131,11 @@ RETURNING (SELECT ip_address FROM lease);
 
 @router.post('/auth/{vendor_name}/')
 def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
-    # Just find customer by credentials from request
     vendor_manager = VendorManager(vendor_name=vendor_name)
 
     opt82 = vendor_manager.get_opt82(data=request_data)
-    if not opt82:
-        return _bad_ret("Failed fetch opt82 info")
+    if opt82 is None:
+        return _bad_ret("Fetch opt82 info system fail")
     agent_remote_id, agent_circuit_id = opt82
 
     customer_mac = vendor_manager.get_customer_mac(request_data)
@@ -238,8 +235,10 @@ def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
             customer_id=db_info.id
         )
         return JSONResponse(response, status_code=code)
-    except (LogicError, BadRetException) as err:
+    except LogicError as err:
         return _bad_ret(f'{str(err)}')
+    except BadRetException as err:
+        return _bad_ret(f'{str(err)}', log_err=err.show_err)
 
 
 @router.post('/get_service/')
@@ -268,6 +267,10 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
         return _bad_ret('Empty vendor name')
 
     vendor_manager = VendorManager(vendor_name=vendor_name)
+    bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
+    if bras_service_name is None:
+        logger.info('ERX-Service-Session not found')
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     request_type = vendor_manager.get_acct_status_type(request_data)
     if not request_type:
@@ -281,13 +284,18 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
             err = 'request_type_fn is None, (request_type=%s)' % request_type
             logger.error(err)
             return _acct_unknown(None, err)
-        return request_type_fn(vendor_manager=vendor_manager, request_data=request_data)
+        return request_type_fn(
+            vendor_manager=vendor_manager,
+            request_data=request_data,
+            bras_service_name=bras_service_name
+        )
     except BadRetException as err:
-        return _bad_ret(str(err))
+        return _bad_ret(str(err), log_err=err.show_err)
 
 
-def _bad_ret(text: str, custom_status=status.HTTP_400_BAD_REQUEST) -> JSONResponse:
-    logger.error(msg=str(text))
+def _bad_ret(text: str, custom_status=status.HTTP_400_BAD_REQUEST, log_err=True) -> JSONResponse:
+    if log_err:
+        logger.error(msg=str(text))
     return JSONResponse({
         "Reply-Message": text
     }, status_code=custom_status)
@@ -303,8 +311,11 @@ def _update_lease_send_ws_signal(customer_id: int):
 
 
 class BadRetException(HTTPException):
+    show_err: bool
+
     def __init__(self, status_code=status.HTTP_400_BAD_REQUEST, detail=None,
-                 *args, **kwargs):
+                 show_err=True, *args, **kwargs):
+        self.show_err = show_err
         super().__init__(
             status_code=status_code,
             detail=detail or _('exception from radius.'),
@@ -313,6 +324,11 @@ class BadRetException(HTTPException):
 
     def __str__(self):
         return f'{self.__class__.__name__}: {self.detail}'
+
+
+class CustomerNotFoundException(BadRetException): pass
+class Opt82NotExistsException(BadRetException): pass
+class Opt82NotAllExistsException(BadRetException): pass
 
 
 def _build_srv_result_from_db_result(row: tuple) -> CustomerServiceLeaseResult:
@@ -352,28 +368,28 @@ def _get_customer_and_service_and_lease_by_device_credentials(
         "SELECT ba.id, "
           "ba.username, "
           "ba.is_active, "
-          "cs.balance, "
-          "cs.is_dynamic_ip, "
-          "cs.auto_renewal_service, "
-          "cs.current_service_id, "
-          "cs.dev_port_id, "
-          "cs.device_id, "
-          "cs.gateway_id, "
+          "c.balance, "
+          "c.is_dynamic_ip, "
+          "c.auto_renewal_service, "
+          "cs.id, "
+          "c.dev_port_id, "
+          "c.device_id, "
+          "c.gateway_id, "
           "srv.speed_in, "
           "srv.speed_out, "
           "srv.speed_burst, "
           "nip.ip_address, "
           "nip.mac_address, "
           "nip.is_dynamic "
-        "FROM customers cs "
-          "LEFT JOIN device dv ON (dv.id = cs.device_id) "
-          "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
+        "FROM customers c "
+          "LEFT JOIN device dv ON (dv.id = c.device_id) "
+          "LEFT JOIN device_port dp ON (c.dev_port_id = dp.id) "
           "LEFT JOIN device_dev_type_is_use_dev_port ddtiudptiu ON (ddtiudptiu.dev_type = dv.dev_type) "
-          "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
-          "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
-          "LEFT JOIN services srv ON srv.id = custsrv.service_id "
+          "LEFT JOIN base_accounts ba ON c.baseaccount_ptr_id = ba.id "
+          "LEFT JOIN customer_service cs ON cs.customer_id = c.baseaccount_ptr_id "
+          "LEFT JOIN services srv ON srv.id = cs.service_id "
           "LEFT JOIN networks_ip_leases nip ON ( "
-            "nip.customer_id = cs.baseaccount_ptr_id AND ( "
+            "nip.customer_id = c.baseaccount_ptr_id AND ( "
               "nip.mac_address = %s::MACADDR OR nip.mac_address IS NULL "
             ") "
           ") "
@@ -396,24 +412,24 @@ def _get_customer_and_service_and_lease_by_mac(
         "SELECT ba.id, "
           "ba.username, "
           "ba.is_active, "
-          "cs.balance, "
-          "cs.is_dynamic_ip, "
-          "cs.auto_renewal_service, "
-          "cs.current_service_id, "
-          "cs.dev_port_id, "
-          "cs.device_id, "
-          "cs.gateway_id, "
+          "c.balance, "
+          "c.is_dynamic_ip, "
+          "c.auto_renewal_service, "
+          "cs.id, "
+          "c.dev_port_id, "
+          "c.device_id, "
+          "c.gateway_id, "
           "srv.speed_in, "
           "srv.speed_out, "
           "srv.speed_burst, "
           "nip.ip_address, "
           "nip.mac_address, "
           "false "
-        "FROM customers cs "
-          "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
-          "LEFT JOIN customer_service custsrv ON custsrv.id = cs.current_service_id "
-          "LEFT JOIN services srv ON srv.id = custsrv.service_id "
-          "LEFT JOIN networks_ip_leases nip ON nip.customer_id = cs.baseaccount_ptr_id "
+        "FROM customers c "
+          "LEFT JOIN base_accounts ba ON ba.id = c.baseaccount_ptr_id "
+          "LEFT JOIN customer_service cs ON cs.customer_id = c.baseaccount_ptr_id "
+          "LEFT JOIN services srv ON srv.id = cs.service_id "
+          "LEFT JOIN networks_ip_leases nip ON nip.customer_id = c.baseaccount_ptr_id "
         "WHERE "
           "nip.mac_address = %s::MACADDR "
         "LIMIT 1;"
@@ -440,7 +456,7 @@ def _update_counters(leases, counters: RadiusCounters,
     )
 
 
-def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -> Response:
+def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
     """Accounting start handler."""
     if not vendor_manager or not vendor_manager.vendor_class:
         return _bad_ret(
@@ -482,7 +498,7 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) 
         )
         CustomerIpLeaseModel.objects.filter(
             ip_address=ip,
-            customer_id=customer.pk,
+            # customer_id=customer.pk,
         ).update(
             mac_address=customer_mac,
             input_octets=0,
@@ -494,83 +510,81 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any]) 
             radius_username=radius_username,
             last_update=now,
         )
-    except BadRetException:
+    except (Opt82NotExistsException, Opt82NotAllExistsException):
         # auth by mac. Find static lease.
-        lease = CustomerIpLeaseModel.objects.filter(
-            mac_address=customer_mac,
-            is_dynamic=False,
-            state=False
-        ).exclude(
-            customer=None
-        ).select_related('customer').first()
-        if lease is None:
-            return _bad_ret(
-                'Free lease with mac="%s" not found' % customer_mac,
-                custom_status=status.HTTP_404_NOT_FOUND
-            )
-        customer = lease.customer
-        if not customer:
-            return _bad_ret(
-                'Customer static and free lease with provided mac address: %s Not found' % customer_mac,
-                custom_status=status.HTTP_404_NOT_FOUND
-            )
+        with transaction.atomic():
+            lease = CustomerIpLeaseModel.objects.filter(
+                mac_address=customer_mac,
+                is_dynamic=False,
+            ).exclude(
+                customer=None
+            ).select_related('customer').select_for_update()
+            lease.update(state=True)
+            lease = lease.first()
+            customer = lease.customer
+            if lease is None:
+                return _bad_ret(
+                    'Free lease with mac="%s" not found' % customer_mac,
+                    custom_status=status.HTTP_404_NOT_FOUND
+                )
 
-    bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
-    if bras_service_name is not None:
-        custom_signals.radius_acct_start_signal.send(
-            sender=CustomerIpLeaseModel,
-            instance=None,
-            data=request_data,
-            ip_addr=ip,
-            customer_mac=customer_mac,
-            radius_username=radius_username,
-            customer_ip_lease=None,
-            customer=customer,
-            radius_unique_id=radius_unique_id,
-            event_time=now,
-        )
+    custom_signals.radius_acct_start_signal.send(
+        sender=CustomerIpLeaseModel,
+        instance=None,
+        data=request_data,
+        ip_addr=ip,
+        customer_mac=customer_mac,
+        radius_username=radius_username,
+        customer_ip_lease=None,
+        customer=customer,
+        radius_unique_id=radius_unique_id,
+        event_time=now,
+    )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -> Response:
+def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
     ip = vendor_manager.get_rad_val(request_data, "Framed-IP-Address", str)
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     customer_mac = vendor_manager.get_customer_mac(request_data)
-    leases = CustomerIpLeaseModel.objects.filter(
-        ip_address=ip,
-    )
 
     counters = vendor_manager.get_counters(data=request_data)
 
-    bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
-    if bras_service_name is not None:
-        custom_signals.radius_acct_stop_signal.send(
-            sender=CustomerIpLeaseModel,
-            instance=CustomerIpLeaseModel(),
-            instance_queryset=leases,
-            data=request_data,
-            counters=counters,
-            ip_addr=ip,
-            radius_unique_id=radius_unique_id,
-            customer_mac=customer_mac,
+    with transaction.atomic():
+        leases = CustomerIpLeaseModel.objects.filter(
+            ip_address=ip,
+        ).select_related('customer')
+        leases.select_for_update().update(
+            state=False,
+            input_octets=counters.input_octets,
+            output_octets=counters.output_octets,
+            input_packets=counters.input_packets,
+            output_packets=counters.output_packets,
+            last_update=datetime.now()
         )
 
-    leases.update(
-        state=False,
-        input_octets=counters.input_octets,
-        output_octets=counters.output_octets,
-        input_packets=counters.input_packets,
-        output_packets=counters.output_packets,
-        last_update=datetime.now()
+    custom_signals.radius_acct_stop_signal.send(
+        sender=CustomerIpLeaseModel,
+        instance=CustomerIpLeaseModel(),
+        instance_queryset=leases,
+        data=request_data,
+        counters=counters,
+        ip_addr=ip,
+        radius_unique_id=radius_unique_id,
+        customer_mac=customer_mac,
     )
+
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Customer:
     opt82 = vendor_manager.get_opt82(data=data)
-    if not opt82:
-        raise BadRetException(detail="Failed fetch opt82 info")
+    if not opt82 or opt82 == (None, None):
+        raise Opt82NotExistsException(
+            detail="Failed fetch opt82 info",
+            show_err=False
+        )
     agent_remote_id, agent_circuit_id = opt82
     if all([agent_remote_id, agent_circuit_id]):
         dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
@@ -590,7 +604,7 @@ def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Cu
             device_port=dev_port
         )
         if not customer:
-            raise BadRetException(
+            raise CustomerNotFoundException(
                 detail='Customer not found by device: dev_mac=%(dev_mac)s, dev_port=%(dev_port)s' % {
                     'dev_mac': str(dev_mac),
                     'dev_port': str(dev_port),
@@ -598,13 +612,13 @@ def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Cu
                 status_code=status.HTTP_404_NOT_FOUND
             )
         return customer
-    raise BadRetException(
+    raise Opt82NotAllExistsException(
         detail='not all opt82 %s' % str(opt82),
         status_code=status.HTTP_200_OK
     )
 
 
-def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any]) -> Response:
+def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     if not radius_unique_id:
         return _bad_ret(
@@ -625,7 +639,20 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
     now = datetime.now()
     counters = vendor_manager.get_counters(request_data)
 
-    customer = _find_customer(data=request_data, vendor_manager=vendor_manager)
+    try:
+        customer = _find_customer(data=request_data, vendor_manager=vendor_manager)
+    except CustomerNotFoundException as err:
+        logger.error('Session with not customer in db: uname="%s", details: %s' % (
+            radius_username, err.detail
+        ))
+        async_finish_session_task.delay(
+            radius_uname=radius_username
+        )
+        raise err
+    except Opt82NotExistsException as err:
+        # TODO: update fixed mac
+        raise err
+
     leases = CustomerIpLeaseModel.objects.filter(
         ip_address=ip,
         mac_address=customer_mac,
@@ -661,48 +688,20 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any])
         )
 
     # Check for service synchronization
-    bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
-    if isinstance(bras_service_name, str):
-        if 'SERVICE-INET' in bras_service_name:
-            # bras contain inet session
-            if not customer.is_access():
-                logger.info("COA: inet->guest uname=%s" % radius_username)
-                async_change_session_inet2guest.delay(
-                    radius_uname=radius_username
-                )
-        elif 'SERVICE-GUEST' in bras_service_name:
-            # bras contain guest session
-            # TODO: optimize
-            if customer.is_access():
-                logger.info("COA: guest->inet uname=%s" % radius_username)
-                customer_service = customer.active_service()
-                service = customer_service.service
-                speed = SpeedInfoStruct(
-                    speed_in=float(service.speed_in),
-                    speed_out=float(service.speed_out),
-                    burst_in=float(service.speed_burst),
-                    burst_out=float(service.speed_burst),
-                )
-                speed = vendor_manager.get_speed(speed=speed)
-                async_change_session_guest2inet.delay(
-                    radius_uname=radius_username,
-                    speed_in=speed.speed_in,
-                    speed_out=speed.speed_out,
-                    speed_in_burst=speed.burst_in,
-                    speed_out_burst=speed.burst_out
-                )
-        custom_signals.radius_auth_update_signal.send(
-            sender=CustomerIpLeaseModel,
-            instance=None,
-            instance_queryset=leases,
-            data=request_data,
-            counters=counters,
-            radius_unique_id=radius_unique_id,
-            ip_addr=ip,
-            customer_mac=customer_mac
-        )
-    check_if_lease_have_id_db_task.delay(
-        radius_uname=radius_username
+    tasks.check_and_control_session_task.delay(
+        bras_service_name=bras_service_name,
+        customer_id=customer.pk,
+        radius_username=radius_username
+    )
+    custom_signals.radius_auth_update_signal.send(
+        sender=CustomerIpLeaseModel,
+        instance=None,
+        instance_queryset=leases,
+        data=request_data,
+        counters=counters,
+        radius_unique_id=radius_unique_id,
+        ip_addr=ip,
+        customer_mac=customer_mac
     )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -10,8 +10,7 @@ ENV DJANGO_SETTINGS_MODULE=djing2.settings
 
 RUN ["apk", "add", "net-snmp-dev", "arping", "gettext", "inetutils-telnet", "gcc", "git", "musl-dev", "libffi-dev", "libpq-dev", "make", "--no-cache"]
 RUN ["adduser", "-G", "www-data", "-SDH", "-h", "/var/www/djing2", "www-data"]
-RUN mkdir -p /var/www/djing2/media /var/log/djing2 \
-    && chown -R www-data. /var/www/djing2 /var/log/djing2
+RUN mkdir -p /var/www/djing2/media && chown -R www-data. /var/www/djing2
 
 COPY --chown=www-data:www-data ["requirements.txt", "/var/www/djing2"]
 RUN ["pip", "install", "--no-cache-dir", "-r", "/var/www/djing2/requirements.txt"]
@@ -23,6 +22,7 @@ COPY --chown=www-data:www-data ["manage.py", "create_initial_user.py", "ipt_linu
 COPY --chown=www-data:www-data ["apps", "/var/www/djing2/apps"]
 
 WORKDIR /var/www/djing2
+VOLUME /var/www/djing2/media
 
 USER www-data
 

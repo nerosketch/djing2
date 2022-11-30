@@ -1,5 +1,7 @@
 from collections import OrderedDict
-from django.test import TestCase, override_settings
+from decimal import Decimal
+
+from django.test import override_settings
 from djing2.lib import calc_hash
 from networks.models import NetworkIpPool, VlanIf, CustomerIpLeaseModel, NetworkIpPoolKind, CustomerIpLeaseLog
 from customers.models import Customer
@@ -7,18 +9,35 @@ from customers.tests.customer import CustomAPITestCase
 from customers.tests.get_user_credentials_by_ip import BaseServiceTestCase
 
 
+def create_test_ippool(self):
+    self.ippool = NetworkIpPool.objects.create(
+        network="10.11.12.0/24",
+        kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
+        description="test",
+        ip_start="10.11.12.2",
+        ip_end="10.11.12.254",
+        # vlan_if=vlan,
+        gateway="10.11.12.1",
+        is_dynamic=True,
+    )
+    self.ippool.groups.add(self.group)
+
+
 @override_settings(API_AUTH_SUBNET="127.0.0.0/8")
-class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
+class LeaseCommitAddUpdateTestCase(BaseServiceTestCase):
     def setUp(self):
         # Initialize customers instances
-        BaseServiceTestCase.setUp(self)
+        super().setUp()
 
         self.customer.device = self.device_switch
         self.customer.dev_port = self.ports[1]
-        self.customer.add_balance(self.admin, 10000, "test")
         self.customer.save()
+        self.customer.add_balance(self.admin, Decimal(10000), "test")
         self.customer.refresh_from_db()
-        self.customer.pick_service(self.service, self.customer)
+        self.service.pick_service(
+            customer=self.customer,
+            author=self.customer
+        )
 
         # customer for tests
         custo2 = Customer.objects.create_user(
@@ -32,17 +51,7 @@ class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
         custo2.refresh_from_db()
         self.customer2 = custo2
 
-        self.ippool = NetworkIpPool.objects.create(
-            network="10.11.12.0/24",
-            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
-            description="test",
-            ip_start="10.11.12.2",
-            ip_end="10.11.12.254",
-            # vlan_if=vlan,
-            gateway="10.11.12.1",
-            is_dynamic=True,
-        )
-        self.ippool.groups.add(self.group)
+        create_test_ippool(self)
 
         self.client.logout()
 
@@ -150,8 +159,12 @@ class LeaseCommitAddUpdateTestCase(CustomAPITestCase):
         self.assertIsNotNone(log_customer2.event_time)
         self.assertIsNone(log_customer2.end_use_time)
 
-class IpPoolTestCase(TestCase):
+
+class IpPoolTestCase(CustomAPITestCase):
     def setUp(self):
+        # Initialize customers instances
+        super().setUp()
+
         self.vlan1 = VlanIf.objects.create(
             title="Test vlan 1",
             vid=12,
@@ -177,9 +190,6 @@ class IpPoolTestCase(TestCase):
             gateway="192.168.1.1",
             is_dynamic=False,
         )
-
-        # Initialize customers instances
-        CustomAPITestCase.setUp(self)
 
     def test_get_free_ip_from_empty_leases(self):
         free_ip = self.pool1.get_free_ip()

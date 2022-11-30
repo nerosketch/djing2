@@ -17,7 +17,7 @@ def get_users_from_biling() -> list:
     }, headers={
         'Authorization': 'Token ffffffffffffffffffffffffffffffffffff',
         'Content-type': 'application/json'
-    })
+    }, verify=False, timeout=20)
     if credentials.status_code != 200:
         exit(1)
     return credentials.json()
