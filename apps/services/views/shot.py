@@ -1,4 +1,5 @@
 from django.contrib.sites.models import Site
+from django.db import transaction
 from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.perms import permission_check_dependency
 from djing2.lib.fastapi.sites_depend import sites_dependency
@@ -8,12 +9,12 @@ from profiles.models import UserProfile
 from customers.models import Customer
 from starlette import status
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.crud import CrudRouter
 from services import schemas
 from services import models
 
 
 router = APIRouter(
-    prefix='/shot',
     dependencies=[Depends(is_admin_auth_dependency)]
 )
 
@@ -58,3 +59,31 @@ def make_payment_shot(customer_id: int, payload: schemas.MakePaymentSHotRequestS
     if not r:
         return Response(status_code=status.HTTP_403_FORBIDDEN)
     return Response(r)
+
+
+router.include_router(CrudRouter(
+    schema=schemas.OneShotPayModelSchema,
+    update_schema=schemas.OneShotPayBaseSchema,
+    queryset=models.OneShotPay.objects.all(),
+    create_route=False,
+), prefix='/shot')
+
+
+@router.post('/shot/',
+             response_model=schemas.OneShotPayModelSchema,
+             status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(permission_check_dependency(
+                 perm_codename='services.add_oneshotpay'
+             ))]
+             )
+def create_periodic_pay(payload: schemas.OneShotPayBaseSchema,
+                        curr_site: Site = Depends(sites_dependency),
+                        ):
+    with transaction.atomic():
+        new_op = models.OneShotPay.objects.create(
+            **payload.dict()
+        )
+        new_op.sites.add(curr_site)
+    return schemas.OneShotPayModelSchema.from_orm(new_op)
+
+
