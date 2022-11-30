@@ -5,7 +5,6 @@ from django.conf import settings
 api_urls = [
     path("profiles/", include("profiles.urls", namespace="profiles")),
     path("groups/", include("groupapp.urls", namespace="groups")),
-    path("services/", include("services.urls", namespace="services")),
     path("gateways/", include("gateways.urls", namespace="gateways")),
     path("devices/", include("devices.urls", namespace="devices")),
     path("customers/", include("customers.urls", namespace="customers")),
