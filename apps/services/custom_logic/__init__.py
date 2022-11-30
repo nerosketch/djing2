@@ -35,9 +35,18 @@ PERIODIC_PAY_CHOICES = (
 )
 
 
+class PeriodicPayChoices(int, Enum):
+    PERIODIC_PAY_CALC_DEFAULT = PERIODIC_PAY_CALC_DEFAULT
+    PERIODIC_PAY_CALC_RANDOM = PERIODIC_PAY_CALC_RANDOM
+
+
 ONE_SHOT_DEFAULT = 0
 
 ONE_SHOT_TYPES = ((ONE_SHOT_DEFAULT, ShotDefault),)
+
+
+class OneShotChoices(int, Enum):
+    ONE_SHOT_DEFAULT = ONE_SHOT_DEFAULT
 
 
 __all__ = (
@@ -52,4 +61,6 @@ __all__ = (
     "PERIODIC_PAY_CHOICES",
     "ONE_SHOT_TYPES",
     "ServiceChoiceEnum",
+    "PeriodicPayChoices",
+    "OneShotChoices",
 )

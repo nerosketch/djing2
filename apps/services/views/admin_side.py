@@ -2,25 +2,74 @@ from django.contrib.sites.models import Site
 from django.db import transaction
 from django.db.models.aggregates import Count
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination
 from djing2.lib.fastapi.utils import get_object_or_404
-from djing2.lib.mixins import SitesFilterMixin
-from djing2.viewsets import DjingModelViewSet
 from fastapi import APIRouter, Depends, Request, Path
 from profiles.models import UserProfileLogActionType, UserProfile
 from services import schemas
 from services.models import Service, PeriodicPay, OneShotPay
-from services.serializers import PeriodicPayModelSerializer, OneShotPaySerializer
 from starlette import status
 
 router = APIRouter(
     prefix='',
     dependencies=[Depends(is_admin_auth_dependency)]
 )
+
+router.include_router(CrudRouter(
+    schema=schemas.PeriodicPayModelSchema,
+    update_schema=schemas.PeriodicPayModelSchema,
+    queryset=PeriodicPay.objects.all(),
+    create_route=False,
+), prefix='/periodic')
+
+
+@router.post('/periodic/',
+             response_model=schemas.PeriodicPayModelSchema,
+             status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(permission_check_dependency(
+                 perm_codename='services.add_periodicpay'
+             ))]
+             )
+def create_periodic_pay(payload: schemas.PeriodicPayModelSchema,
+                        curr_site: Site = Depends(sites_dependency),
+                        ):
+    with transaction.atomic():
+        new_pp = PeriodicPay.objects.create(
+            **payload.dict()
+        )
+        new_pp.sites.add(curr_site)
+    return schemas.PeriodicPayModelSchema.from_orm(new_pp)
+
+
+router.include_router(CrudRouter(
+    schema=schemas.OneShotPayModelSchema,
+    update_schema=schemas.OneShotPayBaseSchema,
+    queryset=OneShotPay.objects.all(),
+    create_route=False,
+), prefix='/shot')
+
+
+@router.post('/shot/',
+             response_model=schemas.OneShotPayModelSchema,
+             status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(permission_check_dependency(
+                 perm_codename='services.add_oneshotpay'
+             ))]
+             )
+def create_periodic_pay(payload: schemas.OneShotPayBaseSchema,
+                        curr_site: Site = Depends(sites_dependency),
+                        ):
+    with transaction.atomic():
+        new_op = OneShotPay.objects.create(
+            **payload.dict()
+        )
+        new_op.sites.add(curr_site)
+    return schemas.OneShotPayModelSchema.from_orm(new_op)
 
 
 @router.patch('/{service_id}/',
@@ -146,19 +195,3 @@ def create_new_service(
             }
         )
     return schemas.ServiceModelSchema.from_orm(new_service)
-
-
-class PeriodicPayModelViewSet(SitesFilterMixin, DjingModelViewSet):
-    queryset = PeriodicPay.objects.all()
-    serializer_class = PeriodicPayModelSerializer
-
-    def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(serializer=serializer, sites=[self.request.site])
-
-
-class OneShotModelViewSet(SitesFilterMixin, DjingModelViewSet):
-    queryset = OneShotPay.objects.all()
-    serializer_class = OneShotPaySerializer
-
-    def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(serializer=serializer, sites=[self.request.site])
