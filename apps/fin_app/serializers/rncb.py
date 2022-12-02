@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from rest_framework import serializers
-from rest_framework import status
+from starlette import status
 from django.core.validators import integer_validator
 from djing2.lib import IntEnumEx
 from djing2.lib.mixins import BaseCustomModelSerializer

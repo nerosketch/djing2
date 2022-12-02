@@ -5,7 +5,7 @@ from django.db.models import Count
 from django.utils.translation import gettext, gettext_lazy as _
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status
+from starlette import status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import ValidationError

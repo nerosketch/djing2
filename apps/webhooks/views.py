@@ -1,6 +1,6 @@
 from typing import Optional
 from django.contrib.contenttypes.models import ContentType
-from rest_framework import status
+from starlette import status
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
