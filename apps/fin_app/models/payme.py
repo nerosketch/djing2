@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db import models, transaction
 from django.utils.translation import override, gettext_lazy as _, gettext
 from rest_framework.exceptions import APIException
-from rest_framework import status
+from starlette import status
 from djing2.lib import IntEnumEx
 from .base_payment_model import (
     BasePaymentModel,

@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from guardian.shortcuts import get_objects_for_user
-from rest_framework import status
+from starlette import status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.utils.encoders import JSONEncoder

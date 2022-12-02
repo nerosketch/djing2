@@ -3,7 +3,7 @@ from datetime import datetime
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.translation import gettext_lazy as _
 from django.db.utils import IntegrityError
-from rest_framework import status
+from starlette import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated, IsAdminUser

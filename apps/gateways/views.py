@@ -7,7 +7,7 @@ from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import Pagination
-from rest_framework import status
+from starlette import status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 

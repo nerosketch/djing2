@@ -79,21 +79,14 @@ class TariffDp(ServiceDefault):
         return self.customer_service.service.cost
 
 
-# Как в IS только не на время, а на 10 лет
+# Как в IS только не на время, а на 100 лет
 class TariffCp(TariffDp):
     description = _("Private service")
 
     @staticmethod
     def offer_deadline(start_time: datetime) -> datetime:
-        ten_years = datetime(
-            year=start_time.year + 10,
-            month=start_time.month,
-            day=1,
-            hour=23,
-            minute=59,
-            second=59
-        )
-        return ten_years
+        century = start_time + timedelta(days=3650)
+        return century
 
 
 # Daily service
