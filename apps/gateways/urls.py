@@ -6,7 +6,7 @@ from gateways.views import GatewayModelViewSet, gateway_class_choices
 app_name = "gateways"
 
 router = DefaultRouter()
-router.register("", GatewayModelViewSet)
+# router.register("", GatewayModelViewSet)
 
 urlpatterns = [
     path("gateway_class_choices/", gateway_class_choices),

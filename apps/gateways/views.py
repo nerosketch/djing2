@@ -1,5 +1,12 @@
 from django.contrib.messages.api import MessageFailure
+from django.contrib.sites.models import Site
 from django.db.models import Count, Q
+from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.general_filter import general_filter_queryset
+from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
+from djing2.lib.fastapi.perms import permission_check_dependency
+from djing2.lib.fastapi.sites_depend import sites_dependency
+from djing2.lib.fastapi.types import Pagination
 from rest_framework import status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
@@ -8,10 +15,30 @@ from djing2.lib import safe_int
 from djing2.viewsets import DjingModelViewSet
 from gateways.models import Gateway, GatewayClassChoices
 from gateways.serializers import GatewayModelSerializer
-from profiles.models import UserProfileLogActionType
+from profiles.models import UserProfileLogActionType, BaseAccount
+from fastapi import APIRouter, Depends, Request
+from gateways import schemas
 
 
-class GatewayModelViewSet(DjingModelViewSet):
+router = APIRouter(
+    prefix='/gateways',
+    tags=['Gateways'],
+    dependencies=[Depends(is_admin_auth_dependency)],
+)
+
+
+@router.get('/')
+@paginate_qs_path_decorator(
+    schema=schemas.GatewayModelSchema,
+    db_model=Gateway
+)
+def get_all_gateways(request: Request,
+                     curr_site: Site = Depends(sites_dependency),
+                     curr_user: BaseAccount = Depends(permission_check_dependency(
+                         perm_codename='customers.change_customer'
+                     )),
+                     pagination: Pagination = Depends(),
+                     ):
     queryset = Gateway.objects.annotate(
         customer_count=Count("customer"),
         customer_count_active=Count("customer", filter=Q(customer__is_active=True)),
@@ -19,6 +46,16 @@ class GatewayModelViewSet(DjingModelViewSet):
             "customer", filter=Q(customer__is_active=True) & ~Q(customer__current_service=None)
         ),
     )
+    queryset = general_filter_queryset(
+        qs_or_model=queryset,
+        curr_user=curr_user,
+        curr_site=curr_site,
+        perm_codename='gateways.view_gateway'
+    )
+    return queryset
+
+
+class GatewayModelViewSet(DjingModelViewSet):
     serializer_class = GatewayModelSerializer
 
     @action(detail=False)

@@ -1,4 +1,5 @@
 from typing import Optional
+from enum import IntEnum
 from gateways.gw_facade.base_gw import BaseGateway
 from gateways.gw_facade.linux_gw import LinuxGateway
 from gateways.gw_facade.mikrotik_gw import MikrotikGateway
@@ -11,7 +12,15 @@ class GatewayNetworkError(Exception):
 MIKROTIK = 0
 LINUX = 1
 
-GATEWAY_TYPES = ((MIKROTIK, MikrotikGateway), (LINUX, LinuxGateway))
+GATEWAY_TYPES = (
+    (MIKROTIK, MikrotikGateway),
+    (LINUX, LinuxGateway)
+)
+
+
+class GatewayTypesEnum(IntEnum):
+    MIKROTIK = MIKROTIK
+    LINUX = LINUX
 
 
 class GatewayFacade(BaseGateway):
@@ -38,4 +47,7 @@ class GatewayFacade(BaseGateway):
         return self.gw_instance.ping_customer(*args, **kwargs)
 
 
-__all__ = "GatewayFacade", "GATEWAY_TYPES", "GatewayNetworkError", "MIKROTIK", "LINUX"
+__all__ = (
+    "GatewayFacade", "GATEWAY_TYPES", "GatewayNetworkError",
+    "MIKROTIK", "LINUX", "GatewayTypesEnum",
+)

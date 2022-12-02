@@ -96,6 +96,13 @@ class Gateway(BaseAbstractModel):
                 yield els
                 els = cur.fetchone()
 
+    @property
+    def gw_type_str(self):
+        fn = getattr(self, 'get_gw_type_display', None)
+        if fn:
+            return fn()
+        return ''
+
     def __str__(self):
         return self.title
 
