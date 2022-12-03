@@ -665,6 +665,10 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any],
             _update_counters(
                 leases=leases_fu,
                 counters=counters,
+                state=True,
+                session_id=str(radius_unique_id),
+                radius_username=radius_username,
+                mac_address=str(customer_mac),
                 last_event_time=now
             )
         else:
