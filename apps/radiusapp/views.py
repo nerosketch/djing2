@@ -655,37 +655,39 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any],
 
     leases = CustomerIpLeaseModel.objects.filter(
         ip_address=ip,
-        mac_address=customer_mac,
+        # mac_address=customer_mac,
         customer=customer
     )
-    if leases.exists():
-        # just update counters
-        _update_counters(
-            leases=leases,
-            counters=counters,
-            last_event_time=now
-        )
-    else:
-        # create lease on customer profile if it not exists
-        vlan_id = vendor_manager.get_vlan_id(request_data)
-        service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
-        CustomerIpLeaseModel.objects.filter(
-            ip_address=str(ip),
-        ).update(
-            customer=customer,
-            mac_address=str(customer_mac),
-            input_octets=counters.input_octets,
-            output_octets=counters.output_octets,
-            input_packets=counters.input_packets,
-            output_packets=counters.output_packets,
-            state=True,
-            # lease_time=now,
-            last_update=now,
-            session_id=str(radius_unique_id),
-            radius_username=radius_username,
-            svid=safe_int(service_vlan_id),
-            cvid=safe_int(vlan_id)
-        )
+    with transaction.atomic():
+        leases_fu = leases.select_for_update()
+        if leases_fu.exists():
+            # just update counters
+            _update_counters(
+                leases=leases_fu,
+                counters=counters,
+                last_event_time=now
+            )
+        else:
+            # create lease on customer profile if it not exists
+            vlan_id = vendor_manager.get_vlan_id(request_data)
+            service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
+            CustomerIpLeaseModel.objects.filter(
+                ip_address=str(ip),
+            ).update(
+                customer=customer,
+                mac_address=str(customer_mac),
+                input_octets=counters.input_octets,
+                output_octets=counters.output_octets,
+                input_packets=counters.input_packets,
+                output_packets=counters.output_packets,
+                state=True,
+                # lease_time=now,
+                last_update=now,
+                session_id=str(radius_unique_id),
+                radius_username=radius_username,
+                svid=safe_int(service_vlan_id),
+                cvid=safe_int(vlan_id)
+            )
 
     # Check for service synchronization
     tasks.check_and_control_session_task.delay(
