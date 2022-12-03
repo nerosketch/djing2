@@ -155,7 +155,8 @@ DATABASES = {
         "PASSWORD": get_secret("POSTGRES_PASSWORD"),
         "HOST": os.getenv("POSTGRES_HOST", "postgres"),
         "PORT": os.getenv("POSTGRES_PORT", 6432),
-        "DISABLE_SERVER_SIDE_CURSORS": bool(os.getenv("DISABLE_SERVER_SIDE_CURSORS", False)),
+        #"DISABLE_SERVER_SIDE_CURSORS": bool(os.getenv("DISABLE_SERVER_SIDE_CURSORS", False)),
+        "DISABLE_SERVER_SIDE_CURSORS": True
     }
 }
 
