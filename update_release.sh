@@ -8,7 +8,6 @@ if [ $? -eq 1 ]; then
   exit 1
 fi
 
-docker login
-docker build -t nerosketch/djing2_app:latest .
+docker login && \
+docker build -t nerosketch/djing2_app:latest . && \
 docker push nerosketch/djing2_app:latest
-
