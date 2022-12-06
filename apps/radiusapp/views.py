@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Optional, Mapping, Any
 
+from asyncpg.pool import PoolAcquireContext
 from django.db import connection, transaction
 from django.utils.translation import gettext_lazy as _
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, Depends
 from netaddr import EUI
 from starlette import status
 from starlette.responses import Response, JSONResponse
@@ -23,6 +24,7 @@ from radiusapp.vendor_base import (
     SpeedInfoStruct, RadiusCounters
 )
 from radiusapp.vendors import VendorManager
+from radiusapp.db_asession import db_connection_dependency
 from radiusapp import tasks
 
 # TODO: Also protect requests by hash
@@ -73,9 +75,10 @@ def _assign_global_guest_lease(customer_mac, vlan_id: Optional[int], svid: Optio
     )
 
 
-def _find_and_assign_lease(customer_mac: EUI, pool_kind: NetworkIpPoolKind,
-                           customer_id: int, vlan_id: int, service_vlan_id: int,
-                           radius_unique_id: str, radius_username: str):
+async def _find_and_assign_lease(customer_mac: EUI, pool_kind: NetworkIpPoolKind,
+                                 customer_id: int, vlan_id: int, service_vlan_id: int,
+                                 radius_unique_id: str, radius_username: str,
+                                 conn: PoolAcquireContext):
     sql = """WITH lease(id, ip_address) AS (
     SELECT nil.id, nil.ip_address
     FROM networks_ip_leases nil
@@ -111,17 +114,16 @@ SET mac_address     = %(mac_address)s::macaddr,
 WHERE unil.id IN (SELECT id FROM lease)
 RETURNING (SELECT ip_address FROM lease);
 """
-    with connection.cursor() as cur:
-        cur.execute(sql, {
-            'mac_address': str(customer_mac),
-            'customer_id': customer_id,
-            'cvid': vlan_id,
-            'svid': service_vlan_id,
-            'session_id': radius_unique_id,
-            'pool_kind': pool_kind.value,
-            'radius_uname': radius_username
-        })
-        r = cur.fetchone()
+    conn.execute(sql, {
+        'mac_address': str(customer_mac),
+        'customer_id': customer_id,
+        'cvid': vlan_id,
+        'svid': service_vlan_id,
+        'session_id': radius_unique_id,
+        'pool_kind': pool_kind.value,
+        'radius_uname': radius_username
+    })
+    r = conn.fetchval()
 
     if r and r[0]:
         ip = r[0]
@@ -130,7 +132,8 @@ RETURNING (SELECT ip_address FROM lease);
 
 
 @router.post('/auth/{vendor_name}/')
-def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
+async def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...),
+               conn=Depends(db_connection_dependency)):
     vendor_manager = VendorManager(vendor_name=vendor_name)
 
     opt82 = vendor_manager.get_opt82(data=request_data)
@@ -156,7 +159,8 @@ def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
         if not dev_mac:
             return _bad_ret("Failed to parse option82")
 
-        db_info = _get_customer_and_service_and_lease_by_device_credentials(
+        db_info = await _get_customer_and_service_and_lease_by_device_credentials(
+            conn=conn,
             device_mac=dev_mac,
             customer_mac=customer_mac,
             device_port=dev_port
@@ -361,8 +365,9 @@ def _build_srv_result_from_db_result(row: tuple) -> CustomerServiceLeaseResult:
     )
 
 
-def _get_customer_and_service_and_lease_by_device_credentials(
-    device_mac: EUI, customer_mac: EUI, device_port: int = 0
+async def _get_customer_and_service_and_lease_by_device_credentials(
+    conn: PoolAcquireContext,
+    device_mac: EUI, customer_mac: EUI, device_port: int = 0,
 ) -> Optional[CustomerServiceLeaseResult]:
     sql = (
         "SELECT ba.id, "
@@ -397,9 +402,8 @@ def _get_customer_and_service_and_lease_by_device_credentials(
         "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = %s::SMALLINT) "
         "LIMIT 1;"
     )
-    with connection.cursor() as cur:
-        cur.execute(sql=sql, params=[str(customer_mac), str(device_mac), device_port])
-        row = cur.fetchone()
+    conn.execute(sql, str(customer_mac), str(device_mac), device_port)
+    row = conn.fetchval()
     if not row:
         return None
     return _build_srv_result_from_db_result(row=row)
