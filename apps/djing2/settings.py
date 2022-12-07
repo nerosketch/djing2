@@ -61,8 +61,6 @@ if isinstance(ADMINS, str):
 else:
     ADMINS = [("Admin", "admin@localhost")]
 
-# Application definition
-
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -86,22 +84,24 @@ INSTALLED_APPS = [
     "devices.apps.DevicesConfig",
     "networks.apps.NetworksConfig",
     "customers.apps.CustomersConfig",
-    # "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
-    #"sorm_export.apps.SormExportConfig",
     "customer_comments.apps.CustomerCommentsConfig",
     "dynamicfields.apps.DynamicfieldsConfig",
     "customers_legal.apps.CustomersLegalConfig",
     "customer_contract.apps.CustomerContractConfig",
-
-    #"webhooks.apps.WebhooksConfig",
 ]
 
 if DEBUG:
     INSTALLED_APPS.insert(0, "django.contrib.admin")
+
+
+external_apps = os.getenv('INSTALLED_APPS_ADDITIONAL', '')
+if external_apps and isinstance(external_apps, str):
+    INSTALLED_APPS.extend(i.strip() for i in external_apps.split(','))
+
 
 MIDDLEWARE = [
     "djing2.middleware.XRealIPMiddleware",
@@ -143,9 +143,6 @@ AUTHENTICATION_BACKENDS = (
 WSGI_APPLICATION = "djing2.wsgi.application"
 
 
-# Database
-# https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -160,24 +157,6 @@ DATABASES = {
     }
 }
 
-
-# if DEBUG:
-#     CACHES = {
-#         'default': {
-#             'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-#         }
-#     }
-# else:
-#     CACHES = {
-#         'default': {
-#             'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
-#             'LOCATION': '127.0.0.1:11211',
-#         }
-#     }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -271,9 +250,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/2.1/howto/static-files/
-
 STATIC_URL = "/static/"
 if DEBUG:
     STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
@@ -291,10 +267,6 @@ EMAIL_BACKEND = 'djing2.email_backend.Djing2EmailBackend'
 
 DEFAULT_PICTURE = "/static/img/user_ava_min.gif"
 AUTH_USER_MODEL = "profiles.BaseAccount"
-
-# LOGIN_URL = reverse_lazy('acc_app:login')
-# LOGIN_REDIRECT_URL = reverse_lazy('acc_app:setup_info')
-# LOGOUT_URL = reverse_lazy('acc_app:logout')
 
 TELEPHONE_REGEXP = os.getenv("TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
 
