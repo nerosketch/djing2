@@ -20,7 +20,10 @@ class CustomerServiceLeaseResult:
     username: str = ''
     is_active: bool = False
     balance: float = 0
+
+    # is dynamic in customer profile
     is_dynamic_ip: bool = False
+
     auto_renewal_service: bool = False
     current_service_id: Optional[int] = None
     dev_port_id: Optional[int] = None
@@ -29,6 +32,8 @@ class CustomerServiceLeaseResult:
     speed: Optional[SpeedInfoStruct] = None
     ip_address: Optional[str] = None
     mac_address: Optional[str] = None
+
+    # is dynamic lease
     is_dynamic: Optional[bool] = False
 
 
