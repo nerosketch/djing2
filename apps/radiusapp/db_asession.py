@@ -1,15 +1,12 @@
 from asyncpg import Pool, create_pool
 from asyncpg.pool import PoolConnectionProxy
-from django.conf import settings
+from django.db import connection
 from django.core.exceptions import ImproperlyConfigured
 from fastapi import Depends
 
 
 async def pool_dep() -> Pool:
-    databases = getattr(settings, 'DATABASES')
-    if databases is None:
-        raise ImproperlyConfigured('missing DATABASES option in settings')
-    db_def = databases.get('default')
+    db_def = connection.settings_dict
     if db_def is None:
         raise ImproperlyConfigured('missing DATABASES default option in settings')
     if db_def['ENGINE'] != 'django.db.backends.postgresql':
