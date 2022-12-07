@@ -276,7 +276,11 @@ def get_service(data: CustomerServiceRequestSchema):
 
 
 @router.post('/acct/{vendor_name}/')
-async def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
+async def acct(
+    vendor_name: str,
+    request_data: Mapping[str, Any] = Body(...),
+    conn: PoolConnectionProxy = Depends(db_connection_dependency)
+):
     if not vendor_name:
         return _bad_ret('Empty vendor name')
 
@@ -300,7 +304,8 @@ async def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
         return await request_type_fn(
             vendor_manager=vendor_manager,
             request_data=request_data,
-            bras_service_name=bras_service_name
+            bras_service_name=bras_service_name,
+            conn=conn
         )
     except BadRetException as err:
         return _bad_ret(str(err), log_err=err.show_err)
@@ -436,21 +441,11 @@ async def _get_customer_and_service_and_lease_by_mac(
     return _build_srv_result_from_db_result(row=row)
 
 
-def _update_counters(leases, counters: RadiusCounters,
-                     last_event_time=None, **update_kwargs):
-    if last_event_time is None:
-        last_event_time = datetime.now()
-    leases.update(
-        last_update=last_event_time,
-        input_octets=counters.input_octets,
-        output_octets=counters.output_octets,
-        input_packets=counters.input_packets,
-        output_packets=counters.output_packets,
-        **update_kwargs,
-    )
-
-
-async def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
+async def _acct_start(
+    vendor_manager: VendorManager, request_data: Mapping[str, Any],
+    bras_service_name: str,
+    conn: PoolConnectionProxy
+) -> Response:
     """Accounting start handler."""
     if not vendor_manager or not vendor_manager.vendor_class:
         return _bad_ret(
@@ -488,39 +483,54 @@ async def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, 
     try:
         customer = await _find_customer(
             data=request_data,
-            vendor_manager=vendor_manager
+            vendor_manager=vendor_manager,
+            conn=conn
         )
-        CustomerIpLeaseModel.objects.filter(
-            ip_address=ip,
-            # customer_id=customer.pk,
-        ).update(
-            mac_address=customer_mac,
-            input_octets=0,
-            output_octets=0,
-            input_packets=0,
-            output_packets=0,
-            state=True,
-            session_id=radius_unique_id,
-            radius_username=radius_username,
-            last_update=now,
+        sql = (
+            "UPDATE networks_ip_leases n SET "
+                "mac_address = $1::macaddr, "
+                "input_octets=0, "
+                "output_octets=0, "
+                "input_packets=0, "
+                "output_packets=0, "
+                "state=True, "
+                "session_id=$2::uuid, "
+                "radius_username=$3, "
+                "last_update=now() "
+            "WHERE ip_address=$4::inet"
         )
+        await conn.execute(sql, str(customer_mac), radius_unique_id, radius_username, ip)
     except (Opt82NotExistsException, Opt82NotAllExistsException):
         # auth by mac. Find static lease.
-        with transaction.atomic():
-            lease = CustomerIpLeaseModel.objects.filter(
-                mac_address=customer_mac,
-                is_dynamic=False,
-            ).exclude(
-                customer=None
-            ).select_related('customer').select_for_update()
-            lease.update(state=True)
-            lease = lease.first()
-            customer = lease.customer
-            if lease is None:
-                return _bad_ret(
-                    'Free lease with mac="%s" not found' % customer_mac,
-                    custom_status=status.HTTP_404_NOT_FOUND
-                )
+        sql = (
+            "UPDATE networks_ip_leases l SET "
+                "state=true "
+            "FROM customers c "
+                "WHERE l.customer_id = c.baseaccount_ptr_id AND "
+                    "l.mac_address=$1::macaddr AND "
+                    "not l.is_dynamic AND "
+                    "l.customer_id IS NOT NULL "
+            "RETURNING c.baseaccount_ptr_id, c.balance, c.is_dynamic_ip, "
+            "c.auto_renewal_service, c.dev_port_id, c.device_id, c.gateway_id, "
+            "c.group_id, c.address_id"
+        )
+        row = conn.fetchrow(sql, str(customer_mac))
+        if not row:
+            return _bad_ret(
+                'Free lease with mac="%s" not found' % customer_mac,
+                custom_status=status.HTTP_404_NOT_FOUND
+            )
+        customer = Customer(
+            pk=row.get('baseaccount_ptr_id'),
+            balance=row.get('balance'),
+            is_dynamic_ip=row.get('is_dynamic_ip', False),
+            auto_renewal_service=row.get('auto_renewal_service'),
+            dev_port_id=row.get('dev_port_id'),
+            device_id=row.get('device_id'),
+            gateway_id=row.get('gateway_id'),
+            group_id=row.get('group_id'),
+            address_id=row.get('address_id')
+        )
 
     custom_signals.radius_acct_start_signal.send(
         sender=CustomerIpLeaseModel,
@@ -538,7 +548,12 @@ async def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-async def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
+async def _acct_stop(
+    vendor_manager: VendorManager,
+    request_data: Mapping[str, Any],
+    bras_service_name: str,
+    conn: PoolConnectionProxy
+) -> Response:
     ip = vendor_manager.get_rad_val(request_data, "Framed-IP-Address", str)
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     customer_mac = vendor_manager.get_customer_mac(request_data)
@@ -572,7 +587,57 @@ async def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, A
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-async def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Customer:
+# async version of networks.models.CustomerIpLeaseModel.find_customer_by_device_credentials
+async def _find_customer_by_device_credentials_async(
+    conn: PoolConnectionProxy,
+    device_mac: EUI,
+    device_port: int
+):
+    sql = (
+        "SELECT ba.id as uid, ba.last_login, ba.is_superuser, ba.username, "
+        "ba.fio, ba.birth_day, ba.is_active, ba.is_admin, "
+        "ba.telephone, ba.create_date, ba.last_update_time, "
+        "cs.balance, cs.is_dynamic_ip, cs.auto_renewal_service, "
+        "cs.dev_port_id, cs.device_id, "
+        "cs.gateway_id, cs.group_id, cs.address_id "
+        "FROM customers cs "
+        "LEFT JOIN device dv ON (dv.id = cs.device_id) "
+        "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
+        "LEFT JOIN device_dev_type_is_use_dev_port ddtiudptiu ON (ddtiudptiu.dev_type = dv.dev_type) "
+        "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+        "WHERE dv.mac_addr = $1::MACADDR "
+        "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = $2::SMALLINT) "
+        "LIMIT 1;"
+    )
+    row = await conn.fetchrow(sql, str(device_mac), device_port)
+    return Customer(
+        pk=row.get('uid'),
+        last_login=row.get('last_login'),
+        is_superuser=row.get('is_superuser'),
+        username=row.get('username'),
+        fio=row.get('fio'),
+        birth_day=row.get('birth_day'),
+        is_active=row.get('is_active'),
+        is_admin=row.get('is_admin'),
+        telephone=row.get('telephone'),
+        create_date=row.get('create_date'),
+        last_update_time=row.get('last_update_time'),
+        balance=row.get('balance'),
+        is_dynamic_ip=row.get('is_dynamic_ip'),
+        auto_renewal_service=row.get('auto_renewal_service'),
+        dev_port_id=row.get('dev_port_id'),
+        device_id=row.get('device_id'),
+        gateway_id=row.get('gateway_id'),
+        group_id=row.get('group_id'),
+        address_id=row.get('address_id'),
+    )
+
+
+async def _find_customer(
+    data: Mapping[str, Any],
+    vendor_manager: VendorManager,
+    conn: PoolConnectionProxy
+) -> Customer:
     opt82 = vendor_manager.get_opt82(data=data)
     if not opt82 or opt82 == (None, None):
         raise Opt82NotExistsException(
@@ -593,9 +658,10 @@ async def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager)
                 }
             )
 
-        customer = await CustomerIpLeaseModel.find_customer_by_device_credentials(
+        customer = await _find_customer_by_device_credentials_async(
             device_mac=dev_mac,
-            device_port=dev_port
+            device_port=dev_port,
+            conn=conn
         )
         if not customer:
             raise CustomerNotFoundException(
@@ -612,7 +678,12 @@ async def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager)
     )
 
 
-async def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
+async def _acct_update(
+    vendor_manager: VendorManager,
+    request_data: Mapping[str, Any],
+    bras_service_name: str,
+    conn: PoolConnectionProxy
+) -> Response:
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     if not radius_unique_id:
         return _bad_ret(
@@ -634,7 +705,11 @@ async def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str,
     counters = vendor_manager.get_counters(request_data)
 
     try:
-        customer = await _find_customer(data=request_data, vendor_manager=vendor_manager)
+        customer = await _find_customer(
+            data=request_data,
+            vendor_manager=vendor_manager,
+            conn=conn
+        )
     except CustomerNotFoundException as err:
         logger.error('Session with not customer in db: uname="%s", details: %s' % (
             radius_username, err.detail
@@ -656,14 +731,17 @@ async def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str,
         leases_fu = leases.select_for_update()
         if leases_fu.exists():
             # just update counters
-            _update_counters(
-                leases=leases_fu,
-                counters=counters,
+            leases_fu.update(
+                last_update=now,
+                input_octets=counters.input_octets,
+                output_octets=counters.output_octets,
+                input_packets=counters.input_packets,
+                output_packets=counters.output_packets,
                 state=True,
                 session_id=str(radius_unique_id),
                 radius_username=radius_username,
                 mac_address=str(customer_mac),
-                last_event_time=now
+                last_event_time=now,
             )
         else:
             # create lease on customer profile if it not exists
