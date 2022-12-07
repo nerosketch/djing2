@@ -7,7 +7,6 @@ from sorm_export.ftp_worker.func import send_file2ftp
 from sorm_export.hier_export.base import format_fname
 
 
-@celery_app.task
 def save_radius_acct(data: dict) -> None:
     line = [v for k, v in data.items()]
     with open(AAA_EXPORT_FNAME, "a") as f:
