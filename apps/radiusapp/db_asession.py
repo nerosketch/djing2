@@ -28,5 +28,5 @@ async def pool_dep() -> Pool:
 
 
 async def db_connection_dependency(pool: Pool = Depends(pool_dep)) -> PoolConnectionProxy:
-    async with pool.acquire() as connection:
-        yield connection
+    async with pool.acquire() as conn:
+        yield conn
