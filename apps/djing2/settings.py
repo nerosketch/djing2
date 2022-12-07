@@ -103,6 +103,12 @@ INSTALLED_APPS = [
 if DEBUG:
     INSTALLED_APPS.insert(0, "django.contrib.admin")
 
+
+external_apps = os.getenv('INSTALLED_APPS_ADDITIONAL', '')
+if external_apps and isinstance(external_apps, str):
+    INSTALLED_APPS.extend(i.strip() for i in external_apps.split(','))
+
+
 MIDDLEWARE = [
     "djing2.middleware.XRealIPMiddleware",
     "django.middleware.security.SecurityMiddleware",
