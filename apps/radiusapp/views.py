@@ -506,15 +506,17 @@ async def _acct_start(
             "UPDATE networks_ip_leases l SET "
                 "state=true "
             "FROM customers c "
+            "LEFT JOIN base_accounts ba on c.baseaccount_ptr_id = ba.id "
                 "WHERE l.customer_id = c.baseaccount_ptr_id AND "
                     "l.mac_address=$1::macaddr AND "
                     "not l.is_dynamic AND "
                     "l.customer_id IS NOT NULL "
             "RETURNING c.baseaccount_ptr_id, c.balance, c.is_dynamic_ip, "
             "c.auto_renewal_service, c.dev_port_id, c.device_id, c.gateway_id, "
-            "c.group_id, c.address_id"
+            "c.group_id, c.address_id, ba.username, ba.is_active, ba.is_admin, "
+            "ba.is_superuser"
         )
-        row = conn.fetchrow(sql, str(customer_mac))
+        row = await conn.fetchrow(sql, str(customer_mac))
         if not row:
             return _bad_ret(
                 'Free lease with mac="%s" not found' % customer_mac,
@@ -522,6 +524,10 @@ async def _acct_start(
             )
         customer = Customer(
             pk=row.get('baseaccount_ptr_id'),
+            username=row.get('username'),
+            is_active=row.get('is_active'),
+            is_admin=row.get('is_admin'),
+            is_superuser=row.get('is_superuser'),
             balance=row.get('balance'),
             is_dynamic_ip=row.get('is_dynamic_ip', False),
             auto_renewal_service=row.get('auto_renewal_service'),
@@ -582,6 +588,7 @@ async def _acct_stop(
         ip_addr=ip,
         radius_unique_id=radius_unique_id,
         customer_mac=customer_mac,
+        customer=
     )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -779,6 +786,7 @@ async def _acct_update(
         counters=counters,
         radius_unique_id=radius_unique_id,
         ip_addr=ip,
+        customer=
         customer_mac=customer_mac
     )
 
