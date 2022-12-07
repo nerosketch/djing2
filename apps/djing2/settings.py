@@ -377,8 +377,6 @@ RADIUSAPP_OPTIONS = {
     'secret': get_secret("RADIUS_SECRET").encode()
 }
 
-SORM_REPORTING_EMAILS = []
-
 CONTRACTS_OPTIONS = {
     'DEFAULT_TITLE': os.getenv('CONTRACT_DEFAULT_TITLE', 'Contract default title')
 }
