@@ -21,7 +21,7 @@ from radiusapp.schemas import CustomerServiceRequestSchema
 from radiusapp.vendor_base import (
     AcctStatusType,
     CustomerServiceLeaseResult,
-    SpeedInfoStruct, RadiusCounters
+    SpeedInfoStruct
 )
 from radiusapp.vendors import VendorManager
 from radiusapp.db_asession import db_connection_dependency
@@ -729,7 +729,6 @@ async def _acct_update(
             custom_status=status.HTTP_200_OK
         )
     ip = vendor_manager.get_rad_val(request_data, "Framed-IP-Address", str)
-    now = datetime.now()
     counters = vendor_manager.get_counters(request_data)
 
     try:
@@ -750,48 +749,49 @@ async def _acct_update(
         # TODO: update fixed mac
         raise err
 
-    leases = CustomerIpLeaseModel.objects.filter(
-        ip_address=ip,
-        # mac_address=customer_mac,
-        customer=customer
+    sql = (
+        "DO $$ "
+        "BEGIN "
+            "select id from networks_ip_leases where ip_address=$1::inet AND customer_id=$2::integer; "
+            "if FOUND then "
+                # just update counters
+                "update networks_ip_leases l "
+                "set last_update=now(), "
+                    "input_octets=$3::bigint, "
+                    "output_octets=$4::bigint, "
+                    "input_packets=$5::bigint, "
+                    "output_packets=$6::bigint, "
+                    "state=true, "
+                    "session_id=$7::uuid, "
+                    "radius_username=$8, "
+                    "mac_address=$9::macaddr "
+                "where l.ip_address=$1::inet and l.customer_id=$2::integer; "
+            "else "
+                # create lease on customer profile if it not exists
+                "update networks_ip_leases l "
+                "set customer_id=$2::integer, "
+                    "mac_address=$9::macaddr, "
+                    "input_octets=$3::bigint, "
+                    "output_octets=$4::bigint, "
+                    "input_packets=$5::bigint, "
+                    "output_packets=$6::bigint, "
+                    "state=true, "
+                    "last_update=now(), "
+                    "session_id=$7::uuid, "
+                    "radius_username=$8, "
+                    "cvid=$10::smallint, "
+                    "svid=$11::smallint "
+                "where ip_address=$1::inet; "
+            "end if; "
+        "END$$;"
     )
-    with transaction.atomic():
-        leases_fu = leases.select_for_update()
-        if leases_fu.exists():
-            # just update counters
-            leases_fu.update(
-                last_update=now,
-                input_octets=counters.input_octets,
-                output_octets=counters.output_octets,
-                input_packets=counters.input_packets,
-                output_packets=counters.output_packets,
-                state=True,
-                session_id=str(radius_unique_id),
-                radius_username=radius_username,
-                mac_address=str(customer_mac),
-                last_event_time=now,
-            )
-        else:
-            # create lease on customer profile if it not exists
-            vlan_id = vendor_manager.get_vlan_id(request_data)
-            service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
-            CustomerIpLeaseModel.objects.filter(
-                ip_address=str(ip),
-            ).update(
-                customer=customer,
-                mac_address=str(customer_mac),
-                input_octets=counters.input_octets,
-                output_octets=counters.output_octets,
-                input_packets=counters.input_packets,
-                output_packets=counters.output_packets,
-                state=True,
-                # lease_time=now,
-                last_update=now,
-                session_id=str(radius_unique_id),
-                radius_username=radius_username,
-                svid=safe_int(service_vlan_id),
-                cvid=safe_int(vlan_id)
-            )
+    vlan_id = vendor_manager.get_vlan_id(request_data)
+    service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
+    await conn.execute(sql, str(ip), customer.pk, counters.input_octets,
+                       counters.output_octets, counters.input_packets,
+                       counters.output_packets, str(radius_unique_id),
+                       radius_username, str(customer_mac),
+                       safe_int(vlan_id), safe_int(service_vlan_id))
 
     # Check for service synchronization
     tasks.check_and_control_session_task.delay(
@@ -802,12 +802,11 @@ async def _acct_update(
     custom_signals.radius_auth_update_signal.send(
         sender=CustomerIpLeaseModel,
         instance=None,
-        instance_queryset=leases,
         data=request_data,
         counters=counters,
         radius_unique_id=radius_unique_id,
         ip_addr=ip,
-        customer=
+        customer=customer,
         customer_mac=customer_mac
     )
 
