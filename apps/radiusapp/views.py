@@ -566,29 +566,50 @@ async def _acct_stop(
 
     counters = vendor_manager.get_counters(data=request_data)
 
-    with transaction.atomic():
-        leases = CustomerIpLeaseModel.objects.filter(
-            ip_address=ip,
-        ).select_related('customer')
-        leases.select_for_update().update(
-            state=False,
-            input_octets=counters.input_octets,
-            output_octets=counters.output_octets,
-            input_packets=counters.input_packets,
-            output_packets=counters.output_packets,
-            last_update=datetime.now()
-        )
+    sql = (
+        "UPDATE networks_ip_leases l SET "
+            "state=false, "
+            "input_octets=$1::bigint, "
+            "output_octets=$2::bigint, "
+            "input_packets=$3::bigint, "
+            "output_packets=$4::bigint, "
+            "last_update=now() "
+        "FROM customers c "
+            "LEFT JOIN base_accounts ba ON c.baseaccount_ptr_id = ba.id "
+        "WHERE l.ip_address=$5::inet "
+            "RETURNING c.baseaccount_ptr_id, c.balance, c.is_dynamic_ip, "
+                "c.auto_renewal_service, c.dev_port_id, c.device_id, c.gateway_id, "
+            "c.group_id, c.address_id, ba.username, ba.is_active, ba.is_admin, "
+            "ba.is_superuser;"
+    )
+
+    row = await conn.fetchrow(sql, str(customer_mac))
+
+    customer = Customer(
+        pk=row.get('baseaccount_ptr_id'),
+        username=row.get('username'),
+        is_active=row.get('is_active'),
+        is_admin=row.get('is_admin'),
+        is_superuser=row.get('is_superuser'),
+        balance=row.get('balance'),
+        is_dynamic_ip=row.get('is_dynamic_ip', False),
+        auto_renewal_service=row.get('auto_renewal_service'),
+        dev_port_id=row.get('dev_port_id'),
+        device_id=row.get('device_id'),
+        gateway_id=row.get('gateway_id'),
+        group_id=row.get('group_id'),
+        address_id=row.get('address_id')
+    )
 
     custom_signals.radius_acct_stop_signal.send(
         sender=CustomerIpLeaseModel,
         instance=CustomerIpLeaseModel(),
-        instance_queryset=leases,
         data=request_data,
         counters=counters,
         ip_addr=ip,
         radius_unique_id=radius_unique_id,
         customer_mac=customer_mac,
-        customer=
+        customer=customer
     )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
