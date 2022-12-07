@@ -7,7 +7,7 @@ from fastapi import Depends
 
 async def pool_dep() -> Pool:
     db_def = connection.settings_dict
-    if db_def is None:
+    if not db_def:
         raise ImproperlyConfigured('missing DATABASES default option in settings')
     if db_def['ENGINE'] != 'django.db.backends.postgresql':
         raise ImproperlyConfigured('You must use postgresql to use this app')
