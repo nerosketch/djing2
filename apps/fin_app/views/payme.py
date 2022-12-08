@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.authentication import BaseAuthentication, get_authorization_header
-from rest_framework import status
+from starlette import status
 from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SitesFilterMixin
 from ._general import cached_property

@@ -306,8 +306,8 @@ class CustomerIpLeaseModel(models.Model):
             "ba.fio, ba.birth_day, ba.is_active, ba.is_admin, "
             "ba.telephone, ba.create_date, ba.last_update_time, "
             "cs.balance, cs.is_dynamic_ip, cs.auto_renewal_service, "
-            "cs.current_service_id, cs.dev_port_id, cs.device_id, "
-            "cs.gateway_id, cs.group_id, cs.last_connected_service_id, cs.address_id "
+            "cs.dev_port_id, cs.device_id, "
+            "cs.gateway_id, cs.group_id, cs.address_id "
             "FROM customers cs "
             "LEFT JOIN device dv ON (dv.id = cs.device_id) "
             "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
@@ -329,8 +329,8 @@ class CustomerIpLeaseModel(models.Model):
             fio, birth_day, is_active, is_admin,
             telephone, create_date, last_update_time,
             balance, is_dyn_ip, auto_renw_srv,
-            curr_srv_id, dev_port_id, dev_id,
-            gw_id, grp_id, last_srv_id, address_id,
+            dev_port_id, dev_id,
+            gw_id, grp_id, address_id,
         ) = res
         return Customer(
             pk=bid,
@@ -347,12 +347,10 @@ class CustomerIpLeaseModel(models.Model):
             balance=balance,
             is_dynamic_ip=is_dyn_ip,
             auto_renewal_service=auto_renw_srv,
-            current_service_id=curr_srv_id,
             dev_port_id=dev_port_id,
             device_id=dev_id,
             gateway_id=gw_id,
             group_id=grp_id,
-            last_connected_service_id=last_srv_id,
             address_id=address_id,
         )
 

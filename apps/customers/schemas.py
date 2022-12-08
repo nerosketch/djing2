@@ -11,7 +11,6 @@ from djing2.lib.validators import tel_regexp_str
 from pydantic import validator, BaseModel, Field
 
 from profiles.schemas import BaseAccountSchema
-from services.schemas import ServiceModelSchema
 
 from . import models
 
@@ -40,7 +39,6 @@ class CustomerSchema(BaseAccountSchema):
     is_dynamic_ip: bool = False
     gateway_id: Optional[int] = None
     auto_renewal_service: bool = False
-    last_connected_service_id: Optional[int] = None
 
 
 class CustomerModelSchema(CustomerSchema):
@@ -53,7 +51,6 @@ class CustomerModelSchema(CustomerSchema):
     address_title: str
     balance: float
     device_comment: Optional[str]
-    last_connected_service_title: Optional[str]
     current_service_title: Optional[str]
     service_id: Optional[int]
     raw_password: Optional[str]
@@ -64,18 +61,6 @@ class CustomerModelSchema(CustomerSchema):
     @validator('balance')
     def check_balance(cls, v: float):
         return round(v, 2)
-
-    Config = OrmConf
-
-
-class CustomerServiceBaseSchema(BaseModel):
-    deadline: Optional[datetime] = None
-
-
-class CustomerServiceModelSchema(CustomerServiceBaseSchema):
-    id: int
-    service_id: int
-    start_time: Optional[datetime] = None
 
     Config = OrmConf
 
@@ -152,21 +137,6 @@ class AdditionalTelephoneModelSchema(AdditionalTelephoneBaseSchema):
     Config = OrmConf
 
 
-class PeriodicPayForIdBaseSchema(BaseModel):
-    periodic_pay_id: int
-
-
-class PeriodicPayForIdModelSchema(PeriodicPayForIdBaseSchema):
-    id: int
-    next_pay: datetime
-    last_pay: Optional[datetime] = None
-    service_name: Optional[str] = None
-    service_calc_type: Optional[str] = None
-    service_amount: Optional[float] = None
-
-    Config = OrmConf
-
-
 class AttachGroupServiceResponseSchema(BaseModel):
     service: int
     check: bool
@@ -221,12 +191,9 @@ class UserCustomerModelSchema(UserCustomerWritableModelSchema):
 
     address_title: str
     balance: float
-    last_connected_service_title: Optional[str]
     current_service_title: Optional[str]
     service_id: Optional[int]
     current_service_id: Optional[int] = None
-
-    last_connected_service_id: Optional[int] = None
 
     Config = OrmConf
 
@@ -241,24 +208,6 @@ class UserBuyServiceSchema(BaseModel):
 
 class UserAutoRenewalServiceSchema(BaseModel):
     auto_renewal_service: bool
-
-
-class DetailedCustomerServiceModelSchema(CustomerServiceModelSchema):
-    service: ServiceModelSchema
-
-
-class PickServiceRequestSchema(BaseModel):
-    service_id: int
-    deadline: Optional[datetime] = None
-
-
-class MakePaymentSHotRequestSchema(BaseModel):
-    shot_id: int
-
-
-class PeriodicPayForIdRequestSchema(BaseModel):
-    periodic_pay_id: int
-    next_pay: datetime
 
 
 class ServiceUsersResponseSchema(BaseModel):
@@ -352,26 +301,6 @@ class PassportInfoModelSchema(PassportInfoBaseSchema):
         return v or ''
 
     Config = OrmConf
-
-
-class CustomerServiceTypeReportCalcType(BaseModel):
-    calc_type_count: int
-    service_descr: str
-
-
-class CustomerServiceTypeReportResponseSchema(BaseModel):
-    all_count: int = Field(title='All services count')
-    admin_count: int = Field(title='Admin services count')
-    zero_cost_count: int = Field(title='Zero cost services count')
-    calc_type_counts: list[CustomerServiceTypeReportCalcType] = Field(title='Calculation types count')
-
-
-class ActivityReportResponseSchema(BaseModel):
-    all_count: int = Field(title='All services count')
-    enabled_count: int = Field(title='Enabled services count')
-    with_services_count: int
-    active_count: int = Field(title='Active services count')
-    commercial_customers: int
 
 
 class GetAfkResponseSchema(BaseModel):

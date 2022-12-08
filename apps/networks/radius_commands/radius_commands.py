@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
-from rest_framework import status
+from starlette import status
 from pyrad.client import Client, Timeout
 from pyrad import packet
 from pyrad import dictionary
@@ -61,7 +61,7 @@ class RadiusInteract:
             'User-Name': uname,
             'ERX-Service-Deactivate': 'SERVICE-INET',
             'ERX-Service-Activate:1': 'SERVICE-GUEST',
-            'ERX-Service-Acct-Interval:1': 14400,
+            'ERX-Service-Acct-Interval:1': 600,
             'ERX-Service-Statistics:1': 2
         }
         return self.coa(**attrs)
@@ -71,7 +71,7 @@ class RadiusInteract:
             'User-Name': uname,
             'ERX-Service-Deactivate': 'SERVICE-GUEST',
             'ERX-Service-Activate:1': f'SERVICE-INET({speed_in},{speed_in_burst},{speed_out},{speed_out_burst})',
-            'ERX-Service-Acct-Interval:1': 14400,
+            'ERX-Service-Acct-Interval:1': 600,
             'ERX-Service-Statistics:1': 2
         }
         return self.coa(**attrs)

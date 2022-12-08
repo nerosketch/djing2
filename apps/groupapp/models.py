@@ -30,10 +30,6 @@ from djing2.models import BaseAbstractModel
 
 class Group(BaseAbstractModel):
     title = models.CharField(_("Title"), max_length=127, unique=True)
-    # Code is deprecated
-    code = models.CharField(
-        _("Tech code"), blank=True, null=True, default=None, max_length=12, validators=[latinValidator]
-    )
     sites = models.ManyToManyField(Site, blank=True)
 
     # objects = GroupManager()

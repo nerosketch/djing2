@@ -61,8 +61,6 @@ if isinstance(ADMINS, str):
 else:
     ADMINS = [("Admin", "admin@localhost")]
 
-# Application definition
-
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -74,7 +72,6 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "encrypted_model_fields",
     "django_filters",
-    "corsheaders",
     "guardian",
     "django_cleanup.apps.CleanupConfig",
     "webpush",
@@ -87,28 +84,29 @@ INSTALLED_APPS = [
     "devices.apps.DevicesConfig",
     "networks.apps.NetworksConfig",
     "customers.apps.CustomersConfig",
-    # "messenger.apps.MessengerConfig",
     "tasks.apps.TasksConfig",
     "fin_app.apps.FinAppConfig",
     "sitesapp.apps.SitesAppConfig",
     "radiusapp.apps.RadiusAppConfig",
-    #"sorm_export.apps.SormExportConfig",
     "customer_comments.apps.CustomerCommentsConfig",
     "dynamicfields.apps.DynamicfieldsConfig",
     "customers_legal.apps.CustomersLegalConfig",
     "customer_contract.apps.CustomerContractConfig",
-
-    #"webhooks.apps.WebhooksConfig",
 ]
 
 if DEBUG:
     INSTALLED_APPS.insert(0, "django.contrib.admin")
 
+
+external_apps = os.getenv('INSTALLED_APPS_ADDITIONAL', '')
+if external_apps and isinstance(external_apps, str):
+    INSTALLED_APPS.extend(i.strip() for i in external_apps.split(','))
+
+
 MIDDLEWARE = [
     "djing2.middleware.XRealIPMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     # 'django.middleware.csrf.CsrfViewMiddleware',
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -145,9 +143,6 @@ AUTHENTICATION_BACKENDS = (
 WSGI_APPLICATION = "djing2.wsgi.application"
 
 
-# Database
-# https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -156,29 +151,12 @@ DATABASES = {
         "USER": os.getenv("POSTGRES_USER", "postgres"),
         "PASSWORD": get_secret("POSTGRES_PASSWORD"),
         "HOST": os.getenv("POSTGRES_HOST", "postgres"),
-        "PORT": os.getenv("POSTGRES_PORT", 5432),
-        "DISABLE_SERVER_SIDE_CURSORS": bool(os.getenv("DISABLE_SERVER_SIDE_CURSORS", False)),
+        "PORT": os.getenv("POSTGRES_PORT", 6432),
+        #"DISABLE_SERVER_SIDE_CURSORS": bool(os.getenv("DISABLE_SERVER_SIDE_CURSORS", False)),
+        "DISABLE_SERVER_SIDE_CURSORS": True
     }
 }
 
-
-# if DEBUG:
-#     CACHES = {
-#         'default': {
-#             'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-#         }
-#     }
-# else:
-#     CACHES = {
-#         'default': {
-#             'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
-#             'LOCATION': '127.0.0.1:11211',
-#         }
-#     }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -263,17 +241,14 @@ USE_L10N = False
 
 USE_TZ = False
 
-# Maximum file size is 50Mb
-FILE_UPLOAD_MAX_MEMORY_SIZE = os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", 52428800)
+# Maximum file size is 150Mb
+FILE_UPLOAD_MAX_MEMORY_SIZE = os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", 157286400)
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
 
 # time to session live, 1 week
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = "/static/"
 if DEBUG:
@@ -292,10 +267,6 @@ EMAIL_BACKEND = 'djing2.email_backend.Djing2EmailBackend'
 
 DEFAULT_PICTURE = "/static/img/user_ava_min.gif"
 AUTH_USER_MODEL = "profiles.BaseAccount"
-
-# LOGIN_URL = reverse_lazy('acc_app:login')
-# LOGIN_REDIRECT_URL = reverse_lazy('acc_app:setup_info')
-# LOGOUT_URL = reverse_lazy('acc_app:logout')
 
 TELEPHONE_REGEXP = os.getenv("TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
 
@@ -339,7 +310,8 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'djing2.lib.renderer.CustomJSONRenderer',
         'rest_framework_csv.renderers.CSVRenderer',
-    ]
+    ],
+    'EXCEPTION_HANDLER': 'djing2.middleware.catch_logic_error',
 }
 
 # Guardian options
@@ -347,9 +319,6 @@ GUARDIAN_RAISE_403 = True
 # GUARDIAN_AUTO_PREFETCH = True
 
 if DEBUG:
-    CORS_ORIGIN_ALLOW_ALL = True
-    CORS_ALLOW_CREDENTIALS = True
-    CORS_ORIGIN_WHITELIST = ("http://0.0.0.0:8080",)
     REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"].append(
         "rest_framework.authentication.SessionAuthentication",
     )
@@ -407,8 +376,6 @@ RADIUSAPP_OPTIONS = {
     'server_host': os.getenv("RADIUS_APP_HOST"),
     'secret': get_secret("RADIUS_SECRET").encode()
 }
-
-SORM_REPORTING_EMAILS = []
 
 CONTRACTS_OPTIONS = {
     'DEFAULT_TITLE': os.getenv('CONTRACT_DEFAULT_TITLE', 'Contract default title')

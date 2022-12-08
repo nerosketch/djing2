@@ -4,3 +4,5 @@ from services import models
 admin.site.register(models.Service)
 admin.site.register(models.PeriodicPay)
 admin.site.register(models.OneShotPay)
+admin.site.register(models.CustomerService)
+admin.site.register(models.PeriodicPayForId)

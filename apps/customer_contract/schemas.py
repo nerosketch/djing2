@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Optional
 
+from django.db.models.fields.files import FieldFile
 from django.utils.translation import gettext as _
 from djing2.lib.fastapi.types import OrmConf
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 
 class CustomerContractBaseSchema(BaseModel):
@@ -31,6 +32,12 @@ class CustomerContractAttachmentBaseSchema(BaseModel):
     author_id: Optional[int] = None
     title: str
     doc_file: str
+
+    @validator('doc_file', pre=True)
+    def validate_doc_file(cls, v):
+        if isinstance(v, FieldFile):
+            return v.url
+        return v
 
 
 class CustomerContractAttachmentSchema(CustomerContractAttachmentBaseSchema):

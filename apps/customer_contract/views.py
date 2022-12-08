@@ -6,7 +6,8 @@ from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination, NOT_FOUND
 from djing2.lib.fastapi.utils import create_get_initial_route
-from fastapi import APIRouter, Depends, Request, Path
+from fastapi import APIRouter, Depends, Request, Path, UploadFile, Form
+from profiles.models import UserProfile
 from starlette import status
 
 from . import schemas
@@ -99,9 +100,31 @@ def finish_contract(contract_id: int):
 
 router.include_router(CrudRouter(
     schema=schemas.CustomerContractAttachmentSchema,
-    create_schema=schemas.CustomerContractAttachmentBaseSchema,
-    queryset=models.CustomerContractAttachmentModel.objects.all()
+    queryset=models.CustomerContractAttachmentModel.objects.all(),
+    create_route=False,
+    update_route=False
 ), prefix='/docs')
+
+
+@router.post('/docs/',
+             response_model=schemas.CustomerContractAttachmentSchema)
+def create_contract_attachment(
+    doc_file: UploadFile,
+    title: str = Form(),
+    contract_id: int = Form(gt=0),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='customer_contract.add_customercontractattachmentmodel'
+    ))
+):
+    from django.core.files.base import ContentFile
+    df = ContentFile(doc_file.file._file.read(), name=doc_file.filename)
+    new_attachment = models.CustomerContractAttachmentModel.objects.create(
+        contract_id=contract_id,
+        author=curr_user,
+        title=title,
+        doc_file=df
+    )
+    return schemas.CustomerContractAttachmentSchema.from_orm(new_attachment)
 
 
 create_get_initial_route(
