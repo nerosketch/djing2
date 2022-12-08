@@ -29,9 +29,13 @@ class CustomerLegalBaseSchema(BaseAccountSchema):
 class CustomerLegalSchema(CustomerLegalBaseSchema):
     id: int
     balance: float
+    fio: Optional[str] = None
+    state_level_reg_number: Optional[str] = None
+    actual_start_time: Optional[datetime] = None
 
     @validator('fio')
-    def validate_fio(cls, full_fio: str) -> str:
+    def validate_fio(cls, full_fio: Optional[str]) -> str:
+        # TODO: validate it
         return full_fio
 
     Config = OrmConf
