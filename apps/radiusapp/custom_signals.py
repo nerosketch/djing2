@@ -20,23 +20,23 @@ radius_acct_start_signal = Signal()
 # attrs:
 #    sender - CustomerIpLeaseModel
 #    instance - CustomerIpLeaseModel instance
-#    instance_queryset - CustomerIpLeaseModel Queryset in instance is None
 #    data - all raw data from radius request
 #    counters - instance of radiusapp.vendor_base.RadiusCounters dataclass
 #    ip_addr - customer ip address from radius request
 #    radius_unique_id - obviously
 #    customer_mac: netaddr.EUI instance -  customer device mac address from radius request
+#    customer - customers.models.Customer instance
 radius_acct_stop_signal = Signal()
 
 
 # Sends while radius send acct-update event
 # attrs:
 #    sender - CustomerIpLeaseModel
-#    instance - CustomerIpLeaseModel instance or None, if instance_queryset is None
-#    instance_queryset - CustomerIpLeaseModel Queryset if instance is None
+#    instance - CustomerIpLeaseModel instance or None
 #    data - all raw data from radius request
 #    counters - instance of radiusapp.vendor_base.RadiusCounters dataclass
 #    radius_unique_id - obviously
 #    ip_addr - customer ip address from radius request
 #    customer_mac: Optional[netaddr.EUI] instance -  customer device mac address from radius request
+#    customer - customers.models.Customer instance
 radius_auth_update_signal = Signal()

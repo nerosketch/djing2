@@ -1,18 +1,19 @@
 from datetime import datetime
 from typing import Optional, Mapping, Any
 
-from django.db import connection, transaction
-from django.utils.translation import gettext_lazy as _
-from fastapi import APIRouter, HTTPException, Body
+from asyncpg import Record
+from asyncpg.pool import PoolConnectionProxy
+from django.utils.translation import gettext as _
+from djing2.lib.fastapi.default_response_class import CompatibleJSONResponse
+from fastapi import APIRouter, HTTPException, Body, Depends
 from netaddr import EUI
 from starlette import status
-from starlette.responses import Response, JSONResponse
+from starlette.responses import Response
 
 from customers.models import Customer
 from services.models import CustomerService
 from djing2.lib import LogicError, safe_int
 from djing2.lib.logger import logger
-from djing2.lib.ws_connector import WsEventTypeEnum, send_data2ws
 from networks.models import CustomerIpLeaseModel, NetworkIpPoolKind
 from networks.tasks import async_finish_session_task
 from radiusapp import custom_signals
@@ -20,9 +21,10 @@ from radiusapp.schemas import CustomerServiceRequestSchema
 from radiusapp.vendor_base import (
     AcctStatusType,
     CustomerServiceLeaseResult,
-    SpeedInfoStruct, RadiusCounters
+    SpeedInfoStruct
 )
 from radiusapp.vendors import VendorManager
+from radiusapp.db_asession import db_connection_dependency
 from radiusapp import tasks
 
 # TODO: Also protect requests by hash
@@ -32,63 +34,87 @@ router = APIRouter(
 )
 
 
+def _bad_ret(text: str, custom_status=status.HTTP_400_BAD_REQUEST, log_err=True) -> CompatibleJSONResponse:
+    if log_err:
+        logger.error(msg=str(text))
+    return CompatibleJSONResponse({
+        "Reply-Message": text
+    }, status_code=custom_status)
+
+
 def _acct_unknown(_, tx=''):
     logger.error('Unknown acct: %s' % tx)
     return _bad_ret("Bad Acct-Status-Type: %s" % tx, custom_status=status.HTTP_200_OK)
 
 
-def _assign_global_guest_lease(customer_mac, vlan_id: Optional[int], svid: Optional[int],
-                               now: datetime, session_id: Optional[str], radius_username: Optional[str]):
+async def _assign_global_guest_lease(
+    customer_mac, vlan_id: Optional[int], svid: Optional[int],
+    session_id: Optional[str], radius_username: Optional[str],
+    conn: PoolConnectionProxy,
+):
     """Create global guest lease without customer"""
 
-    leases_qs = CustomerIpLeaseModel.objects.filter(
-        pool__kind=NetworkIpPoolKind.NETWORK_KIND_GUEST.value,
-        state=False,
-    )[:1]
-    leases_qs = CustomerIpLeaseModel.objects.filter(pk__in=leases_qs)
-    updated_lease_count = leases_qs.update(
-        mac_address=customer_mac,
-        state=True,
-        input_octets=0,
-        output_octets=0,
-        input_packets=0,
-        output_packets=0,
-        cvid=vlan_id,
-        svid=svid,
-        lease_time=now,
-        last_update=now,
-        session_id=session_id,
-        radius_username=radius_username,
+    sql = (
+        "UPDATE networks_ip_leases n SET "
+            "mac_address=$1::macaddr, "
+            "state=true, "
+            "input_octets=0, "
+            "output_octets=0, "
+            "input_packets=0, "
+            "output_packets=0, "
+            "cvid=$2::smallint, "
+            "svid=$3::smallint, "
+            "lease_time=now(), "
+            "last_update=now(), "
+            "session_id=$4::uuid, "
+            "radius_username=$5 "
+        "WHERE id IN ( "
+            "SELECT l.id "
+            "FROM networks_ip_leases l "
+            "LEFT JOIN networks_ip_pool p ON l.pool_id = p.id "
+            "WHERE p.kind = $6::smallint "
+              "AND NOT l.state "
+            "LIMIT 1 "
+        ") "
+        "RETURNING n.ip_address, n.mac_address, n.is_dynamic"
     )
-    if updated_lease_count > 0:
-        ipaddr = leases_qs.first()
-        if ipaddr is not None:
-            db_info = CustomerServiceLeaseResult(
-                ip_address=ipaddr.ip_address
-            )
-            return db_info
-    raise BadRetException(
-        detail='Failed to assign guest address',
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    ip_result = await conn.fetchrow(
+        sql, str(customer_mac), vlan_id,
+        svid, session_id, radius_username,
+        NetworkIpPoolKind.NETWORK_KIND_GUEST.value
+    )
+    if ip_result is None:
+        raise BadRetException(
+            detail='Failed to assign guest address',
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    return CustomerServiceLeaseResult(
+        ip_address=ip_result['ip_address'],
+        mac_address=ip_result['mac_address'],
+        is_dynamic=ip_result['is_dynamic']
     )
 
 
-def _find_and_assign_lease(customer_mac: EUI, pool_kind: NetworkIpPoolKind,
-                           customer_id: int, vlan_id: int, service_vlan_id: int,
-                           radius_unique_id: str, radius_username: str):
+async def _find_and_assign_lease(
+    customer_mac: EUI, pool_kind: NetworkIpPoolKind,
+    customer_id: int, vlan_id: int, service_vlan_id: int,
+    radius_unique_id: str, radius_username: str,
+    conn: PoolConnectionProxy
+):
     sql = """WITH lease(id, ip_address) AS (
     SELECT nil.id, nil.ip_address
     FROM networks_ip_leases nil
              LEFT JOIN networks_ip_pool nip ON (nil.pool_id = nip.id)
              LEFT JOIN networks_vlan nv ON (nip.vlan_if_id = nv.id)
-    WHERE nv.vid = %(cvid)s::smallint
+    WHERE nv.vid = $1::smallint
       AND nip.is_dynamic
-      AND nip.kind = %(pool_kind)s::smallint
+      AND nip.kind = $2::smallint
       AND nil.ip_address >= nip.ip_start
       AND nil.ip_address <= nip.ip_end
       AND nil.is_dynamic
       AND (
-            (nil.customer_id = %(customer_id)s::integer AND nil.mac_address = %(mac_address)s::macaddr)
+            (nil.customer_id = $3::integer AND nil.mac_address = $4::macaddr)
                 OR
             (nil.customer_id IS NULL AND nil.mac_address IS NULL)
         )
@@ -96,41 +122,29 @@ def _find_and_assign_lease(customer_mac: EUI, pool_kind: NetworkIpPoolKind,
     LIMIT 1
 )
 UPDATE networks_ip_leases unil
-SET mac_address     = %(mac_address)s::macaddr,
-    customer_id     = %(customer_id)s::integer,
+SET mac_address     = $4::macaddr,
+    customer_id     = $3::integer,
     input_octets    = 0,
     output_octets   = 0,
     input_packets   = 0,
     output_packets  = 0,
-    cvid            = %(cvid)s::smallint,
-    svid            = %(svid)s::smallint,
+    cvid            = $1::smallint,
+    svid            = $5::smallint,
     lease_time      = now(),
     last_update     = now(),
-    session_id      = %(session_id)s::uuid,
-    radius_username = %(radius_uname)s
+    session_id      = $6::uuid,
+    radius_username = $7
 WHERE unil.id IN (SELECT id FROM lease)
 RETURNING (SELECT ip_address FROM lease);
 """
-    with connection.cursor() as cur:
-        cur.execute(sql, {
-            'mac_address': str(customer_mac),
-            'customer_id': customer_id,
-            'cvid': vlan_id,
-            'svid': service_vlan_id,
-            'session_id': radius_unique_id,
-            'pool_kind': pool_kind.value,
-            'radius_uname': radius_username
-        })
-        r = cur.fetchone()
-
-    if r and r[0]:
-        ip = r[0]
-        return ip
-    return None
+    ip = await conn.fetchval(sql, vlan_id, pool_kind.value, customer_id, str(customer_mac),
+                             service_vlan_id, radius_unique_id, radius_username)
+    return ip
 
 
 @router.post('/auth/{vendor_name}/')
-def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
+async def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...),
+               conn: PoolConnectionProxy = Depends(db_connection_dependency)) -> CompatibleJSONResponse:
     vendor_manager = VendorManager(vendor_name=vendor_name)
 
     opt82 = vendor_manager.get_opt82(data=request_data)
@@ -146,7 +160,6 @@ def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
     service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     radius_username = vendor_manager.get_radius_username(request_data)
-    now = datetime.now()
 
     if all([agent_remote_id, agent_circuit_id]):
         dev_mac, dev_port = vendor_manager.build_dev_mac_by_opt82(
@@ -156,55 +169,58 @@ def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
         if not dev_mac:
             return _bad_ret("Failed to parse option82")
 
-        db_info = _get_customer_and_service_and_lease_by_device_credentials(
+        db_info = await _get_customer_and_service_and_lease_by_device_credentials(
+            conn=conn,
             device_mac=dev_mac,
             customer_mac=customer_mac,
             device_port=dev_port
         )
 
         if db_info is None:
-            db_info = _assign_global_guest_lease(
+            db_info = await _assign_global_guest_lease(
                 customer_mac=customer_mac,
                 vlan_id=vlan_id,
                 svid=service_vlan_id,
-                now=now,
                 session_id=radius_unique_id,
-                radius_username=radius_username
+                radius_username=radius_username,
+                conn=conn
             )
         if not db_info.ip_address:
             # assign new lease
             #  with transaction.atomic():
             # find one free lease, and update it for customer
-            db_info.ip_address = _find_and_assign_lease(
+            db_info.ip_address = await _find_and_assign_lease(
                 customer_mac=customer_mac,
                 pool_kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET,
                 customer_id=db_info.id,
                 vlan_id=vlan_id,
                 service_vlan_id=service_vlan_id,
                 radius_unique_id=radius_unique_id,
-                radius_username=radius_username
+                radius_username=radius_username,
+                conn=conn
             )
             db_info.mac_address = customer_mac
     else:
         # auth by mac. Find static lease.
-        db_info = _get_customer_and_service_and_lease_by_mac(
-            customer_mac=customer_mac
+        db_info = await _get_customer_and_service_and_lease_by_mac(
+            customer_mac=customer_mac,
+            conn=conn
         )
         if db_info is None:
             #  Create global guest lease without customer
-            db_info = _assign_global_guest_lease(
+            db_info = await _assign_global_guest_lease(
                 customer_mac=customer_mac,
                 vlan_id=vlan_id,
                 svid=service_vlan_id,
-                now=now,
                 session_id=radius_unique_id,
-                radius_username=radius_username
+                radius_username=radius_username,
+                conn=conn
             )
 
     # If ip does not exists, then assign guest lease
     if not db_info.ip_address:
         # assign new guest lease
-        db_info.ip_address = _find_and_assign_lease(
+        db_info.ip_address = await _find_and_assign_lease(
             customer_mac=customer_mac,
             pool_kind=NetworkIpPoolKind.NETWORK_KIND_GUEST,
             customer_id=db_info.id,
@@ -212,6 +228,7 @@ def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
             service_vlan_id=service_vlan_id,
             radius_unique_id=radius_unique_id,
             radius_username=radius_username,
+            conn=conn
         )
         db_info.mac_address = customer_mac
 
@@ -231,10 +248,7 @@ def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         response, code = r
-        _update_lease_send_ws_signal(
-            customer_id=db_info.id
-        )
-        return JSONResponse(response, status_code=code)
+        return CompatibleJSONResponse(response, status_code=code)
     except LogicError as err:
         return _bad_ret(f'{str(err)}')
     except BadRetException as err:
@@ -262,13 +276,17 @@ def get_service(data: CustomerServiceRequestSchema):
 
 
 @router.post('/acct/{vendor_name}/')
-def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
+async def acct(
+    vendor_name: str,
+    request_data: Mapping[str, Any] = Body(...),
+    conn: PoolConnectionProxy = Depends(db_connection_dependency)
+):
     if not vendor_name:
         return _bad_ret('Empty vendor name')
 
     vendor_manager = VendorManager(vendor_name=vendor_name)
     bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
-    if bras_service_name is None:
+    if not bras_service_name:
         logger.info('ERX-Service-Session not found')
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -278,36 +296,19 @@ def acct(vendor_name: str, request_data: Mapping[str, Any] = Body(...)):
         return _acct_unknown(None, 'request_type is None')
 
     try:
-        # request_type_fn = acct_status_type_map.get(request_type.value, self._acct_unknown)
         request_type_fn = _acct_status_type_map.get(request_type)
         if request_type_fn is None:
             err = 'request_type_fn is None, (request_type=%s)' % request_type
             logger.error(err)
             return _acct_unknown(None, err)
-        return request_type_fn(
+        return await request_type_fn(
             vendor_manager=vendor_manager,
             request_data=request_data,
-            bras_service_name=bras_service_name
+            bras_service_name=bras_service_name,
+            conn=conn
         )
     except BadRetException as err:
         return _bad_ret(str(err), log_err=err.show_err)
-
-
-def _bad_ret(text: str, custom_status=status.HTTP_400_BAD_REQUEST, log_err=True) -> JSONResponse:
-    if log_err:
-        logger.error(msg=str(text))
-    return JSONResponse({
-        "Reply-Message": text
-    }, status_code=custom_status)
-
-
-def _update_lease_send_ws_signal(customer_id: int):
-    send_data2ws({
-        "eventType": WsEventTypeEnum.UPDATE_CUSTOMER_LEASES.value,
-        "data": {
-            "customer_id": customer_id
-        }
-    })
 
 
 class BadRetException(HTTPException):
@@ -331,9 +332,9 @@ class Opt82NotExistsException(BadRetException): pass
 class Opt82NotAllExistsException(BadRetException): pass
 
 
-def _build_srv_result_from_db_result(row: tuple) -> CustomerServiceLeaseResult:
-    (uid, uname, acc_is_act, balance, is_dyn_ip, ars, csid, dev_port_id, dev_id, gw_id,
-     si, so, sb, ip_addr, mac_addr, ip_is_dynamic) = row
+def _build_srv_result_from_db_result(row: Record) -> CustomerServiceLeaseResult:
+    si, so, sb = row['speed_in'], row['speed_out'], row['speed_burst']
+
     if all([si, so]):
         speed = SpeedInfoStruct(
             speed_in=si,
@@ -344,34 +345,35 @@ def _build_srv_result_from_db_result(row: tuple) -> CustomerServiceLeaseResult:
     else:
         speed = None
     return CustomerServiceLeaseResult(
-        id=uid,
-        username=uname,
-        is_active=acc_is_act,
-        balance=balance,
-        is_dynamic_ip=is_dyn_ip,
-        auto_renewal_service=ars,
-        current_service_id=csid,
-        dev_port_id=dev_port_id,
-        device_id=dev_id,
-        gateway_id=gw_id,
+        id=row.get('uid'),
+        username=row.get('uname'),
+        is_active=row.get('acc_is_active', False),
+        balance=row.get('acc_balance'),
+        is_dynamic_ip=row.get('acc_is_dynamic_ip'),
+        auto_renewal_service=row.get('acc_auto_renewal_service'),
+        current_service_id=row.get('customer_service_id'),
+        dev_port_id=row.get('dev_port_id'),
+        device_id=row.get('device_id'),
+        gateway_id=row.get('gateway_id'),
         speed=speed,
-        ip_address=ip_addr,
-        mac_address=mac_addr,
-        is_dynamic=ip_is_dynamic
+        ip_address=row.get('ip_addr'),
+        mac_address=row.get('mac_address'),
+        is_dynamic=row.get('ip_is_dynamic')
     )
 
 
-def _get_customer_and_service_and_lease_by_device_credentials(
-    device_mac: EUI, customer_mac: EUI, device_port: int = 0
+async def _get_customer_and_service_and_lease_by_device_credentials(
+    conn: PoolConnectionProxy,
+    device_mac: EUI, customer_mac: EUI, device_port: int = 0,
 ) -> Optional[CustomerServiceLeaseResult]:
     sql = (
-        "SELECT ba.id, "
-          "ba.username, "
-          "ba.is_active, "
-          "c.balance, "
-          "c.is_dynamic_ip, "
-          "c.auto_renewal_service, "
-          "cs.id, "
+        "SELECT ba.id as uid, "
+          "ba.username as uname, "
+          "ba.is_active as acc_is_active, "
+          "c.balance as acc_balance, "
+          "c.is_dynamic_ip as acc_is_dynamic_ip, "
+          "c.auto_renewal_service as acc_auto_renewal_service, "
+          "cs.id as customer_service_id, "
           "c.dev_port_id, "
           "c.device_id, "
           "c.gateway_id, "
@@ -380,7 +382,7 @@ def _get_customer_and_service_and_lease_by_device_credentials(
           "srv.speed_burst, "
           "nip.ip_address, "
           "nip.mac_address, "
-          "nip.is_dynamic "
+          "nip.is_dynamic as ip_is_dynamic "
         "FROM customers c "
           "LEFT JOIN device dv ON (dv.id = c.device_id) "
           "LEFT JOIN device_port dp ON (c.dev_port_id = dp.id) "
@@ -390,32 +392,31 @@ def _get_customer_and_service_and_lease_by_device_credentials(
           "LEFT JOIN services srv ON srv.id = cs.service_id "
           "LEFT JOIN networks_ip_leases nip ON ( "
             "nip.customer_id = c.baseaccount_ptr_id AND ( "
-              "nip.mac_address = %s::MACADDR OR nip.mac_address IS NULL "
+              "nip.mac_address = $1::MACADDR OR nip.mac_address IS NULL "
             ") "
           ") "
-        "WHERE dv.mac_addr = %s::MACADDR "
-        "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = %s::SMALLINT) "
+        "WHERE dv.mac_addr = $2::MACADDR "
+        "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = $3::SMALLINT) "
         "LIMIT 1;"
     )
-    with connection.cursor() as cur:
-        cur.execute(sql=sql, params=[str(customer_mac), str(device_mac), device_port])
-        row = cur.fetchone()
+    row = await conn.fetchrow(sql, str(customer_mac), str(device_mac), device_port)
     if not row:
         return None
     return _build_srv_result_from_db_result(row=row)
 
 
-def _get_customer_and_service_and_lease_by_mac(
-    customer_mac: EUI
+async def _get_customer_and_service_and_lease_by_mac(
+    customer_mac: EUI,
+    conn: PoolConnectionProxy
 ) -> Optional[CustomerServiceLeaseResult]:
     sql = (
-        "SELECT ba.id, "
-          "ba.username, "
-          "ba.is_active, "
-          "c.balance, "
-          "c.is_dynamic_ip, "
-          "c.auto_renewal_service, "
-          "cs.id, "
+        "SELECT ba.id as uid, "
+          "ba.username as uname, "
+          "ba.is_active as acc_is_active, "
+          "c.balance as acc_balance, "
+          "c.is_dynamic_ip as acc_is_dynamic_ip, "
+          "c.auto_renewal_service as acc_auto_renewal_service, "
+          "cs.id as customer_service_id, "
           "c.dev_port_id, "
           "c.device_id, "
           "c.gateway_id, "
@@ -424,39 +425,27 @@ def _get_customer_and_service_and_lease_by_mac(
           "srv.speed_burst, "
           "nip.ip_address, "
           "nip.mac_address, "
-          "false "
+          "false as ip_is_dynamic "
         "FROM customers c "
           "LEFT JOIN base_accounts ba ON ba.id = c.baseaccount_ptr_id "
           "LEFT JOIN customer_service cs ON cs.customer_id = c.baseaccount_ptr_id "
           "LEFT JOIN services srv ON srv.id = cs.service_id "
           "LEFT JOIN networks_ip_leases nip ON nip.customer_id = c.baseaccount_ptr_id "
         "WHERE "
-          "nip.mac_address = %s::MACADDR "
-        "LIMIT 1;"
+          "nip.mac_address = $1::MACADDR "
+        "LIMIT 1"
     )
-    with connection.cursor() as cur:
-        cur.execute(sql=sql, params=[str(customer_mac)])
-        row = cur.fetchone()
+    row = await conn.fetchrow(sql, str(customer_mac))
     if not row:
         return None
     return _build_srv_result_from_db_result(row=row)
 
 
-def _update_counters(leases, counters: RadiusCounters,
-                     last_event_time=None, **update_kwargs):
-    if last_event_time is None:
-        last_event_time = datetime.now()
-    leases.update(
-        last_update=last_event_time,
-        input_octets=counters.input_octets,
-        output_octets=counters.output_octets,
-        input_packets=counters.input_packets,
-        output_packets=counters.output_packets,
-        **update_kwargs,
-    )
-
-
-def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
+async def _acct_start(
+    vendor_manager: VendorManager, request_data: Mapping[str, Any],
+    bras_service_name: str,
+    conn: PoolConnectionProxy
+) -> Response:
     """Accounting start handler."""
     if not vendor_manager or not vendor_manager.vendor_class:
         return _bad_ret(
@@ -492,41 +481,62 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any], 
     now = datetime.now()
 
     try:
-        customer = _find_customer(
+        customer = await _find_customer(
             data=request_data,
-            vendor_manager=vendor_manager
+            vendor_manager=vendor_manager,
+            conn=conn
         )
-        CustomerIpLeaseModel.objects.filter(
-            ip_address=ip,
-            # customer_id=customer.pk,
-        ).update(
-            mac_address=customer_mac,
-            input_octets=0,
-            output_octets=0,
-            input_packets=0,
-            output_packets=0,
-            state=True,
-            session_id=radius_unique_id,
-            radius_username=radius_username,
-            last_update=now,
+        sql = (
+            "UPDATE networks_ip_leases n SET "
+                "mac_address = $1::macaddr, "
+                "input_octets=0, "
+                "output_octets=0, "
+                "input_packets=0, "
+                "output_packets=0, "
+                "state=True, "
+                "session_id=$2::uuid, "
+                "radius_username=$3, "
+                "last_update=now() "
+            "WHERE ip_address=$4::inet"
         )
+        await conn.execute(sql, str(customer_mac), radius_unique_id, radius_username, ip)
     except (Opt82NotExistsException, Opt82NotAllExistsException):
         # auth by mac. Find static lease.
-        with transaction.atomic():
-            lease = CustomerIpLeaseModel.objects.filter(
-                mac_address=customer_mac,
-                is_dynamic=False,
-            ).exclude(
-                customer=None
-            ).select_related('customer').select_for_update()
-            lease.update(state=True)
-            lease = lease.first()
-            customer = lease.customer
-            if lease is None:
-                return _bad_ret(
-                    'Free lease with mac="%s" not found' % customer_mac,
-                    custom_status=status.HTTP_404_NOT_FOUND
-                )
+        sql = (
+            "UPDATE networks_ip_leases l SET "
+                "state=true "
+            "FROM customers c "
+            "LEFT JOIN base_accounts ba on c.baseaccount_ptr_id = ba.id "
+                "WHERE l.customer_id = c.baseaccount_ptr_id AND "
+                    "l.mac_address=$1::macaddr AND "
+                    "not l.is_dynamic AND "
+                    "l.customer_id IS NOT NULL "
+            "RETURNING c.baseaccount_ptr_id, c.balance, c.is_dynamic_ip, "
+            "c.auto_renewal_service, c.dev_port_id, c.device_id, c.gateway_id, "
+            "c.group_id, c.address_id, ba.username, ba.is_active, ba.is_admin, "
+            "ba.is_superuser"
+        )
+        row = await conn.fetchrow(sql, str(customer_mac))
+        if not row:
+            return _bad_ret(
+                'Free lease with mac="%s" not found' % customer_mac,
+                custom_status=status.HTTP_404_NOT_FOUND
+            )
+        customer = Customer(
+            pk=row.get('baseaccount_ptr_id'),
+            username=row.get('username'),
+            is_active=row.get('is_active'),
+            is_admin=row.get('is_admin'),
+            is_superuser=row.get('is_superuser'),
+            balance=row.get('balance'),
+            is_dynamic_ip=row.get('is_dynamic_ip', False),
+            auto_renewal_service=row.get('auto_renewal_service'),
+            dev_port_id=row.get('dev_port_id'),
+            device_id=row.get('device_id'),
+            gateway_id=row.get('gateway_id'),
+            group_id=row.get('group_id'),
+            address_id=row.get('address_id')
+        )
 
     custom_signals.radius_acct_start_signal.send(
         sender=CustomerIpLeaseModel,
@@ -544,41 +554,120 @@ def _acct_start(vendor_manager: VendorManager, request_data: Mapping[str, Any], 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def _acct_stop(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
+async def _acct_stop(
+    vendor_manager: VendorManager,
+    request_data: Mapping[str, Any],
+    bras_service_name: str,
+    conn: PoolConnectionProxy
+) -> Response:
     ip = vendor_manager.get_rad_val(request_data, "Framed-IP-Address", str)
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     customer_mac = vendor_manager.get_customer_mac(request_data)
 
     counters = vendor_manager.get_counters(data=request_data)
 
-    with transaction.atomic():
-        leases = CustomerIpLeaseModel.objects.filter(
-            ip_address=ip,
-        ).select_related('customer')
-        leases.select_for_update().update(
-            state=False,
-            input_octets=counters.input_octets,
-            output_octets=counters.output_octets,
-            input_packets=counters.input_packets,
-            output_packets=counters.output_packets,
-            last_update=datetime.now()
-        )
+    sql = (
+        "UPDATE networks_ip_leases l SET "
+            "state=false, "
+            "input_octets=$1::bigint, "
+            "output_octets=$2::bigint, "
+            "input_packets=$3::bigint, "
+            "output_packets=$4::bigint, "
+            "last_update=now() "
+        "FROM customers c "
+            "LEFT JOIN base_accounts ba ON c.baseaccount_ptr_id = ba.id "
+        "WHERE l.ip_address=$5::inet "
+            "RETURNING c.baseaccount_ptr_id, c.balance, c.is_dynamic_ip, "
+                "c.auto_renewal_service, c.dev_port_id, c.device_id, c.gateway_id, "
+            "c.group_id, c.address_id, ba.username, ba.is_active, ba.is_admin, "
+            "ba.is_superuser;"
+    )
+
+    row = await conn.fetchrow(sql, counters.input_octets,
+                              counters.output_octets, counters.input_packets,
+                              counters.output_packets, ip)
+
+    customer = Customer(
+        pk=row.get('baseaccount_ptr_id'),
+        username=row.get('username'),
+        is_active=row.get('is_active'),
+        is_admin=row.get('is_admin'),
+        is_superuser=row.get('is_superuser'),
+        balance=row.get('balance'),
+        is_dynamic_ip=row.get('is_dynamic_ip', False),
+        auto_renewal_service=row.get('auto_renewal_service'),
+        dev_port_id=row.get('dev_port_id'),
+        device_id=row.get('device_id'),
+        gateway_id=row.get('gateway_id'),
+        group_id=row.get('group_id'),
+        address_id=row.get('address_id')
+    )
 
     custom_signals.radius_acct_stop_signal.send(
         sender=CustomerIpLeaseModel,
         instance=CustomerIpLeaseModel(),
-        instance_queryset=leases,
         data=request_data,
         counters=counters,
         ip_addr=ip,
         radius_unique_id=radius_unique_id,
         customer_mac=customer_mac,
+        customer=customer
     )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Customer:
+# async version of networks.models.CustomerIpLeaseModel.find_customer_by_device_credentials
+async def _find_customer_by_device_credentials_async(
+    conn: PoolConnectionProxy,
+    device_mac: EUI,
+    device_port: int
+):
+    sql = (
+        "SELECT ba.id as uid, ba.last_login, ba.is_superuser, ba.username, "
+        "ba.fio, ba.birth_day, ba.is_active, ba.is_admin, "
+        "ba.telephone, ba.create_date, ba.last_update_time, "
+        "cs.balance, cs.is_dynamic_ip, cs.auto_renewal_service, "
+        "cs.dev_port_id, cs.device_id, "
+        "cs.gateway_id, cs.group_id, cs.address_id "
+        "FROM customers cs "
+        "LEFT JOIN device dv ON (dv.id = cs.device_id) "
+        "LEFT JOIN device_port dp ON (cs.dev_port_id = dp.id) "
+        "LEFT JOIN device_dev_type_is_use_dev_port ddtiudptiu ON (ddtiudptiu.dev_type = dv.dev_type) "
+        "LEFT JOIN base_accounts ba ON cs.baseaccount_ptr_id = ba.id "
+        "WHERE dv.mac_addr = $1::MACADDR "
+        "AND ((NOT ddtiudptiu.is_use_dev_port) OR dp.num = $2::SMALLINT) "
+        "LIMIT 1;"
+    )
+    row = await conn.fetchrow(sql, str(device_mac), device_port)
+    return Customer(
+        pk=row.get('uid'),
+        last_login=row.get('last_login'),
+        is_superuser=row.get('is_superuser'),
+        username=row.get('username'),
+        fio=row.get('fio'),
+        birth_day=row.get('birth_day'),
+        is_active=row.get('is_active'),
+        is_admin=row.get('is_admin'),
+        telephone=row.get('telephone'),
+        create_date=row.get('create_date'),
+        last_update_time=row.get('last_update_time'),
+        balance=row.get('balance'),
+        is_dynamic_ip=row.get('is_dynamic_ip'),
+        auto_renewal_service=row.get('auto_renewal_service'),
+        dev_port_id=row.get('dev_port_id'),
+        device_id=row.get('device_id'),
+        gateway_id=row.get('gateway_id'),
+        group_id=row.get('group_id'),
+        address_id=row.get('address_id'),
+    )
+
+
+async def _find_customer(
+    data: Mapping[str, Any],
+    vendor_manager: VendorManager,
+    conn: PoolConnectionProxy
+) -> Customer:
     opt82 = vendor_manager.get_opt82(data=data)
     if not opt82 or opt82 == (None, None):
         raise Opt82NotExistsException(
@@ -599,9 +688,10 @@ def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Cu
                 }
             )
 
-        customer = CustomerIpLeaseModel.find_customer_by_device_credentials(
+        customer = await _find_customer_by_device_credentials_async(
             device_mac=dev_mac,
-            device_port=dev_port
+            device_port=dev_port,
+            conn=conn
         )
         if not customer:
             raise CustomerNotFoundException(
@@ -618,7 +708,12 @@ def _find_customer(data: Mapping[str, Any], vendor_manager: VendorManager) -> Cu
     )
 
 
-def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any], bras_service_name: str) -> Response:
+async def _acct_update(
+    vendor_manager: VendorManager,
+    request_data: Mapping[str, Any],
+    bras_service_name: str,
+    conn: PoolConnectionProxy
+) -> Response:
     radius_unique_id = vendor_manager.get_radius_unique_id(request_data)
     if not radius_unique_id:
         return _bad_ret(
@@ -636,11 +731,14 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any],
             custom_status=status.HTTP_200_OK
         )
     ip = vendor_manager.get_rad_val(request_data, "Framed-IP-Address", str)
-    now = datetime.now()
     counters = vendor_manager.get_counters(request_data)
 
     try:
-        customer = _find_customer(data=request_data, vendor_manager=vendor_manager)
+        customer = await _find_customer(
+            data=request_data,
+            vendor_manager=vendor_manager,
+            conn=conn
+        )
     except CustomerNotFoundException as err:
         logger.error('Session with not customer in db: uname="%s", details: %s' % (
             radius_username, err.detail
@@ -653,44 +751,55 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any],
         # TODO: update fixed mac
         raise err
 
-    leases = CustomerIpLeaseModel.objects.filter(
-        ip_address=ip,
-        # mac_address=customer_mac,
-        customer=customer
-    )
-    with transaction.atomic():
-        leases_fu = leases.select_for_update()
-        if leases_fu.exists():
+    async with conn.transaction():
+        exists = await conn.fetchval(
+            "select id from networks_ip_leases where ip_address=$1::inet AND customer_id=$2 limit 1 for update",
+            str(ip), customer.pk,
+        )
+        if exists is not None:
             # just update counters
-            _update_counters(
-                leases=leases_fu,
-                counters=counters,
-                state=True,
-                session_id=str(radius_unique_id),
-                radius_username=radius_username,
-                mac_address=str(customer_mac),
-                last_event_time=now
+            await conn.execute(
+                "update networks_ip_leases l "
+                "set last_update=now(), "
+                    "input_octets=$3::bigint, "
+                    "output_octets=$4::bigint, "
+                    "input_packets=$5::bigint, "
+                    "output_packets=$6::bigint, "
+                    "state=true, "
+                    "session_id=$7::uuid, "
+                    "radius_username=$8, "
+                    "mac_address=$9::macaddr "
+                "where l.ip_address=$1::inet and l.customer_id=$2::integer;",
+                str(ip), customer.pk, counters.input_octets,
+                counters.output_octets, counters.input_packets,
+                counters.output_packets, str(radius_unique_id),
+                radius_username, str(customer_mac)
             )
         else:
             # create lease on customer profile if it not exists
             vlan_id = vendor_manager.get_vlan_id(request_data)
             service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
-            CustomerIpLeaseModel.objects.filter(
-                ip_address=str(ip),
-            ).update(
-                customer=customer,
-                mac_address=str(customer_mac),
-                input_octets=counters.input_octets,
-                output_octets=counters.output_octets,
-                input_packets=counters.input_packets,
-                output_packets=counters.output_packets,
-                state=True,
-                # lease_time=now,
-                last_update=now,
-                session_id=str(radius_unique_id),
-                radius_username=radius_username,
-                svid=safe_int(service_vlan_id),
-                cvid=safe_int(vlan_id)
+            await conn.execute(
+                "update networks_ip_leases l "
+                "set customer_id=$2::integer, "
+                    "mac_address=$9::macaddr, "
+                    "input_octets=$3::bigint, "
+                    "output_octets=$4::bigint, "
+                    "input_packets=$5::bigint, "
+                    "output_packets=$6::bigint, "
+                    "state=true, "
+                    "last_update=now(), "
+                    "lease_time=now(), "
+                    "session_id=$7::uuid, "
+                    "radius_username=$8, "
+                    "cvid=$10::smallint, "
+                    "svid=$11::smallint "
+                "where ip_address=$1::inet",
+                str(ip), customer.pk, counters.input_octets,
+                counters.output_octets, counters.input_packets,
+                counters.output_packets, str(radius_unique_id),
+                radius_username, str(customer_mac),
+                safe_int(vlan_id), safe_int(service_vlan_id)
             )
 
     # Check for service synchronization
@@ -702,11 +811,11 @@ def _acct_update(vendor_manager: VendorManager, request_data: Mapping[str, Any],
     custom_signals.radius_auth_update_signal.send(
         sender=CustomerIpLeaseModel,
         instance=None,
-        instance_queryset=leases,
         data=request_data,
         counters=counters,
         radius_unique_id=radius_unique_id,
         ip_addr=ip,
+        customer=customer,
         customer_mac=customer_mac
     )
 
