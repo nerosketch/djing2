@@ -196,12 +196,12 @@ def locked_open(filename, mode='r', clear=False):
     """
     with open(filename, mode) as fd:
         try:
-            fcntl.flock(fd, fcntl.LOCK_EX)
+            fcntl.lockf(fd, fcntl.LOCK_EX)
             yield fd
         finally:
             if clear:
                 fd.truncate(0)
-            fcntl.flock(fd, fcntl.LOCK_UN)
+            fcntl.lockf(fd, fcntl.LOCK_UN)
 
 
 __all__ = (
