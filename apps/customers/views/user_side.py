@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional
 
 from customers import models
@@ -10,6 +11,7 @@ from fastapi import APIRouter, Depends
 from starlette import status
 from pydantic import BaseModel, Field
 from services.models import Service
+from services.schemas import DetailedCustomerServiceModelSchema
 
 from .view_decorators import catch_customers_errs
 from .. import schemas
@@ -18,10 +20,6 @@ router = APIRouter(
     prefix='/users',
     tags=['CustomersUserSide'],
     dependencies=[Depends(is_customer_auth_dependency)]
-)
-
-_base_customers_queryset = models.Customer.objects.select_related(
-    "group", "gateway", "device", "current_service"
 )
 
 
@@ -48,8 +46,8 @@ def buy_service(payload: schemas.UserBuyServiceSchema,
     service_id = payload.service_id
     srv = get_object_or_404(Service, pk=service_id)
 
-    current_user.pick_service(
-        service=srv,
+    srv.pick_service(
+        customer=current_user,
         author=current_user,
         comment=gettext("Buy the service via user side, service '%s'") % srv,
         allow_negative=False,
@@ -71,11 +69,11 @@ def set_auto_new_service(payload: schemas.UserAutoRenewalServiceSchema,
     return 'ok'
 
 
-@router.get('/service/', response_model=Optional[schemas.DetailedCustomerServiceModelSchema])
+@router.get('/service/', response_model=Optional[DetailedCustomerServiceModelSchema])
 def get_service_details(current_user: models.Customer = Depends(is_customer_auth_dependency)):
     act_srv = current_user.active_service()
     if act_srv:
-        return schemas.DetailedCustomerServiceModelSchema.from_orm(act_srv)
+        return DetailedCustomerServiceModelSchema.from_orm(act_srv)
     return None
 
 
@@ -96,7 +94,7 @@ def get_user_debts(current_user: models.Customer = Depends(is_customer_auth_depe
     qs = models.InvoiceForPayment.objects.filter(
         customer=current_user
     )
-    return (schemas.CustomerLogModelSchema.from_orm(inv) for inv in qs.iterator())
+    return (schemas.InvoiceForPaymentModelSchema.from_orm(inv) for inv in qs.iterator())
 
 
 class _buyDebtPayload(BaseModel):
@@ -123,7 +121,7 @@ def buy_debt(debt_id: int,
         )
 
     with transaction.atomic():
-        amount = -debt.cost
+        amount = Decimal(debt.cost) * -1
         customer.add_balance(
             profile=customer,
             cost=amount,
@@ -132,6 +130,5 @@ def buy_debt(debt_id: int,
                 "amount": amount
             }
         )
-        customer.save(update_fields=("balance",))
         debt.set_ok()
         debt.save(update_fields=("status", "date_pay"))

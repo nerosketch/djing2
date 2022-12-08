@@ -1,4 +1,4 @@
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase
 
 from devices.device_config.pon.gpon.onu_zte_f601 import DEVICE_UNIQUE_CODE as OnuZTE_F601_code
 from devices.device_config.switch.dlink.dgs_1100_10me import DEVICE_UNIQUE_CODE as Dlink_dgs1100_10me_code

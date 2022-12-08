@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional
 from dataclasses import dataclass
 from uuid import UUID
@@ -11,7 +12,7 @@ from customers.models import Customer
 from devices.models import Device, Port
 from devices.device_config.switch.dlink.dgs_1100_10me import DEVICE_UNIQUE_CODE as Dlink_dgs1100_10me_code
 from groupapp.models import Group
-from services.models import Service
+from services.models import Service, CustomerService
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from radiusapp.vendors import VendorManager, parse_opt82
 from networks.models import (
@@ -84,7 +85,7 @@ def create_full_customer(uname: str,
     if group_title is None:
         group_title = 'test_group'
 
-    group, _ = Group.objects.get_or_create(title=group_title, code="tst")
+    group, _ = Group.objects.get_or_create(title=group_title)
 
     if dev_mac is None:
         dev_mac = "11:13:14:15:17:17"
@@ -103,7 +104,8 @@ def create_full_customer(uname: str,
     customer = Customer.objects.create_user(
         telephone=tel, username=uname, password="passw",
         is_dynamic_ip=True, group=group,
-        balance=initial_balance, device=device,
+        balance=Decimal(initial_balance),
+        device=device,
         dev_port=ports[1],
         is_active=True
     )
@@ -122,10 +124,13 @@ def create_full_customer(uname: str,
         title=service_title, descr=service_descr,
         speed_in=service_speed_in,
         speed_out=service_speed_out,
-        cost=service_cost,
+        cost=Decimal(service_cost),
         calc_type=service_calc_type
     )
-    customer.pick_service(service, customer)
+    service.pick_service(
+        customer=customer,
+        author=customer
+    )
     return CreateFullCustomerReturnType(
         group=group,
         customer=customer,
@@ -798,7 +803,9 @@ class CustomerAcctUpdateTestCase(DjingTestCase, ReqMixin):
         """
         # remove customer service
         customer = self.full_customer.customer
-        customer.current_service = None
+        CustomerService.objects.filter(
+            customer=customer
+        ).delete()
         customer.save()
         customer.refresh_from_db()
 
@@ -943,7 +950,7 @@ class CustomerAuthTestCase(DjingTestCase, ReqMixin):
         """
         customer = self.full_customer.customer
         self.test_auth_radius_session()
-        customer.stop_service(self.admin)
+        CustomerService.objects.filter(customer=customer).delete()
         r = self.post(
             "/api/radius/customer/auth/juniper/",
             radius_api_request_auth(

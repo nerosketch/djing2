@@ -1,3 +1,4 @@
+from decimal import Decimal
 from hashlib import md5
 from datetime import datetime, timedelta
 
@@ -5,7 +6,7 @@ from django.contrib.sites.models import Site
 from django.utils import timezone
 from django.utils.html import escape
 from rest_framework.test import APITestCase, override_settings
-from rest_framework import status
+from starlette import status
 
 from customers.models import Customer
 from fin_app.models.alltime import AllTimePayGateway
@@ -128,7 +129,7 @@ class AllPayTestCase(CustomAPITestCase):
         self.assertXMLEqual(r.content.decode("utf-8"), xml)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.customer.refresh_from_db()
-        self.assertEqual(round(self.customer.balance, 2), 5.09)
+        self.assertEqual(self.customer.balance, Decimal('5.09'))
         self.user_pay_check(current_date)
 
     def user_pay_check(self, test_pay_time):

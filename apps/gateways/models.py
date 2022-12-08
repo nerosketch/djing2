@@ -66,17 +66,35 @@ class Gateway(BaseAbstractModel):
 
     @staticmethod
     def get_user_credentials_by_gw(gw_id: int):
+        sql = (
+            "SELECT "
+                "c.baseaccount_ptr_id, "
+                "nil.id, "
+                "nil.lease_time, "
+                "nil.mac_address, "
+                "nil.ip_address, "
+                "s.speed_in, "
+                "s.speed_out, "
+                "s.speed_burst, "
+                "cs.start_time, "
+                "cs.deadline "
+            "FROM customers c "
+               "LEFT JOIN networks_ip_leases nil ON (nil.customer_id = c.baseaccount_ptr_id) "
+               "LEFT JOIN customer_service cs ON (cs.customer_id = c.baseaccount_ptr_id) "
+               "LEFT JOIN services s ON (s.id = cs.service_id) "
+               "LEFT JOIN base_accounts ba ON (ba.id = c.baseaccount_ptr_id) "
+            "WHERE c.gateway_id = %s::integer AND ba.is_active AND "
+               "c.baseaccount_ptr_id IS NOT NULL AND cs.id IS NOT NULL AND nil.ip_address IS NOT NULL"
+        )
         with connection.cursor() as cur:
-            cur.execute("SELECT * FROM fetch_customers_srvnet_credentials_by_gw(%s::integer)", (str(gw_id),))
-            while True:
+            cur.execute(sql=sql, params=[str(gw_id)])
+            els = cur.fetchone()
+            while els:
                 # (customer_id, lease_id, lease_time, lease_mac, ip_address,
                 #  speed_in, speed_out, speed_burst, service_start_time,
                 #  service_deadline)
-                els = cur.fetchone()
-                customer_id = els[0]
-                if customer_id is None:
-                    break
                 yield els
+                els = cur.fetchone()
 
     def __str__(self):
         return self.title

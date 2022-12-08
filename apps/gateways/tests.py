@@ -1,8 +1,11 @@
-from rest_framework import status
+from decimal import Decimal
+
+from networks.tests import create_test_ippool
+from starlette import status
 
 from customers.tests.customer import CustomAPITestCase
 from devices.tests import device_test_case_set_up
-from networks.models import NetworkIpPool, NetworkIpPoolKind, CustomerIpLeaseModel
+from networks.models import CustomerIpLeaseModel
 from services.custom_logic import SERVICE_CHOICE_DEFAULT
 from services.models import Service
 from gateways.gw_facade import MIKROTIK
@@ -18,26 +21,19 @@ class FetchCredentialsTestCase(CustomAPITestCase):
 
         self.service = Service.objects.create(
             title="test", descr="test",
-            speed_in=10.0, speed_out=10.0, cost=10.0,
+            speed_in=10.0, speed_out=10.0, cost=Decimal(10),
             calc_type=SERVICE_CHOICE_DEFAULT
         )
-        self.ippool = NetworkIpPool.objects.create(
-            network="10.11.12.0/24",
-            kind=NetworkIpPoolKind.NETWORK_KIND_INTERNET.value,
-            description="test",
-            ip_start="10.11.12.2",
-            ip_end="10.11.12.254",
-            # vlan_if=vlan,
-            gateway="10.11.12.1",
-            is_dynamic=True,
-        )
-        self.ippool.groups.add(self.group)
+        create_test_ippool(self)
         self.customer.device = self.device_switch
         self.customer.dev_port = self.ports[1]
-        self.customer.add_balance(self.admin, 10000, "test")
         self.customer.save()
+        self.customer.add_balance(self.admin, Decimal(10000), "test")
         self.customer.refresh_from_db()
-        self.customer.pick_service(self.service, self.customer)
+        self.service.pick_service(
+            customer=self.customer,
+            author=self.customer
+        )
 
         self.lease = CustomerIpLeaseModel.objects.filter(
             ip_address="10.11.12.2",
@@ -78,8 +74,8 @@ class FetchCredentialsTestCase(CustomAPITestCase):
     def test_get_credentials(self):
         r = self.get("/api/gateways/fetch_customers_srvnet_credentials_by_gw/", {"gw_id": self.gw.pk})
 
-        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.data)
-        data = list(r.data)
+        self.assertEqual(r.status_code, status.HTTP_200_OK, msg=r.text)
+        data = list(r.json())
         self.assertGreater(len(data), 0, msg=data)
         (
             customer_id,

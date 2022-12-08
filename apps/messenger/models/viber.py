@@ -7,7 +7,7 @@ from messenger.models.base_messenger import MessengerModel, MessengerSubscriberM
 from profiles.models import UserProfile
 from djing2.lib.logger import logger
 
-from rest_framework import status
+from starlette import status
 from viberbot.api.messages import TextMessage, ContactMessage, KeyboardMessage
 from viberbot.api.user_profile import UserProfile as ViberUserProfile
 from viberbot.api.viber_requests import (
