@@ -209,5 +209,5 @@ __all__ = (
     'MyChoicesAdapter', 'RuTimedelta', 'bytes2human', 'calc_hash',
     'check_sign', 'macbin2str', 'time2utctime', 'IntEnumEx',
     'process_lock_decorator', 'ProcessLocked', 'check_subnet',
-    'get_past_time', 'get_past_time_days'
+    'get_past_time', 'get_past_time_days', 'locked_open'
 )

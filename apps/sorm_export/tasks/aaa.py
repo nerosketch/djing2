@@ -2,6 +2,7 @@ import os
 import csv
 from datetime import datetime
 from djing2 import celery_app
+from djing2.lib import locked_open
 from sorm_export.serializers.aaa import AAA_EXPORT_FNAME
 from sorm_export.ftp_worker.func import send_file2ftp
 from sorm_export.hier_export.base import format_fname
@@ -9,7 +10,7 @@ from sorm_export.hier_export.base import format_fname
 
 def save_radius_acct(data: dict) -> None:
     line = [v for k, v in data.items()]
-    with open(AAA_EXPORT_FNAME, "a") as f:
+    with locked_open(AAA_EXPORT_FNAME, "a") as f:
         csv_writer = csv.writer(f, dialect="unix", delimiter=";")
         csv_writer.writerow(line)
 
