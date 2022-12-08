@@ -200,7 +200,7 @@ def locked_open(filename, mode='r', clear=False):
             yield fd
         finally:
             if clear:
-                fd.truncate()
+                fd.truncate(0)
             fcntl.flock(fd, fcntl.LOCK_UN)
 
 
