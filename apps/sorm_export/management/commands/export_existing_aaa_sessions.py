@@ -25,21 +25,23 @@ class Command(BaseCommand):
 
     @no_translations
     def handle(self, fname=None, send2ftp=None, *args, **options):
-        leases = CustomerIpLeaseModel.objects.exclude(customer=None).only(
+        leases = CustomerIpLeaseModel.objects.exclude(customer=None, lease_time=None).filter(
+            state=True, is_dynamic=True
+        ).only(
             'customer', 'lease_time', 'session_id',
             'input_octets', 'output_octets'
-        ).select_related('customer').iterator()
+        ).select_related('customer')
 
         dat = [{
-            "event_time": time2utctime(l.lease_time),
+            "event_time": time2utctime(lease.lease_time),
             "event_type": AAAEventType.RADIUS_AUTH_START,
-            "session_id": str(l.session_id),
-            "customer_ip": l.ip_address,
-            "customer_db_username": l.customer.username,
-            'input_octets': l.input_octets,
-            'output_octets': l.output_octets,
-            "customer_device_mac": l.mac_address.format(dialect=mac_unix_common) if l.mac_address else ''
-        } for l in leases]
+            "session_id": str(lease.session_id),
+            "customer_ip": lease.ip_address,
+            "customer_db_username": lease.customer.username,
+            'input_octets': lease.input_octets,
+            'output_octets': lease.output_octets,
+            "customer_device_mac": lease.mac_address.format(dialect=mac_unix_common) if lease.mac_address else ''
+        } for lease in leases.iterator()]
 
         ser = AAAExportSerializer(data=dat, many=True)
         ser.is_valid(raise_exception=True)
