@@ -286,7 +286,7 @@ async def acct(
 
     vendor_manager = VendorManager(vendor_name=vendor_name)
     bras_service_name = vendor_manager.get_rad_val(request_data, "ERX-Service-Session", str)
-    if bras_service_name is None:
+    if not bras_service_name:
         logger.info('ERX-Service-Session not found')
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -583,7 +583,9 @@ async def _acct_stop(
             "ba.is_superuser;"
     )
 
-    row = await conn.fetchrow(sql, str(customer_mac))
+    row = await conn.fetchrow(sql, counters.input_octets,
+                              counters.output_octets, counters.input_packets,
+                              counters.output_packets, ip)
 
     customer = Customer(
         pk=row.get('baseaccount_ptr_id'),
@@ -749,12 +751,14 @@ async def _acct_update(
         # TODO: update fixed mac
         raise err
 
-    sql = (
-        "DO $$ "
-        "BEGIN "
-            "select id from networks_ip_leases where ip_address=$1::inet AND customer_id=$2::integer; "
-            "if FOUND then "
-                # just update counters
+    async with conn.transaction():
+        exists = await conn.fetchval(
+            "select id from networks_ip_leases where ip_address=$1::inet AND customer_id=$2 limit 1 for update",
+            str(ip), customer.pk,
+        )
+        if exists is not None:
+            # just update counters
+            await conn.execute(
                 "update networks_ip_leases l "
                 "set last_update=now(), "
                     "input_octets=$3::bigint, "
@@ -765,9 +769,17 @@ async def _acct_update(
                     "session_id=$7::uuid, "
                     "radius_username=$8, "
                     "mac_address=$9::macaddr "
-                "where l.ip_address=$1::inet and l.customer_id=$2::integer; "
-            "else "
-                # create lease on customer profile if it not exists
+                "where l.ip_address=$1::inet and l.customer_id=$2::integer;",
+                str(ip), customer.pk, counters.input_octets,
+                counters.output_octets, counters.input_packets,
+                counters.output_packets, str(radius_unique_id),
+                radius_username, str(customer_mac)
+            )
+        else:
+            # create lease on customer profile if it not exists
+            vlan_id = vendor_manager.get_vlan_id(request_data)
+            service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
+            await conn.execute(
                 "update networks_ip_leases l "
                 "set customer_id=$2::integer, "
                     "mac_address=$9::macaddr, "
@@ -777,21 +789,18 @@ async def _acct_update(
                     "output_packets=$6::bigint, "
                     "state=true, "
                     "last_update=now(), "
+                    "lease_time=now(), "
                     "session_id=$7::uuid, "
                     "radius_username=$8, "
                     "cvid=$10::smallint, "
                     "svid=$11::smallint "
-                "where ip_address=$1::inet; "
-            "end if; "
-        "END$$;"
-    )
-    vlan_id = vendor_manager.get_vlan_id(request_data)
-    service_vlan_id = vendor_manager.get_service_vlan_id(request_data)
-    await conn.execute(sql, str(ip), customer.pk, counters.input_octets,
-                       counters.output_octets, counters.input_packets,
-                       counters.output_packets, str(radius_unique_id),
-                       radius_username, str(customer_mac),
-                       safe_int(vlan_id), safe_int(service_vlan_id))
+                "where ip_address=$1::inet",
+                str(ip), customer.pk, counters.input_octets,
+                counters.output_octets, counters.input_packets,
+                counters.output_packets, str(radius_unique_id),
+                radius_username, str(customer_mac),
+                safe_int(vlan_id), safe_int(service_vlan_id)
+            )
 
     # Check for service synchronization
     tasks.check_and_control_session_task.delay(
