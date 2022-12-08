@@ -5,7 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import JsonResponse
 from django.db.models import Q
 from guardian.shortcuts import get_objects_for_user
-from rest_framework import status
+from starlette import status
 from rest_framework.permissions import AllowAny
 from rest_framework.serializers import ModelSerializer
 from drf_queryfields import QueryFieldsMixin

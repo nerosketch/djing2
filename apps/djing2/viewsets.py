@@ -3,7 +3,7 @@ from django.db import IntegrityError
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.ctypes import get_content_type
 from guardian.shortcuts import assign_perm, remove_perm
-from rest_framework import status
+from starlette import status
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView, get_object_or_404
 from rest_framework.response import Response

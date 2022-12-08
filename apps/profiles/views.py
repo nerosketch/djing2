@@ -3,9 +3,10 @@ from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
 from django.utils.translation import gettext, gettext_lazy as _
+from djing2.lib.fastapi.utils import get_object_or_404
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status
+from starlette import status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import ValidationError
@@ -157,7 +158,7 @@ class CurrentAuthenticatedProfileROViewSet(BaseNonAdminReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        return UserProfile.objects.get(pk=self.request.user.pk)
+        return get_object_or_404(UserProfile, pk=self.request.user.pk)
 
     def list(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)

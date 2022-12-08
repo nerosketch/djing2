@@ -1,3 +1,4 @@
+from djing2.lib.fastapi.default_response_class import CompatibleJSONResponse
 from fastapi import APIRouter
 from addresses.views import router as addrs_router
 from sorm_export.views import router as sorm_r
@@ -14,6 +15,7 @@ from groupapp.views import router as groups_rt
 
 router = APIRouter(
     prefix='/api',
+    default_response_class=CompatibleJSONResponse,
 )
 
 router.include_router(addrs_router)

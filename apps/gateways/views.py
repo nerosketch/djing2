@@ -1,6 +1,6 @@
 from django.contrib.messages.api import MessageFailure
 from django.db.models import Count, Q
-from rest_framework import status
+from starlette import status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 
