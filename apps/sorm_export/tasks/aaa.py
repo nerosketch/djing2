@@ -21,13 +21,10 @@ def upload_aaa_2_ftp():
             now = datetime.now()
             send_file2ftp(
                 fname=AAA_EXPORT_FNAME,
-                remote_fname=f"ISP/aaa/aaa_v1_{format_fname(now)}.txt"
+                remote_fname=f"ISP/aaa/aaa_v1_{format_fname(now)}.txt",
+                clear=True
             )
     except FileNotFoundError:
-        pass
-
-    # Erase all content
-    with open(AAA_EXPORT_FNAME, 'w'):
         pass
 
 

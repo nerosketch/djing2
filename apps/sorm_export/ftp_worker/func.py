@@ -3,6 +3,7 @@ from ftplib import FTP
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from djing2.lib import locked_open
 from sorm_export.models import ExportFailedStatus
 
 
@@ -63,12 +64,12 @@ def send_text_buf2ftp(fp: TextIOWrapper, remote_fname: str) -> None:
 
 
 @_ftp_credentials
-def send_file2ftp(fname: str, remote_fname: str, ftp=None) -> None:
+def send_file2ftp(fname: str, remote_fname: str, ftp=None, clear=False) -> None:
     cred = get_credentials()
     if cred['ftp_disable']:
         return
     try:
-        with open(fname, "rb") as file:
+        with locked_open(fname, "rb+", clear=clear) as file:
             ftp.storbinary("STOR %s" % remote_fname, file)
     except FileNotFoundError as err:
         raise ExportFailedStatus(err) from err

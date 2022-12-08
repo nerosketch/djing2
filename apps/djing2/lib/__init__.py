@@ -1,10 +1,12 @@
 import pytz
+import fcntl
 from enum import IntEnum
 from collections.abc import Iterator
 from datetime import timedelta, datetime
 from hashlib import sha256
 from typing import Any, Union, Optional, Mapping
 from ipaddress import ip_address, ip_network
+from contextlib import contextmanager
 
 from django.conf import settings
 from django.db.models.enums import ChoicesMeta
@@ -177,6 +179,29 @@ class IntEnumEx(IntEnum, metaclass=ChoicesMeta):
     @classmethod
     def in_range(cls, value: int):
         return value in cls._value2member_map_
+
+
+@contextmanager
+def locked_open(filename, mode='r', clear=False):
+    """locked_open(filename, mode='r') -> <open file object>
+
+       Context manager that on entry opens the path `filename`, using `mode`
+       (default: `r`), and applies an advisory write lock on the file which
+       is released when leaving the context. Yields the open file object for
+       use within the context.
+       Note: advisory locking implies that all calls to open the file using
+       this same api will block for both read and write until the lock is
+       acquired. Locking this way will not prevent the file from access using
+       any other api/method.
+    """
+    with open(filename, mode) as fd:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            yield fd
+        finally:
+            if clear:
+                fd.truncate()
+            fcntl.flock(fd, fcntl.LOCK_UN)
 
 
 __all__ = (
