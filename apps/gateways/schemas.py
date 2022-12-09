@@ -3,6 +3,7 @@ from ipaddress import IPv4Address
 from datetime import datetime
 
 from django.utils.translation import gettext as _
+from djing2.lib.fastapi.types import OrmConf
 from gateways.gw_facade import GatewayTypesEnum
 from gateways.models import GatewayClassChoices
 from pydantic import Field, BaseModel
@@ -22,10 +23,11 @@ class GatewayBaseSchema(SitesBaseSchema):
 
 
 class GatewayWriteOnlySchema(GatewayBaseSchema):
-    auth_passw: str = Field(title=_("Auth password"), max_length=127)
+    auth_passw: Optional[str] = Field(None, title=_("Auth password"), max_length=127)
 
 
 class GatewayModelSchema(GatewayBaseSchema):
+    id: int
     title: Optional[str] = Field(None, max_length=127, title=_("Title"))
     ip_address: Optional[IPv4Address] = None
     ip_port: int = Field(0, gt=0, lt=65535, title=_("Port"))
@@ -35,6 +37,8 @@ class GatewayModelSchema(GatewayBaseSchema):
     customer_count: int = 0
     customer_count_active: int = 0
     customer_count_w_service: int = 0
+
+    Config = OrmConf
 
 
 class GwClassChoice(BaseModel):

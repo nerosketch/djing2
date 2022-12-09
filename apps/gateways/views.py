@@ -38,11 +38,13 @@ def update_gateway(payload: schemas.GatewayWriteOnlySchema,
     ).filter(pk=gw_id)
     if not gws_qs.exists():
         raise NOT_FOUND
+    payload = payload.dict(
+        exclude_defaults=True,
+        exclude_unset=True
+    )
+    payload['ip_address'] = str(payload['ip_address'])
     gws_qs.update(
-        **payload.dict(
-            exclude_defaults=True,
-            exclude_unset=True
-        )
+        **payload
     )
     return schemas.GatewayModelSchema.from_orm(gws_qs.first())
 
@@ -115,10 +117,12 @@ def create_gateway(
     )),
 ):
     with transaction.atomic():
-        new_gw = Gateway.objects.create(payload.json(
+        payload = payload.dict(
             exclude_defaults=True,
             exclude_unset=True
-        ))
+        )
+        payload['ip_address'] = str(payload['ip_address'])
+        new_gw = Gateway.objects.create(**payload)
         new_gw.sites.add(curr_site)
         # log about creating new Gateway
         curr_user.log(
