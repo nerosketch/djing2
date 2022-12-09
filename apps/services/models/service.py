@@ -214,7 +214,7 @@ class CustomerServiceModelManager(models.Manager):
     _queryset_class = CustomerServiceQuerySet
 
     def customer_service_type_report(self) -> schemas.CustomerServiceTypeReportResponseSchema:
-        active_customers_with_services_qs = super().get_queryset().filter(
+        active_customers_with_services_qs = Customer.objects.filter(
             is_active=True
         ).exclude(
             current_service=None
@@ -245,7 +245,7 @@ class CustomerServiceModelManager(models.Manager):
         )
 
     def activity_report(self) -> schemas.ActivityReportResponseSchema:
-        qs = self.get_queryset()
+        qs = Customer.objects.all()
         all_count = qs.count()
         enabled_count = qs.filter(is_active=True).count()
         with_services_count = qs.filter(
