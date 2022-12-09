@@ -789,7 +789,7 @@ def get_customers(request: Request,
                   filter_fields_q: Q = Depends(filter_qs_by_fields_dependency(
                       fields={
                           'group': int, 'device': int, 'dev_port': int, 'current_service__service': int,
-                          'birth_day': datetime,
+                          'birth_day': datetime, 'is_active': bool
                       },
                       db_model=models.Customer
                   )),
