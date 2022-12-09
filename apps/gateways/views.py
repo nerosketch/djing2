@@ -8,7 +8,7 @@ from djing2.lib.fastapi.perms import permission_check_dependency
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import Pagination
 from starlette import status
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from djing2.lib import safe_int
@@ -102,7 +102,8 @@ class GatewayModelViewSet(DjingModelViewSet):
         return super().perform_destroy(instance)
 
 
-@api_view(['get'])
-def gateway_class_choices(request):
-    gwchoices = ({'v': k, 't': v} for k, v in GatewayClassChoices.choices)
-    return Response(gwchoices)
+@router.get('/gateway_class_choices/',
+            response_model=list[schemas.GwClassChoice])
+def gateway_class_choices():
+    gwchoices = (schemas.GwClassChoice(v=k, t=v) for k, v in GatewayClassChoices.choices)
+    return gwchoices

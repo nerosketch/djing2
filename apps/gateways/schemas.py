@@ -5,7 +5,7 @@ from datetime import datetime
 from django.utils.translation import gettext as _
 from gateways.gw_facade import GatewayTypesEnum
 from gateways.models import GatewayClassChoices
-from pydantic import Field
+from pydantic import Field, BaseModel
 from djing2.lib.mixins import SitesBaseSchema
 
 
@@ -35,3 +35,8 @@ class GatewayModelSchema(GatewayBaseSchema):
     customer_count: int = 0
     customer_count_active: int = 0
     customer_count_w_service: int = 0
+
+
+class GwClassChoice(BaseModel):
+    v: int
+    t: str
