@@ -1,56 +1,150 @@
+from typing import Optional
+
+from django.contrib.sites.models import Site
+from django.db import transaction
 from django.db.models.aggregates import Count
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter
+from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.general_filter import general_filter_queryset
+from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
+from djing2.lib.fastapi.perms import permission_check_dependency
+from djing2.lib.fastapi.sites_depend import sites_dependency
+from djing2.lib.fastapi.types import IListResponse, Pagination
+from djing2.lib.fastapi.utils import get_object_or_404
+from fastapi import APIRouter, Depends, Request, Path
+from profiles.models import UserProfileLogActionType, UserProfile
+from services import schemas
+from services.models import Service
+from starlette import status
 
-from djing2.lib.filters import CustomObjectPermissionsFilter
-from djing2.lib.mixins import SitesFilterMixin
-from djing2.viewsets import DjingModelViewSet
-from profiles.models import UserProfileLogActionType
-from services.models import Service, PeriodicPay, OneShotPay
-from services.serializers import ServiceModelSerializer, PeriodicPayModelSerializer, OneShotPaySerializer
+router = APIRouter(
+    prefix='',
+    dependencies=[Depends(is_admin_auth_dependency)]
+)
 
 
-class ServiceModelViewSet(SitesFilterMixin, DjingModelViewSet):
-    queryset = Service.objects.annotate(usercount=Count("link_to_service"))
-    serializer_class = ServiceModelSerializer
-    filterset_fields = ("groups",)
-    filter_backends = (
-        CustomObjectPermissionsFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
+@router.patch('/{service_id}/',
+              response_model=schemas.ServiceModelSchema
+              )
+def update_service(
+    service_data: schemas.ServiceModelBaseSchema,
+    service_id: int = Path(gt=0),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='services.change_service'
+    )),
+    curr_site: Site = Depends(sites_dependency),
+):
+    services_qs = general_filter_queryset(
+        qs_or_model=Service,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='services.change_service'
     )
-    ordering_fields = ("title", "speed_in", "speed_out", "cost", "usercount")
+    srv = get_object_or_404(services_qs, pk=service_id)
+    pdata = service_data.dict(exclude_unset=True)
 
-    def perform_create(self, serializer, *args, **kwargs):
-        service = super().perform_create(serializer=serializer, sites=[self.request.site])
-        if service is not None:
-            self.request.user.log(
-                do_type=UserProfileLogActionType.CREATE_SERVICE,
-                additional_text='"%(title)s", "%(descr)s", %(amount).2f'
-                % {"title": service.title or "-", "descr": service.descr or "-", "amount": service.cost or 0.0},
-            )
-        return service
+    for d_name, d_val in pdata.items():
+        setattr(srv, d_name, d_val)
 
-    def perform_destroy(self, instance):
-        self.request.user.log(
+    srv.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+    return schemas.ServiceModelSchema.from_orm(srv)
+
+
+@router.delete('/{service_id}/', status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+def remove_service(service_id: int = Path(gt=0),
+                   curr_site: Site = Depends(sites_dependency),
+                   curr_user: UserProfile = Depends(permission_check_dependency(
+                       perm_codename='services.delete_service'
+                   ))
+                   ):
+    services_qs = general_filter_queryset(
+        qs_or_model=Service,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='services.delete_service'
+    )
+    srv = get_object_or_404(queryset=services_qs, pk=service_id)
+
+    with transaction.atomic():
+        srv.delete()
+        curr_user.log(
             do_type=UserProfileLogActionType.DELETE_SERVICE,
-            additional_text='"%(title)s", "%(descr)s", %(amount).2f'
-            % {"title": instance.title or "-", "descr": instance.descr or "-", "amount": instance.cost or 0.0},
+            additional_text='"%(title)s", "%(descr)s", %(amount).2f' % {
+                "title": srv.title or "-",
+                "descr": srv.descr or "-",
+                "amount": srv.cost or 0.0
+            }
         )
-        return super().perform_destroy(instance)
 
 
-class PeriodicPayModelViewSet(SitesFilterMixin, DjingModelViewSet):
-    queryset = PeriodicPay.objects.all()
-    serializer_class = PeriodicPayModelSerializer
+@router.get('/{service_id}/',
+            response_model=schemas.ServiceModelSchema,
+            response_model_exclude_none=True
+            )
+def get_service_details(
+    service_id: int = Path(gt=0),
+    curr_site: Site = Depends(sites_dependency),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='services.view_service'
+    ))
+):
+    qs = general_filter_queryset(
+        qs_or_model=Service.objects.annotate(usercount=Count("link_to_service")),
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='services.view_service'
+    )
+    srv = get_object_or_404(qs, pk=service_id)
+    return schemas.ServiceModelSchema.from_orm(srv)
 
-    def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(serializer=serializer, sites=[self.request.site])
+
+@router.get('/',
+            response_model=IListResponse[schemas.ServiceModelSchema],
+            response_model_exclude_none=True
+            )
+@paginate_qs_path_decorator(
+    schema=schemas.ServiceModelSchema,
+    db_model=Service
+)
+def get_all_services(request: Request,
+                     groups: Optional[int] = None,
+                     curr_user: UserProfile = Depends(permission_check_dependency(
+                         perm_codename='services.view_service'
+                     )),
+                     curr_site: Site = Depends(sites_dependency),
+                     pagination: Pagination = Depends()
+                     ):
+    qs = general_filter_queryset(
+        qs_or_model=Service.objects.annotate(usercount=Count("link_to_service")),
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='services.view_service'
+    )
+    if groups is not None:
+        qs = qs.filter(groups__in=[groups])
+    return qs
 
 
-class OneShotModelViewSet(SitesFilterMixin, DjingModelViewSet):
-    queryset = OneShotPay.objects.all()
-    serializer_class = OneShotPaySerializer
-
-    def perform_create(self, serializer, *args, **kwargs):
-        return super().perform_create(serializer=serializer, sites=[self.request.site])
+@router.post('/',
+             status_code=status.HTTP_201_CREATED,
+             response_model=schemas.ServiceModelSchema)
+def create_new_service(
+    service_data: schemas.ServiceModelBaseSchema,
+    curr_site: Site = Depends(sites_dependency),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='services.add_service'
+    )),
+):
+    with transaction.atomic():
+        new_service = Service.objects.create(
+            **service_data.dict()
+        )
+        new_service.sites.add(curr_site)
+        curr_user.log(
+            do_type=UserProfileLogActionType.CREATE_SERVICE,
+            additional_text='"%(title)s", "%(descr)s", %(amount).2f' % {
+                "title": new_service.title or "-",
+                "descr": new_service.descr or "-",
+                "amount": new_service.cost or 0.0
+            }
+        )
+    return schemas.ServiceModelSchema.from_orm(new_service)

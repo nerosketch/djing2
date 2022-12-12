@@ -1,9 +1,11 @@
 from typing import Optional
 from datetime import datetime
+
+from djing2.lib.mixins import SitesBaseSchema
 from pydantic import BaseModel, Field
 
 from djing2.lib.fastapi.types import OrmConf
-from services.custom_logic import ServiceChoiceEnum
+from services.custom_logic import ServiceChoiceEnum, PeriodicPayChoices, OneShotChoices
 
 
 class ServiceModelBaseSchema(BaseModel):
@@ -18,11 +20,17 @@ class ServiceModelBaseSchema(BaseModel):
 
 
 class ServiceModelSchema(ServiceModelBaseSchema):
-    id: int
+    id: Optional[int] = None
+    title: Optional[str] = None
     create_time: Optional[datetime] = None
     usercount: Optional[int] = None
-    planned_deadline: str
+    planned_deadline: str = ''
     calc_type_name: Optional[str] = None
+    speed_in: float = Field(0.0, ge=0.1)
+    speed_out: float = Field(0.0, ge=0.1)
+    speed_burst: float = 1.0
+    cost: float = Field(0.0, ge=0.0)
+    calc_type: ServiceChoiceEnum = ServiceChoiceEnum.SERVICE_CHOICE_DEFAULT
 
     Config = OrmConf
 
@@ -82,12 +90,28 @@ class PeriodicPayForIdBaseSchema(BaseModel):
 
 
 class PeriodicPayForIdModelSchema(PeriodicPayForIdBaseSchema):
-    id: int
-    next_pay: datetime
+    id: Optional[int] = None
+    next_pay: Optional[datetime] = None
     last_pay: Optional[datetime] = None
     service_name: Optional[str] = None
     service_calc_type: Optional[str] = None
     service_amount: Optional[float] = None
+
+    Config = OrmConf
+
+
+class PeriodicPayBaseSchema(BaseModel):
+    name: str = Field(title='Periodic pay title', max_length=64)
+    calc_type: PeriodicPayChoices = PeriodicPayChoices.PERIODIC_PAY_CALC_DEFAULT
+    amount: float
+
+
+class PeriodicPayModelSchema(PeriodicPayBaseSchema, SitesBaseSchema):
+    id: int
+    name: Optional[str] = None
+    calc_type: Optional[PeriodicPayChoices] = None
+    when_add: Optional[datetime] = None
+    amount: Optional[float] = None
 
     Config = OrmConf
 
@@ -101,5 +125,20 @@ class CustomerServiceQueueModelSchema(CustomerServiceQueueBaseSchema):
     id: int
     number_queue: int = Field(gt=0, title='Number in queue')
     service_title: str
+
+    Config = OrmConf
+
+
+class OneShotPayBaseSchema(BaseModel):
+    name: str = Field(title='Periodic pay title', max_length=64)
+    cost: float = Field(gt=0)
+    pay_type: OneShotChoices = OneShotChoices.ONE_SHOT_DEFAULT
+
+
+class OneShotPayModelSchema(SitesBaseSchema, OneShotPayBaseSchema):
+    id: int
+    name: Optional[str] = None
+    cost: Optional[float] = None
+    pay_type_name: Optional[str] = None
 
     Config = OrmConf

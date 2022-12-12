@@ -1,24 +1,32 @@
-from djing2.lib.mixins import SitesFilterMixin
-from djing2.viewsets import BaseNonAdminReadOnlyModelViewSet
+from django.contrib.sites.models import Site
+from djing2.lib.fastapi.auth import is_customer_auth_dependency
+from djing2.lib.fastapi.sites_depend import sites_dependency
+from profiles.models import BaseAccount
 from services.models import Service
-from services import serializers
+from fastapi import APIRouter, Depends
+from services import schemas
 
 
-class UserSideServiceModelViewSet(SitesFilterMixin, BaseNonAdminReadOnlyModelViewSet):
-    queryset = Service.objects.filter(is_admin=False)
-    serializer_class = serializers.ServiceModelSerializer
-    qs_cache = None
+router = APIRouter(
+    prefix='/user',
+    dependencies=[Depends(is_customer_auth_dependency)],
+)
 
-    def get_queryset(self):
-        if self.qs_cache is not None:
-            return self.qs_cache
-        qs = super().get_queryset()
-        eqs = Service.objects.none()
-        current_user = self.request.user
-        if not current_user:
-            return eqs
-        user_grp = current_user.group
-        if not user_grp:
-            return eqs
-        self.qs_cache = qs.filter(groups__in=(user_grp,))
-        return self.qs_cache
+
+@router.get('/',
+            response_model=list[schemas.ServiceModelSchema],
+            response_model_exclude={'usercount', 'planned_deadline', 'calc_type_name', 'calc_type'}
+            )
+def get_all_customer_service(
+    current_user: BaseAccount = Depends(is_customer_auth_dependency),
+    curr_site: Site = Depends(sites_dependency),
+):
+    user_group = getattr(current_user, 'group', None)
+    if not user_group:
+        return Service.objects.none()
+    qs = Service.objects.filter(
+        is_admin=False,
+        groups__in=[user_group],
+        sites__in=[curr_site]
+    )
+    return (schemas.ServiceModelSchema.from_orm(s) for s in qs)
