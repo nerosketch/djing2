@@ -520,7 +520,7 @@ def add_balance(customer_id: int,
     customer.add_balance(
         profile=curr_user,
         cost=cost,
-        comment=" ".join(comment.split()) if comment else gettext("fill account through admin side"),
+        comment=comment or gettext("fill account through admin side"),
     )
     return Response()
 
