@@ -346,6 +346,10 @@ class Customer(IAddressContaining, BaseAccount):
     def marker_icons(self) -> list[str]:
         return [i for i in self.get_flag_icons()]
 
+    @property
+    def full_name(self):
+        return self.get_full_name()
+
     class Meta:
         db_table = "customers"
         permissions = [
