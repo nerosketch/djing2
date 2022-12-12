@@ -14,11 +14,12 @@ from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.utils.encoders import JSONEncoder
 
+from fastapi import APIRouter, Request, Depends
 from djing2.lib.filters import CustomSearchFilter
 from devices import serializers as dev_serializers
 from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
-from devices.models import Device, Port, PortVlanMemberModel, DeviceModelQuerySet
+from devices.models import Device, Port, PortVlanMemberModel, DeviceModelQuerySet, DeviceStatusEnum
 from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
@@ -33,6 +34,10 @@ from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
 from profiles.models import UserProfile, UserProfileLogActionType
 
+
+router = APIRouter(
+    prefix='/devices'
+)
 
 def catch_dev_manager_err(fn):
     @wraps(fn)
@@ -352,14 +357,14 @@ class DeviceModelViewSet(FilterQuerySetMixin, DjingModelViewSet):
             )
 
         status_map = {
-            0: Device.NETWORK_STATE_UP,
-            1: Device.NETWORK_STATE_DOWN,
+            0: DeviceStatusEnum.NETWORK_STATE_UP.value,
+            1: DeviceStatusEnum.NETWORK_STATE_DOWN.value,
         }
         status_text_map = {
             0: "Device %(device_name)s is ok",
             1: "Device %(device_name)s has problem",
         }
-        device.status = status_map.get(dev_status, Device.NETWORK_STATE_UNDEFINED)
+        device.status = status_map.get(dev_status, DeviceStatusEnum.NETWORK_STATE_UNDEFINED.value)
 
         device.save(update_fields=("status",))
 
