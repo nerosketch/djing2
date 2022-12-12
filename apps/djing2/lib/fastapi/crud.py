@@ -1,7 +1,10 @@
 from typing import Type, Optional, Union, Any, Callable, OrderedDict as OrderedDictType
 
+from django.contrib.sites.models import Site
+from django.db import transaction
 from django.db.models import QuerySet, Model
 from django.db.utils import IntegrityError
+from djing2.lib.fastapi.sites_depend import sites_dependency
 from fastapi.params import Depends
 from pydantic import BaseModel
 from fastapi import HTTPException, Request, APIRouter
@@ -288,7 +291,7 @@ class CrudRouter(CRUDReadGenerator):
         return super().delete(path, *args, **kwargs)
 
     def _create(self, *args: Any, **kwargs: Any):
-        def route(payload: self.create_schema) -> OrderedDictType:
+        def route(payload: self.create_schema, curr_site: Site = Depends(sites_dependency)) -> OrderedDictType:
             pdict = payload.dict(
                 exclude_unset=True,
                 exclude_defaults=True,
@@ -303,7 +306,12 @@ class CrudRouter(CRUDReadGenerator):
 
             model = self._queryset.model
             try:
-                obj = model.objects.create(**pdict)
+                with transaction.atomic():
+                    obj = model.objects.create(**pdict)
+                    sites = getattr(model, 'sites')
+                    if sites is not None:
+                        obj.sites.add(curr_site)
+
                 return format_object(
                     model_item=obj,
                     field_objects=self._field_objects,
@@ -321,7 +329,10 @@ class CrudRouter(CRUDReadGenerator):
     def _update(self, *args: Any, **kwargs: Any):
         def route(item_id: int, model: self.update_schema, request: Request) -> OrderedDictType:
             qs = self.filter_qs(request=request)
-            model_fields = tuple(fname for fname, _ in model.__fields__.items())
+            model_fields = model.__fields__.copy()
+            model_fields.pop('sites', None)
+            model_fields.pop('site', None)
+            model_fields = tuple(fname for fname, _ in model_fields.items())
             update_fields = tuple(fname for fname, _ in self._field_objects.items() if fname in model_fields)
             try:
                 obj = qs.get(pk=item_id)
