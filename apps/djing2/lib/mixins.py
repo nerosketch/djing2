@@ -67,7 +67,7 @@ class BaseCustomModelSerializer(QueryFieldsMixin, ModelSerializer):
 
 class GroupsFilterMixin:
     """
-    Can use only if model has field groups
+    Can use only if model has field groups.
     groups = models.ManyToManyField(Group)
     """
 
@@ -82,7 +82,7 @@ class GroupsFilterMixin:
 
 class SitesFilterMixin:
     """
-    Can use only if model has field sites
+    Can use only if model has field sites.
     sites = models.ManyToManyField(Site)
     """
 
