@@ -356,7 +356,7 @@ def _build_srv_result_from_db_result(row: Record) -> CustomerServiceLeaseResult:
         device_id=row.get('device_id'),
         gateway_id=row.get('gateway_id'),
         speed=speed,
-        ip_address=row.get('ip_addr'),
+        ip_address=row.get('ip_address'),
         mac_address=row.get('mac_address'),
         is_dynamic=row.get('ip_is_dynamic')
     )
