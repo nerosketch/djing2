@@ -4,10 +4,17 @@ from json import dumps as json_dumps
 from dataclasses import asdict
 from typing import Optional
 
+from django.contrib.sites.models import Site
 from django.db.models import Count, QuerySet
 from django.http.response import StreamingHttpResponse
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
+from djing2.lib.fastapi.general_filter import general_filter_queryset
+from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
+from djing2.lib.fastapi.perms import permission_check_dependency
+from djing2.lib.fastapi.sites_depend import sites_dependency
+from djing2.lib.fastapi.types import IListResponse, Pagination
+from djing2.lib.fastapi.utils import get_object_or_404
 from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from guardian.shortcuts import get_objects_for_user
 from starlette import status
@@ -15,7 +22,7 @@ from rest_framework.decorators import action, api_view
 from rest_framework.response import Response as OldResponse
 from rest_framework.utils.encoders import JSONEncoder
 
-from fastapi import APIRouter, Request, Depends, Response
+from fastapi import APIRouter, Request, Depends, Response, Query, Path, HTTPException
 
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
 from djing2.lib.filters import CustomSearchFilter
@@ -26,7 +33,7 @@ from devices.models import Device, Port, PortVlanMemberModel, DeviceModelQuerySe
 from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
-    UnsupportedReadingVlan,
+    UnsupportedReadingVlan, DeviceTimeoutError,
 )
 from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
@@ -52,9 +59,12 @@ def catch_dev_manager_err(fn):
         try:
             return fn(self, *args, **kwargs)
         except (DeviceImplementationError, ExpectValidationError) as err:
-            return OldResponse({"text": str(err), "status": 2})
+            raise HTTPException(
+                status_code=status.HTTP_200_OK,
+                detail={"text": str(err), "status": 2}
+            )
         except EasySNMPTimeoutError as err:
-            return OldResponse(str(err), status=status.HTTP_408_REQUEST_TIMEOUT)
+            raise DeviceTimeoutError() from err
         except (
             ConnectionResetError,
             ConnectionRefusedError,
@@ -62,9 +72,15 @@ def catch_dev_manager_err(fn):
             DeviceConnectionError,
             EasySNMPError,
         ) as err:
-            return OldResponse(str(err), status=452)
+            raise HTTPException(
+                detail=str(err),
+                status_code=452
+            )
         except SystemError as err:
-            return OldResponse(str(err), status=453)
+            raise HTTPException(
+                detail=str(err),
+                status_code=453
+            )
 
     return _wrapper
 
@@ -74,7 +90,7 @@ def filter_query_set_dependency(
     house: Optional[int] = None,
     street: Optional[int] = None,
     address: Optional[int] = None
-) -> QuerySet:
+) -> QuerySet[Device]:
     curr_user, token = auth
     qs = Device.objects.select_related("parent_dev").order_by('comment')
     if curr_user.is_superuser:
@@ -97,28 +113,81 @@ def filter_query_set_dependency(
     return qs
 
 
+@router.get(
+    '/pon/',
+    response_model=IListResponse[schemas.DevicePONModelSchema],
+    response_model_exclude_none=True
+)
+@paginate_qs_path_decorator(
+    schema=schemas.DevicePONModelSchema,
+    db_model=Device
+)
+def get_pon_devices(
+    request: Request,
+    group: Optional[int] = Query(default=None, gt=0),
+    dev_type: Optional[int] = Query(default=None, gt=0),
+    dev_status: Optional[int] = Query(default=None, gt=0, alias='status'),
+    is_noticeable: Optional[int] = Query(default=None, gt=0),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='devices.view_device'
+    )),
+    curr_site: Site = Depends(sites_dependency),
+    pagination: Pagination = Depends(),
+    dev_initial_qs: QuerySet[Device] = Depends(filter_query_set_dependency)
+):
+    qs = general_filter_queryset(
+        qs_or_model=dev_initial_qs,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='devices.view_device',
+    )
+    if isinstance(group, int):
+        qs = qs.filter(group_id=group)
+    if isinstance(dev_type, int):
+        qs = qs.filter(dev_type=dev_type)
+    if isinstance(dev_status, int):
+        qs = qs.filter(status=dev_status)
+    if isinstance(is_noticeable, int):
+        qs = qs.filter(is_noticeable=is_noticeable)
+
+    return qs
 
 
-class DevicePONViewSet(FilterQuerySetMixin, DjingModelViewSet):
-    queryset = Device.objects.select_related("parent_dev").order_by('comment')
-    serializer_class = dev_serializers.DevicePONModelSerializer
-    filterset_fields = ("group", "dev_type", "status", "is_noticeable")
-    filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, CustomSearchFilter]
-    search_fields = ("comment", "ip_address", "mac_addr")
-    ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
+@router.get('/pon/{device_id}/scan_units_unregistered/',
+            response_model=list)
+def scan_units_unregistered(
+    device_id: int = Path(gt=0),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='devices.view_device'
+    )),
+    curr_site: Site = Depends(sites_dependency),
+):
+    qs = general_filter_queryset(
+        qs_or_model=Device,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='devices.view_device',
+    )
+    device = get_object_or_404(qs, pk=device_id)
+    manager = device.get_pon_olt_device_manager()
+    if hasattr(manager, "get_fibers"):
+        unregistered = []
+        for fb in manager.get_fibers():
+            for unr in manager.get_units_unregistered(fb):
+                unregistered.append(unr)
+        return unregistered
+    raise DeviceImplementationError(
+        detail="Manager has not get_fibers attribute"
+    )
 
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_units_unregistered(self, request, pk=None):
-        device = self.get_object()
-        manager = device.get_pon_olt_device_manager()
-        if hasattr(manager, "get_fibers"):
-            unregistered = []
-            for fb in manager.get_fibers():
-                for unr in manager.get_units_unregistered(fb):
-                    unregistered.append(unr)
-            return OldResponse(unregistered)
-        return DeviceImplementationError("Manager has not get_fibers attribute")
+
+class DevicePONViewSet(DjingModelViewSet):
+    # queryset = Device.objects.select_related("parent_dev").order_by('comment')
+    # serializer_class = dev_serializers.DevicePONModelSerializer
+    # filterset_fields = ("group", "dev_type", "status", "is_noticeable")
+    # filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, CustomSearchFilter]
+    # search_fields = ("comment", "ip_address", "mac_addr")
+    # ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
 
     @action(detail=True)
     @catch_dev_manager_err
@@ -285,7 +354,7 @@ class DevicePONViewSet(FilterQuerySetMixin, DjingModelViewSet):
             return OldResponse(())
 
 
-class DeviceModelViewSet(FilterQuerySetMixin, DjingModelViewSet):
+class DeviceModelViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related("parent_dev").order_by('comment')
     serializer_class = dev_serializers.DeviceModelSerializer
     filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")

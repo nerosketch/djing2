@@ -3,10 +3,9 @@ from typing import Union, Optional
 from ipaddress import IPv4Address, IPv6Address
 from django.utils.translation import gettext as _
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 from djing2.lib.fastapi.types import OrmConf
-# from djing2.lib.mixins import SitesBaseSchema
 
 from .device_config.device_type_collection import DeviceTypeEnum
 from .models import DeviceStatusEnum, PortVlanMemberMode
@@ -16,7 +15,7 @@ class DeviceWithoutGroupBaseSchema(BaseModel):
     ip_address: Optional[Union[IPv4Address, IPv6Address]] = Field(None, title=_("Ip address"))
     mac_addr: str
     comment: str = Field(max_length=256, title=_("Comment"))
-    dev_type: DeviceTypeEnum = Field(default=DeviceTypeEnum.DEVICE_TYPE_UNKNOWN, title=_("Device type"))
+    dev_type: DeviceTypeEnum = Field(default=DeviceTypeEnum.UnknownDevice, title=_("Device type"))
     man_passw: Optional[str] = Field(None, title=_("SNMP password"), max_length=16)
     parent_dev_id: Optional[int] = Field(None, title=_("Parent device"))
     snmp_extra: Optional[str] = Field(None, title=_("SNMP extra info"), max_length=256)
@@ -59,8 +58,6 @@ class DeviceBaseSchema(DeviceWithoutGroupBaseSchema):
 
 class DeviceModelSchema(DeviceBaseSchema, DeviceWithoutGroupModelSchema):
     create_time: datetime = Field(title=_("Create time"))
-
-    Config = OrmConf
 
 
 class DevicePONModelSchema(DeviceModelSchema):
