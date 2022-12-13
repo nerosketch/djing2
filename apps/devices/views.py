@@ -2,7 +2,7 @@ import re
 from functools import wraps
 from json import dumps as json_dumps
 from dataclasses import asdict
-from typing import Optional
+from typing import Optional, Union
 
 from django.contrib.sites.models import Site
 from django.db.models import Count, QuerySet
@@ -27,7 +27,7 @@ from fastapi import APIRouter, Request, Depends, Response, Query, Path, HTTPExce
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
 from djing2.lib.filters import CustomSearchFilter
 from devices import serializers as dev_serializers
-from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
+from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext, FiberDataClass
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
 from devices.models import Device, Port, PortVlanMemberModel, DeviceModelQuerySet, DeviceStatusEnum
 from devices.device_config.base import (
@@ -181,6 +181,30 @@ def scan_units_unregistered(
     )
 
 
+@router.get(
+    '/pon/{device_id}/scan_olt_fibers/',
+)
+def scan_olt_fibers(
+    device_id: int = Path(gt=0),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='devices.view_device'
+    )),
+    curr_site: Site = Depends(sites_dependency),
+):
+    qs = general_filter_queryset(
+        qs_or_model=Device,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='devices.view_device',
+    )
+    device = get_object_or_404(qs, pk=device_id)
+    manager = device.get_pon_olt_device_manager()
+    if hasattr(manager, "get_fibers"):
+        fb = manager.get_fibers()
+        return tuple(fb)
+    return Response({"Error": {"text": "Manager has not get_fibers attribute"}})
+
+
 class DevicePONViewSet(DjingModelViewSet):
     # queryset = Device.objects.select_related("parent_dev").order_by('comment')
     # serializer_class = dev_serializers.DevicePONModelSerializer
@@ -231,17 +255,6 @@ class DevicePONViewSet(DjingModelViewSet):
         except StopIteration:
             pass
         return OldResponse("No all fetched")
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_olt_fibers(self, request, pk=None):
-        device = self.get_object()
-        manager = device.get_pon_olt_device_manager()
-        if hasattr(manager, "get_fibers"):
-            fb = manager.get_fibers()
-            return OldResponse(tuple(fb))
-        else:
-            return OldResponse({"Error": {"text": "Manager has not get_fibers attribute"}})
 
     @action(detail=True, url_path=r"scan_onu_on_fiber/(?P<fiber_num>\d{8,12})")
     @catch_dev_manager_err
