@@ -473,7 +473,7 @@ class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
             bank_info = getattr(legal, 'legalcustomerbankmodel')
             res.update({
                 'customer_bank': bank_info.title,
-                'customer_bank_num': bank_info.number,
+                'customer_bank_num': bank_info.settlement_account,
             })
 
         for customer in legal.branches.filter(is_active=True):
