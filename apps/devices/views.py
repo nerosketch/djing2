@@ -181,9 +181,7 @@ def scan_units_unregistered(
     )
 
 
-@router.get(
-    '/pon/{device_id}/scan_olt_fibers/',
-)
+@router.get('/pon/{device_id}/scan_olt_fibers/')
 def scan_olt_fibers(
     device_id: int = Path(gt=0),
     curr_user: UserProfile = Depends(permission_check_dependency(
@@ -203,6 +201,27 @@ def scan_olt_fibers(
         fb = manager.get_fibers()
         return tuple(fb)
     return Response({"Error": {"text": "Manager has not get_fibers attribute"}})
+
+
+@router.get('/pon/{device_id}/scan_pon_details/',
+            response_model=dict)
+def scan_pon_details(
+    device_id: int = Path(gt=0),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='devices.view_device'
+    )),
+    curr_site: Site = Depends(sites_dependency),
+):
+    qs = general_filter_queryset(
+        qs_or_model=Device,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='devices.view_device',
+    )
+    device = get_object_or_404(qs, pk=device_id)
+    pon_manager = device.get_pon_onu_device_manager()
+    data = pon_manager.get_details()
+    return data
 
 
 class DevicePONViewSet(DjingModelViewSet):
@@ -328,14 +347,6 @@ class DevicePONViewSet(DjingModelViewSet):
         if device.remove_from_olt(**args):
             return OldResponse({"text": _("Deleted"), "status": 1})
         return OldResponse({"text": _("Failed"), "status": 2})
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_pon_details(self, request, pk=None):
-        device = self.get_object()
-        pon_manager = device.get_pon_onu_device_manager()
-        data = pon_manager.get_details()
-        return OldResponse(data)
 
     @action(detail=True)
     def get_onu_config_options(self, request, pk=None):
