@@ -31,6 +31,7 @@ class BdcomFiberDataClass(FiberDataClass):
 
 class BDCOM_P3310C(PonOltDeviceStrategy):
     has_attachable_to_customer = False
+    tech_code = 'bdcom_p3310c'
     description = "PON OLT"
     is_use_device_port = False
     ports_len = 4

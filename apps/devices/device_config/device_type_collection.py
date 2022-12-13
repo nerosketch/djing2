@@ -38,7 +38,7 @@ DEVICE_SWITCH_TYPES = [dev_klass for uniq_num, dev_klass in DEVICE_TYPES if issu
 
 
 DeviceTypeEnum = IntEnum('DeviceTypeEnum', {
-    uniq_num: dev_klass.tech_code for uniq_num, dev_klass in global_device_types_map.items()
+    dev_klass.__name__: uniq_num for uniq_num, dev_klass in global_device_types_map.items()
 })
 
 # TODO: Check it

@@ -21,6 +21,7 @@ class UnregisteredUnitType:
 
 
 class ZTE_C320(BDCOM_P3310C):
+    tech_code = 'zte_c320'
     description = "OLT ZTE C320"
     ports_len = 8
 
