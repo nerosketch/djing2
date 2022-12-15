@@ -21,7 +21,6 @@ router = APIRouter(
 )
 
 
-# FIXME: CLOSE BY AUTH HASH
 @router.get('/fetch_customers_srvnet_credentials_by_gw/', response_model=list)
 def fetch_customers_srvnet_credentials_by_gw(gw_id: int = Query(gt=0)):
     res = Gateway.get_user_credentials_by_gw(gw_id=gw_id)
