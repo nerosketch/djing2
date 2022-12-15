@@ -10,7 +10,7 @@ def export_special_numbers(event_time=None):
         'addr': None,
         'description': sn.description or 'Телефон службы поддержки',
         'actual_begin_datetime': sn.actual_begin_datetime.strftime(datetime_format),
-        'actual_end_datetime': sn.ectual_end_datetime.strftime(datetime_format) if sn.ectual_end_datetime else None
+        'actual_end_datetime': sn.actual_end_datetime.strftime(datetime_format) if sn.actual_end_datetime else None
     } for sn in SpecialNumbers.objects.all())
     task_export(
         data=tels,
