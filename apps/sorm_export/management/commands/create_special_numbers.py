@@ -1,33 +1,14 @@
 import re
 from datetime import datetime
-from django.core.management.base import CommandError
+from django.core.management.base import CommandError, BaseCommand, no_translations
 
-from sorm_export.hier_export.special_numbers import store_fname
-from sorm_export.serializers.special_numbers import SpecialNumbersSerializerFormat
-from sorm_export.models import datetime_format
-from ._base_file_based_cmd import BaseFileBasedCommand
+from sorm_export.models import datetime_format, SpecialNumbers
 
 
-def _make_special_number_data(tel_number: str, description: str, start_time: datetime, event_time=None):
-    dat = [{
-        'tel_number': tel_number,
-        # 'ip_address': '',
-        'description': description,  # 'Телефон службы поддержки',
-        'start_time': start_time,    # '29.01.2017T12:00:00',
-        # 'end_time': ''
-        # TODO: Выгружать дату, когда номер перестанет быть актуальным.
-    }]
-
-    ser = SpecialNumbersSerializerFormat(data=dat, many=True)
-    ser.is_valid(raise_exception=True)
-    return ser.data
-
-
-class Command(BaseFileBasedCommand):
+class Command(BaseCommand):
     help = ("Creates or replaces special numbers: "
             "https://wiki.vasexperts.ru/doku.php?id="
             "sorm:sorm3:sorm3_subs_dump:sorm3_subs_special_numbers:start")
-    store_fname = store_fname
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -53,18 +34,31 @@ class Command(BaseFileBasedCommand):
             raise CommandError("Arguments must be separated by comma. And check date format('DD.mm.YYYYTHH:MM:SS'). "
                                "Detail: %s" % err) from err
 
+    @no_translations
+    def handle(self, add=None, show=False, rm=None, *args, **kwargs):
+        if add:
+            self.add(add)
+        elif show:
+            self.show()
+        elif rm:
+            self.rm(rm)
+        else:
+            self.stdout.write(self.style.ERROR('Unknown choice'))
+
     def add(self, val):
         telephone_num, descr, start_time = self._split_args_data(val)
-        self.check_unique(telephone_num)
-        data = _make_special_number_data(
-            tel_number=telephone_num,
-            description=descr,
-            start_time=start_time
+        SpecialNumbers.objects.create(
+            telephone=telephone_num,
+            actual_begin_datetime=start_time,
+            description=descr
         )
-        self.write2file(data)
         self.stdout.write(self.style.SUCCESS('OK'))
 
     def rm(self, val):
         telephone_num = re.sub(r'\D', '', val)
-        self.del_from_file(telephone_num)
+        SpecialNumbers.objects.filter(telephone=telephone_num).delete()
         self.stdout.write(self.style.SUCCESS('OK'))
+
+    def show(self):
+        for sn in SpecialNumbers.objects.all():
+            self.stdout.write(f"{sn.telephone}, {sn.actual_begin_datetime}, {sn.description or '-'}")

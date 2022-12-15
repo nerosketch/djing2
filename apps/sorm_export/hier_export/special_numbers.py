@@ -1,13 +1,19 @@
-from pathlib import Path
+from sorm_export.models import SpecialNumbers, ExportStampTypeEnum
+from sorm_export.tasks.task_export import task_export
+from sorm_export.models import datetime_format
 from .base import format_fname
-from sorm_export.ftp_worker.func import send_file2ftp
-
-store_fname = './apps/sorm_export/special_numbers.csv'
 
 
 def export_special_numbers(event_time=None):
-    if Path(store_fname).exists():
-        send_file2ftp(
-            fname=store_fname,
-            remote_fname=f"ISP/dict/special_numbers_{format_fname(event_time)}.txt"
-        )
+    tels = ({
+        'number': sn.telephone,
+        'addr': None,
+        'description': sn.description or 'Телефон службы поддержки',
+        'actual_begin_datetime': sn.actual_begin_datetime.strftime(datetime_format),
+        'actual_end_datetime': sn.ectual_end_datetime.strftime(datetime_format) if sn.ectual_end_datetime else None
+    } for sn in SpecialNumbers.objects.all())
+    task_export(
+        data=tels,
+        filename=f"ISP/dict/special_numbers_{format_fname(event_time)}.txt",
+        export_type=ExportStampTypeEnum.SPECIAL_NUMBERS
+    )
