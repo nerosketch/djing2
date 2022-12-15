@@ -81,10 +81,10 @@ class CustomerTypeChoices(models.IntegerChoices):
 
 class CustomerDocumentTypeChoices(models.TextChoices):
     EMPTY = ''
-    PASSPORT_RF = _('Passport RF')
-    PASSPORT_USSR = _('Passport USSR')
-    PASSPORT_OTHER_COUNTRY = _('Passport other country')
-    MILITARY_TICKET = _('Military ticket')
+    PASSPORT_RF = 'Паспорт РФ'
+    PASSPORT_USSR = 'Паспорт СССР'
+    PASSPORT_OTHER_COUNTRY = 'Паспорт иностранного гражданина'
+    MILITARY_TICKET = 'Военный билет'
 
 
 class Choice4BooleanField(models.TextChoices):
