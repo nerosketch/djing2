@@ -10,7 +10,7 @@ from djing2.lib.fastapi.types import Pagination, NOT_FOUND
 from starlette import status
 from gateways.models import Gateway, GatewayClassChoices
 from profiles.models import UserProfileLogActionType, BaseAccount, UserProfile
-from fastapi import APIRouter, Depends, Request, Path
+from fastapi import APIRouter, Depends, Request, Path, Query
 from gateways import schemas
 
 
@@ -19,6 +19,14 @@ router = APIRouter(
     tags=['Gateways'],
     dependencies=[Depends(is_admin_auth_dependency)],
 )
+
+
+# FIXME: CLOSE BY AUTH HASH
+@router.get('/fetch_customers_srvnet_credentials_by_gw/', response_model=list)
+def fetch_customers_srvnet_credentials_by_gw(gw_id: int = Query(gt=0)):
+    res = Gateway.get_user_credentials_by_gw(gw_id=gw_id)
+    res = tuple(res)
+    return res
 
 
 @router.patch('/{gw_id}/',
@@ -78,6 +86,13 @@ def delete_gateway(gw_id: int = Path(gt=0, title='Gateway'),
         )
 
 
+@router.get('/gateway_class_choices/',
+            response_model=list[schemas.GwClassChoice])
+def gateway_class_choices():
+    gwchoices = (schemas.GwClassChoice(v=k, t=v) for k, v in GatewayClassChoices.choices)
+    return gwchoices
+
+
 @router.get('/')
 @paginate_qs_path_decorator(
     schema=schemas.GatewayModelSchema,
@@ -134,10 +149,3 @@ def create_gateway(
             }
         )
     return schemas.GatewayModelSchema.from_orm(new_gw)
-
-
-@router.get('/gateway_class_choices/',
-            response_model=list[schemas.GwClassChoice])
-def gateway_class_choices():
-    gwchoices = (schemas.GwClassChoice(v=k, t=v) for k, v in GatewayClassChoices.choices)
-    return gwchoices
