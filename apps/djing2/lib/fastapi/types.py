@@ -8,7 +8,7 @@ from django.db.models import Field as DjangoField
 
 
 PYDANTIC_SCHEMA = BaseModel
-MAX_LIMIT = 1000
+MAX_LIMIT = 100
 DEFAULT_LIMIT = 60
 
 T = TypeVar("T", bound=BaseModel)
