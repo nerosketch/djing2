@@ -6,6 +6,7 @@ from devices.device_config.base import (
     DeviceImplementationError, DeviceConnectionError,
     OptionalScriptCallResult, Vlans
 )
+from devices.schemas import DeviceOnuConfigTemplateSchema
 
 
 class SNMPWorker(Session):
@@ -98,10 +99,10 @@ class DeviceConfigType:
 
     @classmethod
     @abstractmethod
-    def entry_point(cls, config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
+    def entry_point(cls, config: DeviceOnuConfigTemplateSchema, device, *args, **kwargs) -> OptionalScriptCallResult:
         """
         This method is entry point for all custom device automation
-        :param config: Dict from views.apply_device_onu_config_template
+        :param config: config information
         :param device: devices.models.Device instance
         :param args:
         :param kwargs:

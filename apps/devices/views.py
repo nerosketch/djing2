@@ -6,7 +6,7 @@ from typing import Optional
 
 from django.contrib.sites.models import Site
 from django.db.models import Count, QuerySet
-from django.utils.translation import gettext_lazy as _, gettext
+from django.utils.translation import gettext as _
 from django_filters.rest_framework import DjangoFilterBackend
 from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
@@ -33,7 +33,7 @@ from devices.models import Device, Port, PortVlanMemberModel, DeviceModelQuerySe
 from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
-    UnsupportedReadingVlan, DeviceTimeoutError,
+    UnsupportedReadingVlan, DeviceTimeoutError, Vlan, Vlans, OptionalScriptCallResult,
 )
 from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
@@ -153,22 +153,34 @@ def get_pon_devices(
     return qs
 
 
+def pon_device_with_perm(perm: str):
+    def _wrapped(
+        device_id: int = Path(gt=0),
+        curr_user: UserProfile = Depends(permission_check_dependency(
+            perm_codename=perm
+        )),
+        curr_site: Site = Depends(sites_dependency),
+    ):
+        qs = general_filter_queryset(
+            qs_or_model=Device,
+            curr_site=curr_site,
+            curr_user=curr_user,
+            perm_codename=perm,
+        )
+        device = get_object_or_404(qs, pk=device_id)
+        return device
+    return _wrapped
+
+
+def pon_device_object_dependency(
+    device: Device = Depends(pon_device_with_perm(perm='devices.view_device'))
+) -> Device:
+    return device
+
+
 @router.get('/pon/{device_id}/scan_units_unregistered/',
             response_model=list)
-def scan_units_unregistered(
-    device_id: int = Path(gt=0),
-    curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='devices.view_device'
-    )),
-    curr_site: Site = Depends(sites_dependency),
-):
-    qs = general_filter_queryset(
-        qs_or_model=Device,
-        curr_site=curr_site,
-        curr_user=curr_user,
-        perm_codename='devices.view_device',
-    )
-    device = get_object_or_404(qs, pk=device_id)
+def scan_units_unregistered(device: Device = Depends(pon_device_object_dependency)):
     manager = device.get_pon_olt_device_manager()
     if hasattr(manager, "get_fibers"):
         unregistered = []
@@ -183,19 +195,8 @@ def scan_units_unregistered(
 
 @router.get('/pon/{device_id}/scan_olt_fibers/')
 def scan_olt_fibers(
-    device_id: int = Path(gt=0),
-    curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='devices.view_device'
-    )),
-    curr_site: Site = Depends(sites_dependency),
+    device: Device = Depends(pon_device_object_dependency)
 ):
-    qs = general_filter_queryset(
-        qs_or_model=Device,
-        curr_site=curr_site,
-        curr_user=curr_user,
-        perm_codename='devices.view_device',
-    )
-    device = get_object_or_404(qs, pk=device_id)
     manager = device.get_pon_olt_device_manager()
     if hasattr(manager, "get_fibers"):
         fb = manager.get_fibers()
@@ -206,19 +207,8 @@ def scan_olt_fibers(
 @router.get('/pon/{device_id}/scan_pon_details/',
             response_model=dict)
 def scan_pon_details(
-    device_id: int = Path(gt=0),
-    curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='devices.view_device'
-    )),
-    curr_site: Site = Depends(sites_dependency),
+    device: Device = Depends(pon_device_object_dependency)
 ):
-    qs = general_filter_queryset(
-        qs_or_model=Device,
-        curr_site=curr_site,
-        curr_user=curr_user,
-        perm_codename='devices.view_device',
-    )
-    device = get_object_or_404(qs, pk=device_id)
     pon_manager = device.get_pon_onu_device_manager()
     data = pon_manager.get_details()
     return data
@@ -226,19 +216,8 @@ def scan_pon_details(
 
 @router.get('/pon/{device_id}/scan_onu_list/')
 def scan_onu_list(
-    device_id: int = Path(gt=0),
-    curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='devices.view_device'
-    )),
-    curr_site: Site = Depends(sites_dependency),
+    device: Device = Depends(pon_device_object_dependency)
 ):
-    qs = general_filter_queryset(
-        qs_or_model=Device,
-        curr_site=curr_site,
-        curr_user=curr_user,
-        perm_codename='devices.view_device',
-    )
-    device = get_object_or_404(qs, pk=device_id)
     manager = device.get_pon_olt_device_manager()
     if not isinstance(manager, PonOLTDeviceStrategyContext):
         raise DeviceImplementationError("Expected PonOLTDeviceStrategyContext instance")
@@ -282,115 +261,98 @@ def scan_onu_list(
     return Response("No all fetched")
 
 
-class DevicePONViewSet(DjingModelViewSet):
-    # queryset = Device.objects.select_related("parent_dev").order_by('comment')
-    # serializer_class = dev_serializers.DevicePONModelSerializer
-    # filterset_fields = ("group", "dev_type", "status", "is_noticeable")
-    # filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, CustomSearchFilter]
-    # search_fields = ("comment", "ip_address", "mac_addr")
-    # ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
-    @action(detail=True, url_path=r"scan_onu_on_fiber/(?P<fiber_num>\d{8,12})")
-    @catch_dev_manager_err
-    def scan_onu_on_fiber(self, request, fiber_num=0, pk=None):
-        if not str(fiber_num).isdigit() or safe_int(fiber_num) < 1:
-            return OldResponse('"fiber_num" number param required', status=status.HTTP_400_BAD_REQUEST)
-        fiber_num = safe_int(fiber_num)
-        device = self.get_object()
-        manager = device.get_pon_olt_device_manager()
-        if hasattr(manager, "get_ports_on_fiber"):
-            try:
-                onu_list = tuple(manager.get_ports_on_fiber(fiber_num=fiber_num))
-                return OldResponse(onu_list)
-            except ProcessLocked:
-                return OldResponse(_("Process locked by another process"), status=452)
-        else:
-            return OldResponse({"Error": {"text": 'Manager has not "get_ports_on_fiber" attribute'}})
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def fix_onu(self, request, pk=None):
-        self.check_permission_code(request, "devices.can_fix_onu")
-        onu = self.get_object()
-        fix_status, text = onu.fix_onu()
-        onu_serializer = self.get_serializer(onu)
-        return OldResponse({"text": text, "status": 1 if fix_status else 2, "device": onu_serializer.data})
-
-    @action(detail=True, methods=["post"])
-    @catch_dev_manager_err
-    def apply_device_onu_config_template(self, request, pk=None):
-        self.check_permission_code(request, "devices.can_apply_onu_config")
-
-        # mng = device.get_manager_object_onu()
-        # if not isinstance(mng, BasePON_ONU_Interface):
-        #     return OldResponse("device must be PON ONU type", status=status.HTTP_400_BAD_REQUEST)
-
-        # TODO: Describe this as TypedDict from python3.8
-        # apply config
-        # example = {
-        #     'configTypeCode': 'zte_f660_bridge',
-        #     'vlanConfig': [
-        #         {
-        #             'port': 1,
-        #             'vids': [
-        #                 {'vid': 151, 'native': True}
-        #             ]
-        #         },
-        #         {
-        #             'port': 2,
-        #             'vids': [
-        #                 {'vid': 263, 'native': False},
-        #                 {'vid': 264, 'native': False},
-        #                 {'vid': 265, 'native': False},
-        #             ]
-        #         }
-        #     ]
-        # }
-        device_config_serializer = dev_serializers.DeviceOnuConfigTemplate(data=request.data)
-        device_config_serializer.is_valid(raise_exception=True)
-
-        device = self.get_object()
-        res = device.apply_onu_config(config=device_config_serializer.data)
-        return OldResponse(res)
-
-    @action(detail=True, methods=['get'])
-    @catch_dev_manager_err
-    def remove_from_olt(self, request, pk=None):
-        self.check_permission_code(request, "devices.can_remove_from_olt")
-        device = self.get_object()
-        args = request.query_params
-        if device.remove_from_olt(**args):
-            return OldResponse({"text": _("Deleted"), "status": 1})
-        return OldResponse({"text": _("Failed"), "status": 2})
-
-    @action(detail=True)
-    def get_onu_config_options(self, request, pk=None):
-        dev = self.get_object()
-        config_types = dev.get_config_types()
-        config_choices = (i.to_dict() for i in config_types if i)
-        # klass = dev.get_manager_klass()
-
-        res = {
-            # 'port_num': klass.ports_len,
-            "config_choices": config_choices,
-            # 'accept_vlan': True or not True  # or not to be :)
-        }
-
-        return OldResponse(res)
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def read_onu_vlan_info(self, request, pk=None):
+@router.get('/pon/{device_id}/scan_onu_on_fiber/{fiber_num}',
+            response_model=list)
+def scan_onu_on_fiber(
+    fiber_num: int = Path(gt=0),
+    device: Device = Depends(pon_device_object_dependency)
+):
+    manager = device.get_pon_olt_device_manager()
+    if hasattr(manager, "get_ports_on_fiber"):
         try:
-            dev = self.get_object()
-            if dev.is_onu_registered:
-                vlans = tuple(dev.read_onu_vlan_info())
-            else:
-                vlans = dev.default_vlan_info()
-            return OldResponse(vlans)
-        except UnsupportedReadingVlan:
-            # Vlan config unsupported
-            return OldResponse(())
+            onu_list = tuple(manager.get_ports_on_fiber(fiber_num=fiber_num))
+            return onu_list
+        except ProcessLocked:
+            raise HTTPException(
+                detail=_("Process locked by another process"),
+                status_code=452
+            )
+    raise HTTPException(
+        detail={"Error": {"text": 'Manager has not "get_ports_on_fiber" attribute'}},
+        status_code=status.HTTP_200_OK
+    )
+
+
+@router.get('/pon/{device_id}/fix_onu/',
+            response_model=schemas.FixOnuResponseSchema)
+def fix_onu(
+    onu: Device = Depends(pon_device_with_perm(perm='devices.can_fix_onu'))
+):
+    fix_status, text = onu.fix_onu()
+    return schemas.FixOnuResponseSchema(
+        text=text,
+        status=1 if fix_status else 2,
+        device=schemas.DevicePONModelSchema.from_orm(onu)
+    )
+
+
+@router.get('/pon/{device_id}/remove_from_olt/',
+            response_model=schemas.RemoveFromOLTResponseSchema)
+def remove_from_olt(
+    request: Request,
+    device: Device = Depends(pon_device_with_perm(perm='devices.can_remove_from_olt'))
+):
+    args = request.query_params
+    if device.remove_from_olt(**args):
+        return schemas.RemoveFromOLTResponseSchema(
+            text=_("Deleted"),
+            status=1
+        )
+    return schemas.RemoveFromOLTResponseSchema(
+        text=_("Failed"),
+        status=2
+    )
+
+
+@router.get('/pon/{device_id}/get_onu_config_options/')
+def get_onu_config_options(
+    device: Device = Depends(pon_device_object_dependency)
+):
+    config_types = device.get_config_types()
+    config_choices = (i.to_dict() for i in config_types if i)
+    # klass = dev.get_manager_klass()
+
+    return {
+        # 'port_num': klass.ports_len,
+        "config_choices": config_choices,
+        # 'accept_vlan': True or not True  # or not to be :)
+    }
+
+
+@router.get('/pon/{device_id}/read_onu_vlan_info/',
+            response_model=Vlans)
+def read_onu_vlan_info(
+    device: Device = Depends(pon_device_object_dependency)
+) -> Vlans:
+    try:
+        if device.is_onu_registered:
+            vlans = tuple(device.read_onu_vlan_info())
+        else:
+            vlans = device.default_vlan_info()
+        return vlans
+    except UnsupportedReadingVlan:
+        # Vlan config unsupported
+        return ()
+
+
+@router.post('/pon/{device_id}/apply_device_onu_config_template/',
+             response_model=OptionalScriptCallResult)
+def apply_device_onu_config_template(
+    device_config_data: schemas.DeviceOnuConfigTemplateSchema,
+    device: Device = Depends(pon_device_with_perm(perm='devices.can_apply_onu_config'))
+) -> OptionalScriptCallResult:
+    res = device.apply_onu_config(config=device_config_data)
+    return res
 
 
 class DeviceModelViewSet(DjingModelViewSet):

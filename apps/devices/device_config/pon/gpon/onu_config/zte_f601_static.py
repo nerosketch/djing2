@@ -1,6 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 
 from devices.device_config import expect_util
+from devices.schemas import DeviceOnuConfigTemplateSchema
 from . import zte_onu
 from ...utils import VlanList
 
@@ -19,10 +20,10 @@ def _get_onu_template(all_vids: VlanList, *args, **kwargs) -> tuple:
     return template
 
 
-def _get_pon_mng_template(all_vids: VlanList, config: dict, *args, **kwargs) -> list:
+def _get_pon_mng_template(all_vids: VlanList, config: DeviceOnuConfigTemplateSchema, *args, **kwargs) -> list:
     all_vids = ",".join(map(str, set(all_vids)))
-    vlan_config = config.get("vlanConfig")
-    vids = vlan_config[0].get("vids")
+    vlan_config = config.vlanConfig
+    vids = vlan_config[0].vids
 
     native_vids, trunk_vids = zte_onu.build_trunk_native_from_vids(vids)
     native_vids_len = len(native_vids)

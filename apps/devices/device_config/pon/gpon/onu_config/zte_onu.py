@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from devices.device_config import expect_util
 from devices.device_config.base import OptionalScriptCallResult, DeviceConfigurationError
 from devices.device_config.base_device_strategy import DeviceConfigType
+from devices.schemas import DeviceOnuConfigTemplateSchema
 from djing2.lib import process_lock_decorator, safe_int
 from .. import zte_utils
 from ...utils import get_all_vlans_from_config
@@ -32,7 +33,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         sn = "ZTEG%s" % "".join("%.2X" % int(x, base=16) for x in mac.split(":")[-4:])
         return sn
 
-    def entry_point(self, config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
+    def entry_point(self, config: DeviceOnuConfigTemplateSchema, device, *args, **kwargs) -> OptionalScriptCallResult:
         extra_data = self.get_extra_data(device)
 
         ip = None
@@ -112,7 +113,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
     def register_onu(
         self,
         serial: str,
-        config: dict,
+        config: DeviceOnuConfigTemplateSchema,
         onu_mac: str,
         zte_ip_addr: str,
         telnet_login: str,

@@ -6,6 +6,7 @@ from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from devices.schemas import DeviceOnuConfigTemplateSchema
 from djing2.lib import MyChoicesAdapter
 from djing2.lib.mixins import RemoveFilterQuerySetMixin
 from djing2.models import BaseAbstractModel
@@ -165,8 +166,8 @@ class Device(IAddressContaining, BaseAbstractModel):
         mng = self.get_pon_onu_device_manager()
         return mng.get_config_types()
 
-    def apply_onu_config(self, config: dict) -> OptionalScriptCallResult:
-        self.code = config.get("configTypeCode")
+    def apply_onu_config(self, config: DeviceOnuConfigTemplateSchema) -> OptionalScriptCallResult:
+        self.code = config.configTypeCode
         self.save(update_fields=["code"])
         all_device_types = self.get_config_types()
         self_device_type_code = str(self.code)

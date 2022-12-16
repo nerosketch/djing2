@@ -1,10 +1,12 @@
 from typing import Optional
 
+from devices.schemas import DeviceOnuConfigTemplateSchema
+
 VlanList = list[int]
 OptVlanList = Optional[VlanList]
 
 
-def get_all_vlans_from_config(config: dict) -> OptVlanList:
+def get_all_vlans_from_config(config: DeviceOnuConfigTemplateSchema) -> OptVlanList:
     # config = {
     #     'configTypeCode': 'zte_f660_bridge',
     #     'vlanConfig': [
@@ -24,10 +26,10 @@ def get_all_vlans_from_config(config: dict) -> OptVlanList:
     #         }
     #     ]
     # }
-    vlan_config = config.get("vlanConfig")
+    vlan_config = config.vlanConfig
     if not vlan_config:
         return None
-    all_vlan_ports = (v.get("vids") for v in vlan_config)
+    all_vlan_ports = (v.vids for v in vlan_config)
     # all_vlan_ports = [
     #     [
     #         {'vid': 151, 'native': True}
@@ -38,5 +40,5 @@ def get_all_vlans_from_config(config: dict) -> OptVlanList:
     #         {'vid': 265, 'native': False}
     #     ]
     # ]
-    all_vids = {x.get("vid") for b in all_vlan_ports if b for x in b}
+    all_vids = {x.vid for b in all_vlan_ports if b for x in b}
     return [v for v in all_vids if v]

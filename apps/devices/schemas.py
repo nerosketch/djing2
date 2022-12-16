@@ -3,7 +3,7 @@ from typing import Union, Optional
 from ipaddress import IPv4Address, IPv6Address
 from django.utils.translation import gettext as _
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from djing2.lib.fastapi.types import OrmConf
 
@@ -101,7 +101,7 @@ class DevOnuVlanInfoTemplateSchema(BaseModel):
 
 class DeviceOnuConfigTemplateSchema(BaseModel):
     configTypeCode: str = Field(title=_("Config code"), max_length=64)
-    vlanConfig: DevOnuVlanInfoTemplateSchema
+    vlanConfig: list[DevOnuVlanInfoTemplateSchema]
 
 
 class GroupsWithDevicesBaseSchema(BaseModel):
@@ -113,3 +113,16 @@ class GroupsWithDevicesModelSchema(GroupsWithDevicesBaseSchema):
     device_count: Optional[int] = None
 
     Config = OrmConf
+
+
+class FixOnuResponseSchema(BaseModel):
+    text: str
+    status: int = Field(
+        description="1 if ok, else 2"
+    )
+    device: DevicePONModelSchema
+
+
+class RemoveFromOLTResponseSchema(BaseModel):
+    text: str
+    status: int
