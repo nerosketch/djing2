@@ -5,9 +5,12 @@ from pexpect import TIMEOUT
 
 from django.utils.translation import gettext_lazy as _
 from devices.device_config import expect_util
-from devices.device_config.base import OptionalScriptCallResult, DeviceConfigurationError
+from devices.device_config.base import (
+    OptionalScriptCallResult,
+    DeviceConfigurationError,
+    DeviceOnuConfigTemplateSchema
+)
 from devices.device_config.base_device_strategy import DeviceConfigType
-from devices.schemas import DeviceOnuConfigTemplateSchema
 from djing2.lib import process_lock_decorator, safe_int
 from .. import zte_utils
 from ...utils import get_all_vlans_from_config

@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Union, Optional
 from ipaddress import IPv4Address, IPv6Address
 from django.utils.translation import gettext as _
+from netaddr import EUI
 
 from pydantic import BaseModel, Field, validator
 
@@ -46,6 +47,12 @@ class DeviceWithoutGroupModelSchema(DeviceWithoutGroupBaseSchema):
         title=_("Status")
     )
 
+    @validator('mac_addr', pre=True)
+    def validate_mac(cls, mac: str):
+        if isinstance(mac, EUI):
+            return str(mac)
+        return mac
+
     Config = OrmConf
 
 
@@ -58,6 +65,8 @@ class DeviceBaseSchema(DeviceWithoutGroupBaseSchema):
 
 class DeviceModelSchema(DeviceBaseSchema, DeviceWithoutGroupModelSchema):
     create_time: datetime = Field(title=_("Create time"))
+    address_title: Optional[str] = None
+    iface_name: Optional[str] = None
 
 
 class DevicePONModelSchema(DeviceModelSchema):
@@ -87,21 +96,6 @@ class PortVlanMemberModelSchema(PortVlanMemberBasSchema):
     id: Optional[int] = None
 
     Config = OrmConf
-
-
-class DevOnuVlanSchema(BaseModel):
-    vid: int = 1
-    native: bool = False
-
-
-class DevOnuVlanInfoTemplateSchema(BaseModel):
-    port: int = 1
-    vids: list[DevOnuVlanSchema] = []
-
-
-class DeviceOnuConfigTemplateSchema(BaseModel):
-    configTypeCode: str = Field(title=_("Config code"), max_length=64)
-    vlanConfig: list[DevOnuVlanInfoTemplateSchema]
 
 
 class GroupsWithDevicesBaseSchema(BaseModel):

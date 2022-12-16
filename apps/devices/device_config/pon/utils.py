@@ -1,6 +1,6 @@
 from typing import Optional
 
-from devices.schemas import DeviceOnuConfigTemplateSchema
+from devices.device_config.base import DeviceOnuConfigTemplateSchema
 
 VlanList = list[int]
 OptVlanList = Optional[VlanList]

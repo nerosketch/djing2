@@ -1,7 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 
 from devices.device_config import expect_util
-from devices.schemas import DeviceOnuConfigTemplateSchema
+from devices.device_config.base import DeviceOnuConfigTemplateSchema
 from . import zte_onu
 from ...utils import VlanList
 

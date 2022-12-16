@@ -4,9 +4,9 @@ from easysnmp import Session, EasySNMPConnectionError
 from django.utils.translation import gettext
 from devices.device_config.base import (
     DeviceImplementationError, DeviceConnectionError,
-    OptionalScriptCallResult, Vlans
+    OptionalScriptCallResult, Vlans,
+    DeviceOnuConfigTemplateSchema,
 )
-from devices.schemas import DeviceOnuConfigTemplateSchema
 
 
 class SNMPWorker(Session):

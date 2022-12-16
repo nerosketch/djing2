@@ -6,7 +6,6 @@ from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from devices.schemas import DeviceOnuConfigTemplateSchema
 from djing2.lib import MyChoicesAdapter
 from djing2.lib.mixins import RemoveFilterQuerySetMixin
 from djing2.models import BaseAbstractModel
@@ -16,6 +15,7 @@ from devices.device_config.base import (
     Macs,
     DeviceConfigurationError,
     OptionalScriptCallResult,
+    DeviceOnuConfigTemplateSchema,
 )
 from devices.device_config.base_device_strategy import BaseDeviceStrategyContext
 from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext, PonONUDeviceStrategyContext

@@ -3,6 +3,7 @@ from typing import Generator, Optional, Iterable, Union, Any
 from django.utils.translation import gettext as _
 from starlette import status
 from fastapi import HTTPException
+from pydantic import BaseModel, Field
 
 
 OptionalScriptCallResult = Optional[dict[str, Union[str, Any]]]
@@ -76,3 +77,18 @@ class MacItem:
 
 Vlans = Iterable[Vlan]
 Macs = Generator[MacItem, None, None]
+
+
+class DevOnuVlanSchema(BaseModel):
+    vid: int = 1
+    native: bool = False
+
+
+class DevOnuVlanInfoTemplateSchema(BaseModel):
+    port: int = 1
+    vids: list[DevOnuVlanSchema] = []
+
+
+class DeviceOnuConfigTemplateSchema(BaseModel):
+    configTypeCode: str = Field(title=_("Config code"), max_length=64)
+    vlanConfig: list[DevOnuVlanInfoTemplateSchema]

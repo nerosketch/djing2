@@ -5,7 +5,7 @@ from dataclasses import asdict
 from typing import Optional
 
 from django.contrib.sites.models import Site
-from django.db.models import Count, QuerySet
+from django.db.models import Count, QuerySet, Q
 from django.utils.translation import gettext as _
 from django_filters.rest_framework import DjangoFilterBackend
 from djing2.lib.fastapi.general_filter import general_filter_queryset
@@ -21,19 +21,23 @@ from rest_framework.decorators import action, api_view
 from rest_framework.response import Response as OldResponse
 from rest_framework.utils.encoders import JSONEncoder
 
-from fastapi import APIRouter, Request, Depends, Response, Query, Path, HTTPException
+from fastapi import APIRouter, Request, Depends, Response, Path, HTTPException
 from starlette.responses import StreamingResponse
 
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
-from djing2.lib.filters import CustomSearchFilter
+from djing2.lib.filters import CustomSearchFilter, filter_qs_by_fields_dependency, search_qs_by_fields_dependency
 from devices import serializers as dev_serializers
-from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext, FiberDataClass
+from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
-from devices.models import Device, Port, PortVlanMemberModel, DeviceModelQuerySet, DeviceStatusEnum
+from devices.models import Device, Port, PortVlanMemberModel, DeviceStatusEnum
 from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
-    UnsupportedReadingVlan, DeviceTimeoutError, Vlan, Vlans, OptionalScriptCallResult,
+    UnsupportedReadingVlan,
+    DeviceTimeoutError,
+    Vlans,
+    OptionalScriptCallResult,
+    DeviceOnuConfigTemplateSchema,
 )
 from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
@@ -110,46 +114,6 @@ def filter_query_set_dependency(
         return qs.filter_devices_by_addr(
             addr_id=address,
         )
-    return qs
-
-
-@router.get(
-    '/pon/',
-    response_model=IListResponse[schemas.DevicePONModelSchema],
-    response_model_exclude_none=True
-)
-@paginate_qs_path_decorator(
-    schema=schemas.DevicePONModelSchema,
-    db_model=Device
-)
-def get_pon_devices(
-    request: Request,
-    group: Optional[int] = Query(default=None, gt=0),
-    dev_type: Optional[int] = Query(default=None, gt=0),
-    dev_status: Optional[int] = Query(default=None, gt=0, alias='status'),
-    is_noticeable: Optional[int] = Query(default=None, gt=0),
-    curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='devices.view_device'
-    )),
-    curr_site: Site = Depends(sites_dependency),
-    pagination: Pagination = Depends(),
-    dev_initial_qs: QuerySet[Device] = Depends(filter_query_set_dependency)
-):
-    qs = general_filter_queryset(
-        qs_or_model=dev_initial_qs,
-        curr_site=curr_site,
-        curr_user=curr_user,
-        perm_codename='devices.view_device',
-    )
-    if isinstance(group, int):
-        qs = qs.filter(group_id=group)
-    if isinstance(dev_type, int):
-        qs = qs.filter(dev_type=dev_type)
-    if isinstance(dev_status, int):
-        qs = qs.filter(status=dev_status)
-    if isinstance(is_noticeable, int):
-        qs = qs.filter(is_noticeable=is_noticeable)
-
     return qs
 
 
@@ -350,11 +314,49 @@ def read_onu_vlan_info(
 @router.post('/pon/{device_id}/apply_device_onu_config_template/',
              response_model=OptionalScriptCallResult)
 def apply_device_onu_config_template(
-    device_config_data: schemas.DeviceOnuConfigTemplateSchema,
+    device_config_data: DeviceOnuConfigTemplateSchema,
     device: Device = Depends(pon_device_with_perm(perm='devices.can_apply_onu_config'))
 ) -> OptionalScriptCallResult:
     res = device.apply_onu_config(config=device_config_data)
     return res
+
+
+@router.get(
+    '/all/',
+    response_model=IListResponse[schemas.DeviceModelSchema],
+    response_model_exclude_none=True
+)
+@paginate_qs_path_decorator(
+    schema=schemas.DeviceModelSchema,
+    db_model=Device
+)
+def get_all_devices(
+    request: Request,
+    pagination: Pagination = Depends(),
+    curr_site: Site = Depends(sites_dependency),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='devices.view_device'
+    )),
+    filter_fields_q: Q = Depends(filter_qs_by_fields_dependency(
+        fields={
+            'group': int, 'dev_type': int, 'status': int, 'is_noticeable': bool,
+            'address': int
+        },
+        db_model=Device
+    )),
+    search_filter_q: Q = Depends(search_qs_by_fields_dependency(
+        search_fields=["comment", "ip_address", "mac_addr"]
+    )),
+    dev_initial_qs: QuerySet[Device] = Depends(filter_query_set_dependency)
+):
+    queryset = general_filter_queryset(
+        qs_or_model=dev_initial_qs,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='devices.view_device',
+    )
+    queryset = queryset.filter(filter_fields_q | search_filter_q)
+    return queryset
 
 
 class DeviceModelViewSet(DjingModelViewSet):
@@ -362,7 +364,6 @@ class DeviceModelViewSet(DjingModelViewSet):
     serializer_class = dev_serializers.DeviceModelSerializer
     filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
     filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)
-    search_fields = ("comment", "ip_address", "mac_addr")
     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
 
     def perform_create(self, serializer, *args, **kwargs):
@@ -450,7 +451,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             })
 
         if not device.group:
-            # print('Device has not have a group')
+            # print('Device has not had a group')
             return OldResponse({"text": "Device has not have a group"})
 
         recipients = UserProfile.objects.get_profiles_by_group(
@@ -466,7 +467,7 @@ class DeviceModelViewSet(DjingModelViewSet):
             dev_status,
             "Device %(device_name)s getting undefined status code"
         )
-        text = "%s\n\n%s" % (gettext(notify_text) % {
+        text = "%s\n\n%s" % (_(notify_text) % {
             "device_name": "{}({}) {}".format(device.ip_address or "", device.mac_addr, device.comment)
         }, message)
         # FIXME: make it done
@@ -546,18 +547,6 @@ class PortModelViewSet(DjingModelViewSet):
         else:
             return OldResponse(_("Parameter port_state is bad"), status=status.HTTP_400_BAD_REQUEST)
         return OldResponse(status=status.HTTP_200_OK)
-
-    # @action(detail=True)
-    # @catch_dev_manager_err
-    # def get_subscriber_on_port(self, request, pk=None):
-    #     dev_id = request.query_params.get('device_id')
-    #     # port = self.get_object()
-    #     customers = Customer.objects.filter(device_id=dev_id, dev_port_id=pk)
-    #     if not customers.exists():
-    #         raise NotFound(gettext('Subscribers on port does not exist'))
-    #     if customers.count() > 1:
-    #         return OldResponse(customers)
-    #     return OldResponse(self.serializer_class(instance=customers.first()))
 
     @action(detail=True)
     @catch_dev_manager_err
