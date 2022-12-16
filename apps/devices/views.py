@@ -226,6 +226,8 @@ def scan_onu_list(
         chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONEncoder)
         chunk_json = "%s\n" % chunk_json
         format_string = "{:%ds}" % chunk_max_len
+
+        # FIXME: STR100: Calling format with insecure string. Found in 'format_string.format(chunk_json)'.
         dat = format_string.format(chunk_json)
         return dat.encode()[:chunk_max_len]
 
