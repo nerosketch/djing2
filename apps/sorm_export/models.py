@@ -1,6 +1,8 @@
 from django.utils.translation import gettext as _
 from django.db.models import JSONField
 from django.db import models
+from django.core import validators
+from django.conf import settings
 from djing2.lib import LogicError
 
 
@@ -29,6 +31,7 @@ class ExportStampTypeEnum(models.IntegerChoices):
     DEVICE_SWITCH = 13
     IP_NUMBERING = 14
     GATEWAYS = 15
+    SPECIAL_NUMBERS = 16
 
 
 class ExportStampStatusEnum(models.IntegerChoices):
@@ -78,12 +81,38 @@ class CustomerTypeChoices(models.IntegerChoices):
 
 class CustomerDocumentTypeChoices(models.TextChoices):
     EMPTY = ''
-    PASSPORT_RF = _('Passport RF')
-    PASSPORT_USSR = _('Passport USSR')
-    PASSPORT_OTHER_COUNTRY = _('Passport other country')
-    MILITARY_TICKET = _('Military ticket')
+    PASSPORT_RF = 'Паспорт РФ'
+    PASSPORT_USSR = 'Паспорт СССР'
+    PASSPORT_OTHER_COUNTRY = 'Паспорт иностранного гражданина'
+    MILITARY_TICKET = 'Военный билет'
 
 
 class Choice4BooleanField(models.TextChoices):
     YES = '1'
     NO = '0'
+
+
+class SpecialNumbers(models.Model):
+    telephone = models.CharField(
+        max_length=16,
+        verbose_name=_("Telephone"),
+        unique=True,
+        validators=(
+            validators.RegexValidator(
+                getattr(settings, "TELEPHONE_REGEXP", r"^(\+[7893]\d{10,11})?$")
+            ),
+        ),
+    )
+    actual_begin_datetime = models.DateTimeField()
+    actual_end_datetime = models.DateTimeField(
+        null=True, blank=True, default=None
+    )
+    description = models.CharField(
+        max_length=256,
+        blank=True,
+        null=True,
+        default=None
+    )
+
+    class Meta:
+        db_table = 'sorm_special_numbers'

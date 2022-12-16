@@ -26,11 +26,9 @@ VOLUME /var/www/djing2/media
 
 USER www-data
 
-#RUN ["django-admin", "compilemessages"]
-
 CMD ./manage.py migrate \
     && ./manage.py loaddata initial_data \
+    && ./manage.py compilemessages \
     # && ./manage.py shell -c "from create_initial_user import *; make_initial_user()"
     # --workers=(available cpu count)
     && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --log-level warning --workers $(nproc)
-#   && exec uvicorn fastapi_app:app --host 0.0.0.0 --port 8000 --log-level warning --reload

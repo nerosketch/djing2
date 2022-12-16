@@ -1,6 +1,6 @@
 from typing import Optional
 
-from django.db.models import Subquery, OuterRef, Count, Q
+from django.db.models import Subquery, OuterRef, Count, Q, QuerySet
 from django.utils.translation import gettext_lazy as _, gettext
 from djing2.lib.logger import logger
 from addresses.models import AddressModelTypes, AddressModel
@@ -473,7 +473,7 @@ class LegalCustomerExportTree(ExportTree[CustomerLegalModel]):
             bank_info = getattr(legal, 'legalcustomerbankmodel')
             res.update({
                 'customer_bank': bank_info.title,
-                'customer_bank_num': bank_info.number,
+                'customer_bank_num': bank_info.settlement_account,
             })
 
         for customer in legal.branches.filter(is_active=True):
@@ -508,6 +508,7 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     В этом файле выгружаются данные по договорам абонентов.
     :return:
     """
+    _contract_title = gettext('Contract default title')
 
     def get_remote_ftp_file_name(self):
         return f"ISP/abonents/contracts_{format_fname(self._event_time)}.txt"
@@ -520,13 +521,28 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
     def get_export_type(cls):
         return ExportStampTypeEnum.CUSTOMER_CONTRACT
 
-    def get_items(self, queryset):
-        # Выгрузить себя
+    def get_items(self, queryset, legal_qs: QuerySet[CustomerLegalModel], *args, **kwargs):
+        # Выгрузить договора физиков
         for item in self.filter_queryset(queryset=queryset):
             try:
                 yield self.get_item(item)
             except ContinueIteration:
                 continue
+
+        # Выгрузить договоры филиалов юриков
+        for legal in legal_qs.iterator():
+            yield from self.get_legal_item(legal=legal)
+
+    def get_legal_item(self, legal: CustomerLegalModel):
+        for branch in legal.branches.all():
+            yield {
+                "contract_id": f"u{branch.pk}",
+                "customer_id": branch.pk,
+                "contract_start_date": legal.actual_start_time.date(),
+                'contract_end_date': legal.actual_end_time.date() if legal.actual_end_time else None,
+                "contract_number": legal.username,
+                "contract_title": self._contract_title,
+            }
 
     def get_item(self, contract: CustomerContractModel):
         return {
@@ -535,5 +551,5 @@ class CustomerContractExportTree(ExportTree[CustomerContractModel]):
             "contract_start_date": contract.start_service_time.date(),
             'contract_end_date': contract.end_service_time.date() if contract.end_service_time else None,
             "contract_number": contract.contract_number,
-            "contract_title": gettext('Contract default title'),
+            "contract_title": self._contract_title,
         }

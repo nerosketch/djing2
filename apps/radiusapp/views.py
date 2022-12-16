@@ -640,6 +640,8 @@ async def _find_customer_by_device_credentials_async(
         "LIMIT 1;"
     )
     row = await conn.fetchrow(sql, str(device_mac), device_port)
+    if not row:
+        return
     return Customer(
         pk=row.get('uid'),
         last_login=row.get('last_login'),

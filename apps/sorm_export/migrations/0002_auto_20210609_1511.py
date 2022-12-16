@@ -28,6 +28,9 @@ class Migration(migrations.Migration):
             name='data',
             field=models.JSONField(verbose_name='Export event data'),
         ),
+        migrations.DeleteModel(
+            name='FiasRecursiveAddressModel',
+        ),
         migrations.RunSQL(
             sql="""
 ALTER TABLE IF EXISTS sorm_address_groups DROP CONSTRAINT if exists sorm_address_groups_groupsid_uniq;
