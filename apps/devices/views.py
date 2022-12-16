@@ -2,11 +2,10 @@ import re
 from functools import wraps
 from json import dumps as json_dumps
 from dataclasses import asdict
-from typing import Optional, Union
+from typing import Optional
 
 from django.contrib.sites.models import Site
 from django.db.models import Count, QuerySet
-from django.http.response import StreamingHttpResponse
 from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from djing2.lib.fastapi.general_filter import general_filter_queryset
@@ -23,6 +22,7 @@ from rest_framework.response import Response as OldResponse
 from rest_framework.utils.encoders import JSONEncoder
 
 from fastapi import APIRouter, Request, Depends, Response, Query, Path, HTTPException
+from starlette.responses import StreamingResponse
 
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
 from djing2.lib.filters import CustomSearchFilter
@@ -224,6 +224,64 @@ def scan_pon_details(
     return data
 
 
+@router.get('/pon/{device_id}/scan_onu_list/')
+def scan_onu_list(
+    device_id: int = Path(gt=0),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='devices.view_device'
+    )),
+    curr_site: Site = Depends(sites_dependency),
+):
+    qs = general_filter_queryset(
+        qs_or_model=Device,
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='devices.view_device',
+    )
+    device = get_object_or_404(qs, pk=device_id)
+    manager = device.get_pon_olt_device_manager()
+    if not isinstance(manager, PonOLTDeviceStrategyContext):
+        raise DeviceImplementationError("Expected PonOLTDeviceStrategyContext instance")
+
+    def chunk_cook(chunk: dict) -> bytes:
+        chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONEncoder)
+        chunk_json = "%s\n" % chunk_json
+        format_string = "{:%ds}" % chunk_max_len
+        dat = format_string.format(chunk_json)
+        return dat.encode()[:chunk_max_len]
+
+    try:
+        onu_list = manager.scan_onu_list()
+        item_size = next(onu_list)
+        chunk_max_len = next(onu_list)
+        r = StreamingResponse(
+            content=(
+                chunk_cook(
+                    {
+                        "number": p.num,
+                        "title": p.name,
+                        "status": p.status,
+                        "mac_addr": p.mac,
+                        "signal": p.signal,
+                        "uptime": str(RuTimedelta(seconds=p.uptime / 100)) if p.uptime else None,
+                        "fiberid": p.fiberid,
+                    }
+                )
+                for p in onu_list
+            ),
+            status_code=status.HTTP_200_OK,
+            media_type="application/octet-stream",
+            headers={
+                "Content-Length": str(item_size * chunk_max_len),
+                # "Cache-Control": "no-store",
+            }
+        )
+        return r
+    except StopIteration:
+        pass
+    return Response("No all fetched")
+
+
 class DevicePONViewSet(DjingModelViewSet):
     # queryset = Device.objects.select_related("parent_dev").order_by('comment')
     # serializer_class = dev_serializers.DevicePONModelSerializer
@@ -231,49 +289,6 @@ class DevicePONViewSet(DjingModelViewSet):
     # filter_backends = [CustomObjectPermissionsFilter, DjangoFilterBackend, CustomSearchFilter]
     # search_fields = ("comment", "ip_address", "mac_addr")
     # ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_onu_list(self, request, pk=None):
-        device = self.get_object()
-        manager = device.get_pon_olt_device_manager()
-        if not isinstance(manager, PonOLTDeviceStrategyContext):
-            raise DeviceImplementationError("Expected PonOLTDeviceStrategyContext instance")
-
-        def chunk_cook(chunk: dict) -> bytes:
-            chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONEncoder)
-            chunk_json = "%s\n" % chunk_json
-            format_string = "{:%ds}" % chunk_max_len
-            dat = format_string.format(chunk_json)
-            return dat.encode()[:chunk_max_len]
-
-        try:
-            onu_list = manager.scan_onu_list()
-            item_size = next(onu_list)
-            chunk_max_len = next(onu_list)
-            r = StreamingHttpResponse(
-                streaming_content=(
-                    chunk_cook(
-                        {
-                            "number": p.num,
-                            "title": p.name,
-                            "status": p.status,
-                            "mac_addr": p.mac,
-                            "signal": p.signal,
-                            "uptime": str(RuTimedelta(seconds=p.uptime / 100)) if p.uptime else None,
-                            "fiberid": p.fiberid,
-                        }
-                    )
-                    for p in onu_list
-                )
-            )
-            r["Content-Length"] = item_size * chunk_max_len
-            r["Cache-Control"] = "no-store"
-            r["Content-Type"] = "application/octet-stream"
-            return r
-        except StopIteration:
-            pass
-        return OldResponse("No all fetched")
 
     @action(detail=True, url_path=r"scan_onu_on_fiber/(?P<fiber_num>\d{8,12})")
     @catch_dev_manager_err
