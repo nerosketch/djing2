@@ -67,7 +67,7 @@ def get_customer_payment_log(request: Request,
     return qs
 
 
-@router.get('/groups_with_customers/', response_model=list[schemas.GroupsWithCustomersSchema])
+@router.get('/groups_with_customers/', response_model=IListResponse[schemas.GroupsWithCustomersSchema])
 def groups_with_customers(
     curr_site: Site = Depends(sites_dependency),
     auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
@@ -85,7 +85,12 @@ def groups_with_customers(
     ).filter(
         customer_count__gt=0
     ).order_by('title')
-    return (schemas.GroupsWithCustomersSchema.from_orm(grp) for grp in grps.iterator())
+    return IListResponse[schemas.GroupsWithCustomersSchema](
+        count=grps.count(),
+        next=None,
+        previous=None,
+        results=(schemas.GroupsWithCustomersSchema.from_orm(grp) for grp in grps.iterator())
+    )
 
 
 @router.get('/service_users/', response_model=list[schemas.ServiceUsersResponseSchema])

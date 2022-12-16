@@ -576,5 +576,7 @@ class PortVlanMemberModelViewSet(DjingModelViewSet):
 def groups_with_devices(request):
     grps = Group.objects.annotate(device_count=Count('device')).filter(device_count__gt=0).order_by('title')
     ser = dev_serializers.GroupsWithDevicesSerializer(instance=grps, many=True)
-    return OldResponse(ser.data)
+    return OldResponse({
+        'results': ser.data
+    })
 
