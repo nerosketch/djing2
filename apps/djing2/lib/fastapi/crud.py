@@ -308,7 +308,7 @@ class CrudRouter(CRUDReadGenerator):
             try:
                 with transaction.atomic():
                     obj = model.objects.create(**pdict)
-                    sites = getattr(model, 'sites')
+                    sites = getattr(model, 'sites', None)
                     if sites is not None:
                         obj.sites.add(curr_site)
 
