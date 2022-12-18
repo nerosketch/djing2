@@ -56,10 +56,12 @@ def export_all_customer_contracts():
     ).filter(
         customer__is_active=True
     )
+    legals = CustomerLegalModel.objects.all()
     CustomerContractExportTree(
         recursive=False
     ).exportNupload(
-        queryset=contracts
+        queryset=contracts,
+        legal_qs=legals
     )
 
 

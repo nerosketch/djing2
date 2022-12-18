@@ -1,7 +1,7 @@
 from typing import Mapping
 
 from netaddr import EUI, mac_unix_expanded
-from rest_framework import status
+from starlette import status
 from radiusapp.vendor_base import (
     IVendorSpecific,
     CustomerServiceLeaseResult,

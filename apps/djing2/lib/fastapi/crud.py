@@ -1,7 +1,10 @@
 from typing import Type, Optional, Union, Any, Callable, OrderedDict as OrderedDictType
 
+from django.contrib.sites.models import Site
+from django.db import transaction
 from django.db.models import QuerySet, Model
 from django.db.utils import IntegrityError
+from djing2.lib.fastapi.sites_depend import sites_dependency
 from fastapi.params import Depends
 from pydantic import BaseModel
 from fastapi import HTTPException, Request, APIRouter
@@ -13,6 +16,7 @@ from .perms import permission_check_dependency
 from .types import DEPENDENCIES, IListResponse, Pagination, NOT_FOUND
 from .utils import schema_factory, format_object
 from .pagination import paginate_qs_path_decorator
+from djing2.exceptions import DuplicationError
 
 
 def _generate_perm_dep(qs: QuerySet, route: Union[bool, DEPENDENCIES], perm_prefix: str) -> list[Depends]:
@@ -174,6 +178,7 @@ class CRUDReadGenerator(APIRouter):
         return qs
 
 
+# TODO: Make rights check for this
 class CrudRouter(CRUDReadGenerator):
     create_schema: Type[BaseModel]
     update_schema: Type[BaseModel]
@@ -213,7 +218,11 @@ class CrudRouter(CRUDReadGenerator):
         self.update_schema = (
             update_schema
             if update_schema
-            else schema_factory(schema, pk_field_name=self._pk, name="Update")
+            else (
+                create_schema
+                if create_schema
+                else schema_factory(schema, pk_field_name=self._pk, name="Update")
+            )
         )
 
         if update_route:
@@ -282,7 +291,7 @@ class CrudRouter(CRUDReadGenerator):
         return super().delete(path, *args, **kwargs)
 
     def _create(self, *args: Any, **kwargs: Any):
-        def route(payload: self.create_schema) -> OrderedDictType:
+        def route(payload: self.create_schema, curr_site: Site = Depends(sites_dependency)) -> OrderedDictType:
             pdict = payload.dict(
                 exclude_unset=True,
                 exclude_defaults=True,
@@ -297,27 +306,38 @@ class CrudRouter(CRUDReadGenerator):
 
             model = self._queryset.model
             try:
-                obj = model.objects.create(**pdict)
+                with transaction.atomic():
+                    obj = model.objects.create(**pdict)
+                    sites = getattr(model, 'sites', None)
+                    if sites is not None:
+                        obj.sites.add(curr_site)
+
                 return format_object(
                     model_item=obj,
                     field_objects=self._field_objects,
                     computed_field_objects=self._computed_field_objects,
                 )
             except IntegrityError as err:
-                if 'is not present in table' in str(err):
+                serr = str(err)
+                if 'is not present in table' in serr:
                     raise NOT_FOUND
-                raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Integration error")
+                elif 'duplicate key value violates unique constraint' in serr:
+                    raise DuplicationError(detail=serr) from err
+                raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, serr)
         return route
 
     def _update(self, *args: Any, **kwargs: Any):
-        def route(item_id: int, model: dict[str, Union[str, int, float]], request: Request) -> OrderedDictType:
+        def route(item_id: int, model: self.update_schema, request: Request) -> OrderedDictType:
             qs = self.filter_qs(request=request)
-            model_fields = tuple(fname for fname, _ in model.items())
+            model_fields = model.__fields__.copy()
+            model_fields.pop('sites', None)
+            model_fields.pop('site', None)
+            model_fields = tuple(fname for fname, _ in model_fields.items())
             update_fields = tuple(fname for fname, _ in self._field_objects.items() if fname in model_fields)
             try:
                 obj = qs.get(pk=item_id)
                 for fname in update_fields:
-                    value = model.get(fname)
+                    value = getattr(model, fname)
                     setattr(obj, fname, value)
                 obj.save(update_fields=update_fields)
                 return format_object(

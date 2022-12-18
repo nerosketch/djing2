@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 
 from .periodic import PeriodicPayCalcDefault, PeriodicPayCalcRandom
 from .services import ServiceDefault, TariffDp, TariffCp, TariffDaily
@@ -19,7 +19,7 @@ SERVICE_CHOICES = (
 )
 
 
-class ServiceChoiceEnum(int, Enum):
+class ServiceChoiceEnum(IntEnum):
     SERVICE_CHOICE_DEFAULT = SERVICE_CHOICE_DEFAULT
     SERVICE_CHOICE_DP = SERVICE_CHOICE_DP
     SERVICE_CHOICE_CP = SERVICE_CHOICE_CP
@@ -35,9 +35,18 @@ PERIODIC_PAY_CHOICES = (
 )
 
 
+class PeriodicPayChoices(IntEnum):
+    PERIODIC_PAY_CALC_DEFAULT = PERIODIC_PAY_CALC_DEFAULT
+    PERIODIC_PAY_CALC_RANDOM = PERIODIC_PAY_CALC_RANDOM
+
+
 ONE_SHOT_DEFAULT = 0
 
 ONE_SHOT_TYPES = ((ONE_SHOT_DEFAULT, ShotDefault),)
+
+
+class OneShotChoices(IntEnum):
+    ONE_SHOT_DEFAULT = ONE_SHOT_DEFAULT
 
 
 __all__ = (
@@ -51,4 +60,7 @@ __all__ = (
     "ONE_SHOT_DEFAULT",
     "PERIODIC_PAY_CHOICES",
     "ONE_SHOT_TYPES",
+    "ServiceChoiceEnum",
+    "PeriodicPayChoices",
+    "OneShotChoices",
 )

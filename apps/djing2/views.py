@@ -140,8 +140,8 @@ def search_entry_point(s: str = '', limit: int = 100,
         devices = ()
 
     return SearchResultModel(
-        accounts=(accs_format(acc) for acc in customers),
-        devices=(dev_format(dev) for dev in devices)
+        accounts=(accs_format(acc) for acc in customers.distinct()),
+        devices=(dev_format(dev) for dev in devices.distinct())
     )
 
 

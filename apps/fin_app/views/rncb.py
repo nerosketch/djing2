@@ -9,7 +9,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework_xml.renderers import XMLRenderer
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework import status
+from starlette import status
 from rest_framework.exceptions import ValidationError
 from djing2.viewsets import DjingModelViewSet
 from fin_app.models.base_payment_model import fetch_customer_profile

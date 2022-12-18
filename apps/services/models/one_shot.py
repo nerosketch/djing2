@@ -74,6 +74,10 @@ class OneShotPay(BaseAbstractModel):
             }
         )
 
+    @property
+    def pay_type_name(self) -> str:
+        return self.get_pay_type_display()
+
     def __str__(self):
         return self.name
 

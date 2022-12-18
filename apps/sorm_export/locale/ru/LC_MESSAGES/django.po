@@ -133,22 +133,6 @@ msgstr "Физическое лицо"
 msgid "Legal entity"
 msgstr "Юридическое лицо"
 
-#: apps/sorm_export/models.py:80
-msgid "Passport RF"
-msgstr "Паспорт РФ"
-
-#: apps/sorm_export/models.py:81
-msgid "Passport USSR"
-msgstr "Паспорт СССР"
-
-#: apps/sorm_export/models.py:82
-msgid "Passport other country"
-msgstr "Паспорт иностранного гражданина"
-
-#: apps/sorm_export/models.py:83
-msgid "Military ticket"
-msgstr "Военный билет"
-
 #: apps/sorm_export/serializers/aaa.py:19
 msgid "Output voip dial"
 msgstr "Исходящий звонок voip"

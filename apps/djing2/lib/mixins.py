@@ -5,11 +5,12 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import JsonResponse
 from django.db.models import Q
 from guardian.shortcuts import get_objects_for_user
-from rest_framework import status
+from starlette import status
 from rest_framework.permissions import AllowAny
 from rest_framework.serializers import ModelSerializer
 from drf_queryfields import QueryFieldsMixin
 from djing2.lib import check_sign, check_subnet
+from pydantic import BaseModel, validator
 
 from groupapp.models import Group
 
@@ -120,3 +121,17 @@ class RemoveFilterQuerySetMixin:
 
         query.where.children = list(filter(_filter_lookups, query.where.children))
         return self
+
+
+class SitesBaseSchema(BaseModel):
+    sites: list[int] = []
+
+    @validator('sites', pre=True)
+    def format_sites(cls, sites):
+        if isinstance(sites, (list, tuple)):
+            return [s.pk if isinstance(s, Site) else int(s) for s in sites]
+        try:
+            return [int(s) for s in sites]
+        except TypeError:
+            pass
+        return [int(s.pk) for s in sites.all()]

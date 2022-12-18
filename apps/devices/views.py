@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _, gettext
 from django_filters.rest_framework import DjangoFilterBackend
 from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from guardian.shortcuts import get_objects_for_user
-from rest_framework import status
+from starlette import status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.utils.encoders import JSONEncoder
@@ -507,5 +507,7 @@ class PortVlanMemberModelViewSet(DjingModelViewSet):
 def groups_with_devices(request):
     grps = Group.objects.annotate(device_count=Count('device')).filter(device_count__gt=0).order_by('title')
     ser = dev_serializers.GroupsWithDevicesSerializer(instance=grps, many=True)
-    return Response(ser.data)
+    return Response({
+        'results': ser.data
+    })
 

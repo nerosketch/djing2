@@ -1,6 +1,6 @@
 from operator import or_
 from functools import reduce
-from typing import Optional, Type
+from typing import Optional, Type, Any
 from fastapi import Depends, Query
 from django.db.models import Model, Q
 from rest_framework_guardian.filters import ObjectPermissionsFilter
@@ -31,8 +31,8 @@ class CustomSearchFilter(SearchFilter):
         return qs
 
 
-def filter_qs_by_fields_dependency(db_model: Type[Model], fields: dict[str, type]):
-    prms = {f_name: (Optional[int], None) for f_name, f_type in fields.items()}
+def filter_qs_by_fields_dependency(db_model: Type[Model], fields: dict[str, Any]):
+    prms = {f_name: (Optional[f_type], None) for f_name, f_type in fields.items()}
     query_model = create_model(f'{db_model}FieldFilterSchema', **prms)
     del prms
 

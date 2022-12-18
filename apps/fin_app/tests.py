@@ -6,7 +6,7 @@ from django.contrib.sites.models import Site
 from django.utils import timezone
 from django.utils.html import escape
 from rest_framework.test import APITestCase, override_settings
-from rest_framework import status
+from starlette import status
 
 from customers.models import Customer
 from fin_app.models.alltime import AllTimePayGateway

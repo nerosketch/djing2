@@ -252,7 +252,7 @@ class Customer(IAddressContaining, BaseAccount):
                 from_balance=old_balance,
                 to_balance=old_balance + float(cost),
                 author=profile if isinstance(profile, BaseAccount) else None,
-                comment=re.sub(r"\W{1,128}", " ", str(comment))[:128] if comment else '-'
+                comment=re.sub(r"\s+", " ", str(comment))[:128].strip() if comment else '-'
             )
             self.balance += cost
             self.save(update_fields=['balance'])
