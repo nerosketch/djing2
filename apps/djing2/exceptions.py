@@ -9,25 +9,26 @@ class UniqueConstraintIntegrityError(APIException):
     default_code = "unique_conflict"
 
 
-class DuplicationError(HTTPException):
+class BaseProjectError(HTTPException):
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    default_detail = 'Internal server error'
+
     def __init__(
         self,
-        status_code=status.HTTP_409_CONFLICT,
-        detail='ModelDuplicationError'
+        status_code=status_code,
+        detail=default_detail
     ):
         super().__init__(
-            status_code=status_code,
-            detail=detail
+            status_code=status_code or self.status_code,
+            detail=detail or self.default_detail
         )
 
 
-class ModelValidationError(HTTPException):
-    def __init__(
-        self,
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail='ModelValidationError'
-    ):
-        super().__init__(
-            status_code=status_code,
-            detail=detail
-        )
+class DuplicationError(BaseProjectError):
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = 'ModelDuplicationError'
+
+
+class ModelValidationError(BaseProjectError):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = 'ModelValidationError'
