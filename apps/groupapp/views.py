@@ -41,14 +41,13 @@ router.include_router(CrudRouter(
     schema=schemas.GroupsModelSchema,
     db_model=Group
 )
-def get_all_services(request: Request,
-                     groups: Optional[int] = None,
-                     curr_user: BaseAccount = Depends(permission_check_dependency(
-                         perm_codename='groupapp.view_group'
-                     )),
-                     curr_site: Site = Depends(sites_dependency),
-                     pagination: Pagination = Depends()
-                     ):
+def get_all_groups(request: Request,
+                   curr_user: BaseAccount = Depends(permission_check_dependency(
+                       perm_codename='groupapp.view_group'
+                   )),
+                   curr_site: Site = Depends(sites_dependency),
+                   pagination: Pagination = Depends()
+                   ):
     qs = general_filter_queryset(
         qs_or_model=Group.objects.order_by('title'),
         curr_site=curr_site,
