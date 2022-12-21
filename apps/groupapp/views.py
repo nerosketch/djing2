@@ -1,5 +1,3 @@
-from typing import Optional
-
 from django.contrib.sites.models import Site
 from django.db import transaction
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
