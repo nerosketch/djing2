@@ -1,11 +1,10 @@
-from datetime import datetime
-from typing import Optional, Type
+from typing import Type
 from django.utils.translation import gettext_lazy as _
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.contrib.sites.models import Site
+from fin_app.schemas.base import PaysReportParamsSchema, PaysReportResponseSchema
 from rest_framework.exceptions import ParseError
 from django.db import models
-from djing2.lib import safe_int
 from djing2.models import BaseAbstractModel
 try:
     from customers.models import Customer
@@ -34,6 +33,10 @@ class BasePaymentModel(BaseAbstractModel):
     def __str__(self):
         return self.title
 
+    @property
+    def payment_type_text(self) -> str:
+        return getattr(self, 'get_payment_type_display')()
+
     class Meta:
         db_table = "base_payment_gateway"
         verbose_name = _("Base gateway")
@@ -41,13 +44,12 @@ class BasePaymentModel(BaseAbstractModel):
         #  abstract = True
 
 
-def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = None,
-        pay_gw_id=None, group_by=0, limit=50):
-    group_by = safe_int(group_by)
+def report_by_pays(params: PaysReportParamsSchema):
+    group_by = params.group_by
     if not group_by:
         raise ParseError('Bad value in "group_by" param')
 
-    if not from_time:
+    if not params.from_time:
         raise ParseError('from_time is required')
 
     flds = {
@@ -81,7 +83,7 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
     annotation = query_opt.get('annotate', {})
 
     qs = BasePaymentLogModel.objects.filter(
-        date_add__gte=from_time
+        date_add__gte=params.from_time
     )
     related_fields = query_opt.get('related_fields', [])
 
@@ -92,21 +94,20 @@ def report_by_pays(from_time: Optional[datetime], to_time: Optional[datetime] = 
         pay_count=models.Count('amount'),
     )
 
-    if pay_gw_id is not None:
-        pay_gw_id = safe_int(pay_gw_id)
-        if pay_gw_id > 0:
-            qs = qs.filter(pay_gw_id=pay_gw_id)
+    if params.pay_gw_id is not None:
+        if params.pay_gw_id > 0:
+            qs = qs.filter(pay_gw_id=params.pay_gw_id)
 
-    if to_time is not None:
-        qs = qs.filter(date_add__lte=to_time)
+    if params.to_time is not None:
+        qs = qs.filter(date_add__lte=params.to_time)
 
-    for item in qs[:limit].iterator():
-        yield {
-            'summ': item['summ'],
-            'pay_count': item['pay_count'],
+    for item in qs[:params.limit].iterator():
+        yield PaysReportResponseSchema(
+            summ=item['summ'],
+            pay_count=item['pay_count'],
             **{field_name: item[field_name]},
-            **{f:item[f] for f in related_fields}
-        }
+            **{f: item[f] for f in related_fields if f != field_name}
+        )
 
 
 class BasePaymentLogModel(BaseAbstractModel):

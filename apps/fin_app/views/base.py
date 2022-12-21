@@ -1,47 +1,42 @@
 from django.db.models import Count
-from djing2.viewsets import DjingModelViewSet
-from rest_framework.exceptions import ValidationError
-from rest_framework.decorators import action
-from rest_framework.response import Response
+from djing2.lib.fastapi.auth import is_admin_auth_dependency
+from djing2.lib.fastapi.crud import CrudRouter, CRUDReadGenerator
+from fastapi import APIRouter, Depends
 from fin_app.models.base_payment_model import (
     BasePaymentModel,
     BasePaymentLogModel,
     report_by_pays
 )
-from fin_app.serializers.base import (
-    BasePaymentModelSerializer,
-    BasePaymentLogModelSerializer,
-    PaysReportParamsSerializer,
+from fin_app.schemas import base as schemas
+
+
+router = APIRouter(
+    prefix='/base',
+    dependencies=[Depends(is_admin_auth_dependency)]
 )
 
 
-class BasePaymentGatewayModelViewSet(DjingModelViewSet):
-    queryset = BasePaymentModel.objects.order_by('id').annotate(
-        pay_count=Count("basepaymentlogmodel")
+@router.get('/pays_report/',
+            response_model=list[schemas.PaysReportResponseSchema],
+            response_model_exclude_none=True)
+def pays_report(params: schemas.PaysReportParamsSchema = Depends()):
+    return report_by_pays(
+        params=params
     )
-    serializer_class = BasePaymentModelSerializer
-
-    def perform_create(self, serializer, *args, **kwargs):
-        raise ValidationError("Base payment model can't direct creation")
-
-    @action(methods=['get'], detail=False)
-    def pays_report(self, request):
-        ser = PaysReportParamsSerializer(data=request.query_params)
-        ser.is_valid(raise_exception=True)
-        dat = ser.data
-        r = report_by_pays(
-            from_time=dat.get('from_time'),
-            to_time=dat.get('to_time'),
-            pay_gw_id=dat.get('pay_gw'),
-            group_by=dat.get('group_by', 0),
-            limit=dat.get('limit')
-        )
-        return Response(list(r))
 
 
-class BasePaymentLogModelViewSet(DjingModelViewSet):
-    queryset = BasePaymentLogModel.objects.all()
-    serializer_class = BasePaymentLogModelSerializer
+router.include_router(CrudRouter(
+    schema=schemas.BasePaymentModelSchema,
+    update_schema=schemas.BasePaymentBaseSchema,
+    queryset=BasePaymentModel.objects.order_by('id').annotate(
+        pay_count=Count("basepaymentlogmodel")
+    ),
+    create_route=False
+))
 
-    def perform_create(self, serializer, *args, **kwargs):
-        raise ValidationError("Base payment log can't direct creation")
+
+router.include_router(CRUDReadGenerator(
+    schema=schemas.BasePaymentLogModelSchema,
+    queryset=BasePaymentLogModel.objects.all(),
+    get_one_route=False
+), prefix='/base/log')
