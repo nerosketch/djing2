@@ -20,7 +20,7 @@ router = APIRouter(
 )
 
 
-@router.post('/{customer_id}/make_periodic_pay/')
+@router.post('/periodic-pay/{customer_id}/make_periodic_pay/')
 def make_periodic_pay(
     customer_id: int,
     payload: schemas.PeriodicPayForIdRequestSchema,

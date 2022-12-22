@@ -1,23 +1,21 @@
 from decimal import Decimal
 from functools import wraps
-
-import fin_app.schemas.rncb
-from djing2.lib.fastapi.auth import is_admin_auth_dependency
-from djing2.lib.fastapi.crud import CrudRouter
-
 from ._general import cached_property
 from datetime import datetime
 from django.db import transaction
 from django.db.models import Sum
 from django.utils.encoding import force_str
+from rest_framework.generics import GenericAPIView
+from rest_framework_xml.renderers import XMLRenderer
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 from starlette import status
-from fastapi import APIRouter, Depends
+from rest_framework.exceptions import ValidationError
+from djing2.viewsets import DjingModelViewSet
 from fin_app.models.base_payment_model import fetch_customer_profile
 from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
 from fin_app.serializers import rncb as serializers_rncb
 from fin_app import custom_signals
-from fin_app.schemas import rncb as schemas
-
 try:
     from customers.models import Customer
 except ImportError as imperr:
@@ -29,22 +27,14 @@ except ImportError as imperr:
     ) from imperr
 
 
-router = APIRouter(
-    prefix='/rncb',
-    dependencies=[Depends(is_admin_auth_dependency)],
-)
+class PayRNCBGatewayModelViewSet(DjingModelViewSet):
+    queryset = RNCBPaymentGateway.objects.all()
+    serializer_class = serializers_rncb.PayRNCBGatewayModelSerializer
 
 
-router.include_router(CrudRouter(
-    schema=schemas.RNCBPayLogModelSchema,
-    queryset=RNCBPaymentLog.objects.all()
-), prefix='/log')
-
-
-router.include_router(CrudRouter(
-    schema=schemas.PayRNCBGatewayModelSchema,
-    queryset=RNCBPaymentGateway.objects.all()
-))
+class RNCBPayLogModelViewSet(DjingModelViewSet):
+    queryset = RNCBPaymentLog.objects.all()
+    serializer_class = serializers_rncb.RNCBPayLogModelSerializer
 
 
 class DynamicRootXMLRenderer(XMLRenderer):
@@ -109,7 +99,7 @@ def payment_wrapper(request_serializer, response_serializer, root_tag: str):
                 return Response({
                     root_tag: r_ser.validated_data
                 })
-            except fin_app.schemas.rncb.RNCBProtocolErrorException as e:
+            except serializers_rncb.RNCBProtocolErrorException as e:
                 return Response({root_tag: {
                     'ERROR': e.error.value,
                     'COMMENTS': _expand_str_from_err(e)
@@ -117,12 +107,12 @@ def payment_wrapper(request_serializer, response_serializer, root_tag: str):
             except ValidationError as e:
                 return Response({root_tag: {
                     # 'CUSTOMER_NOT_FOUND' because RNCB wants it that way
-                    'ERROR': fin_app.schemas.rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
+                    'ERROR': serializers_rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
                     'COMMENTS': _expand_str_from_err(e)
                 }}, status=status.HTTP_200_OK)
             except Customer.DoesNotExist:
                 return Response({root_tag: {
-                    'ERROR': fin_app.schemas.rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
+                    'ERROR': serializers_rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
                     'COMMENTS': 'Customer does not exists'
                 }}, status=status.HTTP_200_OK)
 
@@ -199,7 +189,7 @@ class RNCBPaymentViewSet(GenericAPIView):
         ).first()
         if pay is not None:
             return {
-                'ERROR': fin_app.schemas.rncb.RNCBPaymentErrorEnum.DUPLICATE_TRANSACTION.value,
+                'ERROR': serializers_rncb.RNCBPaymentErrorEnum.DUPLICATE_TRANSACTION.value,
                 'OUT_PAYMENT_ID': pay.pk,
                 'COMMENTS': 'Payment duplicate'
             }
