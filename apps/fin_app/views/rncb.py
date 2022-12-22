@@ -3,7 +3,7 @@ from functools import wraps
 
 import fin_app.schemas.rncb
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
-from djing2.lib.fastapi.crud import CRUDReadGenerator, CrudRouter
+from djing2.lib.fastapi.crud import CrudRouter
 
 from ._general import cached_property
 from datetime import datetime
@@ -12,7 +12,6 @@ from django.db.models import Sum
 from django.utils.encoding import force_str
 from starlette import status
 from fastapi import APIRouter, Depends
-from djing2.viewsets import DjingModelViewSet
 from fin_app.models.base_payment_model import fetch_customer_profile
 from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
 from fin_app.serializers import rncb as serializers_rncb
