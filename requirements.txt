@@ -18,9 +18,6 @@ git+https://github.com/nerosketch/easysnmp.git#egg=easysnmp
 
 transliterate==1.10.2
 
-# xml for pay system allpay, rncb
-djangorestframework-xml==2.0.0
-
 # django-bitfield
 git+https://github.com/disqus/django-bitfield.git#egg=django-bitfield
 
