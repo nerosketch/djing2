@@ -5,11 +5,11 @@ from djing2.lib.mixins import SitesBaseSchema
 from pydantic import BaseModel, Field
 
 
-class GroupBaseSchema(BaseModel):
-    title: str = Field(max_length=127)
+class GroupBaseSchema(SitesBaseSchema, BaseModel):
+    title: Optional[str] = Field(default=None, max_length=127)
 
 
-class GroupsModelSchema(SitesBaseSchema, GroupBaseSchema):
+class GroupsModelSchema(GroupBaseSchema):
     id: Optional[int] = None
 
     Config = OrmConf

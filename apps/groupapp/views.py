@@ -7,9 +7,10 @@ from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination
+from djing2.lib.fastapi.utils import get_object_or_404
 from profiles.models import BaseAccount
 from groupapp.models import Group
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Path
 from starlette import status
 from groupapp import schemas
 
@@ -28,7 +29,37 @@ router.include_router(CrudRouter(
     create_route=False,
     get_all_route=False,
     get_one_route=False,
+    update_route=False,
 ))
+
+
+@router.patch('/{group_id}/',
+              response_model=schemas.GroupsModelSchema)
+def update_group_info(
+    payload: schemas.GroupBaseSchema,
+    group_id: int = Path(gt=0),
+    curr_site: Site = Depends(sites_dependency),
+    curr_user: BaseAccount = Depends(
+        permission_check_dependency(perm_codename='groupapp.change_group')
+    ),
+):
+    qs = general_filter_queryset(
+        qs_or_model=Group.objects.order_by('title'),
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='groupapp.change_group'
+    )
+    grp = get_object_or_404(qs, pk=group_id)
+    data = payload.dict(exclude_unset=True)
+    sites = data.pop('sites')
+
+    for d_name, d_val in data.items():
+        setattr(grp, d_name, d_val)
+
+    if isinstance(sites, (tuple, list)):
+        grp.sites.set(sites)
+
+    return schemas.GroupsModelSchema.from_orm(grp)
 
 
 @router.get('/',
