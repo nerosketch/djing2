@@ -79,13 +79,13 @@ class RNCBPaymentTransactionCheckSchema(BaseModel):
     date_to: datetime = Field(alias='DateTo')
 
     @validator('date_from', pre=True)
-    def validate_exec_date(cls, v):
+    def validate_date_from(cls, v):
         if isinstance(v, datetime):
             return v.strftime(fmt=date_format)
         return datetime.strptime(str(v), format=date_format)
 
     @validator('date_to', pre=True)
-    def validate_exec_date(cls, v):
+    def validate_date_to(cls, v):
         if isinstance(v, datetime):
             return v.strftime(fmt=date_format)
         return datetime.strptime(str(v), format=date_format)
