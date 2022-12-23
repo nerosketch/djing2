@@ -74,7 +74,6 @@ INSTALLED_APPS = [
     "django_filters",
     "guardian",
     "django_cleanup.apps.CleanupConfig",
-    "webpush",
     "djing2.apps.Djing2Config",
     "groupapp.apps.GroupappConfig",
     "addresses.apps.AddressesConfig",
