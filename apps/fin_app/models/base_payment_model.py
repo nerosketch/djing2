@@ -144,8 +144,6 @@ def get_payment_types() -> list[tuple[int, str]]:
     return _payment_types
 
 
-def fetch_customer_profile(request, username: str) -> Customer:
-    customer = Customer.objects.filter(username=username, is_active=True)
-    if hasattr(request, 'site'):
-        customer = customer.filter(sites__in=[request.site])
+def fetch_customer_profile(*, curr_site: Site, username: str) -> Customer:
+    customer = Customer.objects.filter(username=username, is_active=True, sites__in=[curr_site])
     return customer.get()

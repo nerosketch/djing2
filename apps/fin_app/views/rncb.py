@@ -1,3 +1,4 @@
+from typing import Type
 from decimal import Decimal
 from functools import wraps
 from enum import Enum
@@ -12,11 +13,12 @@ from djing2.lib.fastapi.sites_depend import sites_dependency
 from datetime import datetime
 from django.db import transaction
 from django.db.models import Sum
+from djing2.lib.fastapi.utils import get_object_or_404
 from starlette import status
 from fastapi import APIRouter, Depends, Path, Query, Request, Response
+from pydantic import BaseModel
 from fin_app.models.base_payment_model import fetch_customer_profile
 from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
-from fin_app.serializers import rncb as serializers_rncb
 from fin_app import custom_signals
 from fin_app.schemas import rncb as schemas
 
@@ -49,7 +51,7 @@ router.include_router(CrudRouter(
 ))
 
 
-def payment_wrapper(request_serializer, response_serializer, root_tag: str):
+def payment_wrapper(request_schema: Type[BaseModel], response_schema: Type[BaseModel], root_tag: str):
     def _el(lst: list):
         """Expand list"""
         return ' '.join(s for s in lst)
@@ -61,32 +63,32 @@ def payment_wrapper(request_serializer, response_serializer, root_tag: str):
 
     def _fn(fn):
         @wraps(fn)
-        def _wrapper(request: Request):
+        def _wrapper(request: Request, pay_gateway: RNCBPaymentGateway, curr_site: Site):
             try:
-                ser = request_serializer(data=request.query_params)
-                ser.is_valid(raise_exception=True)
-                res = fn(request=request)
-                r_ser = response_serializer(data=res)
-                r_ser.is_valid(raise_exception=True)
-                return OldResponse({
-                    root_tag: r_ser.validated_data
+                data = dict(request.query_params)
+                request_schema(**data)
+
+                res = fn(data=data, pay_gateway=pay_gateway, curr_site=curr_site)
+                r_schema = response_schema(res)
+                return Response({
+                    root_tag: r_schema.dict()
                 })
             except fin_app.schemas.rncb.RNCBProtocolErrorException as e:
-                return OldResponse({root_tag: {
+                return Response({root_tag: {
                     'ERROR': e.error.value,
                     'COMMENTS': _expand_str_from_err(e)
-                }}, status=e.status_code)
-            except ValidationError as e:
-                return OldResponse({root_tag: {
+                }}, status_code=e.status_code)
+            except BaseProjectError as e:
+                return Response({root_tag: {
                     # 'CUSTOMER_NOT_FOUND' because RNCB wants it that way
                     'ERROR': fin_app.schemas.rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
                     'COMMENTS': _expand_str_from_err(e)
-                }}, status=status.HTTP_200_OK)
+                }}, status_code=status.HTTP_200_OK)
             except Customer.DoesNotExist:
-                return OldResponse({root_tag: {
+                return Response({root_tag: {
                     'ERROR': fin_app.schemas.rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
                     'COMMENTS': 'Customer does not exists'
-                }}, status=status.HTTP_200_OK)
+                }}, status_code=status.HTTP_200_OK)
 
         return _wrapper
     return _fn
@@ -99,13 +101,16 @@ class QueryTypeEnum(str, Enum):
 
 
 @payment_wrapper(
-    request_serializer=serializers_rncb.RNCBPaymentCheckSerializer,
-    response_serializer=serializers_rncb.RNCBPaymentCheckOldResponseSerializer,
+    request_schema=schemas.RNCBPaymentCheckSchema,
+    response_schema=schemas.RNCBPaymentCheckResponseSchema,
     root_tag='CHECKRESPONSE'
 )
-def _check(request: Request):
+def _check(data: dict, pay_gateway: RNCBPaymentGateway, curr_site: Site):
     account = data['Account']
-    customer = fetch_customer_profile(.request, username=account)
+    customer = fetch_customer_profile(
+        curr_site=curr_site,
+        username=account
+    )
 
     return {
         # 'fio': customer.get_full_name(),
@@ -116,20 +121,23 @@ def _check(request: Request):
 
 
 @payment_wrapper(
-    request_serializer=serializers_rncb.RNCBPaymentPaySerializer,
-    response_serializer=serializers_rncb.RNCBPaymentPayOldResponseSerializer,
+    request_schema=schemas.RNCBPaymentPaySchema,
+    response_schema=schemas.RNCBPaymentPayResponseSchema,
     root_tag='PAYRESPONSE'
 )
-def _pay(request: Request):
-    account = data['Account']
-    payment_id = data['Payment_id']
-    pay_amount = float(data['Summa'])
-    exec_date = data['Exec_date']
+def _pay(data: dict, pay_gateway: RNCBPaymentGateway, curr_site: Site):
+    account = data['account']
+    payment_id = data['payment_id']
+    pay_amount = float(data['summa'])
+    exec_date = data['exec_date']
     if not isinstance(exec_date, datetime):
-        exec_date = datetime.strptime(exec_date, serializers_rncb.date_format)
+        exec_date = datetime.strptime(exec_date, schemas.date_format)
     #  inn = data['inn']
 
-    customer = fetch_customer_profile(self.request, username=account)
+    customer = fetch_customer_profile(
+        curr_site=curr_site,
+        username=account
+    )
 
     pay = RNCBPaymentLog.objects.filter(
         pay_id=payment_id
@@ -151,14 +159,14 @@ def _pay(request: Request):
         customer.add_balance(
             profile=None,
             cost=Decimal(pay_amount),
-            comment=f"{self._lazy_object.title} {pay_amount:.2f}"
+            comment=f"{pay_gateway.title} {pay_amount:.2f}"
         )
         log = RNCBPaymentLog.objects.create(
             customer=customer,
             pay_id=payment_id,
             acct_time=exec_date,
             amount=pay_amount,
-            pay_gw=self._lazy_object
+            pay_gw=pay_gateway
         )
     custom_signals.after_payment_success.send(
         sender=Customer,
@@ -171,18 +179,19 @@ def _pay(request: Request):
         'COMMENTS': 'Success'
     }
 
+
 @payment_wrapper(
-    request_serializer=serializers_rncb.RNCBPaymentTransactionCheckSerializer,
-    response_serializer=serializers_rncb.RNCBPaymentTransactionCheckOldResponseSerializer,
+    request_schema=schemas.RNCBPaymentTransactionCheckSchema,
+    response_schema=schemas.RNCBPaymentTransactionCheckResponseSchema,
     root_tag='BALANCERESPONSE'
 )
-def _balance(request: Request):
-    date_from = data['DateFrom']
-    date_to = data['DateTo']
+def _balance(data: dict, pay_gateway: RNCBPaymentGateway, curr_site: Site):
+    date_from = data['date_from']
+    date_to = data['date_to']
     #  inn = data['inn']
 
-    date_from = datetime.strptime(date_from, serializers_rncb.date_format)
-    date_to = datetime.strptime(date_to, serializers_rncb.date_format)
+    date_from = datetime.strptime(date_from, schemas.date_format)
+    date_to = datetime.strptime(date_to, schemas.date_format)
 
     pays = RNCBPaymentLog.objects.filter(
         acct_time__gte=date_from,
@@ -196,7 +205,7 @@ def _balance(request: Request):
                 'out_payment_id': p.pk,
                 'account': p.customer.username,
                 'sum': float(p.amount),
-                'ex_date': p.acct_time.strftime(serializers_rncb.date_format)
+                'ex_date': p.acct_time.strftime(schemas.date_format)
             }
         }
 
@@ -209,7 +218,8 @@ def _balance(request: Request):
         'PAYMENTS': [_gen_pay(p) for p in pays]
     }
 
-def _unknown_query_type(request: Request):
+
+def _unknown_query_type(data: dict, pay_gateway: RNCBPaymentGateway, curr_site: Site):
     return Response(
         'Unknown QueryType parameter',
         status_code=status.HTTP_400_BAD_REQUEST
@@ -234,9 +244,13 @@ def rncb_payment_route(
     query_type: QueryTypeEnum = Query(alias='QueryType'),
     curr_site: Site = Depends(sites_dependency),
 ) -> Response:
-    qs = RNCBPaymentGateway.objects.filter(slug=pay_slug)
-    qs = qs.filter(sites__in=[curr_site])
+    qs = RNCBPaymentGateway.objects.filter(sites__in=[curr_site])
+    pay_gateway = get_object_or_404(qs, slug=pay_slug)
 
     query_m = query_type_map.get(query_type, _unknown_query_type)
 
-    return query_m(request)
+    return query_m(
+        request=request,
+        pay_gateway=pay_gateway,
+        curr_site=curr_site
+    )
