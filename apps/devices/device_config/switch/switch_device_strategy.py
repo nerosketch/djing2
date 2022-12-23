@@ -72,16 +72,6 @@ class PortType(object):
 class SwitchDeviceStrategy(BaseDeviceStrategy):
     ports_len: int
 
-    @staticmethod
-    def normalize_name(name: str, vid: Optional[int] = None) -> str:
-        if name:
-            language_code = getattr(settings, "LANGUAGE_CODE", "ru")
-            vname = translit(name, language_code=language_code, reversed=True)
-            return re.sub(r"\W+", "_", vname)[:32]
-        if vid and isinstance(vid, int):
-            return 'v%d' % vid
-        return ''
-
     @abstractmethod
     def get_ports(self) -> tuple:
         """
@@ -188,9 +178,6 @@ class SwitchDeviceStrategyContext(BaseDeviceStrategyContext):
 
     def get_vid_name(self, vid: int) -> str:
         return self._current_dev_manager.get_vid_name(vid=vid)
-
-    def normalize_name(self, name: str, vid: Optional[int] = None) -> str:
-        return self._current_dev_manager.normalize_name(name=name, vid=vid)
 
     def read_mac_address_vlan(self, vid: int) -> Macs:
         """
