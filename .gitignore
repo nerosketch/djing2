@@ -1,6 +1,7 @@
 *.pyc
 *.txt
 !requirements.txt
+!requirements_dev.txt
 !debian_apt_requirements.txt
 !TODO.txt
 !robots.txt
