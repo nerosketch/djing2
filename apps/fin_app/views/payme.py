@@ -1,4 +1,4 @@
-from functools import wraps
+from functools import wraps, cached_property
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
@@ -11,7 +11,6 @@ from rest_framework.authentication import BaseAuthentication, get_authorization_
 from starlette import status
 from djing2.viewsets import DjingModelViewSet
 from djing2.lib.mixins import SitesFilterMixin
-from ._general import cached_property
 from fin_app.models.base_payment_model import fetch_customer_profile, Customer
 from fin_app.models import payme as pmodels
 from fin_app.serializers import payme as payme_serializers

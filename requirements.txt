@@ -17,7 +17,7 @@ git+https://github.com/nerosketch/easysnmp.git#egg=easysnmp
 # pid==3.0.4
 
 transliterate==1.10.2
-
+dicttoxml
 # django-bitfield
 git+https://github.com/disqus/django-bitfield.git#egg=django-bitfield
 

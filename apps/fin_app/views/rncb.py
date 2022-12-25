@@ -2,21 +2,21 @@ from typing import Type
 from decimal import Decimal
 from functools import wraps
 from enum import Enum
+from datetime import datetime
 
-import fin_app.schemas.rncb
 from django.contrib.sites.models import Site
-from djing2.exceptions import BaseProjectError
 from djing2.lib.fastapi.auth import is_admin_auth_dependency
 from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.sites_depend import sites_dependency
+from djing2.lib.fastapi.utils import get_object_or_404
 
-from datetime import datetime
 from django.db import transaction
 from django.db.models import Sum
-from djing2.lib.fastapi.utils import get_object_or_404
 from starlette import status
+from pydantic import BaseModel, ValidationError
 from fastapi import APIRouter, Depends, Path, Query, Request, Response
-from pydantic import BaseModel
+from dicttoxml import dicttoxml
+
 from fin_app.models.base_payment_model import fetch_customer_profile
 from fin_app.models.rncb import RNCBPaymentGateway, RNCBPaymentLog
 from fin_app import custom_signals
@@ -35,20 +35,17 @@ except ImportError as imperr:
 
 router = APIRouter(
     prefix='/rncb',
-    dependencies=[Depends(is_admin_auth_dependency)],
 )
 
 
-router.include_router(CrudRouter(
-    schema=schemas.RNCBPayLogModelSchema,
-    queryset=RNCBPaymentLog.objects.all()
-), prefix='/log')
-
-
-router.include_router(CrudRouter(
-    schema=schemas.PayRNCBGatewayModelSchema,
-    queryset=RNCBPaymentGateway.objects.all()
-))
+router.include_router(
+    CrudRouter(
+        schema=schemas.RNCBPayLogModelSchema,
+        queryset=RNCBPaymentLog.objects.all()
+    ),
+    prefix='/log',
+    dependencies=[Depends(is_admin_auth_dependency)],
+)
 
 
 def payment_wrapper(request_schema: Type[BaseModel], response_schema: Type[BaseModel], root_tag: str):
@@ -56,10 +53,10 @@ def payment_wrapper(request_schema: Type[BaseModel], response_schema: Type[BaseM
         """Expand list"""
         return ' '.join(s for s in lst)
 
-    def _expand_str_from_err(err: BaseProjectError):
-        if isinstance(err.detail, dict):
-            return '\n'.join(f'{k}: {_el(v)}' for k, v in err.detail.items())
-        return str(err.detail)
+    def _expand_str_from_err(err):
+        if isinstance(err, dict):
+            return '\n'.join(f'{k}: {_el(v)}' for k, v in err.items())
+        return str(err)
 
     def _fn(fn):
         @wraps(fn)
@@ -70,25 +67,36 @@ def payment_wrapper(request_schema: Type[BaseModel], response_schema: Type[BaseM
 
                 res = fn(data=data, pay_gateway=pay_gateway, curr_site=curr_site)
                 r_schema = response_schema(res)
-                return Response({
+                return Response(dicttoxml({
                     root_tag: r_schema.dict()
-                })
-            except fin_app.schemas.rncb.RNCBProtocolErrorException as e:
-                return Response({root_tag: {
-                    'ERROR': e.error.value,
-                    'COMMENTS': _expand_str_from_err(e)
-                }}, status_code=e.status_code)
-            except BaseProjectError as e:
-                return Response({root_tag: {
-                    # 'CUSTOMER_NOT_FOUND' because RNCB wants it that way
-                    'ERROR': fin_app.schemas.rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
-                    'COMMENTS': _expand_str_from_err(e)
-                }}, status_code=status.HTTP_200_OK)
+                }), media_type='text/xml')
+            except schemas.RNCBProtocolErrorException as e:
+                return Response(
+                    dicttoxml({root_tag: {
+                        'ERROR': e.error.value,
+                        'COMMENTS': _expand_str_from_err(e.detail)
+                    }}),
+                    status_code=e.status_code,
+                    media_type='text/xml'
+                )
+            except ValidationError as e:
+                return Response(
+                    dicttoxml({root_tag: {
+                        'ERROR': schemas.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
+                        'COMMENTS': _expand_str_from_err(e)
+                    }}),
+                    status_code=status.HTTP_200_OK,
+                    media_type='text/xml'
+                )
             except Customer.DoesNotExist:
-                return Response({root_tag: {
-                    'ERROR': fin_app.schemas.rncb.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value,
-                    'COMMENTS': 'Customer does not exists'
-                }}, status_code=status.HTTP_200_OK)
+                return Response(
+                    dicttoxml({root_tag: {
+                        'ERROR': schemas.RNCBPaymentErrorEnum.CUSTOMER_NOT_FOUND.value
+                        'COMMENTS': 'Customer does not exists'
+                    }}),
+                    status_code=status.HTTP_200_OK,
+                    media_type='text/xml'
+                )
 
         return _wrapper
     return _fn
@@ -144,7 +152,7 @@ def _pay(data: dict, pay_gateway: RNCBPaymentGateway, curr_site: Site):
     ).first()
     if pay is not None:
         return {
-            'ERROR': fin_app.schemas.rncb.RNCBPaymentErrorEnum.DUPLICATE_TRANSACTION.value,
+            'ERROR': schemas.RNCBPaymentErrorEnum.DUPLICATE_TRANSACTION.value,
             'OUT_PAYMENT_ID': pay.pk,
             'COMMENTS': 'Payment duplicate'
         }
@@ -233,7 +241,7 @@ query_type_map = {
 }
 
 
-@router.get('/{pay_slug}/pay/')
+@router.get('/{pay_slug}/pay/', response_class=XmlTextResponse)
 def rncb_payment_route(
     request: Request,
     pay_slug: str = Path(
@@ -254,3 +262,13 @@ def rncb_payment_route(
         pay_gateway=pay_gateway,
         curr_site=curr_site
     )
+
+
+router.route_class = NonJsonRoute
+add_openapi_extension(router)
+
+
+router.include_router(CrudRouter(
+    schema=schemas.PayRNCBGatewayModelSchema,
+    queryset=RNCBPaymentGateway.objects.all()
+), dependencies=[Depends(is_admin_auth_dependency)])

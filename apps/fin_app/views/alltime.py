@@ -1,7 +1,6 @@
 from decimal import Decimal
 from hashlib import md5
 
-from ._general import cached_property
 from django.db import transaction, IntegrityError
 from django.db.utils import DatabaseError
 from django.http import Http404
@@ -84,7 +83,6 @@ class AllTimePay(GenericAPIView):
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend]
 
-    @cached_property
     def _lazy_object(self):
         return self.get_object()
 
