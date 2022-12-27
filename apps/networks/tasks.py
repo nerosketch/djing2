@@ -18,11 +18,11 @@ def periodically_checks_for_stale_leases():
     ).release()
 
 
-celery_app.add_periodic_task(
-    1800,
-    periodically_checks_for_stale_leases.s(),
-    name='Periodically checks for stale leases'
-)
+# celery_app.add_periodic_task(
+#     1800,
+#     periodically_checks_for_stale_leases.s(),
+#     name='Periodically checks for stale leases'
+# )
 
 
 def _radius_task_wrapper(fn):
