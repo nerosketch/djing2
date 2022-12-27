@@ -119,35 +119,6 @@ class Device(IAddressContaining, BaseAbstractModel):
     def get_address(self):
         return self.address
 
-    # def get_manager_klass(self):
-    #     try:
-    #         return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
-    #     except StopIteration:
-    #         raise TypeError(
-    #             "one of types is not subclass of BaseDeviceInterface. "
-    #             "Or implementation of that device type is not found"
-    #         )
-    #
-    # def get_manager_object_switch(self) -> BaseSwitchInterface:
-    #     man_klass = self.get_manager_klass()
-    #     if self._cached_manager is None:
-    #         self._cached_manager = man_klass(
-    #             dev_instance=self, host=str(self.ip_address), snmp_community=str(self.man_passw)
-    #         )
-    #     return self._cached_manager
-    #
-    # def get_manager_object_olt(self) -> BasePONInterface:
-    #     man_klass = self.get_manager_klass()
-    #     if self._cached_manager is None:
-    #         self._cached_manager = man_klass(dev_instance=self)
-    #     return self._cached_manager
-    #
-    # def get_manager_object_onu(self) -> BasePON_ONU_Interface:
-    #     man_klass = self.get_manager_klass()
-    #     if self._cached_manager is None:
-    #         self._cached_manager = man_klass(dev_instance=self)
-    #     return self._cached_manager
-
     def get_pon_olt_device_manager(self) -> PonOLTDeviceStrategyContext:
         return PonOLTDeviceStrategyContext(model_instance=self)
 
@@ -159,10 +130,6 @@ class Device(IAddressContaining, BaseAbstractModel):
 
     def get_general_device_manager(self) -> BaseDeviceStrategyContext:
         return BaseDeviceStrategyContext(model_instance=self)
-
-    # Can attach device to customer in customer page
-    # def has_attachable_to_customer(self) -> bool:
-    #     return self.device_strategy_context.has_attachable_to_customer
 
     def __str__(self):
         return "{} {}".format(self.ip_address or "", self.comment)
@@ -232,26 +199,9 @@ class Device(IAddressContaining, BaseAbstractModel):
         mng = self.get_switch_device_manager()
         return mng.read_mac_address_vlan(vid=vid)
 
-    ##############################
-    # Switch telnet methods
-    ##############################
-
-    # @_telnet_methods_wrapper
-    # def telnet_switch_attach_vlan_to_port(self, tln: BaseSwitchInterface, vid: int,
-    #                                       port: int, tag: bool = True) -> bool:
-    #     return tln.attach_vlan_to_port(vid=vid, port=port, tag=tag)
-
     def dev_switch_get_mac_address_port(self, device_port_num: int) -> Macs:
         mng = self.get_switch_device_manager()
         return mng.read_mac_address_port(port_num=device_port_num)
-
-    ##############################
-    # PON telnet methods
-    ##############################
-
-    # @_telnet_methods_wrapper
-    # def telnet_pon_attach_vlans_to_uplink(self, tln: BasePONInterface, vids: Iterable[int], *args, **kwargs) -> None:
-    #     return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
 
 
 class PortVlanMemberMode(models.IntegerChoices):
