@@ -162,7 +162,7 @@ def time2utctime(src_datetime) -> datetime:
 def get_past_time(how_long: timedelta, now: Optional[datetime] = None) -> datetime:
     if not isinstance(how_long, timedelta):
         raise ValueError('"how_long" must be a timedelta')
-    if now is None:
+    if now is None or not isinstance(now, datetime):
         now = datetime.now()
     past = now - how_long
     return past
