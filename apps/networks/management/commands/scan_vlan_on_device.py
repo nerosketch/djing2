@@ -41,9 +41,9 @@ class Command(BaseCommand):
 
         vlans = device.dev_get_all_vlan_list()
         for vlan in vlans:
-            if not vlan.title:
-                self._err("Skipping vlan with vid=%d. Empty title" % vlan.vid)
-                continue
+            title = vlan.title
+            if not title:
+                title = f'v{vlan.vid}'
 
             db_vlan_exists = VlanIf.objects.filter(vid=vlan.vid).exists()
             if db_vlan_exists:
@@ -51,7 +51,7 @@ class Command(BaseCommand):
             else:
                 VlanIf.objects.create(
                     vid=vlan.vid,
-                    title=vlan.title.decode() if isinstance(vlan.title, bytes) else vlan.title,
+                    title=title.decode() if isinstance(title, bytes) else title,
                     is_management=bool(vlan.is_management),
                 )
-                self._ok(f"OK: {vlan.vid}\t\t{vlan.title} created")
+                self._ok(f"OK: {vlan.vid}\t\t{title} created")
