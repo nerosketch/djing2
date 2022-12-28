@@ -3,6 +3,7 @@ from typing import Type, Optional, Union, Any, Callable, OrderedDict as OrderedD
 from django.contrib.sites.models import Site
 from django.db import transaction
 from django.db.models import QuerySet, Model
+from django.db.models.fields.related import ManyToManyField
 from django.db.utils import IntegrityError
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from fastapi.params import Depends
@@ -329,17 +330,28 @@ class CrudRouter(CRUDReadGenerator):
     def _update(self, *args: Any, **kwargs: Any):
         def route(item_id: int, model: self.update_schema, request: Request) -> OrderedDictType:
             qs = self.filter_qs(request=request)
-            model_fields = model.__fields__.copy()
+            model_fields = model.dict(exclude_unset=True).copy()
             model_fields.pop('sites', None)
             model_fields.pop('site', None)
             model_fields = tuple(fname for fname, _ in model_fields.items())
-            update_fields = tuple(fname for fname, _ in self._field_objects.items() if fname in model_fields)
+            update_fields = tuple(fname for fname, v in self._field_objects.items() if fname in model_fields and not isinstance(v, ManyToManyField))
+            update_fields_m2m = tuple(fname for fname, v in self._field_objects.items() if fname in model_fields and isinstance(v, ManyToManyField))
             try:
                 obj = qs.get(pk=item_id)
-                for fname in update_fields:
-                    value = getattr(model, fname)
-                    setattr(obj, fname, value)
-                obj.save(update_fields=update_fields)
+
+                with transaction.atomic():
+                    for fname in update_fields:
+                        value = getattr(model, fname)
+                        setattr(obj, fname, value)
+                    if update_fields:
+                        obj.save(update_fields=update_fields)
+
+                    for m2mfname in update_fields_m2m:
+                        v = getattr(obj, m2mfname)
+                        val = getattr(model, m2mfname, None)
+                        if v and val:
+                            v.set(val)
+
                 return format_object(
                     model_item=obj,
                     field_objects=self._field_objects,
