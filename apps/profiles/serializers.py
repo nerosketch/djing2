@@ -90,13 +90,6 @@ class UserProfilePasswordSerializer(serializers.Serializer):
     old_passw = serializers.CharField(label="Old password", max_length=128, required=True)
     new_passw = serializers.CharField(label="Old password", max_length=128, required=True)
 
-    # def update(self, instance, validated_data):
-    #     print('UserProfilePasswordSerializer.update', instance, validated_data)
-    #     return instance
-
-    # def create(self, validated_data):
-    #     print('UserProfilePasswordSerializer.create', validated_data)
-
     def validate_new_passw(self, value):
         try:
             validate_password(value)

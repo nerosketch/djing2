@@ -77,7 +77,6 @@ class FilterQuerySetMixin:
         else:
             street = safe_int(self.request.query_params.get('street'))
             if street > 0:
-                print('Filter by street:', street)
                 return queryset.filter_devices_by_addr(
                     addr_id=street,
                 )
@@ -364,13 +363,11 @@ class DeviceModelViewSet(FilterQuerySetMixin, DjingModelViewSet):
         device.save(update_fields=("status",))
 
         if not device.is_noticeable:
-            # print("Notification for %s is unnecessary" % device.ip_address or device.comment)
             return Response({
                 "text": "Notification for %s is unnecessary" % device.ip_address or device.comment
             })
 
         if not device.group:
-            # print('Device has not have a group')
             return Response({"text": "Device has not have a group"})
 
         recipients = UserProfile.objects.get_profiles_by_group(
