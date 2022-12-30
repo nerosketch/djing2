@@ -411,6 +411,16 @@ def delete_device(
         )
 
 
+@router.get(
+    '/all/{device_id}/',
+    response_model=schemas.DeviceModelSchema
+)
+def get_device_details(
+    device: Device = Depends(device_object_dependency)
+):
+    return schemas.DeviceModelSchema.from_orm(device)
+
+
 class DeviceModelViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related("parent_dev").order_by('comment')
     serializer_class = dev_serializers.DeviceModelSerializer

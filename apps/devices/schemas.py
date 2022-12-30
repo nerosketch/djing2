@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Union, Optional
 from ipaddress import IPv4Address, IPv6Address
+from django.db.models import QuerySet
 from django.utils.translation import gettext as _
 from netaddr import EUI
 
@@ -31,6 +32,8 @@ class AttachedUserSchema(BaseModel):
     id: int
     full_name: str
 
+    Config = OrmConf
+
 
 class DeviceWithoutGroupModelSchema(DeviceWithoutGroupBaseSchema):
     id: Optional[int] = None
@@ -52,6 +55,12 @@ class DeviceWithoutGroupModelSchema(DeviceWithoutGroupBaseSchema):
         if isinstance(mac, EUI):
             return str(mac)
         return mac
+
+    @validator('attached_users', pre=True)
+    def get_attached_users(cls, au):
+        if isinstance(au, QuerySet):
+            return [AttachedUserSchema.from_orm(i) for i in au]
+        return au
 
     Config = OrmConf
 

@@ -225,7 +225,8 @@ class Device(IAddressContaining, BaseAbstractModel):
 
     @property
     def address_title(self):
-        return self.get_address()
+        if self.address:
+            return self.address.full_title()
 
     @property
     def attached_users(self):

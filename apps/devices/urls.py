@@ -10,7 +10,7 @@ router = DefaultRouter()
 router.register("ports-vlan", views.PortVlanMemberModelViewSet)
 router.register("ports", views.PortModelViewSet)
 # router.register("pon", views.DevicePONViewSet)
-router.register("all", views.DeviceModelViewSet)
+# router.register("all", views.DeviceModelViewSet)
 
 urlpatterns = [
     path("without_groups/", views.DeviceWithoutGroupListAPIView.as_view()),
