@@ -537,7 +537,7 @@ def update_device_info(
         for d_name, d_val in pdata.items():
             if issubclass(d_val.__class__, Enum):
                 d_val = d_val.value
-            setattr(device, d_name, str(d_val))
+            setattr(device, d_name, None if d_val is None else str(d_val))
         device.save(update_fields=[d_name for d_name, _ in pdata.items()])
 
         if curr_user.is_superuser:
