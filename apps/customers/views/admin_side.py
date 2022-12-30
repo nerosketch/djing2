@@ -15,8 +15,7 @@ from djing2.lib.fastapi.perms import permission_check_dependency, check_perm, fi
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination, NOT_FOUND
 from djing2.lib.fastapi.utils import get_object_or_404, AllOptionalMetaclass, create_get_initial_route
-from djing2.lib.filters import filter_qs_by_fields_dependency
-from djing2.lib.filters import search_qs_by_fields_dependency
+from djing2.lib.filters import filter_qs_by_fields_dependency, search_qs_by_fields_dependency
 from dynamicfields.views import AbstractDynamicFieldContentModelViewSet
 from fastapi import APIRouter, Depends, Request, Response, Body, Query, UploadFile, Form
 from groupapp.models import Group
@@ -27,10 +26,6 @@ from services.models import Service
 from starlette import status
 
 from .. import schemas
-
-# TODO:
-#  добавить новые права где не хватает.
-#  проверить чтоб нельзя было изменить некоторые поля из api (типо изменить CustomerService и врубить себе услугу).
 
 
 router = APIRouter(
