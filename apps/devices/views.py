@@ -590,13 +590,28 @@ def add_new_device(
 #     filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)
 #     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
 
+@router.get(
+    '/without_groups/',
+    response_model=list[schemas.DeviceWithoutGroupBaseSchema]
+)
+def get_devices_without_groups(
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+):
+    curr_user, token = auth
+    qs = get_objects_for_user(curr_user, perms="devices.view_device", klass=Device).filter(group=None).order_by("id")
+    return (schemas.DeviceWithoutGroupBaseSchema.from_orm(d) for d in qs)
 
-class DeviceWithoutGroupListAPIView(DjingListAPIView):
-    serializer_class = dev_serializers.DeviceWithoutGroupModelSerializer
 
-    def get_queryset(self):
-        qs = get_objects_for_user(self.request.user, perms="devices.view_device", klass=Device).order_by("id")
-        return qs.filter(group=None)
+@router.get(
+    '/without_address/',
+    response_model=list[schemas.DeviceWithoutGroupBaseSchema]
+)
+def get_devices_without_groups(
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+):
+    curr_user, token = auth
+    qs = get_objects_for_user(curr_user, perms="devices.view_device", klass=Device).filter(address=None).order_by("id")
+    return (schemas.DeviceWithoutGroupBaseSchema.from_orm(d) for d in qs)
 
 
 class PortModelViewSet(DjingModelViewSet):

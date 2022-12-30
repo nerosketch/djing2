@@ -13,7 +13,6 @@ router.register("ports", views.PortModelViewSet)
 # router.register("all", views.DeviceModelViewSet)
 
 urlpatterns = [
-    path("without_groups/", views.DeviceWithoutGroupListAPIView.as_view()),
     path("groups_with_devices/", views.groups_with_devices),
     path("", include(router.urls)),
 ]
