@@ -498,22 +498,37 @@ def get_active_task_count(
     return tasks_count
 
 
+def get_task_depend(perm: str = 'tasks.view_task'):
+    def _wrap(
+        task_id: int = Path(gt=0),
+        curr_site: Site = Depends(sites_dependency),
+        curr_user: UserProfile = Depends(permission_check_dependency(
+            perm_codename=perm
+        ))
+    ) -> models.Task:
+        queryset = general_filter_queryset(
+            qs_or_model=models.Task,
+            curr_user=curr_user,
+            curr_site=curr_site,
+            perm_codename=perm
+        )
+        return get_object_or_404(queryset=queryset, pk=task_id)
+
+    return _wrap
+
+
 @router.get(
     '/{task_id}/finish/',
     status_code=status.HTTP_204_NO_CONTENT
 )
 def finish_task(
-    task_id: int,
     curr_user: UserProfile = Depends(permission_check_dependency(
         perm_codename='tasks.can_finish_task'
+    )),
+    task: models.Task = Depends(get_task_depend(
+        perm='tasks.can_finish_task'
     ))
 ):
-    tasks_qs = filter_qs_by_rights(
-        qs_or_model=models.Task,
-        curr_user=curr_user,
-        perm_codename='tasks.can_finish_task'
-    )
-    task = get_object_or_404(tasks_qs, pk=task_id)
     task.finish(curr_user)
 
 
@@ -525,14 +540,11 @@ def fail_task(
     task_id: int,
     curr_user: UserProfile = Depends(permission_check_dependency(
         perm_codename='tasks.can_fail_task'
+    )),
+    task: models.Task = Depends(get_task_depend(
+        perm='tasks.can_fail_task'
     ))
 ):
-    tasks_qs = filter_qs_by_rights(
-        qs_or_model=models.Task,
-        curr_user=curr_user,
-        perm_codename='tasks.can_fail_task'
-    )
-    task = get_object_or_404(tasks_qs, pk=task_id)
     task.do_fail(curr_user)
 
 
@@ -540,17 +552,10 @@ def fail_task(
             status_code=status.HTTP_204_NO_CONTENT,
             response_model=None)
 def remind_task(
-    task_id: int,
-    curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='tasks.tasks.can_remind'
+    task: models.Task = Depends(get_task_depend(
+        perm='tasks.can_remind'
     ))
 ):
-    tasks_qs = filter_qs_by_rights(
-        qs_or_model=models.Task,
-        curr_user=curr_user,
-        perm_codename='tasks.can_fail_task'
-    )
-    task = get_object_or_404(tasks_qs, pk=task_id)
     task.send_notification()
 
 
@@ -632,32 +637,22 @@ def task_mode_report():
 
 
 @router.get('/{task_id}/', response_model=schemas.TaskModelSchema)
-def get_task_details(task_id: int,
-                     auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
-                     ):
-    curr_user, token = auth
-    tasks_qs = filter_qs_by_rights(
-        qs_or_model=models.Task,
-        curr_user=curr_user,
-        perm_codename='tasks.view_task'
-    )
-    task = get_object_or_404(tasks_qs, pk=task_id)
+def get_task_details(
+    task: models.Task = Depends(get_task_depend())
+):
     return schemas.TaskModelSchema.from_orm(task)
 
 
 @router.patch('/{task_id}/',
               response_model=schemas.TaskModelSchema)
-def update_task_info(task_id: int,
-                     update_data: schemas.TaskUpdateSchema,
-                     auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency)
-                     ):
+def update_task_info(
+    update_data: schemas.TaskUpdateSchema,
+    auth: TOKEN_RESULT_TYPE = Depends(is_admin_auth_dependency),
+    task: models.Task = Depends(get_task_depend(
+        perm='tasks.change_task'
+    ))
+):
     curr_user, token = auth
-    tasks_qs = filter_qs_by_rights(
-        qs_or_model=models.Task,
-        curr_user=curr_user,
-        perm_codename='tasks.change_task'
-    )
-    task = get_object_or_404(tasks_qs, pk=task_id)
     pdata = update_data.dict(
         exclude_unset=True
     )
@@ -692,23 +687,15 @@ def update_task_info(task_id: int,
                    }
                },
                response_model=Optional[str])
-def remove_task(task_id: int,
-                curr_site: Site = Depends(sites_dependency),
-                curr_user: UserProfile = Depends(permission_check_dependency(
-                    perm_codename='tasks.delete_task'
-                ))
-                ):
-    queryset = general_filter_queryset(
-        qs_or_model=models.Task,
-        curr_user=curr_user,
-        curr_site=curr_site,
+def remove_task(
+    curr_user: UserProfile = Depends(permission_check_dependency(
         perm_codename='tasks.delete_task'
-    )
-    # .annotate(
-    #     recipients_agg=ArrayAgg('recipients')
-    # )
-    task = get_object_or_404(queryset=queryset, pk=task_id)
-    if curr_user.is_superuser or curr_user not in task.recipients_agg:
+    )),
+    task: models.Task = Depends(get_task_depend(
+        perm='tasks.delete_task'
+    ))
+):
+    if curr_user.is_superuser or curr_user not in [r.pk for r in task.recipients.all()]:
         task.delete()
     else:
         return Response(
