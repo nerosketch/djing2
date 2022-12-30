@@ -145,3 +145,10 @@ class ZabbixNotificationData(BaseModel):
 class DeviceTypeName(BaseModel):
     nm: str
     v: int
+
+
+class PonDetailsResult(BaseModel):
+    info: tuple
+    mac: str
+    signal: float
+    status: str

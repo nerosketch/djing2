@@ -172,13 +172,18 @@ def scan_olt_fibers(
 
 
 @router.get('/pon/{device_id}/scan_pon_details/',
-            response_model=dict)
+            response_model=schemas.PonDetailsResult)
 def scan_pon_details(
     device: Device = Depends(device_object_dependency)
 ):
     pon_manager = device.get_pon_onu_device_manager()
     data = pon_manager.get_details()
-    return data
+    return schemas.PonDetailsResult(
+        info=tuple((str(k), str(v)) for k, v in data['info']),
+        mac=data.get('mac'),
+        signal=data.get('signal'),
+        status=data.get('status')
+    )
 
 
 @router.get('/pon/{device_id}/scan_onu_list/')
