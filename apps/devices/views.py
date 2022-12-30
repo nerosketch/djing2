@@ -175,7 +175,7 @@ def scan_pon_details(
     pon_manager = device.get_pon_onu_device_manager()
     data = pon_manager.get_details()
     return schemas.PonDetailsResult(
-        info=[(str(k), str(v)) for k, v in data['info']],
+        info=[(str(k), str(v)) for k, v in data['info']] if data.get('info', False) else [],
         mac=data.get('mac'),
         signal=data.get('signal'),
         status=data.get('status')
