@@ -1,4 +1,3 @@
-import re
 from functools import wraps
 from json import dumps as json_dumps
 from dataclasses import asdict
@@ -9,7 +8,6 @@ from django.contrib.sites.models import Site
 from django.db.models import Count, QuerySet, Q
 from django.db import transaction
 from django.utils.translation import gettext as _
-from django_filters.rest_framework import DjangoFilterBackend
 from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
@@ -28,11 +26,11 @@ from starlette import status
 from pydantic import BaseModel
 
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
-from djing2.lib.filters import CustomSearchFilter, filter_qs_by_fields_dependency, search_qs_by_fields_dependency
+from djing2.lib.filters import filter_qs_by_fields_dependency, search_qs_by_fields_dependency
 from devices import serializers as dev_serializers
 from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
 from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
-from devices.models import Device, Port, PortVlanMemberModel, DeviceStatusEnum
+from devices.models import Device, Port, PortVlanMemberModel
 from devices.device_config.base import (
     DeviceImplementationError,
     DeviceConnectionError,
@@ -43,10 +41,8 @@ from devices.device_config.base import (
     DeviceOnuConfigTemplateSchema, MacItem, Vlan,
 )
 from devices.device_config.expect_util import ExpectValidationError
-from djing2 import IP_ADDR_REGEX
 from djing2.lib import ProcessLocked, safe_int, RuTimedelta
 from djing2.lib.custom_signals import notification_signal
-from djing2.lib.filters import CustomObjectPermissionsFilter
 from djing2.viewsets import DjingModelViewSet, DjingListAPIView
 from groupapp.models import Group
 from profiles.models import UserProfile, UserProfileLogActionType
@@ -526,12 +522,12 @@ def delete_device(
 
 @router.get(
     '/all/{device_id}/',
-    response_model=schemas.DeviceModelSchema
+    response_model=schemas.DeviceModelSchemaWithSites
 )
 def get_device_details(
     device: Device = Depends(device_object_dependency)
 ):
-    return schemas.DeviceModelSchema.from_orm(device)
+    return schemas.DeviceModelSchemaWithSites.from_orm(device)
 
 
 @router.patch(
@@ -540,13 +536,22 @@ def get_device_details(
 )
 def update_device_info(
     patch_info: schemas.DeviceUpdateSchema,
+    curr_user: UserProfile = Depends(
+        permission_check_dependency(perm_codename='devices.change_device')
+    ),
     device: Device = Depends(device_with_perm_dep(perm='devices.change_device'))
 ):
     pdata = patch_info.dict(exclude_unset=True)
-    for d_name, d_val in pdata.items():
-        setattr(device, d_name, d_val)
+    sites = pdata.pop('sites', None)
+    with transaction.atomic():
+        for d_name, d_val in pdata.items():
+            setattr(device, d_name, d_val)
+        device.save(update_fields=[d_name for d_name, d_val in pdata.items()])
 
-    device.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+        if curr_user.is_superuser:
+            if isinstance(sites, (tuple, list)):
+                device.sites.set(sites)
+
     return schemas.DeviceModelSchema.from_orm(device)
 
 
@@ -578,12 +583,12 @@ def add_new_device(
     return schemas.DeviceModelSchema.from_orm(dev)
 
 
-class DeviceModelViewSet(DjingModelViewSet):
-    queryset = Device.objects.select_related("parent_dev").order_by('comment')
-    serializer_class = dev_serializers.DeviceModelSerializer
-    filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
-    filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)
-    ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
+# class DeviceModelViewSet(DjingModelViewSet):
+#     queryset = Device.objects.select_related("parent_dev").order_by('comment')
+#     serializer_class = dev_serializers.DeviceModelSerializer
+#     filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
+#     filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)
+#     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
 
 
 class DeviceWithoutGroupListAPIView(DjingListAPIView):

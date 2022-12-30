@@ -3,6 +3,7 @@ from typing import Union, Optional
 from ipaddress import IPv4Address, IPv6Address
 from django.db.models import QuerySet
 from django.utils.translation import gettext as _
+from djing2.lib.mixins import SitesBaseSchema
 from netaddr import EUI
 
 from pydantic import BaseModel, Field, validator
@@ -72,7 +73,7 @@ class DeviceBaseSchema(DeviceWithoutGroupBaseSchema):
     code: Optional[str] = Field(None, title=_("Code"), max_length=64)
 
 
-class DeviceUpdateSchema(DeviceBaseSchema):
+class DeviceUpdateSchema(DeviceBaseSchema, SitesBaseSchema):
     mac_addr: Optional[str] = None
     comment: Optional[str] = Field(None, max_length=256, title=_("Comment"))
 
@@ -81,6 +82,10 @@ class DeviceModelSchema(DeviceBaseSchema, DeviceWithoutGroupModelSchema):
     create_time: datetime = Field(title=_("Create time"))
     address_title: Optional[str] = None
     iface_name: Optional[str] = None
+
+
+class DeviceModelSchemaWithSites(DeviceModelSchema, SitesBaseSchema):
+    pass
 
 
 class DevicePONModelSchema(DeviceModelSchema):
