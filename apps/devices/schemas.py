@@ -72,6 +72,11 @@ class DeviceBaseSchema(DeviceWithoutGroupBaseSchema):
     code: Optional[str] = Field(None, title=_("Code"), max_length=64)
 
 
+class DeviceUpdateSchema(DeviceBaseSchema):
+    mac_addr: Optional[str] = None
+    comment: Optional[str] = Field(None, max_length=256, title=_("Comment"))
+
+
 class DeviceModelSchema(DeviceBaseSchema, DeviceWithoutGroupModelSchema):
     create_time: datetime = Field(title=_("Create time"))
     address_title: Optional[str] = None
@@ -129,3 +134,14 @@ class FixOnuResponseSchema(BaseModel):
 class RemoveFromOLTResponseSchema(BaseModel):
     text: str
     status: int
+
+
+class ZabbixNotificationData(BaseModel):
+    dev_ip: Union[IPv4Address, IPv6Address]
+    dev_status: DeviceStatusEnum
+    message: str
+
+
+class DeviceTypeName(BaseModel):
+    nm: str
+    v: int

@@ -4,6 +4,7 @@ from json import dumps as json_dumps
 from dataclasses import asdict
 from typing import Optional
 
+from devices.schemas import DeviceTypeName
 from django.contrib.sites.models import Site
 from django.db.models import Count, QuerySet, Q
 from django.db import transaction
@@ -17,13 +18,14 @@ from djing2.lib.fastapi.types import IListResponse, Pagination
 from djing2.lib.fastapi.utils import get_object_or_404
 from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from guardian.shortcuts import get_objects_for_user
-from starlette import status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response as OldResponse
 from rest_framework.utils.encoders import JSONEncoder
 
-from fastapi import APIRouter, Request, Depends, Response, Path, HTTPException
+from fastapi import APIRouter, Request, Depends, Response, Path, HTTPException, Query
 from starlette.responses import StreamingResponse
+from starlette import status
+from pydantic import BaseModel
 
 from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
 from djing2.lib.filters import CustomSearchFilter, filter_qs_by_fields_dependency, search_qs_by_fields_dependency
@@ -38,7 +40,7 @@ from devices.device_config.base import (
     DeviceTimeoutError,
     Vlans,
     OptionalScriptCallResult,
-    DeviceOnuConfigTemplateSchema,
+    DeviceOnuConfigTemplateSchema, MacItem, Vlan,
 )
 from devices.device_config.expect_util import ExpectValidationError
 from djing2 import IP_ADDR_REGEX
@@ -360,32 +362,138 @@ def get_all_devices(
     return queryset
 
 
-@router.post(
-    '/all/',
-    response_model=schemas.DeviceModelSchema,
-    response_model_exclude_none=True,
-    status_code=status.HTTP_201_CREATED
+class ScanPortsResult(BaseModel):
+    text: str
+    status: int
+    ports: Optional[list] = None
+
+
+@router.get(
+    '/all/{device_id}/scan_ports/',
+    response_model=ScanPortsResult
 )
-def add_new_device(
-    dev_info: schemas.DeviceBaseSchema,
-    curr_user: UserProfile = Depends(permission_check_dependency(
-        perm_codename='devices.add_device'
-    )),
-    curr_site: Site = Depends(sites_dependency),
+def scan_device_ports(
+    device: Device = Depends(device_object_dependency)
 ):
-    pdata = dev_info.dict(exclude_unset=True)
-    with transaction.atomic():
-        dev = Device.objects.create(**pdata)
-        dev.sites.add(curr_site)
-        curr_user.log(
-            do_type=UserProfileLogActionType.CREATE_DEVICE,
-            additional_text='ip %s, mac: %s, "%s"' % (
-                dev.ip_address,
-                dev.mac_addr,
-                dev.comment
-            )
+    manager = device.get_switch_device_manager()
+    if not isinstance(manager, SwitchDeviceStrategyContext):
+        raise DeviceImplementationError("Expected SwitchDeviceStrategyContext instance")
+    try:
+        ports = [p.as_dict() for p in manager.get_ports()]
+        return ScanPortsResult(
+            text='',
+            status=1,
+            ports=ports
         )
-    return schemas.DeviceModelSchema.from_orm(dev)
+    except StopIteration:
+        return ScanPortsResult(
+            text=_("Device port count error"),
+            status=2
+        )
+
+
+@router.put(
+    '/all/{device_id}/send_reboot/',
+    status_code=status.HTTP_204_NO_CONTENT
+)
+def send_reboot(
+    device: Device = Depends(device_object_dependency)
+):
+    manager = device.get_switch_device_manager()
+    manager.reboot(save_before_reboot=False)
+
+
+@router.post(
+    '/all/zbx_monitoring_event/',
+)
+def zabbix_monitoring_event(
+    data: schemas.ZabbixNotificationData,
+):
+    device = Device.objects.filter(
+        ip_address=data.dev_ip
+    ).defer("extra_data").first()
+    if device is None:
+        return OldResponse(
+            {"text": "Devices with ip %s does not exist" % data.dev_ip},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    status_text_map = {
+        0: "Device %(device_name)s is ok",
+        1: "Device %(device_name)s has problem",
+    }
+    device.status = data.dev_status
+    device.save(update_fields=["status"])
+    if not device.is_noticeable:
+        # print("Notification for %s is unnecessary" % device.ip_address or device.comment)
+        return {
+            "text": "Notification for %s is unnecessary" % device.ip_address or device.comment
+        }
+    if not device.group:
+        # print('Device has not had a group')
+        return {"text": "Device has not have a group"}
+    recipients = UserProfile.objects.get_profiles_by_group(
+        group_id=device.group.pk
+    )
+    user_ids = tuple(recipient.pk for recipient in recipients.only("pk").iterator())
+    notify_text = status_text_map.get(
+        data.dev_status,
+        "Device %(device_name)s getting undefined status code"
+    )
+    text = "%s\n\n%s" % (_(notify_text) % {
+        "device_name": "{}({}) {}".format(device.ip_address or "", device.mac_addr, device.comment)
+    }, data.message)
+    # FIXME: make it done
+    # ws_connector.send_data2ws({
+    #     "eventType": "monitoring_event",
+    #     "recipients": user_ids,
+    #     "text": text
+    # })
+    notification_signal.send(
+        sender=device.__class__,
+        instance=device,
+        recipients=user_ids,
+        text=text
+    )
+    return {
+        "text": "notification successfully sent"
+    }
+
+
+@router.get(
+    '/all/{device_id}/scan_mac_address_vlan/',
+    response_model=list[MacItem]
+)
+def scan_mac_address_vlan(
+    vid: int = Query(gt=1, le=4095, title='8021.q Vlan ID'),
+    device: Device = Depends(device_object_dependency)
+):
+    macs = device.dev_read_mac_address_vlan(vid=vid)
+    return [MacItem(**asdict(m)) for m in macs]
+
+
+@router.get(
+    '/all/{device_id}/scan_all_vlan_list/',
+    response_model=list[Vlans]
+)
+def scan_all_vlan_list(
+    device: Device = Depends(device_object_dependency)
+):
+    vlan_list = device.dev_get_all_vlan_list()
+    res = (Vlan(**asdict(i)) for i in vlan_list)
+    return res
+
+
+@router.get(
+    '/all/device_types/',
+    response_model=list[DeviceTypeName]
+)
+def device_types():
+    dev_types = SwitchDeviceStrategyContext.get_device_types()
+    return (DeviceTypeName(
+        v=uint,
+        nm=str(klass.description)
+    ) for uint, klass in dev_types.items())
 
 
 @router.delete(
@@ -421,140 +529,56 @@ def get_device_details(
     return schemas.DeviceModelSchema.from_orm(device)
 
 
+@router.patch(
+    '/all/{device_id}/',
+    response_model=schemas.DeviceModelSchema
+)
+def update_device_info(
+    patch_info: schemas.DeviceUpdateSchema,
+    device: Device = Depends(device_with_perm_dep(perm='devices.change_device'))
+):
+    pdata = patch_info.dict(exclude_unset=True)
+    for d_name, d_val in pdata.items():
+        setattr(device, d_name, d_val)
+
+    device.save(update_fields=[d_name for d_name, d_val in pdata.items()])
+    return schemas.DeviceModelSchema.from_orm(device)
+
+
+@router.post(
+    '/all/',
+    response_model=schemas.DeviceModelSchema,
+    response_model_exclude_none=True,
+    status_code=status.HTTP_201_CREATED
+)
+def add_new_device(
+    dev_info: schemas.DeviceBaseSchema,
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='devices.add_device'
+    )),
+    curr_site: Site = Depends(sites_dependency),
+):
+    pdata = dev_info.dict(exclude_unset=True)
+    with transaction.atomic():
+        dev = Device.objects.create(**pdata)
+        dev.sites.add(curr_site)
+        curr_user.log(
+            do_type=UserProfileLogActionType.CREATE_DEVICE,
+            additional_text='ip %s, mac: %s, "%s"' % (
+                dev.ip_address,
+                dev.mac_addr,
+                dev.comment
+            )
+        )
+    return schemas.DeviceModelSchema.from_orm(dev)
+
+
 class DeviceModelViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related("parent_dev").order_by('comment')
     serializer_class = dev_serializers.DeviceModelSerializer
     filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
     filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)
     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_ports(self, request, pk=None):
-        device = self.get_object()
-        manager = device.get_switch_device_manager()
-        if not isinstance(manager, SwitchDeviceStrategyContext):
-            raise DeviceImplementationError("Expected SwitchDeviceStrategyContext instance")
-        try:
-            ports = [p.as_dict() for p in manager.get_ports()]
-            return OldResponse({"text": '', "status": 1, "ports": ports})
-        except StopIteration:
-            return OldResponse({"text": _("Device port count error"), "status": 2})
-
-    @action(detail=True, methods=["put"])
-    @catch_dev_manager_err
-    def send_reboot(self, request, pk=None):
-        device = self.get_object()
-        manager = device.get_switch_device_manager()
-        manager.reboot(save_before_reboot=False)
-        return OldResponse(status=status.HTTP_204_NO_CONTENT)
-
-    @action(detail=False, methods=["post"])
-    @catch_dev_manager_err
-    def zbx_monitoring_event(self, request):
-        dat = request.data
-        dev_ip = dat.get("dev_ip")
-        dev_status = dat.get("status")
-        message = dat.get('message')
-        dev_status = safe_int(dev_status)
-        if not dev_ip:
-            return OldResponse(
-                {"text": "ip does not passed"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if not re.match(IP_ADDR_REGEX, dev_ip):
-            return OldResponse(
-                {"text": "ip address %s is not valid" % dev_ip},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        device = self.get_queryset().filter(ip_address=dev_ip).defer("extra_data").first()
-        if device is None:
-            return OldResponse(
-                {"text": "Devices with ip %s does not exist" % dev_ip},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        status_map = {
-            0: DeviceStatusEnum.NETWORK_STATE_UP.value,
-            1: DeviceStatusEnum.NETWORK_STATE_DOWN.value,
-        }
-        status_text_map = {
-            0: "Device %(device_name)s is ok",
-            1: "Device %(device_name)s has problem",
-        }
-        device.status = status_map.get(dev_status, DeviceStatusEnum.NETWORK_STATE_UNDEFINED.value)
-
-        device.save(update_fields=("status",))
-
-        if not device.is_noticeable:
-            # print("Notification for %s is unnecessary" % device.ip_address or device.comment)
-            return OldResponse({
-                "text": "Notification for %s is unnecessary" % device.ip_address or device.comment
-            })
-
-        if not device.group:
-            # print('Device has not had a group')
-            return OldResponse({"text": "Device has not have a group"})
-
-        recipients = UserProfile.objects.get_profiles_by_group(
-            group_id=device.group.pk
-        )
-        # TODO: make editable UserProfile.flags
-        # ).filter(
-        #     flags=UserProfile.flags.notify_mon
-        # )
-        user_ids = tuple(recipient.pk for recipient in recipients.only("pk").iterator())
-
-        notify_text = status_text_map.get(
-            dev_status,
-            "Device %(device_name)s getting undefined status code"
-        )
-        text = "%s\n\n%s" % (_(notify_text) % {
-            "device_name": "{}({}) {}".format(device.ip_address or "", device.mac_addr, device.comment)
-        }, message)
-        # FIXME: make it done
-        # ws_connector.send_data2ws({
-        #     "eventType": "monitoring_event",
-        #     "recipients": user_ids,
-        #     "text": text
-        # })
-        notification_signal.send(
-            sender=device.__class__,
-            instance=device,
-            recipients=user_ids,
-            text=text
-        )
-        return OldResponse({
-            "text": "notification successfully sent"
-        })
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_mac_address_vlan(self, request, pk=None):
-        dev = self.get_object()
-        vid = safe_int(request.query_params.get("vid"))
-        if vid == 0:
-            return OldResponse("Valid vid required", status=status.HTTP_400_BAD_REQUEST)
-        macs = dev.dev_read_mac_address_vlan(vid=vid)
-        return OldResponse([asdict(m) for m in macs])
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_all_vlan_list(self, request, pk=None):
-        dev = self.get_object()
-        vlan_list = dev.dev_get_all_vlan_list()
-        res = (asdict(i) for i in vlan_list)
-        return OldResponse(res)
-
-    @action(methods=['get'], detail=False)
-    def device_types(self, request):
-        dev_types = SwitchDeviceStrategyContext.get_device_types()
-        result_dev_types = ({
-            'v': uint,
-            'nm': str(klass.description)
-        } for uint, klass in dev_types.items())
-        return OldResponse(result_dev_types)
 
 
 class DeviceWithoutGroupListAPIView(DjingListAPIView):
