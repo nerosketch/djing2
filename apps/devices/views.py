@@ -6,6 +6,7 @@ from typing import Optional
 
 from django.contrib.sites.models import Site
 from django.db.models import Count, QuerySet, Q
+from django.db import transaction
 from django.utils.translation import gettext as _
 from django_filters.rest_framework import DjangoFilterBackend
 from djing2.lib.fastapi.general_filter import general_filter_queryset
@@ -117,7 +118,7 @@ def filter_query_set_dependency(
     return qs
 
 
-def pon_device_with_perm(perm: str):
+def device_with_perm_dep(perm: str):
     def _wrapped(
         device_id: int = Path(gt=0),
         curr_user: UserProfile = Depends(permission_check_dependency(
@@ -136,15 +137,15 @@ def pon_device_with_perm(perm: str):
     return _wrapped
 
 
-def pon_device_object_dependency(
-    device: Device = Depends(pon_device_with_perm(perm='devices.view_device'))
+def device_object_dependency(
+    device: Device = Depends(device_with_perm_dep(perm='devices.view_device'))
 ) -> Device:
     return device
 
 
 @router.get('/pon/{device_id}/scan_units_unregistered/',
             response_model=list)
-def scan_units_unregistered(device: Device = Depends(pon_device_object_dependency)):
+def scan_units_unregistered(device: Device = Depends(device_object_dependency)):
     manager = device.get_pon_olt_device_manager()
     if hasattr(manager, "get_fibers"):
         unregistered = []
@@ -159,7 +160,7 @@ def scan_units_unregistered(device: Device = Depends(pon_device_object_dependenc
 
 @router.get('/pon/{device_id}/scan_olt_fibers/')
 def scan_olt_fibers(
-    device: Device = Depends(pon_device_object_dependency)
+    device: Device = Depends(device_object_dependency)
 ):
     manager = device.get_pon_olt_device_manager()
     if hasattr(manager, "get_fibers"):
@@ -171,7 +172,7 @@ def scan_olt_fibers(
 @router.get('/pon/{device_id}/scan_pon_details/',
             response_model=dict)
 def scan_pon_details(
-    device: Device = Depends(pon_device_object_dependency)
+    device: Device = Depends(device_object_dependency)
 ):
     pon_manager = device.get_pon_onu_device_manager()
     data = pon_manager.get_details()
@@ -180,7 +181,7 @@ def scan_pon_details(
 
 @router.get('/pon/{device_id}/scan_onu_list/')
 def scan_onu_list(
-    device: Device = Depends(pon_device_object_dependency)
+    device: Device = Depends(device_object_dependency)
 ):
     manager = device.get_pon_olt_device_manager()
     if not isinstance(manager, PonOLTDeviceStrategyContext):
@@ -231,7 +232,7 @@ def scan_onu_list(
             response_model=list)
 def scan_onu_on_fiber(
     fiber_num: int = Path(gt=0),
-    device: Device = Depends(pon_device_object_dependency)
+    device: Device = Depends(device_object_dependency)
 ):
     manager = device.get_pon_olt_device_manager()
     if hasattr(manager, "get_ports_on_fiber"):
@@ -252,7 +253,7 @@ def scan_onu_on_fiber(
 @router.get('/pon/{device_id}/fix_onu/',
             response_model=schemas.FixOnuResponseSchema)
 def fix_onu(
-    onu: Device = Depends(pon_device_with_perm(perm='devices.can_fix_onu'))
+    onu: Device = Depends(device_with_perm_dep(perm='devices.can_fix_onu'))
 ):
     fix_status, text = onu.fix_onu()
     return schemas.FixOnuResponseSchema(
@@ -266,7 +267,7 @@ def fix_onu(
             response_model=schemas.RemoveFromOLTResponseSchema)
 def remove_from_olt(
     request: Request,
-    device: Device = Depends(pon_device_with_perm(perm='devices.can_remove_from_olt'))
+    device: Device = Depends(device_with_perm_dep(perm='devices.can_remove_from_olt'))
 ):
     args = request.query_params
     if device.remove_from_olt(**args):
@@ -282,7 +283,7 @@ def remove_from_olt(
 
 @router.get('/pon/{device_id}/get_onu_config_options/')
 def get_onu_config_options(
-    device: Device = Depends(pon_device_object_dependency)
+    device: Device = Depends(device_object_dependency)
 ):
     config_types = device.get_config_types()
     config_choices = (i.to_dict() for i in config_types if i)
@@ -298,7 +299,7 @@ def get_onu_config_options(
 @router.get('/pon/{device_id}/read_onu_vlan_info/',
             response_model=Vlans)
 def read_onu_vlan_info(
-    device: Device = Depends(pon_device_object_dependency)
+    device: Device = Depends(device_object_dependency)
 ) -> Vlans:
     try:
         if device.is_onu_registered:
@@ -315,7 +316,7 @@ def read_onu_vlan_info(
              response_model=OptionalScriptCallResult)
 def apply_device_onu_config_template(
     device_config_data: DeviceOnuConfigTemplateSchema,
-    device: Device = Depends(pon_device_with_perm(perm='devices.can_apply_onu_config'))
+    device: Device = Depends(device_with_perm_dep(perm='devices.can_apply_onu_config'))
 ) -> OptionalScriptCallResult:
     res = device.apply_onu_config(config=device_config_data)
     return res
@@ -359,31 +360,63 @@ def get_all_devices(
     return queryset
 
 
+@router.post(
+    '/all/',
+    response_model=schemas.DeviceModelSchema,
+    response_model_exclude_none=True,
+    status_code=status.HTTP_201_CREATED
+)
+def add_new_device(
+    dev_info: schemas.DeviceBaseSchema,
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='devices.add_device'
+    )),
+    curr_site: Site = Depends(sites_dependency),
+):
+    pdata = dev_info.dict(exclude_unset=True)
+    with transaction.atomic():
+        dev = Device.objects.create(**pdata)
+        dev.sites.add(curr_site)
+        curr_user.log(
+            do_type=UserProfileLogActionType.CREATE_DEVICE,
+            additional_text='ip %s, mac: %s, "%s"' % (
+                dev.ip_address,
+                dev.mac_addr,
+                dev.comment
+            )
+        )
+    return schemas.DeviceModelSchema.from_orm(dev)
+
+
+@router.delete(
+    '/all/{device_id}/',
+    status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_device(
+    device: Device = Depends(device_with_perm_dep(perm='devices.delete_device')),
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='devices.delete_device'
+    )),
+):
+    with transaction.atomic():
+        device.delete()
+        # log about it
+        curr_user.log(
+            do_type=UserProfileLogActionType.DELETE_DEVICE,
+            additional_text='ip %s, mac: %s, "%s"' % (
+                device.ip_address or "-",
+                device.mac_addr or "-",
+                device.comment or "-"
+            ),
+        )
+
+
 class DeviceModelViewSet(DjingModelViewSet):
     queryset = Device.objects.select_related("parent_dev").order_by('comment')
     serializer_class = dev_serializers.DeviceModelSerializer
     filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
     filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)
     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
-    def perform_create(self, serializer, *args, **kwargs):
-        device_instance = super().perform_create(serializer=serializer, sites=[self.request.site])
-        if device_instance is not None:
-            self.request.user.log(
-                do_type=UserProfileLogActionType.CREATE_DEVICE,
-                additional_text='ip %s, mac: %s, "%s"'
-                % (device_instance.ip_address, device_instance.mac_addr, device_instance.comment),
-            )
-        return device_instance
-
-    def perform_destroy(self, instance):
-        # log about it
-        self.request.user.log(
-            do_type=UserProfileLogActionType.DELETE_DEVICE,
-            additional_text='ip %s, mac: %s, "%s"'
-            % (instance.ip_address or "-", instance.mac_addr or "-", instance.comment or "-"),
-        )
-        return super().perform_destroy(instance)
 
     @action(detail=True)
     @catch_dev_manager_err
