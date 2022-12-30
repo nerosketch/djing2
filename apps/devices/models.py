@@ -201,15 +201,6 @@ class Device(IAddressContaining, BaseAbstractModel):
         mng = self.get_switch_device_manager()
         return mng.read_mac_address_vlan(vid=vid)
 
-    ##############################
-    # Switch telnet methods
-    ##############################
-
-    # @_telnet_methods_wrapper
-    # def telnet_switch_attach_vlan_to_port(self, tln: BaseSwitchInterface, vid: int,
-    #                                       port: int, tag: bool = True) -> bool:
-    #     return tln.attach_vlan_to_port(vid=vid, port=port, tag=tag)
-
     def dev_switch_get_mac_address_port(self, device_port_num: int) -> Macs:
         mng = self.get_switch_device_manager()
         return mng.read_mac_address_port(port_num=device_port_num)

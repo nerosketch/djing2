@@ -24,7 +24,7 @@ max_line_length = 118
 
 
 # Use 2 spaces for the HTML files
-[*.html]
+[*.{html,yml}]
 indent_size = 2
 
 # Tab indentation (no size specified)

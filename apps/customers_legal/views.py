@@ -71,5 +71,6 @@ create_get_initial_route(
 router.include_router(CrudRouter(
     schema=schemas.CustomerLegalSchema,
     queryset=models.CustomerLegalModel.objects.all(),
+    update_schema=schemas.CustomerLegalUpdateSchema,
     create_schema=schemas.CustomerLegalBaseSchema
 ))

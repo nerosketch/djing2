@@ -66,11 +66,6 @@ def _post_del_signal_handler(sender, instance, **kwargs):
     )
 
 
-# @receiver(post_init)
-# def _post_init_signal_handler(sender, **kwargs):
-#     print('_post_init_signal_handler', sender, kwargs)
-
-
 @receiver_no_test(pre_save)
 def _pre_save_signal_handler(sender, instance, **kwargs):
     _send2task(
@@ -87,8 +82,3 @@ def _pre_del_signal_handler(sender, instance, **kwargs):
         instance=instance,
         sender=sender
     )
-
-
-# @receiver(pre_init)
-# def _pre_init_signal_handler(sender, **kwargs):
-#     print('_pre_init_signal_handler', sender, kwargs)

@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 from typing import Optional
 
+from customers.models import Customer
 from customers_legal.models import CustomerLegalIntegerChoices
 from django.conf import settings
 from djing2.lib.fastapi.types import OrmConf
@@ -24,6 +25,25 @@ class CustomerLegalBaseSchema(BaseAccountSchema):
     actual_end_time: Optional[datetime] = None
     title: str
     description: Optional[str] = None
+    branches: list[int] = []
+
+    @validator('branches', pre=True)
+    def get_branches(cls, branches):
+        if isinstance(branches, (list, tuple)):
+            return [b.pk if isinstance(b, Customer) else int(b) for b in branches]
+        try:
+            return [int(b) for b in branches]
+        except TypeError:
+            pass
+        return [int(b.pk) for b in branches.all()]
+
+
+class CustomerLegalUpdateSchema(CustomerLegalBaseSchema):
+    fio: Optional[str] = None
+    tax_number: Optional[str] = None
+    state_level_reg_number: Optional[str] = None
+    actual_start_time: Optional[datetime] = None
+    title: Optional[str] = None
 
 
 class CustomerLegalSchema(CustomerLegalBaseSchema):

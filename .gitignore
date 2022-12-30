@@ -1,6 +1,7 @@
 *.pyc
 *.txt
 !requirements.txt
+!requirements_dev.txt
 !debian_apt_requirements.txt
 !TODO.txt
 !robots.txt
@@ -15,6 +16,11 @@ static/
 __pycache__/
 apps/devices/device_config/custom/*.py
 !apps/devices/device_config/custom/__init__.py
+
+docs/_build/
+docs/_static/
+docs/_templates/
+
 secrets/
 .env
 .vscode/

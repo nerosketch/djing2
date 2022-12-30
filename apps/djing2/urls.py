@@ -12,7 +12,6 @@ api_urls = [
     path("fin/", include("fin_app.urls", namespace="fin_app")),
     path("sites/", include("sitesapp.urls", namespace="sitesapp")),
     # path("hook/", include("webhooks.urls", namespace="webhooks")),
-    path("webpush/", include("webpush.urls")),
 ]
 
 
