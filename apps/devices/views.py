@@ -179,7 +179,7 @@ def scan_pon_details(
     pon_manager = device.get_pon_onu_device_manager()
     data = pon_manager.get_details()
     return schemas.PonDetailsResult(
-        info=tuple((str(k), str(v)) for k, v in data['info']),
+        info=[(str(k), str(v)) for k, v in data['info']],
         mac=data.get('mac'),
         signal=data.get('signal'),
         status=data.get('status')
@@ -304,7 +304,7 @@ def get_onu_config_options(
 
 
 @router.get('/pon/{device_id}/read_onu_vlan_info/',
-            response_model=Vlans)
+            response_model=list)
 def read_onu_vlan_info(
     device: Device = Depends(device_object_dependency)
 ) -> Vlans:
@@ -316,7 +316,7 @@ def read_onu_vlan_info(
         return vlans
     except UnsupportedReadingVlan:
         # Vlan config unsupported
-        return ()
+        return []
 
 
 @router.post('/pon/{device_id}/apply_device_onu_config_template/',

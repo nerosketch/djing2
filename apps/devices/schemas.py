@@ -148,7 +148,16 @@ class DeviceTypeName(BaseModel):
 
 
 class PonDetailsResult(BaseModel):
-    info: tuple
-    mac: str
-    signal: float
-    status: str
+    info: list[tuple[str, str]]
+    mac: Optional[str] = None
+    signal: Optional[Union[float, str]] = None
+    status: Optional[str] = None
+    uptime: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    has_attachable_to_customer: bool = False
+    is_use_device_port: bool = False
+    disk_total: Optional[str] = None
+    disk_free: Optional[str] = None
+    fname: Optional[str] = None
+    fver: Optional[str] = None
