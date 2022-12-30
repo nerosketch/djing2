@@ -120,7 +120,6 @@ class PortVlanMemberBaseSchema(BaseModel):
 class PortVlanMemberUpdateSchema(BaseModel):
     vlanif_id: Optional[int] = None
     port_id: Optional[int] = None
-    mode: Optional[PortVlanMemberMode] = Field(None, PortVlanMemberMode.NOT_CHOSEN, title=_("Operating mode"))
 
 
 class PortVlanMemberModelSchema(PortVlanMemberBaseSchema):
@@ -171,5 +170,3 @@ class PonDetailsResult(BaseModel):
 
 class GroupsWithDevicesSchema(GroupsModelSchema):
     device_count: int = 0
-
-    Config = OrmConf
