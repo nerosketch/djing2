@@ -1,53 +1,41 @@
+from enum import Enum
+from dataclasses import asdict
 from functools import wraps
 from json import dumps as json_dumps
-from dataclasses import asdict
 from typing import Optional
 
+from devices.device_config import base
+from devices.device_config.expect_util import ExpectValidationError
+from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
+from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
+from devices.models import Device, Port, PortVlanMemberModel
 from devices.schemas import DeviceTypeName
 from django.contrib.sites.models import Site
-from django.db.models import Count, QuerySet, Q
 from django.db import transaction
+from django.db.models import Count, QuerySet, Q
 from django.utils.translation import gettext as _
+from djing2.lib import ProcessLocked, RuTimedelta
+from djing2.lib.custom_signals import notification_signal
+from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
+from djing2.lib.fastapi.crud import CrudRouter
 from djing2.lib.fastapi.general_filter import general_filter_queryset
 from djing2.lib.fastapi.pagination import paginate_qs_path_decorator
 from djing2.lib.fastapi.perms import permission_check_dependency
 from djing2.lib.fastapi.sites_depend import sites_dependency
 from djing2.lib.fastapi.types import IListResponse, Pagination
 from djing2.lib.fastapi.utils import get_object_or_404
-from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
-from guardian.shortcuts import get_objects_for_user
-from rest_framework.decorators import action, api_view
-from rest_framework.response import Response as OldResponse
-from rest_framework.utils.encoders import JSONEncoder
-
-from fastapi import APIRouter, Request, Depends, Response, Path, HTTPException, Query
-from starlette.responses import StreamingResponse
-from starlette import status
-from pydantic import BaseModel
-
-from djing2.lib.fastapi.auth import is_admin_auth_dependency, TOKEN_RESULT_TYPE
 from djing2.lib.filters import filter_qs_by_fields_dependency, search_qs_by_fields_dependency
-from devices import serializers as dev_serializers
-from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext
-from devices.device_config.switch.switch_device_strategy import SwitchDeviceStrategyContext
-from devices.models import Device, Port, PortVlanMemberModel
-from devices.device_config.base import (
-    DeviceImplementationError,
-    DeviceConnectionError,
-    UnsupportedReadingVlan,
-    DeviceTimeoutError,
-    Vlans,
-    OptionalScriptCallResult,
-    DeviceOnuConfigTemplateSchema, MacItem, Vlan,
-)
-from devices.device_config.expect_util import ExpectValidationError
-from djing2.lib import ProcessLocked, safe_int, RuTimedelta
-from djing2.lib.custom_signals import notification_signal
-from djing2.viewsets import DjingModelViewSet, DjingListAPIView
+from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
+from fastapi import APIRouter, Request, Depends, Response, Path, HTTPException, Query
 from groupapp.models import Group
+from guardian.shortcuts import get_objects_for_user
 from profiles.models import UserProfile, UserProfileLogActionType
-from . import schemas
+from pydantic import BaseModel
+from rest_framework.utils.encoders import JSONEncoder
+from starlette import status
+from starlette.responses import StreamingResponse
 
+from . import schemas
 
 router = APIRouter(
     prefix='/devices',
@@ -61,18 +49,18 @@ def catch_dev_manager_err(fn):
     def _wrapper(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
-        except (DeviceImplementationError, ExpectValidationError) as err:
+        except (base.DeviceImplementationError, ExpectValidationError) as err:
             raise HTTPException(
                 status_code=status.HTTP_200_OK,
                 detail={"text": str(err), "status": 2}
             )
         except EasySNMPTimeoutError as err:
-            raise DeviceTimeoutError() from err
+            raise base.DeviceTimeoutError() from err
         except (
             ConnectionResetError,
             ConnectionRefusedError,
             OSError,
-            DeviceConnectionError,
+            base.DeviceConnectionError,
             EasySNMPError,
         ) as err:
             raise HTTPException(
@@ -151,7 +139,7 @@ def scan_units_unregistered(device: Device = Depends(device_object_dependency)):
             for unr in manager.get_units_unregistered(fb):
                 unregistered.append(unr)
         return unregistered
-    raise DeviceImplementationError(
+    raise base.DeviceImplementationError(
         detail="Manager has not get_fibers attribute"
     )
 
@@ -188,7 +176,7 @@ def scan_onu_list(
 ):
     manager = device.get_pon_olt_device_manager()
     if not isinstance(manager, PonOLTDeviceStrategyContext):
-        raise DeviceImplementationError("Expected PonOLTDeviceStrategyContext instance")
+        raise base.DeviceImplementationError("Expected PonOLTDeviceStrategyContext instance")
 
     def chunk_cook(chunk: dict) -> bytes:
         chunk_json = json_dumps(chunk, ensure_ascii=False, cls=JSONEncoder)
@@ -303,24 +291,24 @@ def get_onu_config_options(
             response_model=list)
 def read_onu_vlan_info(
     device: Device = Depends(device_object_dependency)
-) -> Vlans:
+) -> base.Vlans:
     try:
         if device.is_onu_registered:
             vlans = tuple(device.read_onu_vlan_info())
         else:
             vlans = device.default_vlan_info()
         return vlans
-    except UnsupportedReadingVlan:
+    except base.UnsupportedReadingVlan:
         # Vlan config unsupported
         return []
 
 
 @router.post('/pon/{device_id}/apply_device_onu_config_template/',
-             response_model=OptionalScriptCallResult)
+             response_model=base.OptionalScriptCallResult)
 def apply_device_onu_config_template(
-    device_config_data: DeviceOnuConfigTemplateSchema,
+    device_config_data: base.DeviceOnuConfigTemplateSchema,
     device: Device = Depends(device_with_perm_dep(perm='devices.can_apply_onu_config'))
-) -> OptionalScriptCallResult:
+) -> base.OptionalScriptCallResult:
     res = device.apply_onu_config(config=device_config_data)
     return res
 
@@ -378,7 +366,9 @@ def scan_device_ports(
 ):
     manager = device.get_switch_device_manager()
     if not isinstance(manager, SwitchDeviceStrategyContext):
-        raise DeviceImplementationError("Expected SwitchDeviceStrategyContext instance")
+        raise base.DeviceImplementationError(
+            "Expected SwitchDeviceStrategyContext instance"
+        )
     try:
         ports = [p.as_dict() for p in manager.get_ports()]
         return ScanPortsResult(
@@ -414,9 +404,9 @@ def zabbix_monitoring_event(
         ip_address=data.dev_ip
     ).defer("extra_data").first()
     if device is None:
-        return OldResponse(
+        return Response(
             {"text": "Devices with ip %s does not exist" % data.dev_ip},
-            status=status.HTTP_404_NOT_FOUND
+            status_code=status.HTTP_404_NOT_FOUND
         )
 
     status_text_map = {
@@ -463,25 +453,25 @@ def zabbix_monitoring_event(
 
 @router.get(
     '/all/{device_id}/scan_mac_address_vlan/',
-    response_model=list[MacItem]
+    response_model=list[base.MacItem]
 )
 def scan_mac_address_vlan(
     vid: int = Query(gt=1, le=4095, title='8021.q Vlan ID'),
     device: Device = Depends(device_object_dependency)
 ):
     macs = device.dev_read_mac_address_vlan(vid=vid)
-    return [MacItem(**asdict(m)) for m in macs]
+    return [base.MacItem(**asdict(m)) for m in macs]
 
 
 @router.get(
     '/all/{device_id}/scan_all_vlan_list/',
-    response_model=list[Vlans]
+    response_model=list[base.Vlan]
 )
 def scan_all_vlan_list(
     device: Device = Depends(device_object_dependency)
 ):
     vlan_list = device.dev_get_all_vlan_list()
-    res = (Vlan(**asdict(i)) for i in vlan_list)
+    res = (base.Vlan(**asdict(i)) for i in vlan_list)
     return res
 
 
@@ -583,13 +573,6 @@ def add_new_device(
     return schemas.DeviceModelSchema.from_orm(dev)
 
 
-# class DeviceModelViewSet(DjingModelViewSet):
-#     queryset = Device.objects.select_related("parent_dev").order_by('comment')
-#     serializer_class = dev_serializers.DeviceModelSerializer
-#     filterset_fields = ("group", "dev_type", "status", "is_noticeable", "address")
-#     filter_backends = (CustomObjectPermissionsFilter, CustomSearchFilter, DjangoFilterBackend)
-#     ordering_fields = ("ip_address", "mac_addr", "comment", "dev_type")
-
 @router.get(
     '/without_groups/',
     response_model=list[schemas.DeviceWithoutGroupBaseSchema]
@@ -614,61 +597,104 @@ def get_devices_without_groups(
     return (schemas.DeviceWithoutGroupBaseSchema.from_orm(d) for d in qs)
 
 
-class PortModelViewSet(DjingModelViewSet):
-    queryset = Port.objects.annotate(user_count=Count("customer")).order_by("num")
-    serializer_class = dev_serializers.PortModelSerializer
-    filterset_fields = ("device", "num")
+def get_port_dependency(perm: str):
+    def _wrapped(
+        port_id: int = Path(gt=0),
+        curr_user: UserProfile = Depends(permission_check_dependency(
+            perm_codename='devices.view_port'
+        )),
+        curr_site: Site = Depends(sites_dependency),
+    ) -> Port:
+        qs = general_filter_queryset(
+            qs_or_model=Port,
+            curr_site=curr_site,
+            curr_user=curr_user,
+            perm_codename=perm,
+        )
+        device_port = get_object_or_404(qs, pk=port_id)
+        return device_port
 
-    @action(detail=True)
-    @catch_dev_manager_err
-    def toggle_port(self, request, pk=None):
-        self.check_permission_code(request, "devices.can_toggle_ports")
-        port_state = request.query_params.get("port_state")
-        port_snmp_num = request.query_params.get("port_snmp_num")
-        port_snmp_num = safe_int(port_snmp_num)
-        port = self.get_object()
-        if port_snmp_num > 0:
-            port_num = port_snmp_num
-        else:
-            port_num = int(port.num)
-        manager = port.device.get_switch_device_manager()
-        if port_state == "up":
-            manager.port_enable(port_num=port_num)
-        elif port_state == "down":
-            manager.port_disable(port_num=port_num)
-        else:
-            return OldResponse(_("Parameter port_state is bad"), status=status.HTTP_400_BAD_REQUEST)
-        return OldResponse(status=status.HTTP_200_OK)
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_mac_address_port(self, request, pk=None):
-        port = self.get_object()
-        dev = port.device
-        if dev is None:
-            return OldResponse(status=status.HTTP_404_NOT_FOUND)
-        macs = tuple(dev.dev_switch_get_mac_address_port(device_port_num=port.num))
-        return OldResponse(asdict(m) for m in macs)
-
-    @action(detail=True)
-    @catch_dev_manager_err
-    def scan_vlan(self, request, pk=None):
-        port = self.get_object()
-        port_vlans = port.get_port_vlan_list()
-        return OldResponse(asdict(p) for p in port_vlans)
+    return _wrapped
 
 
-class PortVlanMemberModelViewSet(DjingModelViewSet):
-    queryset = PortVlanMemberModel.objects.all()
-    serializer_class = dev_serializers.PortVlanMemberModelSerializer
-    filterset_fields = ("vlanif", "port")
+class PortStates(str, Enum):
+    up = 'up'
+    down = 'down'
 
 
-@api_view(['get'])
-def groups_with_devices(request):
-    grps = Group.objects.annotate(device_count=Count('device')).filter(device_count__gt=0).order_by('title')
-    ser = dev_serializers.GroupsWithDevicesSerializer(instance=grps, many=True)
-    return OldResponse({
-        'results': ser.data
-    })
+@router.get('/ports/{port_id}/toggle_port/')
+def toggle_device_port(
+    port_state: PortStates,
+    port_snmp_num: int = 0,
+    port: Port = Depends(get_port_dependency(perm='devices.can_toggle_ports')),
+):
+    if port_snmp_num > 0:
+        port_num = port_snmp_num
+    else:
+        port_num = int(port.num)
 
+    manager = port.device.get_switch_device_manager()
+    if port_state == PortStates.up:
+        manager.port_enable(port_num=port_num)
+    elif port_state == PortStates.down:
+        manager.port_disable(port_num=port_num)
+    else:
+        return Response(
+            _("Parameter port_state is bad"),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+    return Response(status_code=status.HTTP_200_OK)
+
+
+@router.get('/ports/{port_id}/scan_mac_address_port/')
+def scan_mac_address_port(
+    port: Port = Depends(get_port_dependency(perm='devices.view_port')),
+):
+    dev = port.device
+    if dev is None:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
+    macs = tuple(dev.dev_switch_get_mac_address_port(device_port_num=port.num))
+    return (asdict(m) for m in macs)
+
+
+@router.get('/ports/{port_id}/scan_vlan/')
+def scan_vlan(
+    port: Port = Depends(get_port_dependency(perm='devices.view_port')),
+):
+    port_vlans = port.get_port_vlan_list()
+    return (asdict(p) for p in port_vlans)
+
+
+router.include_router(CrudRouter(
+    schema=schemas.PortVlanMemberModelSchema,
+    create_schema=schemas.PortVlanMemberBaseSchema,
+    update_schema=schemas.PortVlanMemberUpdateSchema,
+    queryset=PortVlanMemberModel.objects.all()
+), prefix='/ports-vlan')
+
+router.include_router(CrudRouter(
+    schema=schemas.PortModelSchema,
+    create_schema=schemas.PortBaseSchema,
+    update_schema=schemas.PortUpdateSchema,
+    queryset=Port.objects.annotate(user_count=Count("customer")).order_by("num")
+), prefix='/ports')
+
+
+@router.get('/groups_with_devices/',
+            response_model=list[schemas.GroupsWithDevicesSchema])
+def groups_with_devices(
+    curr_user: UserProfile = Depends(permission_check_dependency(
+        perm_codename='groupapp.view_group'
+    )),
+    curr_site: Site = Depends(sites_dependency),
+):
+    qs = general_filter_queryset(
+        qs_or_model=Group.objects.order_by('title'),
+        curr_site=curr_site,
+        curr_user=curr_user,
+        perm_codename='groupapp.view_group'
+    )
+    grps = qs.annotate(
+        device_count=Count('device')
+    ).filter(device_count__gt=0)
+    return (schemas.GroupsWithDevicesSchema.from_orm(g) for g in grps)

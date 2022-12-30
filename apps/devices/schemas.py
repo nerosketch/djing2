@@ -4,6 +4,7 @@ from ipaddress import IPv4Address, IPv6Address
 from django.db.models import QuerySet
 from django.utils.translation import gettext as _
 from djing2.lib.mixins import SitesBaseSchema
+from groupapp.schemas import GroupsModelSchema
 from netaddr import EUI
 
 from pydantic import BaseModel, Field, validator
@@ -98,6 +99,11 @@ class PortBaseSchema(BaseModel):
     descr: Optional[str] = Field(None, title=_("Description"), max_length=60)
 
 
+class PortUpdateSchema(BaseModel):
+    device_id: Optional[int] = None
+    num: Optional[int] = None
+
+
 class PortModelSchema(PortBaseSchema):
     id: Optional[int] = None
     user_count: Optional[int] = None
@@ -105,25 +111,20 @@ class PortModelSchema(PortBaseSchema):
     Config = OrmConf
 
 
-class PortVlanMemberBasSchema(BaseModel):
+class PortVlanMemberBaseSchema(BaseModel):
     vlanif_id: int
     port_id: int
     mode: PortVlanMemberMode = Field(PortVlanMemberMode.NOT_CHOSEN, title=_("Operating mode"))
 
 
-class PortVlanMemberModelSchema(PortVlanMemberBasSchema):
+class PortVlanMemberUpdateSchema(BaseModel):
+    vlanif_id: Optional[int] = None
+    port_id: Optional[int] = None
+    mode: Optional[PortVlanMemberMode] = Field(None, PortVlanMemberMode.NOT_CHOSEN, title=_("Operating mode"))
+
+
+class PortVlanMemberModelSchema(PortVlanMemberBaseSchema):
     id: Optional[int] = None
-
-    Config = OrmConf
-
-
-class GroupsWithDevicesBaseSchema(BaseModel):
-    title: str = Field(max_length=127)
-
-
-class GroupsWithDevicesModelSchema(GroupsWithDevicesBaseSchema):
-    id: Optional[int] = None
-    device_count: Optional[int] = None
 
     Config = OrmConf
 
@@ -166,3 +167,9 @@ class PonDetailsResult(BaseModel):
     disk_free: Optional[str] = None
     fname: Optional[str] = None
     fver: Optional[str] = None
+
+
+class GroupsWithDevicesSchema(GroupsModelSchema):
+    device_count: int = 0
+
+    Config = OrmConf
