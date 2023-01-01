@@ -16,7 +16,7 @@ class WebSocketSender:
 
     def __init__(self, host=None):
         if host is None:
-            host = getattr(settings, "WS_ADDR", "127.0.0.1:3211")
+            host = getattr(settings, "WS_ADDR", "ws:3211")
         ipaddr, hport = host.split(":")
         self._ipaddr, self._hport = ipaddr, int(hport)
 
