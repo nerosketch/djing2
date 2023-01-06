@@ -1,3 +1,4 @@
+from typing import Optional
 from asyncpg import Pool, create_pool
 from asyncpg.pool import PoolConnectionProxy
 from django.db import connection
@@ -24,9 +25,18 @@ async def pool_dep() -> Pool:
         host=db_host,
         port=db_port
     )
-    yield pool
+    return pool
 
 
-async def db_connection_dependency(pool: Pool = Depends(pool_dep)) -> PoolConnectionProxy:
+class PoolPers:
+    _pool: Optional[Pool] = None
+
+    async def __call__(self):
+        if not self._pool:
+            self._pool = await pool_dep()
+        return self._pool
+
+
+async def db_connection_dependency(pool: Pool = Depends(PoolPers())) -> PoolConnectionProxy:
     async with pool.acquire() as conn:
         yield conn
