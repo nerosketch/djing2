@@ -179,10 +179,6 @@ msgstr "У абонента нет ip адресов"
 msgid "Ping ok"
 msgstr "Пингуется ok"
 
-#: apps/customers/models.py:714
-msgid "arp ping ok"
-msgstr "Пингуется по ARP"
-
 #: apps/customers/models.py:715
 msgid "no ping"
 msgstr "не пингуется"

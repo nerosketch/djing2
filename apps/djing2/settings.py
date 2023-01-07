@@ -347,11 +347,6 @@ RADIUS_SESSION_TIME = os.getenv("RADIUS_SESSION_TIME", 3600)
 # Address to websocket transmitter
 WS_ADDR = os.getenv("WS_ADDR", "ws:3211")
 
-# absolute path to arping command
-ARPING_COMMAND = os.getenv("ARPING_COMMAND", "/usr/sbin/arping")
-ARPING_ENABLED = os.getenv("ARPING_ENABLED", False)
-ARPING_ENABLED = bool(ARPING_ENABLED)
-
 # SITE_ID = 1
 
 if DEBUG:

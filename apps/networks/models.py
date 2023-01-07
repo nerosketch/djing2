@@ -364,9 +364,9 @@ class CustomerIpLeaseModel(models.Model):
         return res[0] if len(res) > 0 else False
 
     # @process_lock_decorator()
-    def ping_icmp(self, num_count=10, arp=False) -> bool:
+    def ping_icmp(self, num_count=10) -> bool:
         host_ip = str(self.ip_address)
-        return icmp_ping(ip_addr=host_ip, count=num_count, arp=arp)
+        return icmp_ping(ip_addr=host_ip, count=num_count)
 
     @staticmethod
     def lease_commit_add_update(client_ip: str, mac_addr: str, dev_mac: str, dev_port: int):

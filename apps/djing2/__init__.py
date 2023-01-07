@@ -15,13 +15,9 @@ IP_ADDR_REGEX = (
 MAC_ADDR_REGEXP = r"^([0-9a-fA-F]{2}[:.-]){5}[0-9a-fA-F]{2}|([0-9a-fA-F]{4}[:.-]){2}[0-9a-fA-F]{4}$"
 
 
-def ping(ip_addr: str, count=1, arp=False, interval=0.2) -> bool:
+def ping(ip_addr: str, count=1, interval=0.2) -> bool:
     if re.match(IP_ADDR_REGEX, ip_addr):
-        if arp:
-            arping_command = getattr(settings, "ARPING_COMMAND", "arping")
-            response = os.system(f"{arping_command} -qc{count} -W {interval} {ip_addr} > /dev/null")
-        else:
-            response = os.system(f"`which ping` -4Anq -i {interval} -c{count} -W1 {ip_addr} > /dev/null")
+        response = os.system(f"`which ping` -4Anq -i {interval} -c{count} -W1 {ip_addr} > /dev/null")
         return response == 0
     else:
         raise ValueError('"ip_addr" is not valid ip address')
