@@ -144,7 +144,7 @@ RETURNING (SELECT ip_address FROM lease);
 
 @router.post('/auth/{vendor_name}/')
 async def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...),
-               conn: PoolConnectionProxy = Depends(db_connection_dependency)) -> CompatibleJSONResponse:
+               conn: PoolConnectionProxy = Depends(db_connection_dependency)):
     vendor_manager = VendorManager(vendor_name=vendor_name)
 
     opt82 = vendor_manager.get_opt82(data=request_data)
