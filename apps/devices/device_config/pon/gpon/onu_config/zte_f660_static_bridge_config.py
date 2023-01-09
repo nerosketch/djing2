@@ -21,12 +21,12 @@ def _get_onu_template(all_vids: VlanList, *args, **kwargs) -> tuple:
     )
 
 
-def get_ports_config(vlan_config):
+def get_ports_config(vlan_config: list[base.DevOnuVlanInfoTemplateSchema]):
     ports_config = []
     for port_conf in vlan_config:
-        port_num = port_conf.get("port")
+        port_num = port_conf.port
 
-        vids = port_conf.get("vids")
+        vids = port_conf.vids
         if not vids:
             continue
 

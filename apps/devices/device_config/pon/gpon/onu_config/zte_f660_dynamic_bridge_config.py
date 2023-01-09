@@ -1,3 +1,4 @@
+from devices.device_config import base
 from .zte_f660_static_bridge_config import ZteF660BridgeStaticScriptModule, VlanList, get_ports_config
 
 
@@ -20,9 +21,9 @@ def _get_onu_template(all_vids: VlanList, onu_mac: str, *args, **kwargs) -> tupl
     )
 
 
-def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
+def _get_onu_mng_template(all_vids: VlanList, config: base.DeviceOnuConfigTemplateSchema, *args, **kwargs):
     all_vids = ",".join(map(str, set(all_vids)))
-    vlan_config = config.get("vlanConfig")
+    vlan_config = config.vlanConfig
 
     ports_config = get_ports_config(vlan_config)
 

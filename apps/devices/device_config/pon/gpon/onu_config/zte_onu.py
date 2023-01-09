@@ -8,6 +8,7 @@ from devices.device_config import expect_util
 from devices.device_config.base import (
     OptionalScriptCallResult,
     DeviceConfigurationError,
+    DevOnuVlanSchema,
     DeviceOnuConfigTemplateSchema
 )
 from devices.device_config.base_device_strategy import DeviceConfigType
@@ -237,7 +238,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         pass
 
 
-def build_trunk_native_from_vids(vids):
-    native_vids = {vid.get("vid") for vid in vids if vid.get("native", False)}
-    trunk_vids = {vid.get("vid") for vid in vids if not vid.get("native", False)}
+def build_trunk_native_from_vids(vids: list[DevOnuVlanSchema]):
+    native_vids = {vid.vid for vid in vids if vid.native}
+    trunk_vids = {vid.vid for vid in vids if not vid.native}
     return list(native_vids), list(trunk_vids)
