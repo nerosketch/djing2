@@ -345,12 +345,7 @@ DHCP_DEFAULT_LEASE_TIME = 86400
 RADIUS_SESSION_TIME = os.getenv("RADIUS_SESSION_TIME", 3600)
 
 # Address to websocket transmitter
-WS_ADDR = os.getenv("WS_ADDR", "127.0.0.1:3211")
-
-# absolute path to arping command
-ARPING_COMMAND = os.getenv("ARPING_COMMAND", "/usr/sbin/arping")
-ARPING_ENABLED = os.getenv("ARPING_ENABLED", False)
-ARPING_ENABLED = bool(ARPING_ENABLED)
+WS_ADDR = os.getenv("WS_ADDR", "ws:3211")
 
 # SITE_ID = 1
 

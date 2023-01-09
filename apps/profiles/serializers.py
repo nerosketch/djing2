@@ -37,6 +37,10 @@ class BaseAccountSerializer(BaseCustomModelSerializer):
 class UserProfileSerializer(BaseAccountSerializer):
     create_date = serializers.CharField(read_only=True)
     access_level = serializers.IntegerField(source="calc_access_level_percent", read_only=True)
+    avatar = serializers.SerializerMethodField()
+
+    def get_avatar(self, data):
+        return data.get_avatar_url()
 
     class Meta:
         model = UserProfile

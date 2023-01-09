@@ -142,9 +142,10 @@ RETURNING (SELECT ip_address FROM lease);
     return ip
 
 
+# FIXME: Protect this route by auth
 @router.post('/auth/{vendor_name}/')
 async def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...),
-               conn: PoolConnectionProxy = Depends(db_connection_dependency)) -> CompatibleJSONResponse:
+               conn: PoolConnectionProxy = Depends(db_connection_dependency)):
     vendor_manager = VendorManager(vendor_name=vendor_name)
 
     opt82 = vendor_manager.get_opt82(data=request_data)
@@ -255,6 +256,7 @@ async def auth(vendor_name: str, request_data: Mapping[str, Any] = Body(...),
         return _bad_ret(f'{str(err)}', log_err=err.show_err)
 
 
+# FIXME: Protect this route by auth
 @router.post('/get_service/')
 def get_service(data: CustomerServiceRequestSchema):
     customer_ip = data.customer_ip
@@ -275,6 +277,7 @@ def get_service(data: CustomerServiceRequestSchema):
     })
 
 
+# FIXME: Protect this route by auth
 @router.post('/acct/{vendor_name}/')
 async def acct(
     vendor_name: str,

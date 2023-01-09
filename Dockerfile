@@ -8,7 +8,7 @@ ENV PYTHONIOENCODING=UTF-8
 ENV PYTHONPATH=/var/www/djing2:/var/www/djing2/apps
 ENV DJANGO_SETTINGS_MODULE=djing2.settings
 
-RUN ["apk", "add", "net-snmp-dev", "arping", "gettext", "inetutils-telnet", "gcc", "git", "musl-dev", "libffi-dev", "libpq-dev", "make", "--no-cache"]
+RUN ["apk", "add", "net-snmp-dev", "gettext", "inetutils-telnet", "gcc", "git", "musl-dev", "libffi-dev", "libpq-dev", "make", "--no-cache"]
 RUN ["adduser", "-G", "www-data", "-SDH", "-h", "/var/www/djing2", "www-data"]
 RUN mkdir -p /var/www/djing2/media && chown -R www-data. /var/www/djing2
 
