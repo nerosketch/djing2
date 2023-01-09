@@ -1,6 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
-from devices.device_config import expect_util
+from devices.device_config import expect_util, base
 from devices.device_config.pon.gpon.onu_config.zte_onu import build_trunk_native_from_vids
 from .zte_f601_bridge_config import ZteF601BridgeScriptModule
 
@@ -65,9 +65,9 @@ def get_ports_config(vlan_config):
     return ports_config
 
 
-def _get_onu_mng_template(all_vids: VlanList, config: dict, *args, **kwargs):
+def _get_onu_mng_template(all_vids: VlanList, config: base.DeviceOnuConfigTemplateSchema, *args, **kwargs):
     all_vids = ",".join(map(str, set(all_vids)))
-    vlan_config = config.get("vlanConfig")
+    vlan_config = config.vlanConfig
 
     ports_config = get_ports_config(vlan_config)
 
