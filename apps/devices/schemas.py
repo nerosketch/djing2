@@ -80,7 +80,9 @@ class DeviceUpdateSchema(DeviceBaseSchema, SitesBaseSchema):
 
 
 class DeviceModelSchema(DeviceBaseSchema, DeviceWithoutGroupModelSchema):
-    create_time: datetime = Field(title=_("Create time"))
+    mac_addr: Optional[str] = None
+    dev_type_str: Optional[str] = None
+    create_time: Optional[datetime] = Field(None, title=_("Create time"))
     address_title: Optional[str] = None
     iface_name: Optional[str] = None
 

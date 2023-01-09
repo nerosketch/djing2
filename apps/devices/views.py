@@ -92,10 +92,9 @@ def filter_query_set_dependency(
 ) -> QuerySet[Device]:
     curr_user, token = auth
     qs = Device.objects.select_related("parent_dev").order_by('comment')
-    if curr_user.is_superuser:
-        return qs
-    grps = get_objects_for_user(user=curr_user, perms="groupapp.view_group", klass=Group).order_by("title")
-    qs = qs.filter(group__in=grps)
+    if not curr_user.is_superuser:
+        grps = get_objects_for_user(user=curr_user, perms="groupapp.view_group", klass=Group).order_by("title")
+        qs = qs.filter(group__in=grps)
 
     if house and house > 0:
         return qs.filter_devices_by_addr(
@@ -324,7 +323,7 @@ def apply_device_onu_config_template(
 @router.get(
     '/all/',
     response_model=IListResponse[schemas.DeviceModelSchema],
-    response_model_exclude_none=True
+    response_model_exclude_unset=True
 )
 @paginate_qs_path_decorator(
     schema=schemas.DeviceModelSchema,
@@ -339,8 +338,7 @@ def get_all_devices(
     )),
     filter_fields_q: Q = Depends(filter_qs_by_fields_dependency(
         fields={
-            'group': int, 'dev_type': int, 'status': int, 'is_noticeable': bool,
-            'address': int
+            'group': int, 'dev_type': int, 'status': int, 'is_noticeable': bool
         },
         db_model=Device
     )),
