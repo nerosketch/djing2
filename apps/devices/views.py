@@ -1,8 +1,7 @@
 from enum import Enum
 from dataclasses import asdict
-from functools import wraps
 from json import dumps as json_dumps
-from typing import Optional
+from typing import Optional, Callable
 
 from devices.device_config import base
 from devices.device_config.expect_util import ExpectValidationError
@@ -27,6 +26,7 @@ from djing2.lib.fastapi.utils import get_object_or_404
 from djing2.lib.filters import filter_qs_by_fields_dependency, search_qs_by_fields_dependency
 from easysnmp.exceptions import EasySNMPTimeoutError, EasySNMPError
 from fastapi import APIRouter, Request, Depends, Response, Path, HTTPException, Query
+from fastapi.routing import APIRoute
 from groupapp.models import Group
 from guardian.shortcuts import get_objects_for_user
 from profiles.models import UserProfile, UserProfileLogActionType
@@ -37,43 +37,47 @@ from starlette.responses import StreamingResponse
 
 from . import schemas
 
+
+class CatchDevManagerErrAPIRoute(APIRoute):
+    def get_route_handler(self) -> Callable:
+        original_route_handler = super().get_route_handler()
+
+        async def custom_route_handler(request: Request) -> Response:
+            try:
+                return await original_route_handler(request)
+            except (base.DeviceImplementationError, ExpectValidationError) as err:
+                raise HTTPException(
+                    status_code=status.HTTP_200_OK,
+                    detail={"text": str(err), "status": 2}
+                )
+            except EasySNMPTimeoutError as err:
+                raise base.DeviceTimeoutError() from err
+            except (
+                ConnectionResetError,
+                ConnectionRefusedError,
+                OSError,
+                base.DeviceConnectionError,
+                EasySNMPError,
+            ) as err:
+                raise HTTPException(
+                    detail=str(err),
+                    status_code=452
+                )
+            except SystemError as err:
+                raise HTTPException(
+                    detail=str(err),
+                    status_code=453
+                )
+
+        return custom_route_handler
+
+
 router = APIRouter(
     prefix='/devices',
     tags=['Devices'],
-    dependencies=[Depends(is_admin_auth_dependency)]
+    dependencies=[Depends(is_admin_auth_dependency)],
+    route_class=CatchDevManagerErrAPIRoute
 )
-
-
-def catch_dev_manager_err(fn):
-    @wraps(fn)
-    def _wrapper(self, *args, **kwargs):
-        try:
-            return fn(self, *args, **kwargs)
-        except (base.DeviceImplementationError, ExpectValidationError) as err:
-            raise HTTPException(
-                status_code=status.HTTP_200_OK,
-                detail={"text": str(err), "status": 2}
-            )
-        except EasySNMPTimeoutError as err:
-            raise base.DeviceTimeoutError() from err
-        except (
-            ConnectionResetError,
-            ConnectionRefusedError,
-            OSError,
-            base.DeviceConnectionError,
-            EasySNMPError,
-        ) as err:
-            raise HTTPException(
-                detail=str(err),
-                status_code=452
-            )
-        except SystemError as err:
-            raise HTTPException(
-                detail=str(err),
-                status_code=453
-            )
-
-    return _wrapper
 
 
 def filter_query_set_dependency(
