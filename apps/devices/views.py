@@ -51,16 +51,20 @@ class CatchDevManagerErrAPIRoute(APIRoute):
                     detail={"text": str(err), "status": 2}
                 )
             except EasySNMPTimeoutError as err:
-                raise base.DeviceTimeoutError() from err
+                raise base.DeviceTimeoutError from err
             except (
                 ConnectionResetError,
                 ConnectionRefusedError,
                 OSError,
-                base.DeviceConnectionError,
                 EasySNMPError,
             ) as err:
                 raise HTTPException(
                     detail=str(err),
+                    status_code=452
+                )
+            except base.DeviceConnectionError as err:
+                raise HTTPException(
+                    detail=err.detail,
                     status_code=452
                 )
             except SystemError as err:
