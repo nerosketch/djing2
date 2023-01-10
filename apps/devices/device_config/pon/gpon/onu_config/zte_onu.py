@@ -5,7 +5,12 @@ from pexpect import TIMEOUT
 
 from django.utils.translation import gettext_lazy as _
 from devices.device_config import expect_util
-from devices.device_config.base import OptionalScriptCallResult, DeviceConfigurationError
+from devices.device_config.base import (
+    OptionalScriptCallResult,
+    DeviceConfigurationError,
+    DevOnuVlanSchema,
+    DeviceOnuConfigTemplateSchema
+)
 from devices.device_config.base_device_strategy import DeviceConfigType
 from djing2.lib import process_lock_decorator, safe_int
 from .. import zte_utils
@@ -32,7 +37,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         sn = "ZTEG%s" % "".join("%.2X" % int(x, base=16) for x in mac.split(":")[-4:])
         return sn
 
-    def entry_point(self, config: dict, device, *args, **kwargs) -> OptionalScriptCallResult:
+    def entry_point(self, config: DeviceOnuConfigTemplateSchema, device, *args, **kwargs) -> OptionalScriptCallResult:
         extra_data = self.get_extra_data(device)
 
         ip = None
@@ -112,7 +117,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
     def register_onu(
         self,
         serial: str,
-        config: dict,
+        config: DeviceOnuConfigTemplateSchema,
         onu_mac: str,
         zte_ip_addr: str,
         telnet_login: str,
@@ -233,7 +238,7 @@ class ZteOnuDeviceConfigType(DeviceConfigType):
         pass
 
 
-def build_trunk_native_from_vids(vids):
-    native_vids = {vid.get("vid") for vid in vids if vid.get("native", False)}
-    trunk_vids = {vid.get("vid") for vid in vids if not vid.get("native", False)}
+def build_trunk_native_from_vids(vids: list[DevOnuVlanSchema]):
+    native_vids = {vid.vid for vid in vids if vid.native}
+    trunk_vids = {vid.vid for vid in vids if not vid.native}
     return list(native_vids), list(trunk_vids)

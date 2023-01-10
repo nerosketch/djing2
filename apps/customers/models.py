@@ -300,10 +300,6 @@ class Customer(IAddressContaining, BaseAccount):
             for lease in leases:
                 if lease.ping_icmp():
                     return _("Ping ok"), True
-                else:
-                    # arping_enabled = getattr(settings, "ARPING_ENABLED", False)
-                    if lease.ping_icmp(arp=False):
-                        return _("arp ping ok"), True
             return _("no ping"), False
         except ProcessLocked:
             return _("Process locked by another process"), False
@@ -345,6 +341,10 @@ class Customer(IAddressContaining, BaseAccount):
     @property
     def marker_icons(self) -> list[str]:
         return [i for i in self.get_flag_icons()]
+
+    @property
+    def full_name(self):
+        return self.get_full_name()
 
     class Meta:
         db_table = "customers"

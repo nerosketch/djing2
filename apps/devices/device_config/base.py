@@ -1,16 +1,29 @@
 from dataclasses import dataclass
 from typing import Generator, Optional, Iterable, Union, Any
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 from starlette import status
-from rest_framework.exceptions import APIException
+from fastapi import HTTPException
+from pydantic import BaseModel, Field
 
 
 OptionalScriptCallResult = Optional[dict[str, Union[str, Any]]]
 
 
-class DeviceImplementationError(APIException):
+class DeviceImplementationError(HTTPException):
     status_code = status.HTTP_400_BAD_REQUEST
     default_detail = _("Device implementation error")
+
+    def __init__(
+        self,
+        detail: Any = None,
+        status_code: Optional[int] = None,
+        *args, **kwargs
+    ) -> None:
+        super().__init__(
+            status_code=status_code or self.status_code,
+            detail=str(detail) if detail else self.default_detail,
+            *args, **kwargs
+        )
 
 
 class DeviceConfigurationError(DeviceImplementationError):
@@ -64,3 +77,18 @@ class MacItem:
 
 Vlans = Iterable[Vlan]
 Macs = Generator[MacItem, None, None]
+
+
+class DevOnuVlanSchema(BaseModel):
+    vid: int = 1
+    native: bool = False
+
+
+class DevOnuVlanInfoTemplateSchema(BaseModel):
+    port: int = 1
+    vids: list[DevOnuVlanSchema] = []
+
+
+class DeviceOnuConfigTemplateSchema(BaseModel):
+    configTypeCode: str = Field(title=_("Config code"), max_length=64)
+    vlanConfig: list[DevOnuVlanInfoTemplateSchema]

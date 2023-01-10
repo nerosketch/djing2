@@ -1,8 +1,5 @@
-import re
 from abc import abstractmethod
 from typing import Optional, AnyStr
-from transliterate import translit
-from django.conf import settings
 from django.utils.translation import gettext
 from devices.device_config.base import Vlans, Macs
 from devices.device_config.base_device_strategy import (

@@ -146,15 +146,12 @@ class CustomerIpLeaseModelViewSet(DjingModelViewSet):
     @action(detail=True)
     def ping_ip(self, request, pk=None):
         lease = self.get_object()
-        text = _("Ping ok")
         try:
             is_pinged = lease.ping_icmp()
-            if not is_pinged:
-                # arping_enabled = getattr(settings, "ARPING_ENABLED", False)
-                if lease.ping_icmp(arp=False):
-                    text = _("arp ping ok")
-                else:
-                    text = _("no ping")
+            if is_pinged:
+                text = _("Ping ok")
+            else:
+                text = _("no ping")
         except ProcessLocked:
             return Response({"text": _("Process locked by another process"), "status": False})
         except ValueError as err:

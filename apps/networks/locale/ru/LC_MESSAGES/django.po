@@ -191,10 +191,6 @@ msgstr "Сеть не может быть пустой"
 msgid "Ping ok"
 msgstr "Пингуется OK"
 
-#: apps/networks/views.py:85
-msgid "arp ping ok"
-msgstr "Пингуется по ARP"
-
 #: apps/networks/views.py:87
 msgid "no ping"
 msgstr "не пингуется"

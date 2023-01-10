@@ -15,6 +15,7 @@ from devices.device_config.base import (
     Macs,
     DeviceConfigurationError,
     OptionalScriptCallResult,
+    DeviceOnuConfigTemplateSchema,
 )
 from devices.device_config.base_device_strategy import BaseDeviceStrategyContext
 from devices.device_config.pon.pon_device_strategy import PonOLTDeviceStrategyContext, PonONUDeviceStrategyContext
@@ -53,6 +54,13 @@ class DeviceModelQuerySet(RemoveFilterQuerySetMixin, models.QuerySet):
         )
 
 
+class DeviceStatusEnum(models.IntegerChoices):
+    NETWORK_STATE_UNDEFINED = 0, _("Undefined")
+    NETWORK_STATE_UP = 1, _('Up')
+    NETWORK_STATE_UNREACHABLE = 2, _('Unreachable')
+    NETWORK_STATE_DOWN = 3, _('Down')
+
+
 class Device(IAddressContaining, BaseAbstractModel):
     ip_address = models.GenericIPAddressField(verbose_name=_("Ip address"), null=True, blank=True, default=None)
     mac_addr = MACAddressField(verbose_name=_("Mac address"), unique=True)
@@ -74,17 +82,11 @@ class Device(IAddressContaining, BaseAbstractModel):
     )
     vlans = models.ManyToManyField(VlanIf, verbose_name=_("Available vlans"), blank=True)
 
-    NETWORK_STATE_UNDEFINED = 0
-    NETWORK_STATE_UP = 1
-    NETWORK_STATE_UNREACHABLE = 2
-    NETWORK_STATE_DOWN = 3
-    NETWORK_STATES = (
-        (NETWORK_STATE_UNDEFINED, _("Undefined")),
-        (NETWORK_STATE_UP, _("Up")),
-        (NETWORK_STATE_UNREACHABLE, _("Unreachable")),
-        (NETWORK_STATE_DOWN, _("Down")),
+    status = models.PositiveSmallIntegerField(
+        _("Status"),
+        choices=DeviceStatusEnum.choices,
+        default=DeviceStatusEnum.NETWORK_STATE_UNDEFINED
     )
-    status = models.PositiveSmallIntegerField(_("Status"), choices=NETWORK_STATES, default=NETWORK_STATE_UNDEFINED)
 
     is_noticeable = models.BooleanField(_("Send notify when monitoring state changed"), default=False)
 
@@ -119,35 +121,6 @@ class Device(IAddressContaining, BaseAbstractModel):
     def get_address(self):
         return self.address
 
-    # def get_manager_klass(self):
-    #     try:
-    #         return next(klass for code, klass in DEVICE_TYPES if code == safe_int(self.dev_type))
-    #     except StopIteration:
-    #         raise TypeError(
-    #             "one of types is not subclass of BaseDeviceInterface. "
-    #             "Or implementation of that device type is not found"
-    #         )
-    #
-    # def get_manager_object_switch(self) -> BaseSwitchInterface:
-    #     man_klass = self.get_manager_klass()
-    #     if self._cached_manager is None:
-    #         self._cached_manager = man_klass(
-    #             dev_instance=self, host=str(self.ip_address), snmp_community=str(self.man_passw)
-    #         )
-    #     return self._cached_manager
-    #
-    # def get_manager_object_olt(self) -> BasePONInterface:
-    #     man_klass = self.get_manager_klass()
-    #     if self._cached_manager is None:
-    #         self._cached_manager = man_klass(dev_instance=self)
-    #     return self._cached_manager
-    #
-    # def get_manager_object_onu(self) -> BasePON_ONU_Interface:
-    #     man_klass = self.get_manager_klass()
-    #     if self._cached_manager is None:
-    #         self._cached_manager = man_klass(dev_instance=self)
-    #     return self._cached_manager
-
     def get_pon_olt_device_manager(self) -> PonOLTDeviceStrategyContext:
         return PonOLTDeviceStrategyContext(model_instance=self)
 
@@ -159,10 +132,6 @@ class Device(IAddressContaining, BaseAbstractModel):
 
     def get_general_device_manager(self) -> BaseDeviceStrategyContext:
         return BaseDeviceStrategyContext(model_instance=self)
-
-    # Can attach device to customer in customer page
-    # def has_attachable_to_customer(self) -> bool:
-    #     return self.device_strategy_context.has_attachable_to_customer
 
     def __str__(self):
         return "{} {}".format(self.ip_address or "", self.comment)
@@ -197,8 +166,8 @@ class Device(IAddressContaining, BaseAbstractModel):
         mng = self.get_pon_onu_device_manager()
         return mng.get_config_types()
 
-    def apply_onu_config(self, config: dict) -> OptionalScriptCallResult:
-        self.code = config.get("configTypeCode")
+    def apply_onu_config(self, config: DeviceOnuConfigTemplateSchema) -> OptionalScriptCallResult:
+        self.code = config.configTypeCode
         self.save(update_fields=["code"])
         all_device_types = self.get_config_types()
         self_device_type_code = str(self.code)
@@ -232,26 +201,36 @@ class Device(IAddressContaining, BaseAbstractModel):
         mng = self.get_switch_device_manager()
         return mng.read_mac_address_vlan(vid=vid)
 
-    ##############################
-    # Switch telnet methods
-    ##############################
-
-    # @_telnet_methods_wrapper
-    # def telnet_switch_attach_vlan_to_port(self, tln: BaseSwitchInterface, vid: int,
-    #                                       port: int, tag: bool = True) -> bool:
-    #     return tln.attach_vlan_to_port(vid=vid, port=port, tag=tag)
-
     def dev_switch_get_mac_address_port(self, device_port_num: int) -> Macs:
         mng = self.get_switch_device_manager()
         return mng.read_mac_address_port(port_num=device_port_num)
 
-    ##############################
-    # PON telnet methods
-    ##############################
+    @property
+    def dev_type_str(self) -> str:
+        return getattr(self, 'get_dev_type_display', lambda: '-')()
 
-    # @_telnet_methods_wrapper
-    # def telnet_pon_attach_vlans_to_uplink(self, tln: BasePONInterface, vids: Iterable[int], *args, **kwargs) -> None:
-    #     return tln.attach_vlans_to_uplink(vids=vids, *args, **kwargs)
+    @property
+    def iface_name(self) -> str:
+        return self.get_if_name()
+
+    @property
+    def parent_dev_name(self):
+        if self.parent_dev:
+            return str(self.parent_dev)
+
+    @property
+    def parent_dev_group(self):
+        if self.parent_dev.group:
+            return self.parent_dev.group_id
+
+    @property
+    def address_title(self):
+        if self.address:
+            return self.address.full_title()
+
+    @property
+    def attached_users(self):
+        return self.customer_set.all()
 
 
 class PortVlanMemberMode(models.IntegerChoices):

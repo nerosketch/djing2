@@ -1,4 +1,5 @@
 import re
+from enum import IntEnum
 from devices.device_config.base import Vlan, Vlans, DeviceImplementationError
 from devices.device_config.base_device_strategy import BaseDeviceStrategy, global_device_types_map, DeviceConfigType
 from devices.device_config.pon.pon_device_strategy import PonOnuDeviceStrategy
@@ -35,6 +36,10 @@ DEVICE_ONU_TYPES = [dev_klass for uniq_num, dev_klass in DEVICE_TYPES if issubcl
 DEVICE_SWITCH_TYPES = [dev_klass for uniq_num, dev_klass in DEVICE_TYPES if issubclass(
     dev_klass, SwitchDeviceStrategy)]
 
+
+DeviceTypeEnum = IntEnum('DeviceTypeEnum', {
+    dev_klass.__name__: uniq_num for uniq_num, dev_klass in DEVICE_TYPES
+})
 
 # TODO: Check it
 # Check type for device config classes
